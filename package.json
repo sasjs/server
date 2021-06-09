@@ -7,7 +7,9 @@
     "start": "nodemon ./src/index.ts",
     "build": "tsc --project ./",
     "semantic-release": "semantic-release -d",
-    "postinstall": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true"
+    "postinstall": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
+    "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
+    "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
   },
   "author": "Analytium",
   "dependencies": {
