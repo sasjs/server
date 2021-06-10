@@ -11,8 +11,15 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
   },
-  "author": "Analytium",
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "author": "Analytium Ltd",
   "dependencies": {
+    "@sasjs/utils": "^2.19.0",
+    "child_process": "^1.0.2",
     "express": "^4.17.1"
   },
   "devDependencies": {
