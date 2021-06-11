@@ -3,7 +3,7 @@ name: SASjs Server Deploy
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   release:
