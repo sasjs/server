@@ -13,7 +13,7 @@
   },
   "release": {
     "branches": [
-      "main"
+      "master"
     ]
   },
   "author": "Analytium Ltd",
