@@ -1,9 +1,4 @@
-import express from 'express'
-import indexRouter from './routes'
-
-const app = express()
-
-app.use('/', indexRouter)
+import app from './app'
 
 const port = 5000
 app.listen(port, () => {
