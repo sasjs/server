@@ -1,6 +1,6 @@
 import express from 'express'
-import { processSas } from '../controllers'
-import { ExecutionResult, RequestQuery, isRequestQuery } from '../types'
+import { processSas, createFileTree, getTreeExample } from '../controllers'
+import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 
 const router = express.Router()
 
@@ -18,6 +18,22 @@ router.get('/', async (req, res) => {
   res.send(`<b>Executed!</b><br>
 <p>Log is located:</p> ${result.logPath}<br>
 <p>Log:</p> <textarea style="width: 100%; height: 100%">${result.log}</textarea>`)
+})
+
+router.post('/deploy', async (req, res) => {
+  if (!isFileTree(req.body)) {
+    res.status(400).send(getTreeExample())
+
+    return
+  }
+
+  await createFileTree(req.body.members)
+    .then(() => {
+      res.status(200).send('Files deployed successfully to @sasjs/server.')
+    })
+    .catch((err) => {
+      res.status(500).send({ message: 'Deployment failed!', ...err })
+    })
 })
 
 export default router
