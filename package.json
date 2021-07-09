@@ -5,12 +5,13 @@
   "main": "./src/server.ts",
   "scripts": {
     "start": "nodemon ./src/index.ts",
-    "build": "tsc --project ./",
+    "build": "rimraf build && tsc",
     "semantic-release": "semantic-release -d",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
     "test": "jest --coverage",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
-    "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
+    "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
+    "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack"
   },
   "release": {
     "branches": [
@@ -31,6 +32,7 @@
     "jest": "^27.0.6",
     "nodemon": "^2.0.7",
     "prettier": "^2.3.1",
+    "rimraf": "^3.0.2",
     "semantic-release": "^17.4.3",
     "supertest": "^6.1.3",
     "ts-jest": "^27.0.3",
