@@ -6,3 +6,5 @@ export const getTmpFolderPath = () =>
 
 export const getTmpFilesFolderPath = () =>
   path.join(getTmpFolderPath(), 'files')
+
+export const getTmpLogFolderPath = () => path.join(getTmpFolderPath(), 'log')

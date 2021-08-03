@@ -1,5 +1,5 @@
 module.exports = {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/js-with-ts',
   testEnvironment: 'node',
   coverageThreshold: {
     global: {
@@ -9,5 +9,6 @@ module.exports = {
       statements: -10
     }
   },
-  collectCoverageFrom: ['src/**/{!(index),}.ts']
+  collectCoverageFrom: ['src/**/{!(index),}.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/build/']
 }
