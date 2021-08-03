@@ -36,4 +36,12 @@ router.post('/deploy', async (req, res) => {
     })
 })
 
+router.post('/execute', async (req, res) => {
+  if (req.body?._program) {
+    const result: ExecutionResult = await processSas(req.body)
+  } else {
+    res.status(400).send(`Please provide the location of SAS code`)
+  }
+})
+
 export default router
