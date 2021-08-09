@@ -7,4 +7,7 @@ export const getTmpFolderPath = () =>
 export const getTmpFilesFolderPath = () =>
   path.join(getTmpFolderPath(), 'files')
 
-export const getTmpLogFolderPath = () => path.join(getTmpFolderPath(), 'log')
+export const getTmpLogFolderPath = () => path.join(getTmpFolderPath(), 'logs')
+
+export const getTmpWeboutFolderPath = () =>
+  path.join(getTmpFolderPath(), 'webouts')
