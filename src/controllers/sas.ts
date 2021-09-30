@@ -2,14 +2,15 @@ import {
   readFile,
   generateTimestamp,
   deleteFile,
-  fileExists
+  fileExists,
+  createFile
 } from '@sasjs/utils'
 import path from 'path'
 import { ExecutionResult, ExecutionQuery } from '../types'
 import {
-  getTmpFolderPath,
   getTmpFilesFolderPath,
-  getTmpLogFolderPath
+  getTmpLogFolderPath,
+  getTmpWeboutFolderPath
 } from '../utils'
 import { configuration } from '../../package.json'
 import { promisify } from 'util'
