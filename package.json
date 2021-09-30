@@ -21,7 +21,6 @@
   "author": "Analytium Ltd",
   "dependencies": {
     "@sasjs/utils": "^2.23.3",
-    "child_process": "^1.0.2",
     "express": "^4.17.1"
   },
   "devDependencies": {
