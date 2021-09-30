@@ -22,25 +22,51 @@ router.get('/', async (req, res) => {
 
 router.post('/deploy', async (req, res) => {
   if (!isFileTree(req.body)) {
-    res.status(400).send(getTreeExample())
+    res.status(400).send({
+      status: 'failure',
+      message: 'Provided not supported data format.',
+      example: getTreeExample()
+    })
 
     return
   }
 
   await createFileTree(req.body.members)
     .then(() => {
-      res.status(200).send('Files deployed successfully to @sasjs/server.')
+      res.status(200).send({
+        status: 'success',
+        message: 'Files deployed successfully to @sasjs/server.'
+      })
     })
     .catch((err) => {
-      res.status(500).send({ message: 'Deployment failed!', ...err })
+      res
+        .status(500)
+        .send({ status: 'failure', message: 'Deployment failed!', ...err })
     })
 })
 
 router.post('/execute', async (req, res) => {
   if (req.body?._program) {
-    const result: ExecutionResult = await processSas(req.body)
+    await processSas(req.body)
+      .then((result) => {
+        res.status(200).send({
+          status: 'success',
+          message: 'Job has been sent for execution.',
+          ...result
+        })
+      })
+      .catch((err) => {
+        res.status(400).send({
+          status: 'failure',
+          message: 'Job execution failed.',
+          error: err
+        })
+      })
   } else {
-    res.status(400).send(`Please provide the location of SAS code`)
+    res.status(400).send({
+      status: 'failure',
+      message: `Please provide the location of SAS code`
+    })
   }
 })
 

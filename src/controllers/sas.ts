@@ -1,4 +1,3 @@
-import { execFile } from 'child_process'
 import {
   readFile,
   generateTimestamp,
@@ -13,37 +12,45 @@ import {
   getTmpLogFolderPath
 } from '../utils'
 import { configuration } from '../../package.json'
+import { promisify } from 'util'
+import { execFile } from 'child_process'
+const execFilePromise = promisify(execFile)
 
 export const processSas = async (
   query: ExecutionQuery
-): Promise<ExecutionResult> =>
-  new Promise(async (resolve, reject) => {
-    let sasCodePath = path.join(getTmpFilesFolderPath(), query._program)
-    sasCodePath = sasCodePath.replace(new RegExp('/', 'g'), path.sep)
+): Promise<ExecutionResult> => {
+  let sasCodePath = path.join(getTmpFilesFolderPath(), query._program)
+  sasCodePath = sasCodePath.replace(new RegExp('/', 'g'), path.sep)
 
-    if (!(await fileExists(sasCodePath))) {
-      reject('SAS file does not exist.')
-    }
+  if (!(await fileExists(sasCodePath))) {
+    return Promise.reject('SAS file does not exist.')
+  }
 
-    const sasFile: string = sasCodePath.split(path.sep).pop() || 'default'
+  const sasFile: string = sasCodePath.split(path.sep).pop() || 'default'
 
-    const sasLogPath = path.join(
-      getTmpLogFolderPath(),
-      [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.log'].join('')
-    )
+  const sasLogPath = path.join(
+    getTmpLogFolderPath(),
+    [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.log'].join('')
+  )
 
-    execFile(
-      configuration.sasPath,
-      ['-SYSIN', sasCodePath, '-log', sasLogPath, '-nosplash'],
-      async (err, _, stderr) => {
-        if (err) reject(err)
-        if (stderr) reject(stderr)
+  const { stdout, stderr } = await execFilePromise(configuration.sasPath, [
+    '-SYSIN',
+    sasCodePath,
+    '-log',
+    sasLogPath,
+    '-nosplash'
+  ])
 
-        const log = await readFile(sasLogPath)
+  if (stderr) return Promise.reject(stderr)
 
-        // deleteFile(sasLogPath)
+  if (await fileExists(sasLogPath)) {
+    return Promise.resolve({
+      log: await readFile(sasLogPath),
+      logPath: sasLogPath
+    })
+  } else {
+    return Promise.reject(`Log file wasn't created.`)
+  }
 
-        resolve({ log: log, logPath: sasLogPath })
-      }
-    )
-  })
+  // deleteFile(sasLogPath)
+}
