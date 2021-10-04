@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/deploy', async (req, res) => {
-  if (!isFileTree(req.body)) {
+  if (!isFileTree({ members: req.body.members })) {
     res.status(400).send({
       status: 'failure',
       message: 'Provided not supported data format.',
@@ -31,7 +31,10 @@ router.post('/deploy', async (req, res) => {
     return
   }
 
-  await createFileTree(req.body.members)
+  await createFileTree(
+    req.body.members,
+    req.body.appLoc ? req.body.appLoc.replace(/^\//, '').split('/') : []
+  )
     .then(() => {
       res.status(200).send({
         status: 'success',
