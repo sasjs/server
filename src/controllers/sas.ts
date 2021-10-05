@@ -29,29 +29,71 @@ export const processSas = async (
 
   const sasFile: string = sasCodePath.split(path.sep).pop() || 'default'
 
-  const sasLogPath = path.join(
-    getTmpLogFolderPath(),
-    [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.log'].join('')
+  const logArgs = []
+  let sasLogPath
+
+  if (query._debug) {
+    sasLogPath = path.join(
+      getTmpLogFolderPath(),
+      [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.log'].join('')
+    )
+    logArgs.push('-log')
+    logArgs.push(sasLogPath)
+  }
+
+  const sasWeboutPath = path.join(
+    getTmpWeboutFolderPath(),
+    [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.json'].join('')
   )
+
+  let sasCode = await readFile(sasCodePath)
+  const originalSasCode = sasCode
+
+  if (query.macroVars) {
+    const macroVars = query.macroVars.macroVars
+
+    Object.keys(macroVars).forEach(
+      (key: string) => (sasCode = `%let ${key}=${macroVars[key]};\n${sasCode}`)
+    )
+  }
+
+  sasCode = `filename _webout "${sasWeboutPath}";\n${sasCode}`
+
+  await createFile(sasCodePath, sasCode)
 
   const { stdout, stderr } = await execFilePromise(configuration.sasPath, [
     '-SYSIN',
     sasCodePath,
-    '-log',
-    sasLogPath,
+    ...logArgs,
     '-nosplash'
   ])
 
   if (stderr) return Promise.reject(stderr)
 
-  if (await fileExists(sasLogPath)) {
-    return Promise.resolve({
-      log: await readFile(sasLogPath),
-      logPath: sasLogPath
-    })
+  if (await fileExists(sasWeboutPath)) {
+    const webout = await readFile(sasWeboutPath)
+
+    try {
+      const weboutJson = JSON.parse(webout)
+
+      if (sasLogPath && (await fileExists(sasLogPath))) {
+        return Promise.resolve({
+          webout: weboutJson,
+          log: await readFile(sasLogPath),
+          logPath: sasLogPath
+        })
+      } else {
+        return Promise.resolve({
+          webout: weboutJson
+        })
+      }
+    } catch (error) {
+      return Promise.reject(`Error while parsing Webout. Details: ${error}`)
+    }
   } else {
-    return Promise.reject(`Log file wasn't created.`)
+    return Promise.reject(`Webout wasn't created.`)
   }
 
-  // deleteFile(sasLogPath)
+  // await createFile(sasCodePath, originalSasCode)
+  // await deleteFile(sasLogPath)
 }
