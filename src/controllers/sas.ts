@@ -1,27 +1,21 @@
-import {
-  readFile,
-  generateTimestamp,
-  deleteFile,
-  fileExists,
-  createFile
-} from '@sasjs/utils'
+import { readFile, deleteFile, fileExists, createFile } from '@sasjs/utils'
 import path from 'path'
 import { ExecutionResult, ExecutionQuery } from '../types'
 import {
   getTmpFilesFolderPath,
   getTmpLogFolderPath,
-  getTmpWeboutFolderPath
+  getTmpWeboutFolderPath,
+  generateUniqueFileName
 } from '../utils'
 import { configuration } from '../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 const execFilePromise = promisify(execFile)
 
-export const processSas = async (
-  query: ExecutionQuery
-): Promise<ExecutionResult> => {
-  let sasCodePath = path.join(getTmpFilesFolderPath(), query._program)
-  sasCodePath = sasCodePath.replace(new RegExp('/', 'g'), path.sep)
+export const processSas = async (query: ExecutionQuery): Promise<any> => {
+  const sasCodePath = path
+    .join(getTmpFilesFolderPath(), query._program)
+    .replace(new RegExp('/', 'g'), path.sep)
 
   if (!(await fileExists(sasCodePath))) {
     return Promise.reject('SAS file does not exist.')
@@ -29,71 +23,73 @@ export const processSas = async (
 
   const sasFile: string = sasCodePath.split(path.sep).pop() || 'default'
 
-  const logArgs = []
-  let sasLogPath
-
-  if (query._debug) {
-    sasLogPath = path.join(
-      getTmpLogFolderPath(),
-      [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.log'].join('')
-    )
-    logArgs.push('-log')
-    logArgs.push(sasLogPath)
-  }
+  const sasLogPath = path.join(
+    getTmpLogFolderPath(),
+    generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.log')
+  )
 
   const sasWeboutPath = path.join(
     getTmpWeboutFolderPath(),
-    [sasFile.replace(/\.sas/g, ''), '-', generateTimestamp(), '.json'].join('')
+    generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.json')
   )
 
   let sasCode = await readFile(sasCodePath)
-  const originalSasCode = sasCode
 
-  if (query.macroVars) {
-    const macroVars = query.macroVars.macroVars
-
-    Object.keys(macroVars).forEach(
-      (key: string) => (sasCode = `%let ${key}=${macroVars[key]};\n${sasCode}`)
-    )
-  }
+  const vars: any = query
+  Object.keys(query).forEach(
+    (key: string) => (sasCode = `%let ${key}=${vars[key]};\n${sasCode}`)
+  )
 
   sasCode = `filename _webout "${sasWeboutPath}";\n${sasCode}`
 
-  await createFile(sasCodePath, sasCode)
+  const tmpSasCodePath = sasCodePath.replace(
+    sasFile,
+    generateUniqueFileName(sasFile)
+  )
+
+  await createFile(tmpSasCodePath, sasCode)
 
   const { stdout, stderr } = await execFilePromise(configuration.sasPath, [
     '-SYSIN',
-    sasCodePath,
-    ...logArgs,
-    '-nosplash'
-  ])
+    tmpSasCodePath,
+    '-log',
+    sasLogPath,
+    '-nosplash' // FIXME: should be configurable
+  ]).catch((err) => ({ stderr: err, stdout: '' }))
 
-  if (stderr) return Promise.reject(stderr)
-
-  if (await fileExists(sasWeboutPath)) {
-    const webout = await readFile(sasWeboutPath)
-
-    try {
-      const weboutJson = JSON.parse(webout)
-
-      if (sasLogPath && (await fileExists(sasLogPath))) {
-        return Promise.resolve({
-          webout: weboutJson,
-          log: await readFile(sasLogPath),
-          logPath: sasLogPath
-        })
-      } else {
-        return Promise.resolve({
-          webout: weboutJson
-        })
-      }
-    } catch (error) {
-      return Promise.reject(`Error while parsing Webout. Details: ${error}`)
-    }
-  } else {
-    return Promise.reject(`Webout wasn't created.`)
+  let log = ''
+  if (sasLogPath && (await fileExists(sasLogPath))) {
+    log = await readFile(sasLogPath)
   }
 
-  // await createFile(sasCodePath, originalSasCode)
-  // await deleteFile(sasLogPath)
+  await deleteFile(sasLogPath)
+  await deleteFile(tmpSasCodePath)
+
+  if (stderr) return Promise.reject({ error: stderr, log: log })
+
+  if (await fileExists(sasWeboutPath)) {
+    let webout = await readFile(sasWeboutPath)
+
+    await deleteFile(sasWeboutPath)
+
+    const debug = Object.keys(query).find(
+      (key: string) => key.toLowerCase() === '_debug'
+    )
+
+    if (debug && (query as any)[debug] >= 131) {
+      webout = `<html><body>
+      >>weboutBEGIN<< ${webout} >>weboutEND<<
+      <div style="text-align:left">
+      <hr /><h2>SAS Log</h2>
+      <pre>${log}</pre>
+      </div>
+      </body></html>`
+    }
+
+    return Promise.resolve(webout)
+  } else {
+    return Promise.resolve({
+      log: log
+    })
+  }
 }

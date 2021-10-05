@@ -1,5 +1,5 @@
 export interface ExecutionResult {
-  webout: object
+  webout?: string
   log?: string
   logPath?: string
 }

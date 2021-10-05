@@ -53,27 +53,13 @@ router.get('/SASjsExecutor', async (req, res) => {
   res.status(200).send({ status: 'success', tree: {} })
 })
 
-// SAS:
-// https://sas.analytium.co.uk:8343/SASStoredProcess/do?_action=form,properties,execute,noba[…]blic%2Fapp%2Fdata-combiner%2Fservices%2Fcommon%2Fappinit
-// https://sas.analytium.co.uk:8343/SASStoredProcess/
-// https://sas.analytium.co.uk:8343/SASStoredProcess/do?&_program=%2FPublic%2Fapp%2Fdata-combiner%2Fservices%2Fcommon%2Fappinit&_DEBUG=131
-// https://sas.analytium.co.uk:8343/SASStoredProcess/do?_program=%2FPublic%2Fapp%2Fdata-comb[…]ction=update%2Cnewwindow%2Cnobanner&_updatekey=895432774
-
-// SASjs:
-// http://localhost:5000/SASjsExecutor?_program=%2FPublic%2Fapp%2Fdata-combiner%2Fservices%2Fcommon%2Fappinit
-// http://localhost:5000/SASjsExecutor
-// http://localhost:5000/SASjsExecutor?_program=%2FPublic%2Fapp%2Fdata-combiner%2Fservices%2Fcommon%2Fappinit&_DEBUG=131
-
 router.get('/SASjsExecutor/do', async (req, res) => {
   const queryEntries = Object.keys(req.query).map((entry: string) =>
     entry.toLowerCase()
   )
-  const isDebug = queryEntries.find((entry: string) => entry === '_debug')
-    ? true
-    : false
 
   if (isRequestQuery(req.query)) {
-    await processSas({ ...req.query, _debug: isDebug })
+    await processSas({ ...req.query })
       .then((result) => {
         res.status(200).send(result)
       })
@@ -81,7 +67,7 @@ router.get('/SASjsExecutor/do', async (req, res) => {
         res.status(400).send({
           status: 'failure',
           message: 'Job execution failed.',
-          error: err
+          ...err
         })
       })
   } else {
