@@ -34,26 +34,23 @@ export const createFileTree = async (
 }
 
 export const getTreeExample = () => ({
-  message: 'Provided not supported data format.',
-  supportedFormat: {
-    members: [
-      {
-        name: 'jobs',
-        type: 'folder',
-        members: [
-          {
-            name: 'extract',
-            type: 'folder',
-            members: [
-              {
-                name: 'makedata1',
-                type: 'service',
-                code: '%put Hello World!;'
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+  members: [
+    {
+      name: 'jobs',
+      type: 'folder',
+      members: [
+        {
+          name: 'extract',
+          type: 'folder',
+          members: [
+            {
+              name: 'makedata1',
+              type: 'service',
+              code: '%put Hello World!;'
+            }
+          ]
+        }
+      ]
+    }
+  ]
 })

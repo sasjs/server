@@ -21,19 +21,61 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/deploy', async (req, res) => {
-  if (!isFileTree(req.body)) {
-    res.status(400).send(getTreeExample())
+  if (!isFileTree({ members: req.body.members })) {
+    res.status(400).send({
+      status: 'failure',
+      message: 'Provided not supported data format.',
+      example: getTreeExample()
+    })
 
     return
   }
 
-  await createFileTree(req.body.members)
+  await createFileTree(
+    req.body.members,
+    req.body.appLoc ? req.body.appLoc.replace(/^\//, '').split('/') : []
+  )
     .then(() => {
-      res.status(200).send('Files deployed successfully to @sasjs/server.')
+      res.status(200).send({
+        status: 'success',
+        message: 'Files deployed successfully to @sasjs/server.'
+      })
     })
     .catch((err) => {
-      res.status(500).send({ message: 'Deployment failed!', ...err })
+      res
+        .status(500)
+        .send({ status: 'failure', message: 'Deployment failed!', ...err })
     })
+})
+
+// TODO: respond with HTML page including file tree
+router.get('/SASjsExecutor', async (req, res) => {
+  res.status(200).send({ status: 'success', tree: {} })
+})
+
+router.get('/SASjsExecutor/do', async (req, res) => {
+  const queryEntries = Object.keys(req.query).map((entry: string) =>
+    entry.toLowerCase()
+  )
+
+  if (isRequestQuery(req.query)) {
+    await processSas({ ...req.query })
+      .then((result) => {
+        res.status(200).send(result)
+      })
+      .catch((err) => {
+        res.status(400).send({
+          status: 'failure',
+          message: 'Job execution failed.',
+          ...err
+        })
+      })
+  } else {
+    res.status(400).send({
+      status: 'failure',
+      message: `Please provide the location of SAS code`
+    })
+  }
 })
 
 export default router

@@ -1,4 +1,5 @@
 export interface ExecutionResult {
-  log: string
-  logPath: string
+  webout?: string
+  log?: string
+  logPath?: string
 }
