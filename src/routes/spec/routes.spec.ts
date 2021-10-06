@@ -10,7 +10,11 @@ describe('deploy', () => {
     const res = await request(app).post('/deploy').send(payload)
 
     expect(res.statusCode).toEqual(400)
-    expect(res.body).toEqual(getTreeExample())
+    expect(res.body).toEqual({
+      status: 'failure',
+      message: 'Provided not supported data format.',
+      example: getTreeExample()
+    })
   }
 
   it('should respond with payload example if valid payload was not provided', async () => {
@@ -70,12 +74,12 @@ describe('deploy', () => {
   })
 
   it('should respond with payload example if valid payload was not provided', async () => {
-    const res = await request(app)
-      .post('/deploy')
-      .send(getTreeExample().supportedFormat)
+    const res = await request(app).post('/deploy').send(getTreeExample())
 
     expect(res.statusCode).toEqual(200)
-    expect(res.text).toEqual('Files deployed successfully to @sasjs/server.')
+    expect(res.text).toEqual(
+      '{"status":"success","message":"Files deployed successfully to @sasjs/server."}'
+    )
     await expect(folderExists(getTmpFilesFolderPath())).resolves.toEqual(true)
 
     const testJobFolder = path.join(getTmpFilesFolderPath(), 'jobs', 'extract')
@@ -83,13 +87,13 @@ describe('deploy', () => {
 
     const testJobFile = path.join(
       testJobFolder,
-      getTreeExample().supportedFormat.members[0].members[0].members[0].name
+      getTreeExample().members[0].members[0].members[0].name
     )
 
     await expect(fileExists(testJobFile)).resolves.toEqual(true)
 
     await expect(readFile(testJobFile)).resolves.toEqual(
-      getTreeExample().supportedFormat.members[0].members[0].members[0].code
+      getTreeExample().members[0].members[0].members[0].code
     )
 
     await deleteFolder(getTmpFilesFolderPath())
