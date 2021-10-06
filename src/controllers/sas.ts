@@ -18,7 +18,7 @@ export const processSas = async (query: ExecutionQuery): Promise<any> => {
     .replace(new RegExp('/', 'g'), path.sep)
 
   if (!(await fileExists(sasCodePath))) {
-    return Promise.reject('SAS file does not exist.')
+    return Promise.reject({ error: 'SAS file does not exist.' })
   }
 
   const sasFile: string = sasCodePath.split(path.sep).pop() || 'default'
@@ -54,7 +54,7 @@ export const processSas = async (query: ExecutionQuery): Promise<any> => {
     tmpSasCodePath,
     '-log',
     sasLogPath,
-    '-nosplash' // FIXME: should be configurable
+    process.platform === 'win32' ? '-nosplash' : ''
   ]).catch((err) => ({ stderr: err, stdout: '' }))
 
   let log = ''
@@ -78,12 +78,12 @@ export const processSas = async (query: ExecutionQuery): Promise<any> => {
 
     if (debug && (query as any)[debug] >= 131) {
       webout = `<html><body>
-      >>weboutBEGIN<< ${webout} >>weboutEND<<
-      <div style="text-align:left">
-      <hr /><h2>SAS Log</h2>
-      <pre>${log}</pre>
-      </div>
-      </body></html>`
+${webout}
+<div style="text-align:left">
+<hr /><h2>SAS Log</h2>
+<pre>${log}</pre>
+</div>
+</body></html>`
     }
 
     return Promise.resolve(webout)
