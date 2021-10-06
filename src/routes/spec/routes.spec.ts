@@ -73,10 +73,10 @@ describe('deploy', () => {
     })
   })
 
-  it.only('should respond with payload example if valid payload was not provided', async () => {
+  it('should respond with payload example if valid payload was not provided', async () => {
     const res = await request(app).post('/deploy').send(getTreeExample())
 
-    // expect(res.statusCode).toEqual(200)
+    expect(res.statusCode).toEqual(200)
     expect(res.text).toEqual(
       '{"status":"success","message":"Files deployed successfully to @sasjs/server."}'
     )

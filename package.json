@@ -8,7 +8,7 @@
     "build": "rimraf build && tsc",
     "semantic-release": "semantic-release -d",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
-    "test": "jest --coverage",
+    "test": "mkdir -p tmp && jest --coverage",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack"
