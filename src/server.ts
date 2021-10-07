@@ -1,6 +1,8 @@
 import app from './app'
+import { configuration } from '../package.json'
 
-const port = 5000
-const listener = app.listen(port, () => {
-  console.log(`⚡️[server]: Server is running at http://localhost:${port}`)
+app.listen(configuration.sasJsPort, () => {
+  console.log(
+    `⚡️[server]: Server is running at http://localhost:${configuration.sasJsPort}`
+  )
 })

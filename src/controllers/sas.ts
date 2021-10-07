@@ -28,10 +28,14 @@ export const processSas = async (query: ExecutionQuery): Promise<any> => {
     generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.log')
   )
 
+  await createFile(sasLogPath, '')
+
   const sasWeboutPath = path.join(
     getTmpWeboutFolderPath(),
-    generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.json')
+    generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.txt')
   )
+
+  await createFile(sasWeboutPath, '')
 
   let sasCode = await readFile(sasCodePath)
 
