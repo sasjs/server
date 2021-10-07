@@ -39,6 +39,7 @@
     "typescript": "^4.3.2"
   },
   "configuration": {
-    "sasPath": "C:\\Program Files\\SASHome\\SASFoundation\\9.4\\sas.exe"
+    "sasPath": "/opt/sas/sas9/SASHome/SASFoundation/9.4/sasexe/sas",
+    "sasJsPort": 5001
   }
 }
