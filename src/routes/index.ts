@@ -1,5 +1,10 @@
 import express from 'express'
-import { processSas, createFileTree, getTreeExample } from '../controllers'
+import {
+  processSas,
+  createFileTree,
+  getTreeExample,
+  sasjsExecutor
+} from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 
 const router = express.Router()
@@ -50,7 +55,10 @@ router.post('/deploy', async (req, res) => {
 
 // TODO: respond with HTML page including file tree
 router.get('/SASjsExecutor', async (req, res) => {
-  res.status(200).send({ status: 'success', tree: {} })
+  const tree = sasjsExecutor()
+  // res.status(200).send({ status: 'success', tree })
+  console.log(tree)
+  res.render('index', { tree })
 })
 
 router.get('/SASjsExecutor/do', async (req, res) => {
