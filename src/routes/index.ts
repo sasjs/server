@@ -2,6 +2,8 @@ import express from 'express'
 import { processSas, createFileTree, getTreeExample } from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 
+const multer  = require('multer')
+const upload = multer({ dest: 'sas_uploads/' })
 const router = express.Router()
 
 router.get('/', async (req, res) => {
@@ -53,7 +55,7 @@ router.get('/SASjsExecutor', async (req, res) => {
   res.status(200).send({ status: 'success', tree: {} })
 })
 
-router.get('/SASjsExecutor/do', async (req, res) => {
+router.post('/SASjsExecutor/do', upload.array('files', 10), async (req, res) => {
   const queryEntries = Object.keys(req.query).map((entry: string) =>
     entry.toLowerCase()
   )
