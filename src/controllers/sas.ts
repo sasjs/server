@@ -10,9 +10,12 @@ import {
 import { configuration } from '../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
-const execFilePromise = promisify(execFile)
+import fs from 'fs'
 
-export const processSas = async (query: ExecutionQuery): Promise<any> => {
+const execFilePromise = promisify(execFile)
+const sasUploadsDir = '../../sas_uploads'
+
+export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promise<any> => {
   const sasCodePath = path
     .join(getTmpFilesFolderPath(), query._program)
     .replace(new RegExp('/', 'g'), path.sep)
@@ -46,6 +49,14 @@ export const processSas = async (query: ExecutionQuery): Promise<any> => {
 
   sasCode = `filename _webout "${sasWeboutPath}";\n${sasCode}`
 
+  if (otherArgs && otherArgs.filesNamesMap) {
+    const uploadSasCode = parseFileUploadSasCode(otherArgs.filesNamesMap)
+
+    if (uploadSasCode.length > 0) {
+      sasCode += `${uploadSasCode}`
+    }
+  }
+
   const tmpSasCodePath = sasCodePath.replace(
     sasFile,
     generateUniqueFileName(sasFile)
@@ -68,6 +79,12 @@ export const processSas = async (query: ExecutionQuery): Promise<any> => {
 
   await deleteFile(sasLogPath)
   await deleteFile(tmpSasCodePath)
+
+  //remove uploaded files
+  const sasUploadsDirPath = path.join(__dirname, '../../sas_uploads')
+  fs.readdirSync(sasUploadsDirPath).forEach(async fileName => {
+    await deleteFile(sasUploadsDirPath + '/' + fileName)
+  })
 
   if (stderr) return Promise.reject({ error: stderr, log: log })
 
@@ -96,4 +113,46 @@ ${webout}
       log: log
     })
   }
+}
+
+const parseFileUploadSasCode = (filesNamesMap: any) => {
+  const uploadFilesDirPath = path.join(__dirname, sasUploadsDir)
+
+  let uploadSasCode = ''
+  let fileCount = 0
+  let uploadedFilesMap: {fileref: string, filepath: string, filename: string, count: number}[] = []
+
+  fs.readdirSync(uploadFilesDirPath).forEach(fileName => {
+    fileCount++
+
+    let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
+    fileCountString = fileCount < 10 ? '00' + fileCount : fileCount
+
+    uploadedFilesMap.push({
+      fileref: `_sasjsfile${fileCountString}`,
+      filepath: `${uploadFilesDirPath}/${fileName}`,
+      filename: filesNamesMap[fileName],
+      count: fileCount
+    })
+  });
+
+  for (let uploadedMap of uploadedFilesMap) {
+    uploadSasCode += `\nfilename ${uploadedMap.fileref} "${uploadedMap.filepath}";`
+  }
+
+  uploadSasCode += `\n%let _WEBIN_FILE_COUNT=${fileCount};`
+
+  for (let uploadedMap of uploadedFilesMap) {
+    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedMap.count}=${uploadedMap.filepath};`
+  }
+
+  for (let uploadedMap of uploadedFilesMap) {
+    uploadSasCode += `\n%let _WEBIN_FILEREF${uploadedMap.count}=${uploadedMap.fileref};`
+  }
+
+  for (let uploadedMap of uploadedFilesMap) {
+    uploadSasCode += `\n%let _WEBIN_NAME${uploadedMap.count}=${uploadedMap.filename};`
+  }
+
+  return uploadSasCode
 }
