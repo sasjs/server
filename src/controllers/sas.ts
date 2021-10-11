@@ -49,14 +49,14 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
 
   sasCode = `filename _webout "${sasWeboutPath}";\n${sasCode}`
 
+  // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs && otherArgs.filesNamesMap) {
-    const uploadSasCode = parseFileUploadSasCode(otherArgs.filesNamesMap, otherArgs.sasUploadFolder)
+    const uploadSasCode = generateFileUploadSasCode(otherArgs.filesNamesMap, otherArgs.sasUploadFolder)
 
+    //If sas code for the file is generated it will be appended to the sasCode
     if (uploadSasCode.length > 0) {
       sasCode += `${uploadSasCode}`
     }
-
-    console.log(sasCode)
   }
 
   const tmpSasCodePath = sasCodePath.replace(
@@ -115,7 +115,13 @@ ${webout}
   }
 }
 
-const parseFileUploadSasCode = (filesNamesMap: any, sasUploadFolder: string) => {
+/**
+ * Generates the sas code that reference uploaded files in the concurrent request
+ * @param filesNamesMap object that maps hashed file names and original file names
+ * @param sasUploadFolder name of the folder that is created for the purpose of files in concurrent request
+ * @returns generated sas code
+ */
+const generateFileUploadSasCode = (filesNamesMap: any, sasUploadFolder: string): string => {
   const uploadFilesDirPath = path.join(__dirname, sasUploadsDir + '/' + sasUploadFolder)
 
   let uploadSasCode = ''

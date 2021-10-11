@@ -6,23 +6,27 @@ import fs from 'fs'
 import path from 'path'
 import { uuidv4 } from '@sasjs/utils'
 
+//initializing multer for files intercepting
 const multer  = require('multer')
-// const upload = multer({ dest: 'sas_uploads/' })
 const router = express.Router()
 
 var storage = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
+    //if not already existing, creating subfolder for current request files
     const uploadsPath = path.join(__dirname, '../../sas_uploads')
     const reqFolderPath = `${uploadsPath}/${req.sasUploadFolder}`
 
     if (!fs.existsSync(reqFolderPath)) fs.mkdirSync(reqFolderPath)
     
+    //Sending the intercepted files to the desired subfolder
     cb(null, `sas_uploads/${req.sasUploadFolder}`);
   }
 })
 
 const upload = multer({storage: storage})
 
+//It will intercept request and generate uniqe uuid to be used as a subfolder name
+//that will store the files uploaded
 const preuploadMiddleware = (req: any, res: any, next: any) => {
   req.sasUploadFolder = uuidv4();
   next();

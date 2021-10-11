@@ -1,3 +1,8 @@
+/**
+ * It will create a object that maps hashed file names to the original names
+ * @param files array of files to be mapped
+ * @returns object
+ */
 export const makeFilesNamesMap = (files: any) => {
   const filesNamesMap: any = {}
 
