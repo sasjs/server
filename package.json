@@ -5,6 +5,7 @@
   "main": "./src/server.ts",
   "scripts": {
     "start": "nodemon ./src/server.ts",
+    "start:prod": "nodemon ./src/prod-server.ts",
     "build": "rimraf build && tsc",
     "semantic-release": "semantic-release -d",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
