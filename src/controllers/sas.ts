@@ -129,7 +129,7 @@ const parseFileUploadSasCode = (filesNamesMap: any) => {
     fileCountString = fileCount < 10 ? '00' + fileCount : fileCount
 
     uploadedFilesMap.push({
-      fileref: `_sasjsfile${fileCountString}`,
+      fileref: `_sjs${fileCountString}`,
       filepath: `${uploadFilesDirPath}/${fileName}`,
       filename: filesNamesMap[fileName],
       count: fileCount
