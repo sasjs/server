@@ -12,8 +12,9 @@ import { promisify } from 'util'
 import { execFile } from 'child_process'
 import fs from 'fs'
 
+const sasUploadPath = configuration.sasUploadsPath.charAt(0) === '/' ? configuration.sasUploadsPath.replace('/', '') : configuration.sasUploadsPath
 const execFilePromise = promisify(execFile)
-const sasUploadsDir = '../../sas_uploads'
+const sasUploadsDir = `../../${sasUploadPath}`
 
 export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promise<any> => {
   const sasCodePath = path
@@ -83,7 +84,7 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
   await deleteFile(tmpSasCodePath)
 
   //remove uploaded files
-  const sasUploadsDirPath = path.join(__dirname, '../../sas_uploads/' + otherArgs.sasUploadFolder)
+  const sasUploadsDirPath = path.join(__dirname, `../../${sasUploadPath}/${otherArgs.sasUploadFolder}`)
   await deleteFolder(sasUploadsDirPath)
 
   if (stderr) return Promise.reject({ error: stderr, log: log })
