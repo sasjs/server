@@ -2,10 +2,31 @@ import express from 'express'
 import { processSas, createFileTree, getTreeExample } from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 import { makeFilesNamesMap } from '../utils'
+import fs from 'fs'
+import path from 'path'
+import { uuidv4 } from '@sasjs/utils'
 
 const multer  = require('multer')
-const upload = multer({ dest: 'sas_uploads/' })
+// const upload = multer({ dest: 'sas_uploads/' })
 const router = express.Router()
+
+var storage = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    const uploadsPath = path.join(__dirname, '../../sas_uploads')
+    const reqFolderPath = `${uploadsPath}/${req.sasUploadFolder}`
+
+    if (!fs.existsSync(reqFolderPath)) fs.mkdirSync(reqFolderPath)
+    
+    cb(null, `sas_uploads/${req.sasUploadFolder}`);
+  }
+})
+
+const upload = multer({storage: storage})
+
+const preuploadMiddleware = (req: any, res: any, next: any) => {
+  req.sasUploadFolder = uuidv4();
+  next();
+};
 
 router.get('/', async (req, res) => {
   const query = req.query
@@ -56,7 +77,7 @@ router.get('/SASjsExecutor', async (req, res) => {
   res.status(200).send({ status: 'success', tree: {} })
 })
 
-router.post('/SASjsExecutor/do', upload.array('files', 10), async (req: any, res) => {
+router.post('/SASjsExecutor/do', preuploadMiddleware, upload.array('files', 10), async (req: any, res) => {
   const queryEntries = Object.keys(req.query).map((entry: string) =>
     entry.toLowerCase()
   )
@@ -64,7 +85,7 @@ router.post('/SASjsExecutor/do', upload.array('files', 10), async (req: any, res
   if (isRequestQuery(req.query)) {
     const filesNamesMap = makeFilesNamesMap(req.files)
 
-    await processSas({ ...req.query }, {filesNamesMap})
+    await processSas({ ...req.query }, {filesNamesMap: filesNamesMap, sasUploadFolder: req.sasUploadFolder})
       .then((result) => {
         res.status(200).send(result)
       })

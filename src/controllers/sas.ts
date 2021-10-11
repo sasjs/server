@@ -1,4 +1,4 @@
-import { readFile, deleteFile, fileExists, createFile } from '@sasjs/utils'
+import { readFile, deleteFile, fileExists, createFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
 import { ExecutionResult, ExecutionQuery } from '../types'
 import {
@@ -50,11 +50,13 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
   sasCode = `filename _webout "${sasWeboutPath}";\n${sasCode}`
 
   if (otherArgs && otherArgs.filesNamesMap) {
-    const uploadSasCode = parseFileUploadSasCode(otherArgs.filesNamesMap)
+    const uploadSasCode = parseFileUploadSasCode(otherArgs.filesNamesMap, otherArgs.sasUploadFolder)
 
     if (uploadSasCode.length > 0) {
       sasCode += `${uploadSasCode}`
     }
+
+    console.log(sasCode)
   }
 
   const tmpSasCodePath = sasCodePath.replace(
@@ -81,10 +83,8 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
   await deleteFile(tmpSasCodePath)
 
   //remove uploaded files
-  const sasUploadsDirPath = path.join(__dirname, '../../sas_uploads')
-  fs.readdirSync(sasUploadsDirPath).forEach(async fileName => {
-    await deleteFile(sasUploadsDirPath + '/' + fileName)
-  })
+  const sasUploadsDirPath = path.join(__dirname, '../../sas_uploads/' + otherArgs.sasUploadFolder)
+  await deleteFolder(sasUploadsDirPath)
 
   if (stderr) return Promise.reject({ error: stderr, log: log })
 
@@ -115,8 +115,8 @@ ${webout}
   }
 }
 
-const parseFileUploadSasCode = (filesNamesMap: any) => {
-  const uploadFilesDirPath = path.join(__dirname, sasUploadsDir)
+const parseFileUploadSasCode = (filesNamesMap: any, sasUploadFolder: string) => {
+  const uploadFilesDirPath = path.join(__dirname, sasUploadsDir + '/' + sasUploadFolder)
 
   let uploadSasCode = ''
   let fileCount = 0
