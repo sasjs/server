@@ -1,25 +1,40 @@
-import { readFile, deleteFile, fileExists, createFile, deleteFolder } from '@sasjs/utils'
+import {
+  readFile,
+  deleteFile,
+  fileExists,
+  createFile,
+  deleteFolder
+} from '@sasjs/utils'
 import path from 'path'
 import { ExecutionResult, ExecutionQuery } from '../types'
 import {
   getTmpFilesFolderPath,
   getTmpLogFolderPath,
   getTmpWeboutFolderPath,
-  generateUniqueFileName
+  generateUniqueFileName,
+  getTmpSessionPath,
+  getTmpFolderPath
 } from '../utils'
 import { configuration } from '../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import fs from 'fs'
 
-const sasUploadPath = configuration.sasUploadsPath.charAt(0) === '/' ? configuration.sasUploadsPath.replace('/', '') : configuration.sasUploadsPath
+const sasUploadPath =
+  configuration.sasUploadsPath.charAt(0) === '/'
+    ? configuration.sasUploadsPath.replace('/', '')
+    : configuration.sasUploadsPath
 const execFilePromise = promisify(execFile)
 const sasUploadsDir = `../../${sasUploadPath}`
 
-export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promise<any> => {
-  const sasCodePath = path
-    .join(getTmpFilesFolderPath(), query._program)
-    .replace(new RegExp('/', 'g'), path.sep)
+export const processSas = async (
+  query: ExecutionQuery,
+  otherArgs?: any
+): Promise<any> => {
+  const sasCodePath =
+    path
+      .join(getTmpFilesFolderPath(), query._program)
+      .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   if (!(await fileExists(sasCodePath))) {
     return Promise.reject({ error: 'SAS file does not exist.' })
@@ -28,15 +43,16 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
   const sasFile: string = sasCodePath.split(path.sep).pop() || 'default'
 
   const sasLogPath = path.join(
-    getTmpLogFolderPath(),
-    generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.log')
+    getTmpSessionPath(otherArgs.sasSessionTmp),
+    sasFile + '.log'
   )
+  console.log('sasLogPath', sasLogPath)
 
   await createFile(sasLogPath, '')
 
   const sasWeboutPath = path.join(
-    getTmpWeboutFolderPath(),
-    generateUniqueFileName(sasFile.replace(/\.sas/g, ''), '.txt')
+    getTmpSessionPath(otherArgs.sasSessionTmp),
+    sasFile + '.txt'
   )
 
   await createFile(sasWeboutPath, '')
@@ -52,7 +68,10 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
 
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs && otherArgs.filesNamesMap) {
-    const uploadSasCode = generateFileUploadSasCode(otherArgs.filesNamesMap, otherArgs.sasUploadFolder)
+    const uploadSasCode = generateFileUploadSasCode(
+      otherArgs.filesNamesMap,
+      otherArgs.sasSessionTmp
+    )
 
     //If sas code for the file is generated it will be appended to the sasCode
     if (uploadSasCode.length > 0) {
@@ -60,9 +79,9 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
     }
   }
 
-  const tmpSasCodePath = sasCodePath.replace(
-    sasFile,
-    generateUniqueFileName(sasFile)
+  const tmpSasCodePath = path.join(
+    getTmpSessionPath(otherArgs.sasSessionTmp),
+    sasFile + '.sas'
   )
 
   await createFile(tmpSasCodePath, sasCode)
@@ -73,19 +92,17 @@ export const processSas = async (query: ExecutionQuery, otherArgs?: any): Promis
     '-log',
     sasLogPath,
     process.platform === 'win32' ? '-nosplash' : ''
-  ]).catch((err) => ({ stderr: err, stdout: '' }))
+  ]).catch((err) => {
+    return { stderr: err, stdout: '' }
+  })
 
   let log = ''
   if (sasLogPath && (await fileExists(sasLogPath))) {
     log = await readFile(sasLogPath)
   }
 
-  await deleteFile(sasLogPath)
-  await deleteFile(tmpSasCodePath)
-
-  //remove uploaded files
-  const sasUploadsDirPath = path.join(__dirname, `../../${sasUploadPath}/${otherArgs.sasUploadFolder}`)
-  await deleteFolder(sasUploadsDirPath)
+  // Remove sas session folder
+  await deleteFolder(getTmpSessionPath(otherArgs.sasSessionTmp))
 
   if (stderr) return Promise.reject({ error: stderr, log: log })
 
@@ -122,14 +139,25 @@ ${webout}
  * @param sasUploadFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated sas code
  */
-const generateFileUploadSasCode = (filesNamesMap: any, sasUploadFolder: string): string => {
-  const uploadFilesDirPath = path.join(__dirname, sasUploadsDir + '/' + sasUploadFolder)
+const generateFileUploadSasCode = (
+  filesNamesMap: any,
+  sasUploadFolder: string
+): string => {
+  const uploadFilesDirPath = path.join(
+    __dirname,
+    sasUploadsDir + '/' + sasUploadFolder
+  )
 
   let uploadSasCode = ''
   let fileCount = 0
-  let uploadedFilesMap: {fileref: string, filepath: string, filename: string, count: number}[] = []
+  let uploadedFilesMap: {
+    fileref: string
+    filepath: string
+    filename: string
+    count: number
+  }[] = []
 
-  fs.readdirSync(uploadFilesDirPath).forEach(fileName => {
+  fs.readdirSync(uploadFilesDirPath).forEach((fileName) => {
     fileCount++
 
     let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
@@ -141,7 +169,7 @@ const generateFileUploadSasCode = (filesNamesMap: any, sasUploadFolder: string):
       filename: filesNamesMap[fileName],
       count: fileCount
     })
-  });
+  })
 
   for (let uploadedMap of uploadedFilesMap) {
     uploadSasCode += `\nfilename ${uploadedMap.fileref} "${uploadedMap.filepath}";`

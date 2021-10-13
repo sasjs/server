@@ -4,6 +4,8 @@
  * @returns object
  */
 export const makeFilesNamesMap = (files: any) => {
+  if (!files) return null
+
   const filesNamesMap: any = {}
 
   for (let file of files) {

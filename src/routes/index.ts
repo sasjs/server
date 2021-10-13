@@ -7,10 +7,13 @@ import path from 'path'
 import { uuidv4 } from '@sasjs/utils'
 import { configuration } from '../../package.json'
 
-const sasUploadPath = configuration.sasUploadsPath.charAt(0) === '/' ? configuration.sasUploadsPath.replace('/', '') : configuration.sasUploadsPath
+const sasUploadPath =
+  configuration.sasUploadsPath.charAt(0) === '/'
+    ? configuration.sasUploadsPath.replace('/', '')
+    : configuration.sasUploadsPath
 
 //initializing multer for files intercepting
-const multer  = require('multer')
+const multer = require('multer')
 const router = express.Router()
 
 var storage = multer.diskStorage({
@@ -19,21 +22,25 @@ var storage = multer.diskStorage({
     const uploadsPath = path.join(__dirname, `../../${sasUploadPath}`)
     const reqFolderPath = `${uploadsPath}/${req.sasUploadFolder}`
 
-    if (!fs.existsSync(reqFolderPath)) fs.mkdirSync(reqFolderPath)
-    
     //Sending the intercepted files to the desired subfolder
-    cb(null, `${sasUploadPath}/${req.sasUploadFolder}`);
+    cb(null, `${sasUploadPath}/${req.sasUploadFolder}`)
   }
 })
 
-const upload = multer({storage: storage})
+const upload = multer({ storage: storage })
 
 //It will intercept request and generate uniqe uuid to be used as a subfolder name
 //that will store the files uploaded
 const preuploadMiddleware = (req: any, res: any, next: any) => {
-  req.sasUploadFolder = uuidv4();
-  next();
-};
+  req.sasUploadFolder = uuidv4()
+
+  const uploadsPath = path.join(__dirname, `../../${sasUploadPath}`)
+  const reqFolderPath = `${uploadsPath}/${req.sasUploadFolder}`
+
+  if (!fs.existsSync(reqFolderPath)) fs.mkdirSync(reqFolderPath)
+
+  next()
+}
 
 router.get('/', async (req, res) => {
   const query = req.query
@@ -84,15 +91,15 @@ router.get('/SASjsExecutor', async (req, res) => {
   res.status(200).send({ status: 'success', tree: {} })
 })
 
-router.post('/SASjsExecutor/do', preuploadMiddleware, upload.array('files', 10), async (req: any, res) => {
+router.get('/SASjsExecutor/do', preuploadMiddleware, async (req: any, res) => {
+  console.log('req.query', req.query)
+  console.log('req.body', req.body)
   const queryEntries = Object.keys(req.query).map((entry: string) =>
     entry.toLowerCase()
   )
 
   if (isRequestQuery(req.query)) {
-    const filesNamesMap = makeFilesNamesMap(req.files)
-
-    await processSas({ ...req.query }, {filesNamesMap: filesNamesMap, sasUploadFolder: req.sasUploadFolder})
+    await processSas({ ...req.query }, { sasSessionTmp: req.sasUploadFolder })
       .then((result) => {
         res.status(200).send(result)
       })
@@ -110,5 +117,48 @@ router.post('/SASjsExecutor/do', preuploadMiddleware, upload.array('files', 10),
     })
   }
 })
+
+router.post(
+  '/SASjsExecutor/do',
+  preuploadMiddleware,
+  upload.any(),
+  async (req: any, res) => {
+    const queryEntries = Object.keys(req.query).map((entry: string) =>
+      entry.toLowerCase()
+    )
+
+    if (isRequestQuery(req.query)) {
+      let filesNamesMap = null
+
+      if (req.files && req.files.length > 0) {
+        filesNamesMap = makeFilesNamesMap(req.files)
+      }
+
+      await processSas(
+        { ...req.query },
+        {
+          filesNamesMap: filesNamesMap ? filesNamesMap : undefined,
+          sasSessionTmp: req.sasUploadFolder
+        }
+      )
+        .then((result) => {
+          console.log('result')
+          res.status(200).send(result)
+        })
+        .catch((err) => {
+          res.status(400).send({
+            status: 'failure',
+            message: 'Job execution failed.',
+            ...err
+          })
+        })
+    } else {
+      res.status(400).send({
+        status: 'failure',
+        message: `Please provide the location of SAS code`
+      })
+    }
+  }
+)
 
 export default router
