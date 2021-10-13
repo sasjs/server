@@ -9,7 +9,7 @@ export const makeFilesNamesMap = (files: any) => {
   const filesNamesMap: any = {}
 
   for (let file of files) {
-    filesNamesMap[file.filename] = file.originalname
+    filesNamesMap[file.filename] = file.fieldname
   }
 
   return filesNamesMap

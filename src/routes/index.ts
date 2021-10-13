@@ -24,6 +24,10 @@ var storage = multer.diskStorage({
 
     //Sending the intercepted files to the desired subfolder
     cb(null, `${sasUploadPath}/${req.sasUploadFolder}`)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    //req_file prefix + unique hash added to sas request files
+    cb(null, `req_file_${uuidv4().replace(/-/gm, '')}`)
   }
 })
 

@@ -73,9 +73,9 @@ export const processSas = async (
       otherArgs.sasSessionTmp
     )
 
-    //If sas code for the file is generated it will be appended to the sasCode
+    //If sas code for the file is generated it will be appended to the top of sasCode
     if (uploadSasCode.length > 0) {
-      sasCode += `${uploadSasCode}`
+      sasCode = `${uploadSasCode}` + sasCode
     }
   }
 
@@ -101,15 +101,13 @@ export const processSas = async (
     log = await readFile(sasLogPath)
   }
 
-  // Remove sas session folder
-  await deleteFolder(getTmpSessionPath(otherArgs.sasSessionTmp))
-
   if (stderr) return Promise.reject({ error: stderr, log: log })
 
   if (await fileExists(sasWeboutPath)) {
     let webout = await readFile(sasWeboutPath)
 
-    await deleteFile(sasWeboutPath)
+    // Remove sas session folder
+    await deleteFolder(getTmpSessionPath(otherArgs.sasSessionTmp))
 
     const debug = Object.keys(query).find(
       (key: string) => key.toLowerCase() === '_debug'
@@ -127,6 +125,9 @@ ${webout}
 
     return Promise.resolve(webout)
   } else {
+    // Remove sas session folder
+    await deleteFolder(getTmpSessionPath(otherArgs.sasSessionTmp))
+
     return Promise.resolve({
       log: log
     })
@@ -158,17 +159,19 @@ const generateFileUploadSasCode = (
   }[] = []
 
   fs.readdirSync(uploadFilesDirPath).forEach((fileName) => {
-    fileCount++
-
     let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
     fileCountString = fileCount < 10 ? '00' + fileCount : fileCount
 
-    uploadedFilesMap.push({
-      fileref: `_sjs${fileCountString}`,
-      filepath: `${uploadFilesDirPath}/${fileName}`,
-      filename: filesNamesMap[fileName],
-      count: fileCount
-    })
+    if (fileName.includes('req_file')) {
+      fileCount++
+
+      uploadedFilesMap.push({
+        fileref: `_sjs${fileCountString}`,
+        filepath: `${uploadFilesDirPath}/${fileName}`,
+        filename: filesNamesMap[fileName],
+        count: fileCount
+      })
+    }
   })
 
   for (let uploadedMap of uploadedFilesMap) {
@@ -188,6 +191,14 @@ const generateFileUploadSasCode = (
   for (let uploadedMap of uploadedFilesMap) {
     uploadSasCode += `\n%let _WEBIN_NAME${uploadedMap.count}=${uploadedMap.filename};`
   }
+
+  if (fileCount > 0) {
+    uploadSasCode += `\n%let _WEBIN_NAME=&_WEBIN_NAME1;`
+    uploadSasCode += `\n%let _WEBIN_FILEREF=&_WEBIN_FILEREF1;`
+    uploadSasCode += `\n%let _WEBIN_FILENAME=&_WEBIN_FILENAME1;`
+  }
+
+  uploadSasCode += `\n`
 
   return uploadSasCode
 }
