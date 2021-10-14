@@ -1,23 +1,40 @@
 import express from 'express'
 import { processSas, createFileTree, getTreeExample } from '../controllers'
-import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
+import {
+  ExecutionResult,
+  isRequestQuery,
+  isFileTree,
+  AuthMechanism
+} from '../types'
+import { getAuthMechanisms } from '../utils'
 
 const router = express.Router()
 
+const header = (user: any) => {
+  const authMechanisms = getAuthMechanisms()
+  if (
+    authMechanisms.length === 1 &&
+    authMechanisms[0] === AuthMechanism.NoSecurity
+  )
+    return '<div><p>No Security applied</p></div>'
+  return `<div><p>Logged in as ${user.username} <a href="/signout" role="button">Logout</a></p></div>`
+}
 router.get('/', async (req, res) => {
   const query = req.query
 
   if (!isRequestQuery(query)) {
-    res.send('Welcome to @sasjs/server API')
+    res.send(`${header(req.user)}Welcome to @sasjs/server API`)
 
     return
   }
 
   const result: ExecutionResult = await processSas(query)
 
-  res.send(`<b>Executed!</b><br>
+  res.send(`${header(req.user)}<b>Executed!</b><br>
 <p>Log is located:</p> ${result.logPath}<br>
-<p>Log:</p> <textarea style="width: 100%; height: 100%">${result.log}</textarea>`)
+<p>Log:</p> <textarea style="width: 100%; height: 100%">${
+    result.log
+  }</textarea>`)
 })
 
 router.post('/deploy', async (req, res) => {

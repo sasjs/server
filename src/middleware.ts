@@ -1,36 +1,20 @@
+import path from 'path'
 import jwt from 'jsonwebtoken'
-import dotenv from 'dotenv'
 import express from 'express'
-import session from 'express-session'
 import passport from 'passport'
 import { Strategy } from 'passport-local'
 const AzureAdOAuth2Strategy = require('passport-azure-ad-oauth2')
 import { ensureLoggedIn } from 'connect-ensure-login'
+import { readFile } from '@sasjs/utils'
+
 import { AuthMechanism } from './types'
 import { getAuthMechanisms } from './utils'
 import indexRouter, { Routes } from './routes'
 
 export const passportMiddleware = (): express.Express => {
-  dotenv.config()
   const authMechanisms = getAuthMechanisms()
 
   const middleware = express()
-
-  const sessionConfig = {
-    secret: 'keyboard cat',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false // set this to true on production
-    }
-  }
-
-  if (middleware.get('env') === 'production') {
-    middleware.set('trust proxy', 1) // trust first proxy
-    sessionConfig.cookie.secure = true // serve secure cookies
-  }
-
-  middleware.use(session(sessionConfig))
 
   setupPassportStrategies(authMechanisms)
 
@@ -49,10 +33,10 @@ export const passportMiddleware = (): express.Express => {
     authMechanisms[0] === AuthMechanism.NoSecurity
   ) {
     console.log('Using No Security')
-    middleware.get('/', indexRouter)
+    middleware.all('/*', indexRouter)
   } else {
-    middleware.get(
-      '/',
+    middleware.all(
+      '/*',
       ensureLoggedIn({ redirectTo: '/SASjsLogon' }),
       indexRouter
     )
@@ -65,15 +49,18 @@ const setupPassportStrategies = (authMechanisms: string[]) => {
   if (authMechanisms.includes(AuthMechanism.Local)) {
     console.log('Using Local Authentication')
     passport.use(
-      new Strategy((username: string, password: string, cb: Function) => {
-        console.log('username', username)
-        if (username !== 'SaadJutt')
-          return cb(null, false, { message: 'Incorrect Username' })
+      new Strategy(async (username: string, code: string, cb: Function) => {
+        const content = await readFile(
+          path.join(__dirname, '..', 'security.json')
+        )
+        const { code: securityCode } = JSON.parse(content)
+        if (securityCode !== code)
+          return cb(null, false, { message: 'Incorrect Security Code' })
 
         const user = {
           id: 'SOMEID',
           username: username,
-          displayName: 'displayName'
+          displayName: username
         }
         return cb(null, user)
       })
@@ -95,11 +82,20 @@ const setupPassportStrategies = (authMechanisms: string[]) => {
           profile: any,
           done: any
         ) {
-          // currently we can't find a way to exchange access token by user info (see userProfile implementation), so
-          // you will need a jwt-package like https://github.com/auth0/node-jsonwebtoken to decode id_token and get waad profile
-          var waadProfile = profile || jwt.decode(params.id_token)
+          const decoded = jwt.decode(params.id_token)
 
-          done(null, { id: waadProfile.upn })
+          const user = {
+            id: 'ID',
+            username: 'username',
+            displayName: 'display name'
+          }
+          if (decoded && typeof decoded === 'object') {
+            user.id = decoded.oid
+            user.username = decoded.unique_name
+            user.displayName = decoded.name
+          }
+
+          done(null, user)
         }
       )
     )
@@ -127,20 +123,30 @@ const setupPassportRoutes = (
     app.get(
       Routes.AzureSignInRedirect,
       passport.authenticate('azure_ad_oauth2', {
-        successRedirect: '/',
         failureRedirect: Routes.Login,
         failureMessage: true
-      })
+      }),
+      (req, res) => {
+        const session: any = req.session
+        const returnTo = session.returnTo ?? '/'
+        session.returnTo = undefined
+        res.redirect(returnTo)
+      }
     )
   }
   if (authMechanisms.includes(AuthMechanism.Local)) {
     app.post(
       Routes.LocalSignIn,
-      passport.authenticate(['local'], {
-        successRedirect: '/',
+      passport.authenticate('local', {
         failureRedirect: Routes.Login,
         failureMessage: true
-      })
+      }),
+      (req, res) => {
+        const session: any = req.session
+        const returnTo = session.returnTo ?? '/'
+        session.returnTo = undefined
+        res.redirect(returnTo)
+      }
     )
   }
 }
