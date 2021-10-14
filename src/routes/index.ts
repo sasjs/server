@@ -1,9 +1,11 @@
 import express from 'express'
+import path from 'path'
 import {
   processSas,
   createFileTree,
   getTreeExample,
-  sasjsExecutor
+  sasjsExecutor,
+  sasjsDrive
 } from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 
@@ -53,12 +55,23 @@ router.post('/deploy', async (req, res) => {
     })
 })
 
-// TODO: respond with HTML page including file tree
+router.get('/SASjsDrive', async (req, res) => {
+  if (req.query.filepath) {
+    const fileContent = await sasjsDrive(req.query.filepath as string, 'read')
+    res.status(200).send({ status: 'success', fileContent: fileContent })
+  } else {
+    res.sendFile(path.join(__dirname, '..', '..', 'Web', 'build', 'index.html'))
+  }
+})
+
+router.post('/SASjsDrive', async (req, res) => {
+  await sasjsDrive(req.body.filePath as string, 'update', req.body.fileContent)
+  res.status(200).send({ status: 'success' })
+})
+
 router.get('/SASjsExecutor', async (req, res) => {
   const tree = sasjsExecutor()
-  // res.status(200).send({ status: 'success', tree })
-  console.log(tree)
-  res.render('index', { tree })
+  res.status(200).send({ status: 'success', tree })
 })
 
 router.get('/SASjsExecutor/do', async (req, res) => {
