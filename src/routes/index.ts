@@ -1,23 +1,14 @@
 import express from 'express'
-import { processSas, createFileTree, getTreeExample } from '../controllers'
+import { createFileTree, getTreeExample } from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
+import path from 'path'
+import { getTmpFilesFolderPath } from '../utils'
+import { ExecutionController } from '../controllers'
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
-  const query = req.query
-
-  if (!isRequestQuery(query)) {
-    res.send('Welcome to @sasjs/server API')
-
-    return
-  }
-
-  const result: ExecutionResult = await processSas(query)
-
-  res.send(`<b>Executed!</b><br>
-<p>Log is located:</p> ${result.logPath}<br>
-<p>Log:</p> <textarea style="width: 100%; height: 100%">${result.log}</textarea>`)
+router.get('/', async (_, res) => {
+  res.status(200).send('Welcome to @sasjs/server API')
 })
 
 router.post('/deploy', async (req, res) => {
@@ -54,20 +45,21 @@ router.get('/SASjsExecutor', async (req, res) => {
 })
 
 router.get('/SASjsExecutor/do', async (req, res) => {
-  const queryEntries = Object.keys(req.query).map((entry: string) =>
-    entry.toLowerCase()
-  )
-
   if (isRequestQuery(req.query)) {
-    await processSas({ ...req.query })
-      .then((result) => {
+    const sasCodePath = path
+      .join(getTmpFilesFolderPath(), req.query._program)
+      .replace(new RegExp('/', 'g'), path.sep)
+
+    await new ExecutionController()
+      .execute(sasCodePath, undefined, undefined, { ...req.query })
+      .then((result: {}) => {
         res.status(200).send(result)
       })
-      .catch((err) => {
+      .catch((err: {} | string) => {
         res.status(400).send({
           status: 'failure',
           message: 'Job execution failed.',
-          ...err
+          ...(typeof err === 'object' ? err : { details: err })
         })
       })
   } else {
