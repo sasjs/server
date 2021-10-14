@@ -1,26 +1,27 @@
 import path from 'path'
 import express from 'express'
+import { renderFile } from 'ejs'
 
-import indexRouter from './routes'
-import { AuthMechanism } from './types'
-import { getAzureSubApp } from './authMechanisms'
+import { Routes } from './routes'
+import { passportMiddleware } from './middleware'
+import { getAuthMechanisms } from './utils'
 
 const app = express()
+
+app.use(express.urlencoded({ extended: false }))
+app.engine('html', renderFile)
+app.set('view engine', 'html')
+app.set('views', path.join(__dirname, './views'))
+
 app.use(express.json({ limit: '50mb' }))
 app.use(express.static(path.join(__dirname, '..', 'public')))
 
-require('dotenv').config()
+app.use(passportMiddleware())
 
-const authMechanisms = process.env.AUTH?.split(' ') ?? [
-  AuthMechanism.NoSecurity
-]
-
-if (authMechanisms.includes(AuthMechanism.Azure)) {
-  app.use(getAzureSubApp())
-} else {
-  app.get('/', indexRouter)
-}
-
+const authMechanisms = getAuthMechanisms()
+app.get(Routes.Login, (req, res) => {
+  res.render('sasjslogon.html', { authMechanisms })
+})
 app.get('/error', (req, res) => res.redirect('/500.html'))
 app.get('/unauthorized', (req, res) => res.redirect('/401.html'))
 app.get('*', (req, res) => res.status(404).redirect('/404.html'))

@@ -79,3 +79,4 @@ router.get('/SASjsExecutor/do', async (req, res) => {
 })
 
 export default router
+export * from './routes'

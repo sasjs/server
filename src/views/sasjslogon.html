@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" status="width=device-width, initial-scale=1.0" />
+
+    <title>SASjs Logon</title>
+    <style>
+      #azure,
+      #local {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row" style="margin: auto">
+      <div id="card-div" class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h1>Welcome!</h1>
+            <div id="azure">
+              <h2>Sign-in with Azure</h2>
+              <a href="/signin-with-azure" role="button">Sign in Using Azure</a>
+            </div>
+            <div id="local">
+              <h2>Sign-in with Local</h2>
+
+              <form action="/signin-with-local" method="post">
+                <input type="text" name="username" placeholder="Username" />
+                <input type="password" name="password" placeholder="Password" />
+                <button type="submit" class="contrast">Sign in</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const authMechanisms = '<%= authMechanisms %>'.split(',')
+      if (authMechanisms.includes('azure')) {
+        const azureDiv = document.getElementById('azure')
+        azureDiv.style.display = 'block'
+      }
+      if (authMechanisms.includes('local')) {
+        const localDiv = document.getElementById('local')
+        localDiv.style.display = 'block'
+      }
+    </script>
+  </body>
+</html>
