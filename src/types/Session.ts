@@ -1,7 +1,8 @@
 export interface Session {
   id: string
-  available: boolean
+  ready: boolean
   creationTimeStamp: string
   deathTimeStamp: string
   path: string
+  inUse: boolean
 }
