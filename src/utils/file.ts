@@ -12,12 +12,15 @@ export const getTmpLogFolderPath = () => path.join(getTmpFolderPath(), 'logs')
 export const getTmpWeboutFolderPath = () =>
   path.join(getTmpFolderPath(), 'webouts')
 
+export const getTmpSessionsFolderPath = () =>
+  path.join(getTmpFolderPath(), 'sessions')
+
 export const generateUniqueFileName = (fileName: string, extension = '') =>
   [
     fileName,
     '-',
     Math.round(Math.random() * 100000),
     '-',
-    generateTimestamp(),
+    new Date().getTime(),
     extension
   ].join('')

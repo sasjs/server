@@ -3,6 +3,7 @@ import { getTmpFilesFolderPath } from '../utils/file'
 import { createFolder, createFile, asyncForEach } from '@sasjs/utils'
 import path from 'path'
 
+// REFACTOR: export FileTreeCpntroller
 export const createFileTree = async (
   members: [FolderMember, ServiceMember],
   parentFolders: string[] = []
