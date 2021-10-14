@@ -58,8 +58,4 @@ app.get(Routes.Login, (req, res) => {
 
 app.use(passportMiddleware())
 
-app.get('/error', (req, res) => res.redirect('/500.html'))
-app.get('/unauthorized', (req, res) => res.redirect('/401.html'))
-// app.get('*', (req, res) => res.status(404).redirect('/404.html'))
-
 export default app
