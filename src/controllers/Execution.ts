@@ -60,7 +60,7 @@ ${program}`
       }
     }
 
-    let code = path.join(session.path, 'code.sas')
+    const code = path.join(session.path, 'code.sas')
     if (!(await fileExists(code))) {
       await createFile(code, program)
     }
@@ -81,10 +81,6 @@ ${program}`
 
     if (await fileExists(log)) log = await readFile(log)
     else log = ''
-
-    // if (stderr) {
-    //   return Promise.reject({ error: stderr, log: log })
-    // }
 
     if (await fileExists(webout)) webout = await readFile(webout)
     else webout = ''

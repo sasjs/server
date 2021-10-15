@@ -1,16 +1,18 @@
 import path from 'path'
 import fs from 'fs'
 import { getTmpSessionsFolderPath } from '.'
+import { MulterFile } from '../types/Upload'
+import { listFilesInFolder } from '@sasjs/utils'
 
 /**
- * It will create a object that maps hashed file names to the original names
+ * It will create an object that maps hashed file names to the original names
  * @param files array of files to be mapped
  * @returns object
  */
-export const makeFilesNamesMap = (files: any) => {
+export const makeFilesNamesMap = (files: MulterFile[]) => {
 	if (!files) return null
 
-	const filesNamesMap: any = {}
+	const filesNamesMap: {[key: string]: string} = {}
 
 	for (let file of files) {
 			filesNamesMap[file.filename] = file.fieldname
@@ -20,7 +22,7 @@ export const makeFilesNamesMap = (files: any) => {
 }
 
 /**
- * Generates the sas code that reference uploaded files in the concurrent request
+ * Generates the sas code that references uploaded files in the concurrent request
  * @param filesNamesMap object that maps hashed file names and original file names
  * @param sasUploadFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated sas code
@@ -29,8 +31,6 @@ export const makeFilesNamesMap = (files: any) => {
   filesNamesMap: any,
   sasSessionFolder: string
 ): string => {
-  const uploadFilesDirPath = sasSessionFolder
-
   let uploadSasCode = ''
   let fileCount = 0
   let uploadedFilesMap: {
@@ -40,7 +40,8 @@ export const makeFilesNamesMap = (files: any) => {
     count: number
   }[] = []
 
-  fs.readdirSync(uploadFilesDirPath).forEach((fileName) => {
+  
+  fs.readdirSync(sasSessionFolder).forEach((fileName) => {
     let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
     fileCountString = fileCount < 10 ? '00' + fileCount : fileCount
 
@@ -49,7 +50,7 @@ export const makeFilesNamesMap = (files: any) => {
 
       uploadedFilesMap.push({
         fileref: `_sjs${fileCountString}`,
-        filepath: `${uploadFilesDirPath}/${fileName}`,
+        filepath: `${sasSessionFolder}/${fileName}`,
         filename: filesNamesMap[fileName],
         count: fileCount
       })

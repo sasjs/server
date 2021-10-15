@@ -24,3 +24,7 @@ export const generateUniqueFileName = (fileName: string, extension = '') =>
     new Date().getTime(),
     extension
   ].join('')
+
+export const addExtensionIfNotFound = (value: string, extension: string) => {
+  return !value.includes('.') ? `.${extension}` : ''
+}
