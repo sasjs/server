@@ -8,15 +8,15 @@ import { getTmpSessionsFolderPath } from '.'
  * @returns object
  */
 export const makeFilesNamesMap = (files: any) => {
-	if (!files) return null
+  if (!files) return null
 
-	const filesNamesMap: any = {}
+  const filesNamesMap: any = {}
 
-	for (let file of files) {
-			filesNamesMap[file.filename] = file.fieldname
-	}
+  for (let file of files) {
+    filesNamesMap[file.filename] = file.fieldname
+  }
 
-	return filesNamesMap
+  return filesNamesMap
 }
 
 /**
@@ -25,7 +25,7 @@ export const makeFilesNamesMap = (files: any) => {
  * @param sasUploadFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated sas code
  */
- export const generateFileUploadSasCode = (
+export const generateFileUploadSasCode = (
   filesNamesMap: any,
   sasSessionFolder: string
 ): string => {
