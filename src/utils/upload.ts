@@ -14,11 +14,11 @@ export const makeFilesNamesMap = (files: MulterFile[]) => {
 
 	const filesNamesMap: {[key: string]: string} = {}
 
-	for (let file of files) {
-			filesNamesMap[file.filename] = file.fieldname
-	}
+  for (let file of files) {
+    filesNamesMap[file.filename] = file.fieldname
+  }
 
-	return filesNamesMap
+  return filesNamesMap
 }
 
 /**
@@ -27,7 +27,7 @@ export const makeFilesNamesMap = (files: MulterFile[]) => {
  * @param sasUploadFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated sas code
  */
- export const generateFileUploadSasCode = (
+export const generateFileUploadSasCode = (
   filesNamesMap: any,
   sasSessionFolder: string
 ): string => {

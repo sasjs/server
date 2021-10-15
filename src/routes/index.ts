@@ -1,9 +1,19 @@
 import express from 'express'
-import { createFileTree, getSessionController, getTreeExample } from '../controllers'
+import {
+  createFileTree,
+  getSessionController,
+  getTreeExample
+} from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 import path from 'path'
-import { addExtensionIfNotFound, getTmpFilesFolderPath, getTmpFolderPath, makeFilesNamesMap } from '../utils'
+import {
+  addExtensionIfNotFound,
+  getTmpFilesFolderPath,
+  getTmpFolderPath,
+  makeFilesNamesMap
+} from '../utils'
 import { ExecutionController, FileUploadController } from '../controllers'
+import { uuidv4 } from '@sasjs/utils'
 
 const router = express.Router()
 
@@ -51,7 +61,7 @@ router.get('/SASjsExecutor/do', async (req, res) => {
     let sasCodePath = path
       .join(getTmpFilesFolderPath(), req.query._program)
       .replace(new RegExp('/', 'g'), path.sep)
-      
+
     // If no extension provided, add .sas extension
     sasCodePath += !sasCodePath.includes('.') ? '.sas' : ''
 

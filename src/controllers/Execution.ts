@@ -41,7 +41,7 @@ export class ExecutionController {
 
     let webout = path.join(session.path, 'webout.txt')
     await createFile(webout, '')
-    
+
     program = `
 %let sasjsprocessmode=Stored Program;
 filename _webout "${webout}";
@@ -89,7 +89,7 @@ ${program}`
       (key: string) => key.toLowerCase() === '_debug'
     )
 
-    if (debug && vars[debug] >= 131 || stderr) {
+    if ((debug && vars[debug] >= 131) || stderr) {
       webout = `<html><body>
 ${webout}
 <div style="text-align:left">
@@ -98,7 +98,7 @@ ${webout}
 </div>
 </body></html>`
     }
-    
+
     session.inUse = false
 
     sessionController.deleteSession(session)
