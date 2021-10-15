@@ -10,9 +10,9 @@ import { listFilesInFolder } from '@sasjs/utils'
  * @returns object
  */
 export const makeFilesNamesMap = (files: MulterFile[]) => {
-	if (!files) return null
+  if (!files) return null
 
-	const filesNamesMap: {[key: string]: string} = {}
+  const filesNamesMap: { [key: string]: string } = {}
 
   for (let file of files) {
     filesNamesMap[file.filename] = file.fieldname
@@ -40,7 +40,6 @@ export const generateFileUploadSasCode = (
     count: number
   }[] = []
 
-  
   fs.readdirSync(sasSessionFolder).forEach((fileName) => {
     let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
     fileCountString = fileCount < 10 ? '00' + fileCount : fileCount
