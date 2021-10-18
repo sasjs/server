@@ -41,7 +41,7 @@ const SideBar = (props: any) => {
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
 
   useEffect(() => {
-    axios.get(`${baseUrl}/SASjsExecutor`).then((res: any) => {
+    axios.get(`${baseUrl}/SASjsApi/executor`).then((res: any) => {
       if (res.data && res.data?.status === 'success') {
         setDirectoryData(res.data.tree)
       }

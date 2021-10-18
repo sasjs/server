@@ -14,15 +14,15 @@ const Main = (props: any) => {
   const baseUrl = window.location.origin
 
   const [isLoading, setIsLoading] = useState(false)
+  const [fileContentBeforeEdit, setFileContentBeforeEdit] = useState('')
   const [fileContent, setFileContent] = useState('')
   const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
-    console.log('from main', props.selectedFilePath)
     if (props.selectedFilePath !== '') {
       setIsLoading(true)
       axios
-        .get(`${baseUrl}/SASjsDrive?filepath=${props.selectedFilePath}`)
+        .get(`${baseUrl}/SASjsApi/files?filepath=${props.selectedFilePath}`)
         .then((res: any) => {
           setIsLoading(false)
           setFileContent(res.data.fileContent)
@@ -32,11 +32,12 @@ const Main = (props: any) => {
 
   const handleEditSaveBtnClick = () => {
     if (!editMode) {
+      setFileContentBeforeEdit(fileContent)
       setEditMode(true)
     } else {
       setIsLoading(true)
       axios
-        .post(`${baseUrl}/SASjsDrive`, {
+        .post(`${baseUrl}/SASjsApi/files`, {
           filePath: props.selectedFilePath,
           fileContent: fileContent
         })
@@ -49,7 +50,17 @@ const Main = (props: any) => {
 
   const handleCancelExecuteBtnClick = () => {
     if (editMode) {
+      setFileContent(fileContentBeforeEdit)
       setEditMode(false)
+    } else {
+      setIsLoading(true)
+      axios
+        .get(`${baseUrl}/SASjsExecutor/do?_program=${props.selectedFilePath}`)
+        .then((res) => {
+          setIsLoading(false)
+          setEditMode(false)
+          console.log(res)
+        })
     }
   }
 

@@ -13,7 +13,7 @@ import { getTmpFilesFolderPath } from '../utils'
 const router = express.Router()
 
 router.get('/', async (_, res) => {
-  res.status(200).send('Welcome to @sasjs/server API')
+  res.sendFile(path.join(__dirname, '..', '..', 'Web', 'build', 'index.html'))
 })
 
 router.post('/deploy', async (req, res) => {
@@ -44,21 +44,21 @@ router.post('/deploy', async (req, res) => {
     })
 })
 
-router.get('/SASjsDrive', async (req, res) => {
+router.get('/SASjsApi/files', async (req, res) => {
   if (req.query.filepath) {
     const fileContent = await sasjsDrive(req.query.filepath as string, 'read')
     res.status(200).send({ status: 'success', fileContent: fileContent })
   } else {
-    res.sendFile(path.join(__dirname, '..', '..', 'Web', 'build', 'index.html'))
+    throw 'Invalid Request: File path is not provided.'
   }
 })
 
-router.post('/SASjsDrive', async (req, res) => {
+router.post('/SASjsApi/files', async (req, res) => {
   await sasjsDrive(req.body.filePath as string, 'update', req.body.fileContent)
   res.status(200).send({ status: 'success' })
 })
 
-router.get('/SASjsExecutor', async (req, res) => {
+router.get('/SASjsApi/executor', async (req, res) => {
   const tree = sasjsExecutor()
   res.status(200).send({ status: 'success', tree })
 })
