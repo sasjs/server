@@ -12,7 +12,6 @@ const SASjsDrive = () => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <Header title="SASjs Drive" />
       <SideBar setSelectedFilePath={setSelectedFilePath} />
       <Main selectedFilePath={selectedFilePath} />
     </Box>
