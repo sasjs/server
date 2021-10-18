@@ -63,7 +63,7 @@ router.get('/SASjsExecutor/do', async (req, res) => {
       .replace(new RegExp('/', 'g'), path.sep)
 
     // If no extension provided, add .sas extension
-    sasCodePath += !sasCodePath.includes('.') ? '.sas' : ''
+    sasCodePath += addExtensionIfNotFound(sasCodePath, 'sas')
 
     await new ExecutionController()
       .execute(sasCodePath, undefined, undefined, { ...req.query })

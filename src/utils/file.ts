@@ -26,5 +26,11 @@ export const generateUniqueFileName = (fileName: string, extension = '') =>
   ].join('')
 
 export const addExtensionIfNotFound = (value: string, extension: string) => {
-  return !value.includes('.') ? `.${extension}` : ''
+  const valueSplit = value.split('.')
+  
+  if (valueSplit.length < 2) return `.${extension}`
+
+  const hasExt = valueSplit[valueSplit.length - 1].length === 3
+
+  return !hasExt ? `.${extension}` : ''
 }
