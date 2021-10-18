@@ -7,7 +7,12 @@ import {
   sasjsDrive,
   ExecutionController
 } from '../controllers'
-import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
+import {
+  ExecutionResult,
+  isExecutionQuery,
+  isFileQuery,
+  isFileTree
+} from '../types'
 import { getTmpFilesFolderPath } from '../utils'
 
 const router = express.Router()
@@ -45,11 +50,17 @@ router.post('/deploy', async (req, res) => {
 })
 
 router.get('/SASjsApi/files', async (req, res) => {
-  if (req.query.filepath) {
-    const fileContent = await sasjsDrive(req.query.filepath as string, 'read')
+  if (isFileQuery(req.query)) {
+    const filePath = path
+      .join(getTmpFilesFolderPath(), req.query.filePath)
+      .replace(new RegExp('/', 'g'), path.sep)
+    const fileContent = await sasjsDrive(filePath as string, 'read')
     res.status(200).send({ status: 'success', fileContent: fileContent })
   } else {
-    throw 'Invalid Request: File path is not provided.'
+    res.status(400).send({
+      status: 'failure',
+      message: 'please provide valid file path'
+    })
   }
 })
 
@@ -64,7 +75,7 @@ router.get('/SASjsApi/executor', async (req, res) => {
 })
 
 router.get('/SASjsExecutor/do', async (req, res) => {
-  if (isRequestQuery(req.query)) {
+  if (isExecutionQuery(req.query)) {
     const sasCodePath = path
       .join(getTmpFilesFolderPath(), req.query._program)
       .replace(new RegExp('/', 'g'), path.sep)

@@ -6,5 +6,12 @@ export interface ExecutionQuery {
   _debug?: boolean
 }
 
-export const isRequestQuery = (arg: any): arg is ExecutionQuery =>
+export interface FileQuery {
+  filePath: string
+}
+
+export const isExecutionQuery = (arg: any): arg is ExecutionQuery =>
   arg && !Array.isArray(arg) && typeof arg._program === 'string'
+
+export const isFileQuery = (arg: any): arg is FileQuery =>
+  arg && !Array.isArray(arg) && typeof arg.filePath === 'string'

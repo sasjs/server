@@ -22,7 +22,7 @@ const Main = (props: any) => {
     if (props.selectedFilePath !== '') {
       setIsLoading(true)
       axios
-        .get(`${baseUrl}/SASjsApi/files?filepath=${props.selectedFilePath}`)
+        .get(`${baseUrl}/SASjsApi/files?filePath=${props.selectedFilePath}`)
         .then((res: any) => {
           setIsLoading(false)
           setFileContent(res.data.fileContent)
