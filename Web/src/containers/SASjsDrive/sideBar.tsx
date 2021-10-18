@@ -16,9 +16,10 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 interface TreeNode {
-  path: string
   name: string
-  children?: readonly TreeNode[]
+  relativePath: string
+  absolutePath: string
+  children: Array<TreeNode>
 }
 
 const useStyles = makeStyles(() => ({
@@ -49,21 +50,21 @@ const SideBar = (props: any) => {
   }, [])
 
   const handleSelect = (node: TreeNode) => {
-    if (!node.children) {
+    if (!node.children.length) {
       window.history.pushState(
         '',
         '',
-        `${baseUrl}/SASjsDrive?filepath=${node.path}`
+        `${baseUrl}/SASjsDrive?filepath=${node.relativePath}`
       )
-      props.setSelectedFilePath(node.path)
+      props.setSelectedFilePath(node.relativePath)
     }
   }
 
   const renderTree = (nodes: TreeNode) => (
     <TreeItem
       classes={{ root: classes.root }}
-      key={nodes.path}
-      nodeId={nodes.path}
+      key={nodes.relativePath}
+      nodeId={nodes.relativePath}
       label={
         <ListItem
           className={classes.listItem}
