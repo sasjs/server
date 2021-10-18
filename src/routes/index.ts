@@ -103,7 +103,7 @@ router.post(
       if (req.files && req.files.length > 0) {
         filesNamesMap = makeFilesNamesMap(req.files)
       }
-      
+
       await new ExecutionController()
         .execute(
           sasCodePath,

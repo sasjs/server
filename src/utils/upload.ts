@@ -40,7 +40,9 @@ export const generateFileUploadSasCode = async (
     count: number
   }[] = []
 
-  const sasSessionFolderList: string[] = await listFilesInFolder(sasSessionFolder)
+  const sasSessionFolderList: string[] = await listFilesInFolder(
+    sasSessionFolder
+  )
   sasSessionFolderList.forEach((fileName) => {
     let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
     fileCountString = fileCount < 10 ? '00' + fileCount : fileCount

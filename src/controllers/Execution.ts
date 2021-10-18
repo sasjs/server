@@ -41,7 +41,7 @@ export class ExecutionController {
 
     let webout = path.join(session.path, 'webout.txt')
     await createFile(webout, '')
-    
+
     program = `
 %let sasjsprocessmode=Stored Program;
 filename _webout "${webout}";
