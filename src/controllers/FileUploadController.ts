@@ -16,7 +16,7 @@ export class FileUploadController {
 
   private upload = multer({ storage: this.storage })
 
-  //It will intercept request and generate uniqe uuid to be used as a subfolder name
+  //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preuploadMiddleware = async (req: any, res: any, next: any) => {
     let session

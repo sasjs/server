@@ -27,10 +27,10 @@ export const makeFilesNamesMap = (files: MulterFile[]) => {
  * @param sasUploadFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated sas code
  */
-export const generateFileUploadSasCode = (
+export const generateFileUploadSasCode = async (
   filesNamesMap: any,
   sasSessionFolder: string
-): string => {
+): Promise<string> => {
   let uploadSasCode = ''
   let fileCount = 0
   let uploadedFilesMap: {
@@ -40,7 +40,8 @@ export const generateFileUploadSasCode = (
     count: number
   }[] = []
 
-  fs.readdirSync(sasSessionFolder).forEach((fileName) => {
+  const sasSessionFolderList: string[] = await listFilesInFolder(sasSessionFolder)
+  sasSessionFolderList.forEach((fileName) => {
     let fileCountString = fileCount < 100 ? '0' + fileCount : fileCount
     fileCountString = fileCount < 10 ? '00' + fileCount : fileCount
 

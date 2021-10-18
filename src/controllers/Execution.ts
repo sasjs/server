@@ -41,7 +41,7 @@ export class ExecutionController {
 
     let webout = path.join(session.path, 'webout.txt')
     await createFile(webout, '')
-
+    
     program = `
 %let sasjsprocessmode=Stored Program;
 filename _webout "${webout}";
@@ -49,7 +49,7 @@ ${program}`
 
     // if no files are uploaded filesNamesMap will be undefined
     if (otherArgs && otherArgs.filesNamesMap) {
-      const uploadSasCode = generateFileUploadSasCode(
+      const uploadSasCode = await generateFileUploadSasCode(
         otherArgs.filesNamesMap,
         session.path
       )

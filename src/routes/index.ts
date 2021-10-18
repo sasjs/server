@@ -103,13 +103,13 @@ router.post(
       if (req.files && req.files.length > 0) {
         filesNamesMap = makeFilesNamesMap(req.files)
       }
-
+      
       await new ExecutionController()
         .execute(
           sasCodePath,
           undefined,
           req.sasSession,
-          { ...req.query },
+          { ...req.query, ...req.body },
           { filesNamesMap: filesNamesMap }
         )
         .then((result: {}) => {
