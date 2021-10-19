@@ -38,8 +38,8 @@ const Header = (props: any) => {
           onChange={handleTabChange}
         >
           <Tab label="Home" to="/" component={Link} />
-          <Tab label="SASjs Drive" to="/SASjsDrive" component={Link} />
-          <Tab label="SAS Studio" to="/SASjsStudio" component={Link} />
+          <Tab label="Drive" to="/SASjsDrive" component={Link} />
+          <Tab label="Studio" to="/SASjsStudio" component={Link} />
         </Tabs>
       </Toolbar>
     </AppBar>
