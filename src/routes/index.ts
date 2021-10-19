@@ -59,7 +59,7 @@ router.get('/SASjsApi/files', async (req, res) => {
   } else {
     res.status(400).send({
       status: 'failure',
-      message: 'please provide valid file path'
+      message: 'Invalid Request: Expected parameter filePath was not provided'
     })
   }
 })

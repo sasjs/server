@@ -5,7 +5,7 @@ import Box from '@mui/material/Box'
 
 const SASjsStudio = () => {
   return (
-    <Box sx={{ display: 'flex' }} className="main">
+    <Box className="main">
       <CssBaseline />
       <h2>This is container for SAS studio</h2>
     </Box>
