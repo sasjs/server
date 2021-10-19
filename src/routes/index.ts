@@ -18,7 +18,7 @@ import { getTmpFilesFolderPath } from '../utils'
 const router = express.Router()
 
 router.get('/', async (_, res) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'Web', 'build', 'index.html'))
+  res.sendFile(path.join(__dirname, '..', '..', 'web', 'build', 'index.html'))
 })
 
 router.post('/deploy', async (req, res) => {

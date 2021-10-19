@@ -5,6 +5,6 @@ const app = express()
 
 app.use(express.json({ limit: '50mb' }))
 app.use('/', indexRouter)
-app.use(express.static(path.join(__dirname, '..', 'Web', 'build')))
+app.use(express.static(path.join(__dirname, '..', 'web', 'build')))
 
 export default app
