@@ -1,11 +1,11 @@
-import { addExtensionIfNotFound } from '..'
+import { addSasExtensionIfNotFound } from '..'
 
 describe('file utils', () => {
   it('should add extension if missing', async () => {
-    expect(addExtensionIfNotFound('test', 'ext')).toEqual('.ext')
-    expect(addExtensionIfNotFound('test.test', 'ext')).toEqual('.ext')
-    expect(addExtensionIfNotFound('test.sas', 'ext')).toEqual('')
-    expect(addExtensionIfNotFound('test.test.test', 'ext')).toEqual('.ext')
-    expect(addExtensionIfNotFound('test.test.test.sas', 'ext')).toEqual('')
+    expect(addSasExtensionIfNotFound('test')).toEqual('.sas')
+    expect(addSasExtensionIfNotFound('test.test')).toEqual('.sas')
+    expect(addSasExtensionIfNotFound('test.sas')).toEqual('')
+    expect(addSasExtensionIfNotFound('test.test.test')).toEqual('.sas')
+    expect(addSasExtensionIfNotFound('test.test.test.sas')).toEqual('')
   })
 })

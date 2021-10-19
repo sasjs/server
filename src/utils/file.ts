@@ -25,7 +25,8 @@ export const generateUniqueFileName = (fileName: string, extension = '') =>
     extension
   ].join('')
 
-export const addExtensionIfNotFound = (value: string, extension: string) => {
+export const addSasExtensionIfNotFound = (value: string) => {
+  const extension = 'sas'
   const valueSplit = value.split('.')
 
   if (valueSplit.length < 2) return `.${extension}`

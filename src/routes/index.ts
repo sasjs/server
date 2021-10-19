@@ -7,7 +7,7 @@ import {
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 import path from 'path'
 import {
-  addExtensionIfNotFound,
+  addSasExtensionIfNotFound,
   getTmpFilesFolderPath,
   getTmpFolderPath,
   makeFilesNamesMap
@@ -63,7 +63,7 @@ router.get('/SASjsExecutor/do', async (req, res) => {
       .replace(new RegExp('/', 'g'), path.sep)
 
     // If no extension provided, add .sas extension
-    sasCodePath += addExtensionIfNotFound(sasCodePath, 'sas')
+    sasCodePath += addSasExtensionIfNotFound(sasCodePath)
 
     await new ExecutionController()
       .execute(sasCodePath, undefined, undefined, { ...req.query })
@@ -96,7 +96,7 @@ router.post(
         .replace(new RegExp('/', 'g'), path.sep)
 
       // If no extension provided, add .sas extension
-      sasCodePath += addExtensionIfNotFound(sasCodePath, 'sas')
+      sasCodePath += addSasExtensionIfNotFound(sasCodePath)
 
       let filesNamesMap = null
 
