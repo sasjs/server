@@ -24,14 +24,3 @@ export const generateUniqueFileName = (fileName: string, extension = '') =>
     new Date().getTime(),
     extension
   ].join('')
-
-export const addSasExtensionIfNotFound = (value: string) => {
-  const extension = 'sas'
-  const valueSplit = value.split('.')
-
-  if (valueSplit.length < 2) return `.${extension}`
-
-  const hasExt = valueSplit[valueSplit.length - 1].length === 3
-
-  return !hasExt ? `.${extension}` : ''
-}
