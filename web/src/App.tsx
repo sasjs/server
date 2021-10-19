@@ -1,5 +1,5 @@
 import React from 'react'
-import { Route, BrowserRouter, Switch, Redirect } from 'react-router-dom'
+import { Route, HashRouter, Switch, Redirect } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { theme } from './theme'
 
@@ -10,7 +10,7 @@ import SASjsStudio from './containers/SASjsStudio'
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <BrowserRouter>
+      <HashRouter>
         <Header />
         <Switch>
           <Route exact path="/">
@@ -23,7 +23,7 @@ function App() {
             <SASjsStudio />
           </Route>
         </Switch>
-      </BrowserRouter>
+      </HashRouter>
     </ThemeProvider>
   )
 }

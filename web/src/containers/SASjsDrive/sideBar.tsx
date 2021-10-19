@@ -54,7 +54,7 @@ const SideBar = (props: any) => {
       window.history.pushState(
         '',
         '',
-        `${baseUrl}/SASjsDrive?filepath=${node.relativePath}`
+        `${baseUrl}/#/SASjsDrive?filepath=${node.relativePath}`
       )
       props.setSelectedFilePath(node.relativePath)
     }

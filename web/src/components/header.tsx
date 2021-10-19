@@ -8,9 +8,10 @@ import Tab from '@mui/material/Tab'
 
 const Header = (props: any) => {
   const history = useHistory()
-  const [tabValue, setTabValue] = useState(0)
+  const { pathname } = useLocation()
+  const [tabValue, setTabValue] = useState(pathname)
 
-  const handleTabChange = (event: React.SyntheticEvent, value: number) => {
+  const handleTabChange = (event: React.SyntheticEvent, value: string) => {
     setTabValue(value)
   }
   return (
@@ -28,7 +29,7 @@ const Header = (props: any) => {
             marginRight: '25px'
           }}
           onClick={() => {
-            setTabValue(0)
+            setTabValue('/')
             history.push('/')
           }}
         />
@@ -37,9 +38,19 @@ const Header = (props: any) => {
           value={tabValue}
           onChange={handleTabChange}
         >
-          <Tab label="Home" to="/" component={Link} />
-          <Tab label="Drive" to="/SASjsDrive" component={Link} />
-          <Tab label="Studio" to="/SASjsStudio" component={Link} />
+          <Tab label="Home" value="/" to="/" component={Link} />
+          <Tab
+            label="Drive"
+            value="/SASjsDrive"
+            to="/SASjsDrive"
+            component={Link}
+          />
+          <Tab
+            label="Studio"
+            value="/SASjsStudio"
+            to="/SASjsStudio"
+            component={Link}
+          />
         </Tabs>
       </Toolbar>
     </AppBar>
