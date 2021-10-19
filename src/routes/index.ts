@@ -65,7 +65,10 @@ router.get('/SASjsApi/files', async (req, res) => {
 })
 
 router.post('/SASjsApi/files', async (req, res) => {
-  await sasjsDrive(req.body.filePath as string, 'update', req.body.fileContent)
+  const filePath = path
+    .join(getTmpFilesFolderPath(), req.body.filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
+  await sasjsDrive(filePath, 'update', req.body.fileContent)
   res.status(200).send({ status: 'success' })
 })
 
