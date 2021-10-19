@@ -4,7 +4,7 @@ import {
   createFileTree,
   getTreeExample,
   sasjsExecutor,
-  sasjsDrive,
+  SASjsDriveController,
   ExecutionController
 } from '../controllers'
 import {
@@ -54,7 +54,7 @@ router.get('/SASjsApi/files', async (req, res) => {
     const filePath = path
       .join(getTmpFilesFolderPath(), req.query.filePath)
       .replace(new RegExp('/', 'g'), path.sep)
-    const fileContent = await sasjsDrive(filePath as string, 'read')
+    const fileContent = await new SASjsDriveController().readFile(filePath)
     res.status(200).send({ status: 'success', fileContent: fileContent })
   } else {
     res.status(400).send({
@@ -68,7 +68,7 @@ router.post('/SASjsApi/files', async (req, res) => {
   const filePath = path
     .join(getTmpFilesFolderPath(), req.body.filePath)
     .replace(new RegExp('/', 'g'), path.sep)
-  await sasjsDrive(filePath, 'update', req.body.fileContent)
+  await new SASjsDriveController().updateFile(filePath, req.body.fileContent)
   res.status(200).send({ status: 'success' })
 })
 
