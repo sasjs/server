@@ -67,15 +67,20 @@ const Main = (props: any) => {
   return (
     <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
       <Toolbar />
-      {isLoading && (
-        <CircularProgress
-          style={{ position: 'fixed', left: '50%', top: '50%' }}
-        />
-      )}
       <Paper
-        sx={{ height: '75vh', padding: '10px', overflow: 'auto' }}
+        sx={{
+          height: '75vh',
+          padding: '10px',
+          overflow: 'auto',
+          position: 'relative'
+        }}
         elevation={3}
       >
+        {isLoading && (
+          <CircularProgress
+            style={{ position: 'absolute', left: '50%', top: '50%' }}
+          />
+        )}
         {!isLoading && props?.selectedFilePath !== '' && !editMode && (
           <code style={{ whiteSpace: 'break-spaces' }}>{fileContent}</code>
         )}
