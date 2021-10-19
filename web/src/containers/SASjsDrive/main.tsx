@@ -53,14 +53,9 @@ const Main = (props: any) => {
       setFileContent(fileContentBeforeEdit)
       setEditMode(false)
     } else {
-      setIsLoading(true)
-      axios
-        .get(`${baseUrl}/SASjsExecutor/do?_program=${props.selectedFilePath}`)
-        .then((res) => {
-          setIsLoading(false)
-          setEditMode(false)
-          console.log(res)
-        })
+      window.open(
+        `${baseUrl}/SASjsExecutor/do?_program=${props.selectedFilePath}`
+      )
     }
   }
 
