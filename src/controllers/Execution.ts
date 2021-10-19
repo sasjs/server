@@ -5,6 +5,7 @@ import { configuration } from '../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import { Session } from '../types'
+import { generateFileUploadSasCode } from '../utils'
 const execFilePromise = promisify(execFile)
 
 export class ExecutionController {
@@ -12,7 +13,8 @@ export class ExecutionController {
     program = '',
     autoExec?: string,
     session?: Session,
-    vars?: any
+    vars?: any,
+    otherArgs?: any
   ) {
     if (program) {
       if (!(await fileExists(program))) {
@@ -40,7 +42,23 @@ export class ExecutionController {
     let webout = path.join(session.path, 'webout.txt')
     await createFile(webout, '')
 
-    program = `filename _webout "${webout}";\n${program}`
+    program = `
+%let sasjsprocessmode=Stored Program;
+filename _webout "${webout}";
+${program}`
+
+    // if no files are uploaded filesNamesMap will be undefined
+    if (otherArgs && otherArgs.filesNamesMap) {
+      const uploadSasCode = await generateFileUploadSasCode(
+        otherArgs.filesNamesMap,
+        session.path
+      )
+
+      //If sas code for the file is generated it will be appended to the top of sasCode
+      if (uploadSasCode.length > 0) {
+        program = `${uploadSasCode}` + program
+      }
+    }
 
     const code = path.join(session.path, 'code.sas')
     if (!(await fileExists(code))) {
@@ -64,8 +82,6 @@ export class ExecutionController {
     if (await fileExists(log)) log = await readFile(log)
     else log = ''
 
-    if (stderr) return Promise.reject({ error: stderr, log: log })
-
     if (await fileExists(webout)) webout = await readFile(webout)
     else webout = ''
 
@@ -73,7 +89,7 @@ export class ExecutionController {
       (key: string) => key.toLowerCase() === '_debug'
     )
 
-    if (debug && vars[debug] >= 131) {
+    if ((debug && vars[debug] >= 131) || stderr) {
       webout = `<html><body>
 ${webout}
 <div style="text-align:left">
