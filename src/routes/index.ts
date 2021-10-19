@@ -1,11 +1,22 @@
 import express from 'express'
-import { createFileTree, getTreeExample } from '../controllers'
+import {
+  createFileTree,
+  getSessionController,
+  getTreeExample
+} from '../controllers'
 import { ExecutionResult, isRequestQuery, isFileTree } from '../types'
 import path from 'path'
-import { getTmpFilesFolderPath } from '../utils'
-import { ExecutionController } from '../controllers'
+import {
+  getTmpFilesFolderPath,
+  getTmpFolderPath,
+  makeFilesNamesMap
+} from '../utils'
+import { ExecutionController, FileUploadController } from '../controllers'
+import { uuidv4 } from '@sasjs/utils'
 
 const router = express.Router()
+
+const fileUploadController = new FileUploadController()
 
 router.get('/', async (_, res) => {
   res.status(200).send('Welcome to @sasjs/server API')
@@ -46,9 +57,12 @@ router.get('/SASjsExecutor', async (req, res) => {
 
 router.get('/SASjsExecutor/do', async (req, res) => {
   if (isRequestQuery(req.query)) {
-    const sasCodePath = path
+    let sasCodePath = path
       .join(getTmpFilesFolderPath(), req.query._program)
       .replace(new RegExp('/', 'g'), path.sep)
+
+    // If no extension provided, add .sas extension
+    sasCodePath += '.sas'
 
     await new ExecutionController()
       .execute(sasCodePath, undefined, undefined, { ...req.query })
@@ -69,5 +83,51 @@ router.get('/SASjsExecutor/do', async (req, res) => {
     })
   }
 })
+
+router.post(
+  '/SASjsExecutor/do',
+  fileUploadController.preuploadMiddleware,
+  fileUploadController.getMulterUploadObject().any(),
+  async (req: any, res: any) => {
+    if (isRequestQuery(req.query)) {
+      let sasCodePath = path
+        .join(getTmpFilesFolderPath(), req.query._program)
+        .replace(new RegExp('/', 'g'), path.sep)
+
+      // If no extension provided, add .sas extension
+      sasCodePath += '.sas'
+
+      let filesNamesMap = null
+
+      if (req.files && req.files.length > 0) {
+        filesNamesMap = makeFilesNamesMap(req.files)
+      }
+
+      await new ExecutionController()
+        .execute(
+          sasCodePath,
+          undefined,
+          req.sasSession,
+          { ...req.query, ...req.body },
+          { filesNamesMap: filesNamesMap }
+        )
+        .then((result: {}) => {
+          res.status(200).send(result)
+        })
+        .catch((err: {} | string) => {
+          res.status(400).send({
+            status: 'failure',
+            message: 'Job execution failed.',
+            ...(typeof err === 'object' ? err : { details: err })
+          })
+        })
+    } else {
+      res.status(400).send({
+        status: 'failure',
+        message: `Please provide the location of SAS code`
+      })
+    }
+  }
+)
 
 export default router
