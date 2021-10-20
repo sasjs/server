@@ -1,7 +1,13 @@
 {
-  "name": "client",
+  "name": "web",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "dependencies": {
     "@emotion/react": "^11.4.1",
     "@emotion/styled": "^11.3.0",
@@ -25,11 +31,10 @@
     "typescript": "^4.4.3",
     "web-vitals": "^1.1.2"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+  "devDependencies": {
+    "@types/prismjs": "^1.16.6",
+    "@types/react-router-dom": "^5.3.1",
+    "babel-plugin-prismjs": "^2.1.0"
   },
   "eslintConfig": {
     "extends": [
@@ -48,10 +53,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@types/prismjs": "^1.16.6",
-    "@types/react-router-dom": "^5.3.1",
-    "babel-plugin-prismjs": "^2.1.0"
   }
 }
