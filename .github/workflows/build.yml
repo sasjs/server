@@ -29,6 +29,6 @@ jobs:
         run: npm test
       - name: Build Package
         working-directory: ./api
-        run: npm run package:lib
+        run: npm run build
         env:
           CI: true
