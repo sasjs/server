@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-api:
     runs-on: ubuntu-latest
 
     strategy:
@@ -18,19 +18,16 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Check pwd 1
-        run: pwd
-      - name: Change directory
-        run: cd api
-      - name: Check pwd 2
-        run: pwd
       - name: Install Dependencies
+        working-directory: ./api
         run: npm ci
       - name: Check Code Style
         run: npm run lint
       - name: Run Unit Tests
+        working-directory: ./api
         run: npm test
       - name: Build Package
+        working-directory: ./api
         run: npm run package:lib
         env:
           CI: true
