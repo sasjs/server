@@ -1,0 +1,14 @@
+{
+  "name": "server",
+  "version": "0.0.1",
+  "description": "NodeJS wrapper for calling the SAS binary executable",
+  "scripts": {
+    "lint-api:fix": "npx prettier --write \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
+    "lint-api": "npx prettier --check \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
+    "lint-web:fix": "npx prettier --write \"web/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
+    "lint-web": "npx prettier --check \"web/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
+    },
+    "devDependencies": {
+      "prettier": "^2.3.1"
+    }
+}

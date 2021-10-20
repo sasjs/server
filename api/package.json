@@ -1,7 +1,7 @@
 {
-  "name": "server",
+  "name": "api",
   "version": "0.0.1",
-  "description": "SASjs server",
+  "description": "Api of SASjs server",
   "main": "./src/server.ts",
   "scripts": {
     "start": "nodemon ./src/server.ts",
@@ -9,9 +9,7 @@
     "build": "rimraf build && tsc",
     "semantic-release": "semantic-release -d",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
-    "test": "mkdir -p tmp && jest --coverage",
-    "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
-    "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
+    "test": "mkdir -p tmp && jest --coverage"
   },
   "release": {
     "branches": [
@@ -32,7 +30,6 @@
     "@types/supertest": "^2.0.11",
     "jest": "^27.0.6",
     "nodemon": "^2.0.7",
-    "prettier": "^2.3.1",
     "rimraf": "^3.0.2",
     "semantic-release": "^17.4.3",
     "supertest": "^6.1.3",
