@@ -22,6 +22,7 @@ jobs:
         working-directory: ./api
         run: npm ci
       - name: Check Code Style
+        working-directory: ./api
         run: npm run lint
       - name: Run Unit Tests
         working-directory: ./api
