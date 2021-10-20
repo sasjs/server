@@ -16,7 +16,9 @@ const router = express.Router()
 const fileUploadController = new FileUploadController()
 
 router.get('/', async (_, res) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'web', 'build', 'index.html'))
+  res.sendFile(
+    path.join(__dirname, '..', '..', '..', 'web', 'build', 'index.html')
+  )
 })
 
 router.post('/deploy', async (req, res) => {
