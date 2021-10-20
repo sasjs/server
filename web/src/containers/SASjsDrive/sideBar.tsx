@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import { useLocation } from 'react-router-dom'
 
 import { makeStyles } from '@mui/styles'
 
@@ -36,6 +37,7 @@ const useStyles = makeStyles(() => ({
 const drawerWidth = 240
 
 const SideBar = (props: any) => {
+  const location = useLocation()
   const baseUrl = window.location.origin
   const classes = useStyles()
 
@@ -47,6 +49,8 @@ const SideBar = (props: any) => {
         setDirectoryData(res.data.tree)
       }
     })
+    const queryParams = new URLSearchParams(location.search)
+    props.setSelectedFilePath(queryParams.get('filePath'))
   }, [])
 
   const handleSelect = (node: TreeNode) => {
@@ -54,7 +58,7 @@ const SideBar = (props: any) => {
       window.history.pushState(
         '',
         '',
-        `${baseUrl}/#/SASjsDrive?filepath=${node.relativePath}`
+        `${baseUrl}/#/SASjsDrive?filePath=${node.relativePath}`
       )
       props.setSelectedFilePath(node.relativePath)
     }
