@@ -1,5 +1,5 @@
 import React from 'react'
-import { Route, HashRouter, Switch, Redirect } from 'react-router-dom'
+import { Route, HashRouter, Switch } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { theme } from './theme'
 

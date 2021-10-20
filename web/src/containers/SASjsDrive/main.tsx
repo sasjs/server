@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
 import Editor from '@monaco-editor/react'
@@ -28,7 +28,7 @@ const Main = (props: any) => {
           setFileContent(res.data.fileContent)
         })
     }
-  }, [props.selectedFilePath])
+  }, [props.selectedFilePath, baseUrl])
 
   const handleEditSaveBtnClick = () => {
     if (!editMode) {
