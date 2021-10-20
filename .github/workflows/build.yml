@@ -40,9 +40,6 @@ jobs:
       - name: Install Dependencies
         working-directory: ./api
         run: npm ci
-      - name: Check Code Style
-        working-directory: ./api
-        run: npm run lint
       - name: Run Unit Tests
         working-directory: ./api
         run: npm test
@@ -67,9 +64,6 @@ jobs:
       - name: Install Dependencies
         working-directory: ./web
         run: npm ci
-      - name: Check Code Style
-        working-directory: ./web
-        run: npm run lint
       - name: Run Unit Tests
         working-directory: ./web
         run: npm test
