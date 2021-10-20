@@ -18,8 +18,12 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Check pwd 1
+        run: pwd
       - name: Change directory
         run: cd api
+      - name: Check pwd 2
+        run: pwd
       - name: Install Dependencies
         run: npm ci
       - name: Check Code Style
