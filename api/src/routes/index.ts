@@ -3,7 +3,6 @@ import path from 'path'
 import {
   createFileTree,
   getTreeExample,
-  sasjsExecutor,
   SASjsDriveController,
   ExecutionController,
   FileUploadController
@@ -73,7 +72,7 @@ router.post('/SASjsApi/files', async (req, res) => {
 })
 
 router.get('/SASjsApi/executor', async (req, res) => {
-  const tree = sasjsExecutor()
+  const tree = new ExecutionController().buildDirectorytree()
   res.status(200).send({ status: 'success', tree })
 })
 

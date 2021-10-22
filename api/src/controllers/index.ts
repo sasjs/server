@@ -1,5 +1,4 @@
 export * from './deploy'
-export * from './sasjsExecutor'
 export * from './sasjsDrive'
 export * from './Session'
 export * from './Execution'
