@@ -15,7 +15,7 @@ const Home = () => {
         contributions are welcomed.
       </p>
       <p>
-        SASjs Server is maintained by the SAS Apps team -{' '}
+        SASjs Server is maintained by the SASjs Apps team -{' '}
         <a href="https://sasapps.io/contact-us"> contact us</a> if you'd like
         help with SAS DevOps or SAS Application development!{' '}
       </p>

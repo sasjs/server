@@ -5,8 +5,8 @@ import { theme } from './theme'
 
 import Header from './components/header'
 import Home from './components/home'
-import SASjsDrive from './containers/SASjsDrive'
-import SASjsStudio from './containers/SASjsStudio'
+import Drive from './containers/Drive'
+import Studio from './containers/Studio'
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -17,10 +17,10 @@ function App() {
             <Home />
           </Route>
           <Route exact path="/SASjsDrive">
-            <SASjsDrive />
+            <Drive />
           </Route>
           <Route exact path="/SASjsStudio">
-            <SASjsStudio />
+            <Studio />
           </Route>
         </Switch>
       </HashRouter>

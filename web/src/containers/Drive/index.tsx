@@ -6,7 +6,7 @@ import Box from '@mui/material/Box'
 import SideBar from './sideBar'
 import Main from './main'
 
-const SASjsDrive = () => {
+const Drive = () => {
   const [selectedFilePath, setSelectedFilePath] = useState('')
   return (
     <Box sx={{ display: 'flex' }}>
@@ -17,4 +17,4 @@ const SASjsDrive = () => {
   )
 }
 
-export default SASjsDrive
+export default Drive
