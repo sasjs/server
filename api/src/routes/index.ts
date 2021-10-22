@@ -8,16 +8,18 @@ import {
   FileUploadController
 } from '../controllers'
 import { isExecutionQuery, isFileQuery, isFileTree } from '../types'
-import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
+import {
+  getTmpFilesFolderPath,
+  getWebBuildFolderPath,
+  makeFilesNamesMap
+} from '../utils'
 
 const router = express.Router()
 
 const fileUploadController = new FileUploadController()
 
 router.get('/', async (_, res) => {
-  res.sendFile(
-    path.join(__dirname, '..', '..', '..', 'web', 'build', 'index.html')
-  )
+  res.sendFile(path.join(getWebBuildFolderPath(), 'index.html'))
 })
 
 router.post('/deploy', async (req, res) => {
