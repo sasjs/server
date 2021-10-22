@@ -3,7 +3,7 @@ import { MacroVars } from '@sasjs/utils'
 export interface ExecutionQuery {
   _program: string
   macroVars?: MacroVars
-  _debug?: boolean
+  _debug?: number
 }
 
 export interface FileQuery {
