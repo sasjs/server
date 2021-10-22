@@ -19,16 +19,16 @@ const Main = (props: any) => {
   const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
-    if (props.selectedFilePath !== '') {
+    if (props.selectedFilePath) {
       setIsLoading(true)
       axios
-        .get(`${baseUrl}/SASjsApi/files?filePath=${props.selectedFilePath}`)
+        .get(`/SASjsApi/files?filePath=${props.selectedFilePath}`)
         .then((res: any) => {
           setIsLoading(false)
           setFileContent(res.data.fileContent)
         })
     }
-  }, [props.selectedFilePath, baseUrl])
+  }, [props.selectedFilePath])
 
   const handleEditSaveBtnClick = () => {
     if (!editMode) {
@@ -37,7 +37,7 @@ const Main = (props: any) => {
     } else {
       setIsLoading(true)
       axios
-        .post(`${baseUrl}/SASjsApi/files`, {
+        .post(`/SASjsApi/files`, {
           filePath: props.selectedFilePath,
           fileContent: fileContent
         })
