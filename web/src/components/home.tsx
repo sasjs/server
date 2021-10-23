@@ -12,7 +12,11 @@ const Home = () => {
         This portal provides an interface for executing Stored Programs (drive)
         and ad hoc code (studio) against a SAS executable. The source code is
         available on{' '}
-        <a href="https://github.com/sasjs/server" target="_blank">
+        <a
+          href="https://github.com/sasjs/server"
+          target="_blank"
+          rel="noreferrer"
+        >
           {' '}
           github
         </a>{' '}
@@ -20,7 +24,11 @@ const Home = () => {
       </p>
       <p>
         SASjs Server is maintained by the SASjs Apps team -{' '}
-        <a href="https://sasapps.io/contact-us" target="_blank">
+        <a
+          href="https://sasapps.io/contact-us"
+          target="_blank"
+          rel="noreferrer"
+        >
           {' '}
           contact us
         </a>{' '}
