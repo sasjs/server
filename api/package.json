@@ -9,7 +9,7 @@
     "build": "rimraf build && tsc",
     "semantic-release": "semantic-release -d",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
-    "test": "mkdir -p tmp && jest --coverage"
+    "test": "mkdir -p tmp && mkdir -p ../web/build && jest --coverage"
   },
   "release": {
     "branches": [
