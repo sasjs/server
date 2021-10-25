@@ -8,7 +8,7 @@
     "lint-web:fix": "npx prettier --write \"web/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-web": "npx prettier --check \"web/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npm run lint-api && npm run lint-web",
-    "lint:fix": "npm run lint-api-fix && npm run lint-web-fix"
+    "lint:fix": "npm run lint-api:fix && npm run lint-web:fix"
   },
   "devDependencies": {
     "prettier": "^2.3.1"

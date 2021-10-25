@@ -25,9 +25,11 @@ const Main = (props: any) => {
         .get(`/SASjsApi/files?filePath=${props.selectedFilePath}`)
         .then((res: any) => {
           setFileContent(res.data.fileContent)
-        }).catch((err) => {
+        })
+        .catch((err) => {
           console.log(err)
-        }).finally(() => {
+        })
+        .finally(() => {
           setIsLoading(false)
         })
     }
@@ -46,9 +48,11 @@ const Main = (props: any) => {
         })
         .then((res) => {
           setEditMode(false)
-        }).catch((err) => {
+        })
+        .catch((err) => {
           console.log(err)
-        }).finally(() => {
+        })
+        .finally(() => {
           setIsLoading(false)
         })
     }

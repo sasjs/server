@@ -44,13 +44,16 @@ const SideBar = (props: any) => {
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
 
   useEffect(() => {
-    axios.get(`/SASjsApi/executor`).then((res: any) => {
-      if (res.data && res.data?.status === 'success') {
-        setDirectoryData(res.data.tree)
-      }
-    }).catch((err) => {
-      console.log(err)
-    })
+    axios
+      .get(`/SASjsApi/executor`)
+      .then((res: any) => {
+        if (res.data && res.data?.status === 'success') {
+          setDirectoryData(res.data.tree)
+        }
+      })
+      .catch((err) => {
+        console.log(err)
+      })
     const queryParams = new URLSearchParams(location.search)
     props.setSelectedFilePath(queryParams.get('filePath'))
   }, [])
