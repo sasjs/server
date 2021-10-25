@@ -56,7 +56,7 @@ const SideBar = (props: any) => {
       })
     const queryParams = new URLSearchParams(location.search)
     props.setSelectedFilePath(queryParams.get('filePath'))
-  }, [])
+  })
 
   const handleSelect = (node: TreeNode) => {
     if (!node.children.length) {
