@@ -48,10 +48,12 @@ const SideBar = (props: any) => {
       if (res.data && res.data?.status === 'success') {
         setDirectoryData(res.data.tree)
       }
+    }).catch((err) => {
+      console.log(err)
     })
     const queryParams = new URLSearchParams(location.search)
     props.setSelectedFilePath(queryParams.get('filePath'))
-  }, [location.search, props])
+  }, [])
 
   const handleSelect = (node: TreeNode) => {
     if (!node.children.length) {

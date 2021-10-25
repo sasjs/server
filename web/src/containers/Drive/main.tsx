@@ -24,8 +24,11 @@ const Main = (props: any) => {
       axios
         .get(`/SASjsApi/files?filePath=${props.selectedFilePath}`)
         .then((res: any) => {
-          setIsLoading(false)
           setFileContent(res.data.fileContent)
+        }).catch((err) => {
+          console.log(err)
+        }).finally(() => {
+          setIsLoading(false)
         })
     }
   }, [props.selectedFilePath])
@@ -42,8 +45,11 @@ const Main = (props: any) => {
           fileContent: fileContent
         })
         .then((res) => {
-          setIsLoading(false)
           setEditMode(false)
+        }).catch((err) => {
+          console.log(err)
+        }).finally(() => {
+          setIsLoading(false)
         })
     }
   }
