@@ -1,5 +1,5 @@
 export * from './deploy'
-export * from './sasjsDrive'
+export * from './Drive'
 export * from './Session'
 export * from './Execution'
 export * from './FileUploadController'

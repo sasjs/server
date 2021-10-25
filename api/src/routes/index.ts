@@ -3,7 +3,7 @@ import path from 'path'
 import {
   createFileTree,
   getTreeExample,
-  SASjsDriveController,
+  DriveController,
   ExecutionController,
   FileUploadController
 } from '../controllers'
@@ -55,8 +55,18 @@ router.get('/SASjsApi/files', async (req, res) => {
     const filePath = path
       .join(getTmpFilesFolderPath(), req.query.filePath)
       .replace(new RegExp('/', 'g'), path.sep)
-    const fileContent = await new SASjsDriveController().readFile(filePath)
-    res.status(200).send({ status: 'success', fileContent: fileContent })
+    await new DriveController()
+      .readFile(filePath)
+      .then((fileContent) => {
+        res.status(200).send({ status: 'success', fileContent: fileContent })
+      })
+      .catch((err) => {
+        res.status(400).send({
+          status: 'failure',
+          message: 'File request failed.',
+          ...(typeof err === 'object' ? err : { details: err })
+        })
+      })
   } else {
     res.status(400).send({
       status: 'failure',
@@ -69,8 +79,18 @@ router.post('/SASjsApi/files', async (req, res) => {
   const filePath = path
     .join(getTmpFilesFolderPath(), req.body.filePath)
     .replace(new RegExp('/', 'g'), path.sep)
-  await new SASjsDriveController().updateFile(filePath, req.body.fileContent)
-  res.status(200).send({ status: 'success' })
+  await new DriveController()
+    .updateFile(filePath, req.body.fileContent)
+    .then(() => {
+      res.status(200).send({ status: 'success' })
+    })
+    .catch((err) => {
+      res.status(400).send({
+        status: 'failure',
+        message: 'File request failed.',
+        ...(typeof err === 'object' ? err : { details: err })
+      })
+    })
 })
 
 router.get('/SASjsApi/executor', async (req, res) => {
