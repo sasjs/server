@@ -74,7 +74,9 @@ describe('deploy', () => {
   })
 
   it('should respond with payload example if valid payload was not provided', async () => {
-    const res = await request(app).post('/deploy').send(getTreeExample())
+    const res = await request(app)
+      .post('/deploy')
+      .send({ fileTree: getTreeExample() })
 
     expect(res.statusCode).toEqual(200)
     expect(res.text).toEqual(
