@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { useLocation } from 'react-router-dom'
 
@@ -41,7 +41,13 @@ const SideBar = (props: any) => {
   const baseUrl = window.location.origin
   const classes = useStyles()
 
+  const { setSelectedFilePath } = props
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
+
+  const setFilePathOnMount = useCallback(() => {
+    const queryParams = new URLSearchParams(location.search)
+    setSelectedFilePath(queryParams.get('filePath'))
+  }, [location.search, setSelectedFilePath])
 
   useEffect(() => {
     axios
@@ -54,9 +60,8 @@ const SideBar = (props: any) => {
       .catch((err) => {
         console.log(err)
       })
-    const queryParams = new URLSearchParams(location.search)
-    props.setSelectedFilePath(queryParams.get('filePath'))
-  })
+    setFilePathOnMount()
+  }, [setFilePathOnMount])
 
   const handleSelect = (node: TreeNode) => {
     if (!node.children.length) {
@@ -65,7 +70,7 @@ const SideBar = (props: any) => {
         '',
         `${baseUrl}/#/SASjsDrive?filePath=${node.relativePath}`
       )
-      props.setSelectedFilePath(node.relativePath)
+      setSelectedFilePath(node.relativePath)
     }
   }
 
