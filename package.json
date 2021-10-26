@@ -43,6 +43,6 @@
   },
   "configuration": {
     "sasPath": "/opt/sas/sas9/SASHome/SASFoundation/9.4/sas",
-    "sasJsPort": 5005
+    "sasJsPort": 5000
   }
 }
