@@ -111,7 +111,7 @@ router.post(
         .then((result: {}) => {
           res.status(200).send({
             status: 'success',
-            ...(typeof result === 'object' ? result : { result: result })
+            result
           })
         })
         .catch((err: {} | string) => {

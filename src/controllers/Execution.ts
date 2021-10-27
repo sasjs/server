@@ -89,7 +89,6 @@ ${program}`
       (key: string) => key.toLowerCase() === '_debug'
     )
 
-    let response
     if ((debug && vars[debug] >= 131) || stderr) {
       if (!vars['_log']) {
         webout = `<html><body>
@@ -100,10 +99,8 @@ ${webout}
 </div>
 </body></html>`
       } else {
-        response = {
-          result: webout,
-          log: log
-        }
+        webout = `${webout}
+${log}`
       }
     }
 
@@ -111,6 +108,6 @@ ${webout}
 
     sessionController.deleteSession(session)
 
-    return Promise.resolve(response || webout)
+    return Promise.resolve(webout)
   }
 }
