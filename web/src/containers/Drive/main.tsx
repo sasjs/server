@@ -64,7 +64,7 @@ const Main = (props: any) => {
       setEditMode(false)
     } else {
       window.open(
-        `${baseUrl}/SASjsExecutor/do?_program=${props.selectedFilePath}`
+        `${baseUrl}/SASjsExecutor/do?_program=${props.selectedFilePath.replace(/.sas$/, "")}`
       )
     }
   }
