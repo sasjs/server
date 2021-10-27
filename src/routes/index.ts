@@ -85,17 +85,14 @@ router.get('/SASjsExecutor/do', async (req, res) => {
 })
 
 router.post(
-  '/SASjsExecutor/do',
+  '/files/files/execute',
   fileUploadController.preuploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
   async (req: any, res: any) => {
-    if (isRequestQuery(req.query)) {
+    if (isRequestQuery(req.body)) {
       let sasCodePath = path
-        .join(getTmpFilesFolderPath(), req.query._program)
+        .join(getTmpFilesFolderPath(), req.body._program)
         .replace(new RegExp('/', 'g'), path.sep)
-
-      // If no extension provided, add .sas extension
-      sasCodePath += '.sas'
 
       let filesNamesMap = null
 
@@ -112,7 +109,10 @@ router.post(
           { filesNamesMap: filesNamesMap }
         )
         .then((result: {}) => {
-          res.status(200).send(result)
+          res.status(200).send({
+            status: 'success',
+            ...(typeof result === 'object' ? result : { result: result })
+          })
         })
         .catch((err: {} | string) => {
           res.status(400).send({

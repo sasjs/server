@@ -89,20 +89,28 @@ ${program}`
       (key: string) => key.toLowerCase() === '_debug'
     )
 
+    let response
     if ((debug && vars[debug] >= 131) || stderr) {
-      webout = `<html><body>
+      if (!vars['_log']) {
+        webout = `<html><body>
 ${webout}
 <div style="text-align:left">
 <hr /><h2>SAS Log</h2>
 <pre>${log}</pre>
 </div>
 </body></html>`
+      } else {
+        response = {
+          result: webout,
+          log: log
+        }
+      }
     }
 
     session.inUse = false
 
     sessionController.deleteSession(session)
 
-    return Promise.resolve(webout)
+    return Promise.resolve(response || webout)
   }
 }
