@@ -1,6 +1,6 @@
 import express from 'express'
-import webRouter from './routes/web/web'
-import apiRouter from './routes/api/'
+import webRouter from './routes/web'
+import apiRouter from './routes/api'
 
 const app = express()
 
