@@ -2,9 +2,9 @@ import express from 'express'
 import { createFileTree, getTreeExample } from '../../controllers'
 import { isFileTree } from '../../types'
 
-const filesRouter = express.Router()
+const driveRouter = express.Router()
 
-filesRouter.post('/deploy', async (req, res) => {
+driveRouter.post('/deploy', async (req, res) => {
   if (!isFileTree(req.body.fileTree)) {
     res.status(400).send({
       status: 'failure',
@@ -32,4 +32,4 @@ filesRouter.post('/deploy', async (req, res) => {
     })
 })
 
-export default filesRouter
+export default driveRouter

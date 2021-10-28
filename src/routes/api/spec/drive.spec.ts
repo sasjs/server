@@ -9,7 +9,7 @@ describe('files', () => {
   describe('deploy', () => {
     const shouldFailAssertion = async (payload: any) => {
       const res = await request(app)
-        .post('/SASjsApi/files/deploy')
+        .post('/SASjsApi/drive/deploy')
         .send(payload)
 
       expect(res.statusCode).toEqual(400)
@@ -78,7 +78,7 @@ describe('files', () => {
 
     it('should respond with payload example if valid payload was not provided', async () => {
       const res = await request(app)
-        .post('/SASjsApi/files/deploy')
+        .post('/SASjsApi/drive/deploy')
         .send({ fileTree: getTreeExample() })
 
       expect(res.statusCode).toEqual(200)
