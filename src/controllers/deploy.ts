@@ -14,7 +14,9 @@ export const createFileTree = async (
   )
 
   await asyncForEach(members, async (member: FolderMember | ServiceMember) => {
-    const name = member.name
+    let name = member.name
+
+    if (member.type === 'service') name += '.sas'
 
     if (member.type === MemberType.folder) {
       await createFolder(path.join(destinationPath, name)).catch((err) =>

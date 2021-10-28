@@ -14,7 +14,8 @@ export class ExecutionController {
     autoExec?: string,
     session?: Session,
     vars?: any,
-    otherArgs?: any
+    otherArgs?: any,
+    returnJson?: boolean
   ) {
     if (program) {
       if (!(await fileExists(program))) {
@@ -89,6 +90,7 @@ ${program}`
       (key: string) => key.toLowerCase() === '_debug'
     )
 
+    let jsonResult
     if ((debug && vars[debug] >= 131) || stderr) {
       webout = `<html><body>
 ${webout}
@@ -97,12 +99,14 @@ ${webout}
 <pre>${log}</pre>
 </div>
 </body></html>`
+    } else if (returnJson) {
+      jsonResult = { result: webout, log: log }
     }
 
     session.inUse = false
 
     sessionController.deleteSession(session)
 
-    return Promise.resolve(webout)
+    return Promise.resolve(jsonResult || webout)
   }
 }
