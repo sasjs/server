@@ -34,7 +34,7 @@ driveRouter.post('/deploy', async (req, res) => {
     })
 })
 
-driveRouter.get('/files', async (req, res) => {
+driveRouter.get('/file', async (req, res) => {
   if (isFileQuery(req.query)) {
     const filePath = path
       .join(getTmpFilesFolderPath(), req.query.filePath)
@@ -59,7 +59,7 @@ driveRouter.get('/files', async (req, res) => {
   }
 })
 
-driveRouter.patch('/files', async (req, res) => {
+driveRouter.patch('/file', async (req, res) => {
   const filePath = path
     .join(getTmpFilesFolderPath(), req.body.filePath)
     .replace(new RegExp('/', 'g'), path.sep)

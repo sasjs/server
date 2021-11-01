@@ -22,7 +22,7 @@ const Main = (props: any) => {
     if (props.selectedFilePath) {
       setIsLoading(true)
       axios
-        .get(`/SASjsApi/files?filePath=${props.selectedFilePath}`)
+        .get(`/SASjsApi/drive/file?filePath=${props.selectedFilePath}`)
         .then((res: any) => {
           setFileContent(res.data.fileContent)
         })
@@ -42,7 +42,7 @@ const Main = (props: any) => {
     } else {
       setIsLoading(true)
       axios
-        .post(`/SASjsApi/files`, {
+        .patch(`/SASjsApi/drive/file`, {
           filePath: props.selectedFilePath,
           fileContent: fileContent
         })

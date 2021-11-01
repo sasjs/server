@@ -51,7 +51,7 @@ const SideBar = (props: any) => {
 
   useEffect(() => {
     axios
-      .get(`/SASjsApi/executor`)
+      .get(`/SASjsApi/drive/fileTree`)
       .then((res: any) => {
         if (res.data && res.data?.status === 'success') {
           setDirectoryData(res.data.tree)
