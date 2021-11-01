@@ -1,10 +1,7 @@
 import express from 'express'
 import { isExecutionQuery } from '../../types'
 import path from 'path'
-import {
-  getTmpFilesFolderPath,
-  getWebBuildFolderPath,
-} from '../../utils'
+import { getTmpFilesFolderPath, getWebBuildFolderPath } from '../../utils'
 import { ExecutionController } from '../../controllers'
 
 const webRouter = express.Router()
