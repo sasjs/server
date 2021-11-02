@@ -1,6 +1,6 @@
 import express from 'express'
 import bcrypt from 'bcryptjs'
-import mongoose from 'mongoose'
+import mongoose, { Mongoose } from 'mongoose'
 import jwt from 'jsonwebtoken'
 
 import Client from '../../model/Client'
@@ -14,18 +14,32 @@ const clients: { [key: string]: string } = {}
 const clientIDs = new Set()
 const authCodes: { [key: string]: string } = {}
 
-// connect to DB
-mongoose.connect(process.env.DB_CONNECT as string, async (err) => {
-  if (err) throw err
-
-  console.log('Connected to db!')
-
+export const populateClients = async () => {
   const result = await Client.find()
+  clientIDs.clear()
   result.forEach((r) => {
     clients[r.clientid] = r.clientsecret
     clientIDs.add(r.clientid)
   })
-})
+}
+
+export const connectDB = () => {
+  // NOTE: when exporting app.js as agent for supertest
+  // we should exlcude connecting to the real database
+  if (process.env.NODE_ENV !== 'test') {
+    mongoose.connect(process.env.DB_CONNECT as string, async (err) => {
+      if (err) throw err
+
+      console.log('Connected to db!')
+
+      await populateClients()
+    })
+  }
+}
+
+export const saveCode = (client_id: string, code: string) =>
+  (authCodes[client_id] = code)
+export const deleteCode = (client_id: string) => delete authCodes[client_id]
 
 const refreshTokens: string[] = []
 
@@ -37,14 +51,14 @@ authRouter.post('/authorize', async (req, res) => {
 
   // Authenticate User
   const user = await User.findOne({ username })
-  if (!user) return res.status(400).send('Username is not found.')
+  if (!user) return res.status(403).send('Username is not found.')
 
   const validPass = await bcrypt.compare(password, user.password)
-  if (!validPass) return res.status(400).send('Invalid password.')
+  if (!validPass) return res.status(403).send('Invalid password.')
 
   // Verify client ID
   if (!clientIDs.has(client_id)) {
-    return res.sendStatus(403)
+    return res.status(403).send('Invalid client_id.')
   }
 
   // generate authorization code against client_id
@@ -54,9 +68,10 @@ authRouter.post('/authorize', async (req, res) => {
     isadmin: user.isadmin,
     isactive: user.isactive
   }
-  authCodes[client_id] = generateAuthCode(userInfo)
 
-  res.json({ code: authCodes[client_id] })
+  const code = saveCode(client_id, generateAuthCode(userInfo))
+
+  res.json({ code })
 })
 
 authRouter.post('/token', async (req, res) => {
@@ -66,20 +81,21 @@ authRouter.post('/token', async (req, res) => {
   const { client_id, client_secret, code } = value
 
   const userInfo = await verifyAuthCode(client_id, client_secret, code)
-  if (userInfo) {
-    const accessToken = generateAccessToken(userInfo)
-    const refreshToken = jwt.sign(
-      userInfo,
-      process.env.REFRESH_TOKEN_SECRET as string
-    )
-    refreshTokens.push(refreshToken)
 
-    delete authCodes[client_id]
-
-    res.json({ accessToken: accessToken, refreshToken: refreshToken })
-  } else {
-    res.sendStatus(403)
+  if (!userInfo) {
+    return res.sendStatus(403)
   }
+
+  const accessToken = generateAccessToken(userInfo)
+  const refreshToken = jwt.sign(
+    userInfo,
+    process.env.REFRESH_TOKEN_SECRET as string
+  )
+  refreshTokens.push(refreshToken)
+
+  deleteCode(client_id)
+
+  res.json({ accessToken: accessToken, refreshToken: refreshToken })
 })
 
 // authRouter.post('/refresh', (req, res) => {
@@ -109,7 +125,7 @@ const generateAccessToken = (data: InfoJWT) =>
     expiresIn: '1day'
   })
 
-const generateAuthCode = (data: InfoJWT) =>
+export const generateAuthCode = (data: InfoJWT) =>
   jwt.sign(data, process.env.AUTH_CODE_SECRET as string, {
     expiresIn: '30s'
   })

@@ -6,9 +6,10 @@ import { InfoJWT } from '../../types'
 import driveRouter from './drive'
 import stpRouter from './stp'
 import userRouter from './user'
+import authRouter, { connectDB } from './auth'
 
 dotenv.config()
-import authRouter from './auth'
+connectDB()
 
 const router = express.Router()
 
