@@ -3,9 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
 import { createUser } from '../../../controllers/createUser'
-import { createClient } from '../../../controllers/createClient'
-import { generateAccessToken, populateClients } from '../auth'
-import { InfoJWT } from '../../../types'
+import { generateAccessToken } from '../auth'
 
 const client = {
   clientid: 'someclientID',

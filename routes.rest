@@ -12,13 +12,23 @@ Content-Type: application/json
   "username": "username2",
   "password": "some password"
 }
+
 ###
-POST http://localhost:5000/SASjsApi/auth/authorize
+POST http://localhost:5000/SASjsApi/client
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InNlY3JldHVzZXIiLCJpc2FkbWluIjp0cnVlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODAzOTc3LCJleHAiOjE2MzU4OTAzNzd9.f-FLgLwryKvB5XrihdzaGZajO3d5E5OHEEuJI_03GRI
 Content-Type: application/json
 
 {
-  "username": "username1",
-  "password": "some password",
+  "client_id": "newClientID",
+  "client_secret": "newClientSecret"
+}
+###
+POST https://sas.analytium.co.uk:5002/SASjsApi/auth/authorize
+Content-Type: application/json
+
+{
+  "username": "secretuser",
+  "password": "secretpassword",
   "client_id": "clientID1"
 }
 
@@ -34,3 +44,14 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:5000/SASjsApi/auth/logout
+
+
+Users
+  "username": "username1",
+  "password": "some password",
+
+  "username": "username2",
+  "password": "some password",
+Admins
+  "username": "secretuser",
+  "password": "secretpassword",

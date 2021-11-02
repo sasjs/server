@@ -6,6 +6,7 @@ import { InfoJWT } from '../../types'
 import driveRouter from './drive'
 import stpRouter from './stp'
 import userRouter from './user'
+import clientRouter from './client'
 import authRouter, { connectDB } from './auth'
 
 dotenv.config()
@@ -16,6 +17,7 @@ const router = express.Router()
 router.use('/drive', authenticateToken, driveRouter)
 router.use('/stp', authenticateToken, stpRouter)
 router.use('/user', authenticateToken, verifyAdmin, userRouter)
+router.use('/client', authenticateToken, verifyAdmin, clientRouter)
 router.use('/auth', authRouter)
 
 function authenticateToken(req: any, res: any, next: any) {

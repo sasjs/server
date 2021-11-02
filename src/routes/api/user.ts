@@ -1,11 +1,11 @@
 import express from 'express'
 import { createUser } from '../../controllers/createUser'
-import { registerValidation } from '../../utils'
+import { registerUserValidation } from '../../utils'
 
 const userRouter = express.Router()
 
 userRouter.post('/', async (req, res) => {
-  const { error, value: data } = registerValidation(req.body)
+  const { error, value: data } = registerUserValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
   try {

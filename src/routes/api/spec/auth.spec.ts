@@ -8,8 +8,8 @@ import { generateAuthCode, populateClients, saveCode } from '../auth'
 import { InfoJWT } from '../../../types'
 
 const client = {
-  clientid: 'someclientID',
-  clientsecret: 'someclientSecret'
+  client_id: 'someclientID',
+  client_secret: 'someclientSecret'
 }
 const user = {
   displayname: 'Test User',
@@ -51,7 +51,7 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: user.password,
-          client_id: client.clientid
+          client_id: client.client_id
         })
         .expect(200)
 
@@ -63,7 +63,7 @@ describe('auth', () => {
         .post('/SASjsApi/auth/authorize')
         .send({
           password: user.password,
-          client_id: client.clientid
+          client_id: client.client_id
         })
         .expect(400)
 
@@ -76,7 +76,7 @@ describe('auth', () => {
         .post('/SASjsApi/auth/authorize')
         .send({
           username: user.username,
-          client_id: client.clientid
+          client_id: client.client_id
         })
         .expect(400)
 
@@ -103,7 +103,7 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: user.password,
-          client_id: client.clientid
+          client_id: client.client_id
         })
         .expect(403)
 
@@ -119,7 +119,7 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: 'WrongPassword',
-          client_id: client.clientid
+          client_id: client.client_id
         })
         .expect(403)
 
@@ -146,7 +146,7 @@ describe('auth', () => {
 
   describe('token', () => {
     const userInfo: InfoJWT = {
-      client_id: client.clientid,
+      client_id: client.client_id,
       username: user.username,
       isadmin: user.isadmin,
       isactive: user.isactive
@@ -166,8 +166,8 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id: client.clientid,
-          client_secret: client.clientsecret,
+          client_id: client.client_id,
+          client_secret: client.client_secret,
           code
         })
         .expect(200)
@@ -180,8 +180,8 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id: client.clientid,
-          client_secret: client.clientsecret
+          client_id: client.client_id,
+          client_secret: client.client_secret
         })
         .expect(400)
 
@@ -195,7 +195,7 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_secret: client.clientsecret,
+          client_secret: client.client_secret,
           code
         })
         .expect(400)
@@ -210,7 +210,7 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id: client.clientid,
+          client_id: client.client_id,
           code
         })
         .expect(400)
@@ -223,8 +223,8 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id: client.clientid,
-          client_secret: client.clientsecret,
+          client_id: client.client_id,
+          client_secret: client.client_secret,
           code: 'InvalidCode'
         })
         .expect(403)
@@ -239,7 +239,7 @@ describe('auth', () => {
         .post('/SASjsApi/auth/token')
         .send({
           client_id: 'WrongClientID',
-          client_secret: client.clientsecret,
+          client_secret: client.client_secret,
           code
         })
         .expect(403)
@@ -253,7 +253,7 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id: client.clientid,
+          client_id: client.client_id,
           client_secret: 'WrongClientSecret',
           code
         })

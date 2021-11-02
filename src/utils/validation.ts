@@ -17,11 +17,17 @@ export const tokenValidation = (data: any): Joi.ValidationResult =>
     code: Joi.string().required()
   }).validate(data)
 
-export const registerValidation = (data: any): Joi.ValidationResult =>
+export const registerUserValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     displayname: Joi.string().min(6).required(),
     username: usernameSchema,
     password: passwordSchema,
     isadmin: Joi.boolean(),
     isactive: Joi.boolean()
+  }).validate(data)
+
+export const registerClientValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    client_id: Joi.string().required(),
+    client_secret: Joi.string().required()
   }).validate(data)
