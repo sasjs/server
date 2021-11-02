@@ -16,8 +16,8 @@ userRouter.post('/', async (req, res) => {
       isadmin: savedUser.isadmin,
       isactive: savedUser.isactive
     })
-  } catch (err) {
-    res.status(400).send(err)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
   }
 })
 

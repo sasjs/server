@@ -11,13 +11,6 @@ const client = {
   clientid: 'someclientID',
   clientsecret: 'someclientSecret'
 }
-// const adminUser = {
-//   displayname: 'Test Admin',
-//   username: 'testAdminUsername',
-//   password: '12345678',
-//   isadmin: true,
-//   isactive: true
-// }
 const user = {
   displayname: 'Test User',
   username: 'testUsername',
@@ -38,13 +31,9 @@ describe('auth', () => {
   })
 
   afterAll(async () => {
-    if (con) {
-      await con.connection.dropDatabase()
-      await con.connection.close()
-    }
-    if (mongoServer) {
-      await mongoServer.stop()
-    }
+    await con.connection.dropDatabase()
+    await con.connection.close()
+    await mongoServer.stop()
   })
 
   describe('authorize', () => {

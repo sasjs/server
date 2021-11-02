@@ -120,7 +120,7 @@ authRouter.delete('/logout', (req, res) => {
   res.sendStatus(204)
 })
 
-const generateAccessToken = (data: InfoJWT) =>
+export const generateAccessToken = (data: InfoJWT) =>
   jwt.sign(data, process.env.ACCESS_TOKEN_SECRET as string, {
     expiresIn: '1day'
   })

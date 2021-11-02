@@ -4,12 +4,20 @@ import { getTreeExample } from '../../../controllers/deploy'
 import { getTmpFilesFolderPath } from '../../../utils/file'
 import { folderExists, fileExists, readFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
+import { generateAccessToken } from '../auth'
 
 describe('files', () => {
+  const accessToken = generateAccessToken({
+    client_id: 'someClientID',
+    username: 'username',
+    isadmin: false,
+    isactive: true
+  })
   describe('deploy', () => {
     const shouldFailAssertion = async (payload: any) => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
         .send(payload)
 
       expect(res.statusCode).toEqual(400)
@@ -79,6 +87,7 @@ describe('files', () => {
     it('should respond with payload example if valid payload was not provided', async () => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
         .send({ fileTree: getTreeExample() })
 
       expect(res.statusCode).toEqual(200)

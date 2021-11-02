@@ -28,3 +28,6 @@ jobs:
         run: npm run package:lib
         env:
           CI: true
+          ACCESS_TOKEN_SECRET: ${{secrets.ACCESS_TOKEN_SECRET}}
+          REFRESH_TOKEN_SECRET: ${{secrets.REFRESH_TOKEN_SECRET}}
+          AUTH_CODE_SECRET: ${{secrets.AUTH_CODE_SECRET}}
