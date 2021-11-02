@@ -40,7 +40,6 @@ stpRouter.post(
   fileUploadController.preuploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
   async (req: any, res: any) => {
-
     let _program
     if (isExecutionQuery(req.query)) {
       _program = req.query._program
