@@ -40,10 +40,18 @@ stpRouter.post(
   fileUploadController.preuploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
   async (req: any, res: any) => {
-    if (isExecutionQuery(req.body)) {
+
+    let _program
+    if (isExecutionQuery(req.query)) {
+      _program = req.query._program
+    } else if (isExecutionQuery(req.body)) {
+      _program = req.body._program
+    }
+
+    if (_program) {
       let sasCodePath =
         path
-          .join(getTmpFilesFolderPath(), req.body._program)
+          .join(getTmpFilesFolderPath(), _program)
           .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
       let filesNamesMap = null
