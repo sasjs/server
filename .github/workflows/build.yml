@@ -1,7 +1,6 @@
 name: SASjs Server Build
 
 on:
-  push:
   pull_request:
 
 jobs:
@@ -18,16 +17,22 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+
       - name: Install Dependencies
         run: npm ci
+
       - name: Check Code Style
         run: npm run lint
+
       - name: Run Unit Tests
         run: npm test
-      - name: Build Package
-        run: npm run package:lib
         env:
           CI: true
           ACCESS_TOKEN_SECRET: ${{secrets.ACCESS_TOKEN_SECRET}}
           REFRESH_TOKEN_SECRET: ${{secrets.REFRESH_TOKEN_SECRET}}
           AUTH_CODE_SECRET: ${{secrets.AUTH_CODE_SECRET}}
+
+      - name: Build Package
+        run: npm run package:lib
+        env:
+          CI: true
