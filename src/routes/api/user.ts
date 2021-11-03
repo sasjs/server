@@ -11,10 +11,10 @@ userRouter.post('/', async (req, res) => {
   try {
     const savedUser = await createUser(data)
     res.send({
-      displayname: savedUser.displayname,
+      displayName: savedUser.displayName,
       username: savedUser.username,
-      isadmin: savedUser.isadmin,
-      isactive: savedUser.isactive,
+      isAdmin: savedUser.isAdmin,
+      isActive: savedUser.isActive,
       tokens: []
     })
   } catch (err: any) {

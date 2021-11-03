@@ -7,20 +7,21 @@ import { createClient } from '../../../controllers/createClient'
 import {
   generateAccessToken,
   generateAuthCode,
+  generateRefreshToken,
   populateClients,
   saveCode
 } from '../auth'
 import { InfoJWT } from '../../../types'
 import { saveTokensInDB, verifyTokenInDB } from '../../../utils'
 
-const client_id = 'someclientID'
-const client_secret = 'someclientSecret'
+const clientId = 'someclientID'
+const clientSecret = 'someclientSecret'
 const user = {
-  displayname: 'Test User',
+  displayName: 'Test User',
   username: 'testUsername',
   password: '87654321',
-  isadmin: false,
-  isactive: true
+  isAdmin: false,
+  isActive: true
 }
 
 describe('auth', () => {
@@ -30,7 +31,7 @@ describe('auth', () => {
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
-    await createClient({ client_id, client_secret })
+    await createClient({ clientId, clientSecret })
     await populateClients()
   })
 
@@ -55,7 +56,7 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: user.password,
-          client_id
+          clientId
         })
         .expect(200)
 
@@ -67,7 +68,7 @@ describe('auth', () => {
         .post('/SASjsApi/auth/authorize')
         .send({
           password: user.password,
-          client_id
+          clientId
         })
         .expect(400)
 
@@ -80,7 +81,7 @@ describe('auth', () => {
         .post('/SASjsApi/auth/authorize')
         .send({
           username: user.username,
-          client_id
+          clientId
         })
         .expect(400)
 
@@ -88,7 +89,7 @@ describe('auth', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if client_id is missing', async () => {
+    it('should respond with Bad Request if clientId is missing', async () => {
       const res = await request(app)
         .post('/SASjsApi/auth/authorize')
         .send({
@@ -97,7 +98,7 @@ describe('auth', () => {
         })
         .expect(400)
 
-      expect(res.text).toEqual(`"client_id" is required`)
+      expect(res.text).toEqual(`"clientId" is required`)
       expect(res.body).toEqual({})
     })
 
@@ -107,7 +108,7 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: user.password,
-          client_id
+          clientId
         })
         .expect(403)
 
@@ -123,7 +124,7 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: 'WrongPassword',
-          client_id
+          clientId
         })
         .expect(403)
 
@@ -131,7 +132,7 @@ describe('auth', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if client_id is incorrect', async () => {
+    it('should respond with Forbidden if clientId is incorrect', async () => {
       await createUser(user)
 
       const res = await request(app)
@@ -139,18 +140,18 @@ describe('auth', () => {
         .send({
           username: user.username,
           password: user.password,
-          client_id: 'WrongClientID'
+          clientId: 'WrongClientID'
         })
         .expect(403)
 
-      expect(res.text).toEqual('Invalid client_id.')
+      expect(res.text).toEqual('Invalid clientId.')
       expect(res.body).toEqual({})
     })
   })
 
   describe('token', () => {
     const userInfo: InfoJWT = {
-      client_id,
+      clientId,
       username: user.username
     }
     beforeAll(async () => {
@@ -165,14 +166,14 @@ describe('auth', () => {
     it('should respond with access and refresh tokens', async () => {
       const code = saveCode(
         userInfo.username,
-        userInfo.client_id,
+        userInfo.clientId,
         generateAuthCode(userInfo)
       )
 
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id,
+          clientId,
           code
         })
         .expect(200)
@@ -185,7 +186,7 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id
+          clientId
         })
         .expect(400)
 
@@ -193,10 +194,10 @@ describe('auth', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if client_id is missing', async () => {
+    it('should respond with Bad Request if clientId is missing', async () => {
       const code = saveCode(
         userInfo.username,
-        userInfo.client_id,
+        userInfo.clientId,
         generateAuthCode(userInfo)
       )
 
@@ -207,7 +208,7 @@ describe('auth', () => {
         })
         .expect(400)
 
-      expect(res.text).toEqual(`"client_id" is required`)
+      expect(res.text).toEqual(`"clientId" is required`)
       expect(res.body).toEqual({})
     })
 
@@ -215,7 +216,7 @@ describe('auth', () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id,
+          clientId,
           code: 'InvalidCode'
         })
         .expect(403)
@@ -223,17 +224,17 @@ describe('auth', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if client_id is invalid', async () => {
+    it('should respond with Forbidden if clientId is invalid', async () => {
       const code = saveCode(
         userInfo.username,
-        userInfo.client_id,
+        userInfo.clientId,
         generateAuthCode(userInfo)
       )
 
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
-          client_id: 'WrongClientID',
+          clientId: 'WrongClientID',
           code
         })
         .expect(403)
@@ -242,20 +243,59 @@ describe('auth', () => {
     })
   })
 
-  describe('logout', () => {
-    const accessToken = generateAccessToken({
-      client_id,
+  describe('refresh', () => {
+    const refreshToken = generateRefreshToken({
+      clientId,
       username: user.username
     })
 
     beforeEach(async () => {
       await createUser(user)
-      await saveTokensInDB(
-        user.username,
-        client_id,
-        accessToken,
-        'refreshToken'
-      )
+      await saveTokensInDB(user.username, clientId, 'accessToken', refreshToken)
+    })
+
+    afterEach(async () => {
+      const collections = mongoose.connection.collections
+      const collection = collections['users']
+      await collection.deleteMany({})
+    })
+
+    afterAll(async () => {
+      const collections = mongoose.connection.collections
+      const collection = collections['users']
+      await collection.deleteMany({})
+    })
+
+    it('should respond with new access and refresh tokens', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/auth/refresh')
+        .auth(refreshToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body).toHaveProperty('accessToken')
+      expect(res.body).toHaveProperty('refreshToken')
+
+      // cannot use same refresh again
+      const resWithError = await request(app)
+        .post('/SASjsApi/auth/refresh')
+        .auth(refreshToken, { type: 'bearer' })
+        .send()
+        .expect(401)
+
+      expect(resWithError.body).toEqual({})
+    })
+  })
+
+  describe('logout', () => {
+    const accessToken = generateAccessToken({
+      clientId,
+      username: user.username
+    })
+
+    beforeEach(async () => {
+      await createUser(user)
+      await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
     })
 
     afterEach(async () => {
@@ -280,7 +320,12 @@ describe('auth', () => {
       expect(res.body).toEqual({})
 
       expect(
-        await verifyTokenInDB(user.username, client_id, accessToken)
+        await verifyTokenInDB(
+          user.username,
+          clientId,
+          accessToken,
+          'accessToken'
+        )
       ).toBeUndefined()
     })
   })

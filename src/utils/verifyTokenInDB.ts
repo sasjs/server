@@ -2,21 +2,22 @@ import User from '../model/User'
 
 export const verifyTokenInDB = async (
   username: string,
-  client_id: string,
-  token: string
+  clientId: string,
+  token: string,
+  tokenType: 'accessToken' | 'refreshToken'
 ) => {
   const dbUser = await User.findOne({ username })
 
   const currentTokenObj = dbUser.tokens.find(
-    (tokenObj: any) => tokenObj.clientid === client_id
+    (tokenObj: any) => tokenObj.clientId === clientId
   )
 
-  return currentTokenObj?.accesstoken === token
+  return currentTokenObj?.[tokenType] === token
     ? {
-        client_id,
+        clientId,
         username,
-        isadmin: dbUser.isadmin,
-        isactive: dbUser.isactive
+        isAdmin: dbUser.isAdmin,
+        isActive: dbUser.isActive
       }
     : undefined
 }

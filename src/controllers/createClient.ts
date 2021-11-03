@@ -1,22 +1,22 @@
 import Client from '../model/Client'
 
 export const createClient = async (data: any) => {
-  const { client_id: clientid, client_secret: clientsecret } = data
+  const { clientId, clientSecret } = data
 
   // Checking if client is already in the database
-  const clientExist = await Client.findOne({ clientid })
+  const clientExist = await Client.findOne({ clientId })
   if (clientExist) throw new Error('Client ID already exists.')
 
   // Create a new client
   const client = new Client({
-    clientid,
-    clientsecret
+    clientId,
+    clientSecret
   })
 
   const savedClient = await client.save()
 
   return {
-    client_id: savedClient.clientid,
-    client_secret: savedClient.clientsecret
+    clientId: savedClient.clientId,
+    clientSecret: savedClient.clientSecret
   }
 }

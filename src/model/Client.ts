@@ -1,11 +1,11 @@
 import mongoose from 'mongoose'
 
 const clientSchema = new mongoose.Schema({
-  clientid: {
+  clientId: {
     type: String,
     required: true
   },
-  clientsecret: {
+  clientSecret: {
     type: String,
     required: true
   }

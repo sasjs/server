@@ -7,26 +7,26 @@ export const authorizeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     username: usernameSchema,
     password: passwordSchema,
-    client_id: Joi.string().required()
+    clientId: Joi.string().required()
   }).validate(data)
 
 export const tokenValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    client_id: Joi.string().required(),
+    clientId: Joi.string().required(),
     code: Joi.string().required()
   }).validate(data)
 
 export const registerUserValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    displayname: Joi.string().min(6).required(),
+    displayName: Joi.string().min(6).required(),
     username: usernameSchema,
     password: passwordSchema,
-    isadmin: Joi.boolean(),
-    isactive: Joi.boolean()
+    isAdmin: Joi.boolean(),
+    isActive: Joi.boolean()
   }).validate(data)
 
 export const registerClientValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    client_id: Joi.string().required(),
-    client_secret: Joi.string().required()
+    clientId: Joi.string().required(),
+    clientSecret: Joi.string().required()
   }).validate(data)

@@ -1,4 +1,4 @@
 export interface InfoJWT {
-  client_id: string
+  clientId: string
   username: string
 }

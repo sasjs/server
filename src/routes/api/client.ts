@@ -11,8 +11,8 @@ clientRouter.post('/', async (req, res) => {
   try {
     const savedClient = await createClient(data)
     res.send({
-      client_id: savedClient.client_id,
-      client_secret: savedClient.client_secret
+      clientId: savedClient.clientId,
+      clientSecret: savedClient.clientSecret
     })
   } catch (err: any) {
     res.status(403).send(err.toString())

@@ -6,7 +6,8 @@ import jwt from 'jsonwebtoken'
 import Client from '../../model/Client'
 import User from '../../model/User'
 import {
-  authenticateToken,
+  authenticateAccessToken,
+  authenticateRefreshToken,
   authorizeValidation,
   removeTokensInDB,
   saveTokensInDB,
@@ -16,7 +17,6 @@ import { InfoJWT } from '../../types'
 
 const authRouter = express.Router()
 
-const clients: { [key: string]: string } = {}
 const clientIDs = new Set()
 const authCodes: { [key: string]: { [key: string]: string } } = {}
 
@@ -24,8 +24,7 @@ export const populateClients = async () => {
   const result = await Client.find()
   clientIDs.clear()
   result.forEach((r) => {
-    clients[r.clientid] = r.clientsecret
-    clientIDs.add(r.clientid)
+    clientIDs.add(r.clientId)
   })
 }
 
@@ -43,24 +42,24 @@ export const connectDB = () => {
   }
 }
 
-export const saveCode = (username: string, client_id: string, code: string) => {
-  if (authCodes[username]) return (authCodes[username][client_id] = code)
+export const saveCode = (username: string, clientId: string, code: string) => {
+  if (authCodes[username]) return (authCodes[username][clientId] = code)
 
-  authCodes[username] = { [client_id]: code }
-  return authCodes[username][client_id]
+  authCodes[username] = { [clientId]: code }
+  return authCodes[username][clientId]
 }
-export const deleteCode = (username: string, client_id: string) =>
-  delete authCodes[username][client_id]
+export const deleteCode = (username: string, clientId: string) =>
+  delete authCodes[username][clientId]
 
 authRouter.post('/authorize', async (req, res) => {
   const { error, value } = authorizeValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
-  const { username, password, client_id } = value
+  const { username, password, clientId } = value
 
   // Verify client ID
-  if (!clientIDs.has(client_id)) {
-    return res.status(403).send('Invalid client_id.')
+  if (!clientIDs.has(clientId)) {
+    return res.status(403).send('Invalid clientId.')
   }
 
   // Authenticate User
@@ -70,13 +69,13 @@ authRouter.post('/authorize', async (req, res) => {
   const validPass = await bcrypt.compare(password, user.password)
   if (!validPass) return res.status(403).send('Invalid password.')
 
-  // generate authorization code against client_id
+  // generate authorization code against clientId
   const userInfo: InfoJWT = {
-    client_id,
+    clientId,
     username
   }
 
-  const code = saveCode(username, client_id, generateAuthCode(userInfo))
+  const code = saveCode(username, clientId, generateAuthCode(userInfo))
 
   res.json({ code })
 })
@@ -85,15 +84,15 @@ authRouter.post('/token', async (req, res) => {
   const { error, value } = tokenValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
-  const { client_id, code } = value
+  const { clientId, code } = value
 
-  const userInfo = await verifyAuthCode(client_id, code)
+  const userInfo = await verifyAuthCode(clientId, code)
   if (!userInfo) return res.sendStatus(403)
 
-  if (authCodes[userInfo.username][client_id] !== code)
+  if (authCodes[userInfo.username][clientId] !== code)
     return res.sendStatus(403)
 
-  deleteCode(userInfo.username, client_id)
+  deleteCode(userInfo.username, clientId)
 
   const accessToken = generateAccessToken(userInfo)
   const refreshToken = jwt.sign(
@@ -101,36 +100,44 @@ authRouter.post('/token', async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET as string
   )
 
-  await saveTokensInDB(userInfo.username, client_id, accessToken, refreshToken)
+  await saveTokensInDB(userInfo.username, clientId, accessToken, refreshToken)
 
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 })
 
-// authRouter.post('/refresh', (req, res) => {
-//   const refreshToken = req.body.token
-//   if (refreshToken == null) return res.sendStatus(401)
-//   if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403)
-//   jwt.verify(
-//     refreshToken,
-//     process.env.REFRESH_TOKEN_SECRET as string,
-//     (err: any, user: any) => {
-//       if (err) return res.sendStatus(403)
-//       const accessToken = generateAccessToken({ name: user.name })
-//       res.json({ accessToken: accessToken })
-//     }
-//   )
-// })
+authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
+  const { username, clientId } = req.user
+  const userInfo = {
+    username,
+    clientId
+  }
 
-authRouter.delete('/logout', authenticateToken, async (req: any, res) => {
+  const accessToken = generateAccessToken(userInfo)
+  const refreshToken = jwt.sign(
+    userInfo,
+    process.env.REFRESH_TOKEN_SECRET as string
+  )
+
+  await saveTokensInDB(userInfo.username, clientId, accessToken, refreshToken)
+
+  res.json({ accessToken: accessToken, refreshToken: refreshToken })
+})
+
+authRouter.delete('/logout', authenticateAccessToken, async (req: any, res) => {
   const { user } = req
 
-  await removeTokensInDB(user.username, user.client_id)
+  await removeTokensInDB(user.username, user.clientId)
 
   res.sendStatus(204)
 })
 
 export const generateAccessToken = (data: InfoJWT) =>
   jwt.sign(data, process.env.ACCESS_TOKEN_SECRET as string, {
+    expiresIn: '1h'
+  })
+
+export const generateRefreshToken = (data: InfoJWT) =>
+  jwt.sign(data, process.env.REFRESH_TOKEN_SECRET as string, {
     expiresIn: '1day'
   })
 
@@ -140,7 +147,7 @@ export const generateAuthCode = (data: InfoJWT) =>
   })
 
 const verifyAuthCode = async (
-  client_id: string,
+  clientId: string,
   code: string
 ): Promise<InfoJWT | undefined> => {
   return new Promise((resolve, reject) => {
@@ -148,10 +155,10 @@ const verifyAuthCode = async (
       if (err) return resolve(undefined)
 
       const clientInfo: InfoJWT = {
-        client_id: data?.client_id,
+        clientId: data?.clientId,
         username: data?.username
       }
-      if (clientInfo.client_id === client_id) {
+      if (clientInfo.clientId === clientId) {
         return resolve(clientInfo)
       }
       return resolve(undefined)

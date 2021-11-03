@@ -1,8 +1,7 @@
-import { string } from 'joi'
-import mongoose, { Schema } from 'mongoose'
+import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema({
-  displayname: {
+  displayName: {
     type: String,
     required: true
   },
@@ -14,25 +13,25 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  isadmin: {
+  isAdmin: {
     type: Boolean,
     default: false
   },
-  isactive: {
+  isActive: {
     type: Boolean,
     default: true
   },
   tokens: [
     {
-      clientid: {
+      clientId: {
         type: String,
         required: true
       },
-      accesstoken: {
+      accessToken: {
         type: String,
         required: true
       },
-      refreshtoken: {
+      refreshToken: {
         type: String,
         required: true
       }

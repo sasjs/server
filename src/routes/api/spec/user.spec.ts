@@ -6,23 +6,20 @@ import { createUser } from '../../../controllers/createUser'
 import { generateAccessToken } from '../auth'
 import { saveTokensInDB } from '../../../utils'
 
-const client = {
-  clientid: 'someclientID',
-  clientsecret: 'someclientSecret'
-}
+const clientId = 'someclientID'
 const adminUser = {
-  displayname: 'Test Admin',
+  displayName: 'Test Admin',
   username: 'testAdminUsername',
   password: '12345678',
-  isadmin: true,
-  isactive: true
+  isAdmin: true,
+  isActive: true
 }
 const user = {
-  displayname: 'Test User',
+  displayName: 'Test User',
   username: 'testUsername',
   password: '87654321',
-  isadmin: false,
-  isactive: true
+  isAdmin: false,
+  isActive: true
 }
 
 describe('user', () => {
@@ -42,7 +39,7 @@ describe('user', () => {
 
   describe('create', () => {
     const adminAccessToken = generateAccessToken({
-      client_id: client.clientid,
+      clientId,
       username: adminUser.username
     })
 
@@ -50,7 +47,7 @@ describe('user', () => {
       await createUser(adminUser)
       await saveTokensInDB(
         adminUser.username,
-        client.clientid,
+        clientId,
         adminAccessToken,
         'refreshToken'
       )
@@ -70,9 +67,9 @@ describe('user', () => {
         .expect(200)
 
       expect(res.body.username).toEqual(user.username)
-      expect(res.body.displayname).toEqual(user.displayname)
-      expect(res.body.isadmin).toEqual(user.isadmin)
-      expect(res.body.isactive).toEqual(user.isactive)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
@@ -87,16 +84,11 @@ describe('user', () => {
 
     it('should respond with Forbideen if access token is not of an admin account', async () => {
       const accessToken = generateAccessToken({
-        client_id: client.clientid,
+        clientId,
         username: user.username
       })
       await createUser(user)
-      await saveTokensInDB(
-        user.username,
-        client.clientid,
-        accessToken,
-        'refreshToken'
-      )
+      await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
 
       const res = await request(app)
         .post('/SASjsApi/user')
@@ -149,17 +141,17 @@ describe('user', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if displayname is missing', async () => {
+    it('should respond with Bad Request if displayName is missing', async () => {
       const res = await request(app)
         .post('/SASjsApi/user')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...user,
-          displayname: undefined
+          displayName: undefined
         })
         .expect(400)
 
-      expect(res.text).toEqual(`"displayname" is required`)
+      expect(res.text).toEqual(`"displayName" is required`)
       expect(res.body).toEqual({})
     })
   })

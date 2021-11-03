@@ -2,23 +2,23 @@ import User from '../model/User'
 
 export const saveTokensInDB = async (
   username: string,
-  client_id: string,
+  clientId: string,
   accessToken: string,
   refreshToken: string
 ) => {
   const user = await User.findOne({ username })
 
   const currentTokenObj = user.tokens.find(
-    (tokenObj: any) => tokenObj.clientid === client_id
+    (tokenObj: any) => tokenObj.clientId === clientId
   )
   if (currentTokenObj) {
-    currentTokenObj.accesstoken = accessToken
-    currentTokenObj.refreshtoken = refreshToken
+    currentTokenObj.accessToken = accessToken
+    currentTokenObj.refreshToken = refreshToken
   } else {
     user.tokens.push({
-      clientid: client_id,
-      accesstoken: accessToken,
-      refreshtoken: refreshToken
+      clientId: clientId,
+      accessToken: accessToken,
+      refreshToken: refreshToken
     })
   }
   await user.save()

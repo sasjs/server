@@ -10,16 +10,13 @@ import { generateAccessToken } from '../auth'
 import { createUser } from '../../../controllers/createUser'
 import { saveTokensInDB } from '../../../utils'
 
-const client = {
-  clientid: 'someclientID',
-  clientsecret: 'someclientSecret'
-}
+const clientId = 'someclientID'
 const user = {
-  displayname: 'Test User',
+  displayName: 'Test User',
   username: 'testUsername',
   password: '87654321',
-  isadmin: false,
-  isactive: true
+  isAdmin: false,
+  isActive: true
 }
 
 describe('files', () => {
@@ -38,18 +35,13 @@ describe('files', () => {
   })
   describe('deploy', () => {
     const accessToken = generateAccessToken({
-      client_id: client.clientid,
+      clientId,
       username: user.username
     })
 
     beforeAll(async () => {
       await createUser(user)
-      await saveTokensInDB(
-        user.username,
-        client.clientid,
-        accessToken,
-        'refreshToken'
-      )
+      await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
     })
     const shouldFailAssertion = async (payload: any) => {
       const res = await request(app)
