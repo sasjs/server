@@ -1,4 +1,5 @@
-import mongoose from 'mongoose'
+import { string } from 'joi'
+import mongoose, { Schema } from 'mongoose'
 
 const userSchema = new mongoose.Schema({
   displayname: {
@@ -20,7 +21,23 @@ const userSchema = new mongoose.Schema({
   isactive: {
     type: Boolean,
     default: true
-  }
+  },
+  tokens: [
+    {
+      clientid: {
+        type: String,
+        required: true
+      },
+      accesstoken: {
+        type: String,
+        required: true
+      },
+      refreshtoken: {
+        type: String,
+        required: true
+      }
+    }
+  ]
 })
 
 export default mongoose.model('User', userSchema)

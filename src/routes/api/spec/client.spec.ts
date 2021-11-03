@@ -4,8 +4,21 @@ import request from 'supertest'
 import app from '../../../app'
 import { createClient } from '../../../controllers/createClient'
 import { generateAccessToken } from '../auth'
+import { createUser } from '../../../controllers/createUser'
+import { saveTokensInDB } from '../../../utils'
 
 const client = {
+  client_id: 'someclientID',
+  client_secret: 'someclientSecret'
+}
+const adminUser = {
+  displayname: 'Test Admin',
+  username: 'testAdminUsername',
+  password: '12345678',
+  isadmin: true,
+  isactive: true
+}
+const newClient = {
   client_id: 'newClientID',
   client_secret: 'newClientSecret'
 }
@@ -27,10 +40,18 @@ describe('user', () => {
 
   describe('create', () => {
     const adminAccessToken = generateAccessToken({
-      client_id: 'someClientID',
-      username: 'someAdminUsername',
-      isadmin: true,
-      isactive: true
+      client_id: client.client_id,
+      username: adminUser.username
+    })
+
+    beforeAll(async () => {
+      await createUser(adminUser)
+      await saveTokensInDB(
+        adminUser.username,
+        client.client_id,
+        adminAccessToken,
+        'refreshToken'
+      )
     })
 
     afterEach(async () => {
@@ -43,17 +64,17 @@ describe('user', () => {
       const res = await request(app)
         .post('/SASjsApi/client')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send(client)
+        .send(newClient)
         .expect(200)
 
-      expect(res.body.client_id).toEqual(client.client_id)
-      expect(res.body.client_secret).toEqual(client.client_secret)
+      expect(res.body.client_id).toEqual(newClient.client_id)
+      expect(res.body.client_secret).toEqual(newClient.client_secret)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app)
         .post('/SASjsApi/client')
-        .send(client)
+        .send(newClient)
         .expect(401)
 
       expect(res.text).toEqual('Unauthorized')
@@ -61,17 +82,29 @@ describe('user', () => {
     })
 
     it('should respond with Forbideen if access token is not of an admin account', async () => {
-      const accessToken = generateAccessToken({
-        client_id: 'someClientID',
-        username: 'someUsername',
+      const user = {
+        displayname: 'User 1',
+        username: 'username1',
+        password: '12345678',
         isadmin: false,
         isactive: true
+      }
+      const accessToken = generateAccessToken({
+        client_id: client.client_id,
+        username: user.username
       })
+      await createUser(user)
+      await saveTokensInDB(
+        user.username,
+        client.client_id,
+        accessToken,
+        'refreshToken'
+      )
 
       const res = await request(app)
         .post('/SASjsApi/client')
         .auth(accessToken, { type: 'bearer' })
-        .send(client)
+        .send(newClient)
         .expect(403)
 
       expect(res.text).toEqual('Admin account required')
@@ -79,12 +112,12 @@ describe('user', () => {
     })
 
     it('should respond with Forbidden if client_id is already present', async () => {
-      await createClient(client)
+      await createClient(newClient)
 
       const res = await request(app)
         .post('/SASjsApi/client')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send(client)
+        .send(newClient)
         .expect(403)
 
       expect(res.text).toEqual('Error: Client ID already exists.')
@@ -96,7 +129,7 @@ describe('user', () => {
         .post('/SASjsApi/client')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
-          ...client,
+          ...newClient,
           client_id: undefined
         })
         .expect(400)
@@ -110,7 +143,7 @@ describe('user', () => {
         .post('/SASjsApi/client')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
-          ...client,
+          ...newClient,
           client_secret: undefined
         })
         .expect(400)

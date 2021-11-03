@@ -4,6 +4,7 @@ import request from 'supertest'
 import app from '../../../app'
 import { createUser } from '../../../controllers/createUser'
 import { generateAccessToken } from '../auth'
+import { saveTokensInDB } from '../../../utils'
 
 const client = {
   clientid: 'someclientID',
@@ -42,9 +43,17 @@ describe('user', () => {
   describe('create', () => {
     const adminAccessToken = generateAccessToken({
       client_id: client.clientid,
-      username: adminUser.username,
-      isadmin: adminUser.isadmin,
-      isactive: adminUser.isactive
+      username: adminUser.username
+    })
+
+    beforeEach(async () => {
+      await createUser(adminUser)
+      await saveTokensInDB(
+        adminUser.username,
+        client.clientid,
+        adminAccessToken,
+        'refreshToken'
+      )
     })
 
     afterEach(async () => {
@@ -79,10 +88,15 @@ describe('user', () => {
     it('should respond with Forbideen if access token is not of an admin account', async () => {
       const accessToken = generateAccessToken({
         client_id: client.clientid,
-        username: user.username,
-        isadmin: user.isadmin,
-        isactive: user.isactive
+        username: user.username
       })
+      await createUser(user)
+      await saveTokensInDB(
+        user.username,
+        client.clientid,
+        accessToken,
+        'refreshToken'
+      )
 
       const res = await request(app)
         .post('/SASjsApi/user')

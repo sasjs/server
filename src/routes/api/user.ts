@@ -14,7 +14,8 @@ userRouter.post('/', async (req, res) => {
       displayname: savedUser.displayname,
       username: savedUser.username,
       isadmin: savedUser.isadmin,
-      isactive: savedUser.isactive
+      isactive: savedUser.isactive,
+      tokens: []
     })
   } catch (err: any) {
     res.status(403).send(err.toString())

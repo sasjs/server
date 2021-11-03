@@ -13,7 +13,6 @@ export const authorizeValidation = (data: any): Joi.ValidationResult =>
 export const tokenValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     client_id: Joi.string().required(),
-    client_secret: Joi.string().required(),
     code: Joi.string().required()
   }).validate(data)
 
