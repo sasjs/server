@@ -35,14 +35,16 @@ describe('files', () => {
     await mongoServer.stop()
   })
   describe('deploy', () => {
-    const accessToken = generateAccessToken({
-      clientId,
-      username: user.username
-    })
+    let accessToken: string
+    let dbUser: any
 
     beforeAll(async () => {
-      await controller.createUser(user)
-      await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
+      dbUser = await controller.createUser(user)
+      accessToken = generateAccessToken({
+        clientId,
+        userId: dbUser.id
+      })
+      await saveTokensInDB(dbUser.id, clientId, accessToken, 'refreshToken')
     })
     const shouldFailAssertion = async (payload: any) => {
       const res = await request(app)

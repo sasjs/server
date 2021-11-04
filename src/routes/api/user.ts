@@ -5,7 +5,6 @@ import {
   verifyAdmin,
   verifyAdminIfNeeded
 } from '../../middlewares'
-import User from '../../model/User'
 import {
   deleteUserValidation,
   registerUserValidation,
@@ -39,13 +38,13 @@ userRouter.get('/', authenticateAccessToken, async (req, res) => {
 })
 
 // get one user
-userRouter.get('/:username', authenticateAccessToken, async (req: any, res) => {
-  const { username } = req.params
+userRouter.get('/:userId', authenticateAccessToken, async (req: any, res) => {
+  const { userId } = req.params
+
+  const controller = new UserController()
   try {
-    const user = await User.findOne({ username })
-      .select({ _id: 0, username: 1, displayName: 1, isAdmin: 1, isActive: 1 })
-      .exec()
-    res.send(user)
+    const response = await controller.getUser(userId)
+    res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }
@@ -53,12 +52,12 @@ userRouter.get('/:username', authenticateAccessToken, async (req: any, res) => {
 
 // update user
 userRouter.patch(
-  '/:username',
+  '/:userId',
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req: any, res) => {
     const { user } = req
-    const { username } = req.params
+    const { userId } = req.params
 
     // only an admin can update `isActive` and `isAdmin` fields
     const { error, value: body } = updateUserValidation(req.body, user.isAdmin)
@@ -66,7 +65,7 @@ userRouter.patch(
 
     const controller = new UserController()
     try {
-      const response = await controller.updateUser(username, body)
+      const response = await controller.updateUser(userId, body)
       res.send(response)
     } catch (err: any) {
       res.status(403).send(err.toString())
@@ -76,12 +75,12 @@ userRouter.patch(
 
 // delete user
 userRouter.delete(
-  '/:username',
+  '/:userId',
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req: any, res) => {
     const { user } = req
-    const { username } = req.params
+    const { userId } = req.params
 
     // only an admin can delete user without providing password
     const { error, value: data } = deleteUserValidation(req.body, user.isAdmin)
@@ -89,7 +88,7 @@ userRouter.delete(
 
     const controller = new UserController()
     try {
-      await controller.deleteUser(username, data, user.isAdmin)
+      await controller.deleteUser(userId, data, user.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
       res.status(403).send(err.toString())

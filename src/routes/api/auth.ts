@@ -46,14 +46,14 @@ export const connectDB = () => {
   }
 }
 
-export const saveCode = (username: string, clientId: string, code: string) => {
-  if (authCodes[username]) return (authCodes[username][clientId] = code)
+export const saveCode = (userId: number, clientId: string, code: string) => {
+  if (authCodes[userId]) return (authCodes[userId][clientId] = code)
 
-  authCodes[username] = { [clientId]: code }
-  return authCodes[username][clientId]
+  authCodes[userId] = { [clientId]: code }
+  return authCodes[userId][clientId]
 }
-export const deleteCode = (username: string, clientId: string) =>
-  delete authCodes[username][clientId]
+export const deleteCode = (userId: number, clientId: string) =>
+  delete authCodes[userId][clientId]
 
 authRouter.post('/authorize', async (req, res) => {
   const { error, value } = authorizeValidation(req.body)
@@ -76,10 +76,10 @@ authRouter.post('/authorize', async (req, res) => {
   // generate authorization code against clientId
   const userInfo: InfoJWT = {
     clientId,
-    username
+    userId: user.id
   }
 
-  const code = saveCode(username, clientId, generateAuthCode(userInfo))
+  const code = saveCode(user.id, clientId, generateAuthCode(userInfo))
 
   res.json({ code })
 })
@@ -93,10 +93,9 @@ authRouter.post('/token', async (req, res) => {
   const userInfo = await verifyAuthCode(clientId, code)
   if (!userInfo) return res.sendStatus(403)
 
-  if (authCodes[userInfo.username][clientId] !== code)
-    return res.sendStatus(403)
+  if (authCodes[userInfo.userId][clientId] !== code) return res.sendStatus(403)
 
-  deleteCode(userInfo.username, clientId)
+  deleteCode(userInfo.userId, clientId)
 
   const accessToken = generateAccessToken(userInfo)
   const refreshToken = jwt.sign(
@@ -104,15 +103,15 @@ authRouter.post('/token', async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET as string
   )
 
-  await saveTokensInDB(userInfo.username, clientId, accessToken, refreshToken)
+  await saveTokensInDB(userInfo.userId, clientId, accessToken, refreshToken)
 
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 })
 
 authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
-  const { username, clientId } = req.user
+  const { userId, clientId } = req.user
   const userInfo = {
-    username,
+    userId,
     clientId
   }
 
@@ -122,7 +121,7 @@ authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
     process.env.REFRESH_TOKEN_SECRET as string
   )
 
-  await saveTokensInDB(userInfo.username, clientId, accessToken, refreshToken)
+  await saveTokensInDB(userInfo.userId, clientId, accessToken, refreshToken)
 
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 })
@@ -160,7 +159,7 @@ const verifyAuthCode = async (
 
       const clientInfo: InfoJWT = {
         clientId: data?.clientId,
-        username: data?.username
+        userId: data?.userId
       }
       if (clientInfo.clientId === clientId) {
         return resolve(clientInfo)

@@ -39,15 +39,16 @@ describe('user', () => {
   })
 
   describe('create', () => {
-    const adminAccessToken = generateAccessToken({
-      clientId,
-      username: adminUser.username
-    })
+    let adminAccessToken: string
 
     beforeEach(async () => {
-      await controller.createUser(adminUser)
+      const dbUser = await controller.createUser(adminUser)
+      adminAccessToken = generateAccessToken({
+        clientId,
+        userId: dbUser.id
+      })
       await saveTokensInDB(
-        adminUser.username,
+        dbUser.id,
         clientId,
         adminAccessToken,
         'refreshToken'
@@ -84,12 +85,12 @@ describe('user', () => {
     })
 
     it('should respond with Forbideen if access token is not of an admin account', async () => {
+      const dbUser = await controller.createUser(user)
       const accessToken = generateAccessToken({
         clientId,
-        username: user.username
+        userId: dbUser.id
       })
-      await controller.createUser(user)
-      await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
+      await saveTokensInDB(dbUser.id, clientId, accessToken, 'refreshToken')
 
       const res = await request(app)
         .post('/SASjsApi/user')

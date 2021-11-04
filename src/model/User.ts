@@ -1,4 +1,6 @@
-import { Schema, model } from 'mongoose'
+import { number } from 'joi'
+import mongoose, { Schema, model } from 'mongoose'
+const AutoIncrement = require('mongoose-sequence')(mongoose)
 
 export interface UserPayload {
   /**
@@ -27,50 +29,52 @@ export interface UserPayload {
   isActive?: boolean
 }
 
-interface UserSchema extends UserPayload {
+interface User extends UserPayload {
+  id: number
   isAdmin: boolean
   isActive: boolean
   tokens: [{ [key: string]: string }]
 }
 
-export default model(
-  'User',
-  new Schema<UserSchema>({
-    displayName: {
-      type: String,
-      required: true
-    },
-    username: {
-      type: String,
-      required: true
-    },
-    password: {
-      type: String,
-      required: true
-    },
-    isAdmin: {
-      type: Boolean,
-      default: false
-    },
-    isActive: {
-      type: Boolean,
-      default: true
-    },
-    tokens: [
-      {
-        clientId: {
-          type: String,
-          required: true
-        },
-        accessToken: {
-          type: String,
-          required: true
-        },
-        refreshToken: {
-          type: String,
-          required: true
-        }
+const UserSchema = new Schema<User>({
+  displayName: {
+    type: String,
+    required: true
+  },
+  username: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  tokens: [
+    {
+      clientId: {
+        type: String,
+        required: true
+      },
+      accessToken: {
+        type: String,
+        required: true
+      },
+      refreshToken: {
+        type: String,
+        required: true
       }
-    ]
-  })
-)
+    }
+  ]
+})
+UserSchema.plugin(AutoIncrement, { inc_field: 'id' })
+
+export default model('User', UserSchema)

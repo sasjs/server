@@ -37,7 +37,7 @@ const authenticateToken = (
 
     // verify this valid token's entry in DB
     const user = await verifyTokenInDB(
-      data?.username,
+      data?.userId,
       data?.clientId,
       token,
       tokenType

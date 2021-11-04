@@ -40,15 +40,17 @@ describe('client', () => {
   })
 
   describe('create', () => {
-    const adminAccessToken = generateAccessToken({
-      clientId: client.clientId,
-      username: adminUser.username
-    })
+    let adminAccessToken: string
+    let dbUser: any
 
     beforeAll(async () => {
-      await userController.createUser(adminUser)
+      dbUser = await userController.createUser(adminUser)
+      adminAccessToken = generateAccessToken({
+        clientId: client.clientId,
+        userId: dbUser.id
+      })
       await saveTokensInDB(
-        adminUser.username,
+        dbUser.id,
         client.clientId,
         adminAccessToken,
         'refreshToken'
@@ -90,13 +92,13 @@ describe('client', () => {
         isAdmin: false,
         isActive: true
       }
+      const dbUser = await userController.createUser(user)
       const accessToken = generateAccessToken({
         clientId: client.clientId,
-        username: user.username
+        userId: dbUser.id
       })
-      await userController.createUser(user)
       await saveTokensInDB(
-        user.username,
+        dbUser.id,
         client.clientId,
         accessToken,
         'refreshToken'

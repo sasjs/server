@@ -17,6 +17,7 @@ import { saveTokensInDB, verifyTokenInDB } from '../../../utils'
 const clientId = 'someclientID'
 const clientSecret = 'someclientSecret'
 const user = {
+  id: 1234,
   displayName: 'Test User',
   username: 'testUsername',
   password: '87654321',
@@ -153,7 +154,7 @@ describe('auth', () => {
   describe('token', () => {
     const userInfo: InfoJWT = {
       clientId,
-      username: user.username
+      userId: user.id
     }
     beforeAll(async () => {
       await userController.createUser(user)
@@ -166,7 +167,7 @@ describe('auth', () => {
 
     it('should respond with access and refresh tokens', async () => {
       const code = saveCode(
-        userInfo.username,
+        userInfo.userId,
         userInfo.clientId,
         generateAuthCode(userInfo)
       )
@@ -197,7 +198,7 @@ describe('auth', () => {
 
     it('should respond with Bad Request if clientId is missing', async () => {
       const code = saveCode(
-        userInfo.username,
+        userInfo.userId,
         userInfo.clientId,
         generateAuthCode(userInfo)
       )
@@ -227,7 +228,7 @@ describe('auth', () => {
 
     it('should respond with Forbidden if clientId is invalid', async () => {
       const code = saveCode(
-        userInfo.username,
+        userInfo.userId,
         userInfo.clientId,
         generateAuthCode(userInfo)
       )
@@ -245,14 +246,21 @@ describe('auth', () => {
   })
 
   describe('refresh', () => {
-    const refreshToken = generateRefreshToken({
-      clientId,
-      username: user.username
-    })
+    let refreshToken: string
+    let currentUser: any
 
     beforeEach(async () => {
-      await userController.createUser(user)
-      await saveTokensInDB(user.username, clientId, 'accessToken', refreshToken)
+      currentUser = await userController.createUser(user)
+      refreshToken = generateRefreshToken({
+        clientId,
+        userId: currentUser.id
+      })
+      await saveTokensInDB(
+        currentUser.id,
+        clientId,
+        'accessToken',
+        refreshToken
+      )
     })
 
     afterEach(async () => {
@@ -289,14 +297,22 @@ describe('auth', () => {
   })
 
   describe('logout', () => {
-    const accessToken = generateAccessToken({
-      clientId,
-      username: user.username
-    })
+    let accessToken: string
+    let currentUser: any
 
     beforeEach(async () => {
-      await userController.createUser(user)
-      await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
+      currentUser = await userController.createUser(user)
+      accessToken = generateAccessToken({
+        clientId,
+        userId: currentUser.id
+      })
+
+      await saveTokensInDB(
+        currentUser.id,
+        clientId,
+        accessToken,
+        'refreshToken'
+      )
     })
 
     afterEach(async () => {
@@ -322,7 +338,7 @@ describe('auth', () => {
 
       expect(
         await verifyTokenInDB(
-          user.username,
+          currentUser.id,
           clientId,
           accessToken,
           'accessToken'
