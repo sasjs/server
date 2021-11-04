@@ -1,8 +1,10 @@
 import express from 'express'
-import { createUser } from '../../controllers/createUser'
-import { updateUser } from '../../controllers/updateUser'
-import { deleteUser } from '../../controllers/deleteUser'
-import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
+import UserController from '../../controllers/user'
+import {
+  authenticateAccessToken,
+  verifyAdmin,
+  verifyAdminIfNeeded
+} from '../../middlewares'
 import User from '../../model/User'
 import {
   deleteUserValidation,
@@ -12,29 +14,31 @@ import {
 
 const userRouter = express.Router()
 
+// create user
 userRouter.post('/', authenticateAccessToken, verifyAdmin, async (req, res) => {
-  const { error, value: data } = registerUserValidation(req.body)
+  const { error, value: body } = registerUserValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
+  const controller = new UserController()
   try {
-    const savedUser = await createUser(data)
-    res.send(savedUser)
+    const response = await controller.createUser(body)
+    res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }
 })
 
 userRouter.get('/', authenticateAccessToken, async (req, res) => {
+  const controller = new UserController()
   try {
-    const users = await User.find({})
-      .select({ _id: 0, username: 1, displayName: 1, isAdmin: 1, isActive: 1 })
-      .exec()
-    res.send(users)
+    const response = await controller.getAllUsers()
+    res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }
 })
 
+// get one user
 userRouter.get('/:username', authenticateAccessToken, async (req: any, res) => {
   const { username } = req.params
   try {
@@ -47,48 +51,45 @@ userRouter.get('/:username', authenticateAccessToken, async (req: any, res) => {
   }
 })
 
+// update user
 userRouter.patch(
   '/:username',
   authenticateAccessToken,
+  verifyAdminIfNeeded,
   async (req: any, res) => {
     const { user } = req
     const { username } = req.params
 
-    // only an admin can update other users
-    if (!user.isAdmin && user.username !== username) {
-      return res.status(401).send('Admin account required')
-    }
-
     // only an admin can update `isActive` and `isAdmin` fields
-    const { error, value: data } = updateUserValidation(req.body, user.isAdmin)
+    const { error, value: body } = updateUserValidation(req.body, user.isAdmin)
     if (error) return res.status(400).send(error.details[0].message)
 
+    const controller = new UserController()
     try {
-      const user = await updateUser(username, data)
-      res.send(user)
+      const response = await controller.updateUser(username, body)
+      res.send(response)
     } catch (err: any) {
       res.status(403).send(err.toString())
     }
   }
 )
 
+// delete user
 userRouter.delete(
   '/:username',
   authenticateAccessToken,
+  verifyAdminIfNeeded,
   async (req: any, res) => {
     const { user } = req
     const { username } = req.params
 
-    // only an admin can delete other users
-    if (!user.isAdmin && user.username !== username) {
-      return res.status(401).send('Admin account required')
-    }
-
+    // only an admin can delete user without providing password
     const { error, value: data } = deleteUserValidation(req.body, user.isAdmin)
     if (error) return res.status(400).send(error.details[0].message)
 
+    const controller = new UserController()
     try {
-      await deleteUser(username, user.isAdmin, data)
+      await controller.deleteUser(username, data, user.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
       res.status(403).send(err.toString())

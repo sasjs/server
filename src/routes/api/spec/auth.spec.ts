@@ -2,7 +2,7 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
-import { createUser } from '../../../controllers/createUser'
+import UserController from '../../../controllers/user'
 import { createClient } from '../../../controllers/createClient'
 import {
   generateAccessToken,
@@ -27,6 +27,7 @@ const user = {
 describe('auth', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
+  const userController = new UserController()
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
@@ -49,7 +50,7 @@ describe('auth', () => {
     })
 
     it('should respond with authorization code', async () => {
-      await createUser(user)
+      await userController.createUser(user)
 
       const res = await request(app)
         .post('/SASjsApi/auth/authorize')
@@ -117,7 +118,7 @@ describe('auth', () => {
     })
 
     it('should respond with Forbidden if password is incorrect', async () => {
-      await createUser(user)
+      await userController.createUser(user)
 
       const res = await request(app)
         .post('/SASjsApi/auth/authorize')
@@ -133,7 +134,7 @@ describe('auth', () => {
     })
 
     it('should respond with Forbidden if clientId is incorrect', async () => {
-      await createUser(user)
+      await userController.createUser(user)
 
       const res = await request(app)
         .post('/SASjsApi/auth/authorize')
@@ -155,7 +156,7 @@ describe('auth', () => {
       username: user.username
     }
     beforeAll(async () => {
-      await createUser(user)
+      await userController.createUser(user)
     })
     afterAll(async () => {
       const collections = mongoose.connection.collections
@@ -250,7 +251,7 @@ describe('auth', () => {
     })
 
     beforeEach(async () => {
-      await createUser(user)
+      await userController.createUser(user)
       await saveTokensInDB(user.username, clientId, 'accessToken', refreshToken)
     })
 
@@ -294,7 +295,7 @@ describe('auth', () => {
     })
 
     beforeEach(async () => {
-      await createUser(user)
+      await userController.createUser(user)
       await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
     })
 

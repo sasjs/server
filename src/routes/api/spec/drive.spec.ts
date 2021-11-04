@@ -3,11 +3,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
 import { getTreeExample } from '../../../controllers/deploy'
+import UserController from '../../../controllers/user'
 import { getTmpFilesFolderPath } from '../../../utils/file'
 import { folderExists, fileExists, readFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
 import { generateAccessToken } from '../auth'
-import { createUser } from '../../../controllers/createUser'
 import { saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'
@@ -22,6 +22,7 @@ const user = {
 describe('files', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
+  const controller = new UserController()
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
@@ -40,7 +41,7 @@ describe('files', () => {
     })
 
     beforeAll(async () => {
-      await createUser(user)
+      await controller.createUser(user)
       await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
     })
     const shouldFailAssertion = async (payload: any) => {

@@ -7,6 +7,7 @@ export const saveTokensInDB = async (
   refreshToken: string
 ) => {
   const user = await User.findOne({ username })
+  if (!user) return
 
   const currentTokenObj = user.tokens.find(
     (tokenObj: any) => tokenObj.clientId === clientId

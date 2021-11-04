@@ -2,7 +2,7 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
-import { createUser } from '../../../controllers/createUser'
+import UserController from '../../../controllers/user'
 import { generateAccessToken } from '../auth'
 import { saveTokensInDB } from '../../../utils'
 
@@ -25,6 +25,7 @@ const user = {
 describe('user', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
+  const controller = new UserController()
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
@@ -44,7 +45,7 @@ describe('user', () => {
     })
 
     beforeEach(async () => {
-      await createUser(adminUser)
+      await controller.createUser(adminUser)
       await saveTokensInDB(
         adminUser.username,
         clientId,
@@ -87,21 +88,21 @@ describe('user', () => {
         clientId,
         username: user.username
       })
-      await createUser(user)
+      await controller.createUser(user)
       await saveTokensInDB(user.username, clientId, accessToken, 'refreshToken')
 
       const res = await request(app)
         .post('/SASjsApi/user')
         .auth(accessToken, { type: 'bearer' })
         .send(user)
-        .expect(403)
+        .expect(401)
 
       expect(res.text).toEqual('Admin account required')
       expect(res.body).toEqual({})
     })
 
     it('should respond with Forbidden if username is already present', async () => {
-      await createUser(user)
+      await controller.createUser(user)
 
       const res = await request(app)
         .post('/SASjsApi/user')

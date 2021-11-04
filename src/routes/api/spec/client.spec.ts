@@ -3,8 +3,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
 import { createClient } from '../../../controllers/createClient'
+import UserController from '../../../controllers/user'
 import { generateAccessToken } from '../auth'
-import { createUser } from '../../../controllers/createUser'
 import { saveTokensInDB } from '../../../utils'
 
 const client = {
@@ -23,9 +23,10 @@ const newClient = {
   clientSecret: 'newClientSecret'
 }
 
-describe('user', () => {
+describe('client', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
+  const userController = new UserController()
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
@@ -45,7 +46,7 @@ describe('user', () => {
     })
 
     beforeAll(async () => {
-      await createUser(adminUser)
+      await userController.createUser(adminUser)
       await saveTokensInDB(
         adminUser.username,
         client.clientId,
@@ -93,7 +94,7 @@ describe('user', () => {
         clientId: client.clientId,
         username: user.username
       })
-      await createUser(user)
+      await userController.createUser(user)
       await saveTokensInDB(
         user.username,
         client.clientId,
@@ -105,7 +106,7 @@ describe('user', () => {
         .post('/SASjsApi/client')
         .auth(accessToken, { type: 'bearer' })
         .send(newClient)
-        .expect(403)
+        .expect(401)
 
       expect(res.text).toEqual('Admin account required')
       expect(res.body).toEqual({})

@@ -1,5 +1,6 @@
 import express from 'express'
 import dotenv from 'dotenv'
+import swaggerUi from 'swagger-ui-express'
 
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
 
@@ -19,5 +20,14 @@ router.use('/stp', authenticateAccessToken, stpRouter)
 router.use('/user', userRouter)
 router.use('/client', authenticateAccessToken, verifyAdmin, clientRouter)
 router.use('/auth', authRouter)
+router.use(
+  '/',
+  swaggerUi.serve,
+  swaggerUi.setup(undefined, {
+    swaggerOptions: {
+      url: '/swagger.json'
+    }
+  })
+)
 
 export default router
