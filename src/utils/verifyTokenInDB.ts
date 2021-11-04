@@ -8,6 +8,8 @@ export const verifyTokenInDB = async (
 ) => {
   const dbUser = await User.findOne({ username })
 
+  if (!dbUser) return undefined
+
   const currentTokenObj = dbUser.tokens.find(
     (tokenObj: any) => tokenObj.clientId === clientId
   )

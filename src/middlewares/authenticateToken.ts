@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken'
-import { verifyTokenInDB } from './verifyTokenInDB'
+import { verifyTokenInDB } from '../utils'
 
 export const authenticateAccessToken = (req: any, res: any, next: any) => {
   authenticateToken(

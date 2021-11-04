@@ -1,4 +1,3 @@
-export * from './authenticateToken'
 export * from './file'
 export * from './removeTokensInDB'
 export * from './saveTokensInDB'

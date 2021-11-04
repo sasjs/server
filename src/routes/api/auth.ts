@@ -5,9 +5,13 @@ import jwt from 'jsonwebtoken'
 
 import Client from '../../model/Client'
 import User from '../../model/User'
+
 import {
   authenticateAccessToken,
-  authenticateRefreshToken,
+  authenticateRefreshToken
+} from '../../middlewares'
+
+import {
   authorizeValidation,
   removeTokensInDB,
   saveTokensInDB,
