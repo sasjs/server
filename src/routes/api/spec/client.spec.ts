@@ -2,8 +2,8 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
-import { createClient } from '../../../controllers/createClient'
 import UserController from '../../../controllers/user'
+import ClientController from '../../../controllers/client'
 import { generateAccessToken } from '../auth'
 import { saveTokensInDB } from '../../../utils'
 
@@ -27,6 +27,7 @@ describe('client', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   const userController = new UserController()
+  const clientController = new ClientController()
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
@@ -115,7 +116,7 @@ describe('client', () => {
     })
 
     it('should respond with Forbidden if clientId is already present', async () => {
-      await createClient(newClient)
+      await clientController.createClient(newClient)
 
       const res = await request(app)
         .post('/SASjsApi/client')

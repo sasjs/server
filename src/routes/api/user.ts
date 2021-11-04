@@ -13,7 +13,6 @@ import {
 
 const userRouter = express.Router()
 
-// create user
 userRouter.post('/', authenticateAccessToken, verifyAdmin, async (req, res) => {
   const { error, value: body } = registerUserValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
@@ -37,7 +36,6 @@ userRouter.get('/', authenticateAccessToken, async (req, res) => {
   }
 })
 
-// get one user
 userRouter.get('/:userId', authenticateAccessToken, async (req: any, res) => {
   const { userId } = req.params
 
@@ -50,7 +48,6 @@ userRouter.get('/:userId', authenticateAccessToken, async (req: any, res) => {
   }
 })
 
-// update user
 userRouter.patch(
   '/:userId',
   authenticateAccessToken,
@@ -73,7 +70,6 @@ userRouter.patch(
   }
 )
 
-// delete user
 userRouter.delete(
   '/:userId',
   authenticateAccessToken,

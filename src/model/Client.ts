@@ -1,6 +1,19 @@
-import mongoose from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 
-const clientSchema = new mongoose.Schema({
+export interface ClientPayload {
+  /**
+   * Client ID
+   * @example "someFormattedClientID1234"
+   */
+  clientId: string
+  /**
+   * Client Secret
+   * @example "someRandomCryptoString"
+   */
+  clientSecret: string
+}
+
+const ClientSchema = new Schema<ClientPayload>({
   clientId: {
     type: String,
     required: true
@@ -11,4 +24,4 @@ const clientSchema = new mongoose.Schema({
   }
 })
 
-export default mongoose.model('Client', clientSchema)
+export default mongoose.model('Client', ClientSchema)

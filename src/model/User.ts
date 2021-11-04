@@ -1,4 +1,3 @@
-import { number } from 'joi'
 import mongoose, { Schema, model } from 'mongoose'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 

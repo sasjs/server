@@ -3,7 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
 import UserController from '../../../controllers/user'
-import { createClient } from '../../../controllers/createClient'
+import ClientController from '../../../controllers/client'
 import {
   generateAccessToken,
   generateAuthCode,
@@ -29,11 +29,12 @@ describe('auth', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   const userController = new UserController()
+  const clientController = new ClientController()
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
-    await createClient({ clientId, clientSecret })
+    await clientController.createClient({ clientId, clientSecret })
     await populateClients()
   })
 

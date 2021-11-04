@@ -10,6 +10,16 @@
         "bearerFormat": "JWT"
       }
     },
+    "tags": [
+      {
+        "name": "User",
+        "description": "Operations about users"
+      },
+      {
+        "name": "Client",
+        "description": "Operations about clients"
+      }
+    ],
     "specVersion": 3
   }
 }

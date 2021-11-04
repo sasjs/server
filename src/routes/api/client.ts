@@ -1,19 +1,17 @@
 import express from 'express'
-import { createClient } from '../../controllers/createClient'
+import ClientController from '../../controllers/client'
 import { registerClientValidation } from '../../utils'
 
 const clientRouter = express.Router()
 
 clientRouter.post('/', async (req, res) => {
-  const { error, value: data } = registerClientValidation(req.body)
+  const { error, value: body } = registerClientValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
+  const controller = new ClientController()
   try {
-    const savedClient = await createClient(data)
-    res.send({
-      clientId: savedClient.clientId,
-      clientSecret: savedClient.clientSecret
-    })
+    const response = await controller.createClient(body)
+    res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }
