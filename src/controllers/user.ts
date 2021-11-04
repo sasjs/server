@@ -8,7 +8,8 @@ import {
   Patch,
   Delete,
   Body,
-  Hidden
+  Hidden,
+  Security
 } from 'tsoa'
 import bcrypt from 'bcryptjs'
 
@@ -28,7 +29,8 @@ interface userDetailsResponse {
   isAdmin: boolean
 }
 
-@Route('user')
+@Security('bearerAuth')
+@Route('SASjsApi/user')
 export default class UserController {
   /**
    * Get list of all users (username, displayname). All users can request this.

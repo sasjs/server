@@ -3,6 +3,13 @@
   "noImplicitAdditionalProperties": "throw-on-extras",
   "spec": {
     "outputDirectory": "public",
+    "securityDefinitions": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "specVersion": 3
   }
 }
