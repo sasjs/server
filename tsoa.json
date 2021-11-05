@@ -18,6 +18,10 @@
       {
         "name": "Client",
         "description": "Operations about clients"
+      },
+      {
+        "name": "Auth",
+        "description": "Operations about auth"
       }
     ],
     "specVersion": 3

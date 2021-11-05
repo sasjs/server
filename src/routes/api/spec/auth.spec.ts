@@ -4,13 +4,12 @@ import request from 'supertest'
 import app from '../../../app'
 import UserController from '../../../controllers/user'
 import ClientController from '../../../controllers/client'
-import {
+import AuthController, {
   generateAccessToken,
   generateAuthCode,
-  generateRefreshToken,
-  populateClients,
-  saveCode
-} from '../auth'
+  generateRefreshToken
+} from '../../../controllers/auth'
+import { populateClients } from '../auth'
 import { InfoJWT } from '../../../types'
 import { saveTokensInDB, verifyTokenInDB } from '../../../utils'
 
@@ -115,7 +114,7 @@ describe('auth', () => {
         })
         .expect(403)
 
-      expect(res.text).toEqual('Username is not found.')
+      expect(res.text).toEqual('Error: Username is not found.')
       expect(res.body).toEqual({})
     })
 
@@ -131,7 +130,7 @@ describe('auth', () => {
         })
         .expect(403)
 
-      expect(res.text).toEqual('Invalid password.')
+      expect(res.text).toEqual('Error: Invalid password.')
       expect(res.body).toEqual({})
     })
 
@@ -167,7 +166,7 @@ describe('auth', () => {
     })
 
     it('should respond with access and refresh tokens', async () => {
-      const code = saveCode(
+      const code = AuthController.saveCode(
         userInfo.userId,
         userInfo.clientId,
         generateAuthCode(userInfo)
@@ -198,7 +197,7 @@ describe('auth', () => {
     })
 
     it('should respond with Bad Request if clientId is missing', async () => {
-      const code = saveCode(
+      const code = AuthController.saveCode(
         userInfo.userId,
         userInfo.clientId,
         generateAuthCode(userInfo)
@@ -228,7 +227,7 @@ describe('auth', () => {
     })
 
     it('should respond with Forbidden if clientId is invalid', async () => {
-      const code = saveCode(
+      const code = AuthController.saveCode(
         userInfo.userId,
         userInfo.clientId,
         generateAuthCode(userInfo)

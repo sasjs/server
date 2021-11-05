@@ -4,7 +4,7 @@ import request from 'supertest'
 import app from '../../../app'
 import UserController from '../../../controllers/user'
 import ClientController from '../../../controllers/client'
-import { generateAccessToken } from '../auth'
+import { generateAccessToken } from '../../../controllers/auth'
 import { saveTokensInDB } from '../../../utils'
 
 const client = {

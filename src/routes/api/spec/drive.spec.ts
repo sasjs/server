@@ -7,7 +7,7 @@ import UserController from '../../../controllers/user'
 import { getTmpFilesFolderPath } from '../../../utils/file'
 import { folderExists, fileExists, readFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
-import { generateAccessToken } from '../auth'
+import { generateAccessToken } from '../../../controllers/auth'
 import { saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'

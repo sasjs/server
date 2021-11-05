@@ -3,7 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
 import UserController from '../../../controllers/user'
-import { generateAccessToken } from '../auth'
+import { generateAccessToken } from '../../../controllers/auth'
 import { saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'

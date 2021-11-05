@@ -16,13 +16,13 @@ import bcrypt from 'bcryptjs'
 
 import User, { UserPayload } from '../model/User'
 
-interface userResponse {
+interface UserResponse {
   id: number
   username: string
   displayName: string
 }
 
-interface userDetailsResponse {
+interface UserDetailsResponse {
   id: number
   displayName: string
   username: string
@@ -38,7 +38,7 @@ export default class UserController {
    * Get list of all users (username, displayname). All users can request this.
    *
    */
-  @Example<userResponse[]>([
+  @Example<UserResponse[]>([
     {
       id: 123,
       username: 'johnusername',
@@ -51,7 +51,7 @@ export default class UserController {
     }
   ])
   @Get('/')
-  public async getAllUsers(): Promise<userResponse[]> {
+  public async getAllUsers(): Promise<UserResponse[]> {
     return getAllUsers()
   }
 
@@ -59,7 +59,7 @@ export default class UserController {
    * Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.
    *
    */
-  @Example<userDetailsResponse>({
+  @Example<UserDetailsResponse>({
     id: 1234,
     displayName: 'John Snow',
     username: 'johnSnow01',
@@ -69,7 +69,7 @@ export default class UserController {
   @Post('/')
   public async createUser(
     @Body() body: UserPayload
-  ): Promise<userDetailsResponse> {
+  ): Promise<UserDetailsResponse> {
     return createUser(body)
   }
 
@@ -79,7 +79,7 @@ export default class UserController {
    * @example userId 1234
    */
   @Get('{userId}')
-  public async getUser(@Path() userId: number): Promise<userDetailsResponse> {
+  public async getUser(@Path() userId: number): Promise<UserDetailsResponse> {
     return getUser(userId)
   }
 
@@ -88,7 +88,7 @@ export default class UserController {
    * @param userId The user's identifier
    * @example userId "1234"
    */
-  @Example<userDetailsResponse>({
+  @Example<UserDetailsResponse>({
     id: 1234,
     displayName: 'John Snow',
     username: 'johnSnow01',
@@ -99,7 +99,7 @@ export default class UserController {
   public async updateUser(
     @Path() userId: number,
     @Body() body: UserPayload
-  ): Promise<userDetailsResponse> {
+  ): Promise<UserDetailsResponse> {
     return updateUser(userId, body)
   }
 
@@ -118,12 +118,12 @@ export default class UserController {
   }
 }
 
-const getAllUsers = async (): Promise<userResponse[]> =>
+const getAllUsers = async (): Promise<UserResponse[]> =>
   await User.find({})
     .select({ _id: 0, id: 1, username: 1, displayName: 1 })
     .exec()
 
-const createUser = async (data: any): Promise<userDetailsResponse> => {
+const createUser = async (data: any): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive } = data
 
   // Checking if user is already in the database
@@ -145,7 +145,13 @@ const createUser = async (data: any): Promise<userDetailsResponse> => {
 
   const savedUser = await user.save()
 
-  return savedUser
+  return {
+    id: savedUser.id,
+    displayName: savedUser.displayName,
+    username: savedUser.username,
+    isActive: savedUser.isActive,
+    isAdmin: savedUser.isAdmin
+  }
 }
 
 const getUser = async (id: number) => {
