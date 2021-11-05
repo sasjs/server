@@ -1,11 +1,11 @@
-import { MemberType, FolderMember, ServiceMember } from '../types'
+import { MemberType, FolderMember, ServiceMember, FileTree } from '../types'
 import { getTmpFilesFolderPath } from '../utils/file'
 import { createFolder, createFile, asyncForEach } from '@sasjs/utils'
 import path from 'path'
 
 // REFACTOR: export FileTreeCpntroller
 export const createFileTree = async (
-  members: [FolderMember, ServiceMember],
+  members: (FolderMember | ServiceMember)[],
   parentFolders: string[] = []
 ) => {
   const destinationPath = path.join(
@@ -16,7 +16,7 @@ export const createFileTree = async (
   await asyncForEach(members, async (member: FolderMember | ServiceMember) => {
     let name = member.name
 
-    if (member.type === 'service') name += '.sas'
+    if (member.type === MemberType.service) name += '.sas'
 
     if (member.type === MemberType.folder) {
       await createFolder(path.join(destinationPath, name)).catch((err) =>
@@ -36,19 +36,19 @@ export const createFileTree = async (
   return Promise.resolve()
 }
 
-export const getTreeExample = () => ({
+export const getTreeExample = (): FileTree => ({
   members: [
     {
       name: 'jobs',
-      type: 'folder',
+      type: MemberType.folder,
       members: [
         {
           name: 'extract',
-          type: 'folder',
+          type: MemberType.folder,
           members: [
             {
               name: 'makedata1',
-              type: 'service',
+              type: MemberType.service,
               code: '%put Hello World!;'
             }
           ]

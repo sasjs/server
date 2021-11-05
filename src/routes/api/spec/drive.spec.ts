@@ -9,6 +9,7 @@ import { folderExists, fileExists, readFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
 import { generateAccessToken } from '../../../controllers/auth'
 import { saveTokensInDB } from '../../../utils'
+import { FolderMember, ServiceMember } from '../../../types'
 
 const clientId = 'someclientID'
 const user = {
@@ -135,21 +136,20 @@ describe('files', () => {
       )
       await expect(folderExists(testJobFolder)).resolves.toEqual(true)
 
-      const testJobFile =
-        path.join(
-          testJobFolder,
-          getTreeExample().members[0].members[0].members[0].name
-        ) + '.sas'
+      const exampleService = getExampleService()
+      const testJobFile = path.join(testJobFolder, exampleService.name) + '.sas'
 
       console.log(`[testJobFile]`, testJobFile)
 
       await expect(fileExists(testJobFile)).resolves.toEqual(true)
 
-      await expect(readFile(testJobFile)).resolves.toEqual(
-        getTreeExample().members[0].members[0].members[0].code
-      )
+      await expect(readFile(testJobFile)).resolves.toEqual(exampleService.code)
 
       await deleteFolder(getTmpFilesFolderPath())
     })
   })
 })
+
+const getExampleService = (): ServiceMember =>
+  ((getTreeExample().members[0] as FolderMember).members[0] as FolderMember)
+    .members[0] as ServiceMember

@@ -1,5 +1,5 @@
 export interface FileTree {
-  members: [FolderMember, ServiceMember]
+  members: (FolderMember | ServiceMember)[]
 }
 
 export enum MemberType {
@@ -10,7 +10,7 @@ export enum MemberType {
 export interface FolderMember {
   name: string
   type: MemberType.folder
-  members: [FolderMember, ServiceMember]
+  members: (FolderMember | ServiceMember)[]
 }
 
 export interface ServiceMember {

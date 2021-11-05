@@ -6,6 +6,5 @@ node_modules/
 sas/
 tmp/
 build/
-public/
 certificates/
 .env

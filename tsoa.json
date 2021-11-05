@@ -22,8 +22,13 @@
       {
         "name": "Auth",
         "description": "Operations about auth"
+      },
+      {
+        "name": "Drive",
+        "description": "Operations about drive"
       }
     ],
+    "yaml": true,
     "specVersion": 3
   }
 }
