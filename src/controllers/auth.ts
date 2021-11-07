@@ -137,7 +137,7 @@ const logout = async (userInfo: InfoJWT) => {
 interface AuthorizePayload {
   /**
    * Username for user
-   * @example "johnSnow01"
+   * @example "secretuser"
    */
   username: string
   /**
@@ -147,7 +147,7 @@ interface AuthorizePayload {
   password: string
   /**
    * Client ID
-   * @example "someFormattedClientID1234"
+   * @example "clientID1"
    */
   clientId: string
 }
@@ -163,7 +163,7 @@ interface AuthorizeResponse {
 interface TokenPayload {
   /**
    * Client ID
-   * @example "someFormattedClientID1234"
+   * @example "clientID1"
    */
   clientId: string
   /**

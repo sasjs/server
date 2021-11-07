@@ -26,6 +26,10 @@
       {
         "name": "Drive",
         "description": "Operations about drive"
+      },
+      {
+        "name": "Group",
+        "description": "Operations about group"
       }
     ],
     "yaml": true,

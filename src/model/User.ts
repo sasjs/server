@@ -32,6 +32,7 @@ interface User extends UserPayload {
   id: number
   isAdmin: boolean
   isActive: boolean
+  groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
 }
 
@@ -57,6 +58,7 @@ const UserSchema = new Schema<User>({
     type: Boolean,
     default: true
   },
+  groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
   tokens: [
     {
       clientId: {

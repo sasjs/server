@@ -16,7 +16,7 @@ import bcrypt from 'bcryptjs'
 
 import User, { UserPayload } from '../model/User'
 
-interface UserResponse {
+export interface UserResponse {
   id: number
   username: string
   displayName: string
@@ -123,7 +123,7 @@ const getAllUsers = async (): Promise<UserResponse[]> =>
     .select({ _id: 0, id: 1, username: 1, displayName: 1 })
     .exec()
 
-const createUser = async (data: any): Promise<UserDetailsResponse> => {
+const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive } = data
 
   // Checking if user is already in the database
@@ -154,7 +154,7 @@ const createUser = async (data: any): Promise<UserDetailsResponse> => {
   }
 }
 
-const getUser = async (id: number) => {
+const getUser = async (id: number): Promise<UserDetailsResponse> => {
   const user = await User.findOne({ id })
     .select({
       _id: 0,
@@ -170,7 +170,10 @@ const getUser = async (id: number) => {
   return user
 }
 
-const updateUser = async (id: number, data: any) => {
+const updateUser = async (
+  id: number,
+  data: UserPayload
+): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive } = data
 
   const params: any = { displayName, username, isAdmin, isActive }
@@ -196,14 +199,16 @@ const updateUser = async (id: number, data: any) => {
   return updatedUser
 }
 
-const deleteUser = async (id: number, isAdmin: boolean, data: any) => {
-  const { password } = data
-
+const deleteUser = async (
+  id: number,
+  isAdmin: boolean,
+  { password }: { password?: string }
+) => {
   const user = await User.findOne({ id })
   if (!user) throw new Error('User is not found.')
 
   if (!isAdmin) {
-    const validPass = await bcrypt.compare(password, user.password)
+    const validPass = await bcrypt.compare(password!, user.password)
     if (!validPass) throw new Error('Invalid password.')
   }
 

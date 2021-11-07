@@ -16,6 +16,13 @@ export const tokenValidation = (data: any): Joi.ValidationResult =>
     code: Joi.string().required()
   }).validate(data)
 
+export const registerGroupValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    name: Joi.string().min(6).required(),
+    description: Joi.string(),
+    isActive: Joi.boolean()
+  }).validate(data)
+
 export const registerUserValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     displayName: Joi.string().min(6).required(),

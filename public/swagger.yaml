@@ -147,6 +147,63 @@ components:
                 - password
             type: object
             additionalProperties: false
+        GroupResponse:
+            properties:
+                groupId:
+                    type: number
+                    format: double
+                name:
+                    type: string
+                description:
+                    type: string
+            required:
+                - groupId
+                - name
+                - description
+            type: object
+            additionalProperties: false
+        GroupDetailsResponse:
+            properties:
+                groupId:
+                    type: number
+                    format: double
+                name:
+                    type: string
+                description:
+                    type: string
+                isActive:
+                    type: boolean
+                users:
+                    items:
+                        $ref: '#/components/schemas/UserResponse'
+                    type: array
+            required:
+                - groupId
+                - name
+                - description
+                - isActive
+                - users
+            type: object
+            additionalProperties: false
+        GroupPayload:
+            properties:
+                name:
+                    type: string
+                    description: 'Name of the group'
+                    example: DCGroup
+                description:
+                    type: string
+                    description: 'Description of the group'
+                    example: 'This group represents Data Controller Users'
+                isActive:
+                    type: boolean
+                    description: 'Group should be active or not, defaults to true'
+                    example: 'true'
+            required:
+                - name
+                - description
+            type: object
+            additionalProperties: false
         ClientPayload:
             properties:
                 clientId:
@@ -177,7 +234,7 @@ components:
                 username:
                     type: string
                     description: 'Username for user'
-                    example: johnSnow01
+                    example: secretuser
                 password:
                     type: string
                     description: 'Password for user'
@@ -185,7 +242,7 @@ components:
                 clientId:
                     type: string
                     description: 'Client ID'
-                    example: someFormattedClientID1234
+                    example: clientID1
             required:
                 - username
                 - password
@@ -212,7 +269,7 @@ components:
                 clientId:
                     type: string
                     description: 'Client ID'
-                    example: someFormattedClientID1234
+                    example: clientID1
                 code:
                     type: string
                     description: 'Authorization code'
@@ -428,6 +485,175 @@ paths:
                                 password:
                                     type: string
                             type: object
+    /SASjsApi/group:
+        get:
+            operationId: GetAllGroups
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/GroupResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users'}]
+            description: 'Get list of all groups (groupName and groupDescription). All users can request this.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreateGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            description: 'Create a new group. Admin only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GroupPayload'
+    '/SASjsApi/group/{groupId}':
+        get:
+            operationId: GetGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+            description: 'Get list of members of a group (userName). All users can request this.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+        delete:
+            operationId: DeleteGroup
+            responses:
+                '204':
+                    description: 'No content'
+            description: 'Delete a group. Admin task only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+    '/SASjsApi/group/{groupId}/{userId}':
+        post:
+            operationId: AddUserToGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            description: 'Add a user to a group. Admin task only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '1234'
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '6789'
+        delete:
+            operationId: RemoveUserFromGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            description: 'Remove a user to a group. Admin task only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '1234'
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '6789'
     /SASjsApi/client:
         post:
             operationId: CreateClient
@@ -551,3 +777,6 @@ tags:
     -
         name: Drive
         description: 'Operations about drive'
+    -
+        name: Group
+        description: 'Operations about group'

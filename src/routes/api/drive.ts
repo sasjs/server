@@ -10,7 +10,9 @@ driveRouter.post('/deploy', async (req, res) => {
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code
+
     delete err.code
+
     res.status(statusCode).send(err)
   }
 })
