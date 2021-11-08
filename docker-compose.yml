@@ -1,0 +1,34 @@
+version: '3.4'
+
+services:
+  server:
+    image: server
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+      DB_CONNECT: mongodb://mongodb:27017/sasjs
+    ports:
+      - 5000:5000
+    volumes:
+      - .:/usr/src/app
+    links:
+      - mongodb
+  mongodb:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - data:/data/db
+  mongo-seed-users:
+    build: ./mongo-seed/users
+    links:
+      - mongodb
+  mongo-seed-clients:
+    build: ./mongo-seed/clients
+    links:
+      - mongodb
+
+volumes:
+  data:
