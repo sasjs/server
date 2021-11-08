@@ -12,7 +12,6 @@ import {
   Body,
   Hidden
 } from 'tsoa'
-import bcrypt from 'bcryptjs'
 
 import User, { UserPayload } from '../model/User'
 
@@ -131,8 +130,7 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   if (usernameExist) throw new Error('Username already exists.')
 
   // Hash passwords
-  const salt = await bcrypt.genSalt(10)
-  const hashPassword = await bcrypt.hash(password, salt)
+  const hashPassword = User.hashPassword(password)
 
   // Create a new user
   const user = new User({
@@ -180,8 +178,7 @@ const updateUser = async (
 
   if (password) {
     // Hash passwords
-    const salt = await bcrypt.genSalt(10)
-    params.password = await bcrypt.hash(password, salt)
+    params.password = User.hashPassword(password)
   }
 
   const updatedUser = await User.findOneAndUpdate({ id }, params, { new: true })
@@ -208,7 +205,7 @@ const deleteUser = async (
   if (!user) throw new Error('User is not found.')
 
   if (!isAdmin) {
-    const validPass = await bcrypt.compare(password!, user.password)
+    const validPass = user.comparePassword(password!)
     if (!validPass) throw new Error('Invalid password.')
   }
 

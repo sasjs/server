@@ -1,6 +1,5 @@
 import { Security, Route, Tags, Example, Post, Body, Query, Hidden } from 'tsoa'
 import jwt from 'jsonwebtoken'
-import bcrypt from 'bcryptjs'
 import User from '../model/User'
 import { InfoJWT } from '../types'
 import { removeTokensInDB, saveTokensInDB } from '../utils'
@@ -80,7 +79,7 @@ const authorize = async (data: any): Promise<AuthorizeResponse> => {
   const user = await User.findOne({ username })
   if (!user) throw new Error('Username is not found.')
 
-  const validPass = await bcrypt.compare(password, user.password)
+  const validPass = user.comparePassword(password)
   if (!validPass) throw new Error('Invalid password.')
 
   // generate authorization code against clientId

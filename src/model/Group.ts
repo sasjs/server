@@ -31,7 +31,7 @@ interface IGroup extends IGroupDocument {
 }
 interface IGroupModel extends Model<IGroup> {}
 
-const groupSchema = new Schema({
+const groupSchema = new Schema<IGroupDocument>({
   name: {
     type: String,
     required: true

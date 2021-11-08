@@ -1,6 +1,5 @@
 import express from 'express'
 import mongoose from 'mongoose'
-import jwt from 'jsonwebtoken'
 
 import AuthController from '../../controllers/auth'
 import Client from '../../model/Client'
@@ -10,12 +9,7 @@ import {
   authenticateRefreshToken
 } from '../../middlewares'
 
-import {
-  authorizeValidation,
-  removeTokensInDB,
-  saveTokensInDB,
-  tokenValidation
-} from '../../utils'
+import { authorizeValidation, tokenValidation } from '../../utils'
 import { InfoJWT } from '../../types'
 
 const authRouter = express.Router()

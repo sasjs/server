@@ -1,5 +1,6 @@
-import mongoose, { Schema, model } from 'mongoose'
+import mongoose, { Schema, model, Document, Model } from 'mongoose'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
+import bcrypt from 'bcryptjs'
 
 export interface UserPayload {
   /**
@@ -28,7 +29,7 @@ export interface UserPayload {
   isActive?: boolean
 }
 
-interface User extends UserPayload {
+interface IUserDocument extends UserPayload, Document {
   id: number
   isAdmin: boolean
   isActive: boolean
@@ -36,7 +37,14 @@ interface User extends UserPayload {
   tokens: [{ [key: string]: string }]
 }
 
-const UserSchema = new Schema<User>({
+interface IUser extends IUserDocument {
+  comparePassword(password: string): boolean
+}
+interface IUserModel extends Model<IUser> {
+  hashPassword(password: string): string
+}
+
+const userSchema = new Schema<IUserDocument>({
   displayName: {
     type: String,
     required: true
@@ -76,6 +84,20 @@ const UserSchema = new Schema<User>({
     }
   ]
 })
-UserSchema.plugin(AutoIncrement, { inc_field: 'id' })
+userSchema.plugin(AutoIncrement, { inc_field: 'id' })
 
-export default model('User', UserSchema)
+// Static Methods
+userSchema.static('hashPassword', (password: string): string => {
+  const salt = bcrypt.genSaltSync(10)
+  return bcrypt.hashSync(password, salt)
+})
+
+// Instance Methods
+userSchema.method('comparePassword', function (password: string): boolean {
+  if (bcrypt.compareSync(password, this.password)) return true
+  return false
+})
+
+export const User: IUserModel = model<IUser, IUserModel>('User', userSchema)
+
+export default User

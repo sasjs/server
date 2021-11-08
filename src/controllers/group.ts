@@ -163,7 +163,10 @@ const createGroup = async ({
 }
 
 const getGroup = async (groupId: number): Promise<GroupDetailsResponse> => {
-  const group = (await Group.findOne({ groupId }).populate(
+  const group = (await Group.findOne(
+    { groupId },
+    'groupId name description isActive users -_id'
+  ).populate(
     'users',
     'id username displayName -_id'
   )) as unknown as GroupDetailsResponse
@@ -193,7 +196,13 @@ const addUserToGroup = async (
   )) as unknown as GroupDetailsResponse
   if (!updatedGroup) throw new Error('Unable to update group')
 
-  return updatedGroup
+  return {
+    groupId: updatedGroup.groupId,
+    name: updatedGroup.name,
+    description: updatedGroup.description,
+    isActive: updatedGroup.isActive,
+    users: updatedGroup.users
+  }
 }
 
 const removeUserFromGroup = async (
@@ -211,5 +220,11 @@ const removeUserFromGroup = async (
   )) as unknown as GroupDetailsResponse
   if (!updatedGroup) throw new Error('Unable to update group')
 
-  return updatedGroup
+  return {
+    groupId: updatedGroup.groupId,
+    name: updatedGroup.name,
+    description: updatedGroup.description,
+    isActive: updatedGroup.isActive,
+    users: updatedGroup.users
+  }
 }
