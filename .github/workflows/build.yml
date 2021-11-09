@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,11 +20,58 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install Dependencies
         run: npm ci
-      - name: Check Code Style
-        run: npm run lint
+      - name: Check Api Code Style
+        run: npm run lint-api
+      - name: Check Web Code Style
+        run: npm run lint-web
+
+  build-api:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install Dependencies
+        working-directory: ./api
+        run: npm ci
       - name: Run Unit Tests
+        working-directory: ./api
         run: npm test
       - name: Build Package
-        run: npm run package:lib
+        working-directory: ./api
+        run: npm run build
+        env:
+          CI: true
+
+  build-web:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install Dependencies
+        working-directory: ./web
+        run: npm ci
+      # TODO: Uncomment next step when unit tests provided
+      # - name: Run Unit Tests
+      #   working-directory: ./web
+      #   run: npm test
+      - name: Build Package
+        working-directory: ./web
+        run: npm run build
         env:
           CI: true
