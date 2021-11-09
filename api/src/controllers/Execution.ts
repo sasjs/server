@@ -1,11 +1,13 @@
+import path from 'path'
+import fs from 'fs'
 import { getSessionController } from './'
 import { readFile, fileExists, createFile } from '@sasjs/utils'
-import path from 'path'
 import { configuration } from '../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
-import { Session } from '../types'
-import { generateFileUploadSasCode } from '../utils'
+import { Session, TreeNode } from '../types'
+import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../utils'
+
 const execFilePromise = promisify(execFile)
 
 export class ExecutionController {
@@ -108,5 +110,42 @@ ${webout}
     sessionController.deleteSession(session)
 
     return Promise.resolve(jsonResult || webout)
+  }
+
+  buildDirectorytree() {
+    const root: TreeNode = {
+      name: 'files',
+      relativePath: '',
+      absolutePath: getTmpFilesFolderPath(),
+      children: []
+    }
+
+    const stack = [root]
+
+    while (stack.length) {
+      const currentNode = stack.pop()
+
+      if (currentNode) {
+        const children = fs.readdirSync(currentNode.absolutePath)
+
+        for (let child of children) {
+          const absoluteChildPath = `${currentNode.absolutePath}/${child}`
+          const relativeChildPath = `${currentNode.relativePath}/${child}`
+          const childNode: TreeNode = {
+            name: child,
+            relativePath: relativeChildPath,
+            absolutePath: absoluteChildPath,
+            children: []
+          }
+          currentNode.children.push(childNode)
+
+          if (fs.statSync(childNode.absolutePath).isDirectory()) {
+            stack.push(childNode)
+          }
+        }
+      }
+    }
+
+    return root
   }
 }

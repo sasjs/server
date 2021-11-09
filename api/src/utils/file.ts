@@ -1,5 +1,8 @@
 import path from 'path'
-import { getRealPath, generateTimestamp } from '@sasjs/utils'
+import { getRealPath } from '@sasjs/utils'
+
+export const getWebBuildFolderPath = () =>
+  getRealPath(path.join(__dirname, '..', '..', '..', 'web', 'build'))
 
 export const getTmpFolderPath = () =>
   getRealPath(path.join(__dirname, '..', '..', 'tmp'))

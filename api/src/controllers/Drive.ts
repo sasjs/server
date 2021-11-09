@@ -1,4 +1,5 @@
 import { Security, Route, Tags, Example, Post, Body, Response } from 'tsoa'
+import { fileExists, readFile, createFile } from '@sasjs/utils'
 import { createFileTree, getTreeExample } from '.'
 
 import { FileTree, isFileTree } from '../types'
@@ -33,7 +34,7 @@ const execErrorResponse: DeployResponse = {
 @Security('bearerAuth')
 @Route('SASjsApi/drive')
 @Tags('Drive')
-export default class DriveController {
+export class DriveController {
   /**
    * Creates/updates files within SASjs Drive using provided payload.
    *
@@ -44,6 +45,22 @@ export default class DriveController {
   @Post('/deploy')
   public async deploy(@Body() body: DeployPayload): Promise<DeployResponse> {
     return deploy(body)
+  }
+
+  async readFile(filePath: string) {
+    await this.validateFilePath(filePath)
+    return await readFile(filePath)
+  }
+
+  async updateFile(filePath: string, fileContent: string) {
+    await this.validateFilePath(filePath)
+    return await createFile(filePath, fileContent)
+  }
+
+  private async validateFilePath(filePath: string) {
+    if (!(await fileExists(filePath))) {
+      throw 'DriveController: File does not exists.'
+    }
   }
 }
 
