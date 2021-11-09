@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [lts/*]
 
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [lts/*]
 
     steps:
       - uses: actions/checkout@v2
@@ -65,7 +65,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [lts/*]
 
     steps:
       - uses: actions/checkout@v2
