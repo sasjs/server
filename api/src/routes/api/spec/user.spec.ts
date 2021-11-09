@@ -364,7 +364,7 @@ describe('user', () => {
       const res = await request(app)
         .get(`/SASjsApi/user/${userId}`)
         .auth(adminAccessToken, { type: 'bearer' })
-        .send(user)
+        .send()
         .expect(200)
 
       expect(res.body.username).toEqual(user.username)
@@ -385,7 +385,7 @@ describe('user', () => {
       const res = await request(app)
         .get(`/SASjsApi/user/${userId}`)
         .auth(accessToken, { type: 'bearer' })
-        .send(user)
+        .send()
         .expect(200)
 
       expect(res.body.username).toEqual(user.username)
@@ -397,7 +397,7 @@ describe('user', () => {
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app)
         .get('/SASjsApi/user/1234')
-        .send(user)
+        .send()
         .expect(401)
 
       expect(res.text).toEqual('Unauthorized')
@@ -410,7 +410,7 @@ describe('user', () => {
       const res = await request(app)
         .get('/SASjsApi/user/1234')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send(user)
+        .send()
         .expect(403)
 
       expect(res.text).toEqual('Error: User is not found.')
@@ -435,7 +435,7 @@ describe('user', () => {
       const res = await request(app)
         .get('/SASjsApi/user')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send(user)
+        .send()
         .expect(200)
 
       expect(res.body).toEqual([
@@ -461,7 +461,7 @@ describe('user', () => {
       const res = await request(app)
         .get('/SASjsApi/user')
         .auth(accessToken, { type: 'bearer' })
-        .send(user)
+        .send()
         .expect(200)
 
       expect(res.body).toEqual([
@@ -479,10 +479,7 @@ describe('user', () => {
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
-      const res = await request(app)
-        .get('/SASjsApi/user')
-        .send(user)
-        .expect(401)
+      const res = await request(app).get('/SASjsApi/user').send().expect(401)
 
       expect(res.text).toEqual('Unauthorized')
       expect(res.body).toEqual({})

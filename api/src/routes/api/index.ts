@@ -16,12 +16,12 @@ connectDB()
 
 const router = express.Router()
 
+router.use('/auth', authRouter)
+router.use('/client', authenticateAccessToken, verifyAdmin, clientRouter)
 router.use('/drive', authenticateAccessToken, driveRouter)
+router.use('/group', groupRouter)
 router.use('/stp', authenticateAccessToken, stpRouter)
 router.use('/user', userRouter)
-router.use('/group', groupRouter)
-router.use('/client', authenticateAccessToken, verifyAdmin, clientRouter)
-router.use('/auth', authRouter)
 router.use(
   '/',
   swaggerUi.serve,

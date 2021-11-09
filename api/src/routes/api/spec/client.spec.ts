@@ -42,10 +42,9 @@ describe('client', () => {
 
   describe('create', () => {
     let adminAccessToken: string
-    let dbUser: any
 
     beforeAll(async () => {
-      dbUser = await userController.createUser(adminUser)
+      const dbUser = await userController.createUser(adminUser)
       adminAccessToken = generateAccessToken({
         clientId: client.clientId,
         userId: dbUser.id

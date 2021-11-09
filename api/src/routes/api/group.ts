@@ -49,6 +49,7 @@ groupRouter.get('/:groupId', authenticateAccessToken, async (req: any, res) => {
 groupRouter.post(
   '/:groupId/:userId',
   authenticateAccessToken,
+  verifyAdmin,
   async (req: any, res) => {
     const { groupId, userId } = req.params
 
@@ -65,6 +66,7 @@ groupRouter.post(
 groupRouter.delete(
   '/:groupId/:userId',
   authenticateAccessToken,
+  verifyAdmin,
   async (req: any, res) => {
     const { groupId, userId } = req.params
 
@@ -81,6 +83,7 @@ groupRouter.delete(
 groupRouter.delete(
   '/:groupId',
   authenticateAccessToken,
+  verifyAdmin,
   async (req: any, res) => {
     const { groupId } = req.params
 

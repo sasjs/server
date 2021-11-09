@@ -170,7 +170,7 @@ const getGroup = async (groupId: number): Promise<GroupDetailsResponse> => {
     'users',
     'id username displayName -_id'
   )) as unknown as GroupDetailsResponse
-  if (!group) throw new Error('Group is not found.')
+  if (!group) throw new Error('Group not found.')
 
   return {
     groupId: group.groupId,
@@ -184,40 +184,30 @@ const getGroup = async (groupId: number): Promise<GroupDetailsResponse> => {
 const addUserToGroup = async (
   groupId: number,
   userId: number
-): Promise<GroupDetailsResponse> => {
-  const group = await Group.findOne({ groupId })
-  if (!group) throw new Error('Group not found')
-
-  const user = await User.findOne({ id: userId })
-  if (!user) throw new Error('User not found')
-
-  const updatedGroup = (await group.addUser(
-    user._id
-  )) as unknown as GroupDetailsResponse
-  if (!updatedGroup) throw new Error('Unable to update group')
-
-  return {
-    groupId: updatedGroup.groupId,
-    name: updatedGroup.name,
-    description: updatedGroup.description,
-    isActive: updatedGroup.isActive,
-    users: updatedGroup.users
-  }
-}
+): Promise<GroupDetailsResponse> =>
+  updateUsersListInGroup(groupId, userId, 'addUser')
 
 const removeUserFromGroup = async (
   groupId: number,
   userId: number
+): Promise<GroupDetailsResponse> =>
+  updateUsersListInGroup(groupId, userId, 'removeUser')
+
+const updateUsersListInGroup = async (
+  groupId: number,
+  userId: number,
+  action: 'addUser' | 'removeUser'
 ): Promise<GroupDetailsResponse> => {
   const group = await Group.findOne({ groupId })
-  if (!group) throw new Error('Group not found')
+  if (!group) throw new Error('Group not found.')
 
   const user = await User.findOne({ id: userId })
-  if (!user) throw new Error('User not found')
+  if (!user) throw new Error('User not found.')
 
-  const updatedGroup = (await group.removeUser(
-    user._id
-  )) as unknown as GroupDetailsResponse
+  const updatedGroup = (action === 'addUser'
+    ? await group.addUser(user._id)
+    : await group.removeUser(user._id)) as unknown as GroupDetailsResponse
+
   if (!updatedGroup) throw new Error('Unable to update group')
 
   return {
