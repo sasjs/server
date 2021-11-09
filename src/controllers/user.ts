@@ -174,7 +174,14 @@ const updateUser = async (
 ): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive } = data
 
-  const params: any = { displayName, username, isAdmin, isActive }
+  const params: any = { displayName, isAdmin, isActive }
+
+  if (username) {
+    // Checking if user is already in the database
+    const usernameExist = await User.findOne({ username })
+    if (usernameExist?.id != id) throw new Error('Username already exists.')
+    params.username = username
+  }
 
   if (password) {
     // Hash passwords
