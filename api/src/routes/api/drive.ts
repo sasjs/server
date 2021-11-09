@@ -1,9 +1,6 @@
 import express from 'express'
 import path from 'path'
-import {
-  DriveController,
-  ExecutionController
-} from '../../controllers'
+import { DriveController, ExecutionController } from '../../controllers'
 import { isFileQuery } from '../../types'
 import { getTmpFilesFolderPath } from '../../utils'
 

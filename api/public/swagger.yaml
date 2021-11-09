@@ -1,0 +1,782 @@
+components:
+    examples: {}
+    headers: {}
+    parameters: {}
+    requestBodies: {}
+    responses: {}
+    schemas:
+        MemberType.folder:
+            enum:
+                - folder
+            type: string
+        FolderMember:
+            properties:
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/MemberType.folder'
+                members:
+                    items:
+                        anyOf:
+                            -
+                                $ref: '#/components/schemas/FolderMember'
+                            -
+                                $ref: '#/components/schemas/ServiceMember'
+                    type: array
+            required:
+                - name
+                - type
+                - members
+            type: object
+            additionalProperties: false
+        MemberType.service:
+            enum:
+                - service
+            type: string
+        ServiceMember:
+            properties:
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/MemberType.service'
+                code:
+                    type: string
+            required:
+                - name
+                - type
+                - code
+            type: object
+            additionalProperties: false
+        FileTree:
+            properties:
+                members:
+                    items:
+                        anyOf:
+                            -
+                                $ref: '#/components/schemas/FolderMember'
+                            -
+                                $ref: '#/components/schemas/ServiceMember'
+                    type: array
+            required:
+                - members
+            type: object
+            additionalProperties: false
+        DeployResponse:
+            properties:
+                status:
+                    type: string
+                message:
+                    type: string
+                example:
+                    $ref: '#/components/schemas/FileTree'
+            required:
+                - status
+                - message
+            type: object
+            additionalProperties: false
+        DeployPayload:
+            properties:
+                appLoc:
+                    type: string
+                fileTree:
+                    $ref: '#/components/schemas/FileTree'
+            required:
+                - fileTree
+            type: object
+            additionalProperties: false
+        UserResponse:
+            properties:
+                id:
+                    type: number
+                    format: double
+                username:
+                    type: string
+                displayName:
+                    type: string
+            required:
+                - id
+                - username
+                - displayName
+            type: object
+            additionalProperties: false
+        UserDetailsResponse:
+            properties:
+                id:
+                    type: number
+                    format: double
+                displayName:
+                    type: string
+                username:
+                    type: string
+                isActive:
+                    type: boolean
+                isAdmin:
+                    type: boolean
+            required:
+                - id
+                - displayName
+                - username
+                - isActive
+                - isAdmin
+            type: object
+            additionalProperties: false
+        UserPayload:
+            properties:
+                displayName:
+                    type: string
+                    description: 'Display name for user'
+                    example: 'John Snow'
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: johnSnow01
+                password:
+                    type: string
+                    description: 'Password for user'
+                isAdmin:
+                    type: boolean
+                    description: 'Account should be admin or not, defaults to false'
+                    example: 'false'
+                isActive:
+                    type: boolean
+                    description: 'Account should be active or not, defaults to true'
+                    example: 'true'
+            required:
+                - displayName
+                - username
+                - password
+            type: object
+            additionalProperties: false
+        GroupResponse:
+            properties:
+                groupId:
+                    type: number
+                    format: double
+                name:
+                    type: string
+                description:
+                    type: string
+            required:
+                - groupId
+                - name
+                - description
+            type: object
+            additionalProperties: false
+        GroupDetailsResponse:
+            properties:
+                groupId:
+                    type: number
+                    format: double
+                name:
+                    type: string
+                description:
+                    type: string
+                isActive:
+                    type: boolean
+                users:
+                    items:
+                        $ref: '#/components/schemas/UserResponse'
+                    type: array
+            required:
+                - groupId
+                - name
+                - description
+                - isActive
+                - users
+            type: object
+            additionalProperties: false
+        GroupPayload:
+            properties:
+                name:
+                    type: string
+                    description: 'Name of the group'
+                    example: DCGroup
+                description:
+                    type: string
+                    description: 'Description of the group'
+                    example: 'This group represents Data Controller Users'
+                isActive:
+                    type: boolean
+                    description: 'Group should be active or not, defaults to true'
+                    example: 'true'
+            required:
+                - name
+                - description
+            type: object
+            additionalProperties: false
+        ClientPayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: someFormattedClientID1234
+                clientSecret:
+                    type: string
+                    description: 'Client Secret'
+                    example: someRandomCryptoString
+            required:
+                - clientId
+                - clientSecret
+            type: object
+            additionalProperties: false
+        AuthorizeResponse:
+            properties:
+                code:
+                    type: string
+                    description: 'Authorization code'
+                    example: someRandomCryptoString
+            required:
+                - code
+            type: object
+            additionalProperties: false
+        AuthorizePayload:
+            properties:
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: secretuser
+                password:
+                    type: string
+                    description: 'Password for user'
+                    example: secretpassword
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: clientID1
+            required:
+                - username
+                - password
+                - clientId
+            type: object
+            additionalProperties: false
+        TokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                    description: 'Access Token'
+                    example: someRandomCryptoString
+                refreshToken:
+                    type: string
+                    description: 'Refresh Token'
+                    example: someRandomCryptoString
+            required:
+                - accessToken
+                - refreshToken
+            type: object
+            additionalProperties: false
+        TokenPayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: clientID1
+                code:
+                    type: string
+                    description: 'Authorization code'
+                    example: someRandomCryptoString
+            required:
+                - clientId
+                - code
+            type: object
+            additionalProperties: false
+        InfoJWT:
+            properties:
+                clientId:
+                    type: string
+                userId:
+                    type: number
+                    format: double
+            required:
+                - clientId
+                - userId
+            type: object
+            additionalProperties: false
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+info:
+    title: api
+    version: 0.0.1
+    description: 'Api of SASjs server'
+    contact:
+        name: 'Analytium Ltd'
+openapi: 3.0.0
+paths:
+    /SASjsApi/drive/deploy:
+        post:
+            operationId: Deploy
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success, message: 'Files deployed successfully to @sasjs/server.'}
+                '400':
+                    description: 'Invalid Format'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Provided not supported data format.'}
+                '500':
+                    description: 'Execution Error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Deployment failed!'}
+            description: 'Creates/updates files within SASjs Drive using provided payload.'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeployPayload'
+    /SASjsApi/user:
+        get:
+            operationId: GetAllUsers
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/UserResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{id: 123, username: johnusername, displayName: John}, {id: 456, username: starkusername, displayName: Stark}]
+            description: 'Get list of all users (username, displayname). All users can request this.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreateUser
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+            description: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserPayload'
+    '/SASjsApi/user/{userId}':
+        get:
+            operationId: GetUser
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+            description: 'Get user properties - such as group memberships, userName, displayName.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+        patch:
+            operationId: UpdateUser
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+            description: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '1234'
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserPayload'
+        delete:
+            operationId: DeleteUser
+            responses:
+                '204':
+                    description: 'No content'
+            description: 'Delete a user. Can be performed either by admins, or the user in question.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                password:
+                                    type: string
+                            type: object
+    /SASjsApi/group:
+        get:
+            operationId: GetAllGroups
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/GroupResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users'}]
+            description: 'Get list of all groups (groupName and groupDescription). All users can request this.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreateGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            description: 'Create a new group. Admin only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GroupPayload'
+    '/SASjsApi/group/{groupId}':
+        get:
+            operationId: GetGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+            description: 'Get list of members of a group (userName). All users can request this.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+        delete:
+            operationId: DeleteGroup
+            responses:
+                '204':
+                    description: 'No content'
+            description: 'Delete a group. Admin task only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+    '/SASjsApi/group/{groupId}/{userId}':
+        post:
+            operationId: AddUserToGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            description: 'Add a user to a group. Admin task only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '1234'
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '6789'
+        delete:
+            operationId: RemoveUserFromGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            description: 'Remove a user to a group. Admin task only.'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '1234'
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: '6789'
+    /SASjsApi/client:
+        post:
+            operationId: CreateClient
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ClientPayload'
+                            examples:
+                                'Example 1':
+                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString}
+            description: 'Create client with the following attributes: ClientId, ClientSecret. Admin only task.'
+            tags:
+                - Client
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ClientPayload'
+    /SASjsApi/auth/authorize:
+        post:
+            operationId: Authorize
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizeResponse'
+                            examples:
+                                'Example 1':
+                                    value: {code: someRandomCryptoString}
+            description: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
+            tags:
+                - Auth
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthorizePayload'
+    /SASjsApi/auth/token:
+        post:
+            operationId: Token
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TokenResponse'
+                            examples:
+                                'Example 1':
+                                    value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
+            description: 'Accepts client/auth code and returns access/refresh tokens'
+            tags:
+                - Auth
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TokenPayload'
+    /SASjsApi/auth/refresh:
+        post:
+            operationId: Refresh
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TokenResponse'
+                            examples:
+                                'Example 1':
+                                    value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
+            description: 'Returns new access/refresh tokens'
+            tags:
+                - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/auth/logout:
+        post:
+            operationId: Logout
+            responses:
+                '204':
+                    description: 'No content'
+            description: 'Logout terminate access/refresh tokens and returns nothing'
+            tags:
+                - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+servers:
+    -
+        url: /
+tags:
+    -
+        name: User
+        description: 'Operations about users'
+    -
+        name: Client
+        description: 'Operations about clients'
+    -
+        name: Auth
+        description: 'Operations about auth'
+    -
+        name: Drive
+        description: 'Operations about drive'
+    -
+        name: Group
+        description: 'Operations about group'
