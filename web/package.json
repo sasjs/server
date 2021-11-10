@@ -33,7 +33,8 @@
   "devDependencies": {
     "@types/prismjs": "^1.16.6",
     "@types/react-router-dom": "^5.3.1",
-    "babel-plugin-prismjs": "^2.1.0"
+    "babel-plugin-prismjs": "^2.1.0",
+    "prettier": "^2.4.1"
   },
   "eslintConfig": {
     "extends": [
