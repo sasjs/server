@@ -1,5 +1,5 @@
-import { Session } from '../types'
-import { getTmpSessionsFolderPath, generateUniqueFileName } from '../utils'
+import { Session } from '../../types'
+import { getTmpSessionsFolderPath, generateUniqueFileName } from '../../utils'
 import {
   deleteFolder,
   createFile,
@@ -120,7 +120,7 @@ export class SessionController {
   }
 }
 
-export const getSessionController = () => {
+export const getSessionController = (): SessionController => {
   if (process.sessionController) return process.sessionController
 
   process.sessionController = new SessionController()

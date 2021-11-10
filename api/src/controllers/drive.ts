@@ -11,7 +11,7 @@ import {
   Patch
 } from 'tsoa'
 import { fileExists, readFile, createFile } from '@sasjs/utils'
-import { createFileTree, ExecutionController, getTreeExample } from '.'
+import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { FileTree, isFileTree, TreeNode } from '../types'
 import path from 'path'

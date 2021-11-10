@@ -1,5 +1,5 @@
 import express from 'express'
-import ClientController from '../../controllers/client'
+import { ClientController } from '../../controllers'
 import { registerClientValidation } from '../../utils'
 
 const clientRouter = express.Router()

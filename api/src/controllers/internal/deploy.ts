@@ -1,5 +1,5 @@
-import { MemberType, FolderMember, ServiceMember, FileTree } from '../types'
-import { getTmpFilesFolderPath } from '../utils/file'
+import { MemberType, FolderMember, ServiceMember, FileTree } from '../../types'
+import { getTmpFilesFolderPath } from '../../utils/file'
 import { createFolder, createFile, asyncForEach } from '@sasjs/utils'
 import path from 'path'
 

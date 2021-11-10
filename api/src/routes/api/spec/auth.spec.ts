@@ -2,16 +2,20 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
-import UserController from '../../../controllers/user'
-import ClientController from '../../../controllers/client'
-import AuthController, {
-  generateAccessToken,
-  generateAuthCode,
-  generateRefreshToken
-} from '../../../controllers/auth'
+import {
+  UserController,
+  ClientController,
+  AuthController
+} from '../../../controllers/'
 import { populateClients } from '../auth'
 import { InfoJWT } from '../../../types'
-import { saveTokensInDB, verifyTokenInDB } from '../../../utils'
+import {
+  generateAccessToken,
+  generateAuthCode,
+  generateRefreshToken,
+  saveTokensInDB,
+  verifyTokenInDB
+} from '../../../utils'
 
 const clientId = 'someclientID'
 const clientSecret = 'someclientSecret'

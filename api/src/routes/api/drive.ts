@@ -1,5 +1,5 @@
 import express from 'express'
-import { DriveController } from '../../controllers/drive'
+import { DriveController } from '../../controllers/'
 import { getFileDriveValidation, updateFileDriveValidation } from '../../utils'
 
 const driveRouter = express.Router()

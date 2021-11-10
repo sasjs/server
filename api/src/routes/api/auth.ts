@@ -1,7 +1,7 @@
 import express from 'express'
 import mongoose from 'mongoose'
 
-import AuthController from '../../controllers/auth'
+import { AuthController } from '../../controllers/'
 import Client from '../../model/Client'
 
 import {

@@ -1,7 +1,7 @@
 import express from 'express'
 import { executeProgramRawValidation } from '../../utils'
-import STPController from '../../controllers/stp'
-import { FileUploadController } from '../../controllers'
+import { STPController } from '../../controllers/'
+import { FileUploadController } from '../../controllers/internal'
 
 const stpRouter = express.Router()
 

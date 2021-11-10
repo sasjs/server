@@ -11,7 +11,7 @@ import {
   Get,
   Query
 } from 'tsoa'
-import { ExecutionController } from '.'
+import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
 
@@ -32,7 +32,7 @@ interface ExecuteReturnJsonResponse {
 @Security('bearerAuth')
 @Route('SASjsApi/client')
 @Tags('STP')
-export default class STPController {
+export class STPController {
   /**
    * Trigger a SAS program using it's location in the _program parameter.
    * Enable debugging using the _debug parameter.

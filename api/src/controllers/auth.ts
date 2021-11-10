@@ -2,11 +2,17 @@ import { Security, Route, Tags, Example, Post, Body, Query, Hidden } from 'tsoa'
 import jwt from 'jsonwebtoken'
 import User from '../model/User'
 import { InfoJWT } from '../types'
-import { removeTokensInDB, saveTokensInDB } from '../utils'
+import {
+  generateAccessToken,
+  generateAuthCode,
+  generateRefreshToken,
+  removeTokensInDB,
+  saveTokensInDB
+} from '../utils'
 
 @Route('SASjsApi/auth')
 @Tags('Auth')
-export default class AuthController {
+export class AuthController {
   static authCodes: { [key: string]: { [key: string]: string } } = {}
   static saveCode = (userId: number, clientId: string, code: string) => {
     if (AuthController.authCodes[userId])
@@ -184,21 +190,6 @@ interface TokenResponse {
    */
   refreshToken: string
 }
-
-export const generateAuthCode = (data: InfoJWT) =>
-  jwt.sign(data, process.env.AUTH_CODE_SECRET as string, {
-    expiresIn: '30s'
-  })
-
-export const generateAccessToken = (data: InfoJWT) =>
-  jwt.sign(data, process.env.ACCESS_TOKEN_SECRET as string, {
-    expiresIn: '1h'
-  })
-
-export const generateRefreshToken = (data: InfoJWT) =>
-  jwt.sign(data, process.env.REFRESH_TOKEN_SECRET as string, {
-    expiresIn: '1day'
-  })
 
 const verifyAuthCode = async (
   clientId: string,

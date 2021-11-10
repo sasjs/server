@@ -32,7 +32,7 @@ interface UserDetailsResponse {
 @Security('bearerAuth')
 @Route('SASjsApi/user')
 @Tags('User')
-export default class UserController {
+export class UserController {
   /**
    * @summary Get list of all users (username, displayname). All users can request this.
    *

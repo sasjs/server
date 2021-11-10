@@ -31,7 +31,7 @@ interface GroupDetailsResponse {
 @Security('bearerAuth')
 @Route('SASjsApi/group')
 @Tags('Group')
-export default class GroupController {
+export class GroupController {
   /**
    * @summary Get list of all groups (groupName and groupDescription). All users can request this.
    *

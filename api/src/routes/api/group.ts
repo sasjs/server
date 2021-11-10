@@ -1,8 +1,7 @@
 import express from 'express'
-import GroupController from '../../controllers/group'
+import { GroupController } from '../../controllers/'
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
 import { registerGroupValidation } from '../../utils'
-import userRouter from './user'
 
 const groupRouter = express.Router()
 

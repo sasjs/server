@@ -2,11 +2,11 @@ import path from 'path'
 import fs from 'fs'
 import { getSessionController } from './'
 import { readFile, fileExists, createFile } from '@sasjs/utils'
-import { configuration } from '../../package.json'
+import { configuration } from '../../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
-import { PreProgramVars, Session, TreeNode } from '../types'
-import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../utils'
+import { PreProgramVars, Session, TreeNode } from '../../types'
+import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
 
 const execFilePromise = promisify(execFile)
 

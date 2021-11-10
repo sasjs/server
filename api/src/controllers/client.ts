@@ -5,7 +5,7 @@ import Client, { ClientPayload } from '../model/Client'
 @Security('bearerAuth')
 @Route('SASjsApi/client')
 @Tags('Client')
-export default class ClientController {
+export class ClientController {
   /**
    * @summary Create client with the following attributes: ClientId, ClientSecret. Admin only task.
    *

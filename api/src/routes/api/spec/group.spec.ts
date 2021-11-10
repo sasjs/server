@@ -2,10 +2,8 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import app from '../../../app'
-import UserController from '../../../controllers/user'
-import GroupController from '../../../controllers/group'
-import { generateAccessToken } from '../../../controllers/auth'
-import { saveTokensInDB } from '../../../utils'
+import { UserController, GroupController } from '../../../controllers/'
+import { generateAccessToken, saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'
 const adminUser = {
