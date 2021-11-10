@@ -4,8 +4,8 @@ import * as https from 'https'
 import { configuration } from '../package.json'
 import app from './app'
 
-const keyPath = path.join('certificates', 'privkey.pem')
-const certPath = path.join('certificates', 'fullchain.pem')
+const keyPath = path.join('..', 'certificates', 'privkey.pem')
+const certPath = path.join('..', 'certificates', 'fullchain.pem')
 
 const key = readFileSync(keyPath)
 const cert = readFileSync(certPath)
