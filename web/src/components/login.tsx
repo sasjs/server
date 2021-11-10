@@ -23,12 +23,13 @@ const getTokens = async (payload: any) => {
 }
 
 const Login = ({ setTokens }: any) => {
-  const [clientId, setClientId] = useState()
   const [username, setUserName] = useState()
   const [password, setPassword] = useState()
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
+    const { REACT_APP_CLIENT_ID: clientId } = process.env
+
     const { code } = await getAuthCode({
       clientId,
       username,
@@ -57,15 +58,6 @@ const Login = ({ setTokens }: any) => {
       <h2>Welcome to SASjs Server!</h2>
       <br />
 
-      <TextField
-        id="client-id"
-        label="Client ID"
-        type="text"
-        variant="outlined"
-        onChange={(e: any) => setClientId(e.target.value)}
-        autoFocus
-        required
-      />
       <TextField
         id="username"
         label="Username"
