@@ -3,7 +3,11 @@ import path from 'path'
 import { ExecutionController } from '../../controllers'
 import { DriveController } from '../../controllers/drive'
 import { isFileQuery } from '../../types'
-import { getTmpFilesFolderPath } from '../../utils'
+import {
+  getFileDriveValidation,
+  getTmpFilesFolderPath,
+  updateFileDriveValidation
+} from '../../utils'
 
 const driveRouter = express.Router()
 
@@ -22,51 +26,47 @@ driveRouter.post('/deploy', async (req, res) => {
 })
 
 driveRouter.get('/file', async (req, res) => {
-  if (isFileQuery(req.query)) {
-    const filePath = path
-      .join(getTmpFilesFolderPath(), req.query.filePath)
-      .replace(new RegExp('/', 'g'), path.sep)
-    await new DriveController()
-      .readFile(filePath)
-      .then((fileContent) => {
-        res.status(200).send({ status: 'success', fileContent: fileContent })
-      })
-      .catch((err) => {
-        res.status(400).send({
-          status: 'failure',
-          message: 'File request failed.',
-          ...(typeof err === 'object' ? err : { details: err })
-        })
-      })
-  } else {
-    res.status(400).send({
-      status: 'failure',
-      message: 'Invalid Request: Expected parameter filePath was not provided'
-    })
+  const { error, value: query } = getFileDriveValidation(req.query)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  const controller = new DriveController()
+  try {
+    const response = await controller.getFile(query.filePath)
+    res.send(response)
+  } catch (err: any) {
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err)
   }
 })
 
 driveRouter.patch('/file', async (req, res) => {
-  const filePath = path
-    .join(getTmpFilesFolderPath(), req.body.filePath)
-    .replace(new RegExp('/', 'g'), path.sep)
-  await new DriveController()
-    .updateFile(filePath, req.body.fileContent)
-    .then(() => {
-      res.status(200).send({ status: 'success' })
-    })
-    .catch((err) => {
-      res.status(400).send({
-        status: 'failure',
-        message: 'File request failed.',
-        ...(typeof err === 'object' ? err : { details: err })
-      })
-    })
+  const { error, value: body } = updateFileDriveValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  const controller = new DriveController()
+  try {
+    const response = await controller.updateFile(body)
+    res.send(response)
+  } catch (err: any) {
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err)
+  }
 })
 
 driveRouter.get('/fileTree', async (req, res) => {
-  const tree = new ExecutionController().buildDirectorytree()
-  res.status(200).send({ status: 'success', tree })
+  const controller = new DriveController()
+  try {
+    const response = await controller.getFileTree()
+    res.send(response)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
 })
 
 export default driveRouter

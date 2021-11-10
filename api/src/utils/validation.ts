@@ -65,3 +65,14 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
     clientId: Joi.string().required(),
     clientSecret: Joi.string().required()
   }).validate(data)
+
+export const getFileDriveValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    filePath: Joi.string().required()
+  }).validate(data)
+
+export const updateFileDriveValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    filePath: Joi.string().required(),
+    fileContent: Joi.string().required()
+  }).validate(data)

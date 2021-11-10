@@ -1,12 +1,37 @@
-import { Security, Route, Tags, Example, Post, Body, Response } from 'tsoa'
+import {
+  Security,
+  Route,
+  Tags,
+  Example,
+  Post,
+  Body,
+  Response,
+  Query,
+  Get,
+  Patch
+} from 'tsoa'
 import { fileExists, readFile, createFile } from '@sasjs/utils'
-import { createFileTree, getTreeExample } from '.'
+import { createFileTree, ExecutionController, getTreeExample } from '.'
 
-import { FileTree, isFileTree } from '../types'
+import { FileTree, isFileQuery, isFileTree, TreeNode } from '../types'
+import path from 'path'
+import { getTmpFilesFolderPath } from '../utils'
 
 interface DeployPayload {
   appLoc?: string
   fileTree: FileTree
+}
+interface FilePayload {
+  /**
+   * Path of the file
+   * @example "/Public/somefolder/some.file"
+   */
+  filePath: string
+  /**
+   * Contents of the file
+   * @example "Contents of the File"
+   */
+  fileContent: string
 }
 
 interface DeployResponse {
@@ -15,18 +40,34 @@ interface DeployResponse {
   example?: FileTree
 }
 
+interface GetFileResponse {
+  status: string
+  fileContent?: string
+  message?: string
+}
+
+interface GetFileTreeResponse {
+  status: string
+  tree: TreeNode
+}
+
+interface UpdateFileResponse {
+  status: string
+  message?: string
+}
+
 const fileTreeExample = getTreeExample()
 
-const successResponse: DeployResponse = {
+const successDeployResponse: DeployResponse = {
   status: 'success',
   message: 'Files deployed successfully to @sasjs/server.'
 }
-const invalidFormatResponse: DeployResponse = {
+const invalidDeployFormatResponse: DeployResponse = {
   status: 'failure',
   message: 'Provided not supported data format.',
   example: fileTreeExample
 }
-const execErrorResponse: DeployResponse = {
+const execDeployErrorResponse: DeployResponse = {
   status: 'failure',
   message: 'Deployment failed!'
 }
@@ -39,42 +80,122 @@ export class DriveController {
    * Creates/updates files within SASjs Drive using provided payload.
    *
    */
-  @Example<DeployResponse>(successResponse)
-  @Response<DeployResponse>(400, 'Invalid Format', invalidFormatResponse)
-  @Response<DeployResponse>(500, 'Execution Error', execErrorResponse)
+  @Example<DeployResponse>(successDeployResponse)
+  @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
+  @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
   @Post('/deploy')
   public async deploy(@Body() body: DeployPayload): Promise<DeployResponse> {
     return deploy(body)
   }
 
-  async readFile(filePath: string) {
-    await this.validateFilePath(filePath)
-    return await readFile(filePath)
+  /**
+   * Get file from SASjs Drive
+   *
+   */
+  @Example<GetFileResponse>({
+    status: 'success',
+    fileContent: 'Contents of the File'
+  })
+  @Response<GetFileResponse>(400, 'Unable to get File', {
+    status: 'failure',
+    message: 'File request failed.'
+  })
+  @Get('/file')
+  public async getFile(@Query() filePath: string): Promise<GetFileResponse> {
+    return getFile(filePath)
   }
 
-  async updateFile(filePath: string, fileContent: string) {
-    await this.validateFilePath(filePath)
-    return await createFile(filePath, fileContent)
+  /**
+   * Modify a file in SASjs Drive
+   *
+   */
+  @Example<UpdateFileResponse>({
+    status: 'success'
+  })
+  @Response<UpdateFileResponse>(400, 'Unable to get File', {
+    status: 'failure',
+    message: 'File request failed.'
+  })
+  @Patch('/file')
+  public async updateFile(
+    @Body() body: FilePayload
+  ): Promise<UpdateFileResponse> {
+    return updateFile(body)
   }
 
-  private async validateFilePath(filePath: string) {
-    if (!(await fileExists(filePath))) {
-      throw 'DriveController: File does not exists.'
-    }
+  /**
+   * Fetch file tree within SASjs Drive.
+   *
+   */
+  @Get('/filetree')
+  public async getFileTree(): Promise<GetFileTreeResponse> {
+    return getFileTree()
   }
+}
+
+const getFileTree = () => {
+  const tree = new ExecutionController().buildDirectorytree()
+  return { status: 'success', tree }
 }
 
 const deploy = async (data: DeployPayload) => {
   if (!isFileTree(data.fileTree)) {
-    throw { code: 400, ...invalidFormatResponse }
+    throw { code: 400, ...invalidDeployFormatResponse }
   }
 
   await createFileTree(
     data.fileTree.members,
     data.appLoc ? data.appLoc.replace(/^\//, '').split('/') : []
   ).catch((err) => {
-    throw { code: 500, ...execErrorResponse, ...err }
+    throw { code: 500, ...execDeployErrorResponse, ...err }
   })
 
-  return successResponse
+  return successDeployResponse
+}
+
+const getFile = async (filePath: string): Promise<GetFileResponse> => {
+  try {
+    const filePathFull = path
+      .join(getTmpFilesFolderPath(), filePath)
+      .replace(new RegExp('/', 'g'), path.sep)
+
+    await validateFilePath(filePathFull)
+    const fileContent = await readFile(filePathFull)
+
+    return { status: 'success', fileContent: fileContent }
+  } catch (err) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'File request failed.',
+      ...(typeof err === 'object' ? err : { details: err })
+    }
+  }
+}
+
+const updateFile = async (body: FilePayload): Promise<GetFileResponse> => {
+  const { filePath, fileContent } = body
+  try {
+    const filePathFull = path
+      .join(getTmpFilesFolderPath(), filePath)
+      .replace(new RegExp('/', 'g'), path.sep)
+
+    await validateFilePath(filePathFull)
+    await createFile(filePathFull, fileContent)
+
+    return { status: 'success' }
+  } catch (err) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'File request failed.',
+      ...(typeof err === 'object' ? err : { details: err })
+    }
+  }
+}
+
+const validateFilePath = async (filePath: string) => {
+  if (!(await fileExists(filePath))) {
+    throw 'DriveController: File does not exists.'
+  }
 }

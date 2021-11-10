@@ -84,6 +84,73 @@ components:
                 - fileTree
             type: object
             additionalProperties: false
+        GetFileResponse:
+            properties:
+                status:
+                    type: string
+                fileContent:
+                    type: string
+                message:
+                    type: string
+            required:
+                - status
+            type: object
+            additionalProperties: false
+        UpdateFileResponse:
+            properties:
+                status:
+                    type: string
+                message:
+                    type: string
+            required:
+                - status
+            type: object
+            additionalProperties: false
+        FilePayload:
+            properties:
+                filePath:
+                    type: string
+                    description: 'Path of the file'
+                    example: /Public/somefolder/some.file
+                fileContent:
+                    type: string
+                    description: 'Contents of the file'
+                    example: 'Contents of the File'
+            required:
+                - filePath
+                - fileContent
+            type: object
+            additionalProperties: false
+        TreeNode:
+            properties:
+                name:
+                    type: string
+                relativePath:
+                    type: string
+                absolutePath:
+                    type: string
+                children:
+                    items:
+                        $ref: '#/components/schemas/TreeNode'
+                    type: array
+            required:
+                - name
+                - relativePath
+                - absolutePath
+                - children
+            type: object
+            additionalProperties: false
+        GetFileTreeResponse:
+            properties:
+                status:
+                    type: string
+                tree:
+                    $ref: '#/components/schemas/TreeNode'
+            required:
+                - status
+                - tree
+            type: object
+            additionalProperties: false
         UserResponse:
             properties:
                 id:
@@ -348,6 +415,92 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/DeployPayload'
+    /SASjsApi/drive/file:
+        get:
+            operationId: GetFile
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFileResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success, fileContent: 'Contents of the File'}
+                '400':
+                    description: 'Unable to get File'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFileResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'File request failed.'}
+            description: 'Get file from SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: query
+                    name: filePath
+                    required: true
+                    schema:
+                        type: string
+        patch:
+            operationId: UpdateFile
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateFileResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '400':
+                    description: 'Unable to get File'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateFileResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'File request failed.'}
+            description: 'Modify a file in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FilePayload'
+    /SASjsApi/drive/filetree:
+        get:
+            operationId: GetFileTree
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFileTreeResponse'
+            description: 'Fetch file tree within SASjs Drive.'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
     /SASjsApi/user:
         get:
             operationId: GetAllUsers
