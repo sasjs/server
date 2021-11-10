@@ -8,7 +8,9 @@
     "start:prod": "nodemon ./src/prod-server.ts",
     "build": "rimraf build && tsc",
     "semantic-release": "semantic-release -d",
-    "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
+    "prepare": "npm run create-tmp-dir && npm run create-web-build && [ -d .git ] && git config core.hooksPath ./.git-hooks || true",
+    "create-web-build": "cd ../web && npm install && npm run build",
+    "create-tmp-dir": "mkdir -p tmp/files",
     "test": "mkdir -p tmp && mkdir -p ../web/build && jest --coverage"
   },
   "release": {
