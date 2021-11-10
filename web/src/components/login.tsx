@@ -1,25 +1,30 @@
+import axios from 'axios'
 import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 
 import { CssBaseline, Box, TextField, Button } from '@mui/material'
 
 const getAuthCode = async (credentials: any) => {
-  return fetch('http://localhost:5000/SASjsApi/auth/authorize', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(credentials)
-  }).then((data) => data.json())
+  return axios
+    .post('/SASjsApi/auth/authorize', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(credentials)
+    })
+    .then((data: any) => data.json())
 }
 const getTokens = async (payload: any) => {
-  return fetch('http://localhost:5000/SASjsApi/auth/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  }).then((data) => data.json())
+  return axios
+    .post('/SASjsApi/auth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then((data: any) => data.json())
 }
 
 const Login = ({ setTokens }: any) => {
