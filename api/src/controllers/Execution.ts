@@ -92,24 +92,36 @@ ${program}`
       (key: string) => key.toLowerCase() === '_debug'
     )
 
-    let jsonResult
-    if ((debug && vars[debug] >= 131) || stderr) {
-      webout = `<html><body>
-${webout}
-<div style="text-align:left">
-<hr /><h2>SAS Log</h2>
-<pre>${log}</pre>
-</div>
-</body></html>`
-    } else if (returnJson) {
-      jsonResult = { result: webout, log: log }
+    let responseToReturn
+
+    if (returnJson) {
+      if (debug && vars[debug] >= 131) {
+        responseToReturn = {
+          _webout: webout,
+          log: log
+        }
+      } else {
+        responseToReturn = { _webout: webout }
+      }
+    } else {
+      if ((debug && vars[debug] >= 131) || stderr) {
+        responseToReturn = `<html><body>
+  ${webout}
+  <div style="text-align:left">
+  <hr /><h2>SAS Log</h2>
+  <pre>${log}</pre>
+  </div>
+  </body></html>`
+      } else {
+        responseToReturn = webout
+      }
     }
 
     session.inUse = false
 
     sessionController.deleteSession(session)
 
-    return Promise.resolve(jsonResult || webout)
+    return Promise.resolve(responseToReturn)
   }
 
   buildDirectorytree() {

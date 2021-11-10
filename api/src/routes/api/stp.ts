@@ -69,10 +69,7 @@ stpRouter.post(
           true
         )
         .then((result: {}) => {
-          res.status(200).send({
-            status: 'success',
-            ...result
-          })
+          res.status(200).send(result)
         })
         .catch((err: {} | string) => {
           res.status(400).send({
