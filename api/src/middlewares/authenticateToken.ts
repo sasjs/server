@@ -46,6 +46,7 @@ const authenticateToken = (
     if (user) {
       if (user.isActive) {
         req.user = user
+        if (tokenType === 'accessToken') req.accessToken = token
         return next()
       } else return res.sendStatus(401)
     }

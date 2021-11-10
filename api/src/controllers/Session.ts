@@ -70,7 +70,9 @@ export class SessionController {
 
     this.scheduleSessionDestroy(session)
 
-    this.executionController.execute('', autoExec, session).catch(() => {})
+    this.executionController
+      .execute('', undefined, autoExec, session)
+      .catch(() => {})
 
     this.sessions.push(session)
 

@@ -19,6 +19,7 @@ export const verifyTokenInDB = async (
         userId: dbUser.id,
         clientId,
         username: dbUser.username,
+        displayName: dbUser.displayName,
         isAdmin: dbUser.isAdmin,
         isActive: dbUser.isActive
       }

@@ -5,7 +5,7 @@ import { readFile, fileExists, createFile } from '@sasjs/utils'
 import { configuration } from '../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
-import { Session, TreeNode } from '../types'
+import { PreProgramVars, Session, TreeNode } from '../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../utils'
 
 const execFilePromise = promisify(execFile)
@@ -13,6 +13,7 @@ const execFilePromise = promisify(execFile)
 export class ExecutionController {
   async execute(
     program = '',
+    preProgramVariables?: PreProgramVars,
     autoExec?: string,
     session?: Session,
     vars?: any,
@@ -45,7 +46,19 @@ export class ExecutionController {
     let webout = path.join(session.path, 'webout.txt')
     await createFile(webout, '')
 
+    const tokenFile = path.join(session.path, 'accessToken.txt')
+    await createFile(
+      tokenFile,
+      preProgramVariables?.accessToken ?? 'accessToken'
+    )
+
     program = `
+%let _sasjs_tokenfile=${tokenFile};
+%let _sasjs_username=${preProgramVariables?.username};
+%let _sasjs_userid=${preProgramVariables?.userId};
+%let _sasjs_displayname=${preProgramVariables?.displayName};
+%let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
+%let _sasjs_apipath=/SASjsApi/stp/execute;
 %let sasjsprocessmode=Stored Program;
 filename _webout "${webout}";
 ${program}`

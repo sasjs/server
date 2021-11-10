@@ -1,5 +1,5 @@
 import express from 'express'
-import { isExecutionQuery } from '../../types'
+import { isExecutionQuery, PreProgramVars } from '../../types'
 import path from 'path'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../../utils'
 import { ExecutionController, FileUploadController } from '../../controllers'
@@ -16,7 +16,9 @@ stpRouter.get('/execute', async (req, res) => {
         .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
     await new ExecutionController()
-      .execute(sasCodePath, undefined, undefined, { ...req.query })
+      .execute(sasCodePath, getPreProgramVariables(req), undefined, undefined, {
+        ...req.query
+      })
       .then((result: {}) => {
         res.status(200).send(result)
       })
@@ -62,6 +64,7 @@ stpRouter.post(
       await new ExecutionController()
         .execute(
           sasCodePath,
+          getPreProgramVariables(req),
           undefined,
           req.sasSession,
           { ...req.query, ...req.body },
@@ -89,5 +92,18 @@ stpRouter.post(
     }
   }
 )
+
+const getPreProgramVariables = (req: any): PreProgramVars => {
+  const host = req.get('host')
+  const protocol = req.protocol + '://'
+  const { user, accessToken } = req
+  return {
+    username: user.username,
+    userId: user.userId,
+    displayName: user.displayName,
+    serverUrl: protocol + host,
+    accessToken
+  }
+}
 
 export default stpRouter
