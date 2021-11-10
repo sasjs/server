@@ -33,7 +33,7 @@ interface GroupDetailsResponse {
 @Tags('Group')
 export default class GroupController {
   /**
-   * Get list of all groups (groupName and groupDescription). All users can request this.
+   * @summary Get list of all groups (groupName and groupDescription). All users can request this.
    *
    */
   @Example<GroupResponse[]>([
@@ -49,7 +49,7 @@ export default class GroupController {
   }
 
   /**
-   * Create a new group. Admin only.
+   * @summary Create a new group. Admin only.
    *
    */
   @Example<GroupDetailsResponse>({
@@ -67,7 +67,7 @@ export default class GroupController {
   }
 
   /**
-   * Get list of members of a group (userName). All users can request this.
+   * @summary Get list of members of a group (userName). All users can request this.
    * @param groupId The group's identifier
    * @example groupId 1234
    */
@@ -79,7 +79,7 @@ export default class GroupController {
   }
 
   /**
-   * Add a user to a group. Admin task only.
+   * @summary Add a user to a group. Admin task only.
    * @param groupId The group's identifier
    * @example groupId "1234"
    * @param userId The user's identifier
@@ -101,7 +101,7 @@ export default class GroupController {
   }
 
   /**
-   * Remove a user to a group. Admin task only.
+   * @summary Remove a user to a group. Admin task only.
    * @param groupId The group's identifier
    * @example groupId "1234"
    * @param userId The user's identifier
@@ -123,7 +123,7 @@ export default class GroupController {
   }
 
   /**
-   * Delete a group. Admin task only.
+   * @summary Delete a group. Admin task only.
    * @param groupId The group's identifier
    * @example groupId 1234
    */

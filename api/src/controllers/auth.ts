@@ -19,7 +19,7 @@ export default class AuthController {
     delete AuthController.authCodes[userId][clientId]
 
   /**
-   * Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE
+   * @summary Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE
    *
    */
   @Example<AuthorizeResponse>({
@@ -33,7 +33,7 @@ export default class AuthController {
   }
 
   /**
-   * Accepts client/auth code and returns access/refresh tokens
+   * @summary Accepts client/auth code and returns access/refresh tokens
    *
    */
   @Example<TokenResponse>({
@@ -46,7 +46,7 @@ export default class AuthController {
   }
 
   /**
-   * Returns new access/refresh tokens
+   * @summary Returns new access/refresh tokens
    *
    */
   @Example<TokenResponse>({
@@ -62,7 +62,7 @@ export default class AuthController {
   }
 
   /**
-   * Logout terminate access/refresh tokens and returns nothing
+   * @summary Logout terminate access/refresh tokens and returns nothing
    *
    */
   @Security('bearerAuth')

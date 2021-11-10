@@ -151,6 +151,28 @@ components:
                 - tree
             type: object
             additionalProperties: false
+        ExecuteReturnJsonResponse:
+            properties:
+                status:
+                    type: string
+                log:
+                    type: string
+                result:
+                    type: string
+                message:
+                    type: string
+            required:
+                - status
+            type: object
+            additionalProperties: false
+        ExecuteReturnJsonPayload:
+            properties:
+                _program:
+                    type: string
+                    description: 'Location of SAS program'
+                    example: /Public/somefolder/some.file
+            type: object
+            additionalProperties: false
         UserResponse:
             properties:
                 id:
@@ -402,7 +424,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: 'Creates/updates files within SASjs Drive using provided payload.'
+            summary: 'Creates/updates files within SASjs Drive using provided payload.'
             tags:
                 - Drive
             security:
@@ -437,7 +459,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: 'Get file from SASjs Drive'
+            summary: 'Get file from SASjs Drive'
             tags:
                 - Drive
             security:
@@ -450,6 +472,7 @@ paths:
                     required: true
                     schema:
                         type: string
+                    example: /Public/somefolder/some.file
         patch:
             operationId: UpdateFile
             responses:
@@ -471,7 +494,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: 'Modify a file in SASjs Drive'
+            summary: 'Modify a file in SASjs Drive'
             tags:
                 - Drive
             security:
@@ -494,13 +517,68 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetFileTreeResponse'
-            description: 'Fetch file tree within SASjs Drive.'
+            summary: 'Fetch file tree within SASjs Drive.'
             tags:
                 - Drive
             security:
                 -
                     bearerAuth: []
             parameters: []
+    /SASjsApi/client/execute:
+        get:
+            operationId: ExecuteReturnRaw
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
+            summary: 'Execute Stored Program, return raw content'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: query
+                    name: _program
+                    required: true
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file
+        post:
+            operationId: ExecuteReturnJson
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
+            summary: 'Execute Stored Program, return JSON'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: query
+                    name: _program
+                    required: false
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExecuteReturnJsonPayload'
     /SASjsApi/user:
         get:
             operationId: GetAllUsers
@@ -516,7 +594,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{id: 123, username: johnusername, displayName: John}, {id: 456, username: starkusername, displayName: Stark}]
-            description: 'Get list of all users (username, displayname). All users can request this.'
+            summary: 'Get list of all users (username, displayname). All users can request this.'
             tags:
                 - User
             security:
@@ -535,7 +613,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            description: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
+            summary: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
             tags:
                 - User
             security:
@@ -558,7 +636,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UserDetailsResponse'
-            description: 'Get user properties - such as group memberships, userName, displayName.'
+            summary: 'Get user properties - such as group memberships, userName, displayName.'
             tags:
                 - User
             security:
@@ -586,7 +664,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            description: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+            summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
             tags:
                 - User
             security:
@@ -613,7 +691,7 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            description: 'Delete a user. Can be performed either by admins, or the user in question.'
+            summary: 'Delete a user. Can be performed either by admins, or the user in question.'
             tags:
                 - User
             security:
@@ -653,7 +731,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users'}]
-            description: 'Get list of all groups (groupName and groupDescription). All users can request this.'
+            summary: 'Get list of all groups (groupName and groupDescription). All users can request this.'
             tags:
                 - Group
             security:
@@ -672,7 +750,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            description: 'Create a new group. Admin only.'
+            summary: 'Create a new group. Admin only.'
             tags:
                 - Group
             security:
@@ -695,7 +773,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
-            description: 'Get list of members of a group (userName). All users can request this.'
+            summary: 'Get list of members of a group (userName). All users can request this.'
             tags:
                 - Group
             security:
@@ -716,7 +794,7 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            description: 'Delete a group. Admin task only.'
+            summary: 'Delete a group. Admin task only.'
             tags:
                 - Group
             security:
@@ -745,7 +823,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            description: 'Add a user to a group. Admin task only.'
+            summary: 'Add a user to a group. Admin task only.'
             tags:
                 - Group
             security:
@@ -782,7 +860,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            description: 'Remove a user to a group. Admin task only.'
+            summary: 'Remove a user to a group. Admin task only.'
             tags:
                 - Group
             security:
@@ -820,7 +898,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString}
-            description: 'Create client with the following attributes: ClientId, ClientSecret. Admin only task.'
+            summary: 'Create client with the following attributes: ClientId, ClientSecret. Admin only task.'
             tags:
                 - Client
             security:
@@ -846,7 +924,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {code: someRandomCryptoString}
-            description: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
+            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
             tags:
                 - Auth
             security: []
@@ -870,7 +948,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
-            description: 'Accepts client/auth code and returns access/refresh tokens'
+            summary: 'Accepts client/auth code and returns access/refresh tokens'
             tags:
                 - Auth
             security: []
@@ -894,7 +972,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
-            description: 'Returns new access/refresh tokens'
+            summary: 'Returns new access/refresh tokens'
             tags:
                 - Auth
             security:
@@ -907,7 +985,7 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            description: 'Logout terminate access/refresh tokens and returns nothing'
+            summary: 'Logout terminate access/refresh tokens and returns nothing'
             tags:
                 - Auth
             security:
@@ -933,3 +1011,6 @@ tags:
     -
         name: Group
         description: 'Operations about group'
+    -
+        name: STP
+        description: 'Operations about STP'

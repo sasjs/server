@@ -13,7 +13,7 @@ import {
 import { fileExists, readFile, createFile } from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from '.'
 
-import { FileTree, isFileQuery, isFileTree, TreeNode } from '../types'
+import { FileTree, isFileTree, TreeNode } from '../types'
 import path from 'path'
 import { getTmpFilesFolderPath } from '../utils'
 
@@ -77,7 +77,7 @@ const execDeployErrorResponse: DeployResponse = {
 @Tags('Drive')
 export class DriveController {
   /**
-   * Creates/updates files within SASjs Drive using provided payload.
+   * @summary Creates/updates files within SASjs Drive using provided payload.
    *
    */
   @Example<DeployResponse>(successDeployResponse)
@@ -89,8 +89,9 @@ export class DriveController {
   }
 
   /**
-   * Get file from SASjs Drive
-   *
+   * @summary Get file from SASjs Drive
+   * @query filePath Location of SAS program
+   * @example filePath "/Public/somefolder/some.file"
    */
   @Example<GetFileResponse>({
     status: 'success',
@@ -106,7 +107,7 @@ export class DriveController {
   }
 
   /**
-   * Modify a file in SASjs Drive
+   * @summary Modify a file in SASjs Drive
    *
    */
   @Example<UpdateFileResponse>({
@@ -124,7 +125,7 @@ export class DriveController {
   }
 
   /**
-   * Fetch file tree within SASjs Drive.
+   * @summary Fetch file tree within SASjs Drive.
    *
    */
   @Get('/filetree')

@@ -7,7 +7,7 @@ import Client, { ClientPayload } from '../model/Client'
 @Tags('Client')
 export default class ClientController {
   /**
-   * Create client with the following attributes: ClientId, ClientSecret. Admin only task.
+   * @summary Create client with the following attributes: ClientId, ClientSecret. Admin only task.
    *
    */
   @Example<ClientPayload>({

@@ -34,7 +34,7 @@ interface UserDetailsResponse {
 @Tags('User')
 export default class UserController {
   /**
-   * Get list of all users (username, displayname). All users can request this.
+   * @summary Get list of all users (username, displayname). All users can request this.
    *
    */
   @Example<UserResponse[]>([
@@ -55,7 +55,7 @@ export default class UserController {
   }
 
   /**
-   * Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.
+   * @summary Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.
    *
    */
   @Example<UserDetailsResponse>({
@@ -73,7 +73,7 @@ export default class UserController {
   }
 
   /**
-   * Get user properties - such as group memberships, userName, displayName.
+   * @summary Get user properties - such as group memberships, userName, displayName.
    * @param userId The user's identifier
    * @example userId 1234
    */
@@ -83,7 +83,7 @@ export default class UserController {
   }
 
   /**
-   * Update user properties - such as displayName. Can be performed either by admins, or the user in question.
+   * @summary Update user properties - such as displayName. Can be performed either by admins, or the user in question.
    * @param userId The user's identifier
    * @example userId "1234"
    */
@@ -103,7 +103,7 @@ export default class UserController {
   }
 
   /**
-   * Delete a user. Can be performed either by admins, or the user in question.
+   * @summary Delete a user. Can be performed either by admins, or the user in question.
    * @param userId The user's identifier
    * @example userId 1234
    */

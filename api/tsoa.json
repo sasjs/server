@@ -30,6 +30,10 @@
       {
         "name": "Group",
         "description": "Operations about group"
+      },
+      {
+        "name": "STP",
+        "description": "Operations about STP"
       }
     ],
     "yaml": true,

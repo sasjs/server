@@ -1,13 +1,6 @@
 import express from 'express'
-import path from 'path'
-import { ExecutionController } from '../../controllers'
 import { DriveController } from '../../controllers/drive'
-import { isFileQuery } from '../../types'
-import {
-  getFileDriveValidation,
-  getTmpFilesFolderPath,
-  updateFileDriveValidation
-} from '../../utils'
+import { getFileDriveValidation, updateFileDriveValidation } from '../../utils'
 
 const driveRouter = express.Router()
 
