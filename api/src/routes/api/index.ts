@@ -1,5 +1,5 @@
 import express from 'express'
-import dotenv from 'dotenv'
+
 import swaggerUi from 'swagger-ui-express'
 
 import {
@@ -13,10 +13,7 @@ import stpRouter from './stp'
 import userRouter from './user'
 import groupRouter from './group'
 import clientRouter from './client'
-import authRouter, { connectDB } from './auth'
-
-dotenv.config()
-connectDB()
+import authRouter from './auth'
 
 const router = express.Router()
 

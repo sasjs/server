@@ -9,7 +9,11 @@ import {
   authenticateRefreshToken
 } from '../../middlewares'
 
-import { authorizeValidation, tokenValidation } from '../../utils'
+import {
+  authorizeValidation,
+  getDesktopFields,
+  tokenValidation
+} from '../../utils'
 import { InfoJWT } from '../../types'
 
 const authRouter = express.Router()
@@ -24,10 +28,16 @@ export const populateClients = async () => {
   })
 }
 
-export const connectDB = () => {
+export const connectDB = async () => {
   const { MODE } = process.env
-  if (MODE?.trim() === 'desktop') {
+  if (MODE?.trim() !== 'server') {
     console.log('Running in Destop Mode, no DB to connect.')
+
+    const { sasLoc, driveLoc } = await getDesktopFields()
+
+    process.sasLoc = sasLoc
+    process.driveLoc = driveLoc
+
     return
   }
 

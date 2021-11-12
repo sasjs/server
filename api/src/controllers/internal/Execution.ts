@@ -84,7 +84,8 @@ ${program}`
     let additionalArgs: string[] = []
     if (autoExec) additionalArgs = ['-AUTOEXEC', autoExec]
 
-    const { stdout, stderr } = await execFilePromise(configuration.sasPath, [
+    const sasLoc = process.sasLoc ?? configuration.sasPath
+    const { stdout, stderr } = await execFilePromise(sasLoc, [
       '-SYSIN',
       code,
       '-LOG',
