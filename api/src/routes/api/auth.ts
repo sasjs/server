@@ -26,7 +26,7 @@ export const populateClients = async () => {
 
 export const connectDB = () => {
   const { MODE } = process.env
-  if (MODE === 'desktop') {
+  if (MODE?.trim() === 'desktop') {
     console.log('Running in Destop Mode, no DB to connect.')
     return
   }

@@ -9,7 +9,7 @@ webRouter.get('/', async (_, res) => {
   const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
 
   const { MODE } = process.env
-  if (MODE === 'desktop') {
+  if (MODE?.trim() === 'desktop') {
     const content = await readFile(indexHtmlPath)
 
     const codeToInject = `

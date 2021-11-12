@@ -29,7 +29,7 @@ const authenticateToken = (
   tokenType: 'accessToken' | 'refreshToken' = 'accessToken'
 ) => {
   const { MODE } = process.env
-  if (MODE === 'desktop') return next()
+  if (MODE?.trim() === 'desktop') return next()
 
   const authHeader = req.headers['authorization']
   const token = authHeader?.split(' ')[1]
