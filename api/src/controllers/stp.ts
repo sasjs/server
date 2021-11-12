@@ -30,7 +30,7 @@ interface ExecuteReturnJsonResponse {
 }
 
 @Security('bearerAuth')
-@Route('SASjsApi/client')
+@Route('SASjsApi/stp')
 @Tags('STP')
 export class STPController {
   /**

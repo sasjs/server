@@ -32,7 +32,7 @@ export class SessionController {
 
   private async createSession() {
     const sessionId = generateUniqueFileName(generateTimestamp())
-    const sessionFolder = path.join(await getTmpSessionsFolderPath(), sessionId)
+    const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
 
     const autoExecContent = `data _null_;
     /* remove the dummy SYSIN */

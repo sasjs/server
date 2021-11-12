@@ -937,7 +937,7 @@ paths:
                         format: double
                         type: number
                     example: '6789'
-    /SASjsApi/client/execute:
+    /SASjsApi/stp/execute:
         get:
             operationId: ExecuteReturnRaw
             responses:
