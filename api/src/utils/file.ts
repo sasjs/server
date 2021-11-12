@@ -5,7 +5,7 @@ export const getWebBuildFolderPath = () =>
   getRealPath(path.join(__dirname, '..', '..', '..', 'web', 'build'))
 
 export const getTmpFolderPath = () =>
-  getRealPath(path.join(__dirname, '..', '..', 'tmp'))
+  getRealPath(path.join(process.cwd(), 'tmp'))
 
 export const getTmpFilesFolderPath = () =>
   path.join(getTmpFolderPath(), 'files')

@@ -25,6 +25,12 @@ export const populateClients = async () => {
 }
 
 export const connectDB = () => {
+  const { MODE } = process.env
+  if (MODE === 'desktop') {
+    console.log('Running in Destop Mode, no DB to connect.')
+    return
+  }
+
   // NOTE: when exporting app.js as agent for supertest
   // we should exlcude connecting to the real database
   if (process.env.NODE_ENV !== 'test') {

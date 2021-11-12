@@ -15,10 +15,9 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack",
-    "exe:prepare": "npm run build && cd build && npm run api && npm run public:copy && npm run web && pkg .",
-    "api": "npm run api:mkdir && npm run api:copy",
-    "api:mkdir": "mkdir tmp && mkdir tmp/files && mkdir tmp/logs && mkdir tmp/webouts && mkdir tmp/sessions",
-    "api:copy": "cp -r ../tmp/ ./tmp/",
+    "exe": "npm run exe:prepare && npm run exe:run",
+    "exe:prepare": "npm run build && cd build && npm run public:copy && npm run web && pkg .",
+    "exe:run": "cd build && ACCESS_TOKEN_SECRET=123 REFRESH_TOKEN_SECRET=456 AUTH_CODE_SECRET=789 DB_CONNECT=\"mongodb+srv://deved:69OFYcgJ1r3Z8ilN@cluster0.hj4h5.mongodb.net/sasjs_server?retryWrites=true&w=majority\" ./dist/api",
     "public:copy": "cp -r ../public/ ./public/",
     "web": "cd .. && npm run web:mkdir && npm run web:copy && cd build",
     "web:mkdir": "rimraf web && mkdir web && mkdir web/build",
@@ -27,7 +26,6 @@
   "bin": "src/server.js",
   "pkg": {
     "assets": [
-      "tmp/files/**/*",
       "public/**/*",
       "../web/build/**/*"
     ],
