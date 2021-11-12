@@ -3,21 +3,22 @@ import PropTypes from 'prop-types'
 
 import { CssBaseline, Box, TextField, Button } from '@mui/material'
 
+const headers = {
+  Accept: 'application/json',
+  'Content-Type': 'application/json'
+}
+
 const getAuthCode = async (credentials: any) => {
   return fetch('/SASjsApi/auth/authorize', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify(credentials)
   }).then((data) => data.json())
 }
 const getTokens = async (payload: any) => {
   return fetch('/SASjsApi/auth/token', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify(payload)
   }).then((data) => data.json())
 }

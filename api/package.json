@@ -14,7 +14,24 @@
     "test": "mkdir -p tmp && mkdir -p ../web/build && jest --coverage",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
-    "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack"
+    "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack",
+    "exe:prepare": "npm run build && cd build && npm run api && npm run public:copy && npm run web && pkg .",
+    "api": "npm run api:mkdir && npm run api:copy",
+    "api:mkdir": "mkdir tmp && mkdir tmp/files && mkdir tmp/logs && mkdir tmp/webouts && mkdir tmp/sessions",
+    "api:copy": "cp -r ../tmp/ ./tmp/",
+    "public:copy": "cp -r ../public/ ./public/",
+    "web": "cd .. && npm run web:mkdir && npm run web:copy && cd build",
+    "web:mkdir": "rimraf web && mkdir web && mkdir web/build",
+    "web:copy": "cp -r ../web/build/ ./web/build/"
+  },
+  "bin": "src/server.js",
+  "pkg": {
+    "assets": [
+      "tmp/files/**/*",
+      "public/**/*",
+      "../web/build/**/*"
+    ],
+    "outputPath": "../../executables"
   },
   "release": {
     "branches": [
@@ -50,6 +67,7 @@
     "jest": "^27.0.6",
     "mongodb-memory-server": "^8.0.0",
     "nodemon": "^2.0.7",
+    "pkg": "^5.4.1",
     "prettier": "^2.3.1",
     "rimraf": "^3.0.2",
     "semantic-release": "^17.4.3",

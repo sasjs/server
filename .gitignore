@@ -7,4 +7,5 @@ sas/
 tmp/
 build/
 certificates/
+executables/
 .env
