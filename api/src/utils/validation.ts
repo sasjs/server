@@ -79,7 +79,7 @@ export const updateFileDriveValidation = (data: any): Joi.ValidationResult =>
 
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    _program: Joi.string().required
+    _program: Joi.string().required()
   })
-    .pattern(/\w\d/, Joi.string())
+    .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)

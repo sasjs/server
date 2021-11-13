@@ -107,6 +107,24 @@ export class DriveController {
   }
 
   /**
+   * @summary Create a file in SASjs Drive
+   *
+   */
+  @Example<UpdateFileResponse>({
+    status: 'success'
+  })
+  @Response<UpdateFileResponse>(400, 'File already exists', {
+    status: 'failure',
+    message: 'File request failed.'
+  })
+  @Post('/file')
+  public async saveFile(
+    @Body() body: FilePayload
+  ): Promise<UpdateFileResponse> {
+    return saveFile(body)
+  }
+
+  /**
    * @summary Modify a file in SASjs Drive
    *
    */
@@ -164,12 +182,35 @@ const getFile = async (filePath: string): Promise<GetFileResponse> => {
     const fileContent = await readFile(filePathFull)
 
     return { status: 'success', fileContent: fileContent }
-  } catch (err) {
+  } catch (err: any) {
     throw {
       code: 400,
       status: 'failure',
       message: 'File request failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
+    }
+  }
+}
+
+const saveFile = async (body: FilePayload): Promise<GetFileResponse> => {
+  const { filePath, fileContent } = body
+  try {
+    const filePathFull = path
+      .join(getTmpFilesFolderPath(), filePath)
+      .replace(new RegExp('/', 'g'), path.sep)
+
+    if (await fileExists(filePathFull)) {
+      throw 'DriveController: File already exists.'
+    }
+    await createFile(filePathFull, fileContent)
+
+    return { status: 'success' }
+  } catch (err: any) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'File request failed.',
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }
@@ -185,12 +226,12 @@ const updateFile = async (body: FilePayload): Promise<GetFileResponse> => {
     await createFile(filePathFull, fileContent)
 
     return { status: 'success' }
-  } catch (err) {
+  } catch (err: any) {
     throw {
       code: 400,
       status: 'failure',
       message: 'File request failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }

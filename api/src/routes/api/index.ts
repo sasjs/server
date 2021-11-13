@@ -1,27 +1,34 @@
 import express from 'express'
-import dotenv from 'dotenv'
+
 import swaggerUi from 'swagger-ui-express'
 
-import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
+import {
+  authenticateAccessToken,
+  desktopRestrict,
+  verifyAdmin
+} from '../../middlewares'
 
 import driveRouter from './drive'
 import stpRouter from './stp'
 import userRouter from './user'
 import groupRouter from './group'
 import clientRouter from './client'
-import authRouter, { connectDB } from './auth'
-
-dotenv.config()
-connectDB()
+import authRouter from './auth'
 
 const router = express.Router()
 
-router.use('/auth', authRouter)
-router.use('/client', authenticateAccessToken, verifyAdmin, clientRouter)
+router.use('/auth', desktopRestrict, authRouter)
+router.use(
+  '/client',
+  desktopRestrict,
+  authenticateAccessToken,
+  verifyAdmin,
+  clientRouter
+)
 router.use('/drive', authenticateAccessToken, driveRouter)
-router.use('/group', groupRouter)
+router.use('/group', desktopRestrict, groupRouter)
 router.use('/stp', authenticateAccessToken, stpRouter)
-router.use('/user', userRouter)
+router.use('/user', desktopRestrict, userRouter)
 router.use(
   '/',
   swaggerUi.serve,

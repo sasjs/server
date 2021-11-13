@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { response } from 'express'
 import path from 'path'
 import {
   Request,
@@ -14,6 +14,7 @@ import {
 import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
+import { request } from 'https'
 
 interface ExecuteReturnJsonPayload {
   /**
@@ -30,7 +31,7 @@ interface ExecuteReturnJsonResponse {
 }
 
 @Security('bearerAuth')
-@Route('SASjsApi/client')
+@Route('SASjsApi/stp')
 @Tags('STP')
 export class STPController {
   /**
@@ -75,6 +76,7 @@ const executeReturnRaw = async (
   req: express.Request,
   _program: string
 ): Promise<string> => {
+  const query = req.query as { [key: string]: string | number | undefined }
   const sasCodePath =
     path
       .join(getTmpFilesFolderPath(), _program)
@@ -84,20 +86,16 @@ const executeReturnRaw = async (
     const result = await new ExecutionController().execute(
       sasCodePath,
       getPreProgramVariables(req),
-      undefined,
-      undefined,
-      {
-        ...req.query
-      }
+      query
     )
 
     return result as string
-  } catch (err) {
+  } catch (err: any) {
     throw {
       code: 400,
       status: 'failure',
       message: 'Job execution failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }
@@ -117,8 +115,6 @@ const executeReturnJson = async (
     const jsonResult: any = await new ExecutionController().execute(
       sasCodePath,
       getPreProgramVariables(req),
-      undefined,
-      req.sasSession,
       { ...req.query, ...req.body },
       { filesNamesMap: filesNamesMap },
       true
@@ -128,11 +124,11 @@ const executeReturnJson = async (
       result: jsonResult.result,
       log: jsonResult.log
     }
-  } catch (err) {
+  } catch (err: any) {
     throw {
       status: 'failure',
       message: 'Job execution failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }

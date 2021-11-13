@@ -5,4 +5,6 @@ export interface Session {
   deathTimeStamp: string
   path: string
   inUse: boolean
+  completed: boolean
+  crashed?: boolean
 }

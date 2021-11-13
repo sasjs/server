@@ -1,7 +1,8 @@
+import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
-import app from '../../../app'
+import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
 import { getTmpFilesFolderPath } from '../../../utils/file'
@@ -9,6 +10,11 @@ import { folderExists, fileExists, readFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
 import { FolderMember, ServiceMember } from '../../../types'
+
+let app: Express
+appPromise.then((_app) => {
+  app = _app
+})
 
 const clientId = 'someclientID'
 const user = {

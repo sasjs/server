@@ -28,6 +28,20 @@ const authenticateToken = (
   key: string,
   tokenType: 'accessToken' | 'refreshToken' = 'accessToken'
 ) => {
+  const { MODE } = process.env
+  if (MODE?.trim() !== 'server') {
+    req.user = {
+      userId: '1234',
+      clientId: 'desktopModeClientId',
+      username: 'desktopModeUsername',
+      displayName: 'desktopModeDisplayName',
+      isAdmin: true,
+      isActive: true
+    }
+    req.accessToken = 'desktopModeAccessToken'
+    return next()
+  }
+
   const authHeader = req.headers['authorization']
   const token = authHeader?.split(' ')[1]
   if (!token) return res.sendStatus(401)
