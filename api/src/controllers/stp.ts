@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { response } from 'express'
 import path from 'path'
 import {
   Request,
@@ -92,12 +92,12 @@ const executeReturnRaw = async (
     )
 
     return result as string
-  } catch (err) {
+  } catch (err: any) {
     throw {
       code: 400,
       status: 'failure',
       message: 'Job execution failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }
@@ -128,11 +128,11 @@ const executeReturnJson = async (
       result: jsonResult.result,
       log: jsonResult.log
     }
-  } catch (err) {
+  } catch (err: any) {
     throw {
       status: 'failure',
       message: 'Job execution failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }

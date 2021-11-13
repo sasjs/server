@@ -81,5 +81,5 @@ export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required()
   })
-    .pattern(/\w\d/, Joi.string())
+    .pattern(/^/, Joi.string())
     .validate(data)

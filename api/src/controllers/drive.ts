@@ -164,12 +164,12 @@ const getFile = async (filePath: string): Promise<GetFileResponse> => {
     const fileContent = await readFile(filePathFull)
 
     return { status: 'success', fileContent: fileContent }
-  } catch (err) {
+  } catch (err: any) {
     throw {
       code: 400,
       status: 'failure',
       message: 'File request failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }
@@ -185,12 +185,12 @@ const updateFile = async (body: FilePayload): Promise<GetFileResponse> => {
     await createFile(filePathFull, fileContent)
 
     return { status: 'success' }
-  } catch (err) {
+  } catch (err: any) {
     throw {
       code: 400,
       status: 'failure',
       message: 'File request failed.',
-      ...(typeof err === 'object' ? err : { details: err })
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }
