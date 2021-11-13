@@ -14,6 +14,7 @@ import {
 import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
+import { request } from 'https'
 
 interface ExecuteReturnJsonPayload {
   /**
@@ -75,6 +76,7 @@ const executeReturnRaw = async (
   req: express.Request,
   _program: string
 ): Promise<string> => {
+  const query = req.query as { [key: string]: string | number | undefined }
   const sasCodePath =
     path
       .join(getTmpFilesFolderPath(), _program)
@@ -84,11 +86,7 @@ const executeReturnRaw = async (
     const result = await new ExecutionController().execute(
       sasCodePath,
       getPreProgramVariables(req),
-      undefined,
-      undefined,
-      {
-        ...req.query
-      }
+      query
     )
 
     return result as string
@@ -117,8 +115,6 @@ const executeReturnJson = async (
     const jsonResult: any = await new ExecutionController().execute(
       sasCodePath,
       getPreProgramVariables(req),
-      undefined,
-      req.sasSession,
       { ...req.query, ...req.body },
       { filesNamesMap: filesNamesMap },
       true

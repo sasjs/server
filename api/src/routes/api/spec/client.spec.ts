@@ -1,9 +1,15 @@
+import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
-import app from '../../../app'
+import appPromise from '../../../app'
 import { UserController, ClientController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
+
+let app: Express
+appPromise.then((_app) => {
+  app = _app
+})
 
 const client = {
   clientId: 'someclientID',

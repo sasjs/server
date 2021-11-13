@@ -1,47 +1,36 @@
 import path from 'path'
 import fs from 'fs'
 import { getSessionController } from './'
-import { readFile, fileExists, createFile } from '@sasjs/utils'
-import { PreProgramVars, Session, TreeNode } from '../../types'
+import { readFile, fileExists, createFile, moveFile } from '@sasjs/utils'
+import { PreProgramVars, TreeNode } from '../../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
-export const delay = (ms: number) =>
-new Promise((resolve) => setTimeout(resolve, ms))
 
 export class ExecutionController {
   async execute(
-    program = '',
-    preProgramVariables?: PreProgramVars,
-    autoExec?: string,
-    session?: Session,
-    vars?: any,
+    programPath: string,
+    preProgramVariables: PreProgramVars,
+    vars: { [key: string]: string | number | undefined },
     otherArgs?: any,
     returnJson?: boolean
   ) {
-    if (program) {
-      if (!(await fileExists(program))) {
-        throw 'ExecutionController: SAS file does not exist.'
-      }
+    if (!(await fileExists(programPath)))
+      throw 'ExecutionController: SAS file does not exist.'
 
-      program = await readFile(program)
+    let program = await readFile(programPath)
 
-      if (vars) {
-        Object.keys(vars).forEach(
-          (key: string) => (program = `%let ${key}=${vars[key]};\n${program}`)
-        )
-      }
-    }
+    Object.keys(vars).forEach(
+      (key: string) => (program = `%let ${key}=${vars[key]};\n${program}`)
+    )
 
     const sessionController = getSessionController()
 
-    if (!session) {
-      session = await sessionController.getSession()
-      session.inUse = true
-    }
+    const session = await sessionController.getSession()
+    session.inUse = true
 
-    let log = path.join(session.path, 'log.log')
+    const logPath = path.join(session.path, 'log.log')
 
-    let webout = path.join(session.path, 'webout.txt')
-    await createFile(webout, '')
+    const weboutPath = path.join(session.path, 'webout.txt')
+    await createFile(weboutPath, '')
 
     const tokenFile = path.join(session.path, 'accessToken.txt')
     await createFile(
@@ -57,7 +46,7 @@ export class ExecutionController {
 %let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
 %let _sasjs_apipath=/SASjsApi/stp/execute;
 %let sasjsprocessmode=Stored Program;
-filename _webout "${webout}";
+filename _webout "${weboutPath}";
 ${program}`
 
     // if no files are uploaded filesNamesMap will be undefined
@@ -74,7 +63,7 @@ ${program}`
     }
 
     const codePath = path.join(session.path, 'code.sas')
-    
+
     // Creating this file in a RUNNING session will break out
     // the autoexec loop and actually execute the program
     // but - given it will take several milliseconds to create
@@ -82,45 +71,31 @@ ${program}`
     // failing due to file lock) we first create the file THEN
     // we rename it.
     await createFile(codePath + '.bkp', program)
-    fs.renameSync(codePath + '.bkp',codePath)
+    await moveFile(codePath + '.bkp', codePath)
 
-    // we now need to poll the session array 
-    while (
-      !session.completed
-    ) { 
+    // we now need to poll the session array
+    while (!session.completed || !session.crashed) {
       await delay(50)
     }
 
+    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
+    const webout = (await fileExists(weboutPath))
+      ? await readFile(weboutPath)
+      : ''
 
+    const debugValue =
+      typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
 
-    if (await fileExists(log)) log = await readFile(log)
-    else log = ''
-
-    if (await fileExists(webout)) webout = await readFile(webout)
-    else webout = ''
-
-    const debug = Object.keys(vars).find(
-      (key: string) => key.toLowerCase() === '_debug'
-    )
-
-    let jsonResult
-    if ((debug && vars[debug] >= 131)) {
-      webout = `<html><body>
-${webout}
-<div style="text-align:left">
-<hr /><h2>SAS Log</h2>
-<pre>${log}</pre>
-</div>
-</body></html>`
-    } else if (returnJson) {
-      jsonResult = { result: webout, log: log }
+    let debugResponse: string | undefined
+    if ((debugValue && debugValue >= 131) || session.crashed) {
+      debugResponse = `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
     }
 
     session.inUse = false
-
     sessionController.deleteSession(session)
 
-    return Promise.resolve(jsonResult || webout)
+    if (returnJson) return { result: debugResponse ?? webout, log }
+    return debugResponse ?? webout
   }
 
   buildDirectorytree() {
@@ -160,3 +135,5 @@ ${webout}
     return root
   }
 }
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
