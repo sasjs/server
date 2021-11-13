@@ -981,7 +981,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
+            description: "Trigger a SAS program using it's location in the _program parameter.\r\nEnable debugging using the _debug parameter.\r\nAdditional URL parameters are turned into SAS macro variables.\r\nAny files provided are placed into the session and\r\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return raw content'
             tags:
                 - STP
@@ -1005,7 +1005,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ExecuteReturnJsonResponse'
-            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
+            description: "Trigger a SAS program using it's location in the _program parameter.\r\nEnable debugging using the _debug parameter.\r\nAdditional URL parameters are turned into SAS macro variables.\r\nAny files provided are placed into the session and\r\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return JSON'
             tags:
                 - STP

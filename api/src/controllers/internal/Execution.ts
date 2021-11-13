@@ -2,13 +2,10 @@ import path from 'path'
 import fs from 'fs'
 import { getSessionController } from './'
 import { readFile, fileExists, createFile } from '@sasjs/utils'
-import { configuration } from '../../../package.json'
-import { promisify } from 'util'
-import { execFile } from 'child_process'
 import { PreProgramVars, Session, TreeNode } from '../../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
-
-const execFilePromise = promisify(execFile)
+export const delay = (ms: number) =>
+new Promise((resolve) => setTimeout(resolve, ms))
 
 export class ExecutionController {
   async execute(
@@ -76,25 +73,25 @@ ${program}`
       }
     }
 
-    const code = path.join(session.path, 'code.sas')
-    if (!(await fileExists(code))) {
-      await createFile(code, program)
+    const codePath = path.join(session.path, 'code.sas')
+    
+    // Creating this file in a RUNNING session will break out
+    // the autoexec loop and actually execute the program
+    // but - given it will take several milliseconds to create
+    // (which can mean SAS trying to run a partial program, or
+    // failing due to file lock) we first create the file THEN
+    // we rename it.
+    await createFile(codePath + '.bkp', program)
+    fs.renameSync(codePath + '.bkp',codePath)
+
+    // we now need to poll the session array 
+    while (
+      !session.completed
+    ) { 
+      await delay(50)
     }
 
-    let additionalArgs: string[] = []
-    if (autoExec) additionalArgs = ['-AUTOEXEC', autoExec]
 
-    const sasLoc = process.sasLoc ?? configuration.sasPath
-    const { stdout, stderr } = await execFilePromise(sasLoc, [
-      '-SYSIN',
-      code,
-      '-LOG',
-      log,
-      '-WORK',
-      session.path,
-      ...additionalArgs,
-      process.platform === 'win32' ? '-nosplash' : ''
-    ]).catch((err) => ({ stderr: err, stdout: '' }))
 
     if (await fileExists(log)) log = await readFile(log)
     else log = ''
@@ -107,7 +104,7 @@ ${program}`
     )
 
     let jsonResult
-    if ((debug && vars[debug] >= 131) || stderr) {
+    if ((debug && vars[debug] >= 131)) {
       webout = `<html><body>
 ${webout}
 <div style="text-align:left">

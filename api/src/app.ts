@@ -2,13 +2,15 @@ import path from 'path'
 import express from 'express'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
-
 import webRouter from './routes/web'
 import apiRouter from './routes/api'
 import { getWebBuildFolderPath } from './utils'
 import { connectDB } from './routes/api/auth'
 
 const app = express()
+
+const cors=require('cors')
+app.use(cors())
 
 app.use(express.json({ limit: '50mb' }))
 app.use(morgan('tiny'))
