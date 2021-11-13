@@ -35,6 +35,23 @@ driveRouter.get('/file', async (req, res) => {
   }
 })
 
+driveRouter.post('/file', async (req, res) => {
+  const { error, value: body } = updateFileDriveValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  const controller = new DriveController()
+  try {
+    const response = await controller.saveFile(body)
+    res.send(response)
+  } catch (err: any) {
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err)
+  }
+})
+
 driveRouter.patch('/file', async (req, res) => {
   const { error, value: body } = updateFileDriveValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
