@@ -43,15 +43,18 @@ export default function useTokens() {
   }
 }
 
-// const baseUrl = 'http://localhost:5000'
-// const isAbsoluteURLRegex = /^(?:\w+:)\/\//
+const baseUrl =
+  process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : undefined
+
+const isAbsoluteURLRegex = /^(?:\w+:)\/\//
 
 const setAxiosRequestHeader = (accessToken: string) => {
-  axios.interceptors.request.use(function (config: any) {
-    // if (!isAbsoluteURLRegex.test(config.url)) {
-    //   config.url = baseUrl + config.url
-    // }
-    config.headers.Authorization = `Bearer ${accessToken}`
+  axios.interceptors.request.use(function (config) {
+    if (baseUrl && !isAbsoluteURLRegex.test(config.url as string)) {
+      config.url = baseUrl + config.url
+    }
+    config.headers!['Authorization'] = `Bearer ${accessToken}`
+    config.withCredentials = true
 
     return config
   })

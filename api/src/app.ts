@@ -2,15 +2,22 @@ import path from 'path'
 import express from 'express'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
+import cors from 'cors'
+
 import webRouter from './routes/web'
 import apiRouter from './routes/api'
 import { getWebBuildFolderPath } from './utils'
 import { connectDB } from './routes/api/auth'
 
+dotenv.config()
+
 const app = express()
 
-const cors=require('cors')
-app.use(cors())
+const { MODE } = process.env
+if (MODE?.trim() !== 'server') {
+  console.log('All CORS Requests are enabled')
+  app.use(cors({ credentials: true, origin: 'http://localhost:3000' }))
+}
 
 app.use(express.json({ limit: '50mb' }))
 app.use(morgan('tiny'))
@@ -21,7 +28,5 @@ app.use('/SASjsApi', apiRouter)
 app.use(express.json({ limit: '50mb' }))
 
 app.use(express.static(getWebBuildFolderPath()))
-
-dotenv.config()
 
 export default connectDB().then(() => app)

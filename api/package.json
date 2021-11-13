@@ -15,24 +15,20 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack",
-    "exe": "npm run build && cd build && npm run public:copy && npm run web && pkg .",
-    "public:copy": "cp -r ../public/ ./public/",
-    "web": "cd .. && npm run web:mkdir && npm run web:copy && cd build",
-    "web:mkdir": "rimraf web && mkdir web && mkdir web/build",
-    "web:copy": "cp -r ../web/build/ ./web/build/"
+    "exe": "npm run build && npm run public:copy && npm run web:copy && pkg .",
+    "public:copy": "cp -r ./public/ ./build/public/",
+    "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/"
   },
-  "bin": "src/server.js",
+  "bin": "./build/src/server.js",
   "pkg": {
     "assets": [
-      "public/**/*",
-      "../web/build/**/*"
+      "./build/public/**/*",
+      "./web/build/**/*"
     ],
     "targets": [
-      "node16-linux-x64",
-      "node16-macos-x64",
-      "node16-win-x64"
+      "node16-macos-x64"
     ],
-    "outputPath": "../../executables"
+    "outputPath": "../executables"
   },
   "release": {
     "branches": [
@@ -57,6 +53,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.12",
     "@types/express": "^4.17.12",
     "@types/jest": "^26.0.24",
     "@types/jsonwebtoken": "^8.5.5",
