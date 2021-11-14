@@ -1,22 +1,29 @@
-import { readFile } from '@sasjs/utils'
+import { fileExists, readFile } from '@sasjs/utils'
 import express from 'express'
 import path from 'path'
 import { getWebBuildFolderPath } from '../../utils'
 
 const webRouter = express.Router()
 
+const codeToInject = `
+<script>
+  localStorage.setItem('accessToken', JSON.stringify('accessToken'))
+  localStorage.setItem('refreshToken', JSON.stringify('refreshToken'))
+</script>`
+
 webRouter.get('/', async (_, res) => {
-  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+  let indexHtmlPath: string
+
+  try {
+    indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+  } catch (err) {
+    return res.send('Web Build is not present')
+  }
 
   const { MODE } = process.env
   if (MODE?.trim() !== 'server') {
     const content = await readFile(indexHtmlPath)
 
-    const codeToInject = `
-    <script>
-      localStorage.setItem('accessToken', JSON.stringify('accessToken'))
-      localStorage.setItem('refreshToken', JSON.stringify('refreshToken'))
-    </script>`
     const injectedContent = content.replace('</head>', `${codeToInject}</head>`)
 
     res.setHeader('Content-Type', 'text/html')

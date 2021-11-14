@@ -1,20 +1,26 @@
 version: '3.4'
 
 services:
-  server:
-    image: server
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+  sasjs_server_api:
+    image: sasjs_server_api
+    build: ./api
     environment:
-      NODE_ENV: production
       DB_CONNECT: mongodb://mongodb:27017/sasjs
     ports:
       - 5000:5000
     volumes:
-      - .:/usr/src/app
+      - ./api:/usr/server/api
     links:
       - mongodb
+
+  sasjs_server_web:
+    image: sasjs_server_web
+    build: ./web
+    ports:
+      - 3000:3000
+    volumes:
+      - ./web:/usr/server/web
+
   mongodb:
     image: mongo:latest
     ports:

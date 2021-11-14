@@ -13,8 +13,8 @@ dotenv.config()
 
 const app = express()
 
-const { MODE } = process.env
-if (MODE?.trim() !== 'server') {
+const { MODE, CORS } = process.env
+if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
   console.log('All CORS Requests are enabled')
   app.use(cors({ credentials: true, origin: 'http://localhost:3000' }))
 }
@@ -27,6 +27,10 @@ app.use('/', webRouter)
 app.use('/SASjsApi', apiRouter)
 app.use(express.json({ limit: '50mb' }))
 
-app.use(express.static(getWebBuildFolderPath()))
+try {
+  app.use(express.static(getWebBuildFolderPath()))
+} catch (err) {
+  console.error('Unable to get web build')
+}
 
 export default connectDB().then(() => app)
