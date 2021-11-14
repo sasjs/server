@@ -1,16 +1,95 @@
 # SASjs Server
 
-SASjs Server provides a NodeJS wrapper for calling the SAS binary executable.  It can be installed on an actual SAS server, or it could even run locally on your desktop.  It provides the following functionality:
+SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or it could even run locally on your desktop. It provides the following functionality:
 
-* Virtual filesystem for storing SAS programs and other content
-* Ability to execute Stored Programs from a URL
-* Ability to create web apps using simple Desktop SAS 
+- Virtual filesystem for storing SAS programs and other content
+- Ability to execute Stored Programs from a URL
+- Ability to create web apps using simple Desktop SAS
 
 One major benefit of using SASjs Server (alongside other components of the SASjs framework such as the [CLI](https://cli.sasjs.io), [Adapter](https://adapter.sasjs.io) and [Core](https://core.sasjs.io) library) is that the projects you create can be very easily ported to SAS 9 (Stored Process server) or Viya (Job Execution server).
 
 ## Configuration
 
-Configuration is made in the `configuration` section of `package.json`:
+### Using dockers:
 
-- Provide path to SAS9 executable.
-- Provide `SASjsServer` hostname and port (eg `localhost:5000`).
+There is `.env.example` file present at root of the project.
+
+#### Development
+
+Command to run docker for development:
+
+```
+docker-compose up -d
+```
+
+It uses default docker compose file i.e. `docker-compose.yml` present at root.
+It will build following images if running first time:
+
+- `sasjs_server_api` - image for sasjs api server app based on _ExpressJS_
+- `sasjs_server_web` - image for sasjs web component app based on _ReactJS_
+- `mongodb` - image for mongo database
+- `mongo-seed-users` - will be populating user data specified in _./mongo-seed/users/user.json_
+- `mongo-seed-clients` - will be populating client data specified in _./mongo-seed/clients/client.json_
+
+#### Production
+
+Command to run docker for production:
+
+```
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+It uses specified docker compose file i.e. `docker-compose.prod.yml` present at root.
+It will build following images if running first time:
+
+- `sasjs_server_prod` - image for sasjs server app containing api and web component's build served at route `/`
+- `mongodb` - image for mongo database
+- `mongo-seed-users` - will be populating user data specified in _./mongo-seed/users/user.json_
+- `mongo-seed-clients` - will be populating client data specified in _./mongo-seed/clients/client.json_
+
+### Using node:
+
+#### Development (running api and web seperately):
+
+##### API
+
+There is `.env.example` file present at `./api` directory.
+Command to install and run api server.
+
+```
+npm install
+npm start
+```
+
+##### Web
+
+There is `.env.example` file present at `./web` directory.
+Command to install and run api server.
+
+```
+npm install
+npm start
+```
+
+#### Development (running only api server and have web build served):
+
+##### API
+
+There is `.env.example` file present at `./api` directory.
+Command to install and run api server.
+
+```
+cd ./web && npm i && npm build && cd ../
+cd ./api && npm i && npm start
+```
+
+## Executables
+
+Command to generate executables
+
+```
+cd ./web && npm i && npm build && cd ../
+cd ./api && npm i && npm run exe
+```
+
+This will install/build web app and install/create executables of sasjs server at root `./executables`
