@@ -7,8 +7,12 @@ const headers = {
   Accept: 'application/json',
   'Content-Type': 'application/json'
 }
+const { NODE_ENV, REACT_APP_PORT_API } = process.env
 const baseUrl =
-  process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : undefined
+  NODE_ENV === 'development'
+    ? `http://localhost:${REACT_APP_PORT_API ?? 5000}`
+    : ''
+
 const getAuthCode = async (credentials: any) => {
   return fetch(`${baseUrl}/SASjsApi/auth/authorize`, {
     method: 'POST',

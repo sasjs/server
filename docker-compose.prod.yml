@@ -1,0 +1,40 @@
+version: '3.4'
+
+services:
+  sasjs_server_prod:
+    image: sasjs_server_prod
+    build:
+      context: .
+      dockerfile: DockerfileProd
+    environment:
+      MODE: server
+      CORS: disable
+      PORT: ${PORT_API}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      AUTH_CODE_SECRET: ${AUTH_CODE_SECRET}
+      DB_CONNECT: mongodb://mongodb:27017/sasjs
+    expose:
+      - ${PORT_API}
+    ports:
+      - ${PORT_API}:${PORT_API}
+    links:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - data:/data/db
+  mongo-seed-users:
+    build: ./mongo-seed/users
+    links:
+      - mongodb
+  mongo-seed-clients:
+    build: ./mongo-seed/clients
+    links:
+      - mongodb
+
+volumes:
+  data:

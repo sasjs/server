@@ -7,10 +7,16 @@ services:
     environment:
       MODE: server
       CORS: enable
-      PORT: 5000
+      PORT: ${PORT_API}
+      PORT_WEB: ${PORT_WEB}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      AUTH_CODE_SECRET: ${AUTH_CODE_SECRET}
       DB_CONNECT: mongodb://mongodb:27017/sasjs
+    expose:
+      - ${PORT_API}
     ports:
-      - 5000:5000
+      - ${PORT_API}:${PORT_API}
     volumes:
       - ./api:/usr/server/api
     links:
@@ -19,8 +25,13 @@ services:
   sasjs_server_web:
     image: sasjs_server_web
     build: ./web
+    environment:
+      REACT_APP_PORT_API: ${PORT_API}
+      PORT: ${PORT_WEB}
+    expose:
+      - ${PORT_WEB}
     ports:
-      - 3000:3000
+      - ${PORT_WEB}:${PORT_WEB}
     volumes:
       - ./web:/usr/server/web
 

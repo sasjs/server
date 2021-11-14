@@ -1,0 +1,10 @@
+FROM node:lts-alpine
+WORKDIR /usr/server/
+COPY . .
+RUN cd web && npm ci --silent
+RUN cd web && REACT_APP_CLIENT_ID=clientID1 npm run build 
+RUN cd api && npm ci --silent
+# RUN chown -R node /usr/server/api
+# USER node
+WORKDIR /usr/server/api
+CMD ["npm","run","start"]

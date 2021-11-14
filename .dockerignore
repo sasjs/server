@@ -1,6 +1,7 @@
 **/.classpath
 **/.dockerignore
 **/.env
+!.env
 **/.git
 **/.gitignore
 **/.project
@@ -20,4 +21,12 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
+api/build
+api/coverage
+api/build
+api/node_modules
+api/public
+api/web
+web/build
+web/node_modules
 README.md
