@@ -1,7 +1,6 @@
 import path from 'path'
 import { readFileSync } from 'fs'
 import * as https from 'https'
-import { configuration } from '../package.json'
 import appPromise from './app'
 
 const keyPath = path.join('..', 'certificates', 'privkey.pem')
@@ -13,9 +12,10 @@ const cert = readFileSync(certPath)
 appPromise.then((app) => {
   const httpsServer = https.createServer({ key, cert }, app)
 
-  httpsServer.listen(configuration.sasJsPort, () => {
+  const sasJsPort = process.env.PORT ?? 5000
+  httpsServer.listen(sasJsPort, () => {
     console.log(
-      `⚡️[server]: Server is running at https://localhost:${configuration.sasJsPort}`
+      `⚡️[server]: Server is running at https://localhost:${sasJsPort}`
     )
   })
 })

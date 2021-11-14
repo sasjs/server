@@ -12,11 +12,8 @@ const codeToInject = `
 </script>`
 
 webRouter.get('/', async (_, res) => {
-  let indexHtmlPath: string
-
-  try {
-    indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
-  } catch (err) {
+  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+  if (!(await fileExists(indexHtmlPath))) {
     return res.send('Web Build is not present')
   }
 

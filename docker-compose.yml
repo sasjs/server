@@ -5,6 +5,9 @@ services:
     image: sasjs_server_api
     build: ./api
     environment:
+      MODE: server
+      CORS: enable
+      PORT: 5000
       DB_CONNECT: mongodb://mongodb:27017/sasjs
     ports:
       - 5000:5000

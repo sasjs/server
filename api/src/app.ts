@@ -27,10 +27,6 @@ app.use('/', webRouter)
 app.use('/SASjsApi', apiRouter)
 app.use(express.json({ limit: '50mb' }))
 
-try {
-  app.use(express.static(getWebBuildFolderPath()))
-} catch (err) {
-  console.error('Unable to get web build')
-}
+app.use(express.static(getWebBuildFolderPath()))
 
 export default connectDB().then(() => app)

@@ -2,7 +2,7 @@ import path from 'path'
 import { getRealPath } from '@sasjs/utils'
 
 export const getWebBuildFolderPath = () =>
-  getRealPath(path.join(__dirname, '..', '..', '..', 'web', 'build'))
+  path.join(__dirname, '..', '..', '..', 'web', 'build')
 
 export const getTmpFolderPath = () =>
   process.driveLoc ?? getRealPath(path.join(process.cwd(), 'tmp'))
