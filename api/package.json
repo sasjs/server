@@ -5,6 +5,7 @@
   "main": "./src/server.ts",
   "scripts": {
     "prestart": "npm run swagger",
+    "prestart:prod": "npm run swagger",
     "start": "nodemon ./src/server.ts",
     "start:prod": "nodemon ./src/prod-server.ts",
     "build": "rimraf build && tsc",

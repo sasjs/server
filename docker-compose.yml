@@ -3,7 +3,9 @@ version: '3.4'
 services:
   sasjs_server_api:
     image: sasjs_server_api
-    build: ./api
+    build:
+      context: .
+      dockerfile: DockerfileApi
     environment:
       MODE: server
       CORS: enable
