@@ -10,9 +10,16 @@ One major benefit of using SASjs Server (alongside other components of the SASjs
 
 ## Configuration
 
+Configuration is made in the `configuration` section of `package.json`:
+
+- Provide path to SAS9 executable.
+
 ### Using dockers:
 
-There is `.env.example` file present at root of the project.
+There is `.env.example` file present at root of the project. [for Production]
+There is `.env.example` file present at `./api` of the project. [for Development]
+There is `.env.example` file present at `./web` of the project. [for Development]
+Remember to provide enviornment variables.
 
 #### Development
 
@@ -53,7 +60,8 @@ It will build following images if running first time:
 
 ##### API
 
-There is `.env.example` file present at `./api` directory.
+Navigate to `./api`
+There is `.env.example` file present at `./api` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
 Command to install and run api server.
 
 ```
@@ -63,7 +71,8 @@ npm start
 
 ##### Web
 
-There is `.env.example` file present at `./web` directory.
+Navigate to `./web`
+There is `.env.example` file present at `./web` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
 Command to install and run api server.
 
 ```
@@ -73,15 +82,25 @@ npm start
 
 #### Development (running only api server and have web build served):
 
-##### API
+##### API server also serving Web build files
 
-There is `.env.example` file present at `./api` directory.
+There is `.env.example` file present at `./api` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
 Command to install and run api server.
 
 ```
 cd ./web && npm i && npm build && cd ../
 cd ./api && npm i && npm start
 ```
+
+#### Production
+
+##### API & WEB
+
+```
+npm run server
+```
+
+This will install/build `web` and install `api`, then start prod server.
 
 ## Executables
 
