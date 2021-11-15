@@ -64,10 +64,10 @@ export class STPController {
   @Post('/execute')
   public async executeReturnJson(
     @Request() request: express.Request,
-    @Body() body: ExecuteReturnJsonPayload,
+    @Body() body?: ExecuteReturnJsonPayload,
     @Query() _program?: string
   ): Promise<ExecuteReturnJsonResponse> {
-    const program = _program ?? body._program
+    const program = _program ?? body?._program
     return executeReturnJson(request, program!)
   }
 }
@@ -126,6 +126,7 @@ const executeReturnJson = async (
     }
   } catch (err: any) {
     throw {
+      code: 400,
       status: 'failure',
       message: 'Job execution failed.',
       error: typeof err === 'object' ? err.toString() : err

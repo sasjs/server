@@ -30,10 +30,9 @@ stpRouter.post(
   fileUploadController.getMulterUploadObject().any(),
   async (req: any, res: any) => {
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
-    if (errQ) return res.status(400).send(errQ.details[0].message)
-
     const { error: errB, value: body } = executeProgramRawValidation(req.body)
-    if (errB) return res.status(400).send(errB.details[0].message)
+
+    if (errQ && errB) return res.status(400).send(errB.details[0].message)
 
     try {
       const response = await controller.executeReturnJson(

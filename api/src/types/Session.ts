@@ -6,5 +6,5 @@ export interface Session {
   path: string
   inUse: boolean
   completed: boolean
-  crashed?: boolean
+  crashed?: string
 }

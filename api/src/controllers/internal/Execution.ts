@@ -74,11 +74,13 @@ ${program}`
     await moveFile(codePath + '.bkp', codePath)
 
     // we now need to poll the session array
-    while (!session.completed || !session.crashed) {
+    while (!session.completed) {
       await delay(50)
     }
 
-    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
+    const log =
+      ((await fileExists(logPath)) ? await readFile(logPath) : '') +
+      session.crashed
     const webout = (await fileExists(weboutPath))
       ? await readFile(weboutPath)
       : ''

@@ -1021,7 +1021,7 @@ paths:
                         type: string
                     example: /Public/somefolder/some.file
             requestBody:
-                required: true
+                required: false
                 content:
                     application/json:
                         schema:

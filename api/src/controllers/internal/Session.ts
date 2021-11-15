@@ -83,7 +83,7 @@ export class SessionController {
       })
       .catch((err) => {
         session.completed = true
-        session.crashed = true
+        session.crashed = err.toString()
         console.log('session crashed', session.id, err)
       })
 
@@ -100,7 +100,9 @@ export class SessionController {
   public async waitForSession(session: Session) {
     const codeFilePath = path.join(session.path, 'code.sas')
 
-    while (await fileExists(codeFilePath)) {}
+    // TODO: don't wait forever
+    while ((await fileExists(codeFilePath)) && !session.crashed) {}
+    console.log('session crashed?', !!session.crashed, session.crashed)
 
     session.ready = true
     return Promise.resolve(session)
