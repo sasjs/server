@@ -9,3 +9,4 @@ build/
 certificates/
 executables/
 .env
+sas
