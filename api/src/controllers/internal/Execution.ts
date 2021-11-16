@@ -45,6 +45,8 @@ export class ExecutionController {
 %let _sasjs_displayname=${preProgramVariables?.displayName};
 %let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
 %let _sasjs_apipath=/SASjsApi/stp/execute;
+%let _metaperson=&_sasjs_displayname;
+%let _metauser=&_sasjs_username;
 %let sasjsprocessmode=Stored Program;
 filename _webout "${weboutPath}";
 ${program}`
