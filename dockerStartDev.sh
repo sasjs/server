@@ -3,4 +3,4 @@
 ./dockerSASexe.sh
 
 # Run docker-compose with default docker compose file i.e. docker-compose.yml
-# SAS_EXEC=sas_exe/sas docker-compose up -d
+SAS_EXEC=sas_exe/sas docker-compose up --build -d

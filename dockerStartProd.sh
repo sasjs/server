@@ -3,4 +3,4 @@
 ./dockerSASexe.sh
 
 # Build & Run docker-compose with docker compose file i.e. docker-compose.prod.yml
-# SAS_EXEC=sas_exe/sas docker-compose -f docker-compose.prod.yml up --build -d
+SAS_EXEC=sas_exe/sas docker-compose -f docker-compose.prod.yml up --build -d
