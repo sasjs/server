@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "NodeJS wrapper for calling the SAS binary executable",
   "scripts": {
+    "server": "npm run server:prepare && npm run server:start",
+    "server:prepare": "cd web && npm ci && npm run build && cd ../api && npm ci && cd ..",
+    "server:start": "cd api && npm run start:prod",
     "lint-api:fix": "npx prettier --write \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-api": "npx prettier --check \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-web:fix": "npx prettier --write \"web/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",

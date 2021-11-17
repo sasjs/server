@@ -1,0 +1,57 @@
+###
+POST http://localhost:5000/SASjsApi/drive/deploy
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InVzZXJuYW1lMSIsImlzYWRtaW4iOmZhbHNlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODA0MDc2LCJleHAiOjE2MzU4OTA0NzZ9.Cx1F54ILgAUtnkit0Wg1K1YVO2RdNjOnTKdPhUtDm5I
+
+###
+POST http://localhost:5000/SASjsApi/user
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InNlY3JldHVzZXIiLCJpc2FkbWluIjp0cnVlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODAzOTc3LCJleHAiOjE2MzU4OTAzNzd9.f-FLgLwryKvB5XrihdzaGZajO3d5E5OHEEuJI_03GRI
+Content-Type: application/json
+
+{
+  "displayname": "User 2",
+  "username": "username2",
+  "password": "some password"
+}
+
+###
+POST http://localhost:5000/SASjsApi/client
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InNlY3JldHVzZXIiLCJpc2FkbWluIjp0cnVlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODAzOTc3LCJleHAiOjE2MzU4OTAzNzd9.f-FLgLwryKvB5XrihdzaGZajO3d5E5OHEEuJI_03GRI
+Content-Type: application/json
+
+{
+  "client_id": "newClientID",
+  "client_secret": "newClientSecret"
+}
+###
+POST https://sas.analytium.co.uk:5002/SASjsApi/auth/authorize
+Content-Type: application/json
+
+{
+  "username": "secretuser",
+  "password": "secretpassword",
+  "client_id": "clientID1"
+}
+
+###
+POST http://localhost:5000/SASjsApi/auth/token
+Content-Type: application/json
+
+{
+  "client_id": "clientID1",
+  "client_secret": "clientID1secret",
+  "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InVzZXJuYW1lMSIsImlzYWRtaW4iOmZhbHNlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODA0MDYxLCJleHAiOjE2MzU4MDQwOTF9.jV7DpBWG7XAGODs22zAW_kWOqVLZvOxmmYJGpSNQ-KM"
+}
+
+###
+DELETE http://localhost:5000/SASjsApi/auth/logout
+
+
+Users
+  "username": "username1",
+  "password": "some password",
+
+  "username": "username2",
+  "password": "some password",
+Admins
+  "username": "secretuser",
+  "password": "secretpassword",

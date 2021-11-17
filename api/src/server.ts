@@ -1,8 +1,10 @@
-import app from './app'
-import { configuration } from '../package.json'
+import appPromise from './app'
 
-app.listen(configuration.sasJsPort, () => {
-  console.log(
-    `⚡️[server]: Server is running at http://localhost:${configuration.sasJsPort}`
-  )
+appPromise.then((app) => {
+  const sasJsPort = process.env.PORT ?? 5000
+  app.listen(sasJsPort, () => {
+    console.log(
+      `⚡️[server]: Server is running at http://localhost:${sasJsPort}`
+    )
+  })
 })

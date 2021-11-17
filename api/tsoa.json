@@ -1,0 +1,42 @@
+{
+  "entryFile": "src/app.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "spec": {
+    "outputDirectory": "public",
+    "securityDefinitions": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "tags": [
+      {
+        "name": "User",
+        "description": "Operations about users"
+      },
+      {
+        "name": "Client",
+        "description": "Operations about clients"
+      },
+      {
+        "name": "Auth",
+        "description": "Operations about auth"
+      },
+      {
+        "name": "Drive",
+        "description": "Operations about drive"
+      },
+      {
+        "name": "Group",
+        "description": "Operations about group"
+      },
+      {
+        "name": "STP",
+        "description": "Operations about STP"
+      }
+    ],
+    "yaml": true,
+    "specVersion": 3
+  }
+}

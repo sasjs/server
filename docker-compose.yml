@@ -1,0 +1,61 @@
+version: '3.4'
+
+services:
+  sasjs_server_api:
+    image: sasjs_server_api
+    build:
+      context: .
+      dockerfile: DockerfileApi
+    environment:
+      MODE: ${MODE}
+      CORS: ${CORS}
+      PORT: ${PORT_API}
+      PORT_WEB: ${PORT_WEB}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      AUTH_CODE_SECRET: ${AUTH_CODE_SECRET}
+      DB_CONNECT: mongodb://mongodb:27017/sasjs
+      SAS_PATH: /usr/server/sasexe
+    expose:
+      - ${PORT_API}
+    ports:
+      - ${PORT_API}:${PORT_API}
+    volumes:
+      - ./api:/usr/server/api
+      - type: bind
+        source: ${SAS_EXEC}
+        target: /usr/server/sasexe
+        read_only: true
+    links:
+      - mongodb
+
+  sasjs_server_web:
+    image: sasjs_server_web
+    build: ./web
+    environment:
+      REACT_APP_PORT_API: ${PORT_API}
+      PORT: ${PORT_WEB}
+    expose:
+      - ${PORT_WEB}
+    ports:
+      - ${PORT_WEB}:${PORT_WEB}
+    volumes:
+      - ./web:/usr/server/web
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    volumes:
+      - data:/data/db
+  mongo-seed-users:
+    build: ./mongo-seed/users
+    links:
+      - mongodb
+  mongo-seed-clients:
+    build: ./mongo-seed/clients
+    links:
+      - mongodb
+
+volumes:
+  data:

@@ -1,0 +1,10 @@
+FROM node:lts-alpine
+RUN npm install -g @sasjs/cli
+WORKDIR /usr/server/api
+COPY ["package.json","package-lock.json", "./"]
+RUN npm ci
+COPY ./api .
+COPY ./certificates ../certificates
+# RUN chown -R node /usr/server/api
+# USER node
+CMD ["npm","start"]

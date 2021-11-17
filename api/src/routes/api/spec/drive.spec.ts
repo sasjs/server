@@ -1,15 +1,61 @@
+import { Express } from 'express'
+import mongoose, { Mongoose } from 'mongoose'
+import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
-import app from '../../../app'
-import { getTreeExample } from '../../../controllers/deploy'
+import appPromise from '../../../app'
+import { UserController } from '../../../controllers/'
+import { getTreeExample } from '../../../controllers/internal'
 import { getTmpFilesFolderPath } from '../../../utils/file'
 import { folderExists, fileExists, readFile, deleteFolder } from '@sasjs/utils'
 import path from 'path'
+import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import { FolderMember, ServiceMember } from '../../../types'
+
+let app: Express
+appPromise.then((_app) => {
+  app = _app
+})
+
+const clientId = 'someclientID'
+const user = {
+  displayName: 'Test User',
+  username: 'testUsername',
+  password: '87654321',
+  isAdmin: false,
+  isActive: true
+}
 
 describe('files', () => {
+  let con: Mongoose
+  let mongoServer: MongoMemoryServer
+  const controller = new UserController()
+
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create()
+    con = await mongoose.connect(mongoServer.getUri())
+  })
+
+  afterAll(async () => {
+    await con.connection.dropDatabase()
+    await con.connection.close()
+    await mongoServer.stop()
+  })
   describe('deploy', () => {
+    let accessToken: string
+    let dbUser: any
+
+    beforeAll(async () => {
+      dbUser = await controller.createUser(user)
+      accessToken = generateAccessToken({
+        clientId,
+        userId: dbUser.id
+      })
+      await saveTokensInDB(dbUser.id, clientId, accessToken, 'refreshToken')
+    })
     const shouldFailAssertion = async (payload: any) => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
         .send(payload)
 
       expect(res.statusCode).toEqual(400)
@@ -79,6 +125,7 @@ describe('files', () => {
     it('should respond with payload example if valid payload was not provided', async () => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
         .send({ fileTree: getTreeExample() })
 
       expect(res.statusCode).toEqual(200)
@@ -94,21 +141,20 @@ describe('files', () => {
       )
       await expect(folderExists(testJobFolder)).resolves.toEqual(true)
 
-      const testJobFile =
-        path.join(
-          testJobFolder,
-          getTreeExample().members[0].members[0].members[0].name
-        ) + '.sas'
+      const exampleService = getExampleService()
+      const testJobFile = path.join(testJobFolder, exampleService.name) + '.sas'
 
       console.log(`[testJobFile]`, testJobFile)
 
       await expect(fileExists(testJobFile)).resolves.toEqual(true)
 
-      await expect(readFile(testJobFile)).resolves.toEqual(
-        getTreeExample().members[0].members[0].members[0].code
-      )
+      await expect(readFile(testJobFile)).resolves.toEqual(exampleService.code)
 
       await deleteFolder(getTmpFilesFolderPath())
     })
   })
 })
+
+const getExampleService = (): ServiceMember =>
+  ((getTreeExample().members[0] as FolderMember).members[0] as FolderMember)
+    .members[0] as ServiceMember
