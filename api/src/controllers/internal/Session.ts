@@ -2,12 +2,17 @@ import path from 'path'
 import { Session } from '../../types'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
-import { getTmpSessionsFolderPath, generateUniqueFileName } from '../../utils'
+import {
+  getTmpSessionsFolderPath,
+  generateUniqueFileName,
+  sysInitCompiledPath
+} from '../../utils'
 import {
   deleteFolder,
   createFile,
   fileExists,
-  generateTimestamp
+  generateTimestamp,
+  readFile
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
@@ -52,9 +57,13 @@ export class SessionController {
     // we clean them up after a predefined period, if unused
     this.scheduleSessionDestroy(session)
 
+    // Place compiled system init code to autoexec
+    const compiledSystemInitContent = await readFile(sysInitCompiledPath)
+
     // the autoexec file is executed on SAS startup
     const autoExecPath = path.join(sessionFolder, 'autoexec.sas')
-    await createFile(autoExecPath, autoExecContent)
+    const contentForAutoExec = `/* compiled systemInit */\n${compiledSystemInitContent}\n/* autoexec */\n${autoExecContent}`
+    await createFile(autoExecPath, contentForAutoExec)
 
     // create empty code.sas as SAS will not start without a SYSIN
     const codePath = path.join(session.path, 'code.sas')

@@ -1,8 +1,16 @@
 import path from 'path'
 import { getRealPath } from '@sasjs/utils'
 
+export const apiRoot = path.join(__dirname, '..', '..')
+export const codebaseRoot = path.join(apiRoot, '..')
+export const sysInitCompiledPath = path.join(
+  apiRoot,
+  'sasjsbuild',
+  'systemInitCompiled.sas'
+)
+
 export const getWebBuildFolderPath = () =>
-  path.join(__dirname, '..', '..', '..', 'web', 'build')
+  path.join(codebaseRoot, 'web', 'build')
 
 export const getTmpFolderPath = () =>
   process.driveLoc ?? getRealPath(path.join(process.cwd(), 'tmp'))

@@ -4,8 +4,10 @@
   "description": "Api of SASjs server",
   "main": "./src/server.ts",
   "scripts": {
-    "prestart": "npm run swagger",
-    "prestart:prod": "npm run swagger",
+    "initial": "npm run swagger && npm run compileSysInit",
+    "prestart": "npm run initial",
+    "prestart:prod": "npm run initial",
+    "prebuild": "npm run initial",
     "start": "nodemon ./src/server.ts",
     "start:prod": "nodemon ./src/prod-server.ts",
     "build": "rimraf build && tsc",
@@ -16,14 +18,18 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack",
-    "exe": "npm run build && npm run public:copy && npm run web:copy && pkg .",
+    "exe": "npm run build && npm run exe:copy && pkg .",
+    "exe:copy": "npm run public:copy && npm run sasjsbuild:copy && npm run web:copy",
     "public:copy": "cp -r ./public/ ./build/public/",
-    "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/"
+    "sasjsbuild:copy": "cp -r ./sasjsbuild/ ./build/sasjsbuild/",
+    "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/",
+    "compileSysInit": "ts-node ./scripts/compileSysInit.ts"
   },
   "bin": "./build/src/server.js",
   "pkg": {
     "assets": [
       "./build/public/**/*",
+      "./build/sasjsbuild/**/*",
       "./web/build/**/*"
     ],
     "targets": [
@@ -40,7 +46,8 @@
   },
   "author": "Analytium Ltd",
   "dependencies": {
-    "@sasjs/utils": "^2.33.1",
+    "@sasjs/core": "^2.48.6",
+    "@sasjs/utils": "file:../../utils/build/sasjs-utils-5.0.0.tgz",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.17.1",

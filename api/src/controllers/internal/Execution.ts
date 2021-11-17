@@ -18,10 +18,6 @@ export class ExecutionController {
 
     let program = await readFile(programPath)
 
-    Object.keys(vars).forEach(
-      (key: string) => (program = `%let ${key}=${vars[key]};\n${program}`)
-    )
-
     const sessionController = getSessionController()
 
     const session = await sessionController.getSession()
@@ -38,7 +34,12 @@ export class ExecutionController {
       preProgramVariables?.accessToken ?? 'accessToken'
     )
 
-    program = `
+    const varStatments = Object.keys(vars).reduce(
+      (computed: string, key: string) =>
+        `${computed}%let ${key}=${vars[key]};\n`,
+      ''
+    )
+    const preProgramVarStatments = `
 %let _sasjs_tokenfile=${tokenFile};
 %let _sasjs_username=${preProgramVariables?.username};
 %let _sasjs_userid=${preProgramVariables?.userId};
@@ -47,8 +48,17 @@ export class ExecutionController {
 %let _sasjs_apipath=/SASjsApi/stp/execute;
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
-%let sasjsprocessmode=Stored Program;
+%let sasjsprocessmode=Stored Program;`
+
+    program = `
+/* runtime vars */
+${varStatments}
 filename _webout "${weboutPath}";
+
+/* dynamic user-provided vars */
+${preProgramVarStatments}
+
+/* actual job code */
 ${program}`
 
     // if no files are uploaded filesNamesMap will be undefined

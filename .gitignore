@@ -6,6 +6,7 @@ node_modules/
 sas/
 tmp/
 build/
+sasjsbuild/
 certificates/
 executables/
 .env

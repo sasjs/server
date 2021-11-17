@@ -14,7 +14,6 @@ import {
 import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
-import { request } from 'https'
 
 interface ExecuteReturnJsonPayload {
   /**
