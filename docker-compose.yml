@@ -7,20 +7,25 @@ services:
       context: .
       dockerfile: DockerfileApi
     environment:
-      MODE: server
-      CORS: enable
+      MODE: ${MODE}
+      CORS: ${CORS}
       PORT: ${PORT_API}
       PORT_WEB: ${PORT_WEB}
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       AUTH_CODE_SECRET: ${AUTH_CODE_SECRET}
       DB_CONNECT: mongodb://mongodb:27017/sasjs
+      SAS_PATH: /usr/server/sasexe
     expose:
       - ${PORT_API}
     ports:
       - ${PORT_API}:${PORT_API}
     volumes:
       - ./api:/usr/server/api
+      - type: bind
+        source: ${SAS_EXEC}
+        target: /usr/server/sasexe
+        read_only: true
     links:
       - mongodb
 

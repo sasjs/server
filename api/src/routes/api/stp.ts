@@ -37,8 +37,8 @@ stpRouter.post(
     try {
       const response = await controller.executeReturnJson(
         req,
-        query,
-        body?._program
+        body,
+        query?._program
       )
       res.send(response)
     } catch (err: any) {

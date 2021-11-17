@@ -1,4 +1,5 @@
 FROM node:lts-alpine
+RUN npm install -g @sasjs/cli
 WORKDIR /usr/server/api
 COPY ["package.json","package-lock.json", "./"]
 RUN npm ci

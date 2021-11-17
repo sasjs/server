@@ -1,5 +1,4 @@
 import express from 'express'
-import mongoose from 'mongoose'
 
 import { AuthController } from '../../controllers/'
 import Client from '../../model/Client'
@@ -26,32 +25,6 @@ export const populateClients = async () => {
   result.forEach((r) => {
     clientIDs.add(r.clientId)
   })
-}
-
-export const connectDB = async () => {
-  const { MODE } = process.env
-  if (MODE?.trim() !== 'server') {
-    console.log('Running in Destop Mode, no DB to connect.')
-
-    const { sasLoc, driveLoc } = await getDesktopFields()
-
-    process.sasLoc = sasLoc
-    process.driveLoc = driveLoc
-
-    return
-  }
-
-  // NOTE: when exporting app.js as agent for supertest
-  // we should exlcude connecting to the real database
-  if (process.env.NODE_ENV !== 'test') {
-    mongoose.connect(process.env.DB_CONNECT as string, async (err) => {
-      if (err) throw err
-
-      console.log('Connected to db!')
-
-      await populateClients()
-    })
-  }
 }
 
 authRouter.post('/authorize', async (req, res) => {
