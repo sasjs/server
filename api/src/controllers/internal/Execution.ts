@@ -101,6 +101,7 @@ ${program}`
       typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
 
     let debugResponse: string | undefined
+
     if ((debugValue && debugValue >= 131) || session.crashed) {
       debugResponse = `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
     }
@@ -108,7 +109,16 @@ ${program}`
     session.inUse = false
     sessionController.deleteSession(session)
 
-    if (returnJson) return { result: debugResponse ?? webout, log }
+    if (returnJson) {
+      const response: any = {
+        result: webout
+      }
+      if ((debugValue && debugValue >= 131) || session.crashed) {
+        response.log = log
+      }
+
+      return response
+    }
     return debugResponse ?? webout
   }
 

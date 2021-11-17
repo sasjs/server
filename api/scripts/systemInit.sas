@@ -10,6 +10,4 @@
 **/
 
 
-proc fcmp outcat=work.sasjs.utils;
-%mcf_stpsrv_header()
-quit;
+%mcf_stpsrv_header(wrap=YES, insert_cmplib=YES)
