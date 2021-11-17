@@ -15,7 +15,6 @@ services:
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       AUTH_CODE_SECRET: ${AUTH_CODE_SECRET}
       DB_CONNECT: mongodb://mongodb:27017/sasjs
-      SAS_EXEC: ${SAS_EXEC}
     expose:
       - ${PORT_API}
     ports:

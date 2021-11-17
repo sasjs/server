@@ -6,7 +6,8 @@ import cors from 'cors'
 
 import webRouter from './routes/web'
 import apiRouter from './routes/api'
-import { connectDB, getWebBuildFolderPath } from './utils'
+import { getWebBuildFolderPath } from './utils'
+import { connectDB } from './routes/api/auth'
 
 dotenv.config()
 

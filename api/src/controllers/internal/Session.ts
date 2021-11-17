@@ -1,5 +1,6 @@
 import path from 'path'
 import { Session } from '../../types'
+import { configuration } from '../../../package.json'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import { getTmpSessionsFolderPath, generateUniqueFileName } from '../../utils'
@@ -64,8 +65,8 @@ export class SessionController {
     // update the session array to say that it is currently running
     // however we also need a promise so that we can update the
     // session array to say that it has (eventually) finished.
-
-    execFilePromise(process.sasLoc, [
+    const sasLoc = process.sasLoc ?? configuration.sasPath
+    execFilePromise(sasLoc, [
       '-SYSIN',
       codePath,
       '-LOG',
@@ -83,7 +84,7 @@ export class SessionController {
       .catch((err) => {
         session.completed = true
         session.crashed = err.toString()
-        console.log('session crashed', session.id)
+        console.log('session crashed', session.id, err)
       })
 
     // we have a triggered session - add to array

@@ -4,7 +4,6 @@ COPY ["package.json","package-lock.json", "./"]
 RUN npm ci
 COPY ./api .
 COPY ./certificates ../certificates
-COPY ./sas_exe ../sas_exe
 # RUN chown -R node /usr/server/api
 # USER node
 CMD ["npm","start"]
