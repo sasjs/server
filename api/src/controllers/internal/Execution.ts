@@ -53,7 +53,7 @@ export class ExecutionController {
     program = `
 /* runtime vars */
 ${varStatments}
-filename _webout "${weboutPath}";
+filename _webout "${weboutPath}" mod;
 
 /* dynamic user-provided vars */
 ${preProgramVarStatments}
@@ -111,7 +111,7 @@ ${program}`
 
     if (returnJson) {
       const response: any = {
-        result: webout
+        webout: webout
       }
       if ((debugValue && debugValue >= 131) || session.crashed) {
         response.log = log

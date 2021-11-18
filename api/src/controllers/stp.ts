@@ -25,7 +25,7 @@ interface ExecuteReturnJsonPayload {
 interface ExecuteReturnJsonResponse {
   status: string
   log?: string
-  result?: string
+  _webout?: string
   message?: string
 }
 
@@ -120,7 +120,7 @@ const executeReturnJson = async (
     )
     return {
       status: 'success',
-      result: jsonResult.result,
+      _webout: jsonResult.webout,
       log: jsonResult.log
     }
   } catch (err: any) {
