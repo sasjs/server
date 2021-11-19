@@ -1,0 +1,47 @@
+name: SASjs Server Executable Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies WEB
+        working-directory: ./web
+        run: npm ci
+
+      - name: Build WEB
+        working-directory: ./web
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Install Dependencies API
+        working-directory: ./api
+        run: npm ci
+
+      - name: Build Executables
+        working-directory: ./api
+        run: npm run exe
+        env:
+          CI: true
+
+      -name: Create Tag with Release
+      - uses: Klemensas/action-autotag@stable
+        with:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./executables/api-linux
+            ./executables/api-macos
+            ./executables/api-win.exe
+          token: ${{ secrets.GH_TOKEN }}
