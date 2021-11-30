@@ -4,26 +4,32 @@
   "description": "Api of SASjs server",
   "main": "./src/server.ts",
   "scripts": {
-    "prestart": "npm run swagger",
-    "prestart:prod": "npm run swagger",
+    "initial": "npm run swagger && npm run compileSysInit",
+    "prestart": "npm run initial",
+    "prestart:prod": "npm run initial",
+    "prebuild": "npm run initial",
     "start": "nodemon ./src/server.ts",
     "start:prod": "nodemon ./src/prod-server.ts",
     "build": "rimraf build && tsc",
     "swagger": "tsoa spec",
     "semantic-release": "semantic-release -d",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
-    "test": "mkdir -p tmp && mkdir -p ../web/build && jest --coverage",
+    "test": "mkdir -p tmp && mkdir -p ../web/build && jest --silent --coverage",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack",
-    "exe": "npm run build && npm run public:copy && npm run web:copy && pkg .",
+    "exe": "npm run build && npm run exe:copy && pkg .",
+    "exe:copy": "npm run public:copy && npm run sasjsbuild:copy && npm run web:copy",
     "public:copy": "cp -r ./public/ ./build/public/",
-    "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/"
+    "sasjsbuild:copy": "cp -r ./sasjsbuild/ ./build/sasjsbuild/",
+    "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/",
+    "compileSysInit": "ts-node ./scripts/compileSysInit.ts"
   },
   "bin": "./build/src/server.js",
   "pkg": {
     "assets": [
       "./build/public/**/*",
+      "./build/sasjsbuild/**/*",
       "./web/build/**/*"
     ],
     "targets": [
@@ -40,7 +46,8 @@
   },
   "author": "Analytium Ltd",
   "dependencies": {
-    "@sasjs/utils": "^2.33.1",
+    "@sasjs/core": "^2.48.6",
+    "@sasjs/utils": "2.34.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.17.1",
@@ -50,7 +57,6 @@
     "mongoose-sequence": "^5.3.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.3",
-    "shelljs": "^0.8.4",
     "swagger-ui-express": "^4.1.6",
     "tsoa": "^3.14.0"
   },
@@ -64,7 +70,6 @@
     "@types/morgan": "^1.9.3",
     "@types/multer": "^1.4.7",
     "@types/node": "^15.12.2",
-    "@types/shelljs": "^0.8.9",
     "@types/supertest": "^2.0.11",
     "@types/swagger-ui-express": "^4.1.3",
     "dotenv": "^10.0.0",
