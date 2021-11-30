@@ -37,6 +37,9 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
+      - name: Checkout again with new Tag
+        uses: actions/checkout@v2
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
