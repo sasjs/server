@@ -47,7 +47,7 @@
   "author": "Analytium Ltd",
   "dependencies": {
     "@sasjs/core": "^2.48.6",
-    "@sasjs/utils": "2.34.0",
+    "@sasjs/utils": "2.34.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.17.1",
