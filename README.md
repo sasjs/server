@@ -17,8 +17,11 @@ Configuration is made in the `configuration` section of `package.json`:
 ### Using dockers:
 
 There is `.env.example` file present at root of the project. [for Production]
+
 There is `.env.example` file present at `./api` of the project. [for Development]
+
 There is `.env.example` file present at `./web` of the project. [for Development]
+
 Remember to provide enviornment variables.
 
 #### Development
