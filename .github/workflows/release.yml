@@ -33,7 +33,7 @@ jobs:
           CI: true
 
       - name: Create Tag with Release
-      - uses: Klemensas/action-autotag@stable
+        uses: Klemensas/action-autotag@stable
         with:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
