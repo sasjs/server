@@ -362,14 +362,15 @@ components:
             properties:
                 status:
                     type: string
-                log:
-                    type: string
                 _webout:
+                    type: string
+                log:
                     type: string
                 message:
                     type: string
             required:
                 - status
+                - _webout
             type: object
             additionalProperties: false
         ExecuteReturnJsonPayload:
@@ -981,7 +982,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-            description: "Trigger a SAS program using it's location in the _program parameter.\r\nEnable debugging using the _debug parameter.\r\nAdditional URL parameters are turned into SAS macro variables.\r\nAny files provided are placed into the session and\r\ncorresponding _WEBIN_XXX variables are created."
+            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return raw content'
             tags:
                 - STP
@@ -1005,7 +1006,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ExecuteReturnJsonResponse'
-            description: "Trigger a SAS program using it's location in the _program parameter.\r\nEnable debugging using the _debug parameter.\r\nAdditional URL parameters are turned into SAS macro variables.\r\nAny files provided are placed into the session and\r\ncorresponding _WEBIN_XXX variables are created."
+            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return JSON'
             tags:
                 - STP
@@ -1026,10 +1027,33 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
+    /SASjsApi/session:
+        get:
+            operationId: Session
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserResponse'
+                            examples:
+                                'Example 1':
+                                    value: {id: 123, username: johnusername, displayName: John}
+            summary: 'Get session info (username).'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
 servers:
     -
         url: /
 tags:
+    -
+        name: Session
+        description: 'Get Session information'
     -
         name: User
         description: 'Operations about users'

@@ -1,16 +1,6 @@
-import express, { response } from 'express'
+import express from 'express'
 import path from 'path'
-import {
-  Request,
-  Security,
-  Route,
-  Tags,
-  Example,
-  Post,
-  Body,
-  Get,
-  Query
-} from 'tsoa'
+import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
 import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
@@ -24,8 +14,8 @@ interface ExecuteReturnJsonPayload {
 }
 interface ExecuteReturnJsonResponse {
   status: string
+  _webout: string
   log?: string
-  _webout?: string
   message?: string
 }
 
@@ -111,17 +101,17 @@ const executeReturnJson = async (
   const filesNamesMap = req.files?.length ? makeFilesNamesMap(req.files) : null
 
   try {
-    const jsonResult: any = await new ExecutionController().execute(
+    const { webout, log } = (await new ExecutionController().execute(
       sasCodePath,
       getPreProgramVariables(req),
       { ...req.query, ...req.body },
       { filesNamesMap: filesNamesMap },
       true
-    )
+    )) as { webout: string; log: string }
     return {
       status: 'success',
-      _webout: jsonResult.webout,
-      log: jsonResult.log
+      _webout: webout,
+      log
     }
   } catch (err: any) {
     throw {

@@ -12,6 +12,10 @@
     },
     "tags": [
       {
+        "name": "Session",
+        "description": "Get Session information"
+      },
+      {
         "name": "User",
         "description": "Operations about users"
       },

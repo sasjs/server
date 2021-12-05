@@ -100,26 +100,20 @@ ${program}`
     const debugValue =
       typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
 
-    let debugResponse: string | undefined
-
-    if ((debugValue && debugValue >= 131) || session.crashed) {
-      debugResponse = `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
-    }
-
     session.inUse = false
     sessionController.deleteSession(session)
 
     if (returnJson) {
-      const response: any = {
-        webout: webout
+      return {
+        webout,
+        log:
+          (debugValue && debugValue >= 131) || session.crashed ? log : undefined
       }
-      if ((debugValue && debugValue >= 131) || session.crashed) {
-        response.log = log
-      }
-
-      return response
     }
-    return debugResponse ?? webout
+
+    return (debugValue && debugValue >= 131) || session.crashed
+      ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
+      : webout
   }
 
   buildDirectorytree() {
