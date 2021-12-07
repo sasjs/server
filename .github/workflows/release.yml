@@ -39,4 +39,3 @@ jobs:
             ./executables/api-linux
             ./executables/api-macos
             ./executables/api-win.exe
-          token: ${{ secrets.GH_TOKEN }}
