@@ -2,8 +2,8 @@ name: SASjs Server Executable Release
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*.*.*'
 
 jobs:
   release:
@@ -32,17 +32,10 @@ jobs:
         env:
           CI: true
 
-      - name: Create Tag with Release
-        uses: Klemensas/action-autotag@stable
-        with:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             ./executables/api-linux
             ./executables/api-macos
             ./executables/api-win.exe
-          token: ${{ secrets.GH_TOKEN }}
