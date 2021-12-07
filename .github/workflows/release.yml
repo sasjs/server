@@ -2,8 +2,8 @@ name: SASjs Server Executable Release
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*.*.*'
 
 jobs:
   release:
