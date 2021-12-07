@@ -26,7 +26,7 @@ const authenticateToken = (
   res: any,
   next: any,
   key: string,
-  tokenType: 'accessToken' | 'refreshToken' = 'accessToken'
+  tokenType: 'accessToken' | 'refreshToken'
 ) => {
   const { MODE } = process.env
   if (MODE?.trim() !== 'server') {

@@ -18,12 +18,12 @@ export const connectDB = async () => {
       process.driveLoc = driveLoc
 
       return
-    } else {
-      const { SAS_PATH } = process.env
-      const sasDir = SAS_PATH ?? configuration.sasPath
-
-      process.sasLoc = path.join(sasDir, 'sas')
     }
+
+    const { SAS_PATH } = process.env
+    const sasDir = SAS_PATH ?? configuration.sasPath
+
+    process.sasLoc = path.join(sasDir, 'sas')
 
     console.log('sasLoc: ', process.sasLoc)
 

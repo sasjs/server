@@ -1,4 +1,4 @@
 export * from './authenticateToken'
-export * from './desktopRestrict'
+export * from './desktop'
 export * from './verifyAdmin'
 export * from './verifyAdminIfNeeded'
