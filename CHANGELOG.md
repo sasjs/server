@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.9](https://github.com/sasjs/server/compare/v0.0.3...v0.0.9) (2021-12-07)
+
+
+### Bug Fixes
+
+* release with files ([#35](https://github.com/sasjs/server/issues/35)) ([a0822e6](https://github.com/sasjs/server/commit/a0822e6b61905257475121ffd907fd1f79ed146b))
+
 ### [0.0.8](https://github.com/saadjutt01/server/compare/v0.0.7...v0.0.8) (2021-12-07)
 
 ### [0.0.7](https://github.com/saadjutt01/server/compare/v0.0.6...v0.0.7) (2021-12-07)
