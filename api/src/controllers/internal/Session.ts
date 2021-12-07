@@ -92,7 +92,7 @@ export class SessionController {
       .catch((err) => {
         session.completed = true
         session.crashed = err.toString()
-        console.log('session crashed', session.id)
+        console.log('session crashed', session.id, session.crashed)
       })
 
     // we have a triggered session - add to array
