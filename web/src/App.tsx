@@ -19,7 +19,14 @@ function App() {
       <ThemeProvider theme={theme}>
         <HashRouter>
           <Header />
-          <Login setTokens={setTokens} />
+          <Switch>
+            <Route exact path="/SASjsLogon">
+              <Login getCodeOnly />
+            </Route>
+            <Route path="/">
+              <Login setTokens={setTokens} />
+            </Route>
+          </Switch>
         </HashRouter>
       </ThemeProvider>
     )
@@ -38,6 +45,9 @@ function App() {
           </Route>
           <Route exact path="/SASjsStudio">
             <Studio />
+          </Route>
+          <Route exact path="/SASjsLogon">
+            <Login getCodeOnly />
           </Route>
         </Switch>
       </HashRouter>

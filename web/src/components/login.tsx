@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
-import { CssBaseline, Box, TextField, Button } from '@mui/material'
+import { CssBaseline, Box, TextField, Button, Typography } from '@mui/material'
 
 const headers = {
   Accept: 'application/json',
@@ -18,7 +19,12 @@ const getAuthCode = async (credentials: any) => {
     method: 'POST',
     headers,
     body: JSON.stringify(credentials)
-  }).then((data) => data.json())
+  }).then(async (response) => {
+    const resText = await response.text()
+    if (response.status !== 200) throw resText
+
+    return JSON.parse(resText)
+  })
 }
 const getTokens = async (payload: any) => {
   return fetch(`${baseUrl}/SASjsApi/auth/token`, {
@@ -28,26 +34,63 @@ const getTokens = async (payload: any) => {
   }).then((data) => data.json())
 }
 
-const Login = ({ setTokens }: any) => {
-  const [username, setUserName] = useState()
-  const [password, setPassword] = useState()
+const Login = ({ setTokens, getCodeOnly }: any) => {
+  console.log('getCodeOnly', getCodeOnly)
+  const location = useLocation()
+  const [username, setUserName] = useState('')
+  const [password, setPassword] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  let error: boolean
+  const [displayCode, setDisplayCode] = useState(null)
 
   const handleSubmit = async (e: any) => {
+    error = false
+    setErrorMessage('')
     e.preventDefault()
-    const { REACT_APP_CLIENT_ID: clientId } = process.env
+    let { REACT_APP_CLIENT_ID: clientId } = process.env
+
+    if (getCodeOnly) {
+      const params = new URLSearchParams(location.search)
+      const responseType = params.get('response_type')
+      if (responseType === 'code')
+        clientId = params.get('client_id') ?? undefined
+    }
 
     const { code } = await getAuthCode({
       clientId,
       username,
       password
+    }).catch((err: string) => {
+      error = true
+      setErrorMessage(err)
+      return {}
     })
 
-    const { accessToken, refreshToken } = await getTokens({
-      clientId,
-      code
-    })
+    if (!error) {
+      if (getCodeOnly) return setDisplayCode(code)
 
-    setTokens(accessToken, refreshToken)
+      const { accessToken, refreshToken } = await getTokens({
+        clientId,
+        code
+      })
+
+      setTokens(accessToken, refreshToken)
+    }
+  }
+
+  if (displayCode) {
+    return (
+      <Box className="main">
+        <CssBaseline />
+        <br />
+        <h2>Authorization Code</h2>
+        <Typography m={2} p={3} style={{ overflowWrap: 'anywhere' }}>
+          {displayCode}
+        </Typography>
+
+        <br />
+      </Box>
+    )
   }
 
   return (
@@ -61,7 +104,12 @@ const Login = ({ setTokens }: any) => {
     >
       <CssBaseline />
       <br />
-      <h2>Welcome to SASjs Server!</h2>
+      <h2 style={{ width: 'auto' }}>Welcome to SASjs Server!</h2>
+      {getCodeOnly && (
+        <p style={{ width: 'auto' }}>
+          Provide credentials to get authorization code.
+        </p>
+      )}
       <br />
 
       <TextField
@@ -80,6 +128,7 @@ const Login = ({ setTokens }: any) => {
         onChange={(e: any) => setPassword(e.target.value)}
         required
       />
+      {errorMessage && <span>{errorMessage}</span>}
       <Button type="submit" variant="outlined">
         Submit
       </Button>
@@ -88,7 +137,8 @@ const Login = ({ setTokens }: any) => {
 }
 
 Login.propTypes = {
-  setTokens: PropTypes.func.isRequired
+  setTokens: PropTypes.func,
+  getCodeOnly: PropTypes.bool
 }
 
 export default Login

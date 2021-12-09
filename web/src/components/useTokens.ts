@@ -3,15 +3,8 @@ import { useEffect, useState } from 'react'
 
 export default function useTokens() {
   const getTokens = () => {
-    const accessTokenString = localStorage.getItem('accessToken')
-    const accessToken: string = accessTokenString
-      ? JSON.parse(accessTokenString)
-      : undefined
-
-    const refreshTokenString = localStorage.getItem('refreshToken')
-    const refreshToken: string = refreshTokenString
-      ? JSON.parse(refreshTokenString)
-      : undefined
+    const accessToken = localStorage.getItem('accessToken')
+    const refreshToken = localStorage.getItem('refreshToken')
 
     if (accessToken && refreshToken) {
       setAxiosRequestHeader(accessToken)
@@ -31,8 +24,8 @@ export default function useTokens() {
   setAxiosResponse(setTokens)
 
   const saveTokens = (accessToken: string, refreshToken: string) => {
-    localStorage.setItem('accessToken', JSON.stringify(accessToken))
-    localStorage.setItem('refreshToken', JSON.stringify(refreshToken))
+    localStorage.setItem('accessToken', accessToken)
+    localStorage.setItem('refreshToken', refreshToken)
     setAxiosRequestHeader(accessToken)
     setTokens({ accessToken, refreshToken })
   }
