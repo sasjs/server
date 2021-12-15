@@ -35,7 +35,6 @@ const getTokens = async (payload: any) => {
 }
 
 const Login = ({ setTokens, getCodeOnly }: any) => {
-  console.log('getCodeOnly', getCodeOnly)
   const location = useLocation()
   const [username, setUserName] = useState('')
   const [password, setPassword] = useState('')
