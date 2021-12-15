@@ -3,12 +3,14 @@ import mongoose from 'mongoose'
 import { configuration } from '../../package.json'
 import { getDesktopFields } from '.'
 import { populateClients } from '../routes/api/auth'
+import { getRealPath } from '@sasjs/utils'
 
 export const connectDB = async () => {
   // NOTE: when exporting app.js as agent for supertest
   // we should exlcude connecting to the real database
   if (process.env.NODE_ENV !== 'test') {
     const { MODE } = process.env
+
     if (MODE?.trim() !== 'server') {
       console.log('Running in Destop Mode, no DB to connect.')
 
@@ -16,16 +18,19 @@ export const connectDB = async () => {
 
       process.sasLoc = sasLoc
       process.driveLoc = driveLoc
+    } else {
+      const { SAS_PATH, DRIVE_PATH } = process.env
 
-      return
+      process.sasLoc = SAS_PATH ?? configuration.sasPath
+      process.driveLoc = getRealPath(
+        path.join(process.cwd(), DRIVE_PATH ?? 'tmp')
+      )
     }
 
-    const { SAS_PATH } = process.env
-    const sasDir = SAS_PATH ?? configuration.sasPath
-
-    process.sasLoc = path.join(sasDir, 'sas')
-
     console.log('sasLoc: ', process.sasLoc)
+    console.log('sasDrive: ', process.driveLoc)
+
+    if (MODE?.trim() !== 'server') return
 
     mongoose.connect(process.env.DB_CONNECT as string, async (err) => {
       if (err) throw err

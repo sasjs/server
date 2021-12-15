@@ -5,8 +5,10 @@ import { createFolder, fileExists, folderExists } from '@sasjs/utils'
 const isWindows = () => process.platform === 'win32'
 
 export const getDesktopFields = async () => {
-  const sasLoc = await getSASLocation()
-  const driveLoc = await getDriveLocation()
+  const { SAS_PATH, DRIVE_PATH } = process.env
+
+  const sasLoc = SAS_PATH ?? (await getSASLocation())
+  const driveLoc = DRIVE_PATH ?? (await getDriveLocation())
 
   return { sasLoc, driveLoc }
 }
