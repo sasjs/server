@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: DockerfileApi
     environment:
-      MODE: ${MODE}
+      MODE: 'server'
       CORS: ${CORS}
       PORT: ${PORT_API}
       PORT_WEB: ${PORT_WEB}
