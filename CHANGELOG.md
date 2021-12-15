@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.12](https://github.com/sasjs/server/compare/v0.0.11...v0.0.12) (2021-12-15)
+
+
+### Bug Fixes
+
+* use env if provided for desktop mode ([d19ce25](https://github.com/sasjs/server/commit/d19ce253b4e2d2a7dd912d43a553d4c1bd60ba58))
+
 ### [0.0.11](https://github.com/sasjs/server/compare/v0.0.10...v0.0.11) (2021-12-15)
 
 
