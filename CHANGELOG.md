@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.11](https://github.com/sasjs/server/compare/v0.0.10...v0.0.11) (2021-12-15)
+
+
+### Features
+
+* added authorization route for web ([#37](https://github.com/sasjs/server/issues/37)) ([d0a1457](https://github.com/sasjs/server/commit/d0a1457f44a3d8993b57106e5e681c4e51fe8e7d))
+
 ### [0.0.10](https://github.com/sasjs/server/compare/v0.0.9...v0.0.10) (2021-12-07)
 
 ### [0.0.9](https://github.com/sasjs/server/compare/v0.0.3...v0.0.9) (2021-12-07)
