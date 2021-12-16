@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "NodeJS wrapper for calling the SAS binary executable",
   "scripts": {
     "server": "npm run server:prepare && npm run server:start",

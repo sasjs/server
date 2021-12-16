@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.13](https://github.com/sasjs/server/compare/v0.0.12...v0.0.13) (2021-12-16)
+
+
+### Features
+
+* **studio:** run selected code + open in studio ([27129a8](https://github.com/sasjs/server/commit/27129a8921084c72968383fdbc2ecbd2f417456c))
+
+
+### Bug Fixes
+
+* output for Studio ([e5be0e6](https://github.com/sasjs/server/commit/e5be0e678965b05c64bcc8f55c48a366e0ff55a3))
+
 ### [0.0.12](https://github.com/sasjs/server/compare/v0.0.11...v0.0.12) (2021-12-15)
 
 
