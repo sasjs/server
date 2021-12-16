@@ -28,7 +28,12 @@ const Studio = () => {
     axios
       .post(`/SASjsApi/stp/run`, { code })
       .then((res: any) => {
-        setLog(res.data)
+        const data =
+          typeof res.data === 'string'
+            ? res.data
+            : `<pre><code>${JSON.stringify(res.data, null, 4)}</code></pre>`
+
+        setLog(data)
         document?.getElementById('sas_log')?.scrollIntoView()
       })
       .catch((err) => console.log(err))
@@ -78,7 +83,14 @@ const Studio = () => {
           Run Selected SAS Code
         </Button>
       </Stack>
-      {log && <div id="sas_log" dangerouslySetInnerHTML={{ __html: log }} />}
+      {log && (
+        <>
+          <br />
+          <h2 id="sas_log">Output</h2>
+          <br />
+          <div dangerouslySetInnerHTML={{ __html: log }} />
+        </>
+      )}
     </Box>
   )
 }
