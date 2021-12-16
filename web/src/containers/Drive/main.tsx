@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
 
 import Editor from '@monaco-editor/react'
@@ -89,10 +90,10 @@ const Main = (props: any) => {
             style={{ position: 'absolute', left: '50%', top: '50%' }}
           />
         )}
-        {!isLoading && props?.selectedFilePath !== '' && !editMode && (
+        {!isLoading && props?.selectedFilePath && !editMode && (
           <code style={{ whiteSpace: 'break-spaces' }}>{fileContent}</code>
         )}
-        {!isLoading && props?.selectedFilePath !== '' && editMode && (
+        {!isLoading && props?.selectedFilePath && editMode && (
           <Editor
             height="95%"
             value={fileContent}
@@ -110,17 +111,26 @@ const Main = (props: any) => {
         <Button
           variant="contained"
           onClick={handleEditSaveBtnClick}
-          disabled={isLoading || props?.selectedFilePath === ''}
+          disabled={isLoading || !props?.selectedFilePath}
         >
           {!editMode ? 'Edit' : 'Save'}
         </Button>
         <Button
           variant="contained"
           onClick={handleCancelExecuteBtnClick}
-          disabled={isLoading || props?.selectedFilePath === ''}
+          disabled={isLoading || !props?.selectedFilePath}
         >
           {editMode ? 'Cancel' : 'Execute'}
         </Button>
+        {props?.selectedFilePath && (
+          <Button
+            variant="contained"
+            component={Link}
+            to={`/SASjsStudio?_program=${props.selectedFilePath}`}
+          >
+            Open in Studio
+          </Button>
+        )}
       </Stack>
     </Box>
   )

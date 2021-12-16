@@ -5,6 +5,13 @@ import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
 
+interface RunSASPayload {
+  /**
+   * Code of SAS program
+   * @example "* SAS Code HERE;"
+   */
+  code: string
+}
 interface ExecuteReturnJsonPayload {
   /**
    * Location of SAS program
@@ -40,6 +47,19 @@ export class STPController {
   ): Promise<string> {
     return executeReturnRaw(request, _program)
   }
+
+  /**
+   * Trigger a SAS program.
+   * @summary Run SAS Program, return raw content
+   */
+  @Post('/run')
+  public async runSAS(
+    @Request() request: express.Request,
+    @Body() body: RunSASPayload
+  ): Promise<string> {
+    return runSAS(request, body)
+  }
+
   /**
    * Trigger a SAS program using it's location in the _program parameter.
    * Enable debugging using the _debug parameter.
@@ -72,10 +92,29 @@ const executeReturnRaw = async (
       .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   try {
-    const result = await new ExecutionController().execute(
+    const result = await new ExecutionController().executeFile(
       sasCodePath,
       getPreProgramVariables(req),
       query
+    )
+
+    return result as string
+  } catch (err: any) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'Job execution failed.',
+      error: typeof err === 'object' ? err.toString() : err
+    }
+  }
+}
+
+const runSAS = async (req: any, { code }: RunSASPayload) => {
+  try {
+    const result = await new ExecutionController().executeProgram(
+      code,
+      getPreProgramVariables(req),
+      req.query
     )
 
     return result as string
@@ -101,7 +140,7 @@ const executeReturnJson = async (
   const filesNamesMap = req.files?.length ? makeFilesNamesMap(req.files) : null
 
   try {
-    const { webout, log } = (await new ExecutionController().execute(
+    const { webout, log } = (await new ExecutionController().executeFile(
       sasCodePath,
       getPreProgramVariables(req),
       { ...req.query, ...req.body },

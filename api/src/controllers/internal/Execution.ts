@@ -6,7 +6,7 @@ import { PreProgramVars, TreeNode } from '../../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
 
 export class ExecutionController {
-  async execute(
+  async executeFile(
     programPath: string,
     preProgramVariables: PreProgramVars,
     vars: { [key: string]: string | number | undefined },
@@ -16,8 +16,23 @@ export class ExecutionController {
     if (!(await fileExists(programPath)))
       throw 'ExecutionController: SAS file does not exist.'
 
-    let program = await readFile(programPath)
+    const program = await readFile(programPath)
 
+    return this.executeProgram(
+      program,
+      preProgramVariables,
+      vars,
+      otherArgs,
+      returnJson
+    )
+  }
+  async executeProgram(
+    program: string,
+    preProgramVariables: PreProgramVars,
+    vars: { [key: string]: string | number | undefined },
+    otherArgs?: any,
+    returnJson?: boolean
+  ) {
     const sessionController = getSessionController()
 
     const session = await sessionController.getSession()

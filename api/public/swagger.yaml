@@ -358,6 +358,16 @@ components:
                 - description
             type: object
             additionalProperties: false
+        RunSASPayload:
+            properties:
+                code:
+                    type: string
+                    description: 'Code of SAS program'
+                    example: '* SAS Code HERE;'
+            required:
+                - code
+            type: object
+            additionalProperties: false
         ExecuteReturnJsonResponse:
             properties:
                 status:
@@ -1027,6 +1037,30 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
+    /SASjsApi/stp/run:
+        post:
+            operationId: RunSAS
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            description: 'Trigger a SAS program.'
+            summary: 'Run SAS Program, return raw content'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RunSASPayload'
     /SASjsApi/session:
         get:
             operationId: Session

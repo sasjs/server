@@ -77,6 +77,11 @@ export const updateFileDriveValidation = (data: any): Joi.ValidationResult =>
     fileContent: Joi.string().required()
   }).validate(data)
 
+export const runSASValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    code: Joi.string().required()
+  }).validate(data)
+
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required()
