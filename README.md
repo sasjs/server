@@ -8,6 +8,15 @@ SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It
 
 One major benefit of using SASjs Server (alongside other components of the SASjs framework such as the [CLI](https://cli.sasjs.io), [Adapter](https://adapter.sasjs.io) and [Core](https://core.sasjs.io) library) is that the projects you create can be very easily ported to SAS 9 (Stored Process server) or Viya (Job Execution server).
 
+## Installation
+
+Just download the relevant package from the [releases](https://github.com/sasjs/server/releases) page and trigger, either by double clicking (windows) or executing from commandline.
+
+You are presented with two prompts:
+
+* Location of your `sas.exe` / `sas.sh` executable
+* Path to a filesystem location for Stored Programs and temporary files
+
 ## Configuration
 
 Configuration is made in the `configuration` section of `package.json`:
