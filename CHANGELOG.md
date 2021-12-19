@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.14](https://github.com/sasjs/server/compare/v0.0.13...v0.0.14) (2021-12-19)
+
+
+### Bug Fixes
+
+* actually a README change, the fix was in the previous commit (updating ms_webout) that should have been a PR, to trigger a release ([d86c841](https://github.com/sasjs/server/commit/d86c841f1fb94455ac3500f215a42b4acb8b0017))
+* bumping sasjs/core with adjustment to ms_webout() ([076b866](https://github.com/sasjs/server/commit/076b866c020fb017512c2764801022a57fe4cca8))
+* switch to main branch ([ceca370](https://github.com/sasjs/server/commit/ceca370e2757baf2e8ebb90dab6dfd27f7b990fc))
+
 ### [0.0.13](https://github.com/sasjs/server/compare/v0.0.12...v0.0.13) (2021-12-16)
 
 
