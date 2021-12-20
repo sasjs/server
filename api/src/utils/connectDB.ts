@@ -8,7 +8,10 @@ import { getRealPath } from '@sasjs/utils'
 export const connectDB = async () => {
   // NOTE: when exporting app.js as agent for supertest
   // we should exlcude connecting to the real database
-  if (process.env.NODE_ENV !== 'test') {
+  if (process.env.NODE_ENV === 'test') {
+    process.driveLoc = path.join(process.cwd(), 'tmp')
+    return
+  } else {
     const { MODE } = process.env
 
     if (MODE?.trim() !== 'server') {
