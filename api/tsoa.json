@@ -38,6 +38,10 @@
       {
         "name": "STP",
         "description": "Operations about STP"
+      },
+      {
+        "name": "RUN",
+        "description": "Execute SAS code"
       }
     ],
     "yaml": true,

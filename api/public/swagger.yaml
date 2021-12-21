@@ -982,6 +982,50 @@ paths:
                         format: double
                         type: number
                     example: '6789'
+    /SASjsApi/run/code:
+        post:
+            operationId: RunSAS
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            description: 'Trigger a SAS program.'
+            summary: 'Run SAS Program, return raw content'
+            tags:
+                - RUN
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RunSASPayload'
+    /SASjsApi/session:
+        get:
+            operationId: Session
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserResponse'
+                            examples:
+                                'Example 1':
+                                    value: {id: 123, username: johnusername, displayName: John}
+            summary: 'Get session info (username).'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
     /SASjsApi/stp/execute:
         get:
             operationId: ExecuteReturnRaw
@@ -1037,50 +1081,6 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
-    /SASjsApi/stp/run:
-        post:
-            operationId: RunSAS
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-            description: 'Trigger a SAS program.'
-            summary: 'Run SAS Program, return raw content'
-            tags:
-                - STP
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/RunSASPayload'
-    /SASjsApi/session:
-        get:
-            operationId: Session
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserResponse'
-                            examples:
-                                'Example 1':
-                                    value: {id: 123, username: johnusername, displayName: John}
-            summary: 'Get session info (username).'
-            tags:
-                - Session
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
 servers:
     -
         url: /
@@ -1106,3 +1106,6 @@ tags:
     -
         name: STP
         description: 'Operations about STP'
+    -
+        name: RUN
+        description: 'Execute SAS code'
