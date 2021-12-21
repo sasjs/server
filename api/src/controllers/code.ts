@@ -3,7 +3,7 @@ import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 
-interface RunSASPayload {
+interface ExecuteSASCodePayload {
   /**
    * Code of SAS program
    * @example "* SAS Code HERE;"
@@ -12,23 +12,23 @@ interface RunSASPayload {
 }
 
 @Security('bearerAuth')
-@Route('SASjsApi/run')
-@Tags('RUN')
-export class RUNController {
+@Route('SASjsApi/code')
+@Tags('CODE')
+export class CodeController {
   /**
-   * Trigger a SAS program.
-   * @summary Run SAS Program, return raw content
+   * Execute SAS code.
+   * @summary Run SAS Code and returns log
    */
-  @Post('/code')
-  public async runSAS(
+  @Post('/execute')
+  public async executeSASCode(
     @Request() request: express.Request,
-    @Body() body: RunSASPayload
+    @Body() body: ExecuteSASCodePayload
   ): Promise<string> {
-    return runSAS(request, body)
+    return executeSASCode(request, body)
   }
 }
 
-const runSAS = async (req: any, { code }: RunSASPayload) => {
+const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
   try {
     const result = await new ExecutionController().executeProgram(
       code,
