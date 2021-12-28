@@ -33,7 +33,9 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
     const result = await new ExecutionController().executeProgram(
       code,
       getPreProgramVariables(req),
-      { ...req.query, _debug: 131 }
+      { ...req.query, _debug: 131 },
+      undefined,
+      true
     )
 
     return result as string
