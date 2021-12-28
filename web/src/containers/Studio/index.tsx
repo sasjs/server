@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
 import Box from '@mui/material/Box'
-import { Button, Paper, Stack, Tab, Toolbar } from '@mui/material'
+import { Button, Paper, Stack, Tab } from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import Editor from '@monaco-editor/react'
 import { useLocation } from 'react-router-dom'

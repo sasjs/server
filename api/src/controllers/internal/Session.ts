@@ -110,7 +110,7 @@ export class SessionController {
 
     // TODO: don't wait forever
     while ((await fileExists(codeFilePath)) && !session.crashed) {}
-    console.log('session crashed?', !!session.crashed, session.crashed)
+    console.log('session crashed?', !!session.crashed, session.crashed || '')
 
     session.ready = true
     return Promise.resolve(session)
