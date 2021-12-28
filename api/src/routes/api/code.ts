@@ -6,7 +6,7 @@ const runRouter = express.Router()
 
 const controller = new CodeController()
 
-runRouter.post('/code', async (req, res) => {
+runRouter.post('/execute', async (req, res) => {
   const { error, value: body } = runSASValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
