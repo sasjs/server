@@ -22,6 +22,7 @@ const Studio = () => {
   const location = useLocation()
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
+  const [webout, setWebout] = useState('')
 
   const [tab, setTab] = React.useState('1')
   const handleTabChange = (_e: any, newValue: string) => {
@@ -45,7 +46,17 @@ const Studio = () => {
     axios
       .post(`/SASjsApi/code/execute`, { code })
       .then((res: any) => {
-        setLog(res.data)
+        setLog(`<div><h2>SAS Log</h2><pre>${res?.data?.log}</pre></div>`)
+
+        const webout = res?.data?.webout
+          ? JSON.parse(
+              res.data.webout
+                .split('>>weboutBEGIN<<')[1]
+                .split('>>weboutEND<<')[0]
+            )
+          : ''
+
+        setWebout(`<pre><code>${JSON.stringify(webout, null, 4)}</code></pre>`)
         setTab('2')
       })
       .catch((err) => console.log(err))
@@ -74,6 +85,7 @@ const Studio = () => {
             <TabList onChange={handleTabChange} centered>
               <Tab className={classes.root} label="Code" value="1" />
               <Tab className={classes.root} label="Log" value="2" />
+              <Tab className={classes.root} label="Webout" value="3" />
             </TabList>
           </Box>
           <TabPanel value="1">
@@ -110,9 +122,10 @@ const Studio = () => {
             </Stack>
           </TabPanel>
           <TabPanel value="2">
-            <h2>Result</h2>
-            <br />
             <div dangerouslySetInnerHTML={{ __html: log }} />
+          </TabPanel>
+          <TabPanel value="3">
+            <div dangerouslySetInnerHTML={{ __html: webout }} />
           </TabPanel>
         </TabContext>
       </Box>
