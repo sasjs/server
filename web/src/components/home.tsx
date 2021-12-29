@@ -23,7 +23,7 @@ const Home = () => {
         and contributions are welcomed.
       </p>
       <p>
-        SASjs Server is maintained by the SASjs Apps team -{' '}
+        SASjs Server is maintained by the SAS Apps team -{' '}
         <a
           href="https://sasapps.io/contact-us"
           target="_blank"
