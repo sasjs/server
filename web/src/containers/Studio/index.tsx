@@ -48,13 +48,21 @@ const Studio = () => {
       .then((res: any) => {
         setLog(`<div><h2>SAS Log</h2><pre>${res?.data?.log}</pre></div>`)
 
-        const webout = res?.data?.webout
-          ? JSON.parse(
-              res.data.webout
-                .split('>>weboutBEGIN<<')[1]
-                .split('>>weboutEND<<')[0]
-            )
-          : ''
+        let weboutString: string
+        try {
+          weboutString = res.data.webout
+            .split('>>weboutBEGIN<<')[1]
+            .split('>>weboutEND<<')[0]
+        } catch (_) {
+          weboutString = res.data.webout
+        }
+
+        let webout: any
+        try {
+          webout = JSON.parse(weboutString)
+        } catch (_) {
+          webout = weboutString
+        }
 
         setWebout(`<pre><code>${JSON.stringify(webout, null, 4)}</code></pre>`)
         setTab('2')
