@@ -4,7 +4,7 @@ import axios from 'axios'
 import Box from '@mui/material/Box'
 import { Button, Paper, Stack, Tab } from '@mui/material'
 import { makeStyles } from '@mui/styles'
-import Editor from '@monaco-editor/react'
+import Editor, { OnMount } from '@monaco-editor/react'
 import { useLocation } from 'react-router-dom'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
@@ -23,14 +23,16 @@ const Studio = () => {
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
   const [webout, setWebout] = useState('')
-
   const [tab, setTab] = React.useState('1')
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
   }
 
-  const editorRef = useRef(null)
-  const handleEditorDidMount = (editor: any) => (editorRef.current = editor)
+  const editorRef = useRef(null as any)
+  const handleEditorDidMount: OnMount = (editor) => {
+    editor.focus()
+    editorRef.current = editor
+  }
 
   const getSelection = () => {
     const editor = editorRef.current as any
@@ -54,21 +56,32 @@ const Studio = () => {
             .split('>>weboutBEGIN<<')[1]
             .split('>>weboutEND<<')[0]
         } catch (_) {
-          weboutString = res.data.webout
+          weboutString = res?.data?.webout ?? ''
         }
 
-        let webout: any
+        let webout: string
         try {
-          webout = JSON.parse(weboutString)
+          webout = JSON.stringify(JSON.parse(weboutString), null, 4)
         } catch (_) {
           webout = weboutString
         }
 
-        setWebout(`<pre><code>${JSON.stringify(webout, null, 4)}</code></pre>`)
+        setWebout(`<pre><code>${webout}</code></pre>`)
         setTab('2')
       })
       .catch((err) => console.log(err))
   }
+
+  useEffect(() => {
+    const content = localStorage.getItem('fileContent') ?? ''
+    setFileContent(content)
+  }, [])
+
+  useEffect(() => {
+    if (fileContent.length) {
+      localStorage.setItem('fileContent', fileContent)
+    }
+  }, [fileContent])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
