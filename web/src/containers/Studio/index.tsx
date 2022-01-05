@@ -40,9 +40,7 @@ const Studio = () => {
     return selection ?? ''
   }
 
-  const handleRunSelectionBtnClick = () => runCode(getSelection())
-
-  const handleRunBtnClick = () => runCode(fileContent)
+  const handleRunBtnClick = () => runCode(getSelection() || fileContent)
 
   const runCode = (code: string) => {
     axios
@@ -102,7 +100,13 @@ const Studio = () => {
       <br />
       <Box sx={{ width: '100%', typography: 'body1' }}>
         <TabContext value={tab}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Box
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider'
+            }}
+            style={{ position: 'fixed', background: 'white', width: '100%' }}
+          >
             <TabList onChange={handleTabChange} centered>
               <Tab className={classes.root} label="Code" value="1" />
               <Tab className={classes.root} label="Log" value="2" />
@@ -114,6 +118,7 @@ const Studio = () => {
             <Paper
               sx={{
                 height: '70vh',
+                marginTop: '50px',
                 padding: '10px',
                 overflow: 'auto',
                 position: 'relative'
@@ -137,16 +142,20 @@ const Studio = () => {
               <Button variant="contained" onClick={handleRunBtnClick}>
                 Run SAS Code
               </Button>
-              <Button variant="contained" onClick={handleRunSelectionBtnClick}>
-                Run Selected SAS Code
-              </Button>
             </Stack>
           </TabPanel>
           <TabPanel value="2">
-            <div dangerouslySetInnerHTML={{ __html: log }} />
+            <div
+              id="sas_log"
+              style={{ marginTop: '50px' }}
+              dangerouslySetInnerHTML={{ __html: log }}
+            />
           </TabPanel>
           <TabPanel value="3">
-            <div dangerouslySetInnerHTML={{ __html: webout }} />
+            <div
+              style={{ marginTop: '50px' }}
+              dangerouslySetInnerHTML={{ __html: webout }}
+            />
           </TabPanel>
         </TabContext>
       </Box>
