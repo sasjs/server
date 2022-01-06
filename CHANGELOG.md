@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.15](https://github.com/sasjs/server/compare/v0.0.14...v0.0.15) (2022-01-06)
+
+
+### Bug Fixes
+
+* **studio:** web component updated ([2d77222](https://github.com/sasjs/server/commit/2d77222ae8a139acd9d96466d0e68291c4ebd70e))
+* updated route for sas code ([e1eb044](https://github.com/sasjs/server/commit/e1eb04494a5650726c95990f74fc719eced4ccb5))
+* **web:** autosave and autofocus ([51ee8c0](https://github.com/sasjs/server/commit/51ee8c0825f021d1d67b2d765d5b434cbf248a1f))
+* **web:** parsing of webout ([a115160](https://github.com/sasjs/server/commit/a1151606f21e0007e2b1ca1245d592d96866f62a))
+* **web:** sticky tabs on Studio + extra run code button removed ([450d99f](https://github.com/sasjs/server/commit/450d99f06e5929eb1679e6203284e4faa44e19b0))
+
 ### [0.0.14](https://github.com/sasjs/server/compare/v0.0.13...v0.0.14) (2021-12-19)
 
 
