@@ -11,6 +11,7 @@ import {
 
 import driveRouter from './drive'
 import stpRouter from './stp'
+import codeRouter from './code'
 import userRouter from './user'
 import groupRouter from './group'
 import clientRouter from './client'
@@ -31,6 +32,7 @@ router.use(
 router.use('/drive', authenticateAccessToken, driveRouter)
 router.use('/group', desktopRestrict, groupRouter)
 router.use('/stp', authenticateAccessToken, stpRouter)
+router.use('/code', authenticateAccessToken, codeRouter)
 router.use('/user', desktopRestrict, userRouter)
 router.use(
   '/',

@@ -92,6 +92,16 @@ components:
                 - clientSecret
             type: object
             additionalProperties: false
+        ExecuteSASCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'Code of SAS program'
+                    example: '* SAS Code HERE;'
+            required:
+                - code
+            type: object
+            additionalProperties: false
         MemberType.folder:
             enum:
                 - folder
@@ -358,16 +368,6 @@ components:
                 - description
             type: object
             additionalProperties: false
-        RunSASPayload:
-            properties:
-                code:
-                    type: string
-                    description: 'Code of SAS program'
-                    example: '* SAS Code HERE;'
-            required:
-                - code
-            type: object
-            additionalProperties: false
         ExecuteReturnJsonResponse:
             properties:
                 status:
@@ -511,6 +511,30 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ClientPayload'
+    /SASjsApi/code/execute:
+        post:
+            operationId: ExecuteSASCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            description: 'Execute SAS code.'
+            summary: 'Run SAS Code and returns log'
+            tags:
+                - CODE
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExecuteSASCodePayload'
     /SASjsApi/drive/deploy:
         post:
             operationId: Deploy
@@ -982,6 +1006,26 @@ paths:
                         format: double
                         type: number
                     example: '6789'
+    /SASjsApi/session:
+        get:
+            operationId: Session
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserResponse'
+                            examples:
+                                'Example 1':
+                                    value: {id: 123, username: johnusername, displayName: John}
+            summary: 'Get session info (username).'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
     /SASjsApi/stp/execute:
         get:
             operationId: ExecuteReturnRaw
@@ -1037,50 +1081,6 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
-    /SASjsApi/stp/run:
-        post:
-            operationId: RunSAS
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-            description: 'Trigger a SAS program.'
-            summary: 'Run SAS Program, return raw content'
-            tags:
-                - STP
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/RunSASPayload'
-    /SASjsApi/session:
-        get:
-            operationId: Session
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserResponse'
-                            examples:
-                                'Example 1':
-                                    value: {id: 123, username: johnusername, displayName: John}
-            summary: 'Get session info (username).'
-            tags:
-                - Session
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
 servers:
     -
         url: /
@@ -1106,3 +1106,6 @@ tags:
     -
         name: STP
         description: 'Operations about STP'
+    -
+        name: CODE
+        description: 'Operations on SAS code'

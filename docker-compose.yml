@@ -43,7 +43,7 @@ services:
       - ./web:/usr/server/web
 
   mongodb:
-    image: mongo:latest
+    image: mongo:5.0.4
     ports:
       - 27017:27017
     volumes:
