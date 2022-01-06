@@ -15,7 +15,7 @@ const app = express()
 const { MODE, CORS, PORT_WEB } = process.env
 const whiteList = [
   `http://localhost:${PORT_WEB ?? 3000}`,
-  'https://sas.analytium.co.uk:8343/'
+  'https://sas.analytium.co.uk:8343'
 ]
 
 if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {

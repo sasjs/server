@@ -12,7 +12,8 @@ import {
   createFile,
   fileExists,
   generateTimestamp,
-  readFile
+  readFile,
+  moveFile
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
@@ -32,8 +33,9 @@ export class SessionController {
     return session
   }
 
-  private async createSession() {
+  private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
+    console.log('creating session', sessionId)
     const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
 
     const creationTimeStamp = sessionId.split('-').pop() as string
@@ -100,25 +102,35 @@ export class SessionController {
 
     // SAS has been triggered but we can't use it until
     // the autoexec deletes the code.sas file
-    await this.waitForSession(session)
+    if (!(await this.waitForSession(session))) {
+      console.log('session is crashed', sessionId)
 
+      return this.createSession()
+    }
+
+    console.log('session is ready', sessionId)
     return session
   }
 
-  public async waitForSession(session: Session) {
+  private async waitForSession(session: Session) {
     const codeFilePath = path.join(session.path, 'code.sas')
 
     // TODO: don't wait forever
     while ((await fileExists(codeFilePath)) && !session.crashed) {}
     console.log('session crashed?', !!session.crashed, session.crashed || '')
+    if (session.crashed) {
+      await this.deleteSession(session)
+      return false
+    }
 
     session.ready = true
-    return Promise.resolve(session)
+    return true
   }
 
   public async deleteSession(session: Session) {
     // remove the temporary files, to avoid buildup
-    await deleteFolder(session.path)
+    if (session.crashed) await moveFile(session.path, `${session.path}-crashed`)
+    else await deleteFolder(session.path)
 
     // remove the session from the session array
     if (session.ready) {
