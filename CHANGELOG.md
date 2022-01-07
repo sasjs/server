@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.16](https://github.com/sasjs/server/compare/v0.0.15...v0.0.16) (2022-01-07)
+
+
+### Bug Fixes
+
+* added sas9 server address ([cd83891](https://github.com/sasjs/server/commit/cd838915fdb216ee364ea677747409311b1214fb))
+* recreate crashed session ([6cbc657](https://github.com/sasjs/server/commit/6cbc657da3eb7fa821a678443a3ae4079c2a1f09))
+* session should be marked as consumed ([7a3d710](https://github.com/sasjs/server/commit/7a3d710153f37d12160ff45f8f97fb4fcc75d684))
+
 ### [0.0.15](https://github.com/sasjs/server/compare/v0.0.14...v0.0.15) (2022-01-06)
 
 
