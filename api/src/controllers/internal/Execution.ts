@@ -36,6 +36,7 @@ export class ExecutionController {
     const sessionController = getSessionController()
 
     const session = await sessionController.getSession()
+    console.log('using session', session.id)
     session.inUse = true
 
     const logPath = path.join(session.path, 'log.log')
@@ -97,13 +98,15 @@ ${program}`
     // (which can mean SAS trying to run a partial program, or
     // failing due to file lock) we first create the file THEN
     // we rename it.
+    console.log('executing session', session.id)
     await createFile(codePath + '.bkp', program)
     await moveFile(codePath + '.bkp', codePath)
 
-    // we now need to poll the session array
+    // we now need to poll the session status
     while (!session.completed) {
       await delay(50)
     }
+    console.log('completed session', session.id)
 
     const log =
       ((await fileExists(logPath)) ? await readFile(logPath) : '') +
@@ -115,8 +118,8 @@ ${program}`
     const debugValue =
       typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
 
+    // it should be deleted by scheduleSessionDestroy
     session.inUse = false
-    sessionController.deleteSession(session)
 
     if (returnJson) {
       return {

@@ -22,7 +22,7 @@ export class SessionController {
   private sessions: Session[] = []
 
   public async getSession() {
-    const readySessions = this.sessions.filter((sess: Session) => sess.ready)
+    const readySessions = this.getReadySessions()
 
     const session = readySessions.length
       ? readySessions[0]
@@ -32,6 +32,9 @@ export class SessionController {
 
     return session
   }
+
+  private getReadySessions = (): Session[] =>
+    this.sessions.filter((sess: Session) => sess.ready)
 
   private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
@@ -102,13 +105,10 @@ export class SessionController {
 
     // SAS has been triggered but we can't use it until
     // the autoexec deletes the code.sas file
-    if (!(await this.waitForSession(session))) {
-      console.log('session is crashed', sessionId)
-
-      return this.createSession()
-    }
+    await this.waitForSession(session)
 
     console.log('session is ready', sessionId)
+
     return session
   }
 
@@ -117,27 +117,21 @@ export class SessionController {
 
     // TODO: don't wait forever
     while ((await fileExists(codeFilePath)) && !session.crashed) {}
-    console.log('session crashed?', !!session.crashed, session.crashed || '')
-    if (session.crashed) {
-      await this.deleteSession(session)
-      return false
-    }
+
+    if (session.crashed)
+      console.log('session crashed! while waiting to be ready', session.crashed)
 
     session.ready = true
-    return true
   }
 
   public async deleteSession(session: Session) {
     // remove the temporary files, to avoid buildup
-    if (session.crashed) await moveFile(session.path, `${session.path}-crashed`)
-    else await deleteFolder(session.path)
+    await deleteFolder(session.path)
 
     // remove the session from the session array
-    if (session.ready) {
-      this.sessions = this.sessions.filter(
-        (sess: Session) => sess.id !== session.id
-      )
-    }
+    this.sessions = this.sessions.filter(
+      (sess: Session) => sess.id !== session.id
+    )
   }
 
   private scheduleSessionDestroy(session: Session) {
