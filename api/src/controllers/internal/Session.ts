@@ -34,7 +34,7 @@ export class SessionController {
   }
 
   private getReadySessions = (): Session[] =>
-    this.sessions.filter((sess: Session) => sess.ready)
+    this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
 
   private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
@@ -52,6 +52,7 @@ export class SessionController {
       id: sessionId,
       ready: false,
       inUse: false,
+      consumed: false,
       completed: false,
       creationTimeStamp,
       deathTimeStamp,

@@ -38,6 +38,7 @@ export class ExecutionController {
     const session = await sessionController.getSession()
     console.log('using session', session.id)
     session.inUse = true
+    session.consumed = true
 
     const logPath = path.join(session.path, 'log.log')
 
