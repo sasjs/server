@@ -106,9 +106,7 @@ ${program}`
       await delay(50)
     }
 
-    const log =
-      ((await fileExists(logPath)) ? await readFile(logPath) : '') +
-      session.crashed
+    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
     const webout = (await fileExists(weboutPath))
       ? await readFile(weboutPath)
       : ''
