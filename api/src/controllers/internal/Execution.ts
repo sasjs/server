@@ -36,7 +36,6 @@ export class ExecutionController {
     const sessionController = getSessionController()
 
     const session = await sessionController.getSession()
-    console.log('using session', session.id)
     session.inUse = true
     session.consumed = true
 
@@ -99,7 +98,6 @@ ${program}`
     // (which can mean SAS trying to run a partial program, or
     // failing due to file lock) we first create the file THEN
     // we rename it.
-    console.log('executing session', session.id)
     await createFile(codePath + '.bkp', program)
     await moveFile(codePath + '.bkp', codePath)
 
@@ -107,7 +105,6 @@ ${program}`
     while (!session.completed) {
       await delay(50)
     }
-    console.log('completed session', session.id)
 
     const log =
       ((await fileExists(logPath)) ? await readFile(logPath) : '') +

@@ -21,6 +21,9 @@ const execFilePromise = promisify(execFile)
 export class SessionController {
   private sessions: Session[] = []
 
+  private getReadySessions = (): Session[] =>
+    this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
+
   public async getSession() {
     const readySessions = this.getReadySessions()
 
@@ -32,9 +35,6 @@ export class SessionController {
 
     return session
   }
-
-  private getReadySessions = (): Session[] =>
-    this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
 
   private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
@@ -107,8 +107,6 @@ export class SessionController {
     // SAS has been triggered but we can't use it until
     // the autoexec deletes the code.sas file
     await this.waitForSession(session)
-
-    console.log('session is ready', sessionId)
 
     return session
   }
