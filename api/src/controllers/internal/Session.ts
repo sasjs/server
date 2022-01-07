@@ -12,7 +12,8 @@ import {
   createFile,
   fileExists,
   generateTimestamp,
-  readFile
+  readFile,
+  moveFile
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
@@ -20,8 +21,11 @@ const execFilePromise = promisify(execFile)
 export class SessionController {
   private sessions: Session[] = []
 
+  private getReadySessions = (): Session[] =>
+    this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
+
   public async getSession() {
-    const readySessions = this.sessions.filter((sess: Session) => sess.ready)
+    const readySessions = this.getReadySessions()
 
     const session = readySessions.length
       ? readySessions[0]
@@ -32,8 +36,9 @@ export class SessionController {
     return session
   }
 
-  private async createSession() {
+  private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
+    console.log('creating session', sessionId)
     const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
 
     const creationTimeStamp = sessionId.split('-').pop() as string
@@ -47,6 +52,7 @@ export class SessionController {
       id: sessionId,
       ready: false,
       inUse: false,
+      consumed: false,
       completed: false,
       creationTimeStamp,
       deathTimeStamp,
@@ -105,15 +111,16 @@ export class SessionController {
     return session
   }
 
-  public async waitForSession(session: Session) {
+  private async waitForSession(session: Session) {
     const codeFilePath = path.join(session.path, 'code.sas')
 
     // TODO: don't wait forever
     while ((await fileExists(codeFilePath)) && !session.crashed) {}
-    console.log('session crashed?', !!session.crashed, session.crashed || '')
+
+    if (session.crashed)
+      console.log('session crashed! while waiting to be ready', session.crashed)
 
     session.ready = true
-    return Promise.resolve(session)
   }
 
   public async deleteSession(session: Session) {
@@ -121,11 +128,9 @@ export class SessionController {
     await deleteFolder(session.path)
 
     // remove the session from the session array
-    if (session.ready) {
-      this.sessions = this.sessions.filter(
-        (sess: Session) => sess.id !== session.id
-      )
-    }
+    this.sessions = this.sessions.filter(
+      (sess: Session) => sess.id !== session.id
+    )
   }
 
   private scheduleSessionDestroy(session: Session) {

@@ -37,6 +37,7 @@ export class ExecutionController {
 
     const session = await sessionController.getSession()
     session.inUse = true
+    session.consumed = true
 
     const logPath = path.join(session.path, 'log.log')
 
@@ -100,7 +101,7 @@ ${program}`
     await createFile(codePath + '.bkp', program)
     await moveFile(codePath + '.bkp', codePath)
 
-    // we now need to poll the session array
+    // we now need to poll the session status
     while (!session.completed) {
       await delay(50)
     }
@@ -115,8 +116,8 @@ ${program}`
     const debugValue =
       typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
 
+    // it should be deleted by scheduleSessionDestroy
     session.inUse = false
-    sessionController.deleteSession(session)
 
     if (returnJson) {
       return {
