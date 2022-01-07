@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.17](https://github.com/sasjs/server/compare/v0.0.16...v0.0.17) (2022-01-07)
+
+
+### Bug Fixes
+
+* bug removed, log is clean now ([43769e7](https://github.com/sasjs/server/commit/43769e711d37a4f670786545630139a2d926dc76))
+
 ### [0.0.16](https://github.com/sasjs/server/compare/v0.0.15...v0.0.16) (2022-01-07)
 
 
