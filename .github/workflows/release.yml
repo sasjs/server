@@ -32,10 +32,17 @@ jobs:
         env:
           CI: true
 
+      - name: Compress Executables
+        working-directory: ./executables
+        run: |
+          zip linux.zip api-linux
+          zip macos.zip api-macos
+          zip windows.zip api-win.exe
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./executables/api-linux
-            ./executables/api-macos
-            ./executables/api-win.exe
+            ./executables/linux.zip
+            ./executables/macos.zip
+            ./executables/windows.zip
