@@ -10,7 +10,15 @@ One major benefit of using SASjs Server (alongside other components of the SASjs
 
 ## Installation
 
-Just download the relevant package from the [releases](https://github.com/sasjs/server/releases) page and trigger, either by double clicking (windows) or executing from commandline.
+First, download the relevant package from the [releases](https://github.com/sasjs/server/releases) page - either manually, or with commandline, eg as follow:
+
+```bash
+curl -L https://github.com/sasjs/server/releases/latest/download/linux.zip > linux.zip
+unzip linux.zip
+./api-linux
+```
+
+Second, trigger by double clicking (windows) or executing from commandline.
 
 You are presented with two prompts:
 
