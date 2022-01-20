@@ -401,7 +401,7 @@ info:
     version: 0.0.1
     description: 'Api of SASjs server'
     contact:
-        name: 'Analytium Ltd'
+        name: '4GL Ltd'
 openapi: 3.0.0
 paths:
     /SASjsApi/auth/authorize:
