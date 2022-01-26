@@ -158,6 +158,7 @@ const autoExecContent = `
 data _null_;
   /* remove the dummy SYSIN */
   length fname $8;
+  call missing(fname);
   rc=filename(fname,getoption('SYSIN') );
   if rc = 0 and fexist(fname) then rc=fdelete(fname);
   rc=filename(fname);
