@@ -64,7 +64,16 @@ export class ExecutionController {
 %let _sasjs_apipath=/SASjsApi/stp/execute;
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
-%let sasjsprocessmode=Stored Program;`
+%let sasjsprocessmode=Stored Program;
+
+%global SYSPROCESSMODE SYSTCPIPHOSTNAME;
+%macro _sasjs_server_init();
+  %if "&SYSPROCESSMODE"="" %then %let SYSPROCESSMODE=&sasjsprocessmode;
+  %if "&SYSTCPIPHOSTNAME"="" %then %let SYSTCPIPHOSTNAME=&_sasjs_apiserverurl;
+%mend;
+%_sasjs_server_init()
+%sysmacdelete _sasjs_server_init;
+`
 
     program = `
 /* runtime vars */
