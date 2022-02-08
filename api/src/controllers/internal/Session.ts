@@ -38,7 +38,6 @@ export class SessionController {
 
   private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
-    console.log('creating session', sessionId)
     const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
 
     const creationTimeStamp = sessionId.split('-').pop() as string
