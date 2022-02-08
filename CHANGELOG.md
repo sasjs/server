@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.22](https://github.com/sasjs/server/compare/v0.0.17...v0.0.22) (2022-02-08)
+
+
+### Bug Fixes
+
+* adding missing global vars to autoexec ([1966b17](https://github.com/sasjs/server/commit/1966b17f27e66bf1c9673ef6e1c11f4868b4f816))
+* avoid uninitialised note ([e4c027a](https://github.com/sasjs/server/commit/e4c027ad5121302b9ae093b2b76dc27f51a94365))
+* bumping core version ([a8df5f4](https://github.com/sasjs/server/commit/a8df5f4afd6c4522270d0a60ab8153dfbdf79e16))
+* bumping sasjs/core and updating descriptions ([31532c0](https://github.com/sasjs/server/commit/31532c0efa41e53f87377a2c7c41d21c7909e3a0))
+* compressing release files for faster download times ([d8b75a4](https://github.com/sasjs/server/commit/d8b75a47d305e0772ccbf8837ba4d7347b94cc93))
+* fixing versioning blooper ([a3b57f6](https://github.com/sasjs/server/commit/a3b57f6e28448fe98e634383041a5633541c8c02))
+
 ### [0.0.21](https://github.com/sasjs/server/compare/v0.0.20...v0.0.21) (2022-02-01)
 
 
