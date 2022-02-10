@@ -5,11 +5,15 @@ import { readFile, fileExists, createFile, moveFile } from '@sasjs/utils'
 import { PreProgramVars, TreeNode } from '../../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
 
+export interface ExecutionVars {
+  [key: string]: string | number | undefined | boolean
+}
+
 export class ExecutionController {
   async executeFile(
     programPath: string,
     preProgramVariables: PreProgramVars,
-    vars: { [key: string]: string | number | undefined },
+    vars: ExecutionVars,
     otherArgs?: any,
     returnJson?: boolean
   ) {
@@ -29,7 +33,7 @@ export class ExecutionController {
   async executeProgram(
     program: string,
     preProgramVariables: PreProgramVars,
-    vars: { [key: string]: string | number | undefined },
+    vars: ExecutionVars,
     otherArgs?: any,
     returnJson?: boolean
   ) {
@@ -52,9 +56,10 @@ export class ExecutionController {
 
     const varStatments = Object.keys(vars).reduce(
       (computed: string, key: string) =>
-        `${computed}%let ${key}=${vars[key]};\n`,
+        key !== '_returnLog' ? `${computed}%let ${key}=${vars[key]};\n` : '',
       ''
     )
+
     const preProgramVarStatments = `
 %let _sasjs_tokenfile=${tokenFile};
 %let _sasjs_username=${preProgramVariables?.username};
@@ -130,7 +135,11 @@ ${program}`
       return {
         webout,
         log:
-          (debugValue && debugValue >= 131) || session.crashed ? log : undefined
+          (debugValue && debugValue >= 131) ||
+          session.crashed ||
+          Object.keys(vars).includes('_returnLog')
+            ? log
+            : undefined
       }
     }
 
@@ -139,7 +148,7 @@ ${program}`
       : webout
   }
 
-  buildDirectorytree() {
+  buildDirectoryTree() {
     const root: TreeNode = {
       name: 'files',
       relativePath: '',

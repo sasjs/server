@@ -4,6 +4,7 @@ export interface ExecutionQuery {
   _program: string
   macroVars?: MacroVars
   _debug?: number
+  _returnLog?: boolean
 }
 
 export interface FileQuery {
