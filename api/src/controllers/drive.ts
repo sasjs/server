@@ -153,7 +153,7 @@ export class DriveController {
 }
 
 const getFileTree = () => {
-  const tree = new ExecutionController().buildDirectorytree()
+  const tree = new ExecutionController().buildDirectoryTree()
   return { status: 'success', tree }
 }
 

@@ -1,5 +1,5 @@
 import express from 'express'
-import { executeProgramRawValidation, runSASValidation } from '../../utils'
+import { executeProgramRawValidation } from '../../utils'
 import { STPController } from '../../controllers/'
 import { FileUploadController } from '../../controllers/internal'
 
@@ -26,7 +26,7 @@ stpRouter.get('/execute', async (req, res) => {
 
 stpRouter.post(
   '/execute',
-  fileUploadController.preuploadMiddleware,
+  fileUploadController.preUploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
   async (req: any, res: any) => {
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
