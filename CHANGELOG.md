@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.24](https://github.com/sasjs/server/compare/v0.0.23...v0.0.24) (2022-02-11)
+
+
+### Bug Fixes
+
+* removing sysmacdelete ([480ee4d](https://github.com/sasjs/server/commit/480ee4da831d2a89888c58ebec26bd89802ee2f5))
+
 ### [0.0.23](https://github.com/sasjs/server/compare/v0.0.22...v0.0.23) (2022-02-08)
 
 ### [0.0.22](https://github.com/sasjs/server/compare/v0.0.17...v0.0.22) (2022-02-08)
