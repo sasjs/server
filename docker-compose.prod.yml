@@ -14,14 +14,14 @@ services:
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       AUTH_CODE_SECRET: ${AUTH_CODE_SECRET}
       DB_CONNECT: mongodb://mongodb:27017/sasjs
-      SAS_PATH: /usr/server/sasexe
+      SAS_PATH: /usr/server/sasexe/${SAS_EXEC_NAME}
     expose:
       - ${PORT_API}
     ports:
       - ${PORT_API}:${PORT_API}
     volumes:
       - type: bind
-        source: ${SAS_EXEC}
+        source: ${SAS_EXEC_PATH}
         target: /usr/server/sasexe
         read_only: true
     links:
