@@ -133,7 +133,7 @@ To get the log files:
 ```bash
 forever list
 # grap log file link
-tail -f log-file=LOGFILELINK
+tail -f LOGFILE
 ```
 
 To stop:
