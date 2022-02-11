@@ -72,7 +72,6 @@ export class ExecutionController {
   %if "&SYSTCPIPHOSTNAME"="" %then %let SYSTCPIPHOSTNAME=&_sasjs_apiserverurl;
 %mend;
 %_sasjs_server_init()
-%sysmacdelete _sasjs_server_init;
 `
 
     program = `
