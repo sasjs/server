@@ -122,6 +122,26 @@ npm run server
 
 This will install/build `web` and install `api`, then start prod server.
 
+Normally the server process will stop when your terminal dies. To keep it going you can use the npm package [forever](https://www.npmjs.com/package/forever) as follows:
+
+```bash
+npm i -g forever
+forever start -c "npm run server:start" ./
+```
+
+To get the log files:
+```bash
+forever list
+# grap log file link
+tail -f log-file=LOGFILELINK
+```
+
+To stop:
+
+```
+forever stop <pid>
+```
+
 ## Executables
 
 Command to generate executables
