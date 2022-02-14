@@ -6,7 +6,7 @@ import { PreProgramVars, TreeNode } from '../../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
 
 export interface ExecutionVars {
-  [key: string]: string | number | undefined | boolean
+  [key: string]: string | number | undefined
 }
 
 export class ExecutionController {
@@ -56,7 +56,7 @@ export class ExecutionController {
 
     const varStatments = Object.keys(vars).reduce(
       (computed: string, key: string) =>
-        key !== '_returnLog' ? `${computed}%let ${key}=${vars[key]};\n` : '',
+        `${computed}%let ${key}=${vars[key]};\n`,
       ''
     )
 
@@ -135,11 +135,7 @@ ${program}`
       return {
         webout,
         log:
-          (debugValue && debugValue >= 131) ||
-          session.crashed ||
-          Object.keys(vars).includes('_returnLog')
-            ? log
-            : undefined
+          (debugValue && debugValue >= 131) || session.crashed ? log : undefined
       }
     }
 
