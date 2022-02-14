@@ -398,7 +398,7 @@ components:
             bearerFormat: JWT
 info:
     title: api
-    version: 0.0.1
+    version: 0.0.2
     description: 'Api of SASjs server'
     contact:
         name: '4GL Ltd'
