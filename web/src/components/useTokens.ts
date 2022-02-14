@@ -36,11 +36,10 @@ export default function useTokens() {
   }
 }
 
-const { NODE_ENV, REACT_APP_PORT_API } = process.env
+const NODE_ENV = process.env.NODE_ENV
+const PORT_API = process.env.PORT_API
 const baseUrl =
-  NODE_ENV === 'development'
-    ? `http://localhost:${REACT_APP_PORT_API ?? 5000}`
-    : ''
+  NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
 
 const isAbsoluteURLRegex = /^(?:\w+:)\/\//
 
