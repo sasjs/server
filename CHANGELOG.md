@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.26](https://github.com/sasjs/server/compare/v0.0.25...v0.0.26) (2022-02-14)
+
+
+### Bug Fixes
+
+* refactored + removed unused package ([d7e1aca](https://github.com/sasjs/server/commit/d7e1aca7e33c3264c784d406fa766e29a6b15ae9))
+* release should also has https protocol ([0cfe724](https://github.com/sasjs/server/commit/0cfe724ffa089b84a9f8bca49c9033b56f51c9cb))
+* updated token expiry times ([d17a3dd](https://github.com/sasjs/server/commit/d17a3dd5900d5eb88120af8575e3fc7c2cb71ed6))
+
 ### [0.0.25](https://github.com/sasjs/server/compare/v0.0.24...v0.0.25) (2022-02-11)
 
 
