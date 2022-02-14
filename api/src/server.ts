@@ -1,8 +1,7 @@
-import path from 'path'
 import { createServer } from 'https'
-import { readFile } from '@sasjs/utils'
 
 import appPromise from './app'
+import { getCertificates } from './utils'
 
 appPromise.then(async (app) => {
   const protocol = process.env.PROTOCOL ?? 'http'
@@ -25,16 +24,3 @@ appPromise.then(async (app) => {
     })
   }
 })
-
-const getCertificates = async () => {
-  const privkey = process.env.PRIVATE_KEY ?? 'privkey.pem'
-  const fullchain = process.env.FULL_CHAIN ?? 'fullchain.pem'
-
-  const keyPath = path.join(process.cwd(), privkey)
-  const certPath = path.join(process.cwd(), fullchain)
-
-  const key = await readFile(keyPath)
-  const cert = await readFile(certPath)
-
-  return { key, cert }
-}
