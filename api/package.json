@@ -6,10 +6,8 @@
   "scripts": {
     "initial": "npm run swagger && npm run compileSysInit",
     "prestart": "npm run initial",
-    "prestart:prod": "npm run initial",
     "prebuild": "npm run initial",
     "start": "nodemon ./src/server.ts",
-    "start:prod": "nodemon ./src/prod-server.ts",
     "build": "rimraf build && tsc",
     "swagger": "tsoa spec",
     "semantic-release": "semantic-release -d",
