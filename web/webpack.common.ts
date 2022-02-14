@@ -1,26 +1,13 @@
-const path = require('path')
-const ESLintPlugin = require('eslint-webpack-plugin')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-const CopyPlugin = require('copy-webpack-plugin')
-const webpack = require('webpack')
-const dotenv = require('dotenv')
+import path from 'path'
+import { Configuration } from 'webpack'
+import HtmlWebpackPlugin from 'html-webpack-plugin'
+import CopyPlugin from 'copy-webpack-plugin'
+import dotenv from 'dotenv-webpack'
 
-// this will update the process.env with environment variables in .env file
-dotenv.config()
-
-module.exports = {
+const config: Configuration = {
   entry: path.join(__dirname, 'src', 'index.tsx'),
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx']
-  },
-  mode: 'production',
-  output: {
-    path: path.join(__dirname, 'build'),
-    filename: 'index.bundle.js',
-    publicPath: './'
-  },
-  performance: {
-    hints: false
   },
   module: {
     rules: [
@@ -60,17 +47,14 @@ module.exports = {
     ]
   },
   plugins: [
-    new ESLintPlugin({
-      extensions: ['ts', 'tsx', 'js', 'jsx']
-    }),
     new HtmlWebpackPlugin({
       template: path.join(__dirname, 'src', 'index.html')
     }),
     new CopyPlugin({
       patterns: [{ from: 'public' }]
     }),
-    new webpack.DefinePlugin({
-      'process.env': JSON.stringify(process.env)
-    })
+    new dotenv()
   ]
 }
+
+export default config

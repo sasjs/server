@@ -8,11 +8,10 @@ const headers = {
   Accept: 'application/json',
   'Content-Type': 'application/json'
 }
-const { NODE_ENV, REACT_APP_PORT_API } = process.env
+const NODE_ENV = process.env.NODE_ENV
+const PORT_API = process.env.PORT_API
 const baseUrl =
-  NODE_ENV === 'development'
-    ? `http://localhost:${REACT_APP_PORT_API ?? 5000}`
-    : ''
+  NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
 
 const getAuthCode = async (credentials: any) => {
   return fetch(`${baseUrl}/SASjsApi/auth/authorize`, {
@@ -46,7 +45,7 @@ const Login = ({ setTokens, getCodeOnly }: any) => {
     error = false
     setErrorMessage('')
     e.preventDefault()
-    let { REACT_APP_CLIENT_ID: clientId } = process.env
+    let clientId = process.env.CLIENT_ID
 
     if (getCodeOnly) {
       const params = new URLSearchParams(location.search)
