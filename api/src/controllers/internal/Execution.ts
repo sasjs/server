@@ -71,13 +71,12 @@ export class ExecutionController {
 %let _metauser=&_sasjs_username;
 %let sasjsprocessmode=Stored Program;
 
-%global SYSPROCESSMODE SYSTCPIPHOSTNAME;
+%global SYSPROCESSMODE SYSTCPIPHOSTNAME SYSHOSTINFOLONG;
 %macro _sasjs_server_init();
   %if "&SYSPROCESSMODE"="" %then %let SYSPROCESSMODE=&sasjsprocessmode;
   %if "&SYSTCPIPHOSTNAME"="" %then %let SYSTCPIPHOSTNAME=&_sasjs_apiserverurl;
 %mend;
 %_sasjs_server_init()
-%sysmacdelete _sasjs_server_init;
 `
 
     program = `
