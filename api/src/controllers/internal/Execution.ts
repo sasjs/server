@@ -5,11 +5,15 @@ import { readFile, fileExists, createFile, moveFile } from '@sasjs/utils'
 import { PreProgramVars, TreeNode } from '../../types'
 import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
 
+export interface ExecutionVars {
+  [key: string]: string | number | undefined
+}
+
 export class ExecutionController {
   async executeFile(
     programPath: string,
     preProgramVariables: PreProgramVars,
-    vars: { [key: string]: string | number | undefined },
+    vars: ExecutionVars,
     otherArgs?: any,
     returnJson?: boolean
   ) {
@@ -29,7 +33,7 @@ export class ExecutionController {
   async executeProgram(
     program: string,
     preProgramVariables: PreProgramVars,
-    vars: { [key: string]: string | number | undefined },
+    vars: ExecutionVars,
     otherArgs?: any,
     returnJson?: boolean
   ) {
@@ -55,6 +59,7 @@ export class ExecutionController {
         `${computed}%let ${key}=${vars[key]};\n`,
       ''
     )
+
     const preProgramVarStatments = `
 %let _sasjs_tokenfile=${tokenFile};
 %let _sasjs_username=${preProgramVariables?.username};
@@ -138,7 +143,7 @@ ${program}`
       : webout
   }
 
-  buildDirectorytree() {
+  buildDirectoryTree() {
     const root: TreeNode = {
       name: 'files',
       relativePath: '',

@@ -1,7 +1,7 @@
 import express from 'express'
 import path from 'path'
 import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
-import { ExecutionController } from './internal'
+import { ExecutionController, ExecutionVars } from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
 
@@ -66,7 +66,7 @@ const executeReturnRaw = async (
   req: express.Request,
   _program: string
 ): Promise<string> => {
-  const query = req.query as { [key: string]: string | number | undefined }
+  const query = req.query as ExecutionVars
   const sasCodePath =
     path
       .join(getTmpFilesFolderPath(), _program)

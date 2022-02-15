@@ -1,6 +1,5 @@
 import express from 'express'
 import { SessionController } from '../../controllers'
-import { authenticateAccessToken } from '../../middlewares'
 
 const sessionRouter = express.Router()
 
