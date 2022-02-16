@@ -10,6 +10,31 @@ One major benefit of using SASjs Server (alongside other components of the SASjs
 
 SASjs Server is available in two modes - Desktop (without authentication) and Server (with authentiation, and a database)
 
+
+## Configuration
+
+When launching the app, it will make use of specific environment variables. These can be set in the following places:
+
+- Configured globally in /etc/environment file
+- Export in terminal or shell script (`export VAR=VALUE`)
+- Prepend in command
+- Enter in the `.env` file alongside the executable
+
+Example variables:
+
+```
+MODE=[desktop|server] default considered as desktop
+CORS=[disable|enable] default considered as disable
+PROTOCOL=[http|https] default considered as http
+PORT=[5000] default value is 5000
+PORT_WEB=[port for sasjs web component(react)] default value is 3000
+SAS_PATH=/path/to/sas/executable.exe
+DRIVE_PATH=./tmp
+PROTOCOL=[http|https] default considered as http. Use pems below if htttps.
+PRIVATE_KEY=privkey.pem
+FULL_CHAIN=fullchain.pem
+```
+
 ## Desktop Version
 
 ### Manual Installation
@@ -18,7 +43,7 @@ Download the relevant package from the [releases](https://github.com/sasjs/serve
 
 Next, trigger by double clicking (windows) or executing from commandline.
 
-You are presented with two prompts:
+You are presented with two prompts (if not set as ENV vars):
 
 - Location of your `sas.exe` / `sas.sh` executable
 - Path to a filesystem location for Stored Programs and temporary files
@@ -32,24 +57,7 @@ curl -L https://github.com/sasjs/server/releases/latest/download/linux.zip > lin
 unzip linux.zip
 ```
 
-The app can then be launched with `./api-linux` and prompts followed.
-
-When launching the app, it will make use of specific environment variables. These can be set in the following places:
-
-- Configured globally in /etc/environment file
-- Export in terminal or shell script (`export VAR=VALUE`)
-- Prepend in command
-- Enter in the `.env` file alongside the executable
-
-Example variables:
-
-```
-PORT=5004
-SAS_PATH=/path/to/sas/executable.exe
-DRIVE_PATH=./tmp
-```
-
-Setting these prompts variables will avoid the need for prompts.
+The app can then be launched with `./api-linux` and prompts followed (if ENV vars not set).
 
 Normally the server process will stop when your terminal dies. To keep it going you can use the npm package [pm2](https://www.npmjs.com/package/pm2) (`npm install pm2@latest -g`) as follows:
 
@@ -82,7 +90,6 @@ Instead of `app_name` you can pass:
 
 - `all` to act on all processes
 - `id` to act on a specific process id
-
 
 
 ## Server Version
