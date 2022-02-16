@@ -43,7 +43,7 @@
   },
   "author": "4GL Ltd",
   "dependencies": {
-    "@sasjs/core": "4.8.0",
+    "@sasjs/core": "4.9.0",
     "@sasjs/utils": "2.34.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
