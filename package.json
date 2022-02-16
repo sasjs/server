@@ -18,5 +18,8 @@
   "devDependencies": {
     "prettier": "^2.3.1",
     "standard-version": "^9.3.2"
+  },
+  "dependencies": {
+    "@sasjs/core": "4.9.0"
   }
 }
