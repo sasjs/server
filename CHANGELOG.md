@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.28](https://github.com/sasjs/server/compare/v0.0.27...v0.0.28) (2022-02-16)
+
+
+### Features
+
+* default macros and bumping core ([6f19d3d](https://github.com/sasjs/server/commit/6f19d3d0ea3815815f246a3e455495c72c8604c7))
+
+
+### Bug Fixes
+
+* moving core ([f10138b](https://github.com/sasjs/server/commit/f10138b0f2005a958f63cb3a8351e1afa52f086a))
+
 ### [0.0.27](https://github.com/sasjs/server/compare/v0.0.26...v0.0.27) (2022-02-16)
 
 
