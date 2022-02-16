@@ -70,7 +70,7 @@ export class ExecutionController {
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
 %let sasjsprocessmode=Stored Program;
-%let sasjs_stpsrv_header_loc=%sysfunc(pathname(work))/stpsrv_header.txt;
+%let sasjs_stpsrv_header_loc=%sysfunc(pathname(work))/../stpsrv_header.txt;
 
 %global SYSPROCESSMODE SYSTCPIPHOSTNAME SYSHOSTINFOLONG;
 %macro _sasjs_server_init();
