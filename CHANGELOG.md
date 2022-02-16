@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.29](https://github.com/sasjs/server/compare/v0.0.28...v0.0.29) (2022-02-16)
+
+
+### Bug Fixes
+
+* adding .. in folder path ([5931fc1](https://github.com/sasjs/server/commit/5931fc1e712c545ef80454dea5b36e684017c367))
+* adding sasjs stpsrv_header() path to autoexec.  Relates to [#58](https://github.com/sasjs/server/issues/58) ([ce9bde5](https://github.com/sasjs/server/commit/ce9bde5717369de2d76dc183319be8830b2362b2))
+
 ### [0.0.28](https://github.com/sasjs/server/compare/v0.0.27...v0.0.28) (2022-02-16)
 
 
