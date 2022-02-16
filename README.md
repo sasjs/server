@@ -82,3 +82,13 @@ Instead of `app_name` you can pass:
 
 - `all` to act on all processes
 - `id` to act on a specific process id
+
+
+
+## Server Version
+
+The following credentials can be used for the initial connection to SASjs/server.  It is recommended to change these on first use.
+
+CLIENTID:  `CLIENTID1`
+USERNAME:  `secretuser`
+PASSWORD:  `secretpassword`
