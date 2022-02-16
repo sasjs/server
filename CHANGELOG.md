@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.27](https://github.com/sasjs/server/compare/v0.0.26...v0.0.27) (2022-02-16)
+
+
+### Features
+
+* removing stpsrv_header and updating README with auth details ([d3674c7](https://github.com/sasjs/server/commit/d3674c7f9449d77977e482cd63ccdf7e974fa838))
+* **stp-execution:** add returnLog option to execution query ([bf5767e](https://github.com/sasjs/server/commit/bf5767eadfb87f7ed902659347a18361a6a6c74b))
+
 ### [0.0.26](https://github.com/sasjs/server/compare/v0.0.25...v0.0.26) (2022-02-14)
 
 
