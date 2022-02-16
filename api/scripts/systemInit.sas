@@ -9,5 +9,6 @@
 
 **/
 
-
+/* to be replaced with mfs_httpheader
 %mcf_stpsrv_header(wrap=YES, insert_cmplib=YES)
+*/
