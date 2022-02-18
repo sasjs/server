@@ -30,15 +30,20 @@ export class CodeController {
 
 const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
   try {
-    const { result } = (await new ExecutionController().executeProgram(
-      code,
-      getPreProgramVariables(req),
-      { ...req.query, _debug: 131 },
-      undefined,
-      true
-    )) as ExecuteReturnRaw
+    const { result, httpHeaders } =
+      (await new ExecutionController().executeProgram(
+        code,
+        getPreProgramVariables(req),
+        { ...req.query, _debug: 131 },
+        undefined,
+        true
+      )) as ExecuteReturnRaw
 
-    return result as string
+    Object.entries(httpHeaders).forEach(([key, value]) => {
+      req.res?.set(key, value)
+    })
+
+    return result
   } catch (err: any) {
     throw {
       code: 400,
