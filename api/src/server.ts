@@ -7,6 +7,8 @@ appPromise.then(async (app) => {
   const protocol = process.env.PROTOCOL ?? 'http'
   const sasJsPort = process.env.PORT ?? 5000
 
+  console.log('PROTOCOL: ', protocol)
+
   if (protocol !== 'https') {
     app.listen(sasJsPort, () => {
       console.log(

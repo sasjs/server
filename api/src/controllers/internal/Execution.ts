@@ -3,10 +3,26 @@ import fs from 'fs'
 import { getSessionController } from './'
 import { readFile, fileExists, createFile, moveFile } from '@sasjs/utils'
 import { PreProgramVars, TreeNode } from '../../types'
-import { generateFileUploadSasCode, getTmpFilesFolderPath } from '../../utils'
+import {
+  extractHeaders,
+  generateFileUploadSasCode,
+  getTmpFilesFolderPath,
+  HTTPHeaders
+} from '../../utils'
 
 export interface ExecutionVars {
   [key: string]: string | number | undefined
+}
+
+export interface ExecuteReturnRaw {
+  httpHeaders: HTTPHeaders
+  result: string
+}
+
+export interface ExecuteReturnJson {
+  httpHeaders: HTTPHeaders
+  webout: string
+  log?: string
 }
 
 export class ExecutionController {
@@ -30,13 +46,14 @@ export class ExecutionController {
       returnJson
     )
   }
+
   async executeProgram(
     program: string,
     preProgramVariables: PreProgramVars,
     vars: ExecutionVars,
     otherArgs?: any,
     returnJson?: boolean
-  ) {
+  ): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
     const sessionController = getSessionController()
 
     const session = await sessionController.getSession()
@@ -44,11 +61,11 @@ export class ExecutionController {
     session.consumed = true
 
     const logPath = path.join(session.path, 'log.log')
-
+    const headersPath = path.join(session.path, 'stpsrv_header.txt')
     const weboutPath = path.join(session.path, 'webout.txt')
-    await createFile(weboutPath, '')
-
     const tokenFile = path.join(session.path, 'accessToken.txt')
+
+    await createFile(weboutPath, '')
     await createFile(
       tokenFile,
       preProgramVariables?.accessToken ?? 'accessToken'
@@ -124,6 +141,12 @@ ${program}`
     const webout = (await fileExists(weboutPath))
       ? await readFile(weboutPath)
       : ''
+    const headersContent = (await fileExists(headersPath))
+      ? await readFile(headersPath)
+      : ''
+    const httpHeaders: HTTPHeaders = headersContent
+      ? extractHeaders(headersContent)
+      : {}
 
     const debugValue =
       typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
@@ -133,15 +156,20 @@ ${program}`
 
     if (returnJson) {
       return {
+        httpHeaders,
         webout,
         log:
           (debugValue && debugValue >= 131) || session.crashed ? log : undefined
       }
     }
 
-    return (debugValue && debugValue >= 131) || session.crashed
-      ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
-      : webout
+    return {
+      httpHeaders,
+      result:
+        (debugValue && debugValue >= 131) || session.crashed
+          ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
+          : webout
+    }
   }
 
   buildDirectoryTree() {
