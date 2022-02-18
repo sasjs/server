@@ -85,9 +85,7 @@ const executeReturnRaw = async (
         query
       )) as ExecuteReturnRaw
 
-    Object.entries(httpHeaders).forEach(([key, value]) => {
-      req.res?.set(key, value)
-    })
+    req.res?.set(httpHeaders)
 
     return result as string
   } catch (err: any) {
@@ -121,9 +119,7 @@ const executeReturnJson = async (
         true
       )) as ExecuteReturnJson
 
-    Object.entries(httpHeaders).forEach(([key, value]) => {
-      req.res?.set(key, value)
-    })
+    req.res?.set(httpHeaders)
 
     return {
       status: 'success',

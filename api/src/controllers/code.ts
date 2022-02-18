@@ -39,9 +39,7 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
         true
       )) as ExecuteReturnRaw
 
-    Object.entries(httpHeaders).forEach(([key, value]) => {
-      req.res?.set(key, value)
-    })
+    req.res?.set(httpHeaders)
 
     return result
   } catch (err: any) {
