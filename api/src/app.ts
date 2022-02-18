@@ -26,11 +26,9 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
 app.use(express.json({ limit: '50mb' }))
 app.use(morgan('tiny'))
 app.use(express.static(path.join(__dirname, '../public')))
+app.use(express.static(getWebBuildFolderPath()))
 
 app.use('/', webRouter)
 app.use('/SASjsApi', apiRouter)
-app.use(express.json({ limit: '50mb' }))
-
-app.use(express.static(getWebBuildFolderPath()))
 
 export default connectDB().then(() => app)

@@ -1,4 +1,5 @@
 export * from './connectDB'
+export * from './extractHeaders'
 export * from './file'
 export * from './generateAccessToken'
 export * from './generateAuthCode'

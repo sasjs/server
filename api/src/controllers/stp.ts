@@ -1,7 +1,12 @@
 import express from 'express'
 import path from 'path'
 import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
-import { ExecutionController, ExecutionVars } from './internal'
+import {
+  ExecuteReturnJson,
+  ExecuteReturnRaw,
+  ExecutionController,
+  ExecutionVars
+} from './internal'
 import { PreProgramVars } from '../types'
 import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
 
@@ -73,11 +78,14 @@ const executeReturnRaw = async (
       .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   try {
-    const result = await new ExecutionController().executeFile(
-      sasCodePath,
-      getPreProgramVariables(req),
-      query
-    )
+    const { result, httpHeaders } =
+      (await new ExecutionController().executeFile(
+        sasCodePath,
+        getPreProgramVariables(req),
+        query
+      )) as ExecuteReturnRaw
+
+    req.res?.set(httpHeaders)
 
     return result as string
   } catch (err: any) {
@@ -102,16 +110,20 @@ const executeReturnJson = async (
   const filesNamesMap = req.files?.length ? makeFilesNamesMap(req.files) : null
 
   try {
-    const { webout, log } = (await new ExecutionController().executeFile(
-      sasCodePath,
-      getPreProgramVariables(req),
-      { ...req.query, ...req.body },
-      { filesNamesMap: filesNamesMap },
-      true
-    )) as { webout: string; log: string }
+    const { webout, log, httpHeaders } =
+      (await new ExecutionController().executeFile(
+        sasCodePath,
+        getPreProgramVariables(req),
+        { ...req.query, ...req.body },
+        { filesNamesMap: filesNamesMap },
+        true
+      )) as ExecuteReturnJson
+
+    req.res?.set(httpHeaders)
+
     return {
       status: 'success',
-      _webout: webout,
+      _webout: webout as string,
       log
     }
   } catch (err: any) {

@@ -1,6 +1,6 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
-import { ExecutionController } from './internal'
+import { ExecuteReturnRaw, ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 
 interface ExecuteSASCodePayload {
@@ -30,15 +30,18 @@ export class CodeController {
 
 const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
   try {
-    const result = await new ExecutionController().executeProgram(
-      code,
-      getPreProgramVariables(req),
-      { ...req.query, _debug: 131 },
-      undefined,
-      true
-    )
+    const { result, httpHeaders } =
+      (await new ExecutionController().executeProgram(
+        code,
+        getPreProgramVariables(req),
+        { ...req.query, _debug: 131 },
+        undefined,
+        true
+      )) as ExecuteReturnRaw
 
-    return result as string
+    req.res?.set(httpHeaders)
+
+    return result
   } catch (err: any) {
     throw {
       code: 400,

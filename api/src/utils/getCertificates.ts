@@ -7,6 +7,9 @@ export const getCertificates = async () => {
   const keyPath = PRIVATE_KEY ?? (await getFileInput('Private Key (PEM)'))
   const certPath = FULL_CHAIN ?? (await getFileInput('Full Chain (PEM)'))
 
+  console.log('keyPath: ', keyPath)
+  console.log('certPath: ', certPath)
+
   const key = await readFile(keyPath)
   const cert = await readFile(certPath)
 
