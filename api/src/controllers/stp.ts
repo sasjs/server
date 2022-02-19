@@ -1,6 +1,16 @@
 import express from 'express'
 import path from 'path'
-import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
+import {
+  Request,
+  Security,
+  Route,
+  Tags,
+  Post,
+  Body,
+  Get,
+  Query,
+  Example
+} from 'tsoa'
 import {
   ExecuteReturnJson,
   ExecuteReturnRaw,
@@ -8,7 +18,7 @@ import {
   ExecutionVars
 } from './internal'
 import { PreProgramVars } from '../types'
-import { getTmpFilesFolderPath, makeFilesNamesMap } from '../utils'
+import { getTmpFilesFolderPath, HTTPHeaders, makeFilesNamesMap } from '../utils'
 
 interface ExecuteReturnJsonPayload {
   /**
@@ -17,11 +27,12 @@ interface ExecuteReturnJsonPayload {
    */
   _program?: string
 }
-interface ExecuteReturnJsonResponse {
+export interface ExecuteReturnJsonResponse {
   status: string
   _webout: string
   log?: string
   message?: string
+  httpHeaders: HTTPHeaders
 }
 
 @Security('bearerAuth')
@@ -56,6 +67,14 @@ export class STPController {
    * @query _program Location of SAS program
    * @example _program "/Public/somefolder/some.file"
    */
+  @Example<ExecuteReturnJsonResponse>({
+    status: 'success',
+    _webout: 'webout content',
+    httpHeaders: {
+      'Content-type': 'application/zip',
+      'Cache-Control': 'public, max-age=1000'
+    }
+  })
   @Post('/execute')
   public async executeReturnJson(
     @Request() request: express.Request,
@@ -119,12 +138,11 @@ const executeReturnJson = async (
         true
       )) as ExecuteReturnJson
 
-    req.res?.set(httpHeaders)
-
     return {
       status: 'success',
-      _webout: webout as string,
-      log
+      _webout: webout,
+      log,
+      httpHeaders
     }
   } catch (err: any) {
     throw {

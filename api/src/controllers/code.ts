@@ -1,7 +1,8 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
-import { ExecuteReturnRaw, ExecutionController } from './internal'
+import { ExecuteReturnJson, ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
+import { ExecuteReturnJsonResponse } from '.'
 
 interface ExecuteSASCodePayload {
   /**
@@ -23,25 +24,28 @@ export class CodeController {
   public async executeSASCode(
     @Request() request: express.Request,
     @Body() body: ExecuteSASCodePayload
-  ): Promise<string> {
+  ): Promise<ExecuteReturnJsonResponse> {
     return executeSASCode(request, body)
   }
 }
 
 const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
   try {
-    const { result, httpHeaders } =
+    const { webout, log, httpHeaders } =
       (await new ExecutionController().executeProgram(
         code,
         getPreProgramVariables(req),
         { ...req.query, _debug: 131 },
         undefined,
         true
-      )) as ExecuteReturnRaw
+      )) as ExecuteReturnJson
 
-    req.res?.set(httpHeaders)
-
-    return result
+    return {
+      status: 'success',
+      _webout: webout,
+      log,
+      httpHeaders
+    }
   } catch (err: any) {
     throw {
       code: 400,

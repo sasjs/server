@@ -92,6 +92,29 @@ components:
                 - clientSecret
             type: object
             additionalProperties: false
+        HTTPHeaders:
+            properties: {}
+            type: object
+            additionalProperties:
+                type: string
+        ExecuteReturnJsonResponse:
+            properties:
+                status:
+                    type: string
+                _webout:
+                    type: string
+                log:
+                    type: string
+                message:
+                    type: string
+                httpHeaders:
+                    $ref: '#/components/schemas/HTTPHeaders'
+            required:
+                - status
+                - _webout
+                - httpHeaders
+            type: object
+            additionalProperties: false
         ExecuteSASCodePayload:
             properties:
                 code:
@@ -368,21 +391,6 @@ components:
                 - description
             type: object
             additionalProperties: false
-        ExecuteReturnJsonResponse:
-            properties:
-                status:
-                    type: string
-                _webout:
-                    type: string
-                log:
-                    type: string
-                message:
-                    type: string
-            required:
-                - status
-                - _webout
-            type: object
-            additionalProperties: false
         ExecuteReturnJsonPayload:
             properties:
                 _program:
@@ -520,7 +528,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: string
+                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
             description: 'Execute SAS code.'
             summary: 'Run SAS Code and returns log'
             tags:
@@ -1060,6 +1068,9 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success, _webout: 'webout content', httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
             description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return JSON'
             tags:
