@@ -1,7 +1,7 @@
 const headerUtils = require('http-headers-validation')
 
 export interface HTTPHeaders {
-  [key: string]: string | undefined
+  [key: string]: string
 }
 
 export const extractHeaders = (content: string): HTTPHeaders => {
