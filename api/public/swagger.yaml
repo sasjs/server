@@ -92,6 +92,14 @@ components:
                 - clientSecret
             type: object
             additionalProperties: false
+        LogLine:
+            properties:
+                line:
+                    type: string
+            required:
+                - line
+            type: object
+            additionalProperties: false
         HTTPHeaders:
             properties: {}
             type: object
@@ -104,7 +112,9 @@ components:
                 _webout:
                     type: string
                 log:
-                    type: string
+                    items:
+                        $ref: '#/components/schemas/LogLine'
+                    type: array
                 message:
                     type: string
                 httpHeaders:
@@ -112,6 +122,7 @@ components:
             required:
                 - status
                 - _webout
+                - log
                 - httpHeaders
             type: object
             additionalProperties: false
@@ -1070,7 +1081,7 @@ paths:
                                 $ref: '#/components/schemas/ExecuteReturnJsonResponse'
                             examples:
                                 'Example 1':
-                                    value: {status: success, _webout: 'webout content', httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
+                                    value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
             description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return JSON'
             tags:

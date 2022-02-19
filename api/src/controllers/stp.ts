@@ -18,7 +18,13 @@ import {
   ExecutionVars
 } from './internal'
 import { PreProgramVars } from '../types'
-import { getTmpFilesFolderPath, HTTPHeaders, makeFilesNamesMap } from '../utils'
+import {
+  getTmpFilesFolderPath,
+  HTTPHeaders,
+  LogLine,
+  makeFilesNamesMap,
+  parseLogToArray
+} from '../utils'
 
 interface ExecuteReturnJsonPayload {
   /**
@@ -30,7 +36,7 @@ interface ExecuteReturnJsonPayload {
 export interface ExecuteReturnJsonResponse {
   status: string
   _webout: string
-  log?: string
+  log: LogLine[]
   message?: string
   httpHeaders: HTTPHeaders
 }
@@ -70,6 +76,7 @@ export class STPController {
   @Example<ExecuteReturnJsonResponse>({
     status: 'success',
     _webout: 'webout content',
+    log: [],
     httpHeaders: {
       'Content-type': 'application/zip',
       'Cache-Control': 'public, max-age=1000'
@@ -141,7 +148,7 @@ const executeReturnJson = async (
     return {
       status: 'success',
       _webout: webout,
-      log,
+      log: parseLogToArray(log),
       httpHeaders
     }
   } catch (err: any) {

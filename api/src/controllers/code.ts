@@ -3,6 +3,7 @@ import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { ExecuteReturnJson, ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { ExecuteReturnJsonResponse } from '.'
+import { parseLogToArray } from '../utils'
 
 interface ExecuteSASCodePayload {
   /**
@@ -43,7 +44,7 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
     return {
       status: 'success',
       _webout: webout,
-      log,
+      log: parseLogToArray(log),
       httpHeaders
     }
   } catch (err: any) {
