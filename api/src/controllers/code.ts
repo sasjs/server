@@ -41,7 +41,10 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
         true
       )) as ExecuteReturnJson
 
-    if (webout instanceof Buffer) return webout
+    if (webout instanceof Buffer) {
+      ;(req as any).sasHeaders = httpHeaders
+      return webout
+    }
 
     return {
       status: 'success',

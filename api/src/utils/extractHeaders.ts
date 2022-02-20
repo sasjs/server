@@ -15,9 +15,9 @@ export const extractHeaders = (content?: string): HTTPHeaders => {
     const [key, value] = headerStr.split(':').map((data) => data.trim())
 
     if (value && headerUtils.validateHeader(key, value)) {
-      headersObj[key] = value
+      headersObj[key.toLowerCase()] = value
     } else {
-      delete headersObj[key]
+      delete headersObj[key.toLowerCase()]
     }
   })
 

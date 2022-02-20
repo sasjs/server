@@ -113,8 +113,9 @@ const executeReturnRaw = async (
 
     req.res?.set(httpHeaders)
 
-    // if (result instanceof Buffer)
-    //   req.res?.writeHead(200, httpHeaders)
+    if (result instanceof Buffer) {
+      ;(req as any).sasHeaders = httpHeaders
+    }
 
     return result
   } catch (err: any) {
@@ -148,7 +149,10 @@ const executeReturnJson = async (
         true
       )) as ExecuteReturnJson
 
-    if (webout instanceof Buffer) return webout
+    if (webout instanceof Buffer) {
+      ;(req as any).sasHeaders = httpHeaders
+      return webout
+    }
 
     return {
       status: 'success',
