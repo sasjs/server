@@ -14,6 +14,12 @@ stpRouter.get('/execute', async (req, res) => {
 
   try {
     const response = await controller.executeReturnRaw(req, query._program)
+
+    if (response instanceof Buffer) {
+      res.writeHead(200, (req as any).sasHeaders)
+      return res.end(response)
+    }
+
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code
@@ -40,6 +46,12 @@ stpRouter.post(
         body,
         query?._program
       )
+
+      if (response instanceof Buffer) {
+        res.writeHead(200, (req as any).sasHeaders)
+        return res.end(response)
+      }
+
       res.send(response)
     } catch (err: any) {
       const statusCode = err.code

@@ -12,6 +12,12 @@ runRouter.post('/execute', async (req, res) => {
 
   try {
     const response = await controller.executeSASCode(req, body)
+
+    if (response instanceof Buffer) {
+      res.writeHead(200, (req as any).sasHeaders)
+      return res.end(response)
+    }
+
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code

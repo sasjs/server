@@ -12,8 +12,8 @@ describe('extractHeaders', () => {
     `)
 
     expect(headers).toEqual({
-      'Content-type': 'application/zip',
-      'Cache-Control': 'public, max-age=1000'
+      'content-type': 'application/zip',
+      'cache-control': 'public, max-age=1000'
     })
   })
 
@@ -25,7 +25,7 @@ describe('extractHeaders', () => {
       Content-type:    
     `)
 
-    expect(headers).toEqual({ 'Cache-Control': 'public, max-age=1000' })
+    expect(headers).toEqual({ 'cache-control': 'public, max-age=1000' })
   })
 
   it('should return only valid http headers', () => {
@@ -34,6 +34,18 @@ describe('extractHeaders', () => {
       Content//-type: application/text
       Content()-type: application/zip
     `)
+
+    expect(headers).toEqual({})
+  })
+
+  it('should return http headers if empty', () => {
+    const headers = extractHeaders('')
+
+    expect(headers).toEqual({})
+  })
+
+  it('should return http headers if not provided', () => {
+    const headers = extractHeaders()
 
     expect(headers).toEqual({})
   })

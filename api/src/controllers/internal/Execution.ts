@@ -1,7 +1,13 @@
 import path from 'path'
 import fs from 'fs'
 import { getSessionController } from './'
-import { readFile, fileExists, createFile, moveFile } from '@sasjs/utils'
+import {
+  readFile,
+  fileExists,
+  createFile,
+  moveFile,
+  readFileBinary
+} from '@sasjs/utils'
 import { PreProgramVars, TreeNode } from '../../types'
 import {
   extractHeaders,
@@ -16,12 +22,12 @@ export interface ExecutionVars {
 
 export interface ExecuteReturnRaw {
   httpHeaders: HTTPHeaders
-  result: string
+  result: string | Buffer
 }
 
 export interface ExecuteReturnJson {
   httpHeaders: HTTPHeaders
-  webout: string
+  webout: string | Buffer
   log?: string
 }
 
@@ -138,15 +144,17 @@ ${program}`
     }
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
-    const webout = (await fileExists(weboutPath))
-      ? await readFile(weboutPath)
-      : ''
     const headersContent = (await fileExists(headersPath))
       ? await readFile(headersPath)
       : ''
-    const httpHeaders: HTTPHeaders = headersContent
-      ? extractHeaders(headersContent)
-      : {}
+    const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
+    const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
+
+    const webout = (await fileExists(weboutPath))
+      ? fileResponse
+        ? await readFileBinary(weboutPath)
+        : await readFile(weboutPath)
+      : ''
 
     const debugValue =
       typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
@@ -165,10 +173,11 @@ ${program}`
 
     return {
       httpHeaders,
-      result:
-        (debugValue && debugValue >= 131) || session.crashed
-          ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
-          : webout
+      result: fileResponse
+        ? webout
+        : (debugValue && debugValue >= 131) || session.crashed
+        ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
+        : webout
     }
   }
 

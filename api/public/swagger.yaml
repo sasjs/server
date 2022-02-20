@@ -539,7 +539,9 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+                                anyOf:
+                                    - {$ref: '#/components/schemas/ExecuteReturnJsonResponse'}
+                                    - {type: string, format: byte}
             description: 'Execute SAS code.'
             summary: 'Run SAS Code and returns log'
             tags:
@@ -1054,7 +1056,9 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: string
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
             description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
             summary: 'Execute Stored Program, return raw content'
             tags:
@@ -1078,7 +1082,9 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+                                anyOf:
+                                    - {$ref: '#/components/schemas/ExecuteReturnJsonResponse'}
+                                    - {type: string, format: byte}
                             examples:
                                 'Example 1':
                                     value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
