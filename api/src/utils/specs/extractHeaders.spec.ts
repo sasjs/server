@@ -37,4 +37,16 @@ describe('extractHeaders', () => {
 
     expect(headers).toEqual({})
   })
+
+  it('should return http headers if empty', () => {
+    const headers = extractHeaders('')
+
+    expect(headers).toEqual({})
+  })
+
+  it('should return http headers if not provided', () => {
+    const headers = extractHeaders()
+
+    expect(headers).toEqual({})
+  })
 })

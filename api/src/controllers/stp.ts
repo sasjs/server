@@ -59,7 +59,7 @@ export class STPController {
   public async executeReturnRaw(
     @Request() request: express.Request,
     @Query() _program: string
-  ): Promise<string> {
+  ): Promise<string | Buffer> {
     return executeReturnRaw(request, _program)
   }
 
@@ -87,7 +87,7 @@ export class STPController {
     @Request() request: express.Request,
     @Body() body?: ExecuteReturnJsonPayload,
     @Query() _program?: string
-  ): Promise<ExecuteReturnJsonResponse> {
+  ): Promise<ExecuteReturnJsonResponse | Buffer> {
     const program = _program ?? body?._program
     return executeReturnJson(request, program!)
   }
@@ -96,7 +96,7 @@ export class STPController {
 const executeReturnRaw = async (
   req: express.Request,
   _program: string
-): Promise<string> => {
+): Promise<string | Buffer> => {
   const query = req.query as ExecutionVars
   const sasCodePath =
     path
@@ -113,7 +113,10 @@ const executeReturnRaw = async (
 
     req.res?.set(httpHeaders)
 
-    return result as string
+    // if (result instanceof Buffer)
+    //   req.res?.writeHead(200, httpHeaders)
+
+    return result
   } catch (err: any) {
     throw {
       code: 400,
@@ -127,7 +130,7 @@ const executeReturnRaw = async (
 const executeReturnJson = async (
   req: any,
   _program: string
-): Promise<ExecuteReturnJsonResponse> => {
+): Promise<ExecuteReturnJsonResponse | Buffer> => {
   const sasCodePath =
     path
       .join(getTmpFilesFolderPath(), _program)
@@ -144,6 +147,8 @@ const executeReturnJson = async (
         { filesNamesMap: filesNamesMap },
         true
       )) as ExecuteReturnJson
+
+    if (webout instanceof Buffer) return webout
 
     return {
       status: 'success',
