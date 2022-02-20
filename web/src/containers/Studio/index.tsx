@@ -46,7 +46,11 @@ const Studio = () => {
     axios
       .post(`/SASjsApi/code/execute`, { code })
       .then((res: any) => {
-        setLog(`<div><h2>SAS Log</h2><pre>${res?.data?.log}</pre></div>`)
+        const parsedLog = res?.data?.log
+          .map((logLine: any) => logLine.line)
+          .join('\n')
+
+        setLog(`<div><h2>SAS Log</h2><pre>${parsedLog}</pre></div>`)
 
         let weboutString: string
         try {
