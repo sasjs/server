@@ -90,7 +90,7 @@ export class DriveController {
 
   /**
    * @summary Get file from SASjs Drive
-   * @query filePath Location of SAS program
+   * @param filePath Location of SAS program
    * @example filePath "/Public/somefolder/some.file"
    */
   @Example<GetFileResponse>({

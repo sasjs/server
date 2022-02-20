@@ -92,6 +92,10 @@ components:
                 - clientSecret
             type: object
             additionalProperties: false
+        IRecordOfAny:
+            properties: {}
+            type: object
+            additionalProperties: {}
         LogLine:
             properties:
                 line:
@@ -110,7 +114,11 @@ components:
                 status:
                     type: string
                 _webout:
-                    type: string
+                    anyOf:
+                        -
+                            type: string
+                        -
+                            $ref: '#/components/schemas/IRecordOfAny'
                 log:
                     items:
                         $ref: '#/components/schemas/LogLine'
@@ -539,9 +547,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                anyOf:
-                                    - {$ref: '#/components/schemas/ExecuteReturnJsonResponse'}
-                                    - {type: string, format: byte}
+                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
             description: 'Execute SAS code.'
             summary: 'Run SAS Code and returns log'
             tags:
@@ -630,6 +636,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of SAS program'
                     in: query
                     name: filePath
                     required: true
@@ -1068,6 +1075,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of SAS program'
                     in: query
                     name: _program
                     required: true
@@ -1082,9 +1090,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                anyOf:
-                                    - {$ref: '#/components/schemas/ExecuteReturnJsonResponse'}
-                                    - {type: string, format: byte}
+                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
                             examples:
                                 'Example 1':
                                     value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
@@ -1097,6 +1103,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of SAS program'
                     in: query
                     name: _program
                     required: false

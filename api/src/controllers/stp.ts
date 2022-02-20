@@ -33,9 +33,13 @@ interface ExecuteReturnJsonPayload {
    */
   _program?: string
 }
+
+interface IRecordOfAny {
+  [key: string]: any
+}
 export interface ExecuteReturnJsonResponse {
   status: string
-  _webout: string
+  _webout: string | IRecordOfAny
   log: LogLine[]
   message?: string
   httpHeaders: HTTPHeaders
@@ -52,7 +56,7 @@ export class STPController {
    * Any files provided are placed into the session and
    * corresponding _WEBIN_XXX variables are created.
    * @summary Execute Stored Program, return raw content
-   * @query _program Location of SAS program
+   * @param _program Location of SAS program
    * @example _program "/Public/somefolder/some.file"
    */
   @Get('/execute')
@@ -70,7 +74,7 @@ export class STPController {
    * Any files provided are placed into the session and
    * corresponding _WEBIN_XXX variables are created.
    * @summary Execute Stored Program, return JSON
-   * @query _program Location of SAS program
+   * @param _program Location of SAS program
    * @example _program "/Public/somefolder/some.file"
    */
   @Example<ExecuteReturnJsonResponse>({
@@ -87,7 +91,7 @@ export class STPController {
     @Request() request: express.Request,
     @Body() body?: ExecuteReturnJsonPayload,
     @Query() _program?: string
-  ): Promise<ExecuteReturnJsonResponse | Buffer> {
+  ): Promise<ExecuteReturnJsonResponse> {
     const program = _program ?? body?._program
     return executeReturnJson(request, program!)
   }
@@ -131,7 +135,7 @@ const executeReturnRaw = async (
 const executeReturnJson = async (
   req: any,
   _program: string
-): Promise<ExecuteReturnJsonResponse | Buffer> => {
+): Promise<ExecuteReturnJsonResponse> => {
   const sasCodePath =
     path
       .join(getTmpFilesFolderPath(), _program)
@@ -149,14 +153,16 @@ const executeReturnJson = async (
         true
       )) as ExecuteReturnJson
 
-    if (webout instanceof Buffer) {
-      ;(req as any).sasHeaders = httpHeaders
-      return webout
+    let weboutRes: string | IRecordOfAny = webout
+    if (httpHeaders['content-type']?.toLowerCase() === 'application/json') {
+      try {
+        weboutRes = JSON.parse(webout as string)
+      } catch (_) {}
     }
 
     return {
       status: 'success',
-      _webout: webout,
+      _webout: weboutRes,
       log: parseLogToArray(log),
       httpHeaders
     }
