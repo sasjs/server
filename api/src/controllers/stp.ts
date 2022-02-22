@@ -50,12 +50,22 @@ export interface ExecuteReturnJsonResponse {
 @Tags('STP')
 export class STPController {
   /**
-   * Trigger a SAS program using it's location in the _program parameter.
-   * Enable debugging using the _debug parameter.
+   * Trigger a SAS program using it's location in the _program URL parameter.
+   * Enable debugging using the _debug URL parameter.  Setting _debug=131 will
+   * cause the log to be streamed in the output.
+   * 
    * Additional URL parameters are turned into SAS macro variables.
-   * Any files provided are placed into the session and
-   * corresponding _WEBIN_XXX variables are created.
-   * @summary Execute Stored Program, return raw content
+   * 
+   * Any files provided in the request body are placed into the SAS session with
+   * corresponding _WEBIN_XXX variables created.
+   * 
+   * The response headers can be adjusted using the mfs_httpheader() macro.  Any
+   * file type can be returned, including binary files such as zip or xls. 
+   * 
+   * This behaviour differs for POST requests, in which case the reponse is 
+   * always JSON.
+   * 
+   * @summary Execute Stored Program, return raw _webout content.
    * @param _program Location of SAS program
    * @example _program "/Public/somefolder/some.file"
    */
@@ -68,11 +78,26 @@ export class STPController {
   }
 
   /**
-   * Trigger a SAS program using it's location in the _program parameter.
-   * Enable debugging using the _debug parameter.
+   * Trigger a SAS program using it's location in the _program URL parameter.
+   * Enable debugging using the _debug URL parameter.  In any case, the log is
+   * always returned in the log object.
+   * 
    * Additional URL parameters are turned into SAS macro variables.
-   * Any files provided are placed into the session and
-   * corresponding _WEBIN_XXX variables are created.
+   * 
+   * Any files provided in the request body are placed into the SAS session with
+   * corresponding _WEBIN_XXX variables created.
+   * 
+   * The response will be a JSON object with the following root attributes: log,
+   * webout, headers.  
+   * 
+   * The webout will be a nested JSON object ONLY if the response-header 
+   * contains a content-type of application/json AND it is valid JSON. 
+   * Otherwise it will be a stringified version of the webout content.
+   * 
+   * Response headers from the mfs_httpheader macro are simply listed in the 
+   * headers object, for POST requests they have no effect on the actual 
+   * response header.  
+   * 
    * @summary Execute Stored Program, return JSON
    * @param _program Location of SAS program
    * @example _program "/Public/somefolder/some.file"
