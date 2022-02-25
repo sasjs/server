@@ -148,7 +148,8 @@ ${program}`
       ? await readFile(headersPath)
       : ''
     const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
-    const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
+    const fileResponse: boolean =
+      httpHeaders.hasOwnProperty('content-type') && !returnJson
 
     const webout = (await fileExists(weboutPath))
       ? fileResponse

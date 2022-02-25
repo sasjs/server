@@ -25,7 +25,7 @@ export class CodeController {
   public async executeSASCode(
     @Request() request: express.Request,
     @Body() body: ExecuteSASCodePayload
-  ): Promise<ExecuteReturnJsonResponse | Buffer> {
+  ): Promise<ExecuteReturnJsonResponse> {
     return executeSASCode(request, body)
   }
 }
@@ -41,14 +41,9 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
         true
       )) as ExecuteReturnJson
 
-    if (webout instanceof Buffer) {
-      ;(req as any).sasHeaders = httpHeaders
-      return webout
-    }
-
     return {
       status: 'success',
-      _webout: webout,
+      _webout: webout as string,
       log: parseLogToArray(log),
       httpHeaders
     }
