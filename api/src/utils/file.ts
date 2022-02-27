@@ -13,6 +13,8 @@ export const getWebBuildFolderPath = () =>
 
 export const getTmpFolderPath = () => process.driveLoc
 
+export const getTmpUploadsPath = () => path.join(getTmpFolderPath(), 'uploads')
+
 export const getTmpFilesFolderPath = () =>
   path.join(getTmpFolderPath(), 'files')
 

@@ -4,9 +4,7 @@ import morgan from 'morgan'
 import dotenv from 'dotenv'
 import cors from 'cors'
 
-import webRouter from './routes/web'
-import apiRouter from './routes/api'
-import { connectDB, getWebBuildFolderPath } from './utils'
+import { connectDB, getWebBuildFolderPath, setProcessVariables } from './utils'
 
 dotenv.config()
 
@@ -28,7 +26,12 @@ app.use(morgan('tiny'))
 app.use(express.static(path.join(__dirname, '../public')))
 app.use(express.static(getWebBuildFolderPath()))
 
-app.use('/', webRouter)
-app.use('/SASjsApi', apiRouter)
+export default setProcessVariables().then(async () => {
+  // loading these modules after setting up variables due to
+  // multer's usage of process var process.driveLoc
+  const { setupRoutes } = await import('./routes/setupRoutes')
+  setupRoutes(app)
 
-export default connectDB().then(() => app)
+  await connectDB()
+  return app
+})
