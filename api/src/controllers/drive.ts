@@ -1,3 +1,5 @@
+import path from 'path'
+import { Express } from 'express'
 import {
   Security,
   Route,
@@ -8,13 +10,21 @@ import {
   Response,
   Query,
   Get,
-  Patch
+  Patch,
+  UploadedFile,
+  FormField
 } from 'tsoa'
-import { fileExists, readFile, createFile } from '@sasjs/utils'
+import {
+  fileExists,
+  readFile,
+  createFile,
+  moveFile,
+  createFolder,
+  deleteFile
+} from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { FileTree, isFileTree, TreeNode } from '../types'
-import path from 'path'
 import { getTmpFilesFolderPath } from '../utils'
 
 interface DeployPayload {
@@ -90,7 +100,7 @@ export class DriveController {
 
   /**
    * @summary Get file from SASjs Drive
-   * @param filePath Location of SAS program
+   * @query filePath Location of SAS program
    * @example filePath "/Public/somefolder/some.file"
    */
   @Example<GetFileResponse>({
@@ -119,9 +129,10 @@ export class DriveController {
   })
   @Post('/file')
   public async saveFile(
-    @Body() body: FilePayload
+    @FormField() filePath: string,
+    @UploadedFile() file: Express.Multer.File
   ): Promise<UpdateFileResponse> {
-    return saveFile(body)
+    return saveFile(filePath, file)
   }
 
   /**
@@ -192,27 +203,32 @@ const getFile = async (filePath: string): Promise<GetFileResponse> => {
   }
 }
 
-const saveFile = async (body: FilePayload): Promise<GetFileResponse> => {
-  const { filePath, fileContent } = body
-  try {
-    const filePathFull = path
-      .join(getTmpFilesFolderPath(), filePath)
-      .replace(new RegExp('/', 'g'), path.sep)
+const saveFile = async (
+  filePath: string,
+  multerFile: Express.Multer.File
+): Promise<GetFileResponse> => {
+  const driveFilesPath = getTmpFilesFolderPath()
 
-    if (await fileExists(filePathFull)) {
-      throw 'DriveController: File already exists.'
-    }
-    await createFile(filePathFull, fileContent)
+  const filePathFull = path
+    .join(driveFilesPath, filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
 
-    return { status: 'success' }
-  } catch (err: any) {
-    throw {
-      code: 400,
-      status: 'failure',
-      message: 'File request failed.',
-      error: typeof err === 'object' ? err.toString() : err
-    }
+  if (!filePathFull.includes(driveFilesPath)) {
+    await deleteFile(multerFile.path)
+    throw new Error('Cannot put file outside drive.')
   }
+
+  if (await fileExists(filePathFull)) {
+    await deleteFile(multerFile.path)
+    throw new Error('File already exists.')
+  }
+
+  const folderPath = path.dirname(filePathFull)
+  await createFolder(folderPath)
+
+  await moveFile(multerFile.path, filePathFull)
+
+  return { status: 'success' }
 }
 
 const updateFile = async (body: FilePayload): Promise<GetFileResponse> => {

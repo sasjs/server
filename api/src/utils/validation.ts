@@ -73,8 +73,9 @@ export const getFileDriveValidation = (data: any): Joi.ValidationResult =>
 
 export const updateFileDriveValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    filePath: Joi.string().required(),
-    fileContent: Joi.string().required()
+    filePath: Joi.string().pattern(/.sas$/).required().messages({
+      'string.pattern.base': `Valid extensions for filePath: .sas`
+    })
   }).validate(data)
 
 export const runSASValidation = (data: any): Joi.ValidationResult =>

@@ -636,7 +636,6 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS program'
                     in: query
                     name: filePath
                     required: true
@@ -674,9 +673,18 @@ paths:
             requestBody:
                 required: true
                 content:
-                    application/json:
+                    multipart/form-data:
                         schema:
-                            $ref: '#/components/schemas/FilePayload'
+                            type: object
+                            properties:
+                                filePath:
+                                    type: string
+                                file:
+                                    type: string
+                                    format: binary
+                            required:
+                                - filePath
+                                - file
         patch:
             operationId: UpdateFile
             responses:
@@ -1066,8 +1074,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
-            summary: 'Execute Stored Program, return raw content'
+            description: "Trigger a SAS program using it's location in the _program URL parameter.\nEnable debugging using the _debug URL parameter.  Setting _debug=131 will\ncause the log to be streamed in the output.\n\nAdditional URL parameters are turned into SAS macro variables.\n\nAny files provided in the request body are placed into the SAS session with\ncorresponding _WEBIN_XXX variables created.\n\nThe response headers can be adjusted using the mfs_httpheader() macro.  Any\nfile type can be returned, including binary files such as zip or xls.\n\nThis behaviour differs for POST requests, in which case the reponse is\nalways JSON."
+            summary: 'Execute Stored Program, return raw _webout content.'
             tags:
                 - STP
             security:
@@ -1094,7 +1102,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
-            description: "Trigger a SAS program using it's location in the _program parameter.\nEnable debugging using the _debug parameter.\nAdditional URL parameters are turned into SAS macro variables.\nAny files provided are placed into the session and\ncorresponding _WEBIN_XXX variables are created."
+            description: "Trigger a SAS program using it's location in the _program URL parameter.\nEnable debugging using the _debug URL parameter.  In any case, the log is\nalways returned in the log object.\n\nAdditional URL parameters are turned into SAS macro variables.\n\nAny files provided in the request body are placed into the SAS session with\ncorresponding _WEBIN_XXX variables created.\n\nThe response will be a JSON object with the following root attributes: log,\nwebout, headers.\n\nThe webout will be a nested JSON object ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content.\n\nResponse headers from the mfs_httpheader macro are simply listed in the\nheaders object, for POST requests they have no effect on the actual\nresponse header."
             summary: 'Execute Stored Program, return JSON'
             tags:
                 - STP
