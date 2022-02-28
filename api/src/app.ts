@@ -1,5 +1,5 @@
 import path from 'path'
-import express from 'express'
+import express, { ErrorRequestHandler } from 'express'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
 import cors from 'cors'
@@ -26,11 +26,18 @@ app.use(morgan('tiny'))
 app.use(express.static(path.join(__dirname, '../public')))
 app.use(express.static(getWebBuildFolderPath()))
 
+const onError: ErrorRequestHandler = (err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
+}
+
 export default setProcessVariables().then(async () => {
   // loading these modules after setting up variables due to
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')
   setupRoutes(app)
+
+  app.use(onError)
 
   await connectDB()
   return app

@@ -214,18 +214,15 @@ const saveFile = async (
     .replace(new RegExp('/', 'g'), path.sep)
 
   if (!filePathFull.includes(driveFilesPath)) {
-    await deleteFile(multerFile.path)
     throw new Error('Cannot put file outside drive.')
   }
 
   if (await fileExists(filePathFull)) {
-    await deleteFile(multerFile.path)
     throw new Error('File already exists.')
   }
 
   const folderPath = path.dirname(filePathFull)
   await createFolder(folderPath)
-
   await moveFile(multerFile.path, filePathFull)
 
   return { status: 'success' }

@@ -1,5 +1,7 @@
 import express from 'express'
-import multer, { multerSingle } from '../../middlewares/multer'
+import { deleteFile } from '@sasjs/utils'
+
+import { multerSingle } from '../../middlewares/multer'
 import { DriveController } from '../../controllers/'
 import { getFileDriveValidation, updateFileDriveValidation } from '../../utils'
 
@@ -41,7 +43,10 @@ driveRouter.post(
   (...arg) => multerSingle('file', arg),
   async (req, res) => {
     const { error, value: body } = updateFileDriveValidation(req.body)
-    if (error) return res.status(400).send(error.details[0].message)
+    if (error) {
+      if (req.file) await deleteFile(req.file.path)
+      return res.status(400).send(error.details[0].message)
+    }
 
     if (!req.file) return res.status(400).send('"file" is not present.')
 
@@ -49,6 +54,7 @@ driveRouter.post(
       const response = await controller.saveFile(body.filePath, req.file)
       res.send(response)
     } catch (err: any) {
+      await deleteFile(req.file.path)
       res.status(403).send(err.toString())
     }
   }
