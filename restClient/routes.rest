@@ -23,7 +23,7 @@ Content-Type: application/json
   "client_secret": "newClientSecret"
 }
 ###
-POST https://sas.analytium.co.uk:5002/SASjsApi/auth/authorize
+POST http://localhost:5000/SASjsApi/auth/authorize
 Content-Type: application/json
 
 {
@@ -44,6 +44,41 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:5000/SASjsApi/auth/logout
+
+###
+GET http://localhost:5000/SASjsApi/session
+
+
+### multipart upload to sas server file
+POST http://localhost:5000/SASjsApi/drive/file
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="filePath"
+
+/saad/files/new.sas
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample_new.sas"
+Content-Type: application/octet-stream
+
+< ./sample.sas
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### multipart upload to sas server file text
+POST http://localhost:5000/SASjsApi/drive/file
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+  
+------WebKitFormBoundary7MA4YWxkTrZu0gW \n
+Content-Disposition: form-data; name="filePath"
+
+/saad/files/new2.sas
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample_new.sas"
+Content-Type: text/plain
+
+SOME CONTENTS OF SAS FILE IN REQUEST
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 
 Users

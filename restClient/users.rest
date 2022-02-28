@@ -1,0 +1,10 @@
+### Create User
+POST http://localhost:5000/SASjsApi/user
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InNlY3JldHVzZXIiLCJpc2FkbWluIjp0cnVlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODAzOTc3LCJleHAiOjE2MzU4OTAzNzd9.f-FLgLwryKvB5XrihdzaGZajO3d5E5OHEEuJI_03GRI
+Content-Type: application/json
+
+{
+  "displayname": "User 2",
+  "username": "username2",
+  "password": "some password"
+}
