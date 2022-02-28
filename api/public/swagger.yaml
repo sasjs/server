@@ -669,7 +669,13 @@ paths:
             security:
                 -
                     bearerAuth: []
-            parameters: []
+            parameters:
+                -
+                    in: query
+                    name: _filePath
+                    required: false
+                    schema:
+                        type: string
             requestBody:
                 required: true
                 content:
@@ -677,13 +683,12 @@ paths:
                         schema:
                             type: object
                             properties:
-                                filePath:
-                                    type: string
                                 file:
                                     type: string
                                     format: binary
+                                filePath:
+                                    type: string
                             required:
-                                - filePath
                                 - file
         patch:
             operationId: UpdateFile

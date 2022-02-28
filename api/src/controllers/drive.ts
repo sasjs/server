@@ -129,10 +129,11 @@ export class DriveController {
   })
   @Post('/file')
   public async saveFile(
-    @FormField() filePath: string,
-    @UploadedFile() file: Express.Multer.File
+    @UploadedFile() file: Express.Multer.File,
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
   ): Promise<UpdateFileResponse> {
-    return saveFile(filePath, file)
+    return saveFile((_filePath ?? filePath)!, file)
   }
 
   /**

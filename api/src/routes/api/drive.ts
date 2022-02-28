@@ -3,7 +3,12 @@ import { deleteFile } from '@sasjs/utils'
 
 import { multerSingle } from '../../middlewares/multer'
 import { DriveController } from '../../controllers/'
-import { getFileDriveValidation, updateFileDriveValidation } from '../../utils'
+import {
+  getFileDriveValidation,
+  updateFileDriveValidation,
+  uploadFileBodyValidation,
+  uploadFileParamValidation
+} from '../../utils'
 
 const controller = new DriveController()
 
@@ -42,16 +47,22 @@ driveRouter.post(
   '/file',
   (...arg) => multerSingle('file', arg),
   async (req, res) => {
-    const { error, value: body } = updateFileDriveValidation(req.body)
-    if (error) {
+    const { error: errQ, value: query } = uploadFileParamValidation(req.query)
+    const { error: errB, value: body } = uploadFileBodyValidation(req.body)
+
+    if (errQ && errB) {
       if (req.file) await deleteFile(req.file.path)
-      return res.status(400).send(error.details[0].message)
+      return res.status(400).send(errB.details[0].message)
     }
 
     if (!req.file) return res.status(400).send('"file" is not present.')
 
     try {
-      const response = await controller.saveFile(body.filePath, req.file)
+      const response = await controller.saveFile(
+        req.file,
+        query._filePath,
+        body.filePath
+      )
       res.send(response)
     } catch (err: any) {
       await deleteFile(req.file.path)

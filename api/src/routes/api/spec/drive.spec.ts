@@ -172,11 +172,24 @@ describe('files', () => {
 
   describe('file', () => {
     describe('create', () => {
-      it('should create a SAS file on drive', async () => {
+      it('should create a SAS file on drive having filePath as form field', async () => {
         const res = await request(app)
           .post('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
           .field('filePath', '/my/path/code.sas')
+          .attach('file', path.join(__dirname, 'files', 'sample.sas'))
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({
+          status: 'success'
+        })
+      })
+
+      it('should create a SAS file on drive having _filePath as query param', async () => {
+        const res = await request(app)
+          .post('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _filePath: '/my/path/code1.sas' })
           .attach('file', path.join(__dirname, 'files', 'sample.sas'))
 
         expect(res.statusCode).toEqual(200)
