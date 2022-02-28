@@ -117,7 +117,13 @@ export class DriveController {
   }
 
   /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provided else API will respond with Bad Request.
+   *
    * @summary Create a file in SASjs Drive
+   * @param _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file.sas"
    *
    */
   @Example<UpdateFileResponse>({
