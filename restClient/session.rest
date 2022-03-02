@@ -1,0 +1,2 @@
+### Get current user's info via access token
+GET http://localhost:5000/SASjsApi/session

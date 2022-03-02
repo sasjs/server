@@ -1,0 +1,22 @@
+### Get Auth Code
+POST http://localhost:5000/SASjsApi/auth/authorize
+Content-Type: application/json
+
+{
+  "username": "secretuser",
+  "password": "secretpassword",
+  "client_id": "clientID1"
+}
+
+### Exchange AuthCode with Access/Refresh Tokens
+POST http://localhost:5000/SASjsApi/auth/token
+Content-Type: application/json
+
+{
+  "client_id": "clientID1",
+  "client_secret": "clientID1secret",
+  "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InVzZXJuYW1lMSIsImlzYWRtaW4iOmZhbHNlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODA0MDYxLCJleHAiOjE2MzU4MDQwOTF9.jV7DpBWG7XAGODs22zAW_kWOqVLZvOxmmYJGpSNQ-KM"
+}
+
+### Perform logout to deactivate access token instantly
+DELETE http://localhost:5000/SASjsApi/auth/logout

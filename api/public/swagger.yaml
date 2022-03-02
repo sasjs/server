@@ -663,13 +663,22 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
+            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provided else API will respond with Bad Request."
             summary: 'Create a file in SASjs Drive'
             tags:
                 - Drive
             security:
                 -
                     bearerAuth: []
-            parameters: []
+            parameters:
+                -
+                    description: 'Location of SAS program'
+                    in: query
+                    name: _filePath
+                    required: false
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file.sas
             requestBody:
                 required: true
                 content:
@@ -677,13 +686,12 @@ paths:
                         schema:
                             type: object
                             properties:
-                                filePath:
-                                    type: string
                                 file:
                                     type: string
                                     format: binary
+                                filePath:
+                                    type: string
                             required:
-                                - filePath
                                 - file
         patch:
             operationId: UpdateFile
