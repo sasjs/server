@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.30](https://github.com/sasjs/server/compare/v0.0.29...v0.0.30) (2022-03-05)
+
+
+### Features
+
+* parse log to array ([c5ad72c](https://github.com/sasjs/server/commit/c5ad72c931ec8fbd7d5a6475838adcbd380c8aee))
+* set response headers provded by SAS Code execution ([2c4aa42](https://github.com/sasjs/server/commit/2c4aa420b3119890cafde4265ed5dddbc9d6a636))
+
+
+### Bug Fixes
+
+* added http headers to /code api as well ([da899b9](https://github.com/sasjs/server/commit/da899b90e26d5ee393eefc302be985eb7c9055a5))
+* code api is updated return type ([e2a6810](https://github.com/sasjs/server/commit/e2a6810e9531a8102d3c51fd8df2e1f78f0d965f))
+* **file:** fixes response headers ([ef41691](https://github.com/sasjs/server/commit/ef41691e408ef1c1c7a921cc1050bdd533651331))
+* get file instead of it's content ([efaf38d](https://github.com/sasjs/server/commit/efaf38d3039391392ce0e14a3accddd8f34ea7d6))
+* hot fix for web component ([0a4b202](https://github.com/sasjs/server/commit/0a4b202428e14effc8014a6813cecf7761ce3715))
+* improvement in flow of uploading ([8c1941a](https://github.com/sasjs/server/commit/8c1941a87bc184be4e0e09eeff73fc6cb69e3041))
+* macros are available Sessions with SASAUTOS ([95843fa](https://github.com/sasjs/server/commit/95843fa4c711aa695ee63ad265b8def4ba56360d))
+* minor changes ([0b5f958](https://github.com/sasjs/server/commit/0b5f958f456d291ec7a8697236657c7819d5c654))
+* multi-part file upload + validations + specs ([e60f172](https://github.com/sasjs/server/commit/e60f17268d1fa9ab623313026d46bd3f63756f69))
+* organized code for usage of multer ([ce0a5e1](https://github.com/sasjs/server/commit/ce0a5e1229bed69c450061fac2bc19711448da56))
+* return buffer in case of file response ([3e6234e](https://github.com/sasjs/server/commit/3e6234e6019c5f3ae4280fac079ecc9cb0effc07))
+* **stp:** return json for webout ([5005f20](https://github.com/sasjs/server/commit/5005f203b8d6b1d577cdf094b83886bd1fc817a2))
+* updating docs ([7312763](https://github.com/sasjs/server/commit/7312763339d6769826328561e2c8d11bbfc0c9f4))
+* **upload:** added query param as well for filepath ([feeec4e](https://github.com/sasjs/server/commit/feeec4eb149e9a47e5a52320d1fc95243bf5eb15))
+
 ### [0.0.29](https://github.com/sasjs/server/compare/v0.0.28...v0.0.29) (2022-02-16)
 
 
