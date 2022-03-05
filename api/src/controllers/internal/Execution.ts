@@ -13,7 +13,8 @@ import {
   extractHeaders,
   generateFileUploadSasCode,
   getTmpFilesFolderPath,
-  HTTPHeaders
+  HTTPHeaders,
+  sasJSCoreMacros
 } from '../../utils'
 
 export interface ExecutionVars {
@@ -104,6 +105,8 @@ export class ExecutionController {
 `
 
     program = `
+options insert=(SASAUTOS="${sasJSCoreMacros}");
+
 /* runtime vars */
 ${varStatments}
 filename _webout "${weboutPath}" mod;

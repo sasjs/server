@@ -21,7 +21,6 @@ const compiledSystemInit = async (systemInit: string) =>
   }))
 
 const createSysInitFile = async () => {
-  console.log('macroCorePath', macroCorePath)
   const systemInitContent = await readFile(
     path.join(__dirname, 'systemInit.sas')
   )
