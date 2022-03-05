@@ -8,6 +8,8 @@ export const sysInitCompiledPath = path.join(
   'systemInitCompiled.sas'
 )
 
+export const sasJSCoreMacros = path.join(apiRoot, 'sasjscore')
+
 export const getWebBuildFolderPath = () =>
   path.join(codebaseRoot, 'web', 'build')
 

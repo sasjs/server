@@ -1,7 +1,8 @@
 import path from 'path'
-import { Express } from 'express'
+import express, { Express } from 'express'
 import {
   Security,
+  Request,
   Route,
   Tags,
   Example,
@@ -14,14 +15,7 @@ import {
   UploadedFile,
   FormField
 } from 'tsoa'
-import {
-  fileExists,
-  readFile,
-  createFile,
-  moveFile,
-  createFolder,
-  deleteFile
-} from '@sasjs/utils'
+import { fileExists, createFile, moveFile, createFolder } from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { FileTree, isFileTree, TreeNode } from '../types'
@@ -103,17 +97,12 @@ export class DriveController {
    * @query filePath Location of SAS program
    * @example filePath "/Public/somefolder/some.file"
    */
-  @Example<GetFileResponse>({
-    status: 'success',
-    fileContent: 'Contents of the File'
-  })
-  @Response<GetFileResponse>(400, 'Unable to get File', {
-    status: 'failure',
-    message: 'File request failed.'
-  })
   @Get('/file')
-  public async getFile(@Query() filePath: string): Promise<GetFileResponse> {
-    return getFile(filePath)
+  public async getFile(
+    @Request() request: express.Request,
+    @Query() filePath: string
+  ) {
+    return getFile(request, filePath)
   }
 
   /**
@@ -190,24 +179,22 @@ const deploy = async (data: DeployPayload) => {
   return successDeployResponse
 }
 
-const getFile = async (filePath: string): Promise<GetFileResponse> => {
-  try {
-    const filePathFull = path
-      .join(getTmpFilesFolderPath(), filePath)
-      .replace(new RegExp('/', 'g'), path.sep)
+const getFile = async (req: express.Request, filePath: string) => {
+  const driveFilesPath = getTmpFilesFolderPath()
 
-    await validateFilePath(filePathFull)
-    const fileContent = await readFile(filePathFull)
+  const filePathFull = path
+    .join(getTmpFilesFolderPath(), filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
 
-    return { status: 'success', fileContent: fileContent }
-  } catch (err: any) {
-    throw {
-      code: 400,
-      status: 'failure',
-      message: 'File request failed.',
-      error: typeof err === 'object' ? err.toString() : err
-    }
+  if (!filePathFull.includes(driveFilesPath)) {
+    throw new Error('Cannot get file outside drive.')
   }
+
+  if (!(await fileExists(filePathFull))) {
+    throw new Error('File does not exist.')
+  }
+
+  req.res?.download(filePathFull)
 }
 
 const saveFile = async (

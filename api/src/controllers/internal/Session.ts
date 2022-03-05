@@ -67,7 +67,10 @@ export class SessionController {
 
     // the autoexec file is executed on SAS startup
     const autoExecPath = path.join(sessionFolder, 'autoexec.sas')
-    const contentForAutoExec = `/* compiled systemInit */\n${compiledSystemInitContent}\n/* autoexec */\n${autoExecContent}`
+    const contentForAutoExec = `/* compiled systemInit */
+${compiledSystemInitContent}
+/* autoexec */
+${autoExecContent}`
     await createFile(autoExecPath, contentForAutoExec)
 
     // create empty code.sas as SAS will not start without a SYSIN

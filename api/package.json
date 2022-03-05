@@ -4,7 +4,7 @@
   "description": "Api of SASjs server",
   "main": "./src/server.ts",
   "scripts": {
-    "initial": "npm run swagger && npm run compileSysInit",
+    "initial": "npm run swagger && npm run compileSysInit && npm run copySASjsCore",
     "prestart": "npm run initial",
     "prebuild": "npm run initial",
     "start": "nodemon ./src/server.ts",
@@ -16,11 +16,13 @@
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "package:lib": "npm run build && cp ./package.json build && cp README.md build && cd build && npm version \"5.0.0\" && npm pack",
     "exe": "npm run build && npm run exe:copy && pkg .",
-    "exe:copy": "npm run public:copy && npm run sasjsbuild:copy && npm run web:copy",
+    "exe:copy": "npm run public:copy && npm run sasjsbuild:copy && npm run sasjscore:copy && npm run web:copy",
     "public:copy": "cp -r ./public/ ./build/public/",
     "sasjsbuild:copy": "cp -r ./sasjsbuild/ ./build/sasjsbuild/",
+    "sasjscore:copy": "cp -r ./sasjscore/ ./build/sasjscore/",
     "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/",
-    "compileSysInit": "ts-node ./scripts/compileSysInit.ts"
+    "compileSysInit": "ts-node ./scripts/compileSysInit.ts",
+    "copySASjsCore": "ts-node ./scripts/copySASjsCore.ts"
   },
   "bin": "./build/src/server.js",
   "pkg": {

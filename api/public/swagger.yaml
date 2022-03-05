@@ -223,18 +223,6 @@ components:
                 - fileTree
             type: object
             additionalProperties: false
-        GetFileResponse:
-            properties:
-                status:
-                    type: string
-                fileContent:
-                    type: string
-                message:
-                    type: string
-            required:
-                - status
-            type: object
-            additionalProperties: false
         UpdateFileResponse:
             properties:
                 status:
@@ -610,24 +598,8 @@ paths:
         get:
             operationId: GetFile
             responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetFileResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success, fileContent: 'Contents of the File'}
-                '400':
-                    description: 'Unable to get File'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetFileResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'File request failed.'}
+                '204':
+                    description: 'No content'
             summary: 'Get file from SASjs Drive'
             tags:
                 - Drive
