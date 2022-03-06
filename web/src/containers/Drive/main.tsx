@@ -25,7 +25,7 @@ const Main = (props: any) => {
       axios
         .get(`/SASjsApi/drive/file?filePath=${props.selectedFilePath}`)
         .then((res: any) => {
-          setFileContent(res.data.fileContent)
+          setFileContent(res.data)
         })
         .catch((err) => {
           console.log(err)

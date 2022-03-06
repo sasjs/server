@@ -4,7 +4,12 @@ import morgan from 'morgan'
 import dotenv from 'dotenv'
 import cors from 'cors'
 
-import { connectDB, getWebBuildFolderPath, setProcessVariables } from './utils'
+import {
+  connectDB,
+  getWebBuildFolderPath,
+  sasJSCoreMacros,
+  setProcessVariables
+} from './utils'
 
 dotenv.config()
 
@@ -36,6 +41,8 @@ export default setProcessVariables().then(async () => {
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')
   setupRoutes(app)
+
+  console.log('sasJSCoreMacros', sasJSCoreMacros)
 
   app.use(onError)
 
