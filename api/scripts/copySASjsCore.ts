@@ -9,8 +9,6 @@ export const copySASjsCore = async () => {
   await deleteFolder(sasJSCoreMacros)
   await createFolder(sasJSCoreMacros)
 
-  console.log('Copying SASjs Core Macros...')
-
   const foldersToCopy = ['base', 'ddl', 'fcmp', 'lua', 'server']
 
   await asyncForEach(foldersToCopy, async (coreSubFolder) => {
@@ -18,8 +16,6 @@ export const copySASjsCore = async () => {
 
     await copy(coreSubFolderPath, sasJSCoreMacros)
   })
-
-  console.log('Macros available at: ', sasJSCoreMacros)
 }
 
 copySASjsCore()
