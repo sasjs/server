@@ -1,6 +1,7 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
 import morgan from 'morgan'
+import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import cors from 'cors'
 
@@ -26,8 +27,9 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
   app.use(cors({ credentials: true, origin: whiteList }))
 }
 
-app.use(express.json({ limit: '50mb' }))
+app.use(cookieParser())
 app.use(morgan('tiny'))
+app.use(express.json({ limit: '50mb' }))
 app.use(express.static(path.join(__dirname, '../public')))
 app.use(express.static(getWebBuildFolderPath()))
 

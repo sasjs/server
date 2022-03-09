@@ -43,7 +43,9 @@ const authenticateToken = (
   }
 
   const authHeader = req.headers['authorization']
-  const token = authHeader?.split(' ')[1]
+  const token =
+    authHeader?.split(' ')[1] ??
+    (tokenType === 'accessToken' ? req.cookies.accessToken : '')
   if (!token) return res.sendStatus(401)
 
   jwt.verify(token, key, async (err: any, data: any) => {

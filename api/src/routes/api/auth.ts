@@ -55,8 +55,9 @@ authRouter.post('/token', async (req, res) => {
   const controller = new AuthController()
   try {
     const response = await controller.token(body)
+    const { accessToken } = response
 
-    res.send(response)
+    res.cookie('accessToken', accessToken).send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }

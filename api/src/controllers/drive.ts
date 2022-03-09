@@ -194,7 +194,12 @@ const getFile = async (req: express.Request, filePath: string) => {
     throw new Error('File does not exist.')
   }
 
-  req.res?.download(filePathFull)
+  const extension = path.extname(filePathFull).toLowerCase()
+  if (extension === '.sas') {
+    req.res?.setHeader('Content-type', 'text/plain')
+  }
+
+  req.res?.sendFile(path.resolve(filePathFull))
 }
 
 const saveFile = async (
