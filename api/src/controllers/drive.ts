@@ -13,9 +13,15 @@ import {
   Get,
   Patch,
   UploadedFile,
-  FormField
+  FormField,
+  Delete
 } from 'tsoa'
-import { fileExists, createFile, moveFile, createFolder } from '@sasjs/utils'
+import {
+  fileExists,
+  moveFile,
+  createFolder,
+  deleteFile as deleteFileOnSystem
+} from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { FileTree, isFileTree, TreeNode } from '../types'
@@ -24,18 +30,6 @@ import { getTmpFilesFolderPath } from '../utils'
 interface DeployPayload {
   appLoc?: string
   fileTree: FileTree
-}
-interface FilePayload {
-  /**
-   * Path of the file
-   * @example "/Public/somefolder/some.file"
-   */
-  filePath: string
-  /**
-   * Contents of the file
-   * @example "Contents of the File"
-   */
-  fileContent: string
 }
 
 interface DeployResponse {
@@ -93,22 +87,45 @@ export class DriveController {
   }
 
   /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provide else API will respond with Bad Request.
+   *
    * @summary Get file from SASjs Drive
-   * @query filePath Location of SAS program
-   * @example filePath "/Public/somefolder/some.file"
+   * @query _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file"
    */
   @Get('/file')
   public async getFile(
     @Request() request: express.Request,
-    @Query() filePath: string
+
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
   ) {
-    return getFile(request, filePath)
+    return getFile(request, (_filePath ?? filePath)!)
   }
 
   /**
    * It's optional to either provide `_filePath` in url as query parameter
    * Or provide `filePath` in body as form field.
-   * But it's required to provided else API will respond with Bad Request.
+   * But it's required to provide else API will respond with Bad Request.
+   *
+   * @summary Delete file from SASjs Drive
+   * @query _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file"
+   */
+  @Delete('/file')
+  public async deleteFile(
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
+  ) {
+    return deleteFile((_filePath ?? filePath)!)
+  }
+
+  /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provide else API will respond with Bad Request.
    *
    * @summary Create a file in SASjs Drive
    * @param _filePath Location of SAS program
@@ -118,7 +135,7 @@ export class DriveController {
   @Example<UpdateFileResponse>({
     status: 'success'
   })
-  @Response<UpdateFileResponse>(400, 'File already exists', {
+  @Response<UpdateFileResponse>(403, 'File already exists', {
     status: 'failure',
     message: 'File request failed.'
   })
@@ -132,21 +149,29 @@ export class DriveController {
   }
 
   /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provide else API will respond with Bad Request.
+   *
    * @summary Modify a file in SASjs Drive
+   * @param _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file.sas"
    *
    */
   @Example<UpdateFileResponse>({
     status: 'success'
   })
-  @Response<UpdateFileResponse>(400, 'Unable to get File', {
+  @Response<UpdateFileResponse>(403, `File doesn't exist`, {
     status: 'failure',
     message: 'File request failed.'
   })
   @Patch('/file')
   public async updateFile(
-    @Body() body: FilePayload
+    @UploadedFile() file: Express.Multer.File,
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
   ): Promise<UpdateFileResponse> {
-    return updateFile(body)
+    return updateFile((_filePath ?? filePath)!, file)
   }
 
   /**
@@ -194,7 +219,32 @@ const getFile = async (req: express.Request, filePath: string) => {
     throw new Error('File does not exist.')
   }
 
-  req.res?.download(filePathFull)
+  const extension = path.extname(filePathFull).toLowerCase()
+  if (extension === '.sas') {
+    req.res?.setHeader('Content-type', 'text/plain')
+  }
+
+  req.res?.sendFile(path.resolve(filePathFull))
+}
+
+const deleteFile = async (filePath: string) => {
+  const driveFilesPath = getTmpFilesFolderPath()
+
+  const filePathFull = path
+    .join(getTmpFilesFolderPath(), filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  if (!filePathFull.includes(driveFilesPath)) {
+    throw new Error('Cannot delete file outside drive.')
+  }
+
+  if (!(await fileExists(filePathFull))) {
+    throw new Error('File does not exist.')
+  }
+
+  await deleteFileOnSystem(filePathFull)
+
+  return { status: 'success' }
 }
 
 const saveFile = async (
@@ -222,25 +272,27 @@ const saveFile = async (
   return { status: 'success' }
 }
 
-const updateFile = async (body: FilePayload): Promise<GetFileResponse> => {
-  const { filePath, fileContent } = body
-  try {
-    const filePathFull = path
-      .join(getTmpFilesFolderPath(), filePath)
-      .replace(new RegExp('/', 'g'), path.sep)
+const updateFile = async (
+  filePath: string,
+  multerFile: Express.Multer.File
+): Promise<GetFileResponse> => {
+  const driveFilesPath = getTmpFilesFolderPath()
 
-    await validateFilePath(filePathFull)
-    await createFile(filePathFull, fileContent)
+  const filePathFull = path
+    .join(driveFilesPath, filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
 
-    return { status: 'success' }
-  } catch (err: any) {
-    throw {
-      code: 400,
-      status: 'failure',
-      message: 'File request failed.',
-      error: typeof err === 'object' ? err.toString() : err
-    }
+  if (!filePathFull.includes(driveFilesPath)) {
+    throw new Error('Cannot modify file outside drive.')
   }
+
+  if (!(await fileExists(filePathFull))) {
+    throw new Error(`File doesn't exist.`)
+  }
+
+  await moveFile(multerFile.path, filePathFull)
+
+  return { status: 'success' }
 }
 
 const validateFilePath = async (filePath: string) => {

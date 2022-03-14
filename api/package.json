@@ -48,6 +48,7 @@
     "@sasjs/core": "4.9.0",
     "@sasjs/utils": "2.34.1",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "joi": "^17.4.2",
@@ -61,6 +62,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
+    "@types/cookie-parser": "^1.4.2",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.12",
     "@types/jest": "^26.0.24",

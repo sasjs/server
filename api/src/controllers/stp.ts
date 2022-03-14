@@ -21,6 +21,7 @@ import { PreProgramVars } from '../types'
 import {
   getTmpFilesFolderPath,
   HTTPHeaders,
+  isDebugOn,
   LogLine,
   makeFilesNamesMap,
   parseLogToArray
@@ -62,7 +63,9 @@ export class STPController {
    * The response headers can be adjusted using the mfs_httpheader() macro.  Any
    * file type can be returned, including binary files such as zip or xls.
    *
-   * This behaviour differs for POST requests, in which case the reponse is
+   * If _debug is >= 131, response headers will contain Content-Type: 'text/plain'
+   *
+   * This behaviour differs for POST requests, in which case the response is
    * always JSON.
    *
    * @summary Execute Stored Program, return raw _webout content.
@@ -139,6 +142,13 @@ const executeReturnRaw = async (
         getPreProgramVariables(req),
         query
       )) as ExecuteReturnRaw
+
+    // Should over-ride response header for
+    // debug on GET request to see entire log
+    // rendering on browser.
+    if (isDebugOn(query)) {
+      httpHeaders['content-type'] = 'text/plain'
+    }
 
     req.res?.set(httpHeaders)
 

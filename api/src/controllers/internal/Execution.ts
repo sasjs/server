@@ -14,6 +14,7 @@ import {
   generateFileUploadSasCode,
   getTmpFilesFolderPath,
   HTTPHeaders,
+  isDebugOn,
   sasJSCoreMacros
 } from '../../utils'
 
@@ -160,9 +161,6 @@ ${program}`
         : await readFile(weboutPath)
       : ''
 
-    const debugValue =
-      typeof vars._debug === 'string' ? parseInt(vars._debug) : vars._debug
-
     // it should be deleted by scheduleSessionDestroy
     session.inUse = false
 
@@ -170,8 +168,7 @@ ${program}`
       return {
         httpHeaders,
         webout,
-        log:
-          (debugValue && debugValue >= 131) || session.crashed ? log : undefined
+        log: isDebugOn(vars) || session.crashed ? log : undefined
       }
     }
 
@@ -179,7 +176,7 @@ ${program}`
       httpHeaders,
       result: fileResponse
         ? webout
-        : (debugValue && debugValue >= 131) || session.crashed
+        : isDebugOn(vars) || session.crashed
         ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
         : webout
     }

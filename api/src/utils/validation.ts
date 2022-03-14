@@ -66,25 +66,14 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
     clientSecret: Joi.string().required()
   }).validate(data)
 
-export const getFileDriveValidation = (data: any): Joi.ValidationResult =>
-  Joi.object({
-    filePath: Joi.string().required()
-  }).validate(data)
-
-export const updateFileDriveValidation = (data: any): Joi.ValidationResult =>
-  Joi.object({
-    filePath: Joi.string().required(),
-    fileContent: Joi.string().required()
-  }).validate(data)
-
-export const uploadFileBodyValidation = (data: any): Joi.ValidationResult =>
+export const fileBodyValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     filePath: Joi.string().pattern(/.sas$/).required().messages({
       'string.pattern.base': `Valid extensions for filePath: .sas`
     })
   }).validate(data)
 
-export const uploadFileParamValidation = (data: any): Joi.ValidationResult =>
+export const fileParamValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _filePath: Joi.string().pattern(/.sas$/).required().messages({
       'string.pattern.base': `Valid extensions for filePath: .sas`

@@ -321,6 +321,166 @@ describe('files', () => {
         expect(res.body).toEqual({})
       })
     })
+
+    describe('update', () => {
+      it('should update a SAS file on drive having filePath as form field', async () => {
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
+        const pathToUpload = '/my/path/code.sas'
+
+        const pathToCopy = path.join(
+          fileUtilModules.getTmpFilesFolderPath(),
+          pathToUpload
+        )
+        await copy(fileToAttachPath, pathToCopy)
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .attach('file', fileToAttachPath)
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({
+          status: 'success'
+        })
+      })
+
+      it('should update a SAS file on drive having _filePath as query param', async () => {
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
+        const pathToUpload = '/my/path/code.sas'
+
+        const pathToCopy = path.join(
+          fileUtilModules.getTmpFilesFolderPath(),
+          pathToUpload
+        )
+        await copy(fileToAttachPath, pathToCopy)
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .attach('file', fileToAttachPath)
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({
+          status: 'success'
+        })
+      })
+
+      it('should respond with Unauthorized if access token is not present', async () => {
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .field('filePath', '/my/path/code.sas')
+          .attach('file', path.join(__dirname, 'files', 'sample.sas'))
+          .expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if file is not present', async () => {
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', `/my/path/code-${generateTimestamp()}.sas`)
+          .attach('file', path.join(__dirname, 'files', 'sample.sas'))
+          .expect(403)
+
+        expect(res.text).toEqual(`Error: File doesn't exist.`)
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if filePath outside Drive', async () => {
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
+        const pathToUpload = '/../path/code.sas'
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .attach('file', fileToAttachPath)
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Cannot modify file outside drive.')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Bad Request if filePath is missing', async () => {
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', fileToAttachPath)
+          .expect(400)
+
+        expect(res.text).toEqual(`"filePath" is required`)
+        expect(res.body).toEqual({})
+      })
+
+      it("should respond with Bad Request if filePath doesn't has correct extension", async () => {
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
+        const pathToUpload = '/my/path/code.oth'
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .attach('file', fileToAttachPath)
+          .expect(400)
+
+        expect(res.text).toEqual('Valid extensions for filePath: .sas')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Bad Request if file is missing', async () => {
+        const pathToUpload = '/my/path/code.sas'
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .expect(400)
+
+        expect(res.text).toEqual('"file" is not present.')
+        expect(res.body).toEqual({})
+      })
+
+      it("should respond with Bad Request if attached file doesn't has correct extension", async () => {
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.oth')
+        const pathToUpload = '/my/path/code.sas'
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .attach('file', fileToAttachPath)
+          .expect(400)
+
+        expect(res.text).toEqual(
+          `File extension '.oth' not acceptable. Valid extension(s): .sas`
+        )
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Bad Request if attached file exceeds file limit', async () => {
+        const pathToUpload = '/my/path/code.sas'
+
+        const attachedFile = Buffer.from('.'.repeat(20 * 1024 * 1024))
+
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .field('filePath', pathToUpload)
+          .attach('file', attachedFile, 'another.sas')
+          .expect(400)
+
+        expect(res.text).toEqual(
+          'File size is over limit. File limit is: 10 MB'
+        )
+        expect(res.body).toEqual({})
+      })
+    })
   })
 })
 

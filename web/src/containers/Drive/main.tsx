@@ -42,11 +42,15 @@ const Main = (props: any) => {
       setEditMode(true)
     } else {
       setIsLoading(true)
+
+      const formData = new FormData()
+
+      const stringBlob = new Blob([fileContent], { type: 'text/plain' })
+      formData.append('file', stringBlob, 'filename.sas')
+      formData.append('filePath', props.selectedFilePath)
+
       axios
-        .patch(`/SASjsApi/drive/file`, {
-          filePath: props.selectedFilePath,
-          fileContent: fileContent
-        })
+        .patch(`/SASjsApi/drive/file`, formData)
         .then((res) => {
           setEditMode(false)
         })
