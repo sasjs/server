@@ -13,9 +13,15 @@ import {
   Get,
   Patch,
   UploadedFile,
-  FormField
+  FormField,
+  Delete
 } from 'tsoa'
-import { fileExists, createFile, moveFile, createFolder } from '@sasjs/utils'
+import {
+  fileExists,
+  moveFile,
+  createFolder,
+  deleteFile as deleteFileOnSystem
+} from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { FileTree, isFileTree, TreeNode } from '../types'
@@ -24,18 +30,6 @@ import { getTmpFilesFolderPath } from '../utils'
 interface DeployPayload {
   appLoc?: string
   fileTree: FileTree
-}
-interface FilePayload {
-  /**
-   * Path of the file
-   * @example "/Public/somefolder/some.file"
-   */
-  filePath: string
-  /**
-   * Contents of the file
-   * @example "Contents of the File"
-   */
-  fileContent: string
 }
 
 interface DeployResponse {
@@ -93,16 +87,39 @@ export class DriveController {
   }
 
   /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provide else API will respond with Bad Request.
+   *
    * @summary Get file from SASjs Drive
-   * @query filePath Location of SAS program
-   * @example filePath "/Public/somefolder/some.file"
+   * @query _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file"
    */
   @Get('/file')
   public async getFile(
     @Request() request: express.Request,
-    @Query() filePath: string
+
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
   ) {
-    return getFile(request, filePath)
+    return getFile(request, (_filePath ?? filePath)!)
+  }
+
+  /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provide else API will respond with Bad Request.
+   *
+   * @summary Delete file from SASjs Drive
+   * @query _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file"
+   */
+  @Delete('/file')
+  public async deleteFile(
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
+  ) {
+    return deleteFile((_filePath ?? filePath)!)
   }
 
   /**
@@ -208,6 +225,26 @@ const getFile = async (req: express.Request, filePath: string) => {
   }
 
   req.res?.sendFile(path.resolve(filePathFull))
+}
+
+const deleteFile = async (filePath: string) => {
+  const driveFilesPath = getTmpFilesFolderPath()
+
+  const filePathFull = path
+    .join(getTmpFilesFolderPath(), filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  if (!filePathFull.includes(driveFilesPath)) {
+    throw new Error('Cannot delete file outside drive.')
+  }
+
+  if (!(await fileExists(filePathFull))) {
+    throw new Error('File does not exist.')
+  }
+
+  await deleteFileOnSystem(filePathFull)
+
+  return { status: 'success' }
 }
 
 const saveFile = async (
