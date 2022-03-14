@@ -23,7 +23,7 @@ const Main = (props: any) => {
     if (props.selectedFilePath) {
       setIsLoading(true)
       axios
-        .get(`/SASjsApi/drive/file?filePath=${props.selectedFilePath}`)
+        .get(`/SASjsApi/drive/file?_filePath=${props.selectedFilePath}`)
         .then((res: any) => {
           setFileContent(res.data)
         })
@@ -35,6 +35,25 @@ const Main = (props: any) => {
         })
     }
   }, [props.selectedFilePath])
+
+  const handleDeleteBtnClick = () => {
+    setIsLoading(true)
+
+    const filePath = props.selectedFilePath
+
+    axios
+      .delete(`/SASjsApi/drive/file?_filePath=${filePath}`)
+      .then((res) => {
+        setFileContent('')
+        window.history.pushState('', '', `${baseUrl}/#/SASjsDrive`)
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
   const handleEditSaveBtnClick = () => {
     if (!editMode) {
@@ -112,6 +131,13 @@ const Main = (props: any) => {
         direction="row"
         sx={{ justifyContent: 'center', marginTop: '20px' }}
       >
+        <Button
+          variant="contained"
+          onClick={handleDeleteBtnClick}
+          disabled={isLoading || !props?.selectedFilePath}
+        >
+          Delete
+        </Button>
         <Button
           variant="contained"
           onClick={handleEditSaveBtnClick}

@@ -64,14 +64,16 @@ const SideBar = (props: any) => {
   }, [setFilePathOnMount])
 
   const handleSelect = (node: TreeNode) => {
-    if (!node.children.length) {
-      window.history.pushState(
-        '',
-        '',
-        `${baseUrl}/#/SASjsDrive?filePath=${node.relativePath}`
-      )
-      setSelectedFilePath(node.relativePath)
-    }
+    if (node.children.length) return
+
+    if (!node.name.includes('.')) return
+
+    window.history.pushState(
+      '',
+      '',
+      `${baseUrl}/#/SASjsDrive?filePath=${node.relativePath}`
+    )
+    setSelectedFilePath(node.relativePath)
   }
 
   const renderTree = (nodes: TreeNode) => (
