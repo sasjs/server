@@ -108,7 +108,7 @@ export class DriveController {
   /**
    * It's optional to either provide `_filePath` in url as query parameter
    * Or provide `filePath` in body as form field.
-   * But it's required to provided else API will respond with Bad Request.
+   * But it's required to provide else API will respond with Bad Request.
    *
    * @summary Create a file in SASjs Drive
    * @param _filePath Location of SAS program
@@ -118,7 +118,7 @@ export class DriveController {
   @Example<UpdateFileResponse>({
     status: 'success'
   })
-  @Response<UpdateFileResponse>(400, 'File already exists', {
+  @Response<UpdateFileResponse>(403, 'File already exists', {
     status: 'failure',
     message: 'File request failed.'
   })
@@ -132,21 +132,29 @@ export class DriveController {
   }
 
   /**
+   * It's optional to either provide `_filePath` in url as query parameter
+   * Or provide `filePath` in body as form field.
+   * But it's required to provide else API will respond with Bad Request.
+   *
    * @summary Modify a file in SASjs Drive
+   * @param _filePath Location of SAS program
+   * @example _filePath "/Public/somefolder/some.file.sas"
    *
    */
   @Example<UpdateFileResponse>({
     status: 'success'
   })
-  @Response<UpdateFileResponse>(400, 'Unable to get File', {
+  @Response<UpdateFileResponse>(403, `File doesn't exist`, {
     status: 'failure',
     message: 'File request failed.'
   })
   @Patch('/file')
   public async updateFile(
-    @Body() body: FilePayload
+    @UploadedFile() file: Express.Multer.File,
+    @Query() _filePath?: string,
+    @FormField() filePath?: string
   ): Promise<UpdateFileResponse> {
-    return updateFile(body)
+    return updateFile((_filePath ?? filePath)!, file)
   }
 
   /**
@@ -227,25 +235,27 @@ const saveFile = async (
   return { status: 'success' }
 }
 
-const updateFile = async (body: FilePayload): Promise<GetFileResponse> => {
-  const { filePath, fileContent } = body
-  try {
-    const filePathFull = path
-      .join(getTmpFilesFolderPath(), filePath)
-      .replace(new RegExp('/', 'g'), path.sep)
+const updateFile = async (
+  filePath: string,
+  multerFile: Express.Multer.File
+): Promise<GetFileResponse> => {
+  const driveFilesPath = getTmpFilesFolderPath()
 
-    await validateFilePath(filePathFull)
-    await createFile(filePathFull, fileContent)
+  const filePathFull = path
+    .join(driveFilesPath, filePath)
+    .replace(new RegExp('/', 'g'), path.sep)
 
-    return { status: 'success' }
-  } catch (err: any) {
-    throw {
-      code: 400,
-      status: 'failure',
-      message: 'File request failed.',
-      error: typeof err === 'object' ? err.toString() : err
-    }
+  if (!filePathFull.includes(driveFilesPath)) {
+    throw new Error('Cannot modify file outside drive.')
   }
+
+  if (!(await fileExists(filePathFull))) {
+    throw new Error(`File doesn't exist.`)
+  }
+
+  await moveFile(multerFile.path, filePathFull)
+
+  return { status: 'success' }
 }
 
 const validateFilePath = async (filePath: string) => {

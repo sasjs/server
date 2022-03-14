@@ -233,21 +233,6 @@ components:
                 - status
             type: object
             additionalProperties: false
-        FilePayload:
-            properties:
-                filePath:
-                    type: string
-                    description: 'Path of the file'
-                    example: /Public/somefolder/some.file
-                fileContent:
-                    type: string
-                    description: 'Contents of the file'
-                    example: 'Contents of the File'
-            required:
-                - filePath
-                - fileContent
-            type: object
-            additionalProperties: false
         TreeNode:
             properties:
                 name:
@@ -626,7 +611,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success}
-                '400':
+                '403':
                     description: 'File already exists'
                     content:
                         application/json:
@@ -635,7 +620,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provided else API will respond with Bad Request."
+            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
             summary: 'Create a file in SASjs Drive'
             tags:
                 - Drive
@@ -677,8 +662,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success}
-                '400':
-                    description: 'Unable to get File'
+                '403':
+                    description: ""
                     content:
                         application/json:
                             schema:
@@ -686,19 +671,36 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
+            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
             summary: 'Modify a file in SASjs Drive'
             tags:
                 - Drive
             security:
                 -
                     bearerAuth: []
-            parameters: []
+            parameters:
+                -
+                    description: 'Location of SAS program'
+                    in: query
+                    name: _filePath
+                    required: false
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file.sas
             requestBody:
                 required: true
                 content:
-                    application/json:
+                    multipart/form-data:
                         schema:
-                            $ref: '#/components/schemas/FilePayload'
+                            type: object
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                filePath:
+                                    type: string
+                            required:
+                                - file
     /SASjsApi/drive/filetree:
         get:
             operationId: GetFileTree
@@ -1054,7 +1056,7 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a SAS program using it's location in the _program URL parameter.\nEnable debugging using the _debug URL parameter.  Setting _debug=131 will\ncause the log to be streamed in the output.\n\nAdditional URL parameters are turned into SAS macro variables.\n\nAny files provided in the request body are placed into the SAS session with\ncorresponding _WEBIN_XXX variables created.\n\nThe response headers can be adjusted using the mfs_httpheader() macro.  Any\nfile type can be returned, including binary files such as zip or xls.\n\nThis behaviour differs for POST requests, in which case the reponse is\nalways JSON."
+            description: "Trigger a SAS program using it's location in the _program URL parameter.\nEnable debugging using the _debug URL parameter.  Setting _debug=131 will\ncause the log to be streamed in the output.\n\nAdditional URL parameters are turned into SAS macro variables.\n\nAny files provided in the request body are placed into the SAS session with\ncorresponding _WEBIN_XXX variables created.\n\nThe response headers can be adjusted using the mfs_httpheader() macro.  Any\nfile type can be returned, including binary files such as zip or xls.\n\nIf _debug is >= 131, response headers will contain Content-Type: 'text/plain'\n\nThis behaviour differs for POST requests, in which case the response is\nalways JSON."
             summary: 'Execute Stored Program, return raw _webout content.'
             tags:
                 - STP

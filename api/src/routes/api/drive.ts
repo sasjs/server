@@ -66,21 +66,33 @@ driveRouter.post(
   }
 )
 
-driveRouter.patch('/file', async (req, res) => {
-  const { error, value: body } = updateFileDriveValidation(req.body)
-  if (error) return res.status(400).send(error.details[0].message)
+driveRouter.patch(
+  '/file',
+  (...arg) => multerSingle('file', arg),
+  async (req, res) => {
+    const { error: errQ, value: query } = uploadFileParamValidation(req.query)
+    const { error: errB, value: body } = uploadFileBodyValidation(req.body)
 
-  try {
-    const response = await controller.updateFile(body)
-    res.send(response)
-  } catch (err: any) {
-    const statusCode = err.code
+    if (errQ && errB) {
+      if (req.file) await deleteFile(req.file.path)
+      return res.status(400).send(errB.details[0].message)
+    }
 
-    delete err.code
+    if (!req.file) return res.status(400).send('"file" is not present.')
 
-    res.status(statusCode).send(err)
+    try {
+      const response = await controller.updateFile(
+        req.file,
+        query._filePath,
+        body.filePath
+      )
+      res.send(response)
+    } catch (err: any) {
+      await deleteFile(req.file.path)
+      res.status(403).send(err.toString())
+    }
   }
-})
+)
 
 driveRouter.get('/fileTree', async (req, res) => {
   try {
