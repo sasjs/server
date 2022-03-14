@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.31](https://github.com/sasjs/server/compare/v0.0.30...v0.0.31) (2022-03-14)
+
+
+### Features
+
+* **drive:** new route delete file api ([3d583ff](https://github.com/sasjs/server/commit/3d583ff21d344a71aa861c7e5b1426ebc2d54c22))
+
+
+### Bug Fixes
+
+* added cookie for accessToken ([698180a](https://github.com/sasjs/server/commit/698180ab7e44d67d46c84352ececca5b6c83b230))
+* **drive:** update file API is same as create file ([7072e28](https://github.com/sasjs/server/commit/7072e282b1cd1a296d81512c57130237610c1c1e))
+* show content of get file api ([6ab42ca](https://github.com/sasjs/server/commit/6ab42ca4868366874f5f21bd711b7b8b72e36774))
+* **stp:** return plain/text header for GET & debug ([145ac45](https://github.com/sasjs/server/commit/145ac450365ed39279248ec9321bbe4918bee9fa))
+
 ### [0.0.30](https://github.com/sasjs/server/compare/v0.0.29...v0.0.30) (2022-03-05)
 
 
