@@ -28,7 +28,7 @@ import { FileTree, isFileTree, TreeNode } from '../types'
 import { getTmpFilesFolderPath } from '../utils'
 
 interface DeployPayload {
-  appLoc?: string
+  appLoc: string
   fileTree: FileTree
 }
 
@@ -196,7 +196,7 @@ const deploy = async (data: DeployPayload) => {
 
   await createFileTree(
     data.fileTree.members,
-    data.appLoc ? data.appLoc.replace(/^\//, '').split('/') : []
+    data.appLoc.replace(/^\//, '').split('/')
   ).catch((err) => {
     throw { code: 500, ...execDeployErrorResponse, ...err }
   })

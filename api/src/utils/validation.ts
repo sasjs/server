@@ -66,6 +66,12 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
     clientSecret: Joi.string().required()
   }).validate(data)
 
+export const deployValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    appLoc: Joi.string().pattern(/^\//).required().min(2),
+    fileTree: Joi.any().required()
+  }).validate(data)
+
 export const fileBodyValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     filePath: Joi.string().pattern(/.sas$/).required().messages({
