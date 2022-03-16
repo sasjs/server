@@ -40,7 +40,7 @@ driveRouter.get('/file', async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
   const { error: errB, value: body } = fileBodyValidation(req.body)
 
-  if (errQ && errB) return res.status(400).send(errB.details[0].message)
+  if (errQ && errB) return res.status(400).send(errQ.details[0].message)
 
   try {
     await controller.getFile(req, query._filePath, body.filePath)
@@ -53,7 +53,7 @@ driveRouter.delete('/file', async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
   const { error: errB, value: body } = fileBodyValidation(req.body)
 
-  if (errQ && errB) return res.status(400).send(errB.details[0].message)
+  if (errQ && errB) return res.status(400).send(errQ.details[0].message)
 
   try {
     const response = await controller.deleteFile(query._filePath, body.filePath)
@@ -72,7 +72,7 @@ driveRouter.post(
 
     if (errQ && errB) {
       if (req.file) await deleteFile(req.file.path)
-      return res.status(400).send(errB.details[0].message)
+      return res.status(400).send(errQ.details[0].message)
     }
 
     if (!req.file) return res.status(400).send('"file" is not present.')
@@ -100,7 +100,7 @@ driveRouter.patch(
 
     if (errQ && errB) {
       if (req.file) await deleteFile(req.file.path)
-      return res.status(400).send(errB.details[0].message)
+      return res.status(400).send(errQ.details[0].message)
     }
 
     if (!req.file) return res.status(400).send('"file" is not present.')
