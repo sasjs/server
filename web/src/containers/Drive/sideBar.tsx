@@ -68,12 +68,15 @@ const SideBar = ({ directoryData, handleSelect }: Props) => {
     >
       <Toolbar />
       <Box sx={{ overflow: 'auto' }}>
-        <TreeView
-          defaultCollapseIcon={<ExpandMoreIcon />}
-          defaultExpandIcon={<ChevronRightIcon />}
-        >
-          {directoryData && renderTree(directoryData)}
-        </TreeView>
+        {directoryData && (
+          <TreeView
+            defaultCollapseIcon={<ExpandMoreIcon />}
+            defaultExpandIcon={<ChevronRightIcon />}
+            defaultExpanded={[directoryData.relativePath]}
+          >
+            {renderTree(directoryData)}
+          </TreeView>
+        )}
       </Box>
     </Drawer>
   )
