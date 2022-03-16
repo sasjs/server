@@ -1,7 +1,7 @@
+import path from 'path'
 import { MemberType, FolderMember, ServiceMember, FileTree } from '../../types'
 import { getTmpFilesFolderPath } from '../../utils/file'
 import { createFolder, createFile, asyncForEach } from '@sasjs/utils'
-import path from 'path'
 
 // REFACTOR: export FileTreeCpntroller
 export const createFileTree = async (
@@ -27,9 +27,13 @@ export const createFileTree = async (
         (err) => Promise.reject({ error: err, failedToCreate: name })
       )
     } else {
-      await createFile(path.join(destinationPath, name), member.code).catch(
-        (err) => Promise.reject({ error: err, failedToCreate: name })
-      )
+      const encoding = member.type === MemberType.file ? 'base64' : undefined
+
+      await createFile(
+        path.join(destinationPath, name),
+        member.code,
+        encoding
+      ).catch((err) => Promise.reject({ error: err, failedToCreate: name }))
     }
   })
 

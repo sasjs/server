@@ -1,17 +1,31 @@
 import express from 'express'
 import { deleteFile } from '@sasjs/utils'
 
+import { publishAppStream } from '../appStream'
+
 import { multerSingle } from '../../middlewares/multer'
 import { DriveController } from '../../controllers/'
-import { fileBodyValidation, fileParamValidation } from '../../utils'
+import {
+  deployValidation,
+  fileBodyValidation,
+  fileParamValidation
+} from '../../utils'
 
 const controller = new DriveController()
 
 const driveRouter = express.Router()
 
 driveRouter.post('/deploy', async (req, res) => {
+  const { error, value: body } = deployValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
+
   try {
-    const response = await controller.deploy(req.body)
+    const response = await controller.deploy(body)
+
+    const appLoc = body.appLoc.replace(/^\//, '')?.split('/')
+
+    publishAppStream(appLoc)
+
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code

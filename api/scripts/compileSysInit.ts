@@ -17,6 +17,7 @@ const compiledSystemInit = async (systemInit: string) =>
     programFolders: [],
     macroFolders: [],
     buildSourceFolder: '',
+    binaryFolders: [],
     macroCorePath
   }))
 

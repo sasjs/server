@@ -74,14 +74,19 @@ describe('files', () => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
         .auth(accessToken, { type: 'bearer' })
-        .send(payload)
+        .send({ appLoc: '/Public', fileTree: payload })
 
       expect(res.statusCode).toEqual(400)
-      expect(res.body).toEqual({
-        status: 'failure',
-        message: 'Provided not supported data format.',
-        example: getTreeExample()
-      })
+
+      if (payload === undefined) {
+        expect(res.text).toEqual('"fileTree" is required')
+      } else {
+        expect(res.body).toEqual({
+          status: 'failure',
+          message: 'Provided not supported data format.',
+          example: getTreeExample()
+        })
+      }
     }
 
     it('should respond with payload example if valid payload was not provided', async () => {
@@ -140,11 +145,11 @@ describe('files', () => {
       })
     })
 
-    it('should respond with payload example if valid payload was not provided', async () => {
+    it('should successfully deploy if valid payload was provided', async () => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
         .auth(accessToken, { type: 'bearer' })
-        .send({ fileTree: getTreeExample() })
+        .send({ appLoc: '/public', fileTree: getTreeExample() })
 
       expect(res.statusCode).toEqual(200)
       expect(res.text).toEqual(
@@ -154,6 +159,7 @@ describe('files', () => {
 
       const testJobFolder = path.join(
         getTmpFilesFolderPath(),
+        'public',
         'jobs',
         'extract'
       )

@@ -172,12 +172,20 @@ components:
             enum:
                 - service
             type: string
+        MemberType.file:
+            enum:
+                - file
+            type: string
         ServiceMember:
             properties:
                 name:
                     type: string
                 type:
-                    $ref: '#/components/schemas/MemberType.service'
+                    anyOf:
+                        -
+                            $ref: '#/components/schemas/MemberType.service'
+                        -
+                            $ref: '#/components/schemas/MemberType.file'
                 code:
                     type: string
             required:
@@ -220,6 +228,7 @@ components:
                 fileTree:
                     $ref: '#/components/schemas/FileTree'
             required:
+                - appLoc
                 - fileTree
             type: object
             additionalProperties: false

@@ -4,7 +4,8 @@ export interface FileTree {
 
 export enum MemberType {
   folder = 'folder',
-  service = 'service'
+  service = 'service',
+  file = 'file'
 }
 
 export interface FolderMember {
@@ -15,7 +16,7 @@ export interface FolderMember {
 
 export interface ServiceMember {
   name: string
-  type: MemberType.service
+  type: MemberType.service | MemberType.file
   code: string
 }
 
@@ -36,12 +37,21 @@ const isFolderMember = (arg: any): arg is FolderMember =>
   Array.isArray(arg.members) &&
   arg.members.filter(
     (member: FolderMember | ServiceMember) =>
-      !isFolderMember(member) && !isServiceMember(member)
+      !isFolderMember(member) &&
+      !isServiceMember(member) &&
+      !isFileMember(member)
   ).length === 0
 
 const isServiceMember = (arg: any): arg is ServiceMember =>
   arg &&
   typeof arg.name === 'string' &&
   arg.type === MemberType.service &&
+  arg.code &&
+  typeof arg.code === 'string'
+
+const isFileMember = (arg: any): arg is ServiceMember =>
+  arg &&
+  typeof arg.name === 'string' &&
+  arg.type === MemberType.file &&
   arg.code &&
   typeof arg.code === 'string'
