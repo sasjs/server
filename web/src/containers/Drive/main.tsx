@@ -11,7 +11,12 @@ import Button from '@mui/material/Button'
 import Toolbar from '@mui/material/Toolbar'
 import CircularProgress from '@mui/material/CircularProgress'
 
-const Main = (props: any) => {
+type Props = {
+  selectedFilePath: string
+  removeFileFromTree: (path: string) => void
+}
+
+const Main = (props: Props) => {
   const baseUrl = window.location.origin
 
   const [isLoading, setIsLoading] = useState(false)
@@ -45,6 +50,7 @@ const Main = (props: any) => {
       .delete(`/SASjsApi/drive/file?_filePath=${filePath}`)
       .then((res) => {
         setFileContent('')
+        props.removeFileFromTree(filePath)
         window.history.pushState('', '', `${baseUrl}/#/SASjsDrive`)
       })
       .catch((err) => {

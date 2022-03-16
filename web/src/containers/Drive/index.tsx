@@ -54,11 +54,47 @@ const Drive = () => {
     setSelectedFilePath(node.relativePath)
   }
 
+  const removeFileFromTree = (path: string) => {
+    if (directoryData) {
+      const newTree = JSON.parse(JSON.stringify(directoryData)) as TreeNode
+      findAndRemoveNode(newTree, newTree, path)
+      setDirectoryData(newTree)
+    }
+  }
+
+  const findAndRemoveNode = (
+    node: TreeNode,
+    parentNode: TreeNode,
+    path: string
+  ) => {
+    if (node.relativePath === path) {
+      removeNodeFromParent(parentNode, path)
+      return true
+    }
+    if (Array.isArray(node.children)) {
+      for (let i = 0; i < node.children.length; i++) {
+        if (findAndRemoveNode(node.children[i], node, path)) return
+      }
+    }
+  }
+
+  const removeNodeFromParent = (parent: TreeNode, path: string) => {
+    const index = parent.children.findIndex(
+      (node) => node.relativePath === path
+    )
+    if (index !== -1) {
+      parent.children.splice(index, 1)
+    }
+  }
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       <SideBar directoryData={directoryData} handleSelect={handleSelect} />
-      <Main selectedFilePath={selectedFilePath} />
+      <Main
+        selectedFilePath={selectedFilePath}
+        removeFileFromTree={removeFileFromTree}
+      />
     </Box>
   )
 }
