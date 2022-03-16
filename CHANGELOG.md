@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.33](https://github.com/sasjs/server/compare/v0.0.32...v0.0.33) (2022-03-16)
+
+
+### Features
+
+* serve deployed streaming apps ([d6fa877](https://github.com/sasjs/server/commit/d6fa87794155880adc23c2552c37c86ad606c292))
+
+
+### Bug Fixes
+
+* adde validation + code improvement ([1ff6965](https://github.com/sasjs/server/commit/1ff6965dd2f44ad74136af04b4fba8c76979ecba))
+* added api button on web component ([6b708fc](https://github.com/sasjs/server/commit/6b708fcad30d92c21713f9c97bca173c148cc875))
+
 ### [0.0.32](https://github.com/sasjs/server/compare/v0.0.31...v0.0.32) (2022-03-14)
 
 
