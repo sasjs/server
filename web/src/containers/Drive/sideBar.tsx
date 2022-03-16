@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
-import { useLocation } from 'react-router-dom'
+import React from 'react'
 
 import { makeStyles } from '@mui/styles'
 
@@ -16,12 +14,7 @@ import TreeItem from '@mui/lab/TreeItem'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
-interface TreeNode {
-  name: string
-  relativePath: string
-  absolutePath: string
-  children: Array<TreeNode>
-}
+import { TreeNode } from '.'
 
 const useStyles = makeStyles(() => ({
   root: {
@@ -36,45 +29,13 @@ const useStyles = makeStyles(() => ({
 
 const drawerWidth = 240
 
-const SideBar = (props: any) => {
-  const location = useLocation()
-  const baseUrl = window.location.origin
+type Props = {
+  directoryData: TreeNode | null
+  handleSelect: (node: TreeNode) => void
+}
+
+const SideBar = ({ directoryData, handleSelect }: Props) => {
   const classes = useStyles()
-
-  const { setSelectedFilePath } = props
-  const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
-
-  const setFilePathOnMount = useCallback(() => {
-    const queryParams = new URLSearchParams(location.search)
-    setSelectedFilePath(queryParams.get('filePath'))
-  }, [location.search, setSelectedFilePath])
-
-  useEffect(() => {
-    axios
-      .get(`/SASjsApi/drive/fileTree`)
-      .then((res: any) => {
-        if (res.data && res.data?.status === 'success') {
-          setDirectoryData(res.data.tree)
-        }
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-    setFilePathOnMount()
-  }, [setFilePathOnMount])
-
-  const handleSelect = (node: TreeNode) => {
-    if (node.children.length) return
-
-    if (!node.name.includes('.')) return
-
-    window.history.pushState(
-      '',
-      '',
-      `${baseUrl}/#/SASjsDrive?filePath=${node.relativePath}`
-    )
-    setSelectedFilePath(node.relativePath)
-  }
 
   const renderTree = (nodes: TreeNode) => (
     <TreeItem
