@@ -31,7 +31,6 @@ app.use(cookieParser())
 app.use(morgan('tiny'))
 app.use(express.json({ limit: '50mb' }))
 app.use(express.static(path.join(__dirname, '../public')))
-app.use(express.static(getWebBuildFolderPath()))
 
 const onError: ErrorRequestHandler = (err, req, res, next) => {
   console.error(err.stack)
@@ -43,6 +42,10 @@ export default setProcessVariables().then(async () => {
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')
   setupRoutes(app)
+
+  // should be served after setting up web route
+  // index.html needs to be injected with some js script.
+  app.use(express.static(getWebBuildFolderPath()))
 
   console.log('sasJSCoreMacros', sasJSCoreMacros)
 
