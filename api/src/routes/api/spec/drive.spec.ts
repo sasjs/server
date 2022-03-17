@@ -260,7 +260,7 @@ describe('files', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual(`"filePath" is required`)
+        expect(res.text).toEqual(`"_filePath" is required`)
         expect(res.body).toEqual({})
       })
 
@@ -269,9 +269,9 @@ describe('files', () => {
         const pathToUpload = '/my/path/code.oth'
 
         const res = await request(app)
-          .post('/SASjsApi/drive/file')
+          .post(`/SASjsApi/drive/file?_filePath=${pathToUpload}`)
           .auth(accessToken, { type: 'bearer' })
-          .field('filePath', pathToUpload)
+          // .field('filePath', pathToUpload)
           .attach('file', fileToAttachPath)
           .expect(400)
 
@@ -420,7 +420,7 @@ describe('files', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual(`"filePath" is required`)
+        expect(res.text).toEqual(`"_filePath" is required`)
         expect(res.body).toEqual({})
       })
 
@@ -429,9 +429,9 @@ describe('files', () => {
         const pathToUpload = '/my/path/code.oth'
 
         const res = await request(app)
-          .patch('/SASjsApi/drive/file')
+          .patch(`/SASjsApi/drive/file?_filePath=${pathToUpload}`)
           .auth(accessToken, { type: 'bearer' })
-          .field('filePath', pathToUpload)
+          // .field('filePath', pathToUpload)
           .attach('file', fileToAttachPath)
           .expect(400)
 
