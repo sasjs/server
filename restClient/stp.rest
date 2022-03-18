@@ -1,0 +1,27 @@
+
+
+### testing upload file example
+POST http://localhost:5000/SASjsApi/stp/execute/?_program=/Public/app/viya/services/editors/loadfile&table=DCCONFIG.MPE_X_TEST
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundarynkYOqevUMKZrXeAy
+
+------WebKitFormBoundarynkYOqevUMKZrXeAy
+Content-Disposition: form-data; name="file"; filename="DCCONFIG.MPE_X_TEST.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+
+------WebKitFormBoundarynkYOqevUMKZrXeAy
+Content-Disposition: form-data; name="file"; filename="DCCONFIG.MPE_X_TEST.xlsx.csv"
+Content-Type: application/csv
+
+_____DELETE__THIS__RECORD_____,PRIMARY_KEY_FIELD,SOME_CHAR,SOME_DROPDOWN,SOME_NUM,SOME_DATE,SOME_DATETIME,SOME_TIME,SOME_SHORTNUM,SOME_BESTNUM
+,0,this is dummy data 321,Option 1,42,1960-02-12,1960-01-01 00:00:42,00:00:42,3,44
+,1,more dummy data 123,Option 2,42,1960-02-12,1960-01-01 00:00:42,00:07:02,3,44
+,1039,39 bottles of beer on the wall,Option 1,0.8716847965827607,1962-05-30,1960-01-01 00:05:21,00:01:30,89,6
+,1045,45 bottles of beer on the wall,Option 1,0.7279699667021492,1960-03-24,1960-01-01 07:18:54,00:01:08,89,83
+,1047,47 bottles of beer on the wall,Option 1,0.6224654082313484,1961-06-07,1960-01-01 09:45:23,00:01:33,76,98
+,1048,48 bottles of beer on the wall,Option 1,0.0874847523344144,1962-03-01,1960-01-01 13:06:13,00:00:02,76,63
+------WebKitFormBoundarynkYOqevUMKZrXeAy
+Content-Disposition: form-data; name="_debug"
+
+131
+------WebKitFormBoundarynkYOqevUMKZrXeAy--

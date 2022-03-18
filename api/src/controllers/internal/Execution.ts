@@ -119,7 +119,7 @@ ${preProgramVarStatments}
 ${program}`
 
     // if no files are uploaded filesNamesMap will be undefined
-    if (otherArgs && otherArgs.filesNamesMap) {
+    if (otherArgs?.filesNamesMap) {
       const uploadSasCode = await generateFileUploadSasCode(
         otherArgs.filesNamesMap,
         session.path

@@ -1,6 +1,6 @@
+import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
 import { getSessionController } from '.'
-const multer = require('multer')
 
 export class FileUploadController {
   private storage = multer.diskStorage({
