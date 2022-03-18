@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.34](https://github.com/sasjs/server/compare/v0.0.33...v0.0.34) (2022-03-18)
+
+
+### Features
+
+* **web:** directory tree in sidebar of drive should be expanded by default at root level ([3d89b75](https://github.com/sasjs/server/commit/3d89b753f023beed4d51a64db4f74e1011437aab))
+
+
+### Bug Fixes
+
+* desktop mode web index.html js script included ([75291f9](https://github.com/sasjs/server/commit/75291f939770de963d48c2ff1c967da9493bd668))
+* preferred to show param errors from query ([fd26298](https://github.com/sasjs/server/commit/fd2629862f10ec16e2266d68420499e715b5d58c))
+* **stp:** write original file name in sas code for upload ([8822de9](https://github.com/sasjs/server/commit/8822de95df1d2d01dadfe6957391c254172f2819))
+* **web-drive:** upon delete remove entry of deleted file from directory tree in sidebar ([fb77d99](https://github.com/sasjs/server/commit/fb77d99177851e7dc2a71e0b8f516daa3da29e36))
+
 ### [0.0.33](https://github.com/sasjs/server/compare/v0.0.32...v0.0.33) (2022-03-16)
 
 
