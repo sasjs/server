@@ -1,54 +1,21 @@
 # SASjs Server
 
-SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or it could even run locally on your desktop. It provides the following functionality:
+SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or locally on your desktop. It provides:
 
 - Virtual filesystem for storing SAS programs and other content
 - Ability to execute Stored Programs from a URL
 - Ability to create web apps using simple Desktop SAS
+- REST API with Swagger Docs
 
-One major benefit of using SASjs Server (alongside other components of the SASjs framework such as the [CLI](https://cli.sasjs.io), [Adapter](https://adapter.sasjs.io) and [Core](https://core.sasjs.io) library) is that the projects you create can be very easily ported to SAS 9 (Stored Process server) or Viya (Job Execution server).
+One major benefit of using SASjs Server alongside other components of the SASjs framework such as the [CLI](https://cli.sasjs.io), [Adapter](https://adapter.sasjs.io) and [Core](https://core.sasjs.io) library, is that the projects you create can be very easily ported to SAS 9 (Stored Process server) or Viya (Job Execution server).
 
-SASjs Server is available in two modes - Desktop (without authentication) and Server (with authentiation, and a database)
+SASjs Server is available in two modes - Desktop (without authentication) and Server (with authentication, and a database)
 
+## Installation
 
-## Configuration
+Installation can be made programmatically using command line, or by manually downloading and running the executable. 
 
-When launching the app, it will make use of specific environment variables. These can be set in the following places:
-
-- Configured globally in /etc/environment file
-- Export in terminal or shell script (`export VAR=VALUE`)
-- Prepend in command
-- Enter in the `.env` file alongside the executable
-
-Example variables:
-
-```
-MODE=[desktop|server] default considered as desktop
-CORS=[disable|enable] default considered as disable
-PROTOCOL=[http|https] default considered as http
-PORT=[5000] default value is 5000
-PORT_WEB=[port for sasjs web component(react)] default value is 3000
-SAS_PATH=/path/to/sas/executable.exe
-DRIVE_PATH=./tmp
-PROTOCOL=[http|https] default considered as http. Use pems below if htttps.
-PRIVATE_KEY=privkey.pem
-FULL_CHAIN=fullchain.pem
-```
-
-## Desktop Version
-
-### Manual Installation
-
-Download the relevant package from the [releases](https://github.com/sasjs/server/releases) page
-
-Next, trigger by double clicking (windows) or executing from commandline.
-
-You are presented with two prompts (if not set as ENV vars):
-
-- Location of your `sas.exe` / `sas.sh` executable
-- Path to a filesystem location for Stored Programs and temporary files
-
-## Programmatic Installation
+### Programmatic
 
 Fetch the relevant package from github using `curl`, eg as follows (for linux):
 
@@ -58,6 +25,42 @@ unzip linux.zip
 ```
 
 The app can then be launched with `./api-linux` and prompts followed (if ENV vars not set).
+
+### Manual
+
+1. Download the relevant package from the [releases](https://github.com/sasjs/server/releases) page
+2. Trigger by double clicking (windows) or executing from commandline.
+
+You are presented with two prompts (if not set as ENV vars):
+
+- Location of your `sas.exe` / `sas.sh` executable
+- Path to a filesystem location for Stored Programs and temporary files
+
+## ENV Var configuration
+
+When launching the app, it will make use of specific environment variables. These can be set in the following places:
+
+- Configured globally in `/etc/environment` file
+- Export in terminal or shell script (`export VAR=VALUE`)
+- Prepended in the command
+- Enter in the `.env` file alongside the executable
+
+Example contents of a `.env` file:
+
+```
+MODE=desktop # options: [desktop|server] default: desktop
+CORS=disable # options: [disable|enable] default: disable
+PROTOCOL=http # options: [http|https] default: http
+PORT=5000 # default: 5000
+PORT_WEB=3000 # port for sasjs web component(react). default: 3000
+SAS_PATH=/path/to/sas/executable.exe
+DRIVE_PATH=/tmp
+PROTOCOL=http # options: [http|https] default: http
+PRIVATE_KEY=privkey.pem
+FULL_CHAIN=fullchain.pem
+```
+
+## Persisting the Session
 
 Normally the server process will stop when your terminal dies. To keep it going you can use the npm package [pm2](https://www.npmjs.com/package/pm2) (`npm install pm2@latest -g`) as follows:
 
@@ -69,7 +72,7 @@ export DRIVE_PATH=./tmp
 pm2 start api-linux
 ```
 
-To get the logs (and some usefull commands):
+To get the logs (and some useful commands):
 
 ```bash
 pm2 [list|ls|status]
