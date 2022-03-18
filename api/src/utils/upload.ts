@@ -15,7 +15,7 @@ export const makeFilesNamesMap = (files: MulterFile[]) => {
   const filesNamesMap: { [key: string]: string } = {}
 
   for (let file of files) {
-    filesNamesMap[file.filename] = file.fieldname
+    filesNamesMap[file.filename] = file.originalname
   }
 
   return filesNamesMap
@@ -66,7 +66,7 @@ export const generateFileUploadSasCode = async (
   uploadSasCode += `\n%let _WEBIN_FILE_COUNT=${fileCount};`
 
   for (let uploadedMap of uploadedFilesMap) {
-    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedMap.count}=${uploadedMap.filepath};`
+    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedMap.count}=${uploadedMap.filename};`
   }
 
   for (let uploadedMap of uploadedFilesMap) {
@@ -74,7 +74,7 @@ export const generateFileUploadSasCode = async (
   }
 
   for (let uploadedMap of uploadedFilesMap) {
-    uploadSasCode += `\n%let _WEBIN_NAME${uploadedMap.count}=${uploadedMap.filename};`
+    uploadSasCode += `\n%let _WEBIN_NAME${uploadedMap.count}=${uploadedMap.filepath};`
   }
 
   if (fileCount > 0) {
