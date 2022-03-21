@@ -49,19 +49,31 @@ Example contents of a `.env` file:
 
 ```
 MODE=desktop # options: [desktop|server] default: `desktop`
-CORS=disable # options: [disable|enable] default: `disable` for `server` MODE and `enable` for `desktop` MODE
-WHITELIST= # options: <http://localhost:3000 https://abc.com ...> space separated urls, each starting with protocol `http` or `https`
+CORS=disable # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
+WHITELIST= # options: <http://localhost:3000 https://abc.com ...> space separated urls
 PROTOCOL=http # options: [http|https] default: http
-PRIVATE_KEY=privkey.pem # only required for PROTOCOL `https`
-FULL_CHAIN=fullchain.pem # only required for PROTOCOL `https`
 PORT=5000 # default: 5000
-ACCESS_TOKEN_SECRET=<secret> # only required for MODE `server`
-REFRESH_TOKEN_SECRET=<secret> # only required for MODE `server`
-AUTH_CODE_SECRET=<secret> # only required for MODE `server`
-DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority # only required for MODE `server`
 
+# optional
+# for MODE: `desktop`, prompts user
+# for MODE: `server` gets value from api/package.json `configuration.sasPath`
 SAS_PATH=/path/to/sas/executable.exe
+
+
+# optional
+# for MODE: `desktop`, prompts user
+# for MODE: `server` defaults to /tmp
 DRIVE_PATH=/tmp
+
+# ENV variables required for PROTOCOL: `https`
+PRIVATE_KEY=privkey.pem
+FULL_CHAIN=fullchain.pem
+
+# ENV variables required for MODE: `server`
+ACCESS_TOKEN_SECRET=<secret>
+REFRESH_TOKEN_SECRET=<secret>
+AUTH_CODE_SECRET=<secret>
+DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 ```
 
 ## Persisting the Session
