@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.36](https://github.com/sasjs/server/compare/v0.0.35...v0.0.36) (2022-03-21)
+
+
+### Features
+
+* App Stream, load on startup, new route added ([98a00ec](https://github.com/sasjs/server/commit/98a00ec7ace5da765f049864799be44ba6538e8a))
+
+
+### Bug Fixes
+
+* **appstream:** app logo + improvements ([df6003d](https://github.com/sasjs/server/commit/df6003df942fd52b956f3d4069d6d7615441d372))
+
 ### [0.0.35](https://github.com/sasjs/server/compare/v0.0.33...v0.0.35) (2022-03-21)
 
 
