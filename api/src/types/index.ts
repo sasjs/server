@@ -1,4 +1,5 @@
 // TODO: uppercase types
+export * from './AppStreamConfig'
 export * from './Execution'
 export * from './FileTree'
 export * from './InfoJWT'

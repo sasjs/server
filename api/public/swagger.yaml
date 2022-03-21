@@ -225,6 +225,8 @@ components:
             properties:
                 appLoc:
                     type: string
+                streamWebFolder:
+                    type: string
                 fileTree:
                     $ref: '#/components/schemas/FileTree'
             required:

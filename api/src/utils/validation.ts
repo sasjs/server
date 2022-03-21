@@ -3,6 +3,8 @@ import Joi from 'joi'
 const usernameSchema = Joi.string().alphanum().min(6).max(20)
 const passwordSchema = Joi.string().min(6).max(1024)
 
+export const blockFileRegex = /\.(exe|sh|htaccess)$/i
+
 export const authorizeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     username: usernameSchema.required(),
@@ -69,21 +71,30 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
 export const deployValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     appLoc: Joi.string().pattern(/^\//).required().min(2),
+    streamServiceName: Joi.string(),
+    streamWebFolder: Joi.string(),
     fileTree: Joi.any().required()
   }).validate(data)
 
+const filePathSchema = Joi.string()
+  .custom((value, helpers) => {
+    if (blockFileRegex.test(value)) return helpers.error('string.pattern.base')
+
+    return value
+  })
+  .required()
+  .messages({
+    'string.pattern.base': `Invalid file extension`
+  })
+
 export const fileBodyValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    filePath: Joi.string().pattern(/.sas$/).required().messages({
-      'string.pattern.base': `Valid extensions for filePath: .sas`
-    })
+    filePath: filePathSchema
   }).validate(data)
 
 export const fileParamValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    _filePath: Joi.string().pattern(/.sas$/).required().messages({
-      'string.pattern.base': `Valid extensions for filePath: .sas`
-    })
+    _filePath: filePathSchema
   }).validate(data)
 
 export const runSASValidation = (data: any): Joi.ValidationResult =>

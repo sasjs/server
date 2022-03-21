@@ -22,9 +22,12 @@ driveRouter.post('/deploy', async (req, res) => {
   try {
     const response = await controller.deploy(body)
 
-    const appLoc = body.appLoc.replace(/^\//, '')?.split('/')
-
-    publishAppStream(appLoc)
+    if (body.streamWebFolder)
+      publishAppStream(
+        body.appLoc,
+        body.streamWebFolder,
+        body.streamServiceName
+      )
 
     res.send(response)
   } catch (err: any) {

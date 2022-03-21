@@ -266,7 +266,7 @@ describe('files', () => {
 
       it("should respond with Bad Request if filePath doesn't has correct extension", async () => {
         const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
-        const pathToUpload = '/my/path/code.oth'
+        const pathToUpload = '/my/path/code.exe'
 
         const res = await request(app)
           .post(`/SASjsApi/drive/file?_filePath=${pathToUpload}`)
@@ -275,7 +275,7 @@ describe('files', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual('Valid extensions for filePath: .sas')
+        expect(res.text).toEqual('Invalid file extension')
         expect(res.body).toEqual({})
       })
 
@@ -293,7 +293,7 @@ describe('files', () => {
       })
 
       it("should respond with Bad Request if attached file doesn't has correct extension", async () => {
-        const fileToAttachPath = path.join(__dirname, 'files', 'sample.oth')
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.exe')
         const pathToUpload = '/my/path/code.sas'
 
         const res = await request(app)
@@ -303,9 +303,7 @@ describe('files', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual(
-          `File extension '.oth' not acceptable. Valid extension(s): .sas`
-        )
+        expect(res.text).toEqual(`File extension '.exe' not acceptable.`)
         expect(res.body).toEqual({})
       })
 
@@ -426,7 +424,7 @@ describe('files', () => {
 
       it("should respond with Bad Request if filePath doesn't has correct extension", async () => {
         const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
-        const pathToUpload = '/my/path/code.oth'
+        const pathToUpload = '/my/path/code.exe'
 
         const res = await request(app)
           .patch(`/SASjsApi/drive/file?_filePath=${pathToUpload}`)
@@ -435,7 +433,7 @@ describe('files', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual('Valid extensions for filePath: .sas')
+        expect(res.text).toEqual('Invalid file extension')
         expect(res.body).toEqual({})
       })
 
@@ -453,7 +451,7 @@ describe('files', () => {
       })
 
       it("should respond with Bad Request if attached file doesn't has correct extension", async () => {
-        const fileToAttachPath = path.join(__dirname, 'files', 'sample.oth')
+        const fileToAttachPath = path.join(__dirname, 'files', 'sample.exe')
         const pathToUpload = '/my/path/code.sas'
 
         const res = await request(app)
@@ -463,9 +461,7 @@ describe('files', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual(
-          `File extension '.oth' not acceptable. Valid extension(s): .sas`
-        )
+        expect(res.text).toEqual(`File extension '.exe' not acceptable.`)
         expect(res.body).toEqual({})
       })
 

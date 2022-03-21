@@ -1,9 +1,8 @@
 import path from 'path'
 import { Request } from 'express'
 import multer, { FileFilterCallback, Options } from 'multer'
-import { getTmpUploadsPath } from '../utils'
+import { blockFileRegex, getTmpUploadsPath } from '../utils'
 
-const acceptableExtensions = ['.sas']
 const fieldNameSize = 300
 const fileSize = 10485760 // 10 MB
 
@@ -31,15 +30,11 @@ const fileFilter: Options['fileFilter'] = (
   file: Express.Multer.File,
   callback: FileFilterCallback
 ) => {
-  const fileExtension = path.extname(file.originalname).toLocaleLowerCase()
-
-  if (!acceptableExtensions.includes(fileExtension)) {
+  const fileExtension = path.extname(file.originalname)
+  const shouldBlockUpload = blockFileRegex.test(file.originalname)
+  if (shouldBlockUpload) {
     return callback(
-      new Error(
-        `File extension '${fileExtension}' not acceptable. Valid extension(s): ${acceptableExtensions.join(
-          ', '
-        )}`
-      )
+      new Error(`File extension '${fileExtension}' not acceptable.`)
     )
   }
 

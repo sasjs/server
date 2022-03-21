@@ -8,6 +8,7 @@ import cors from 'cors'
 import {
   connectDB,
   getWebBuildFolderPath,
+  loadAppStreamConfig,
   sasJSCoreMacros,
   setProcessVariables
 } from './utils'
@@ -42,6 +43,8 @@ export default setProcessVariables().then(async () => {
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')
   setupRoutes(app)
+
+  await loadAppStreamConfig()
 
   // should be served after setting up web route
   // index.html needs to be injected with some js script.
