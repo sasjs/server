@@ -16,13 +16,14 @@ dotenv.config()
 
 const app = express()
 
-const { MODE, CORS, PORT_WEB } = process.env
-const whiteList = [
-  `http://localhost:${PORT_WEB ?? 3000}`,
-  'https://sas.analytium.co.uk:8343'
-]
+const { MODE, CORS, WHITELIST } = process.env
 
 if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
+  const whiteList: string[] = []
+  WHITELIST?.split(' ')?.forEach((url) => {
+    if (url.startsWith('http')) whiteList.push(url)
+  })
+
   console.log('All CORS Requests are enabled')
   app.use(cors({ credentials: true, origin: whiteList }))
 }
