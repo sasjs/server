@@ -13,7 +13,7 @@ SASjs Server is available in two modes - Desktop (without authentication) and Se
 
 ## Installation
 
-Installation can be made programmatically using command line, or by manually downloading and running the executable. 
+Installation can be made programmatically using command line, or by manually downloading and running the executable.
 
 ### Programmatic
 
@@ -48,16 +48,20 @@ When launching the app, it will make use of specific environment variables. Thes
 Example contents of a `.env` file:
 
 ```
-MODE=desktop # options: [desktop|server] default: desktop
-CORS=disable # options: [disable|enable] default: disable
+MODE=desktop # options: [desktop|server] default: `desktop`
+CORS=disable # options: [disable|enable] default: `disable` for `server` MODE and `enable` for `desktop` MODE
+WHITELIST= # options: <http://localhost:3000 https://abc.com ...> space separated urls, each starting with protocol `http` or `https`
 PROTOCOL=http # options: [http|https] default: http
+PRIVATE_KEY=privkey.pem # only required for PROTOCOL `https`
+FULL_CHAIN=fullchain.pem # only required for PROTOCOL `https`
 PORT=5000 # default: 5000
-PORT_WEB=3000 # port for sasjs web component(react). default: 3000
+ACCESS_TOKEN_SECRET=<secret> # only required for MODE `server`
+REFRESH_TOKEN_SECRET=<secret> # only required for MODE `server`
+AUTH_CODE_SECRET=<secret> # only required for MODE `server`
+DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority # only required for MODE `server`
+
 SAS_PATH=/path/to/sas/executable.exe
 DRIVE_PATH=/tmp
-PROTOCOL=http # options: [http|https] default: http
-PRIVATE_KEY=privkey.pem
-FULL_CHAIN=fullchain.pem
 ```
 
 ## Persisting the Session
@@ -94,11 +98,10 @@ Instead of `app_name` you can pass:
 - `all` to act on all processes
 - `id` to act on a specific process id
 
-
 ## Server Version
 
-The following credentials can be used for the initial connection to SASjs/server.  It is recommended to change these on first use.
+The following credentials can be used for the initial connection to SASjs/server. It is recommended to change these on first use.
 
-* CLIENTID:  `clientID1`
-* USERNAME:  `secretuser`
-* PASSWORD:  `secretpassword`
+- CLIENTID: `clientID1`
+- USERNAME: `secretuser`
+- PASSWORD: `secretpassword`
