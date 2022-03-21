@@ -22,9 +22,15 @@ export const loadAppStreamConfig = async () => {
   process.appStreamConfig = {}
 
   for (const [streamServiceName, entry] of Object.entries(appStreamConfig)) {
-    const { appLoc, streamWebFolder } = entry
+    const { appLoc, streamWebFolder, streamLogo } = entry
 
-    publishAppStream(appLoc, streamWebFolder, streamServiceName, false)
+    publishAppStream(
+      appLoc,
+      streamWebFolder,
+      streamServiceName,
+      streamLogo,
+      false
+    )
   }
 
   console.log('App Stream Config loaded!')
@@ -34,14 +40,14 @@ export const addEntryToAppStreamConfig = (
   streamServiceName: string,
   appLoc: string,
   streamWebFolder: string,
-  logo?: string,
+  streamLogo?: string,
   addEntryToFile: boolean = true
 ) => {
   if (streamServiceName && appLoc && streamWebFolder) {
     process.appStreamConfig[streamServiceName] = {
       appLoc,
       streamWebFolder,
-      logo
+      streamLogo
     }
     if (addEntryToFile) saveAppStreamConfig()
   }
@@ -68,7 +74,7 @@ const saveAppStreamConfig = async () => {
 const isValidAppStreamConfig = (config: any) => {
   if (config) {
     return !Object.entries(config).some(([streamServiceName, entry]) => {
-      const { appLoc, streamWebFolder, logo } = entry as any
+      const { appLoc, streamWebFolder, streamLogo } = entry as any
 
       return (
         typeof streamServiceName !== 'string' ||

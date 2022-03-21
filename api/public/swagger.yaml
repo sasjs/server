@@ -214,6 +214,8 @@ components:
                     type: string
                 message:
                     type: string
+                streamServiceName:
+                    type: string
                 example:
                     $ref: '#/components/schemas/FileTree'
             required:

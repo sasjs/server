@@ -73,6 +73,7 @@ export const deployValidation = (data: any): Joi.ValidationResult =>
     appLoc: Joi.string().pattern(/^\//).required().min(2),
     streamServiceName: Joi.string(),
     streamWebFolder: Joi.string(),
+    streamLogo: Joi.string(),
     fileTree: Joi.any().required()
   }).validate(data)
 

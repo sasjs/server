@@ -17,6 +17,7 @@ export const publishAppStream = async (
   appLoc: string,
   streamWebFolder: string,
   streamServiceName?: string,
+  streamLogo?: string,
   addEntryToFile: boolean = true
 ) => {
   const driveFilesPath = getTmpFilesFolderPath()
@@ -37,8 +38,19 @@ export const publishAppStream = async (
       ? Object.keys(process.appStreamConfig).length
       : 0
 
-    if (!streamServiceName || process.appStreamConfig[streamServiceName]) {
+    if (!streamServiceName) {
       streamServiceName = `AppStreamName${appCount + 1}`
+    } else {
+      const alreadyDeployed = process.appStreamConfig[streamServiceName]
+      if (alreadyDeployed) {
+        if (alreadyDeployed.appLoc === appLoc) {
+          // redeploying to same streamServiceName
+        } else {
+          // trying to deploy to another existing streamServiceName
+          // assign new streamServiceName
+          streamServiceName = `${streamServiceName}-${appCount + 1}`
+        }
+      }
     }
 
     router.use(`/${streamServiceName}`, express.static(pathToDeployment))
@@ -47,7 +59,7 @@ export const publishAppStream = async (
       streamServiceName,
       appLoc,
       streamWebFolder,
-      undefined,
+      streamLogo,
       addEntryToFile
     )
 
@@ -56,7 +68,9 @@ export const publishAppStream = async (
       'Serving Stream App: ',
       `http://localhost:${sasJsPort}/AppStream/${streamServiceName}`
     )
+    return { streamServiceName }
   }
+  return {}
 }
 
 export default router

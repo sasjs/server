@@ -88,5 +88,10 @@
   },
   "configuration": {
     "sasPath": "/opt/sas/sas9/SASHome/SASFoundation/9.4/sas"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "tmp/appStreamConfig.json"
+    ]
   }
 }

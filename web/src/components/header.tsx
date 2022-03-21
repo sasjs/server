@@ -66,10 +66,20 @@ const Header = (props: any) => {
           variant="contained"
           color="primary"
           size="large"
-          startIcon={<OpenInNewIcon />}
-          style={{ marginLeft: '50px' }}
+          endIcon={<OpenInNewIcon />}
         >
           API Docs
+        </Button>
+        <Button
+          href={`${baseUrl}/AppStream`}
+          target="_blank"
+          rel="noreferrer"
+          variant="contained"
+          color="primary"
+          size="large"
+          endIcon={<OpenInNewIcon />}
+        >
+          App Stream
         </Button>
       </Toolbar>
     </AppBar>

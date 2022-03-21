@@ -17,13 +17,20 @@ const style = `<style>
   border-radius: 10px 10px 0 0;
   text-align: center;
 }
+.app-container .app img{
+  width: 100%;
+}
 </style>`
 
 const defaultAppLogo = '/sasjs-logo.svg'
 
-const singleAppStreamHtml = (streamServiceName: string, logo?: string) =>
-  ` <a class="app" href="${streamServiceName}">
-      <img src="${logo ?? defaultAppLogo}" />
+const singleAppStreamHtml = (
+  streamServiceName: string,
+  appLoc: string,
+  logo?: string
+) =>
+  ` <a class="app" href="${streamServiceName}" title="${appLoc}">
+      <img src="${logo ? streamServiceName + '/' + logo : defaultAppLogo}" />
       ${streamServiceName}
     </a>`
 
@@ -36,12 +43,11 @@ export const appStreamHtml = (appStreamConfig: AppStreamConfig) => `
   <body>
     <h1>App Stream</h1>
     <div class="app-container">
-      ${Object.entries(appStreamConfig).map(([streamServiceName, entry]) =>
-        singleAppStreamHtml(streamServiceName, entry.logo)
-      )}
-      <a class="app" href="#"><img src="/sasjs-logo.svg" />App Name here</a>
-      <a class="app" href="#"><img src="/sasjs-logo.svg" />App Name here</a>
-      <a class="app" href="#"><img src="/sasjs-logo.svg" />App Name here</a>
+      ${Object.entries(appStreamConfig)
+        .map(([streamServiceName, entry]) =>
+          singleAppStreamHtml(streamServiceName, entry.appLoc, entry.streamLogo)
+        )
+        .join('')}
     </div>
   </body>
 </html>`

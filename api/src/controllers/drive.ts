@@ -36,6 +36,7 @@ interface DeployPayload {
 interface DeployResponse {
   status: string
   message: string
+  streamServiceName?: string
   example?: FileTree
 }
 
