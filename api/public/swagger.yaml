@@ -214,6 +214,8 @@ components:
                     type: string
                 message:
                     type: string
+                streamServiceName:
+                    type: string
                 example:
                     $ref: '#/components/schemas/FileTree'
             required:
@@ -224,6 +226,8 @@ components:
         DeployPayload:
             properties:
                 appLoc:
+                    type: string
+                streamWebFolder:
                     type: string
                 fileTree:
                     $ref: '#/components/schemas/FileTree'

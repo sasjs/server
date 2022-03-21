@@ -29,12 +29,14 @@ import { getTmpFilesFolderPath } from '../utils'
 
 interface DeployPayload {
   appLoc: string
+  streamWebFolder?: string
   fileTree: FileTree
 }
 
 interface DeployResponse {
   status: string
   message: string
+  streamServiceName?: string
   example?: FileTree
 }
 
@@ -190,14 +192,23 @@ const getFileTree = () => {
 }
 
 const deploy = async (data: DeployPayload) => {
+  const driveFilesPath = getTmpFilesFolderPath()
+
+  const appLocParts = data.appLoc.replace(/^\//, '').split('/')
+
+  const appLocPath = path
+    .join(getTmpFilesFolderPath(), ...appLocParts)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  if (!appLocPath.includes(driveFilesPath)) {
+    throw new Error('appLoc cannot be outside drive.')
+  }
+
   if (!isFileTree(data.fileTree)) {
     throw { code: 400, ...invalidDeployFormatResponse }
   }
 
-  await createFileTree(
-    data.fileTree.members,
-    data.appLoc.replace(/^\//, '').split('/')
-  ).catch((err) => {
+  await createFileTree(data.fileTree.members, appLocParts).catch((err) => {
     throw { code: 500, ...execDeployErrorResponse, ...err }
   })
 

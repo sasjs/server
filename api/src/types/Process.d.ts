@@ -3,5 +3,6 @@ declare namespace NodeJS {
     sasLoc: string
     driveLoc: string
     sessionController?: import('../controllers/internal').SessionController
+    appStreamConfig: import('./').AppStreamConfig
   }
 }
