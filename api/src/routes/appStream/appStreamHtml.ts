@@ -11,7 +11,7 @@ const style = `<style>
   justify-content: center;
 }
 .app-container .app {
-  width: 100px;
+  width: 150px;
   margin: 10px;
   overflow: hidden;
   border-radius: 10px 10px 0 0;
@@ -19,6 +19,7 @@ const style = `<style>
 }
 .app-container .app img{
   width: 100%;
+  margin-bottom: 10px;
 }
 </style>`
 
