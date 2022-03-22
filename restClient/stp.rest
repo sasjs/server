@@ -1,16 +1,14 @@
-
-
 ### testing upload file example
 POST http://localhost:5000/SASjsApi/stp/execute/?_program=/Public/app/viya/services/editors/loadfile&table=DCCONFIG.MPE_X_TEST
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundarynkYOqevUMKZrXeAy
 
 ------WebKitFormBoundarynkYOqevUMKZrXeAy
-Content-Disposition: form-data; name="file"; filename="DCCONFIG.MPE_X_TEST.xlsx"
+Content-Disposition: form-data; name="fileSome11"; filename="DCCONFIG.MPE_X_TEST.xlsx"
 Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 
 
 ------WebKitFormBoundarynkYOqevUMKZrXeAy
-Content-Disposition: form-data; name="file"; filename="DCCONFIG.MPE_X_TEST.xlsx.csv"
+Content-Disposition: form-data; name="fileSome22"; filename="DCCONFIG.MPE_X_TEST.xlsx.csv"
 Content-Type: application/csv
 
 _____DELETE__THIS__RECORD_____,PRIMARY_KEY_FIELD,SOME_CHAR,SOME_DROPDOWN,SOME_NUM,SOME_DATE,SOME_DATETIME,SOME_TIME,SOME_SHORTNUM,SOME_BESTNUM

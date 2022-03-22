@@ -1,8 +1,20 @@
-import path from 'path'
-import fs from 'fs'
-import { getTmpSessionsFolderPath } from '.'
 import { MulterFile } from '../types/Upload'
 import { listFilesInFolder } from '@sasjs/utils'
+
+interface FilenameMapSingle {
+  fieldName: string
+  originalName: string
+}
+
+interface FilenamesMap {
+  [key: string]: FilenameMapSingle
+}
+
+interface UploadedFiles extends FilenameMapSingle {
+  fileref: string
+  filepath: string
+  count: number
+}
 
 /**
  * It will create an object that maps hashed file names to the original names
@@ -12,10 +24,13 @@ import { listFilesInFolder } from '@sasjs/utils'
 export const makeFilesNamesMap = (files: MulterFile[]) => {
   if (!files) return null
 
-  const filesNamesMap: { [key: string]: string } = {}
+  const filesNamesMap: FilenamesMap = {}
 
   for (let file of files) {
-    filesNamesMap[file.filename] = file.originalname
+    filesNamesMap[file.filename] = {
+      fieldName: file.fieldname,
+      originalName: file.originalname
+    }
   }
 
   return filesNamesMap
@@ -28,17 +43,12 @@ export const makeFilesNamesMap = (files: MulterFile[]) => {
  * @returns generated sas code
  */
 export const generateFileUploadSasCode = async (
-  filesNamesMap: any,
+  filesNamesMap: FilenamesMap,
   sasSessionFolder: string
 ): Promise<string> => {
   let uploadSasCode = ''
   let fileCount = 0
-  let uploadedFilesMap: {
-    fileref: string
-    filepath: string
-    filename: string
-    count: number
-  }[] = []
+  const uploadedFiles: UploadedFiles[] = []
 
   const sasSessionFolderList: string[] = await listFilesInFolder(
     sasSessionFolder
@@ -50,31 +60,32 @@ export const generateFileUploadSasCode = async (
     if (fileName.includes('req_file')) {
       fileCount++
 
-      uploadedFilesMap.push({
+      uploadedFiles.push({
         fileref: `_sjs${fileCountString}`,
         filepath: `${sasSessionFolder}/${fileName}`,
-        filename: filesNamesMap[fileName],
+        originalName: filesNamesMap[fileName].originalName,
+        fieldName: filesNamesMap[fileName].fieldName,
         count: fileCount
       })
     }
   })
 
-  for (let uploadedMap of uploadedFilesMap) {
-    uploadSasCode += `\nfilename ${uploadedMap.fileref} "${uploadedMap.filepath}";`
+  for (const uploadedFile of uploadedFiles) {
+    uploadSasCode += `\nfilename ${uploadedFile.fileref} "${uploadedFile.filepath}";`
   }
 
   uploadSasCode += `\n%let _WEBIN_FILE_COUNT=${fileCount};`
 
-  for (let uploadedMap of uploadedFilesMap) {
-    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedMap.count}=${uploadedMap.filename};`
+  for (const uploadedFile of uploadedFiles) {
+    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedFile.count}=${uploadedFile.originalName};`
   }
 
-  for (let uploadedMap of uploadedFilesMap) {
-    uploadSasCode += `\n%let _WEBIN_FILEREF${uploadedMap.count}=${uploadedMap.fileref};`
+  for (const uploadedFile of uploadedFiles) {
+    uploadSasCode += `\n%let _WEBIN_FILEREF${uploadedFile.count}=${uploadedFile.fileref};`
   }
 
-  for (let uploadedMap of uploadedFilesMap) {
-    uploadSasCode += `\n%let _WEBIN_NAME${uploadedMap.count}=${uploadedMap.filepath};`
+  for (const uploadedFile of uploadedFiles) {
+    uploadSasCode += `\n%let _WEBIN_NAME${uploadedFile.count}=${uploadedFile.fieldName};`
   }
 
   if (fileCount > 0) {
