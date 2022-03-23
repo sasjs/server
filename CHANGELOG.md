@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.37](https://github.com/sasjs/server/compare/v0.0.36...v0.0.37) (2022-03-23)
+
+
+### Bug Fixes
+
+* appStream html view ([cd00aa2](https://github.com/sasjs/server/commit/cd00aa2af8c7e0df851050a02152dfeddaec7b0f))
+* moved macros from codebase to drive ([9ac3191](https://github.com/sasjs/server/commit/9ac3191891bf53ff07135ccec6ddc83b34ea871a))
+* **webin:** closes [#99](https://github.com/sasjs/server/issues/99) ([0147bcb](https://github.com/sasjs/server/commit/0147bcb701a209266144147a3746baf1eb1ccc63))
+
 ### [0.0.36](https://github.com/sasjs/server/compare/v0.0.35...v0.0.36) (2022-03-21)
 
 
