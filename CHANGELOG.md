@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.42](https://github.com/sasjs/server/compare/v0.0.41...v0.0.42) (2022-03-23)
+
+
+### Bug Fixes
+
+* execute api, webout as raw ([9c75187](https://github.com/sasjs/server/commit/9c751877d1ed0d0677aff816169a1df7c34c6bf5))
+
 ### [0.0.41](https://github.com/sasjs/server/compare/v0.0.40...v0.0.41) (2022-03-23)
 
 
