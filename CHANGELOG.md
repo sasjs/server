@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.38](https://github.com/sasjs/server/compare/v0.0.37...v0.0.38) (2022-03-23)
+
+
+### Bug Fixes
+
+* quick fix for executables ([9e53470](https://github.com/sasjs/server/commit/9e53470947350f4b8d835a2cb6b70e3dabf247c4))
+
 ### [0.0.37](https://github.com/sasjs/server/compare/v0.0.36...v0.0.37) (2022-03-23)
 
 
