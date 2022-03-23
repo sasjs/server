@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.43](https://github.com/sasjs/server/compare/v0.0.42...v0.0.43) (2022-03-23)
+
+
+### Bug Fixes
+
+* **deploy:** user can deploy to same appName with different/same appLoc ([9ace33d](https://github.com/sasjs/server/commit/9ace33d7830a9def42d741c23b46090afe0c5510))
+* fallback logo on AppStream ([5655311](https://github.com/sasjs/server/commit/5655311b9663225823c192b39a03f39d17dda730))
+
 ### [0.0.42](https://github.com/sasjs/server/compare/v0.0.41...v0.0.42) (2022-03-23)
 
 
