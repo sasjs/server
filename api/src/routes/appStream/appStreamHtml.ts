@@ -14,12 +14,12 @@ const style = `<style>
   width: 150px;
   margin: 10px;
   overflow: hidden;
-  border-radius: 10px 10px 0 0;
   text-align: center;
 }
 .app-container .app img{
   width: 100%;
   margin-bottom: 10px;
+  border-radius: 10px;
 }
 </style>`
 
@@ -31,7 +31,10 @@ const singleAppStreamHtml = (
   logo?: string
 ) =>
   ` <a class="app" href="${streamServiceName}" title="${appLoc}">
-      <img src="${logo ? streamServiceName + '/' + logo : defaultAppLogo}" />
+      <img
+        src="${logo ? streamServiceName + '/' + logo : defaultAppLogo}"
+        onerror="this.src = '${defaultAppLogo}';"
+      />
       ${streamServiceName}
     </a>`
 
