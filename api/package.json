@@ -92,7 +92,7 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "tmp/appStreamConfig.json"
+      "tmp/**/*"
     ]
   }
 }

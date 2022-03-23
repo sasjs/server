@@ -1,11 +1,17 @@
 import path from 'path'
-import { MemberType, FolderMember, ServiceMember, FileTree } from '../../types'
+import {
+  MemberType,
+  FolderMember,
+  ServiceMember,
+  FileTree,
+  FileMember
+} from '../../types'
 import { getTmpFilesFolderPath } from '../../utils/file'
 import { createFolder, createFile, asyncForEach } from '@sasjs/utils'
 
 // REFACTOR: export FileTreeCpntroller
 export const createFileTree = async (
-  members: (FolderMember | ServiceMember)[],
+  members: (FolderMember | ServiceMember | FileMember)[],
   parentFolders: string[] = []
 ) => {
   const destinationPath = path.join(
@@ -13,29 +19,32 @@ export const createFileTree = async (
     path.join(...parentFolders)
   )
 
-  await asyncForEach(members, async (member: FolderMember | ServiceMember) => {
-    let name = member.name
+  await asyncForEach(
+    members,
+    async (member: FolderMember | ServiceMember | FileMember) => {
+      let name = member.name
 
-    if (member.type === MemberType.service) name += '.sas'
+      if (member.type === MemberType.service) name += '.sas'
 
-    if (member.type === MemberType.folder) {
-      await createFolder(path.join(destinationPath, name)).catch((err) =>
-        Promise.reject({ error: err, failedToCreate: name })
-      )
+      if (member.type === MemberType.folder) {
+        await createFolder(path.join(destinationPath, name)).catch((err) =>
+          Promise.reject({ error: err, failedToCreate: name })
+        )
 
-      await createFileTree(member.members, [...parentFolders, name]).catch(
-        (err) => Promise.reject({ error: err, failedToCreate: name })
-      )
-    } else {
-      const encoding = member.type === MemberType.file ? 'base64' : undefined
+        await createFileTree(member.members, [...parentFolders, name]).catch(
+          (err) => Promise.reject({ error: err, failedToCreate: name })
+        )
+      } else {
+        const encoding = member.type === MemberType.file ? 'base64' : undefined
 
-      await createFile(
-        path.join(destinationPath, name),
-        member.code,
-        encoding
-      ).catch((err) => Promise.reject({ error: err, failedToCreate: name }))
+        await createFile(
+          path.join(destinationPath, name),
+          member.code,
+          encoding
+        ).catch((err) => Promise.reject({ error: err, failedToCreate: name }))
+      }
     }
-  })
+  )
 
   return Promise.resolve()
 }

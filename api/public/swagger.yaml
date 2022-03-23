@@ -161,6 +161,8 @@ components:
                                 $ref: '#/components/schemas/FolderMember'
                             -
                                 $ref: '#/components/schemas/ServiceMember'
+                            -
+                                $ref: '#/components/schemas/FileMember'
                     type: array
             required:
                 - name
@@ -172,20 +174,30 @@ components:
             enum:
                 - service
             type: string
-        MemberType.file:
-            enum:
-                - file
-            type: string
         ServiceMember:
             properties:
                 name:
                     type: string
                 type:
-                    anyOf:
-                        -
-                            $ref: '#/components/schemas/MemberType.service'
-                        -
-                            $ref: '#/components/schemas/MemberType.file'
+                    $ref: '#/components/schemas/MemberType.service'
+                code:
+                    type: string
+            required:
+                - name
+                - type
+                - code
+            type: object
+            additionalProperties: false
+        MemberType.file:
+            enum:
+                - file
+            type: string
+        FileMember:
+            properties:
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/MemberType.file'
                 code:
                     type: string
             required:
@@ -203,6 +215,8 @@ components:
                                 $ref: '#/components/schemas/FolderMember'
                             -
                                 $ref: '#/components/schemas/ServiceMember'
+                            -
+                                $ref: '#/components/schemas/FileMember'
                     type: array
             required:
                 - members

@@ -1,23 +1,28 @@
-export interface FileTree {
-  members: (FolderMember | ServiceMember)[]
+export enum MemberType {
+  service = 'service',
+  file = 'file',
+  folder = 'folder'
 }
 
-export enum MemberType {
-  folder = 'folder',
-  service = 'service',
-  file = 'file'
+export interface ServiceMember {
+  name: string
+  type: MemberType.service
+  code: string
+}
+
+export interface FileMember {
+  name: string
+  type: MemberType.file
+  code: string
 }
 
 export interface FolderMember {
   name: string
   type: MemberType.folder
-  members: (FolderMember | ServiceMember)[]
+  members: (FolderMember | ServiceMember | FileMember)[]
 }
-
-export interface ServiceMember {
-  name: string
-  type: MemberType.service | MemberType.file
-  code: string
+export interface FileTree {
+  members: (FolderMember | ServiceMember | FileMember)[]
 }
 
 export const isFileTree = (arg: any): arg is FileTree =>
@@ -25,11 +30,25 @@ export const isFileTree = (arg: any): arg is FileTree =>
   arg.members &&
   Array.isArray(arg.members) &&
   arg.members.filter(
-    (member: FolderMember | ServiceMember) =>
-      !isFolderMember(member) && !isServiceMember(member)
+    (member: ServiceMember | FileMember | FolderMember) =>
+      !isServiceMember(member, '-') &&
+      !isFileMember(member, '-') &&
+      !isFolderMember(member, '-')
   ).length === 0
 
-const isFolderMember = (arg: any): arg is FolderMember =>
+const isServiceMember = (arg: any, pre: string): arg is ServiceMember =>
+  arg &&
+  typeof arg.name === 'string' &&
+  arg.type === MemberType.service &&
+  typeof arg.code === 'string'
+
+const isFileMember = (arg: any, pre: string): arg is ServiceMember =>
+  arg &&
+  typeof arg.name === 'string' &&
+  arg.type === MemberType.file &&
+  typeof arg.code === 'string'
+
+const isFolderMember = (arg: any, pre: string): arg is FolderMember =>
   arg &&
   typeof arg.name === 'string' &&
   arg.type === MemberType.folder &&
@@ -37,21 +56,7 @@ const isFolderMember = (arg: any): arg is FolderMember =>
   Array.isArray(arg.members) &&
   arg.members.filter(
     (member: FolderMember | ServiceMember) =>
-      !isFolderMember(member) &&
-      !isServiceMember(member) &&
-      !isFileMember(member)
+      !isServiceMember(member, pre + '-') &&
+      !isFileMember(member, pre + '-') &&
+      !isFolderMember(member, pre + '-')
   ).length === 0
-
-const isServiceMember = (arg: any): arg is ServiceMember =>
-  arg &&
-  typeof arg.name === 'string' &&
-  arg.type === MemberType.service &&
-  arg.code &&
-  typeof arg.code === 'string'
-
-const isFileMember = (arg: any): arg is ServiceMember =>
-  arg &&
-  typeof arg.name === 'string' &&
-  arg.type === MemberType.file &&
-  arg.code &&
-  typeof arg.code === 'string'
