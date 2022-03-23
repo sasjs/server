@@ -18,6 +18,8 @@ export const getTmpFolderPath = () => process.driveLoc
 export const getTmpAppStreamConfigPath = () =>
   path.join(getTmpFolderPath(), 'appStreamConfig.json')
 
+export const getTmpMacrosPath = () => path.join(getTmpFolderPath(), 'sasjscore')
+
 export const getTmpUploadsPath = () => path.join(getTmpFolderPath(), 'uploads')
 
 export const getTmpFilesFolderPath = () =>

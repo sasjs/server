@@ -7,6 +7,7 @@ import cors from 'cors'
 
 import {
   connectDB,
+  copySASjsCore,
   getWebBuildFolderPath,
   loadAppStreamConfig,
   sasJSCoreMacros,
@@ -42,6 +43,8 @@ const onError: ErrorRequestHandler = (err, req, res, next) => {
 }
 
 export default setProcessVariables().then(async () => {
+  await copySASjsCore()
+
   // loading these modules after setting up variables due to
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')
