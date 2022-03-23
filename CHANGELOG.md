@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.39](https://github.com/sasjs/server/compare/v0.0.38...v0.0.39) (2022-03-23)
+
+
+### Bug Fixes
+
+* included sasjs core macros at compile time ([e680901](https://github.com/sasjs/server/commit/e68090181acd844f86f3e81153cb5a4e3f4a307f))
+
 ### [0.0.38](https://github.com/sasjs/server/compare/v0.0.37...v0.0.38) (2022-03-23)
 
 
