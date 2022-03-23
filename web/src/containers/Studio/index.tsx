@@ -70,6 +70,9 @@ const Studio = () => {
 
         setWebout(`<pre><code>${webout}</code></pre>`)
         setTab('2')
+
+        // Scroll to bottom of log
+        window.scrollTo(0, document.body.scrollHeight)
       })
       .catch((err) => console.log(err))
   }
