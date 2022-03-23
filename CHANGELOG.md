@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.40](https://github.com/sasjs/server/compare/v0.0.39...v0.0.40) (2022-03-23)
+
+
+### Bug Fixes
+
+* **deploy:** validating empty file or service in filetree ([27e260e](https://github.com/sasjs/server/commit/27e260e6a453e9978830db63ab669bd48c029897))
+* macros available for SAS ([7a70d40](https://github.com/sasjs/server/commit/7a70d40dbf0cd91cb3af156755f10006b860f917))
+* moved macros from codebase to drive ([d27e070](https://github.com/sasjs/server/commit/d27e070fc83894854278df22a8223b8016a1f5f7))
+
 ### [0.0.39](https://github.com/sasjs/server/compare/v0.0.38...v0.0.39) (2022-03-23)
 
 
