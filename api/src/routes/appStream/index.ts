@@ -40,17 +40,6 @@ export const publishAppStream = async (
 
     if (!streamServiceName) {
       streamServiceName = `AppStreamName${appCount + 1}`
-    } else {
-      const alreadyDeployed = process.appStreamConfig[streamServiceName]
-      if (alreadyDeployed) {
-        if (alreadyDeployed.appLoc === appLoc) {
-          // redeploying to same streamServiceName
-        } else {
-          // trying to deploy to another existing streamServiceName
-          // assign new streamServiceName
-          streamServiceName = `${streamServiceName}-${appCount + 1}`
-        }
-      }
     }
 
     router.use(`/${streamServiceName}`, express.static(pathToDeployment))
