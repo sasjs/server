@@ -54,11 +54,11 @@ const Studio = () => {
 
         let weboutString: string
         try {
-          weboutString = res.data.webout
+          weboutString = res.data._webout
             .split('>>weboutBEGIN<<')[1]
             .split('>>weboutEND<<')[0]
         } catch (_) {
-          weboutString = res?.data?.webout ?? ''
+          weboutString = res?.data?._webout ?? ''
         }
 
         let webout: string
