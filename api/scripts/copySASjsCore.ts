@@ -1,7 +1,14 @@
 import path from 'path'
-import { asyncForEach, copy, createFolder, deleteFolder } from '@sasjs/utils'
+import {
+  asyncForEach,
+  copy,
+  createFile,
+  createFolder,
+  deleteFolder,
+  listFilesInFolder
+} from '@sasjs/utils'
 
-import { apiRoot, sasJSCoreMacros } from '../src/utils'
+import { apiRoot, sasJSCoreMacros, sasJSCoreMacrosInfo } from '../src/utils'
 
 const macroCorePath = path.join(apiRoot, 'node_modules', '@sasjs', 'core')
 
@@ -16,6 +23,10 @@ export const copySASjsCore = async () => {
 
     await copy(coreSubFolderPath, sasJSCoreMacros)
   })
+
+  const fileNames = await listFilesInFolder(sasJSCoreMacros)
+
+  await createFile(sasJSCoreMacrosInfo, fileNames.join('\n'))
 }
 
 copySASjsCore()

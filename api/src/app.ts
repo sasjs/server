@@ -56,8 +56,6 @@ export default setProcessVariables().then(async () => {
   // index.html needs to be injected with some js script.
   app.use(express.static(getWebBuildFolderPath()))
 
-  console.log('sasJSCoreMacros', sasJSCoreMacros)
-
   app.use(onError)
 
   await connectDB()
