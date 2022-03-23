@@ -29,6 +29,7 @@
     "assets": [
       "./build/public/**/*",
       "./build/sasjsbuild/**/*",
+      "./build/sasjscore/**/*",
       "./web/build/**/*"
     ],
     "targets": [

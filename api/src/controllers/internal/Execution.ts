@@ -13,9 +13,9 @@ import {
   extractHeaders,
   generateFileUploadSasCode,
   getTmpFilesFolderPath,
-  getTmpMacrosPath,
   HTTPHeaders,
-  isDebugOn
+  isDebugOn,
+  sasJSCoreMacros
 } from '../../utils'
 
 export interface ExecutionVars {
@@ -106,7 +106,7 @@ export class ExecutionController {
 `
 
     program = `
-options insert=(SASAUTOS="${getTmpMacrosPath()}");
+options insert=(SASAUTOS="${sasJSCoreMacros}");
 
 /* runtime vars */
 ${varStatments}
