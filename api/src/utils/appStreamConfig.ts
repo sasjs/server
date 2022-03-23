@@ -5,6 +5,8 @@ import { AppStreamConfig } from '../types'
 import { getTmpAppStreamConfigPath } from './file'
 
 export const loadAppStreamConfig = async () => {
+  if (process.env.NODE_ENV === 'test') return
+
   const appStreamConfigPath = getTmpAppStreamConfigPath()
 
   const content = (await fileExists(appStreamConfigPath))
