@@ -48,11 +48,21 @@ When launching the app, it will make use of specific environment variables. Thes
 Example contents of a `.env` file:
 
 ```
-MODE=desktop # options: [desktop|server] default: `desktop`
-CORS=disable # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
-WHITELIST= # options: <http://localhost:3000 https://abc.com ...> space separated urls
-PROTOCOL=http # options: [http|https] default: http
-PORT=5000 # default: 5000
+# options: [desktop|server] default: `desktop`
+MODE=desktop
+
+# options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
+CORS=disable
+
+# options: <http://localhost:3000 https://abc.com ...> space separated urls
+WHITELIST=
+
+# options: [http|https] default: http
+PROTOCOL=http
+
+# default: 5000
+PORT=5000
+
 
 # optional
 # for MODE: `desktop`, prompts user
