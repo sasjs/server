@@ -185,7 +185,8 @@ const executeReturnJson = async (
         getPreProgramVariables(req),
         { ...req.query, ...req.body },
         { filesNamesMap: filesNamesMap },
-        true
+        true,
+        req.sasSession
       )) as ExecuteReturnJson
 
     let weboutRes: string | IRecordOfAny = webout

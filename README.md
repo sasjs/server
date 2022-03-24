@@ -49,19 +49,19 @@ Example contents of a `.env` file:
 
 ```
 # options: [desktop|server] default: `desktop`
-MODE=desktop
+MODE=
 
 # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
-CORS=disable
+CORS=
 
 # options: <http://localhost:3000 https://abc.com ...> space separated urls
 WHITELIST=
 
 # options: [http|https] default: http
-PROTOCOL=http
+PROTOCOL=
 
 # default: 5000
-PORT=5000
+PORT=
 
 
 # optional

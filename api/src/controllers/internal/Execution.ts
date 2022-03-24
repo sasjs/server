@@ -8,7 +8,7 @@ import {
   moveFile,
   readFileBinary
 } from '@sasjs/utils'
-import { PreProgramVars, TreeNode } from '../../types'
+import { PreProgramVars, Session, TreeNode } from '../../types'
 import {
   extractHeaders,
   generateFileUploadSasCode,
@@ -39,7 +39,8 @@ export class ExecutionController {
     preProgramVariables: PreProgramVars,
     vars: ExecutionVars,
     otherArgs?: any,
-    returnJson?: boolean
+    returnJson?: boolean,
+    session?: Session
   ) {
     if (!(await fileExists(programPath)))
       throw 'ExecutionController: SAS file does not exist.'
@@ -51,7 +52,8 @@ export class ExecutionController {
       preProgramVariables,
       vars,
       otherArgs,
-      returnJson
+      returnJson,
+      session
     )
   }
 
@@ -60,11 +62,13 @@ export class ExecutionController {
     preProgramVariables: PreProgramVars,
     vars: ExecutionVars,
     otherArgs?: any,
-    returnJson?: boolean
+    returnJson?: boolean,
+    sessionByFileUpload?: Session
   ): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
     const sessionController = getSessionController()
 
-    const session = await sessionController.getSession()
+    const session =
+      sessionByFileUpload ?? (await sessionController.getSession())
     session.inUse = true
     session.consumed = true
 
