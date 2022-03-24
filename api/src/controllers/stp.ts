@@ -143,9 +143,8 @@ const executeReturnRaw = async (
         query
       )) as ExecuteReturnRaw
 
-    // Should over-ride response header for
-    // debug on GET request to see entire log
-    // rendering on browser.
+    // Should over-ride response header for debug
+    // on GET request to see entire log rendering on browser.
     if (isDebugOn(query)) {
       httpHeaders['content-type'] = 'text/plain'
     }

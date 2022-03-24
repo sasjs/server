@@ -31,7 +31,7 @@ export class SessionController {
       ? readySessions[0]
       : await this.createSession()
 
-    if (readySessions.length < 2) this.createSession()
+    if (readySessions.length < 3) this.createSession()
 
     return session
   }

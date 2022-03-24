@@ -23,7 +23,9 @@ export class FileUploadController {
 
     const sessionController = getSessionController()
     session = await sessionController.getSession()
-    session.inUse = true
+    // marking consumed true, so that it's not available
+    // as readySession for any other request
+    session.consumed = true
 
     req.sasSession = session
 
