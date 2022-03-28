@@ -57,12 +57,11 @@ driveRouter.get('/file', async (req, res) => {
 
 driveRouter.delete('/file', async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
-  const { error: errB, value: body } = fileBodyValidation(req.body)
 
-  if (errQ && errB) return res.status(400).send(errQ.details[0].message)
+  if (errQ) return res.status(400).send(errQ.details[0].message)
 
   try {
-    const response = await controller.deleteFile(query._filePath, body.filePath)
+    const response = await controller.deleteFile(query._filePath)
     res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
