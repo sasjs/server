@@ -10,7 +10,6 @@ import {
   copySASjsCore,
   getWebBuildFolderPath,
   loadAppStreamConfig,
-  sasJSCoreMacros,
   setProcessVariables
 } from './utils'
 

@@ -108,20 +108,14 @@ export class DriveController {
   }
 
   /**
-   * It's optional to either provide `_filePath` in url as query parameter
-   * Or provide `filePath` in body as form field.
-   * But it's required to provide else API will respond with Bad Request.
    *
    * @summary Delete file from SASjs Drive
    * @query _filePath Location of SAS program
    * @example _filePath "/Public/somefolder/some.file"
    */
   @Delete('/file')
-  public async deleteFile(
-    @Query() _filePath?: string,
-    @FormField() filePath?: string
-  ) {
-    return deleteFile((_filePath ?? filePath)!)
+  public async deleteFile(@Query() _filePath: string) {
+    return deleteFile(_filePath)
   }
 
   /**
@@ -304,10 +298,4 @@ const updateFile = async (
   await moveFile(multerFile.path, filePathFull)
 
   return { status: 'success' }
-}
-
-const validateFilePath = async (filePath: string) => {
-  if (!(await fileExists(filePath))) {
-    throw 'DriveController: File does not exists.'
-  }
 }

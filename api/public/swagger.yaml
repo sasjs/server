@@ -649,7 +649,6 @@ paths:
                                 required:
                                     - status
                                 type: object
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
             summary: 'Delete file from SASjs Drive'
             tags:
                 - Drive
@@ -660,19 +659,10 @@ paths:
                 -
                     in: query
                     name: _filePath
-                    required: false
+                    required: true
                     schema:
                         type: string
                     example: /Public/somefolder/some.file
-            requestBody:
-                required: false
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                filePath:
-                                    type: string
         post:
             operationId: SaveFile
             responses:
