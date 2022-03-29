@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.47](https://github.com/sasjs/server/compare/v0.0.46...v0.0.47) (2022-03-29)
+
+
+### Bug Fixes
+
+* **web:** updated STUDIO log and webout ([f700561](https://github.com/sasjs/server/commit/f700561e1a8d06c18ca2bdbe4605d7ab34f7a761))
+
 ### [0.0.46](https://github.com/sasjs/server/compare/v0.0.45...v0.0.46) (2022-03-29)
 
 
