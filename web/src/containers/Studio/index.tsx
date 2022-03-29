@@ -50,25 +50,9 @@ const Studio = () => {
           .map((logLine: any) => logLine.line)
           .join('\n')
 
-        setLog(`<div><h2>SAS Log</h2><pre>${parsedLog}</pre></div>`)
+        setLog(parsedLog)
 
-        let weboutString: string
-        try {
-          weboutString = res.data._webout
-            .split('>>weboutBEGIN<<')[1]
-            .split('>>weboutEND<<')[0]
-        } catch (_) {
-          weboutString = res?.data?._webout ?? ''
-        }
-
-        let webout: string
-        try {
-          webout = JSON.stringify(JSON.parse(weboutString), null, 4)
-        } catch (_) {
-          webout = weboutString
-        }
-
-        setWebout(`<pre><code>${webout}</code></pre>`)
+        setWebout(`${res.data?._webout}`)
         setTab('2')
 
         // Scroll to bottom of log
@@ -100,6 +84,7 @@ const Studio = () => {
   }, [location.search])
 
   const classes = useStyles()
+
   return (
     <>
       <br />
@@ -152,17 +137,15 @@ const Studio = () => {
             </Stack>
           </TabPanel>
           <TabPanel value="2">
-            <div
-              id="sas_log"
-              style={{ marginTop: '50px' }}
-              dangerouslySetInnerHTML={{ __html: log }}
-            />
+            <div style={{ marginTop: '50px' }}>
+              <h2>SAS Log</h2>
+              <pre>{log}</pre>
+            </div>
           </TabPanel>
           <TabPanel value="3">
-            <div
-              style={{ marginTop: '50px' }}
-              dangerouslySetInnerHTML={{ __html: webout }}
-            />
+            <div style={{ marginTop: '50px' }}>
+              <pre>{webout}</pre>
+            </div>
           </TabPanel>
         </TabContext>
       </Box>
