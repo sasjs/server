@@ -1,3 +1,6 @@
+### Get contents of folder
+GET http://localhost:5000/SASjsApi/drive/folder?_path=/Public/app/react-seed-app/services/web
+
 ###
 POST http://localhost:5000/SASjsApi/drive/deploy
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJjbGllbnRJRDEiLCJ1c2VybmFtZSI6InVzZXJuYW1lMSIsImlzYWRtaW4iOmZhbHNlLCJpc2FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjM1ODA0MDc2LCJleHAiOjE2MzU4OTA0NzZ9.Cx1F54ILgAUtnkit0Wg1K1YVO2RdNjOnTKdPhUtDm5I

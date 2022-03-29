@@ -20,7 +20,12 @@ import {
   fileExists,
   moveFile,
   createFolder,
-  deleteFile as deleteFileOnSystem
+  deleteFile as deleteFileOnSystem,
+  folderExists,
+  listFilesAndSubFoldersInFolder,
+  listFilesInFolder,
+  listSubFoldersInFolder,
+  isFolder
 } from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
@@ -89,9 +94,6 @@ export class DriveController {
   }
 
   /**
-   * It's optional to either provide `_filePath` in url as query parameter
-   * Or provide `filePath` in body as form field.
-   * But it's required to provide else API will respond with Bad Request.
    *
    * @summary Get file from SASjs Drive
    * @query _filePath Location of SAS program
@@ -100,11 +102,20 @@ export class DriveController {
   @Get('/file')
   public async getFile(
     @Request() request: express.Request,
-
-    @Query() _filePath?: string,
-    @FormField() filePath?: string
+    @Query() _filePath: string
   ) {
-    return getFile(request, (_filePath ?? filePath)!)
+    return getFile(request, _filePath)
+  }
+
+  /**
+   *
+   * @summary Get folder contents from SASjs Drive
+   * @query _folderPath Location of SAS program
+   * @example _folderPath "/Public/somefolder"
+   */
+  @Get('/folder')
+  public async getFolder(@Query() _folderPath?: string) {
+    return getFolder(_folderPath)
   }
 
   /**
@@ -221,7 +232,7 @@ const getFile = async (req: express.Request, filePath: string) => {
   }
 
   if (!(await fileExists(filePathFull))) {
-    throw new Error('File does not exist.')
+    throw new Error("File doesn't exist.")
   }
 
   const extension = path.extname(filePathFull).toLowerCase()
@@ -230,6 +241,36 @@ const getFile = async (req: express.Request, filePath: string) => {
   }
 
   req.res?.sendFile(path.resolve(filePathFull))
+}
+
+const getFolder = async (folderPath?: string) => {
+  const driveFilesPath = getTmpFilesFolderPath()
+
+  if (folderPath) {
+    const folderPathFull = path
+      .join(getTmpFilesFolderPath(), folderPath)
+      .replace(new RegExp('/', 'g'), path.sep)
+
+    if (!folderPathFull.includes(driveFilesPath)) {
+      throw new Error('Cannot get folder outside drive.')
+    }
+
+    if (!(await folderExists(folderPathFull))) {
+      throw new Error("Folder doesn't exist.")
+    }
+
+    if (!(await isFolder(folderPathFull))) {
+      throw new Error('Not a Folder.')
+    }
+
+    const files: string[] = await listFilesInFolder(folderPathFull)
+    const folders: string[] = await listSubFoldersInFolder(folderPathFull)
+    return { files, folders }
+  }
+
+  const files: string[] = await listFilesInFolder(driveFilesPath)
+  const folders: string[] = await listSubFoldersInFolder(driveFilesPath)
+  return { files, folders }
 }
 
 const deleteFile = async (filePath: string) => {

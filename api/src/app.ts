@@ -10,7 +10,8 @@ import {
   copySASjsCore,
   getWebBuildFolderPath,
   loadAppStreamConfig,
-  setProcessVariables
+  setProcessVariables,
+  setupFolders
 } from './utils'
 
 dotenv.config()
@@ -42,6 +43,7 @@ const onError: ErrorRequestHandler = (err, req, res, next) => {
 }
 
 export default setProcessVariables().then(async () => {
+  await setupFolders()
   await copySASjsCore()
 
   // loading these modules after setting up variables due to

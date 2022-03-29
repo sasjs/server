@@ -98,6 +98,11 @@ export const fileParamValidation = (data: any): Joi.ValidationResult =>
     _filePath: filePathSchema
   }).validate(data)
 
+export const folderParamValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    _folderPath: Joi.string()
+  }).validate(data)
+
 export const runSASValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     code: Joi.string().required()
