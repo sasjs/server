@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.46](https://github.com/sasjs/server/compare/v0.0.45...v0.0.46) (2022-03-29)
+
+
+### Features
+
+* **drive:** GET folder contents API added ([0ac9e4a](https://github.com/sasjs/server/commit/0ac9e4af7d67c4431053e80eb2384bf5bdc3f8b3))
+
 ### [0.0.45](https://github.com/sasjs/server/compare/v0.0.43...v0.0.45) (2022-03-29)
 
 
