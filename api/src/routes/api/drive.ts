@@ -8,7 +8,8 @@ import { DriveController } from '../../controllers/'
 import {
   deployValidation,
   fileBodyValidation,
-  fileParamValidation
+  fileParamValidation,
+  folderParamValidation
 } from '../../utils'
 
 const controller = new DriveController()
@@ -44,12 +45,24 @@ driveRouter.post('/deploy', async (req, res) => {
 
 driveRouter.get('/file', async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
-  const { error: errB, value: body } = fileBodyValidation(req.body)
 
-  if (errQ && errB) return res.status(400).send(errQ.details[0].message)
+  if (errQ) return res.status(400).send(errQ.details[0].message)
 
   try {
-    await controller.getFile(req, query._filePath, body.filePath)
+    await controller.getFile(req, query._filePath)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
+driveRouter.get('/folder', async (req, res) => {
+  const { error: errQ, value: query } = folderParamValidation(req.query)
+
+  if (errQ) return res.status(400).send(errQ.details[0].message)
+
+  try {
+    const response = await controller.getFolder(query._folderPath)
+    res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }

@@ -10,7 +10,9 @@ import {
   readFile,
   deleteFolder,
   generateTimestamp,
-  copy
+  copy,
+  createFolder,
+  createFile
 } from '@sasjs/utils'
 import * as fileUtilModules from '../../../utils/file'
 
@@ -44,7 +46,7 @@ const user = {
   isActive: true
 }
 
-describe('files', () => {
+describe('drive', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   const controller = new UserController()
@@ -69,6 +71,7 @@ describe('files', () => {
     await mongoServer.stop()
     await deleteFolder(tmpFolder)
   })
+
   describe('deploy', () => {
     const shouldFailAssertion = async (payload: any) => {
       const res = await request(app)
@@ -172,17 +175,126 @@ describe('files', () => {
 
       await expect(readFile(testJobFile)).resolves.toEqual(exampleService.code)
 
-      await deleteFolder(getTmpFilesFolderPath())
+      await deleteFolder(path.join(getTmpFilesFolderPath(), 'public'))
+    })
+  })
+
+  describe('folder', () => {
+    describe('get', () => {
+      const getFolderApi = '/SASjsApi/drive/folder'
+
+      it('should get root SAS folder on drive', async () => {
+        const res = await request(app)
+          .get(getFolderApi)
+          .auth(accessToken, { type: 'bearer' })
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({ files: [], folders: [] })
+      })
+
+      it('should get a SAS folder on drive having _folderPath as query param', async () => {
+        const pathToDrive = fileUtilModules.getTmpFilesFolderPath()
+
+        const dirLevel1 = 'level1'
+        const dirLevel2 = 'level2'
+        const fileLevel1 = 'file1'
+        const fileLevel2 = 'file2'
+
+        await createFolder(path.join(pathToDrive, dirLevel1, dirLevel2))
+        await createFile(
+          path.join(pathToDrive, dirLevel1, fileLevel1),
+          'some file content'
+        )
+        await createFile(
+          path.join(pathToDrive, dirLevel1, dirLevel2, fileLevel2),
+          'some file content'
+        )
+
+        const res1 = await request(app)
+          .get(getFolderApi)
+          .query({ _folderPath: '/' })
+          .auth(accessToken, { type: 'bearer' })
+
+        expect(res1.statusCode).toEqual(200)
+        expect(res1.body).toEqual({ files: [], folders: [dirLevel1] })
+
+        const res2 = await request(app)
+          .get(getFolderApi)
+          .query({ _folderPath: dirLevel1 })
+          .auth(accessToken, { type: 'bearer' })
+
+        expect(res2.statusCode).toEqual(200)
+        expect(res2.body).toEqual({ files: [fileLevel1], folders: [dirLevel2] })
+
+        const res3 = await request(app)
+          .get(getFolderApi)
+          .query({ _folderPath: `${dirLevel1}/${dirLevel2}` })
+          .auth(accessToken, { type: 'bearer' })
+
+        expect(res3.statusCode).toEqual(200)
+        expect(res3.body).toEqual({ files: [fileLevel2], folders: [] })
+      })
+
+      it('should respond with Unauthorized if access token is not present', async () => {
+        const res = await request(app).get(getFolderApi).expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if folder is not present', async () => {
+        const res = await request(app)
+          .get(getFolderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _folderPath: `/my/path/code-${generateTimestamp()}` })
+          .expect(403)
+
+        expect(res.text).toEqual(`Error: Folder doesn't exist.`)
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if folderPath outside Drive', async () => {
+        const res = await request(app)
+          .get(getFolderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _folderPath: '/../path/code.sas' })
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Cannot get folder outside drive.')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if folderPath is of a file', async () => {
+        const fileToCopyPath = path.join(__dirname, 'files', 'sample.sas')
+        const filePath = '/my/path/code.sas'
+
+        const pathToCopy = path.join(
+          fileUtilModules.getTmpFilesFolderPath(),
+          filePath
+        )
+        await copy(fileToCopyPath, pathToCopy)
+
+        const res = await request(app)
+          .get(getFolderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _folderPath: filePath })
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Not a Folder.')
+        expect(res.body).toEqual({})
+      })
     })
   })
 
   describe('file', () => {
     describe('create', () => {
       it('should create a SAS file on drive having filePath as form field', async () => {
+        const pathToUpload = `/my/path/code-1.sas`
+
         const res = await request(app)
           .post('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
-          .field('filePath', '/my/path/code.sas')
+          .field('filePath', pathToUpload)
           .attach('file', path.join(__dirname, 'files', 'sample.sas'))
 
         expect(res.statusCode).toEqual(200)
@@ -192,10 +304,12 @@ describe('files', () => {
       })
 
       it('should create a SAS file on drive having _filePath as query param', async () => {
+        const pathToUpload = `/my/path/code-2.sas`
+
         const res = await request(app)
           .post('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
-          .query({ _filePath: '/my/path/code1.sas' })
+          .query({ _filePath: pathToUpload })
           .attach('file', path.join(__dirname, 'files', 'sample.sas'))
 
         expect(res.statusCode).toEqual(200)
@@ -217,7 +331,7 @@ describe('files', () => {
 
       it('should respond with Forbidden if file is already present', async () => {
         const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
-        const pathToUpload = '/my/path/code.sas'
+        const pathToUpload = `/my/path/code-${generateTimestamp()}.sas`
 
         const pathToCopy = path.join(
           fileUtilModules.getTmpFilesFolderPath(),
@@ -386,7 +500,7 @@ describe('files', () => {
         const res = await request(app)
           .patch('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
-          .field('filePath', `/my/path/code-${generateTimestamp()}.sas`)
+          .field('filePath', `/my/path/code-3.sas`)
           .attach('file', path.join(__dirname, 'files', 'sample.sas'))
           .expect(403)
 
@@ -427,9 +541,9 @@ describe('files', () => {
         const pathToUpload = '/my/path/code.exe'
 
         const res = await request(app)
-          .patch(`/SASjsApi/drive/file?_filePath=${pathToUpload}`)
+          .patch('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
-          // .field('filePath', pathToUpload)
+          .query({ _filePath: pathToUpload })
           .attach('file', fileToAttachPath)
           .expect(400)
 
@@ -480,6 +594,79 @@ describe('files', () => {
         expect(res.text).toEqual(
           'File size is over limit. File limit is: 10 MB'
         )
+        expect(res.body).toEqual({})
+      })
+    })
+
+    describe('get', () => {
+      it('should get a SAS file on drive having _filePath as query param', async () => {
+        const fileToCopyPath = path.join(__dirname, 'files', 'sample.sas')
+        const fileToCopyContent = await readFile(fileToCopyPath)
+        const filePath = '/my/path/code.sas'
+
+        const pathToCopy = path.join(
+          fileUtilModules.getTmpFilesFolderPath(),
+          filePath
+        )
+        await copy(fileToCopyPath, pathToCopy)
+
+        const res = await request(app)
+          .get('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _filePath: filePath })
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({})
+        expect(res.text).toEqual(fileToCopyContent)
+      })
+
+      it('should respond with Unauthorized if access token is not present', async () => {
+        const res = await request(app).get('/SASjsApi/drive/file').expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if file is not present', async () => {
+        const res = await request(app)
+          .get('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _filePath: `/my/path/code-4.sas` })
+          .expect(403)
+
+        expect(res.text).toEqual(`Error: File doesn't exist.`)
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if filePath outside Drive', async () => {
+        const res = await request(app)
+          .get('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _filePath: '/../path/code.sas' })
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Cannot get file outside drive.')
+        expect(res.body).toEqual({})
+      })
+
+      it("should respond with Bad Request if filePath doesn't has correct extension", async () => {
+        const res = await request(app)
+          .patch('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _filePath: '/my/path/code.exe' })
+          .expect(400)
+
+        expect(res.text).toEqual('Invalid file extension')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Bad Request if filePath is missing', async () => {
+        const res = await request(app)
+          .post('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .expect(400)
+
+        expect(res.text).toEqual(`"_filePath" is required`)
         expect(res.body).toEqual({})
       })
     })
