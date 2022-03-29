@@ -87,6 +87,8 @@ ${autoExecContent}`
       codePath,
       '-LOG',
       path.join(session.path, 'log.log'),
+      '-PRINT',
+      path.join(session.path, 'output.lst'),
       '-WORK',
       session.path,
       '-AUTOEXEC',
