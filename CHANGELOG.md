@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.44](https://github.com/sasjs/server/compare/v0.0.43...v0.0.44) (2022-03-29)
+
+
+### Bug Fixes
+
+* DELETE req cannot have body ([0a5aece](https://github.com/sasjs/server/commit/0a5aeceab560b022197d0c30c3da7f091b261b1e))
+* increased req body size ([6dc39c0](https://github.com/sasjs/server/commit/6dc39c0d91ac13d6d9b8c0a2240446bfc45bdd7f))
+* **session:** increased session + bug fixed ([117a53c](https://github.com/sasjs/server/commit/117a53ceeadf487a6326384ae11c10e98646631f))
+* **stp:** use same session from file upload ([dd56a95](https://github.com/sasjs/server/commit/dd56a95314f0b61480489118734e45877e1745ef))
+
 ### [0.0.43](https://github.com/sasjs/server/compare/v0.0.42...v0.0.43) (2022-03-23)
 
 
