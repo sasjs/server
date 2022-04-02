@@ -606,6 +606,56 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/DeployPayload'
+    /SASjsApi/drive/deploy/upload:
+        post:
+            operationId: DeployUpload
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success, message: 'Files deployed successfully to @sasjs/server.'}
+                '400':
+                    description: 'Invalid Format'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Provided not supported data format.'}
+                '500':
+                    description: 'Execution Error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Deployment failed!'}
+            summary: 'Creates/updates files within SASjs Drive using uploaded JSON file.'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                            required:
+                                - file
     /SASjsApi/drive/file:
         get:
             operationId: GetFile

@@ -1,5 +1,5 @@
 import express from 'express'
-import { deleteFile } from '@sasjs/utils'
+import { deleteFile, readFile } from '@sasjs/utils'
 
 import { publishAppStream } from '../appStream'
 
@@ -42,6 +42,50 @@ driveRouter.post('/deploy', async (req, res) => {
     res.status(statusCode).send(err)
   }
 })
+
+driveRouter.post(
+  '/deploy/upload',
+  (...arg) => multerSingle('file', arg),
+  async (req, res) => {
+    if (!req.file) return res.status(400).send('"file" is not present.')
+
+    const fileContent = await readFile(req.file.path)
+
+    let jsonContent
+    try {
+      jsonContent = JSON.parse(fileContent)
+    } catch (err) {
+      return res.status(400).send('File containing invalid JSON content.')
+    }
+
+    const { error, value: body } = deployValidation(jsonContent)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    try {
+      const response = await controller.deployUpload(req.file, body)
+
+      if (body.streamWebFolder) {
+        const { streamServiceName } = await publishAppStream(
+          body.appLoc,
+          body.streamWebFolder,
+          body.streamServiceName,
+          body.streamLogo
+        )
+        response.streamServiceName = streamServiceName
+      }
+
+      res.send(response)
+    } catch (err: any) {
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err)
+    } finally {
+      await deleteFile(req.file.path)
+    }
+  }
+)
 
 driveRouter.get('/file', async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)

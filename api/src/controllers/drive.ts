@@ -14,7 +14,8 @@ import {
   Patch,
   UploadedFile,
   FormField,
-  Delete
+  Delete,
+  Hidden
 } from 'tsoa'
 import {
   fileExists,
@@ -22,14 +23,15 @@ import {
   createFolder,
   deleteFile as deleteFileOnSystem,
   folderExists,
-  listFilesAndSubFoldersInFolder,
   listFilesInFolder,
   listSubFoldersInFolder,
-  isFolder
+  isFolder,
+  FileTree,
+  isFileTree
 } from '@sasjs/utils'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
-import { FileTree, isFileTree, TreeNode } from '../types'
+import { TreeNode } from '../types'
 import { getTmpFilesFolderPath } from '../utils'
 
 interface DeployPayload {
@@ -91,6 +93,21 @@ export class DriveController {
   @Post('/deploy')
   public async deploy(@Body() body: DeployPayload): Promise<DeployResponse> {
     return deploy(body)
+  }
+
+  /**
+   * @summary Creates/updates files within SASjs Drive using uploaded JSON file.
+   *
+   */
+  @Example<DeployResponse>(successDeployResponse)
+  @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
+  @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
+  @Post('/deploy/upload')
+  public async deployUpload(
+    @UploadedFile() file: Express.Multer.File, // passing here for API docs
+    @Query() @Hidden() body?: DeployPayload // Hidden decorator has be optional
+  ): Promise<DeployResponse> {
+    return deploy(body!)
   }
 
   /**

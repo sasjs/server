@@ -12,7 +12,9 @@ import {
   generateTimestamp,
   copy,
   createFolder,
-  createFile
+  createFile,
+  ServiceMember,
+  FolderMember
 } from '@sasjs/utils'
 import * as fileUtilModules from '../../../utils/file'
 
@@ -28,7 +30,6 @@ jest
 import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
-import { FolderMember, ServiceMember } from '../../../types'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
 const { getTmpFilesFolderPath } = fileUtilModules
 
