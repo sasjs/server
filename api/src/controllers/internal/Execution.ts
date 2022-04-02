@@ -157,7 +157,9 @@ ${program}`
       : ''
     const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
     const fileResponse: boolean =
-      httpHeaders.hasOwnProperty('content-type') && !returnJson
+      httpHeaders.hasOwnProperty('content-type') &&
+      !returnJson && // not a POST Request
+      !isDebugOn(vars) // Debug is not enabled
 
     const webout = (await fileExists(weboutPath))
       ? fileResponse
