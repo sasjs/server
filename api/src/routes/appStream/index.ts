@@ -52,7 +52,7 @@ export const publishAppStream = async (
       addEntryToFile
     )
 
-    const sasJsPort = process.env.PORT ?? 5000
+    const sasJsPort = process.env.PORT || 5000
     console.log(
       'Serving Stream App: ',
       `http://localhost:${sasJsPort}/AppStream/${streamServiceName}`

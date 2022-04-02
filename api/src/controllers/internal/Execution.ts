@@ -178,11 +178,10 @@ ${program}`
 
     return {
       httpHeaders,
-      result: fileResponse
-        ? webout
-        : isDebugOn(vars) || session.crashed
-        ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
-        : webout
+      result:
+        isDebugOn(vars) || session.crashed
+          ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
+          : webout
     }
   }
 
