@@ -55,11 +55,15 @@ driveRouter.post(
     try {
       jsonContent = JSON.parse(fileContent)
     } catch (err) {
+      deleteFile(req.file.path)
       return res.status(400).send('File containing invalid JSON content.')
     }
 
     const { error, value: body } = deployValidation(jsonContent)
-    if (error) return res.status(400).send(error.details[0].message)
+    if (error) {
+      deleteFile(req.file.path)
+      return res.status(400).send(error.details[0].message)
+    }
 
     try {
       const response = await controller.deployUpload(req.file, body)
@@ -82,7 +86,7 @@ driveRouter.post(
 
       res.status(statusCode).send(err)
     } finally {
-      await deleteFile(req.file.path)
+      deleteFile(req.file.path)
     }
   }
 )
