@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.48](https://github.com/sasjs/server/compare/v0.0.47...v0.0.48) (2022-04-02)
+
+
+### Features
+
+* **deploy:** new route added for deploy with build.json ([18d0604](https://github.com/sasjs/server/commit/18d0604bdd0b20ad468f9345474b4de034ee3a67))
+
+
+### Bug Fixes
+
+* remove uploaded build.json from temp folder in all cases ([9d167ab](https://github.com/sasjs/server/commit/9d167abe2adb743bca161862b4561bf573182c00))
+* **stp:** return log+webout for debug on ([3ff6f5e](https://github.com/sasjs/server/commit/3ff6f5e86581cd2ac23bbe0b8e2c367fbea890ed))
+
 ### [0.0.47](https://github.com/sasjs/server/compare/v0.0.46...v0.0.47) (2022-03-29)
 
 
