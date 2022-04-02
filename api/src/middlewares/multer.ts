@@ -4,7 +4,7 @@ import multer, { FileFilterCallback, Options } from 'multer'
 import { blockFileRegex, getTmpUploadsPath } from '../utils'
 
 const fieldNameSize = 300
-const fileSize = 10485760 // 10 MB
+const fileSize = 104857600 // 100 MB
 
 const storage = multer.diskStorage({
   destination: getTmpUploadsPath(),

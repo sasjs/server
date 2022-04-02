@@ -1,5 +1,6 @@
 import path from 'path'
 import {
+  CompileTree,
   createFile,
   loadDependenciesFile,
   readFile,
@@ -18,7 +19,8 @@ const compiledSystemInit = async (systemInit: string) =>
     macroFolders: [],
     buildSourceFolder: '',
     binaryFolders: [],
-    macroCorePath
+    macroCorePath,
+    compileTree: new CompileTree('') // dummy compileTree
   }))
 
 const createSysInitFile = async () => {

@@ -1,13 +1,15 @@
 import path from 'path'
+import { getTmpFilesFolderPath } from '../../utils/file'
 import {
-  MemberType,
+  createFolder,
+  createFile,
+  asyncForEach,
   FolderMember,
   ServiceMember,
-  FileTree,
-  FileMember
-} from '../../types'
-import { getTmpFilesFolderPath } from '../../utils/file'
-import { createFolder, createFile, asyncForEach } from '@sasjs/utils'
+  FileMember,
+  MemberType,
+  FileTree
+} from '@sasjs/utils'
 
 // REFACTOR: export FileTreeCpntroller
 export const createFileTree = async (

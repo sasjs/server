@@ -12,7 +12,9 @@ import {
   generateTimestamp,
   copy,
   createFolder,
-  createFile
+  createFile,
+  ServiceMember,
+  FolderMember
 } from '@sasjs/utils'
 import * as fileUtilModules from '../../../utils/file'
 
@@ -28,7 +30,6 @@ jest
 import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
-import { FolderMember, ServiceMember } from '../../../types'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
 const { getTmpFilesFolderPath } = fileUtilModules
 
@@ -424,7 +425,7 @@ describe('drive', () => {
       it('should respond with Bad Request if attached file exceeds file limit', async () => {
         const pathToUpload = '/my/path/code.sas'
 
-        const attachedFile = Buffer.from('.'.repeat(20 * 1024 * 1024))
+        const attachedFile = Buffer.from('.'.repeat(110 * 1024 * 1024)) // 110mb
 
         const res = await request(app)
           .post('/SASjsApi/drive/file')
@@ -434,7 +435,7 @@ describe('drive', () => {
           .expect(400)
 
         expect(res.text).toEqual(
-          'File size is over limit. File limit is: 10 MB'
+          'File size is over limit. File limit is: 100 MB'
         )
         expect(res.body).toEqual({})
       })
@@ -582,7 +583,7 @@ describe('drive', () => {
       it('should respond with Bad Request if attached file exceeds file limit', async () => {
         const pathToUpload = '/my/path/code.sas'
 
-        const attachedFile = Buffer.from('.'.repeat(20 * 1024 * 1024))
+        const attachedFile = Buffer.from('.'.repeat(110 * 1024 * 1024)) // 110mb
 
         const res = await request(app)
           .patch('/SASjsApi/drive/file')
@@ -592,7 +593,7 @@ describe('drive', () => {
           .expect(400)
 
         expect(res.text).toEqual(
-          'File size is over limit. File limit is: 10 MB'
+          'File size is over limit. File limit is: 100 MB'
         )
         expect(res.body).toEqual({})
       })
