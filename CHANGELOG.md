@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.49](https://github.com/sasjs/server/compare/v0.0.48...v0.0.49) (2022-04-02)
+
+
+### Bug Fixes
+
+* **stp:** read file in non-binary mode if debug one ([527f70e](https://github.com/sasjs/server/commit/527f70e90dd7369766e375ac2d6fc38b2a114d11))
+
 ### [0.0.48](https://github.com/sasjs/server/compare/v0.0.47...v0.0.48) (2022-04-02)
 
 
