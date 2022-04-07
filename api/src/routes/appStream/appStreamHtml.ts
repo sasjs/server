@@ -1,27 +1,6 @@
 import { AppStreamConfig } from '../../types'
-
-const style = `<style>
-* {
-  font-family: 'Roboto', sans-serif;
-}
-.app-container {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-}
-.app-container .app {
-  width: 150px;
-  margin: 10px;
-  overflow: hidden;
-  text-align: center;
-}
-.app-container .app img{
-  width: 100%;
-  margin-bottom: 10px;
-  border-radius: 10px;
-}
-</style>`
+import { script } from './script'
+import { style } from './style'
 
 const defaultAppLogo = '/sasjs-logo.svg'
 
@@ -52,6 +31,14 @@ export const appStreamHtml = (appStreamConfig: AppStreamConfig) => `
           singleAppStreamHtml(streamServiceName, entry.appLoc, entry.streamLogo)
         )
         .join('')}
+        <a class="app" title="Upload build.json">
+          <input id="fileId" type="file" hidden />
+          <button id="uploadButton" style="margin-bottom: 5px; cursor: pointer">
+            <img src="/plus.png" />
+          </button>
+          <span id="uploadMessage">Upload New App</span>
+        </a>
     </div>
+    ${script}
   </body>
 </html>`
