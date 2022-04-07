@@ -86,72 +86,67 @@ const Studio = () => {
   const classes = useStyles()
 
   return (
-    <>
-      <br />
-      <br />
-      <br />
-      <Box sx={{ width: '100%', typography: 'body1' }}>
-        <TabContext value={tab}>
-          <Box
+    <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
+      <TabContext value={tab}>
+        <Box
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider'
+          }}
+          style={{ position: 'fixed', background: 'white', width: '100%' }}
+        >
+          <TabList onChange={handleTabChange} centered>
+            <Tab className={classes.root} label="Code" value="1" />
+            <Tab className={classes.root} label="Log" value="2" />
+            <Tooltip title="Displays content from the _webout fileref">
+              <Tab className={classes.root} label="Webout" value="3" />
+            </Tooltip>
+          </TabList>
+        </Box>
+        <TabPanel value="1">
+          {/* <Toolbar /> */}
+          <Paper
             sx={{
-              borderBottom: 1,
-              borderColor: 'divider'
+              height: '70vh',
+              marginTop: '50px',
+              padding: '10px',
+              overflow: 'auto',
+              position: 'relative'
             }}
-            style={{ position: 'fixed', background: 'white', width: '100%' }}
+            elevation={3}
           >
-            <TabList onChange={handleTabChange} centered>
-              <Tab className={classes.root} label="Code" value="1" />
-              <Tab className={classes.root} label="Log" value="2" />
-              <Tooltip title="Displays content from the _webout fileref">
-                <Tab className={classes.root} label="Webout" value="3" />
-              </Tooltip>
-            </TabList>
-          </Box>
-          <TabPanel value="1">
-            {/* <Toolbar /> */}
-            <Paper
-              sx={{
-                height: '70vh',
-                marginTop: '50px',
-                padding: '10px',
-                overflow: 'auto',
-                position: 'relative'
+            <Editor
+              height="95%"
+              value={fileContent}
+              onMount={handleEditorDidMount}
+              onChange={(val) => {
+                if (val) setFileContent(val)
               }}
-              elevation={3}
-            >
-              <Editor
-                height="95%"
-                value={fileContent}
-                onMount={handleEditorDidMount}
-                onChange={(val) => {
-                  if (val) setFileContent(val)
-                }}
-              />
-            </Paper>
-            <Stack
-              spacing={3}
-              direction="row"
-              sx={{ justifyContent: 'center', marginTop: '20px' }}
-            >
-              <Button variant="contained" onClick={handleRunBtnClick}>
-                Run SAS Code
-              </Button>
-            </Stack>
-          </TabPanel>
-          <TabPanel value="2">
-            <div style={{ marginTop: '50px' }}>
-              <h2>SAS Log</h2>
-              <pre>{log}</pre>
-            </div>
-          </TabPanel>
-          <TabPanel value="3">
-            <div style={{ marginTop: '50px' }}>
-              <pre>{webout}</pre>
-            </div>
-          </TabPanel>
-        </TabContext>
-      </Box>
-    </>
+            />
+          </Paper>
+          <Stack
+            spacing={3}
+            direction="row"
+            sx={{ justifyContent: 'center', marginTop: '20px' }}
+          >
+            <Button variant="contained" onClick={handleRunBtnClick}>
+              Run SAS Code
+            </Button>
+          </Stack>
+        </TabPanel>
+        <TabPanel value="2">
+          <div style={{ marginTop: '50px' }}>
+            <h2>SAS Log</h2>
+            <pre>{log}</pre>
+          </div>
+        </TabPanel>
+        <TabPanel value="3">
+          <div style={{ marginTop: '50px' }}>
+            <pre>{webout}</pre>
+          </div>
+        </TabPanel>
+      </TabContext>
+    </Box>
   )
 }
 
