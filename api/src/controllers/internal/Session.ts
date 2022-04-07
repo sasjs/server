@@ -12,8 +12,7 @@ import {
   createFile,
   fileExists,
   generateTimestamp,
-  readFile,
-  moveFile
+  readFile
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
@@ -41,6 +40,7 @@ export class SessionController {
     const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
 
     const creationTimeStamp = sessionId.split('-').pop() as string
+    // death time of session is 15 mins from creation
     const deathTimeStamp = (
       parseInt(creationTimeStamp) +
       15 * 60 * 1000 -
@@ -140,7 +140,9 @@ ${autoExecContent}`
   private scheduleSessionDestroy(session: Session) {
     setTimeout(async () => {
       if (session.inUse) {
-        session.deathTimeStamp = session.deathTimeStamp + 1000 * 10
+        // adding 10 more minutes
+        const newDeathTimeStamp = parseInt(session.deathTimeStamp) + 10 * 1000
+        session.deathTimeStamp = newDeathTimeStamp.toString()
 
         this.scheduleSessionDestroy(session)
       } else {
