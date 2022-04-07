@@ -113,3 +113,7 @@ cd ./api && npm i && npm run exe
 ```
 
 This will install/build web app and install/create executables of sasjs server at root `./executables`
+
+## Releases
+
+To cut a release, run `npm run release` on the main branch, then push the tags (per the console log link)
