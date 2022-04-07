@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 
 import Box from '@mui/material/Box'
-import { Button, Paper, Stack, Tab } from '@mui/material'
+import { Button, Paper, Stack, Tab, Tooltip } from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import Editor, { OnMount } from '@monaco-editor/react'
 import { useLocation } from 'react-router-dom'
@@ -102,7 +102,9 @@ const Studio = () => {
             <TabList onChange={handleTabChange} centered>
               <Tab className={classes.root} label="Code" value="1" />
               <Tab className={classes.root} label="Log" value="2" />
-              <Tab className={classes.root} label="Webout" value="3" />
+              <Tooltip title="Displays content from the _webout fileref">
+                <Tab className={classes.root} label="Webout" value="3" />
+              </Tooltip>
             </TabList>
           </Box>
           <TabPanel value="1">
