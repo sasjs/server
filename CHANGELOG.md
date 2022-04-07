@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.50](https://github.com/sasjs/server/compare/v0.0.49...v0.0.50) (2022-04-07)
+
+
+### Features
+
+* **appstream:** Upload an app from appStream page ([74ba65f](https://github.com/sasjs/server/commit/74ba65f9f330bf8c98c12a9c66bb60773d5a7b77))
+
+
+### Bug Fixes
+
+* session death time has to be a valid string number ([23db7e7](https://github.com/sasjs/server/commit/23db7e7b7df2f22bbf7ce16865f83091624d8047))
+* web component added tooltip for webout in studio ([61080d4](https://github.com/sasjs/server/commit/61080d4694859306049346d2e3174f27bb6dac16))
+* web component UI fix for studio scrolling ([f257602](https://github.com/sasjs/server/commit/f25760283492140cc1f14e51ed27673ec28baaf3))
+
 ### [0.0.49](https://github.com/sasjs/server/compare/v0.0.48...v0.0.49) (2022-04-02)
 
 
