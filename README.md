@@ -84,6 +84,15 @@ ACCESS_TOKEN_SECRET=<secret>
 REFRESH_TOKEN_SECRET=<secret>
 AUTH_CODE_SECRET=<secret>
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
+
+# SAS Options
+# On windows use SAS_OPTIONS and on unix use SASV9_OPTIONS
+# Any options set here are automatically applied in the SAS session
+# See: https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/hostunx/p0wrdmqp8k0oyyn1xbx3bp3qy2wl.htm
+# And: https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/hostwin/p0drw76qo0gig2n1kcoliekh605k.htm#p09y7hx0grw1gin1giuvrjyx61m6
+SAS_OPTIONS= -NOXCMD
+SASV9_OPTIONS= -NOXCMD
+
 ```
 
 ## Persisting the Session
