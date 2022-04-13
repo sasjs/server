@@ -22,8 +22,10 @@ const Studio = () => {
   const location = useLocation()
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
+  const [ctrlPressed, setCtrlPressed] = useState(false)
   const [webout, setWebout] = useState('')
   const [tab, setTab] = React.useState('1')
+
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
   }
@@ -61,6 +63,17 @@ const Studio = () => {
       .catch((err) => console.log(err))
   }
 
+  const handleKeyDown = (event: any) => {
+    if (event.ctrlKey) {
+      if (event.key === 'Enter') runCode(getSelection() || fileContent)
+      if (!ctrlPressed) setCtrlPressed(true)
+    }
+  }
+
+  const handleKeyUp = (event: any) => {
+    if (!event.ctrlKey && ctrlPressed) setCtrlPressed(false)
+  }
+
   useEffect(() => {
     const content = localStorage.getItem('fileContent') ?? ''
     setFileContent(content)
@@ -86,7 +99,7 @@ const Studio = () => {
   const classes = useStyles()
 
   return (
-    <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
+    <Box onKeyUp={handleKeyUp} onKeyDown={handleKeyDown} sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <TabContext value={tab}>
         <Box
           sx={{
@@ -119,6 +132,7 @@ const Studio = () => {
               height="95%"
               value={fileContent}
               onMount={handleEditorDidMount}
+              options={{readOnly: ctrlPressed}}
               onChange={(val) => {
                 if (val) setFileContent(val)
               }}
@@ -133,6 +147,7 @@ const Studio = () => {
               Run SAS Code
             </Button>
           </Stack>
+          <p style={{ textAlign: 'center', fontSize: '13px' }}>Or press CTRL + ENTER</p>
         </TabPanel>
         <TabPanel value="2">
           <div style={{ marginTop: '50px' }}>
