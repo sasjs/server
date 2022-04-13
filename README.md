@@ -52,6 +52,7 @@ Example contents of a `.env` file:
 MODE=
 
 # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
+# If enabled, be sure to also configure the WHITELIST of third party servers.
 CORS=
 
 # options: <http://localhost:3000 https://abc.com ...> space separated urls
