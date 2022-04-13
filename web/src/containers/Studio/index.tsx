@@ -141,13 +141,15 @@ const Studio = () => {
           <Stack
             spacing={3}
             direction="row"
+            style={{ position: 'relative' }}
             sx={{ justifyContent: 'center', marginTop: '20px' }}
           >
             <Button variant="contained" onClick={handleRunBtnClick}>
               Run SAS Code
             </Button>
+
+            <p style={{ position: 'absolute', marginRight: '-300px', top: '9px', textAlign: 'center', fontSize: '13px' }}>Or press CTRL + ENTER</p>
           </Stack>
-          <p style={{ textAlign: 'center', fontSize: '13px' }}>Or press CTRL + ENTER</p>
         </TabPanel>
         <TabPanel value="2">
           <div style={{ marginTop: '50px' }}>
