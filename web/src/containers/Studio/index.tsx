@@ -15,6 +15,9 @@ const useStyles = makeStyles(() => ({
     '&.Mui-selected': {
       color: 'black'
     }
+  },
+  subMenu: {
+    marginTop: '25px'
   }
 }))
 
@@ -65,6 +68,10 @@ const Studio = () => {
 
   const handleKeyDown = (event: any) => {
     if (event.ctrlKey) {
+      if (event.key === 'v') {
+        setCtrlPressed(false)
+      }
+
       if (event.key === 'Enter') runCode(getSelection() || fileContent)
       if (!ctrlPressed) setCtrlPressed(true)
     }
@@ -116,12 +123,19 @@ const Studio = () => {
             </Tooltip>
           </TabList>
         </Box>
+
         <TabPanel value="1">
+          <div className={classes.subMenu}>
+            <Tooltip title="CTRL+ENTER will also run SAS code">
+              <Button onClick={handleRunBtnClick} style={{  padding: 0, width: '35px', minWidth: 'unset' }}>
+                <img draggable="false" style={{ width: '100%' }} src="/running-sas.png"></img>
+              </Button>
+            </Tooltip>
+          </div>
           {/* <Toolbar /> */}
           <Paper
             sx={{
-              height: '70vh',
-              marginTop: '50px',
+              height: 'calc(100vh - 180px)',
               padding: '10px',
               overflow: 'auto',
               position: 'relative'
@@ -129,7 +143,7 @@ const Studio = () => {
             elevation={3}
           >
             <Editor
-              height="95%"
+              height="98%"
               value={fileContent}
               onMount={handleEditorDidMount}
               options={{readOnly: ctrlPressed}}
@@ -137,19 +151,8 @@ const Studio = () => {
                 if (val) setFileContent(val)
               }}
             />
+            <p style={{ position: 'absolute', left: 0, right: 0, bottom: -10, textAlign: 'center', fontSize: '13px' }}>Press CTRL + ENTER to run SAS code</p>
           </Paper>
-          <Stack
-            spacing={3}
-            direction="row"
-            style={{ position: 'relative' }}
-            sx={{ justifyContent: 'center', marginTop: '20px' }}
-          >
-            <Button variant="contained" onClick={handleRunBtnClick}>
-              Run SAS Code
-            </Button>
-
-            <p style={{ position: 'absolute', marginRight: '-300px', top: '9px', textAlign: 'center', fontSize: '13px' }}>Or press CTRL + ENTER</p>
-          </Stack>
         </TabPanel>
         <TabPanel value="2">
           <div style={{ marginTop: '50px' }}>

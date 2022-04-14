@@ -28,10 +28,10 @@ const Header = (props: any) => {
     >
       <Toolbar variant="dense">
         <img
-          src="logo-white.png"
+          src="logo.png"
           alt="logo"
           style={{
-            width: '50px',
+            width: '35px',
             cursor: 'pointer',
             marginRight: '25px'
           }}
