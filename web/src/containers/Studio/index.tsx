@@ -106,7 +106,11 @@ const Studio = () => {
   const classes = useStyles()
 
   return (
-    <Box onKeyUp={handleKeyUp} onKeyDown={handleKeyDown} sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
+    <Box
+      onKeyUp={handleKeyUp}
+      onKeyDown={handleKeyDown}
+      sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}
+    >
       <TabContext value={tab}>
         <Box
           sx={{
@@ -127,8 +131,15 @@ const Studio = () => {
         <TabPanel value="1">
           <div className={classes.subMenu}>
             <Tooltip title="CTRL+ENTER will also run SAS code">
-              <Button onClick={handleRunBtnClick} style={{  padding: 0, width: '35px', minWidth: 'unset' }}>
-                <img draggable="false" style={{ width: '100%' }} src="/running-sas.png"></img>
+              <Button
+                onClick={handleRunBtnClick}
+                style={{ padding: 0, width: '35px', minWidth: 'unset' }}
+              >
+                <img
+                  draggable="false"
+                  style={{ width: '100%' }}
+                  src="/running-sas.png"
+                ></img>
               </Button>
             </Tooltip>
           </div>
@@ -146,12 +157,23 @@ const Studio = () => {
               height="98%"
               value={fileContent}
               onMount={handleEditorDidMount}
-              options={{readOnly: ctrlPressed}}
+              options={{ readOnly: ctrlPressed }}
               onChange={(val) => {
                 if (val) setFileContent(val)
               }}
             />
-            <p style={{ position: 'absolute', left: 0, right: 0, bottom: -10, textAlign: 'center', fontSize: '13px' }}>Press CTRL + ENTER to run SAS code</p>
+            <p
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: -10,
+                textAlign: 'center',
+                fontSize: '13px'
+              }}
+            >
+              Press CTRL + ENTER to run SAS code
+            </p>
           </Paper>
         </TabPanel>
         <TabPanel value="2">
