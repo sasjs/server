@@ -140,10 +140,7 @@ const Studio = () => {
         <TabPanel value="1">
           <div className={classes.subMenu}>
             <Tooltip title="CTRL+ENTER will also run SAS code">
-              <Button
-                onClick={handleRunBtnClick}
-                className={classes.runButton}
-              >
+              <Button onClick={handleRunBtnClick} className={classes.runButton}>
                 <img
                   draggable="false"
                   style={{ width: '35px' }}
