@@ -15,6 +15,17 @@ const useStyles = makeStyles(() => ({
     '&.Mui-selected': {
       color: 'black'
     }
+  },
+  subMenu: {
+    marginTop: '25px',
+    display: 'flex',
+    justifyContent: 'center'
+  },
+  runButton: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '5px 5px',
+    minWidth: 'unset'
   }
 }))
 
@@ -22,8 +33,10 @@ const Studio = () => {
   const location = useLocation()
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
+  const [ctrlPressed, setCtrlPressed] = useState(false)
   const [webout, setWebout] = useState('')
   const [tab, setTab] = React.useState('1')
+
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
   }
@@ -61,6 +74,21 @@ const Studio = () => {
       .catch((err) => console.log(err))
   }
 
+  const handleKeyDown = (event: any) => {
+    if (event.ctrlKey) {
+      if (event.key === 'v') {
+        setCtrlPressed(false)
+      }
+
+      if (event.key === 'Enter') runCode(getSelection() || fileContent)
+      if (!ctrlPressed) setCtrlPressed(true)
+    }
+  }
+
+  const handleKeyUp = (event: any) => {
+    if (!event.ctrlKey && ctrlPressed) setCtrlPressed(false)
+  }
+
   useEffect(() => {
     const content = localStorage.getItem('fileContent') ?? ''
     setFileContent(content)
@@ -86,7 +114,11 @@ const Studio = () => {
   const classes = useStyles()
 
   return (
-    <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
+    <Box
+      onKeyUp={handleKeyUp}
+      onKeyDown={handleKeyDown}
+      sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}
+    >
       <TabContext value={tab}>
         <Box
           sx={{
@@ -103,12 +135,24 @@ const Studio = () => {
             </Tooltip>
           </TabList>
         </Box>
-        <TabPanel value="1">
+
+        <TabPanel style={{ paddingBottom: 0 }} value="1">
+          <div className={classes.subMenu}>
+            <Tooltip title="CTRL+ENTER will also run SAS code">
+              <Button onClick={handleRunBtnClick} className={classes.runButton}>
+                <img
+                  draggable="false"
+                  style={{ width: '25px' }}
+                  src="/running-sas.png"
+                ></img>
+                <span style={{ fontSize: '12px' }}>RUN</span>
+              </Button>
+            </Tooltip>
+          </div>
           {/* <Toolbar /> */}
           <Paper
             sx={{
-              height: '70vh',
-              marginTop: '50px',
+              height: 'calc(100vh - 170px)',
               padding: '10px',
               overflow: 'auto',
               position: 'relative'
@@ -116,23 +160,27 @@ const Studio = () => {
             elevation={3}
           >
             <Editor
-              height="95%"
+              height="98%"
               value={fileContent}
               onMount={handleEditorDidMount}
+              options={{ readOnly: ctrlPressed }}
               onChange={(val) => {
                 if (val) setFileContent(val)
               }}
             />
+            <p
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: -10,
+                textAlign: 'center',
+                fontSize: '13px'
+              }}
+            >
+              Press CTRL + ENTER to run SAS code
+            </p>
           </Paper>
-          <Stack
-            spacing={3}
-            direction="row"
-            sx={{ justifyContent: 'center', marginTop: '20px' }}
-          >
-            <Button variant="contained" onClick={handleRunBtnClick}>
-              Run SAS Code
-            </Button>
-          </Stack>
         </TabPanel>
         <TabPanel value="2">
           <div style={{ marginTop: '50px' }}>
