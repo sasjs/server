@@ -136,13 +136,13 @@ const Studio = () => {
           </TabList>
         </Box>
 
-        <TabPanel value="1">
+        <TabPanel style={{ paddingBottom: 0 }} value="1">
           <div className={classes.subMenu}>
             <Tooltip title="CTRL+ENTER will also run SAS code">
               <Button onClick={handleRunBtnClick} className={classes.runButton}>
                 <img
                   draggable="false"
-                  style={{ width: '35px' }}
+                  style={{ width: '25px' }}
                   src="/running-sas.png"
                 ></img>
                 <span style={{ fontSize: '12px' }}>RUN</span>
@@ -152,7 +152,7 @@ const Studio = () => {
           {/* <Toolbar /> */}
           <Paper
             sx={{
-              height: 'calc(100vh - 210px)',
+              height: 'calc(100vh - 170px)',
               padding: '10px',
               overflow: 'auto',
               position: 'relative'
