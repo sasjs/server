@@ -17,7 +17,16 @@ const useStyles = makeStyles(() => ({
     }
   },
   subMenu: {
-    marginTop: '25px'
+    marginTop: '25px',
+    display: 'flex',
+    justifyContent: 'center'
+  },
+  runButton: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '5px 5px',
+    minWidth: 'unset'
   }
 }))
 
@@ -133,20 +142,21 @@ const Studio = () => {
             <Tooltip title="CTRL+ENTER will also run SAS code">
               <Button
                 onClick={handleRunBtnClick}
-                style={{ padding: 0, width: '35px', minWidth: 'unset' }}
+                className={classes.runButton}
               >
                 <img
                   draggable="false"
-                  style={{ width: '100%' }}
+                  style={{ width: '35px' }}
                   src="/running-sas.png"
                 ></img>
+                <span style={{ fontSize: '12px' }}>RUN</span>
               </Button>
             </Tooltip>
           </div>
           {/* <Toolbar /> */}
           <Paper
             sx={{
-              height: 'calc(100vh - 180px)',
+              height: 'calc(100vh - 210px)',
               padding: '10px',
               overflow: 'auto',
               position: 'relative'
