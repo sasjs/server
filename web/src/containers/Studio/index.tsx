@@ -23,7 +23,6 @@ const useStyles = makeStyles(() => ({
   },
   runButton: {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
     padding: '5px 5px',
     minWidth: 'unset'
