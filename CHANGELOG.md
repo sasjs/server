@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.51](https://github.com/sasjs/server/compare/v0.0.50...v0.0.51) (2022-04-15)
+
+
+### Features
+
+* run button running man, sub menu added ([68e84b0](https://github.com/sasjs/server/commit/68e84b0994a3fa6ff56b07635c637c6e3a57bfda))
+* running code with CTRL+ENTER ([b93a0da](https://github.com/sasjs/server/commit/b93a0da3a380926c87548b69309b2d0c1b7e617f))
+
 ### [0.0.50](https://github.com/sasjs/server/compare/v0.0.49...v0.0.50) (2022-04-07)
 
 
