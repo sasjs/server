@@ -9,6 +9,7 @@ import {
   verifyAdmin
 } from '../../middlewares'
 
+import infoRouter from './info'
 import driveRouter from './drive'
 import stpRouter from './stp'
 import codeRouter from './code'
@@ -20,6 +21,7 @@ import sessionRouter from './session'
 
 const router = express.Router()
 
+router.use('/info', infoRouter)
 router.use('/session', desktopUsername, authenticateAccessToken, sessionRouter)
 router.use('/auth', desktopRestrict, authRouter)
 router.use(

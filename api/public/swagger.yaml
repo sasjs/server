@@ -418,6 +418,25 @@ components:
                     example: /Public/somefolder/some.file
             type: object
             additionalProperties: false
+        InfoResponse:
+            properties:
+                mode:
+                    type: string
+                cors:
+                    type: string
+                whiteList:
+                    items:
+                        type: string
+                    type: array
+                protocol:
+                    type: string
+            required:
+                - mode
+                - cors
+                - whiteList
+                - protocol
+            type: object
+            additionalProperties: false
     securitySchemes:
         bearerAuth:
             type: http
@@ -1240,10 +1259,33 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
+    /SASjsApi/info:
+        get:
+            operationId: Info
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InfoResponse'
+                            examples:
+                                'Example 1':
+                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http}
+                                'Example 2':
+                                    value: {mode: server, cors: disable, whiteList: [], protocol: https}
+            summary: 'Get server info (mode, cors, whiteList, protocol).'
+            tags:
+                - Info
+            security: []
+            parameters: []
 servers:
     -
         url: /
 tags:
+    -
+        name: Info
+        description: 'Get Server Info'
     -
         name: Session
         description: 'Get Session information'

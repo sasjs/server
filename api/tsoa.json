@@ -12,6 +12,10 @@
     },
     "tags": [
       {
+        "name": "Info",
+        "description": "Get Server Info"
+      },
+      {
         "name": "Session",
         "description": "Get Session information"
       },
