@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.52](https://github.com/sasjs/server/compare/v0.0.51...v0.0.52) (2022-04-17)
+
+
+### Features
+
+* add api for getting server info ([9fb5f1f](https://github.com/sasjs/server/commit/9fb5f1f8e7d4e2d767cc1ff7285c99514834cf32))
+
 ### [0.0.51](https://github.com/sasjs/server/compare/v0.0.50...v0.0.51) (2022-04-15)
 
 
