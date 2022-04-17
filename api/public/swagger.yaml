@@ -1272,8 +1272,6 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http}
-                                'Example 2':
-                                    value: {mode: server, cors: disable, whiteList: [], protocol: https}
             summary: 'Get server info (mode, cors, whiteList, protocol).'
             tags:
                 - Info
