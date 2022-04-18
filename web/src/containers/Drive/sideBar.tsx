@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 
 import { makeStyles } from '@mui/styles'
 
@@ -30,12 +30,26 @@ const useStyles = makeStyles(() => ({
 const drawerWidth = 240
 
 type Props = {
+  selectedFilePath: string
   directoryData: TreeNode | null
   handleSelect: (node: TreeNode) => void
 }
 
-const SideBar = ({ directoryData, handleSelect }: Props) => {
+const SideBar = ({ selectedFilePath, directoryData, handleSelect }: Props) => {
   const classes = useStyles()
+
+  const defaultExpanded = useMemo(() => {
+    const splittedPath = selectedFilePath.split('/')
+    const arr = ['']
+    let nodeId = ''
+    splittedPath.forEach((path) => {
+      if (path !== '') {
+        nodeId += '/' + path
+        arr.push(nodeId)
+      }
+    })
+    return arr
+  }, [selectedFilePath])
 
   const renderTree = (nodes: TreeNode) => (
     <TreeItem
@@ -72,7 +86,8 @@ const SideBar = ({ directoryData, handleSelect }: Props) => {
           <TreeView
             defaultCollapseIcon={<ExpandMoreIcon />}
             defaultExpandIcon={<ChevronRightIcon />}
-            defaultExpanded={[directoryData.relativePath]}
+            defaultExpanded={defaultExpanded}
+            selected={defaultExpanded.slice(-1)}
           >
             {renderTree(directoryData)}
           </TreeView>

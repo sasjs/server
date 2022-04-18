@@ -90,7 +90,11 @@ const Drive = () => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <SideBar directoryData={directoryData} handleSelect={handleSelect} />
+      <SideBar
+        selectedFilePath={selectedFilePath}
+        directoryData={directoryData}
+        handleSelect={handleSelect}
+      />
       <Main
         selectedFilePath={selectedFilePath}
         removeFileFromTree={removeFileFromTree}
