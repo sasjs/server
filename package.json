@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "0.0.53",
+  "version": "0.0.54",
   "description": "NodeJS wrapper for calling the SAS binary executable",
   "repository": "https://github.com/sasjs/server",
   "scripts": {

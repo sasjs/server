@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.54](https://github.com/sasjs/server/compare/v0.0.53...v0.0.54) (2022-04-19)
+
+
+### Bug Fixes
+
+* added db seed at server startup ([2e63831](https://github.com/sasjs/server/commit/2e63831b90c7457e0e322719ebb1193fd6181cc3))
+
 ### [0.0.53](https://github.com/sasjs/server/compare/v0.0.49...v0.0.53) (2022-04-19)
 
 
