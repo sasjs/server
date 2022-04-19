@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.53](https://github.com/sasjs/server/compare/v0.0.49...v0.0.53) (2022-04-19)
+
+
+### Features
+
+* add api for getting server info ([9fb5f1f](https://github.com/sasjs/server/commit/9fb5f1f8e7d4e2d767cc1ff7285c99514834cf32))
+* **appstream:** Upload an app from appStream page ([74ba65f](https://github.com/sasjs/server/commit/74ba65f9f330bf8c98c12a9c66bb60773d5a7b77))
+* run button running man, sub menu added ([68e84b0](https://github.com/sasjs/server/commit/68e84b0994a3fa6ff56b07635c637c6e3a57bfda))
+* running code with CTRL+ENTER ([b93a0da](https://github.com/sasjs/server/commit/b93a0da3a380926c87548b69309b2d0c1b7e617f))
+
+
+### Bug Fixes
+
+* provide clientId to web component ([db70b1c](https://github.com/sasjs/server/commit/db70b1ce555df6b29fb09c0c960d38b911c97b1b))
+* session death time has to be a valid string number ([23db7e7](https://github.com/sasjs/server/commit/23db7e7b7df2f22bbf7ce16865f83091624d8047))
+* web component added tooltip for webout in studio ([61080d4](https://github.com/sasjs/server/commit/61080d4694859306049346d2e3174f27bb6dac16))
+* web component UI fix for studio scrolling ([f257602](https://github.com/sasjs/server/commit/f25760283492140cc1f14e51ed27673ec28baaf3))
+
 ### [0.0.52](https://github.com/sasjs/server/compare/v0.0.51...v0.0.52) (2022-04-17)
 
 
