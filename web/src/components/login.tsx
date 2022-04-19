@@ -45,13 +45,12 @@ const Login = ({ setTokens, getCodeOnly }: any) => {
     error = false
     setErrorMessage('')
     e.preventDefault()
-    let clientId = process.env.CLIENT_ID
+    let clientId = process.env.CLIENT_ID ?? localStorage.getItem('CLIENT_ID')
 
     if (getCodeOnly) {
       const params = new URLSearchParams(location.search)
       const responseType = params.get('response_type')
-      if (responseType === 'code')
-        clientId = params.get('client_id') ?? undefined
+      if (responseType === 'code') clientId = params.get('client_id')
     }
 
     const { code } = await getAuthCode({

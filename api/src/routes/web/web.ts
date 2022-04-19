@@ -5,10 +5,15 @@ import { getWebBuildFolderPath } from '../../utils'
 
 const webRouter = express.Router()
 
-const codeToInject = `
+const jsCodeForDesktopMode = `
 <script>
   localStorage.setItem('accessToken', JSON.stringify('accessToken'))
   localStorage.setItem('refreshToken', JSON.stringify('refreshToken'))
+</script>`
+
+const jsCodeForServerMode = `
+<script>
+  localStorage.setItem('CLIENT_ID', '${process.env.CLIENT_ID}')
 </script>`
 
 webRouter.get('/', async (_, res) => {
@@ -21,14 +26,12 @@ webRouter.get('/', async (_, res) => {
   }
 
   const { MODE } = process.env
-  if (MODE?.trim() !== 'server') {
-    const injectedContent = content.replace('</head>', `${codeToInject}</head>`)
+  const codeToInject =
+    MODE?.trim() === 'server' ? jsCodeForServerMode : jsCodeForDesktopMode
+  const injectedContent = content.replace('</head>', `${codeToInject}</head>`)
 
-    res.setHeader('Content-Type', 'text/html')
-    return res.send(injectedContent)
-  }
-
-  return res.send(content)
+  res.setHeader('Content-Type', 'text/html')
+  return res.send(injectedContent)
 })
 
 export default webRouter
