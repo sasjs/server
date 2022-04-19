@@ -59,12 +59,12 @@ It will build following images if running first time:
 
 ### Using node:
 
-#### Development (running api and web seperately):
+#### Development (running api and web separately):
 
 ##### API
 
 Navigate to `./api`
-There is `.env.example` file present at `./api` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
+There is `.env.example` file present at `./api` directory. Remember to provide environment variables else default values will be used mentioned in `.env.example` files
 Command to install and run api server.
 
 ```
