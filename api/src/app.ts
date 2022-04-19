@@ -59,6 +59,6 @@ export default setProcessVariables().then(async () => {
 
   app.use(onError)
 
-  connectDB()
+  await connectDB()
   return app
 })
