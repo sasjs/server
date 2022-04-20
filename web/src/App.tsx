@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Route, HashRouter, Switch } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { theme } from './theme'
@@ -9,12 +9,12 @@ import Home from './components/home'
 import Drive from './containers/Drive'
 import Studio from './containers/Studio'
 
-import useTokens from './components/useTokens'
+import { AppContext } from './context/appContext'
 
 function App() {
-  const { tokens, setTokens } = useTokens()
+  const appContext = useContext(AppContext)
 
-  if (!tokens) {
+  if (!appContext.tokens) {
     return (
       <ThemeProvider theme={theme}>
         <HashRouter>
@@ -24,7 +24,7 @@ function App() {
               <Login getCodeOnly />
             </Route>
             <Route path="/">
-              <Login setTokens={setTokens} />
+              <Login />
             </Route>
           </Switch>
         </HashRouter>

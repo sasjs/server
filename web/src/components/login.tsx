@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { useLocation } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
 import { CssBaseline, Box, TextField, Button, Typography } from '@mui/material'
+import { AppContext } from '../context/appContext'
 
 const headers = {
   Accept: 'application/json',
@@ -33,8 +34,9 @@ const getTokens = async (payload: any) => {
   }).then((data) => data.json())
 }
 
-const Login = ({ setTokens, getCodeOnly }: any) => {
+const Login = ({ getCodeOnly }: any) => {
   const location = useLocation()
+  const appContext = useContext(AppContext)
   const [username, setUserName] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -71,7 +73,8 @@ const Login = ({ setTokens, getCodeOnly }: any) => {
         code
       })
 
-      setTokens(accessToken, refreshToken)
+      if (appContext.setTokens) appContext.setTokens(accessToken, refreshToken)
+      if (appContext.setUserName) appContext.setUserName(username)
     }
   }
 
@@ -126,7 +129,7 @@ const Login = ({ setTokens, getCodeOnly }: any) => {
         required
       />
       {errorMessage && <span>{errorMessage}</span>}
-      <Button type="submit" variant="outlined">
+      <Button type="submit" variant="outlined" disabled={!appContext.setTokens}>
         Submit
       </Button>
     </Box>
@@ -134,7 +137,6 @@ const Login = ({ setTokens, getCodeOnly }: any) => {
 }
 
 Login.propTypes = {
-  setTokens: PropTypes.func,
   getCodeOnly: PropTypes.bool
 }
 

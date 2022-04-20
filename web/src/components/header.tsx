@@ -1,12 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { Link, useHistory, useLocation } from 'react-router-dom'
 
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
-import Button from '@mui/material/Button'
+import {
+  AppBar,
+  Toolbar,
+  Tabs,
+  Tab,
+  Button,
+  Menu,
+  MenuItem
+} from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+
+import UserName from './userName'
+import { AppContext } from '../context/appContext'
 
 const NODE_ENV = process.env.NODE_ENV
 const PORT_API = process.env.PORT_API
@@ -16,10 +23,28 @@ const baseUrl =
 const Header = (props: any) => {
   const history = useHistory()
   const { pathname } = useLocation()
+  const appContext = useContext(AppContext)
   const [tabValue, setTabValue] = useState(pathname)
+  const [anchorEl, setAnchorEl] = useState<
+    (EventTarget & HTMLButtonElement) | null
+  >(null)
+
+  const handleMenu = (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    setAnchorEl(event.currentTarget)
+  }
+
+  const handleClose = () => {
+    setAnchorEl(null)
+  }
 
   const handleTabChange = (event: React.SyntheticEvent, value: string) => {
     setTabValue(value)
+  }
+
+  const handleLogout = () => {
+    if (appContext.logout) appContext.logout()
   }
   return (
     <AppBar
@@ -81,6 +106,39 @@ const Header = (props: any) => {
         >
           App Stream
         </Button>
+        <div
+          style={{
+            display: 'flex',
+            flexGrow: 1,
+            justifyContent: 'flex-end'
+          }}
+        >
+          <UserName
+            userName={appContext.userName}
+            onClickHandler={handleMenu}
+          />
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'center'
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'center'
+            }}
+            open={!!anchorEl}
+            onClose={handleClose}
+          >
+            <MenuItem onClick={handleLogout} sx={{ justifyContent: 'center' }}>
+              <Button variant="contained" color="primary">
+                Logout
+              </Button>
+            </MenuItem>
+          </Menu>
+        </div>
       </Toolbar>
     </AppBar>
   )
