@@ -1,5 +1,5 @@
 import path from 'path'
-import { getRealPath } from '@sasjs/utils'
+import { getAbsolutePath, getRealPath } from '@sasjs/utils'
 
 import { configuration } from '../../package.json'
 import { getDesktopFields } from '.'
@@ -12,18 +12,17 @@ export const setProcessVariables = async () => {
 
   const { MODE } = process.env
 
-  if (MODE?.trim() !== 'server') {
+  if (MODE?.trim() === 'server') {
+    const { SAS_PATH, DRIVE_PATH } = process.env
+
+    process.sasLoc = SAS_PATH ?? configuration.sasPath
+    const absPath = getAbsolutePath(DRIVE_PATH ?? 'tmp', process.cwd())
+    process.driveLoc = getRealPath(absPath)
+  } else {
     const { sasLoc, driveLoc } = await getDesktopFields()
 
     process.sasLoc = sasLoc
     process.driveLoc = driveLoc
-  } else {
-    const { SAS_PATH, DRIVE_PATH } = process.env
-
-    process.sasLoc = SAS_PATH ?? configuration.sasPath
-    process.driveLoc = getRealPath(
-      path.join(process.cwd(), DRIVE_PATH ?? 'tmp')
-    )
   }
 
   console.log('sasLoc: ', process.sasLoc)

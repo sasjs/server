@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import { populateClients } from '../routes/api/auth'
 import { seedDB } from './seedDB'
 
-export const connectDB = () => {
+export const connectDB = async () => {
   // NOTE: when exporting app.js as agent for supertest
   // we should exclude connecting to the real database
   if (process.env.NODE_ENV === 'test') {
