@@ -1,5 +1,4 @@
-import express from 'express'
-import { Request, Security, Route, Tags, Example, Get } from 'tsoa'
+import { Route, Tags, Example, Get } from 'tsoa'
 
 export interface InfoResponse {
   mode: string
@@ -29,7 +28,8 @@ export class InfoController {
         process.env.CORS ?? process.env.MODE === 'server'
           ? 'disable'
           : 'enable',
-      whiteList: process.env.WHITELIST?.split(' ') ?? [],
+      whiteList:
+        process.env.WHITELIST?.split(' ')?.filter((url) => !!url) ?? [],
       protocol: process.env.PROTOCOL ?? 'http'
     }
     return response

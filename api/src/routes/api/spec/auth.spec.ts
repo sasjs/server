@@ -18,11 +18,6 @@ import {
   verifyTokenInDB
 } from '../../../utils'
 
-let app: Express
-appPromise.then((_app) => {
-  app = _app
-})
-
 const clientId = 'someclientID'
 const clientSecret = 'someclientSecret'
 const user = {
@@ -35,12 +30,15 @@ const user = {
 }
 
 describe('auth', () => {
+  let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   const userController = new UserController()
   const clientController = new ClientController()
 
   beforeAll(async () => {
+    app = await appPromise
+
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
     await clientController.createClient({ clientId, clientSecret })

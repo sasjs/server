@@ -33,11 +33,6 @@ import { getTreeExample } from '../../../controllers/internal'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
 const { getTmpFilesFolderPath } = fileUtilModules
 
-let app: Express
-appPromise.then((_app) => {
-  app = _app
-})
-
 const clientId = 'someclientID'
 const user = {
   displayName: 'Test User',
@@ -48,6 +43,7 @@ const user = {
 }
 
 describe('drive', () => {
+  let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   const controller = new UserController()
@@ -55,6 +51,8 @@ describe('drive', () => {
   let accessToken: string
 
   beforeAll(async () => {
+    app = await appPromise
+
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
 

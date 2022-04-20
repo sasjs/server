@@ -6,11 +6,6 @@ import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
 
-let app: Express
-appPromise.then((_app) => {
-  app = _app
-})
-
 const clientId = 'someclientID'
 const adminUser = {
   displayName: 'Test Admin',
@@ -30,10 +25,13 @@ const user = {
 const controller = new UserController()
 
 describe('user', () => {
+  let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
 
   beforeAll(async () => {
+    app = await appPromise
+
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
   })
