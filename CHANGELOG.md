@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.56](https://github.com/sasjs/server/compare/v0.0.55...v0.0.56) (2022-04-20)
+
+
+### Bug Fixes
+
+* shortening min length of username.  Closes [#61](https://github.com/sasjs/server/issues/61) ([f02996f](https://github.com/sasjs/server/commit/f02996facf1019ec4022ccfbc99c1d0137074e1b))
+
 ### [0.0.55](https://github.com/sasjs/server/compare/v0.0.53...v0.0.55) (2022-04-20)
 
 
