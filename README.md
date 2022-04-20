@@ -98,7 +98,20 @@ SASV9_OPTIONS= -NOXCMD
 
 ## Persisting the Session
 
-Normally the server process will stop when your terminal dies. To keep it going you can use the npm package [pm2](https://www.npmjs.com/package/pm2) (`npm install pm2@latest -g`) as follows:
+Normally the server process will stop when your terminal dies. To keep it going you can use the following suggested approaches:
+
+1. Linux Background Job
+2. NPM package `pm2
+
+### Background Job
+
+Trigger the command using NOHUP, redirecting the output commands, eg `nohup ./api-linux > server.log &`.
+
+You can now see the job running using the `jobs` command.  To ensure that it will still run when your terminal is closed, execute the `disown` command.  To kill it later, use the `kill -9 <pid>` command.  You can see your sessions using `top -u <userid>`.  Type `c` to see the commands being run against each pid.
+
+### PM2
+
+Install the npm package [pm2](https://www.npmjs.com/package/pm2) (`npm install pm2@latest -g`) and execute, eg as follows:
 
 ```bash
 export SAS_PATH=/opt/sas9/SASHome/SASFoundation/9.4/sasexe/sas
