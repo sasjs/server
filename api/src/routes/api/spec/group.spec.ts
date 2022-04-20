@@ -6,11 +6,6 @@ import appPromise from '../../../app'
 import { UserController, GroupController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
 
-let app: Express
-appPromise.then((_app) => {
-  app = _app
-})
-
 const clientId = 'someclientID'
 const adminUser = {
   displayName: 'Test Admin',
@@ -36,11 +31,14 @@ const userController = new UserController()
 const groupController = new GroupController()
 
 describe('group', () => {
+  let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let adminAccessToken: string
 
   beforeAll(async () => {
+    app = await appPromise
+
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
 
