@@ -101,11 +101,11 @@ SASV9_OPTIONS= -NOXCMD
 Normally the server process will stop when your terminal dies. To keep it going you can use the following suggested approaches:
 
 1. Linux Background Job
-2. NPM package `pm2
+2. NPM package `pm2`
 
 ### Background Job
 
-Trigger the command using NOHUP, redirecting the output commands, eg `nohup ./api-linux > server.log &`.
+Trigger the command using NOHUP, redirecting the output commands, eg `nohup ./api-linux > server.log 2>&1 &`.
 
 You can now see the job running using the `jobs` command.  To ensure that it will still run when your terminal is closed, execute the `disown` command.  To kill it later, use the `kill -9 <pid>` command.  You can see your sessions using `top -u <userid>`.  Type `c` to see the commands being run against each pid.
 
@@ -145,7 +145,7 @@ Instead of `app_name` you can pass:
 
 ## Server Version
 
-The following credentials can be used for the initial connection to SASjs/server. It is recommended to change these on first use.
+The following credentials can be used for the initial connection to SASjs/server. It is highly recommended to change these on first use.
 
 - CLIENTID: `clientID1`
 - USERNAME: `secretuser`
