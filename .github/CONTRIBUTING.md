@@ -14,7 +14,6 @@ The `.env` file should be created in the location(s) below.  Each folder contain
 * `api/.env` - this is the primary file used in NodeJS deploys
 * `web/.env` - this file is only necessary in NodeJS when running `web` and `api` seperately (on different ports).
 
-The actual `.env` values to use are described 
 
 ## Using Docker
 
