@@ -5,23 +5,12 @@
   _before_ any user-provided content.
 
   A number of useful CORE macros are also compiled below, so that they can be
-  available "out of the box".
+  available by default for Stored Programs.
+
+  Note that the full CORE library is available to sessions in SASjs Studio.
 
   <h4> SAS Macros </h4>
-  @li mcf_stpsrv_header.sas
-  @li mf_getuser.sas
-  @li mf_getvarlist.sas
-  @li mf_mkdir.sas
-  @li mf_nobs.sas
-  @li mf_uid.sas
   @li mfs_httpheader.sas
-  @li mp_dirlist.sas
-  @li mp_ds2ddl.sas
-  @li mp_ds2md.sas
-  @li mp_getdbml.sas
-  @li mp_init.sas
-  @li mp_makedata.sas
-  @li mp_zip.sas
-
+  @li ms_webout.sas
 **/
 
