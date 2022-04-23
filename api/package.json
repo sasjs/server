@@ -8,6 +8,7 @@
     "prestart": "npm run initial",
     "prebuild": "npm run initial",
     "start": "nodemon ./src/server.ts",
+    "start:prod": "node ./build/src/server.js",
     "build": "rimraf build && tsc",
     "postbuild": "npm run copy:files",
     "swagger": "tsoa spec",
