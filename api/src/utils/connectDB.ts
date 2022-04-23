@@ -1,5 +1,4 @@
 import mongoose from 'mongoose'
-import { populateClients } from '../routes/api/auth'
 import { seedDB } from './seedDB'
 
 export const connectDB = async () => {
@@ -22,7 +21,5 @@ export const connectDB = async () => {
     console.log('Connected to db!')
 
     await seedDB()
-
-    await populateClients()
   })
 }

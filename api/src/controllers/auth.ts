@@ -1,6 +1,7 @@
 import { Security, Route, Tags, Example, Post, Body, Query, Hidden } from 'tsoa'
 import jwt from 'jsonwebtoken'
 import User from '../model/User'
+import Client from '../model/Client'
 import { InfoJWT } from '../types'
 import {
   generateAccessToken,
@@ -80,6 +81,9 @@ export class AuthController {
 
 const authorize = async (data: any): Promise<AuthorizeResponse> => {
   const { username, password, clientId } = data
+
+  const client = await Client.findOne({ clientId })
+  if (!client) throw new Error('Invalid clientId.')
 
   // Authenticate User
   const user = await User.findOne({ username })
