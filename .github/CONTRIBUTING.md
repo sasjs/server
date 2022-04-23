@@ -2,25 +2,23 @@
 
 Contributions are very welcome!  Feel free to raise an issue or start a discussion, for help in getting started.
 
+The app can be deployed using Docker or NodeJS.
 
 ## Configuration
 
-Configuration is made in the `configuration` section of `package.json`:
+Configuration is made using `.env` files (per [README.md](https://github.com/sasjs/server#env-var-configuration) settings), _except_ for one case, when running in NodeJS in production - in which case the path to the SAS executable is made in the `configuration` section of `package.json`.
 
-- Provide path to SAS9 executable.
+The `.env` file should be created in the location(s) below.  Each folder contains a `.env.example` file that may be adjusted and renamed.
 
+* `.env` - the root .env file is used only for Docker deploys.
+* `api/.env` - this is the primary file used in NodeJS deploys
+* `web/.env` - this file is only necessary in NodeJS when running `web` and `api` seperately (on different ports).
 
-### Using dockers:
+The actual `.env` values to use are described 
 
-There is `.env.example` file present at root of the project. [for Production]
+## Using Docker
 
-There is `.env.example` file present at `./api` of the project. [for Development]
-
-There is `.env.example` file present at `./web` of the project. [for Development]
-
-Remember to provide enviornment variables.
-
-#### Development
+### Docker Development Mode
 
 Command to run docker for development:
 
@@ -38,7 +36,7 @@ It will build following images if running first time:
 - `mongo-seed-clients` - will be populating client data specified in _./mongo-seed/clients/client.json_
 
 
-#### Production
+### Docker Production Mode
 
 Command to run docker for production:
 
@@ -54,47 +52,45 @@ It will build following images if running first time:
 - `mongo-seed-users` - will be populating user data specified in _./mongo-seed/users/user.json_
 - `mongo-seed-clients` - will be populating client data specified in _./mongo-seed/clients/client.json_
 
-### Using node:
+## Using NodeJS:
 
-#### Development (running api and web seperately):
+Be sure to use v16 or above, and to set your environment variables in the relevant `.env` file(s) - else defaults will be used.
 
-##### API
+### NodeJS Development Mode
 
-Navigate to `./api`
-There is `.env.example` file present at `./api` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
-Command to install and run api server.
+SASjs Server is split between an API server (serving REST requests) and a WEB Server (everything else).  These can be run together, or on seperate ports.
+
+### NodeJS Dev - Single Port
+
+Here the environment variables should be configured under `api.env`.  Then:
 
 ```
+cd ./web && npm i && npm build
+cd ../api && npm i && npm start
+```
+
+### NodeJS Dev - Seperate Ports
+
+Set the backend variables in `api/.env` and the frontend variables in `web/.env`. Then:
+
+#### API server
+```
+cd api
 npm install
 npm start
 ```
 
-##### Web
-
-Navigate to `./web`
-There is `.env.example` file present at `./web` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
-Command to install and run api server.
+#### Web Server 
 
 ```
+cd web
 npm install
 npm start
 ```
 
-#### Development (running only api server and have web build served):
+#### NodeJS Production Mode
 
-##### API server also serving Web build files
-
-There is `.env.example` file present at `./api` directory. Remember to provide enviornment variables else default values will be used mentioned in `.env.example` files
-Command to install and run api server.
-
-```
-cd ./web && npm i && npm build && cd ../
-cd ./api && npm i && npm start
-```
-
-#### Production
-
-##### API & WEB
+Update the `.env` file in the *api* folder.  Then:
 
 ```
 npm run server
@@ -105,7 +101,7 @@ This will install/build `web` and install `api`, then start prod server.
 
 ## Executables
 
-Command to generate executables
+In order to generate the final executables:
 
 ```
 cd ./web && npm i && npm build && cd ../
