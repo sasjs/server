@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.58](https://github.com/sasjs/server/compare/v0.0.57...v0.0.58) (2022-04-24)
+
+
+### Bug Fixes
+
+* bumping core library to get latest user management macros ([4862071](https://github.com/sasjs/server/commit/486207128da58fc4866bd0919c1bed2bd98097ea))
+* missing dependency ([d09876c](https://github.com/sasjs/server/commit/d09876c05f89166eec20064f7aa7ed5b867be081))
+
 ### [0.0.57](https://github.com/sasjs/server/compare/v0.0.56...v0.0.57) (2022-04-21)
 
 
