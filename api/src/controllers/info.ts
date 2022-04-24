@@ -25,9 +25,8 @@ export class InfoController {
     const response = {
       mode: process.env.MODE ?? 'desktop',
       cors:
-        process.env.CORS ?? process.env.MODE === 'server'
-          ? 'disable'
-          : 'enable',
+        process.env.CORS ||
+        (process.env.MODE === 'server' ? 'disable' : 'enable'),
       whiteList:
         process.env.WHITELIST?.split(' ')?.filter((url) => !!url) ?? [],
       protocol: process.env.PROTOCOL ?? 'http'
