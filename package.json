@@ -5,8 +5,8 @@
   "repository": "https://github.com/sasjs/server",
   "scripts": {
     "server": "npm run server:prepare && npm run server:start",
-    "server:prepare": "cd web && npm ci && npm run build && cd ../api && npm ci && cd ..",
-    "server:start": "cd api && npm run start",
+    "server:prepare": "cd web && npm ci && npm run build && cd ../api && npm ci && npm run build && cd ..",
+    "server:start": "cd api && npm run start:prod",
     "release": "standard-version",
     "lint-api:fix": "npx prettier --write \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-api": "npx prettier --check \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
