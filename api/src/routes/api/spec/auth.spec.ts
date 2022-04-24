@@ -8,7 +8,6 @@ import {
   ClientController,
   AuthController
 } from '../../../controllers/'
-import { populateClients } from '../auth'
 import { InfoJWT } from '../../../types'
 import {
   generateAccessToken,
@@ -42,7 +41,6 @@ describe('auth', () => {
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
     await clientController.createClient({ clientId, clientSecret })
-    await populateClients()
   })
 
   afterAll(async () => {
