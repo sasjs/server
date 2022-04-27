@@ -9,6 +9,7 @@ import React, {
 } from 'react'
 
 import axios from 'axios'
+import jwt_decode from 'jwt-decode'
 
 const NODE_ENV = process.env.NODE_ENV
 const PORT_API = process.env.PORT_API
@@ -73,6 +74,7 @@ const getTokens = () => {
 
 interface AppContextProps {
   userName: string
+  displayName: string
   setUserName: Dispatch<SetStateAction<string>> | null
   tokens?: { accessToken: string; refreshToken: string }
   setTokens: ((accessToken: string, refreshToken: string) => void) | null
@@ -81,6 +83,7 @@ interface AppContextProps {
 
 export const AppContext = createContext<AppContextProps>({
   userName: '',
+  displayName: '',
   tokens: getTokens(),
   setUserName: null,
   setTokens: null,
@@ -90,6 +93,7 @@ export const AppContext = createContext<AppContextProps>({
 const AppContextProvider = (props: { children: ReactNode }) => {
   const { children } = props
   const [userName, setUserName] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [tokens, setTokens] = useState(getTokens())
 
   useEffect(() => {
@@ -97,11 +101,27 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   }, [])
 
   useEffect(() => {
-    console.log(97)
     if (tokens === undefined) {
-      console.log(99)
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
+      setUserName('')
+      setDisplayName('')
+    } else {
+      const decoded: any = jwt_decode(tokens.accessToken)
+      if (decoded.userId) {
+        axios
+          .get(`/SASjsApi/user/${decoded.userId}`)
+          .then((res: any) => {
+            if (res.data && res.data?.displayName) {
+              setDisplayName(res.data.displayName)
+            } else if (res.data && res.data?.username) {
+              setDisplayName(res.data.username)
+            }
+          })
+          .catch((err) => {
+            console.log(err)
+          })
+      }
     }
   }, [tokens])
 
@@ -109,7 +129,6 @@ const AppContextProvider = (props: { children: ReactNode }) => {
     (accessToken: string, refreshToken: string) => {
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
-      console.log(accessToken)
       setAxiosRequestHeader(accessToken)
       setTokens({ accessToken, refreshToken })
     },
@@ -125,6 +144,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
     <AppContext.Provider
       value={{
         userName,
+        displayName,
         setUserName,
         tokens,
         setTokens: saveTokens,

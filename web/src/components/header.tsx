@@ -114,7 +114,7 @@ const Header = (props: any) => {
           }}
         >
           <UserName
-            userName={appContext.userName}
+            userName={appContext.displayName}
             onClickHandler={handleMenu}
           />
           <Menu
