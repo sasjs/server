@@ -15,7 +15,7 @@ const login = async (payload: { username: string; password: string }) =>
 const Login = ({ getCodeOnly }: any) => {
   const location = useLocation()
   const appContext = useContext(AppContext)
-  const [username, setUserName] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   let error: boolean
@@ -57,8 +57,8 @@ const Login = ({ getCodeOnly }: any) => {
 
     if (loggedIn) {
       appContext.setLoggedIn?.(loggedIn)
-      appContext.setUserName?.(user.username)
-      appContext.setDisplayName?.(user.displayname)
+      appContext.setUsername?.(user.username)
+      appContext.setDisplayName?.(user.displayName)
     }
   }
 
@@ -101,7 +101,7 @@ const Login = ({ getCodeOnly }: any) => {
         label="Username"
         type="text"
         variant="outlined"
-        onChange={(e: any) => setUserName(e.target.value)}
+        onChange={(e: any) => setUsername(e.target.value)}
         required
       />
       <TextField

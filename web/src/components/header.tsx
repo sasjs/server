@@ -12,7 +12,7 @@ import {
 } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
-import UserName from './userName'
+import Username from './username'
 import { AppContext } from '../context/appContext'
 
 const NODE_ENV = process.env.NODE_ENV
@@ -113,8 +113,8 @@ const Header = (props: any) => {
             justifyContent: 'flex-end'
           }}
         >
-          <UserName
-            userName={appContext.userName}
+          <Username
+            username={appContext.displayName || appContext.username}
             onClickHandler={handleMenu}
           />
           <Menu

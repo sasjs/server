@@ -13,8 +13,8 @@ interface AppContextProps {
   checkingSession: boolean
   loggedIn: boolean
   setLoggedIn: Dispatch<SetStateAction<boolean>> | null
-  userName: string
-  setUserName: Dispatch<SetStateAction<string>> | null
+  username: string
+  setUsername: Dispatch<SetStateAction<string>> | null
   displayName: string
   setDisplayName: Dispatch<SetStateAction<string>> | null
   logout: (() => void) | null
@@ -24,8 +24,8 @@ export const AppContext = createContext<AppContextProps>({
   checkingSession: false,
   loggedIn: false,
   setLoggedIn: null,
-  userName: '',
-  setUserName: null,
+  username: '',
+  setUsername: null,
   displayName: '',
   setDisplayName: null,
   logout: null
@@ -35,7 +35,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const { children } = props
   const [checkingSession, setCheckingSession] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
-  const [userName, setUserName] = useState('')
+  const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
 
   useEffect(() => {
@@ -43,11 +43,12 @@ const AppContextProvider = (props: { children: ReactNode }) => {
 
     axios
       .get('/SASjsApi/session')
-      .then((response: any) => {
+      .then((res) => res.data)
+      .then((data: any) => {
         setCheckingSession(false)
         setLoggedIn(true)
-        setUserName(response.userName)
-        setDisplayName(response.displayName)
+        setUsername(data.username)
+        setDisplayName(data.displayName)
       })
       .catch(() => {
         setLoggedIn(false)
@@ -57,7 +58,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const logout = useCallback(() => {
     axios.get('/logout').then(() => {
       setLoggedIn(false)
-      setUserName('')
+      setUsername('')
       setDisplayName('')
     })
   }, [])
@@ -68,8 +69,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         checkingSession,
         loggedIn,
         setLoggedIn,
-        userName,
-        setUserName,
+        username,
+        setUsername,
         displayName,
         setDisplayName,
         logout
