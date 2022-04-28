@@ -5,6 +5,21 @@ components:
     requestBodies: {}
     responses: {}
     schemas:
+        LoginPayload:
+            properties:
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: secretuser
+                password:
+                    type: string
+                    description: 'Password for user'
+                    example: secretpassword
+            required:
+                - username
+                - password
+            type: object
+            additionalProperties: false
         AuthorizeResponse:
             properties:
                 code:
@@ -450,6 +465,47 @@ info:
         name: '4GL Ltd'
 openapi: 3.0.0
 paths:
+    /login:
+        post:
+            operationId: Login
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    user: {properties: {displayName: {type: string}, username: {type: string}}, required: [displayName, username], type: object}
+                                    loggedIn: {type: boolean}
+                                required:
+                                    - user
+                                    - loggedIn
+                                type: object
+            summary: 'Accept a valid username/password'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginPayload'
+    /logout:
+        get:
+            operationId: Logout
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema: {}
+            summary: 'Accept a valid username/password'
+            tags:
+                - Web
+            security: []
+            parameters: []
     /SASjsApi/auth/authorize:
         post:
             operationId: Authorize
@@ -1308,3 +1364,6 @@ tags:
     -
         name: CODE
         description: 'Operations on SAS code'
+    -
+        name: Web
+        description: 'Operations on Web'

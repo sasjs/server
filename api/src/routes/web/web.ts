@@ -1,37 +1,40 @@
-import { readFile } from '@sasjs/utils'
-import express from 'express'
 import path from 'path'
-import { getWebBuildFolderPath } from '../../utils'
+import express from 'express'
+import { fileExists } from '@sasjs/utils'
+import { WebController } from '../../controllers/web'
+import { getWebBuildFolderPath, loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
 
-const jsCodeForDesktopMode = `
-<script>
-  localStorage.setItem('accessToken', JSON.stringify('accessToken'))
-  localStorage.setItem('refreshToken', JSON.stringify('refreshToken'))
-</script>`
-
-const jsCodeForServerMode = `
-<script>
-  localStorage.setItem('CLIENT_ID', '${process.env.CLIENT_ID}')
-</script>`
-
 webRouter.get('/', async (_, res) => {
-  let content: string
+  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+
+  if (await fileExists(indexHtmlPath)) return res.sendFile(indexHtmlPath)
+
+  return res.send('Web Build is not present')
+})
+
+webRouter.post('/login', async (req, res) => {
+  const { error, value: body } = loginWebValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  const controller = new WebController()
   try {
-    const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
-    content = await readFile(indexHtmlPath)
-  } catch (_) {
-    return res.send('Web Build is not present')
+    const response = await controller.login(req, body)
+    res.send(response)
+  } catch (err: any) {
+    res.status(400).send(err.toString())
   }
+})
 
-  const { MODE } = process.env
-  const codeToInject =
-    MODE?.trim() === 'server' ? jsCodeForServerMode : jsCodeForDesktopMode
-  const injectedContent = content.replace('</head>', `${codeToInject}</head>`)
-
-  res.setHeader('Content-Type', 'text/html')
-  return res.send(injectedContent)
+webRouter.get('/logout', async (req, res) => {
+  const controller = new WebController()
+  try {
+    await controller.logout(req)
+    res.status(200).send()
+  } catch (err: any) {
+    res.status(400).send(err.toString())
+  }
 })
 
 export default webRouter

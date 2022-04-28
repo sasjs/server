@@ -2,7 +2,7 @@ import React from 'react'
 import { Typography, IconButton } from '@mui/material'
 import AccountCircle from '@mui/icons-material/AccountCircle'
 
-const UserName = (props: any) => {
+const Username = (props: any) => {
   return (
     <IconButton
       aria-label="account of current user"
@@ -21,10 +21,10 @@ const UserName = (props: any) => {
         <AccountCircle></AccountCircle>
       )}
       <Typography variant="h6" sx={{ color: 'white', padding: '0 8px' }}>
-        {props.userName}
+        {props.username}
       </Typography>
     </IconButton>
   )
 }
 
-export default UserName
+export default Username

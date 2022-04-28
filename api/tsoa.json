@@ -46,6 +46,10 @@
       {
         "name": "CODE",
         "description": "Operations on SAS code"
+      },
+      {
+        "name": "Web",
+        "description": "Operations on Web"
       }
     ],
     "yaml": true,

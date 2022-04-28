@@ -5,6 +5,12 @@ const passwordSchema = Joi.string().min(6).max(1024)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i
 
+export const loginWebValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    username: usernameSchema.required(),
+    password: passwordSchema.required()
+  }).validate(data)
+
 export const authorizeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     username: usernameSchema.required(),
