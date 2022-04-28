@@ -14,6 +14,11 @@ webRouter.get('/', async (_, res) => {
   return res.send('Web Build is not present')
 })
 
+webRouter.get('/form', function (req, res) {
+  // pass the csrfToken to the view
+  res.send({ csrfToken: req.csrfToken() })
+})
+
 webRouter.post('/login', async (req, res) => {
   const { error, value: body } = loginWebValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
