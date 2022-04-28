@@ -1,3 +1,4 @@
+import axios from 'axios'
 import React, { useState, useContext } from 'react'
 import { useLocation } from 'react-router-dom'
 import PropTypes from 'prop-types'
@@ -5,39 +6,16 @@ import PropTypes from 'prop-types'
 import { CssBaseline, Box, TextField, Button, Typography } from '@mui/material'
 import { AppContext } from '../context/appContext'
 
-const headers = {
-  Accept: 'application/json',
-  'Content-Type': 'application/json'
-}
-const NODE_ENV = process.env.NODE_ENV
-const PORT_API = process.env.PORT_API
-const baseUrl =
-  NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
+const getAuthCode = async (credentials: any) =>
+  axios.post('/SASjsApi/auth/authorize', credentials).then((res) => res.data)
 
-const getAuthCode = async (credentials: any) => {
-  return fetch(`${baseUrl}/SASjsApi/auth/authorize`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(credentials)
-  }).then(async (response) => {
-    const resText = await response.text()
-    if (response.status !== 200) throw resText
-
-    return JSON.parse(resText)
-  })
-}
-const getTokens = async (payload: any) => {
-  return fetch(`${baseUrl}/SASjsApi/auth/token`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload)
-  }).then((data) => data.json())
-}
+const login = async (payload: { username: string; password: string }) =>
+  axios.post('/login', payload).then((res) => res.data)
 
 const Login = ({ getCodeOnly }: any) => {
   const location = useLocation()
   const appContext = useContext(AppContext)
-  const [username, setUserName] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   let error: boolean
@@ -47,34 +25,40 @@ const Login = ({ getCodeOnly }: any) => {
     error = false
     setErrorMessage('')
     e.preventDefault()
-    let clientId = process.env.CLIENT_ID ?? localStorage.getItem('CLIENT_ID')
 
     if (getCodeOnly) {
       const params = new URLSearchParams(location.search)
       const responseType = params.get('response_type')
-      if (responseType === 'code') clientId = params.get('client_id')
+      if (responseType === 'code') {
+        const clientId = params.get('client_id')
+
+        const { code } = await getAuthCode({
+          clientId,
+          username,
+          password
+        }).catch((err: any) => {
+          error = true
+          setErrorMessage(err.response.data)
+          return {}
+        })
+        if (!error) return setDisplayCode(code)
+        return
+      }
     }
 
-    const { code } = await getAuthCode({
-      clientId,
+    const { loggedIn, user } = await login({
       username,
       password
-    }).catch((err: string) => {
+    }).catch((err: any) => {
       error = true
-      setErrorMessage(err)
+      setErrorMessage(err.response.data)
       return {}
     })
 
-    if (!error) {
-      if (getCodeOnly) return setDisplayCode(code)
-
-      const { accessToken, refreshToken } = await getTokens({
-        clientId,
-        code
-      })
-
-      if (appContext.setTokens) appContext.setTokens(accessToken, refreshToken)
-      if (appContext.setUserName) appContext.setUserName(username)
+    if (loggedIn) {
+      appContext.setLoggedIn?.(loggedIn)
+      appContext.setUsername?.(user.username)
+      appContext.setDisplayName?.(user.displayName)
     }
   }
 
@@ -117,7 +101,7 @@ const Login = ({ getCodeOnly }: any) => {
         label="Username"
         type="text"
         variant="outlined"
-        onChange={(e: any) => setUserName(e.target.value)}
+        onChange={(e: any) => setUsername(e.target.value)}
         required
       />
       <TextField
@@ -129,7 +113,11 @@ const Login = ({ getCodeOnly }: any) => {
         required
       />
       {errorMessage && <span>{errorMessage}</span>}
-      <Button type="submit" variant="outlined" disabled={!appContext.setTokens}>
+      <Button
+        type="submit"
+        variant="outlined"
+        disabled={!appContext.setLoggedIn}
+      >
         Submit
       </Button>
     </Box>

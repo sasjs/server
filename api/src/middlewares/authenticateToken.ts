@@ -2,6 +2,10 @@ import jwt from 'jsonwebtoken'
 import { verifyTokenInDB } from '../utils'
 
 export const authenticateAccessToken = (req: any, res: any, next: any) => {
+  if (req.session?.loggedIn) {
+    req.user = req.session.user
+    return next()
+  }
   authenticateToken(
     req,
     res,
@@ -43,9 +47,7 @@ const authenticateToken = (
   }
 
   const authHeader = req.headers['authorization']
-  const token =
-    authHeader?.split(' ')[1] ??
-    (tokenType === 'accessToken' ? req.cookies.accessToken : '')
+  const token = authHeader?.split(' ')[1]
   if (!token) return res.sendStatus(401)
 
   jwt.verify(token, key, async (err: any, data: any) => {
