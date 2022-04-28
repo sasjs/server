@@ -37,22 +37,26 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
 }
 
 if (MODE?.trim() === 'server') {
-  const clientPromise = connectDB().then((conn) => conn!.getClient() as any)
+  // NOTE: when exporting app.js as agent for supertest
+  // we should exclude connecting to the real database
+  if (process.env.NODE_ENV !== 'test') {
+    const clientPromise = connectDB().then((conn) => conn!.getClient() as any)
 
-  const { PROTOCOL } = process.env
+    const { PROTOCOL } = process.env
 
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET as string,
-      saveUninitialized: false, // don't create session until something stored
-      resave: false, //don't save session if unmodified
-      store: MongoStore.create({ clientPromise, collectionName: 'sessions' }),
-      cookie: {
-        secure: PROTOCOL === 'https',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      }
-    })
-  )
+    app.use(
+      session({
+        secret: process.env.SESSION_SECRET as string,
+        saveUninitialized: false, // don't create session until something stored
+        resave: false, //don't save session if unmodified
+        store: MongoStore.create({ clientPromise, collectionName: 'sessions' }),
+        cookie: {
+          secure: PROTOCOL === 'https',
+          maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        }
+      })
+    )
+  }
 }
 
 app.use(cookieParser())
