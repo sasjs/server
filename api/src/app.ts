@@ -1,5 +1,7 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
+import session from 'express-session'
+import MongoStore from 'connect-mongo'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
@@ -34,6 +36,25 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
   app.use(cors({ credentials: true, origin: whiteList }))
 }
 
+if (MODE?.trim() === 'server') {
+  const clientPromise = connectDB().then((conn) => conn!.getClient() as any)
+
+  const { PROTOCOL } = process.env
+
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET as string,
+      saveUninitialized: false, // don't create session until something stored
+      resave: false, //don't save session if unmodified
+      store: MongoStore.create({ clientPromise, collectionName: 'sessions' }),
+      cookie: {
+        secure: PROTOCOL === 'https',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      }
+    })
+  )
+}
+
 app.use(cookieParser())
 app.use(morgan('tiny'))
 app.use(express.json({ limit: '100mb' }))
@@ -61,6 +82,5 @@ export default setProcessVariables().then(async () => {
 
   app.use(onError)
 
-  await connectDB()
   return app
 })

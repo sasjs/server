@@ -14,7 +14,7 @@ import { AppContext } from './context/appContext'
 function App() {
   const appContext = useContext(AppContext)
 
-  if (!appContext.tokens) {
+  if (!appContext.loggedIn) {
     return (
       <ThemeProvider theme={theme}>
         <HashRouter>

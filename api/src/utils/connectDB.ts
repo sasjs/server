@@ -11,15 +11,18 @@ export const connectDB = async () => {
   const { MODE } = process.env
 
   if (MODE?.trim() !== 'server') {
-    console.log('Running in Destop Mode, no DB to connect.')
+    console.log('Running in Desktop Mode, no DB to connect.')
     return
   }
 
-  mongoose.connect(process.env.DB_CONNECT as string, async (err) => {
-    if (err) throw err
+  try {
+    await mongoose.connect(process.env.DB_CONNECT as string)
+  } catch (err) {
+    throw new Error('Unable to connect to DB!')
+  }
 
-    console.log('Connected to db!')
+  console.log('Connected to DB!')
+  await seedDB()
 
-    await seedDB()
-  })
+  return mongoose.connection
 }

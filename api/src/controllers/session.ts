@@ -24,7 +24,7 @@ export class SessionController {
 }
 
 const session = (req: any) => ({
-  id: req.user.id,
+  id: req.user.userId,
   username: req.user.username,
   displayName: req.user.displayName
 })
