@@ -24,6 +24,10 @@
         "description": "Operations about users"
       },
       {
+        "name": "Permission",
+        "description": "Operations about permissions"
+      },
+      {
         "name": "Client",
         "description": "Operations about clients"
       },

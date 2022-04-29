@@ -452,6 +452,51 @@ components:
                 - protocol
             type: object
             additionalProperties: false
+        PermissionDetailsResponse:
+            properties:
+                permissionId:
+                    type: number
+                    format: double
+                uri:
+                    type: string
+                setting:
+                    type: string
+                user:
+                    $ref: '#/components/schemas/UserResponse'
+                group:
+                    $ref: '#/components/schemas/GroupResponse'
+                clientId:
+                    type: string
+            required:
+                - permissionId
+                - uri
+                - setting
+            type: object
+            additionalProperties: false
+        PermissionPayload:
+            properties:
+                uri:
+                    type: string
+                    description: 'Name of affected resource'
+                    example: /SASjsApi/code/execute
+                setting:
+                    type: string
+                    description: 'The indication of whether (and to what extent) access is provided'
+                    example: Grant
+                principalType:
+                    type: string
+                    description: 'Indicates the type of principal'
+                    example: user
+                principalId:
+                    description: 'The id of user(number), group(name), or client(clientId) to which a rule is assigned.'
+                    example: 123
+            required:
+                - uri
+                - setting
+                - principalType
+                - principalId
+            type: object
+            additionalProperties: false
     securitySchemes:
         bearerAuth:
             type: http
@@ -1333,6 +1378,53 @@ paths:
                 - Info
             security: []
             parameters: []
+    /SASjsApi/permission:
+        get:
+            operationId: GetAllPermissions
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/PermissionDetailsResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users'}}, {permissionId: 125, uri: /SASjsApi/code/execute, setting: Deny, clientId: clientId1}]
+            summary: 'Get list of all permissions (uri, setting and userDetail).'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreatePermission
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PermissionDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}
+            summary: 'Create a new permission. Admin only.'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PermissionPayload'
 servers:
     -
         url: /
@@ -1346,6 +1438,9 @@ tags:
     -
         name: User
         description: 'Operations about users'
+    -
+        name: Permission
+        description: 'Operations about permissions'
     -
         name: Client
         description: 'Operations about clients'
