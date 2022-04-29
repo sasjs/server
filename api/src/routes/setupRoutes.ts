@@ -5,7 +5,6 @@ import apiRouter from './api'
 import appStreamRouter from './appStream'
 
 export const setupRoutes = (app: Express) => {
-  app.use('/', webRouter)
   app.use('/SASjsApi', apiRouter)
 
   app.use('/AppStream', function (req, res, next) {
@@ -13,4 +12,6 @@ export const setupRoutes = (app: Express) => {
     // whatever the current router is
     appStreamRouter(req, res, next)
   })
+
+  app.use('/', webRouter)
 }

@@ -1,5 +1,6 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
+import csrf from 'csurf'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 import morgan from 'morgan'
@@ -20,8 +21,25 @@ dotenv.config()
 
 const app = express()
 
-const { MODE, CORS, WHITELIST } = process.env
+app.use(cookieParser())
+app.use(morgan('tiny'))
 
+const { MODE, CORS, WHITELIST, PROTOCOL } = process.env
+
+export const cookieOptions = {
+  secure: PROTOCOL === 'https',
+  httpOnly: true,
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}
+
+/***********************************
+ *         CSRF Protection         *
+ ***********************************/
+export const csrfProtection = csrf({ cookie: cookieOptions })
+
+/***********************************
+ *         Enabling CORS           *
+ ***********************************/
 if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
   const whiteList: string[] = []
   WHITELIST?.split(' ')
@@ -36,13 +54,16 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
   app.use(cors({ credentials: true, origin: whiteList }))
 }
 
+/***********************************
+ *         DB Connection &          *
+ *        Express Sessions          *
+ *        With Mongo Store          *
+ ***********************************/
 if (MODE?.trim() === 'server') {
   // NOTE: when exporting app.js as agent for supertest
   // we should exclude connecting to the real database
   if (process.env.NODE_ENV !== 'test') {
     const clientPromise = connectDB().then((conn) => conn!.getClient() as any)
-
-    const { PROTOCOL } = process.env
 
     app.use(
       session({
@@ -50,21 +71,18 @@ if (MODE?.trim() === 'server') {
         saveUninitialized: false, // don't create session until something stored
         resave: false, //don't save session if unmodified
         store: MongoStore.create({ clientPromise, collectionName: 'sessions' }),
-        cookie: {
-          secure: PROTOCOL === 'https',
-          maxAge: 24 * 60 * 60 * 1000 // 24 hours
-        }
+        cookie: cookieOptions
       })
     )
   }
 }
-
-app.use(cookieParser())
-app.use(morgan('tiny'))
 app.use(express.json({ limit: '100mb' }))
 app.use(express.static(path.join(__dirname, '../public')))
 
 const onError: ErrorRequestHandler = (err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN')
+    return res.status(400).send('Invalid CSRF token!')
+
   console.error(err.stack)
   res.status(500).send('Something broke!')
 }
