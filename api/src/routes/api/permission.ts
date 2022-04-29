@@ -53,4 +53,20 @@ permissionRouter.patch(
     }
   }
 )
+
+permissionRouter.delete(
+  '/:permissionId',
+  authenticateAccessToken,
+  verifyAdmin,
+  async (req: any, res) => {
+    const { permissionId } = req.params
+
+    try {
+      await controller.deletePermission(permissionId)
+      res.status(200).send('Permission Deleted!')
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
+  }
+)
 export default permissionRouter

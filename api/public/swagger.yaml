@@ -1448,7 +1448,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}
-            summary: 'Update permission setting.'
+            summary: 'Update permission setting. Admin only'
             tags:
                 - Permission
             security:
@@ -1463,12 +1463,34 @@ paths:
                     schema:
                         format: double
                         type: number
+                    example: 1234
             requestBody:
                 required: true
                 content:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/UpdatePermissionPayload'
+        delete:
+            operationId: DeletePermission
+            responses:
+                '204':
+                    description: 'No content'
+            summary: 'Delete a permission. Admin only.'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: permissionId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
 servers:
     -
         url: /

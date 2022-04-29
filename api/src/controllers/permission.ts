@@ -113,9 +113,9 @@ export class PermissionController {
   }
 
   /**
-   * @summary Update permission setting.
+   * @summary Update permission setting. Admin only
    * @param permissionId The permission's identifier
-   * @example userId "1234"
+   * @example permissionId 1234
    */
   @Example<PermissionDetailsResponse>({
     permissionId: 123,
@@ -129,6 +129,16 @@ export class PermissionController {
     @Body() body: UpdatePermissionPayload
   ): Promise<PermissionDetailsResponse> {
     return updatePermission(permissionId, body)
+  }
+
+  /**
+   * @summary Delete a permission. Admin only.
+   * @param permissionId The user's identifier
+   * @example permissionId 1234
+   */
+  @Delete('{permissionId}')
+  public async deletePermission(@Path() permissionId: number) {
+    return deletePermission(permissionId)
   }
 }
 
@@ -232,4 +242,10 @@ const updatePermission = async (
   if (!updatedPermission) throw new Error('Unable to update permission')
 
   return updatedPermission
+}
+
+const deletePermission = async (id: number) => {
+  const permission = await Permission.findOne({ id })
+  if (!permission) throw new Error('Permission is not found.')
+  await Permission.deleteOne({ id })
 }
