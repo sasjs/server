@@ -74,6 +74,14 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
     clientSecret: Joi.string().required()
   }).validate(data)
 
+export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    uri: Joi.string().required(),
+    setting: Joi.string().required(),
+    principalType: Joi.string().required(),
+    principalId: Joi.any().required()
+  }).validate(data)
+
 export const deployValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     appLoc: Joi.string().pattern(/^\//).required().min(2),
