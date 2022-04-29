@@ -171,23 +171,42 @@ const createPermission = async ({
     setting
   })
 
-  let user, group, client
+  let user: UserResponse | undefined
+  let group: GroupResponse | undefined
+  let clientId: string | undefined
 
   switch (principalType) {
     case 'user':
-      user = await User.findOne({ id: principalId })
-      if (!user) throw new Error('User not found.')
-      permission.user = user._id
+      const userInDB = await User.findOne({ id: principalId })
+      if (!userInDB) throw new Error('User not found.')
+
+      permission.user = userInDB._id
+
+      user = {
+        id: userInDB.id,
+        username: userInDB.username,
+        displayName: userInDB.displayName
+      }
       break
     case 'group':
-      group = await Group.findOne({ groupId: principalId })
-      if (!group) throw new Error('Group not found.')
-      permission.group = group._id
+      const groupInDB = await Group.findOne({ groupId: principalId })
+      if (!groupInDB) throw new Error('Group not found.')
+
+      permission.group = groupInDB._id
+
+      group = {
+        groupId: groupInDB.groupId,
+        name: groupInDB.name,
+        description: groupInDB.description
+      }
       break
     case 'client':
-      client = await Client.findOne({ clientId: principalId })
-      if (!client) throw new Error('Client not found.')
-      permission.client = client._id
+      const clientInDB = await Client.findOne({ clientId: principalId })
+      if (!clientInDB) throw new Error('Client not found.')
+
+      permission.client = clientInDB._id
+
+      clientId = clientInDB.clientId
       break
     default:
       throw new Error('Invalid principal type.')
@@ -199,17 +218,9 @@ const createPermission = async ({
     permissionId: savedPermission.permissionId,
     uri: savedPermission.uri,
     setting: savedPermission.setting,
-    user: !!user
-      ? { id: user.id, username: user.username, displayName: user.displayName }
-      : undefined,
-    group: !!group
-      ? {
-          groupId: group.groupId,
-          name: group.name,
-          description: group.description
-        }
-      : undefined,
-    clientId: !!client ? client.clientId : undefined
+    user,
+    group,
+    clientId
   }
 }
 
