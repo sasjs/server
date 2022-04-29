@@ -84,6 +84,7 @@ FULL_CHAIN=fullchain.pem
 ACCESS_TOKEN_SECRET=<secret>
 REFRESH_TOKEN_SECRET=<secret>
 AUTH_CODE_SECRET=<secret>
+SESSION_SECRET=<secret>
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 
 # SAS Options
@@ -107,7 +108,7 @@ Normally the server process will stop when your terminal dies. To keep it going 
 
 Trigger the command using NOHUP, redirecting the output commands, eg `nohup ./api-linux > server.log 2>&1 &`.
 
-You can now see the job running using the `jobs` command.  To ensure that it will still run when your terminal is closed, execute the `disown` command.  To kill it later, use the `kill -9 <pid>` command.  You can see your sessions using `top -u <userid>`.  Type `c` to see the commands being run against each pid.
+You can now see the job running using the `jobs` command. To ensure that it will still run when your terminal is closed, execute the `disown` command. To kill it later, use the `kill -9 <pid>` command. You can see your sessions using `top -u <userid>`. Type `c` to see the commands being run against each pid.
 
 ### PM2
 
