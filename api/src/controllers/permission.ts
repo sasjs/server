@@ -6,6 +6,7 @@ import {
   Example,
   Get,
   Post,
+  Patch,
   Delete,
   Body
 } from 'tsoa'
@@ -17,7 +18,7 @@ import Client from '../model/Client'
 import { UserResponse } from './user'
 import { GroupResponse } from './group'
 
-interface PermissionPayload {
+interface RegisterPermissionPayload {
   /**
    * Name of affected resource
    * @example "/SASjsApi/code/execute"
@@ -38,6 +39,14 @@ interface PermissionPayload {
    * @example 123
    */
   principalId: any
+}
+
+interface UpdatePermissionPayload {
+  /**
+   * The indication of whether (and to what extent) access is provided
+   * @example "Grant"
+   */
+  setting: string
 }
 
 interface PermissionDetailsResponse {
@@ -98,9 +107,28 @@ export class PermissionController {
   })
   @Post('/')
   public async createPermission(
-    @Body() body: PermissionPayload
+    @Body() body: RegisterPermissionPayload
   ): Promise<PermissionDetailsResponse> {
     return createPermission(body)
+  }
+
+  /**
+   * @summary Update permission setting.
+   * @param permissionId The permission's identifier
+   * @example userId "1234"
+   */
+  @Example<PermissionDetailsResponse>({
+    permissionId: 123,
+    uri: '/SASjsApi/code/execute',
+    setting: 'Grant',
+    user: { id: 1, username: 'johnSnow01', displayName: 'John Snow' }
+  })
+  @Patch('{permissionId}')
+  public async updatePermission(
+    @Path() permissionId: number,
+    @Body() body: UpdatePermissionPayload
+  ): Promise<PermissionDetailsResponse> {
+    return updatePermission(permissionId, body)
   }
 }
 
@@ -127,7 +155,7 @@ const createPermission = async ({
   setting,
   principalType,
   principalId
-}: PermissionPayload): Promise<PermissionDetailsResponse> => {
+}: RegisterPermissionPayload): Promise<PermissionDetailsResponse> => {
   const permission = new Permission({
     uri,
     setting
@@ -173,4 +201,35 @@ const createPermission = async ({
       : undefined,
     clientId: !!client ? client.clientId : undefined
   }
+}
+
+const updatePermission = async (
+  id: number,
+  data: UpdatePermissionPayload
+): Promise<PermissionDetailsResponse> => {
+  const { setting } = data
+
+  const updatedPermission = (await Permission.findOneAndUpdate(
+    { permissionId: id },
+    { setting },
+    { new: true }
+  )
+    .select({
+      _id: 0,
+      permissionId: 1,
+      uri: 1,
+      setting: 1
+    })
+    .populate({ path: 'user', select: 'id username displayName -_id' })
+    .populate({
+      path: 'group',
+      select: 'groupId name description -_id'
+    })
+    .populate({
+      path: 'client',
+      select: 'clientId -_id'
+    })) as unknown as PermissionDetailsResponse
+  if (!updatedPermission) throw new Error('Unable to update permission')
+
+  return updatedPermission
 }

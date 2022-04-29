@@ -473,7 +473,7 @@ components:
                 - setting
             type: object
             additionalProperties: false
-        PermissionPayload:
+        RegisterPermissionPayload:
             properties:
                 uri:
                     type: string
@@ -495,6 +495,16 @@ components:
                 - setting
                 - principalType
                 - principalId
+            type: object
+            additionalProperties: false
+        UpdatePermissionPayload:
+            properties:
+                setting:
+                    type: string
+                    description: 'The indication of whether (and to what extent) access is provided'
+                    example: Grant
+            required:
+                - setting
             type: object
             additionalProperties: false
     securitySchemes:
@@ -1424,7 +1434,41 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/PermissionPayload'
+                            $ref: '#/components/schemas/RegisterPermissionPayload'
+    '/SASjsApi/permission/{permissionId}':
+        patch:
+            operationId: UpdatePermission
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PermissionDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}
+            summary: 'Update permission setting.'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The permission''s identifier'
+                    in: path
+                    name: permissionId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePermissionPayload'
 servers:
     -
         url: /

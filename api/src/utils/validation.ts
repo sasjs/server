@@ -82,6 +82,11 @@ export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
     principalId: Joi.any().required()
   }).validate(data)
 
+export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    setting: Joi.string().required()
+  }).validate(data)
+
 export const deployValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     appLoc: Joi.string().pattern(/^\//).required().min(2),
