@@ -14,7 +14,7 @@ import Group, { GroupPayload } from '../model/Group'
 import User from '../model/User'
 import { UserResponse } from './user'
 
-interface GroupResponse {
+export interface GroupResponse {
   groupId: number
   name: string
   description: string
