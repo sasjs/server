@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.59](https://github.com/sasjs/server/compare/v0.0.58...v0.0.59) (2022-04-29)
+
+
+### Features
+
+* enabled csrf tokens for web component ([e462aeb](https://github.com/sasjs/server/commit/e462aebdc01f3c0068ed0074473a2063412dcf45))
+* enabled session based authentication for web ([5da93f3](https://github.com/sasjs/server/commit/5da93f318aad10b1c67032a467191e4dbb99f411))
+
+
+### Bug Fixes
+
+* fetch client from DB for each request ([4ad8c81](https://github.com/sasjs/server/commit/4ad8c81e4927c1a82220ec015a781b095c8e859e))
+* **web:** show display name instead of username ([e57443f](https://github.com/sasjs/server/commit/e57443f1ed662a022494bb93d79c3d2f10a2d082))
+
 ### [0.0.58](https://github.com/sasjs/server/compare/v0.0.57...v0.0.58) (2022-04-24)
 
 
