@@ -6,10 +6,13 @@ import { getWebBuildFolderPath, loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
 
-webRouter.get('/', async (_, res) => {
+webRouter.get('/', async (req, res) => {
   const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
 
-  if (await fileExists(indexHtmlPath)) return res.sendFile(indexHtmlPath)
+  if (await fileExists(indexHtmlPath)) {
+    res.cookie('XSRF-TOKEN', req.csrfToken())
+    return res.sendFile(indexHtmlPath)
+  }
 
   return res.send('Web Build is not present')
 })
