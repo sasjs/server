@@ -1,6 +1,6 @@
 import path from 'path'
 import express from 'express'
-import { fileExists } from '@sasjs/utils'
+import { readFile } from '@sasjs/utils'
 import { WebController } from '../../controllers/web'
 import { getWebBuildFolderPath, loginWebValidation } from '../../utils'
 
@@ -9,12 +9,16 @@ const webRouter = express.Router()
 webRouter.get('/', async (req, res) => {
   const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
 
-  if (await fileExists(indexHtmlPath)) {
-    res.cookie('XSRF-TOKEN', req.csrfToken())
-    return res.sendFile(indexHtmlPath)
-  }
+  try {
+    // Attention! Cannot use fileExists here, due to limitation after building executable
+    const content = await readFile(indexHtmlPath)
 
-  return res.send('Web Build is not present')
+    res.cookie('XSRF-TOKEN', req.csrfToken())
+    res.setHeader('Content-Type', 'text/html')
+    return res.send(content)
+  } catch (_) {
+    return res.send('Web Build is not present')
+  }
 })
 
 webRouter.post('/login', async (req, res) => {
