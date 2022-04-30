@@ -7,6 +7,7 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import cors from 'cors'
+import helmet from 'helmet'
 
 import {
   connectDB,
@@ -36,6 +37,11 @@ export const cookieOptions = {
  *         CSRF Protection         *
  ***********************************/
 export const csrfProtection = csrf({ cookie: cookieOptions })
+
+/***********************************
+ *   Handle security and origin    *
+ ***********************************/
+app.use(helmet())
 
 /***********************************
  *         Enabling CORS           *

@@ -52,6 +52,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       })
       .catch(() => {
         setLoggedIn(false)
+        axios.get('/') // get CSRF TOKEN
       })
   }, [])
 

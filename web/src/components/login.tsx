@@ -10,13 +10,7 @@ const getAuthCode = async (credentials: any) =>
   axios.post('/SASjsApi/auth/authorize', credentials).then((res) => res.data)
 
 const login = async (payload: { username: string; password: string }) =>
-  axios.get('/form').then((res1) =>
-    axios
-      .post('/login', payload, {
-        headers: { 'csrf-token': res1.data.csrfToken }
-      })
-      .then((res2) => res2.data)
-  )
+  axios.post('/login', payload).then((res) => res.data)
 
 const Login = ({ getCodeOnly }: any) => {
   const location = useLocation()
