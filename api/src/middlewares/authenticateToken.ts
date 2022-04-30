@@ -1,11 +1,16 @@
 import jwt from 'jsonwebtoken'
+import { csrfProtection } from '../app'
 import { verifyTokenInDB } from '../utils'
 
 export const authenticateAccessToken = (req: any, res: any, next: any) => {
+  // if request is coming from web and has valid session
+  // we can validate the request and check for CSRF Token
   if (req.session?.loggedIn) {
     req.user = req.session.user
-    return next()
+
+    return csrfProtection(req, res, next)
   }
+
   authenticateToken(
     req,
     res,
