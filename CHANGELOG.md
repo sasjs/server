@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.60](https://github.com/sasjs/server/compare/v0.0.59...v0.0.60) (2022-04-30)
+
+
+### Bug Fixes
+
+* added CSRF check for granting access via session authentication ([b060ad1](https://github.com/sasjs/server/commit/b060ad1b8e0bbc61c20dc25be553bba4cc4d2716))
+* setting CSRF Token for only rendering SPA ([b4b60c6](https://github.com/sasjs/server/commit/b4b60c69cf67a42f4797f7f1afe68b7a5eec2998))
+
 ### [0.0.59](https://github.com/sasjs/server/compare/v0.0.58...v0.0.59) (2022-04-29)
 
 
