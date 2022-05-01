@@ -63,7 +63,7 @@
     "mongoose-sequence": "^5.3.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.3",
-    "swagger-ui-express": "^4.1.6"
+    "swagger-ui-express": "4.3.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",

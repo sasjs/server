@@ -1,10 +1,23 @@
+import path from 'path'
 import express from 'express'
 import { Request, Route, Tags, Post, Body, Get } from 'tsoa'
+import { readFile } from '@sasjs/utils'
+
 import User from '../model/User'
+import { getWebBuildFolderPath } from '../utils'
 
 @Route('/')
 @Tags('Web')
 export class WebController {
+  /**
+   * @summary Render index.html
+   *
+   */
+  @Get('/')
+  public async home(@Request() req: express.Request) {
+    return home(req)
+  }
+
   /**
    * @summary Accept a valid username/password
    *
@@ -29,6 +42,19 @@ export class WebController {
       })
     })
   }
+}
+
+const home = async (req: express.Request) => {
+  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+
+  // Attention! Cannot use fileExists here,
+  // due to limitation after building executable
+  const content = await readFile(indexHtmlPath)
+
+  req.res?.cookie('XSRF-TOKEN', req.csrfToken())
+  req.res?.setHeader('Content-Type', 'text/html')
+
+  return content
 }
 
 const login = async (
