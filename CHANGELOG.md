@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.66](https://github.com/sasjs/server/compare/v0.0.64...v0.0.66) (2022-05-01)
+
+
+### Bug Fixes
+
+* added swagger ui init file manually ([e2a97fc](https://github.com/sasjs/server/commit/e2a97fcb7c54a57a7ca118677cfce93fe9430d8f))
+* consume swagger api with CSRF ([5aaac24](https://github.com/sasjs/server/commit/5aaac24080362d6ce0c5d1157798a9343f40ae2a))
+
 ### [0.0.65](https://github.com/sasjs/server/compare/v0.0.64...v0.0.65) (2022-05-01)
 
 
