@@ -465,6 +465,21 @@ info:
         name: '4GL Ltd'
 openapi: 3.0.0
 paths:
+    /:
+        get:
+            operationId: Home
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            summary: 'Render index.html'
+            tags:
+                - Web
+            security: []
+            parameters: []
     /login:
         post:
             operationId: Login

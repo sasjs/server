@@ -1,21 +1,14 @@
-import path from 'path'
 import express from 'express'
-import { readFile } from '@sasjs/utils'
 import { WebController } from '../../controllers/web'
-import { getWebBuildFolderPath, loginWebValidation } from '../../utils'
+import { loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
+const controller = new WebController()
 
 webRouter.get('/', async (req, res) => {
-  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
-
   try {
-    // Attention! Cannot use fileExists here, due to limitation after building executable
-    const content = await readFile(indexHtmlPath)
-
-    res.cookie('XSRF-TOKEN', req.csrfToken())
-    res.setHeader('Content-Type', 'text/html')
-    return res.send(content)
+    const response = await controller.home(req)
+    return res.send(response)
   } catch (_) {
     return res.send('Web Build is not present')
   }
@@ -25,7 +18,6 @@ webRouter.post('/login', async (req, res) => {
   const { error, value: body } = loginWebValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
-  const controller = new WebController()
   try {
     const response = await controller.login(req, body)
     res.send(response)
@@ -35,10 +27,9 @@ webRouter.post('/login', async (req, res) => {
 })
 
 webRouter.get('/logout', async (req, res) => {
-  const controller = new WebController()
   try {
     await controller.logout(req)
-    res.status(200).send()
+    res.status(200).send('OK!')
   } catch (err: any) {
     res.status(400).send(err.toString())
   }
