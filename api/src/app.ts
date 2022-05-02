@@ -41,8 +41,7 @@ export const csrfProtection = csrf({ cookie: cookieOptions })
 /***********************************
  *   Handle security and origin    *
  ***********************************/
-// TODO: fix monaco loader from npm package before enabling helmet
-// app.use(helmet())
+app.use(helmet())
 
 /***********************************
  *         Enabling CORS           *

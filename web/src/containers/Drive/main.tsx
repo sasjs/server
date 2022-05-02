@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 
-import Editor from '@monaco-editor/react'
+import Editor from 'react-monaco-editor'
 
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
@@ -125,6 +125,7 @@ const Main = (props: Props) => {
         {!isLoading && props?.selectedFilePath && editMode && (
           <Editor
             height="95%"
+            language="sas"
             value={fileContent}
             onChange={(val) => {
               if (val) setFileContent(val)

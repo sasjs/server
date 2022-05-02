@@ -4,7 +4,7 @@ import axios from 'axios'
 import Box from '@mui/material/Box'
 import { Button, Paper, Stack, Tab, Tooltip } from '@mui/material'
 import { makeStyles } from '@mui/styles'
-import Editor, { OnMount } from '@monaco-editor/react'
+import Editor, { EditorDidMount } from 'react-monaco-editor'
 import { useLocation } from 'react-router-dom'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
@@ -42,7 +42,7 @@ const Studio = () => {
   }
 
   const editorRef = useRef(null as any)
-  const handleEditorDidMount: OnMount = (editor) => {
+  const handleEditorDidMount: EditorDidMount = (editor) => {
     editor.focus()
     editorRef.current = editor
   }
@@ -141,6 +141,7 @@ const Studio = () => {
             <Tooltip title="CTRL+ENTER will also run SAS code">
               <Button onClick={handleRunBtnClick} className={classes.runButton}>
                 <img
+                  alt=""
                   draggable="false"
                   style={{ width: '25px' }}
                   src="/running-sas.png"
@@ -161,8 +162,9 @@ const Studio = () => {
           >
             <Editor
               height="98%"
+              language="sas"
               value={fileContent}
-              onMount={handleEditorDidMount}
+              editorDidMount={handleEditorDidMount}
               options={{ readOnly: ctrlPressed }}
               onChange={(val) => {
                 if (val) setFileContent(val)
