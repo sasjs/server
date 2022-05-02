@@ -7,8 +7,10 @@ import { appStreamHtml } from './appStreamHtml'
 
 const router = express.Router()
 
-router.get('/', async (_, res) => {
+router.get('/', async (req, res) => {
   const content = appStreamHtml(process.appStreamConfig)
+
+  res.cookie('XSRF-TOKEN', req.csrfToken())
 
   return res.send(content)
 })
