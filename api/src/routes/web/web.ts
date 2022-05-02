@@ -7,7 +7,10 @@ const controller = new WebController()
 
 webRouter.get('/', async (req, res) => {
   try {
-    const response = await controller.home(req)
+    const response = await controller.home()
+
+    res.cookie('XSRF-TOKEN', req.csrfToken())
+
     return res.send(response)
   } catch (_) {
     return res.send('Web Build is not present')

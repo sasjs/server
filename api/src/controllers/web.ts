@@ -14,8 +14,8 @@ export class WebController {
    *
    */
   @Get('/')
-  public async home(@Request() req: express.Request) {
-    return home(req)
+  public async home() {
+    return home()
   }
 
   /**
@@ -44,15 +44,12 @@ export class WebController {
   }
 }
 
-const home = async (req: express.Request) => {
+const home = async () => {
   const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
 
   // Attention! Cannot use fileExists here,
   // due to limitation after building executable
   const content = await readFile(indexHtmlPath)
-
-  req.res?.cookie('XSRF-TOKEN', req.csrfToken())
-  req.res?.setHeader('Content-Type', 'text/html')
 
   return content
 }

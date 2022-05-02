@@ -1,5 +1,4 @@
 import { AppStreamConfig } from '../../types'
-import { script } from './script'
 import { style } from './style'
 
 const defaultAppLogo = '/sasjs-logo.svg'
@@ -39,6 +38,7 @@ export const appStreamHtml = (appStreamConfig: AppStreamConfig) => `
           <span id="uploadMessage">Upload New App</span>
         </a>
     </div>
-    ${script}
+    <script src="/axios.min.js"></script>
+    <script src="/app-streams-script.js"></script>
   </body>
 </html>`
