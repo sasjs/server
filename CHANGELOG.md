@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.69](https://github.com/sasjs/server/compare/v0.0.68...v0.0.69) (2022-05-02)
+
+
+### Bug Fixes
+
+* **upload:** appStream uses CSRF + Session authentication ([1f89279](https://github.com/sasjs/server/commit/1f8927926405887f3d134c0a1dd6452ffa33876e))
+
 ### [0.0.68](https://github.com/sasjs/server/compare/v0.0.67...v0.0.68) (2022-05-02)
 
 
