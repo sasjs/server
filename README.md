@@ -70,6 +70,9 @@ PORT=
 # for MODE: `server` gets value from api/package.json `configuration.sasPath`
 SAS_PATH=/path/to/sas/executable.exe
 
+# optional
+# When `true` it will disable strict Content Security Policy
+CSP_DISABLE=true
 
 # optional
 # for MODE: `desktop`, prompts user

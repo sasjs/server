@@ -25,7 +25,7 @@ const app = express()
 app.use(cookieParser())
 app.use(morgan('tiny'))
 
-const { MODE, CORS, WHITELIST, PROTOCOL } = process.env
+const { MODE, CORS, WHITELIST, PROTOCOL, CSP_DISABLE } = process.env
 
 export const cookieOptions = {
   secure: PROTOCOL === 'https',
@@ -41,16 +41,18 @@ export const csrfProtection = csrf({ cookie: cookieOptions })
 /***********************************
  *   Handle security and origin    *
  ***********************************/
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        'script-src': ["'self'", "'unsafe-inline'"]
+if (CSP_DISABLE !== 'true') {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'script-src': ["'self'", "'unsafe-inline'"]
+        }
       }
-    }
-  })
-)
+    })
+  )
+}
 
 /***********************************
  *         Enabling CORS           *
