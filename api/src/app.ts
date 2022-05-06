@@ -17,6 +17,7 @@ import {
   setProcessVariables,
   setupFolders
 } from './utils'
+import { getEnvCSPDirectives } from './utils/parseHelmetConfig'
 
 dotenv.config()
 
@@ -25,13 +26,18 @@ const app = express()
 app.use(cookieParser())
 app.use(morgan('tiny'))
 
-const { MODE, CORS, WHITELIST, PROTOCOL } = process.env
+const { MODE, CORS, WHITELIST, PROTOCOL, HELMET_CSP_CONFIG_PATH, HELMET_COEP } =
+  process.env
 
 export const cookieOptions = {
   secure: PROTOCOL === 'https',
   httpOnly: true,
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }
+
+const cspConfigJson = getEnvCSPDirectives(HELMET_CSP_CONFIG_PATH)
+const coepFlag =
+  HELMET_COEP === 'true' || HELMET_COEP === undefined ? true : false
 
 /***********************************
  *         CSRF Protection         *
@@ -46,9 +52,10 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        'script-src': ["'self'", "'unsafe-inline'"]
+        ...cspConfigJson
       }
-    }
+    },
+    crossOriginEmbedderPolicy: coepFlag
   })
 )
 
