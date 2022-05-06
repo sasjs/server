@@ -71,12 +71,13 @@ SAS_PATH=/path/to/sas/executable.exe
 
 # optional HELMET config
 # crossOriginEmbedderPolicy flag that will be passed in HELMET config
-# https://helmetjs.github.io/
+# [true|false]
+# https://helmetjs.github.io/#reference
 HELMET_COEP=
 
 # optional HELMET config
 # path to json file that will include HELMET `contentSecurityPolicy` directives
-# https://helmetjs.github.io/
+# https://helmetjs.github.io/#reference
 HELMET_CSP_CONFIG_PATH=./csp.config.json
 
 # optional
