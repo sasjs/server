@@ -64,15 +64,18 @@ PROTOCOL=
 # default: 5000
 PORT=
 
-
 # optional
 # for MODE: `desktop`, prompts user
 # for MODE: `server` gets value from api/package.json `configuration.sasPath`
 SAS_PATH=/path/to/sas/executable.exe
 
-# optional
-# When `true` it will disable strict Content Security Policy
-CSP_DISABLE=true
+# optional HELMET config
+# crossOriginEmbedderPolicy flag that will be passed in HELMET config
+HELMET_COEP=
+
+# optional HELMET config
+# path to json file that will include HELMET `contentSecurityPolicy` directives
+HELMET_CSP_CONFIG_PATH=./csp.config.json
 
 # optional
 # for MODE: `desktop`, prompts user
