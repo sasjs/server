@@ -48,15 +48,22 @@ When launching the app, it will make use of specific environment variables. Thes
 Example contents of a `.env` file:
 
 ```
-# options: [desktop|server] default: `desktop`
+#
+## Core Settings
+#
+
+
+# MODE options: [desktop|server] default: `desktop`
+# Desktop mode is single user and designed for workstation use
+# Server mode is multi-user and suitable for intranet / internet use
 MODE=
 
-# options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
-# If enabled, be sure to also configure the WHITELIST of third party servers.
-CORS=
+# Path to SAS executable (sas.exe / sas.sh)
+SAS_PATH=/path/to/sas/executable.exe
 
-# options: <http://localhost:3000 https://abc.com ...> space separated urls
-WHITELIST=
+# Path to working directory
+# This location is for SAS WORK, staged files, DRIVE, configuration etc
+DRIVE_PATH=/tmp
 
 # options: [http|https] default: http
 PROTOCOL=
@@ -64,26 +71,23 @@ PROTOCOL=
 # default: 5000
 PORT=
 
-# optional
-# for MODE: `desktop`, prompts user
-# for MODE: `server` gets value from api/package.json `configuration.sasPath`
-SAS_PATH=/path/to/sas/executable.exe
 
-# optional HELMET config
-# crossOriginEmbedderPolicy flag that will be passed in HELMET config
-# [true|false]
-# https://helmetjs.github.io/#reference
-HELMET_COEP=
+#
+## Additional SAS Options
+#
 
-# optional HELMET config
-# path to json file that will include HELMET `contentSecurityPolicy` directives
-# https://helmetjs.github.io/#reference
-HELMET_CSP_CONFIG_PATH=./csp.config.json
 
-# optional
-# for MODE: `desktop`, prompts user
-# for MODE: `server` defaults to /tmp
-DRIVE_PATH=/tmp
+# On windows use SAS_OPTIONS and on unix use SASV9_OPTIONS
+# Any options set here are automatically applied in the SAS session
+# See: https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/hostunx/p0wrdmqp8k0oyyn1xbx3bp3qy2wl.htm
+# And: https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/hostwin/p0drw76qo0gig2n1kcoliekh605k.htm#p09y7hx0grw1gin1giuvrjyx61m6
+SAS_OPTIONS= -NOXCMD
+SASV9_OPTIONS= -NOXCMD
+
+
+#
+## Additional Web Server Options
+#
 
 # ENV variables required for PROTOCOL: `https`
 PRIVATE_KEY=privkey.pem
@@ -96,13 +100,30 @@ AUTH_CODE_SECRET=<secret>
 SESSION_SECRET=<secret>
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 
-# SAS Options
-# On windows use SAS_OPTIONS and on unix use SASV9_OPTIONS
-# Any options set here are automatically applied in the SAS session
-# See: https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/hostunx/p0wrdmqp8k0oyyn1xbx3bp3qy2wl.htm
-# And: https://documentation.sas.com/doc/en/pgmsascdc/9.4_3.5/hostwin/p0drw76qo0gig2n1kcoliekh605k.htm#p09y7hx0grw1gin1giuvrjyx61m6
-SAS_OPTIONS= -NOXCMD
-SASV9_OPTIONS= -NOXCMD
+# options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
+# If enabled, be sure to also configure the WHITELIST of third party servers.
+CORS=
+
+# options: <http://localhost:3000 https://abc.com ...> space separated urls
+WHITELIST=
+
+# HELMET Cross Origin Embedder Policy
+# Sets the Cross-Origin-Embedder-Policy header to require-corp when `true`
+# options: [true|false] default: true
+# Docs: https://helmetjs.github.io/#reference (`crossOriginEmbedderPolicy`)
+HELMET_COEP=
+
+# HELMET Content Security Policy
+# Path to a json file containing HELMET `contentSecurityPolicy` directives
+# Docs: https://helmetjs.github.io/#reference
+#
+# Example config:
+# {
+#   "img-src": ["'self'", "domain.com"],
+#   "script-src": ["'self'", "'unsafe-inline'"],
+#   "script-src-attr": ["'self'", "'unsafe-inline'"]
+# }
+HELMET_CSP_CONFIG_PATH=./csp.config.json
 
 ```
 
