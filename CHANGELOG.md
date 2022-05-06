@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.70](https://github.com/sasjs/server/compare/v0.0.69...v0.0.70) (2022-05-06)
+
+
+### Features
+
+* CSP_DISABLE env option ([dd3acce](https://github.com/sasjs/server/commit/dd3acce3935e7cfc0b2c44a401314306915a3a10))
+
 ### [0.0.69](https://github.com/sasjs/server/compare/v0.0.68...v0.0.69) (2022-05-02)
 
 
