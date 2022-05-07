@@ -3,5 +3,5 @@ export interface PreProgramVars {
   userId: number
   displayName: string
   serverUrl: string
-  accessToken: string
+  httpHeaders: string[]
 }

@@ -17,8 +17,8 @@ import {
   ExecutionController,
   ExecutionVars
 } from './internal'
-import { PreProgramVars } from '../types'
 import {
+  getPreProgramVariables,
   getTmpFilesFolderPath,
   HTTPHeaders,
   isDebugOn,
@@ -208,18 +208,5 @@ const executeReturnJson = async (
       message: 'Job execution failed.',
       error: typeof err === 'object' ? err.toString() : err
     }
-  }
-}
-
-const getPreProgramVariables = (req: any): PreProgramVars => {
-  const host = req.get('host')
-  const protocol = req.protocol + '://'
-  const { user, accessToken } = req
-  return {
-    username: user.username,
-    userId: user.userId,
-    displayName: user.displayName,
-    serverUrl: protocol + host,
-    accessToken
   }
 }
