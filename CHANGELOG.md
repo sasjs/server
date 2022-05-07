@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.71](https://github.com/sasjs/server/compare/v0.0.70...v0.0.71) (2022-05-07)
+
+
+### Bug Fixes
+
+* added more cookies to req ([4a8e32d](https://github.com/sasjs/server/commit/4a8e32dd20b540b6dc92d749fad90d6c7fc69376))
+* bumping core ([c0b57b9](https://github.com/sasjs/server/commit/c0b57b9e76d6db33fc64a68556a8be979dd69e40))
+* reqHeadrs.txt will contain headers to access APIs ([636301e](https://github.com/sasjs/server/commit/636301e664416fb085f704d83deb7f39ee0a91a7))
+
 ### [0.0.70](https://github.com/sasjs/server/compare/v0.0.69...v0.0.70) (2022-05-06)
 
 
