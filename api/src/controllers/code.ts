@@ -3,7 +3,7 @@ import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { ExecuteReturnJson, ExecutionController } from './internal'
 import { PreProgramVars } from '../types'
 import { ExecuteReturnJsonResponse } from '.'
-import { parseLogToArray } from '../utils'
+import { getPreProgramVariables, parseLogToArray } from '../utils'
 
 interface ExecuteSASCodePayload {
   /**
@@ -54,18 +54,5 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
       message: 'Job execution failed.',
       error: typeof err === 'object' ? err.toString() : err
     }
-  }
-}
-
-const getPreProgramVariables = (req: any): PreProgramVars => {
-  const host = req.get('host')
-  const protocol = req.protocol + '://'
-  const { user, accessToken } = req
-  return {
-    username: user.username,
-    userId: user.userId,
-    displayName: user.displayName,
-    serverUrl: protocol + host,
-    accessToken
   }
 }

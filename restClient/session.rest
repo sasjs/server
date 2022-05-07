@@ -1,2 +1,3 @@
-### Get current user's info via access token
+### Get current user's info via session ID
 GET http://localhost:5000/SASjsApi/session
+cookie: connect.sid=s:G2DeFdKuWhnmTOsTHmTWrxAXPx2P6TLD.JyNLxfACC1w3NlFQFfL5chyxtrqbPYmS6iButRc1goE

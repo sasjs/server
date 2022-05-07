@@ -75,12 +75,12 @@ export class ExecutionController {
     const logPath = path.join(session.path, 'log.log')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
     const weboutPath = path.join(session.path, 'webout.txt')
-    const tokenFile = path.join(session.path, 'accessToken.txt')
+    const tokenFile = path.join(session.path, 'reqHeaders.txt')
 
     await createFile(weboutPath, '')
     await createFile(
       tokenFile,
-      preProgramVariables?.accessToken ?? 'accessToken'
+      preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
 
     const varStatments = Object.keys(vars).reduce(
