@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.72](https://github.com/sasjs/server/compare/v0.0.71...v0.0.72) (2022-05-09)
+
 ### [0.0.71](https://github.com/sasjs/server/compare/v0.0.70...v0.0.71) (2022-05-07)
 
 
