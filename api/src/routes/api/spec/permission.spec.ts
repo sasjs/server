@@ -334,6 +334,19 @@ describe('permission', () => {
       expect(res.text).toEqual(`"setting" is required`)
       expect(res.body).toEqual({})
     })
+
+    it('should respond with forbidden Request (403) if permission with provided id does not exists', async () => {
+      const res = await request(app)
+        .patch('/SASjsApi/permission/123')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          setting: 'deny'
+        })
+        .expect(403)
+
+      expect(res.text).toEqual('Error: Unable to update permission')
+      expect(res.body).toEqual({})
+    })
   })
 })
 
