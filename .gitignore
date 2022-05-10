@@ -11,3 +11,4 @@ sasjscore/
 certificates/
 executables/
 .env
+api/csp.config.json
