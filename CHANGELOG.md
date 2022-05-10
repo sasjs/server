@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.73](https://github.com/sasjs/server/compare/v0.0.72...v0.0.73) (2022-05-10)
+
+
+### Bug Fixes
+
+* helmet config on http mode ([b0fdaaa](https://github.com/sasjs/server/commit/b0fdaaaa79e3135699c51effac0388d8ec5ab23b))
+
 ### [0.0.72](https://github.com/sasjs/server/compare/v0.0.71...v0.0.72) (2022-05-09)
 
 ### [0.0.71](https://github.com/sasjs/server/compare/v0.0.70...v0.0.71) (2022-05-07)
