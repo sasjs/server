@@ -252,6 +252,22 @@ describe('permission', () => {
       expect(res.text).toEqual('Error: Client not found.')
       expect(res.body).toEqual({})
     })
+
+    it('should respond with forbidden Request (403) if principal type is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          principalType: 'invalid'
+        })
+        .expect(403)
+
+      expect(res.text).toEqual(
+        'Error: Invalid principal type. Valid types are user, group and client.'
+      )
+      expect(res.body).toEqual({})
+    })
   })
 
   describe('update', () => {

@@ -209,7 +209,9 @@ const createPermission = async ({
       clientId = clientInDB.clientId
       break
     default:
-      throw new Error('Invalid principal type.')
+      throw new Error(
+        'Invalid principal type. Valid types are user, group and client.'
+      )
   }
 
   const savedPermission = await permission.save()
