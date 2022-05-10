@@ -53,6 +53,7 @@ describe('permission', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let adminAccessToken: string
+  let dbUser: UserDetailsResponse | undefined
 
   beforeAll(async () => {
     app = await appPromise
@@ -61,6 +62,7 @@ describe('permission', () => {
     con = await mongoose.connect(mongoServer.getUri())
 
     adminAccessToken = await generateSaveTokenAndCreateUser()
+    dbUser = await userController.createUser(user)
   })
 
   afterAll(async () => {
@@ -75,11 +77,10 @@ describe('permission', () => {
     })
 
     it('should respond with new permission when principalType is user', async () => {
-      const dbUser = await userController.createUser(user)
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send({ ...permission, principalId: dbUser.id })
+        .send({ ...permission, principalId: dbUser?.id })
         .expect(200)
 
       expect(res.body.permissionId).toBeTruthy()
@@ -271,16 +272,11 @@ describe('permission', () => {
   })
 
   describe('update', () => {
-    let dbUser: UserDetailsResponse | undefined
     let dbPermission: PermissionDetailsResponse | undefined
     beforeAll(async () => {
-      dbUser = await userController.createUser({
-        ...user,
-        username: 'updated username'
-      })
       dbPermission = await permissionController.createPermission({
         ...permission,
-        principalId: dbUser.id
+        principalId: dbUser?.id
       })
     })
 
@@ -351,14 +347,9 @@ describe('permission', () => {
 
   describe('delete', () => {
     it('should delete permission', async () => {
-      const dbUser = await userController.createUser({
-        ...user,
-        username: 'deleted username'
-      })
-
       const dbPermission = await permissionController.createPermission({
         ...permission,
-        principalId: dbUser.id
+        principalId: dbUser?.id
       })
       const res = await request(app)
         .delete(`/SASjsApi/permission/${dbPermission?.permissionId}`)
@@ -377,6 +368,45 @@ describe('permission', () => {
         .expect(403)
 
       expect(res.text).toEqual('Error: Permission is not found.')
+    })
+  })
+
+  describe('get', () => {
+    beforeAll(async () => {
+      await permissionController.createPermission({
+        ...permission,
+        uri: '/test-1',
+        principalId: dbUser?.id
+      })
+      await permissionController.createPermission({
+        ...permission,
+        uri: '/test-2',
+        principalId: dbUser?.id
+      })
+    })
+
+    it('should give a list of all permissions when user is admin', async () => {
+      const res = await request(app)
+        .get('/SASjsApi/permission/')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body).toHaveLength(2)
+    })
+
+    it('should give a list of all permissions when user is not admin', async () => {
+      const accessToken = await generateSaveTokenAndCreateUser({
+        ...user,
+        username: 'get' + user.username
+      })
+      const res = await request(app)
+        .get('/SASjsApi/permission/')
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body).toHaveLength(2)
     })
   })
 })
