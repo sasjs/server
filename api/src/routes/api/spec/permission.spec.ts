@@ -6,8 +6,13 @@ import appPromise from '../../../app'
 import {
   UserController,
   GroupController,
-  ClientController
+  ClientController,
+  PermissionController
 } from '../../../controllers/'
+import {
+  UserDetailsResponse,
+  PermissionDetailsResponse
+} from '../../../controllers'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'
@@ -41,6 +46,7 @@ const group = {
 const userController = new UserController()
 const groupController = new GroupController()
 const clientController = new ClientController()
+const permissionController = new PermissionController()
 
 describe('permission', () => {
   let app: Express
@@ -70,11 +76,10 @@ describe('permission', () => {
 
     it('should respond with new permission when principalType is user', async () => {
       const dbUser = await userController.createUser(user)
-      permission.principalId = dbUser.id
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send(permission)
+        .send({ ...permission, principalId: dbUser.id })
         .expect(200)
 
       expect(res.body.permissionId).toBeTruthy()
@@ -245,6 +250,72 @@ describe('permission', () => {
         .expect(403)
 
       expect(res.text).toEqual('Error: Client not found.')
+      expect(res.body).toEqual({})
+    })
+  })
+
+  describe('update', () => {
+    let dbUser: UserDetailsResponse | undefined
+    let dbPermission: PermissionDetailsResponse | undefined
+    beforeAll(async () => {
+      dbUser = await userController.createUser({
+        ...user,
+        username: 'updated username'
+      })
+      dbPermission = await permissionController.createPermission({
+        ...permission,
+        principalId: dbUser.id
+      })
+    })
+
+    afterEach(async () => {
+      await deleteAllPermissions()
+    })
+
+    it('should respond with updated permission', async () => {
+      const res = await request(app)
+        .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({ setting: 'Deny' })
+        .expect(200)
+
+      expect(res.body.setting).toEqual('Deny')
+    })
+
+    it('should respond with Unauthorized if access token is not present', async () => {
+      const res = await request(app)
+        .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
+        .send(permission)
+        .expect(401)
+
+      expect(res.text).toEqual('Unauthorized')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Unauthorized if access token is not of an admin account', async () => {
+      const accessToken = await generateSaveTokenAndCreateUser({
+        ...user,
+        username: 'update' + user.username
+      })
+
+      const res = await request(app)
+        .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(401)
+
+      expect(res.text).toEqual('Admin account required')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if setting is missing', async () => {
+      const res = await request(app)
+        .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(400)
+
+      expect(res.text).toEqual(`"setting" is required`)
       expect(res.body).toEqual({})
     })
   })

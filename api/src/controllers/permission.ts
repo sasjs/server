@@ -49,7 +49,7 @@ interface UpdatePermissionPayload {
   setting: string
 }
 
-interface PermissionDetailsResponse {
+export interface PermissionDetailsResponse {
   permissionId: number
   uri: string
   setting: string

@@ -21,7 +21,7 @@ export interface UserResponse {
   displayName: string
 }
 
-interface UserDetailsResponse {
+export interface UserDetailsResponse {
   id: number
   displayName: string
   username: string
