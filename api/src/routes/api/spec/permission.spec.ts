@@ -348,6 +348,37 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
   })
+
+  describe('delete', () => {
+    it('should delete permission', async () => {
+      const dbUser = await userController.createUser({
+        ...user,
+        username: 'deleted username'
+      })
+
+      const dbPermission = await permissionController.createPermission({
+        ...permission,
+        principalId: dbUser.id
+      })
+      const res = await request(app)
+        .delete(`/SASjsApi/permission/${dbPermission?.permissionId}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.text).toEqual('Permission Deleted!')
+    })
+
+    it('should respond with forbidden Request (403) if permission with provided id does not exists', async () => {
+      const res = await request(app)
+        .delete('/SASjsApi/permission/123')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(403)
+
+      expect(res.text).toEqual('Error: Permission is not found.')
+    })
+  })
 })
 
 const generateSaveTokenAndCreateUser = async (
