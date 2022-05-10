@@ -35,7 +35,9 @@ export const cookieOptions = {
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }
 
-const cspConfigJson: any = getEnvCSPDirectives(HELMET_CSP_CONFIG_PATH)
+const cspConfigJson: { [key: string]: string[] | null } = getEnvCSPDirectives(
+  HELMET_CSP_CONFIG_PATH
+)
 const coepFlag =
   HELMET_COEP === 'true' || HELMET_COEP === undefined ? true : false
 if (PROTOCOL === 'http') cspConfigJson['upgrade-insecure-requests'] = null
