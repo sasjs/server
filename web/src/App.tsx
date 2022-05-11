@@ -10,6 +10,7 @@ import Drive from './containers/Drive'
 import Studio from './containers/Studio'
 
 import { AppContext } from './context/appContext'
+import AuthCode from './containers/AuthCode'
 
 function App() {
   const appContext = useContext(AppContext)
@@ -20,9 +21,6 @@ function App() {
         <HashRouter>
           <Header />
           <Switch>
-            <Route exact path="/SASjsLogon">
-              <Login getCodeOnly />
-            </Route>
             <Route path="/">
               <Login />
             </Route>
@@ -47,7 +45,7 @@ function App() {
             <Studio />
           </Route>
           <Route exact path="/SASjsLogon">
-            <Login getCodeOnly />
+            <AuthCode />
           </Route>
         </Switch>
       </HashRouter>
