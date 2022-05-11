@@ -119,7 +119,7 @@ HELMET_COEP=
 #
 # Example config:
 # {
-#   "img-src": ["'self'", "domain.com"],
+#   "img-src": ["'self'", "data:"],
 #   "script-src": ["'self'", "'unsafe-inline'"],
 #   "script-src-attr": ["'self'", "'unsafe-inline'"]
 # }

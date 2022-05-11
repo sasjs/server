@@ -5,7 +5,9 @@ export const getEnvCSPDirectives = (
   HELMET_CSP_CONFIG_PATH: string | undefined
 ) => {
   let cspConfigJson = {
-    'script-src': ["'self'", "'unsafe-inline'"]
+    'img-src': ["'self'", "data:"],
+    'script-src': ["'self'", "'unsafe-inline'"],
+    'script-src-attr': ["'self'", "'unsafe-inline'"]
   }
 
   if (

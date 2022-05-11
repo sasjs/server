@@ -1,5 +1,5 @@
 {
-  "img-src": ["'self'", "domen.com"],
+  "img-src": ["'self'", "data:"],
   "script-src": ["'self'", "'unsafe-inline'"],
   "script-src-attr": ["'self'", "'unsafe-inline'"]
 }
