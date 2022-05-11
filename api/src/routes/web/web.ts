@@ -1,6 +1,7 @@
 import express from 'express'
 import { WebController } from '../../controllers/web'
-import { loginWebValidation } from '../../utils'
+import { authenticateAccessToken } from '../../middlewares'
+import { authorizeValidation, loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
 const controller = new WebController()
@@ -17,7 +18,7 @@ webRouter.get('/', async (req, res) => {
   }
 })
 
-webRouter.post('/login', async (req, res) => {
+webRouter.post('/SASLogon/login', async (req, res) => {
   const { error, value: body } = loginWebValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
@@ -28,6 +29,22 @@ webRouter.post('/login', async (req, res) => {
     res.status(400).send(err.toString())
   }
 })
+
+webRouter.post(
+  '/SASLogon/authorize',
+  authenticateAccessToken,
+  async (req, res) => {
+    const { error, value: body } = authorizeValidation(req.body)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    try {
+      const response = await controller.authorize(req, body)
+      res.send(response)
+    } catch (err: any) {
+      res.status(400).send(err.toString())
+    }
+  }
+)
 
 webRouter.get('/logout', async (req, res) => {
   try {
