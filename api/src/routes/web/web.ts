@@ -26,7 +26,7 @@ webRouter.post('/SASLogon/login', async (req, res) => {
     const response = await controller.login(req, body)
     res.send(response)
   } catch (err: any) {
-    res.status(400).send(err.toString())
+    res.status(403).send(err.toString())
   }
 })
 
@@ -41,7 +41,7 @@ webRouter.post(
       const response = await controller.authorize(req, body)
       res.send(response)
     } catch (err: any) {
-      res.status(400).send(err.toString())
+      res.status(403).send(err.toString())
     }
   }
 )
@@ -51,7 +51,7 @@ webRouter.get('/logout', async (req, res) => {
     await controller.logout(req)
     res.status(200).send('OK!')
   } catch (err: any) {
-    res.status(400).send(err.toString())
+    res.status(403).send(err.toString())
   }
 })
 

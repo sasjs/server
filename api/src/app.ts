@@ -85,21 +85,25 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
  *        With Mongo Store          *
  ***********************************/
 if (MODE?.trim() === 'server') {
+  let store: MongoStore | undefined
+
   // NOTE: when exporting app.js as agent for supertest
   // we should exclude connecting to the real database
   if (process.env.NODE_ENV !== 'test') {
     const clientPromise = connectDB().then((conn) => conn!.getClient() as any)
 
-    app.use(
-      session({
-        secret: process.env.SESSION_SECRET as string,
-        saveUninitialized: false, // don't create session until something stored
-        resave: false, //don't save session if unmodified
-        store: MongoStore.create({ clientPromise, collectionName: 'sessions' }),
-        cookie: cookieOptions
-      })
-    )
+    store = MongoStore.create({ clientPromise, collectionName: 'sessions' })
   }
+
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET as string,
+      saveUninitialized: false, // don't create session until something stored
+      resave: false, //don't save session if unmodified
+      store,
+      cookie: cookieOptions
+    })
+  )
 }
 app.use(express.json({ limit: '100mb' }))
 app.use(express.static(path.join(__dirname, '../public')))

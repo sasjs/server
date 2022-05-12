@@ -108,6 +108,10 @@ const authorize = async (
 ): Promise<AuthorizeResponse> => {
   const userId = req.session.user?.userId
   if (!userId) throw new Error('Invalid userId.')
+
+  const client = await Client.findOne({ clientId })
+  if (!client) throw new Error('Invalid clientId.')
+
   // generate authorization code against clientId
   const userInfo: InfoJWT = {
     clientId,
