@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.75](https://github.com/sasjs/server/compare/v0.0.69...v0.0.75) (2022-05-12)
+
+
+### Features
+
+* CSP_DISABLE env option ([dd3acce](https://github.com/sasjs/server/commit/dd3acce3935e7cfc0b2c44a401314306915a3a10))
+
+
+### Bug Fixes
+
+* added more cookies to req ([4a8e32d](https://github.com/sasjs/server/commit/4a8e32dd20b540b6dc92d749fad90d6c7fc69376))
+* bumping core ([c0b57b9](https://github.com/sasjs/server/commit/c0b57b9e76d6db33fc64a68556a8be979dd69e40))
+* csp updates ([7cfa239](https://github.com/sasjs/server/commit/7cfa2398e12c5e515d27c896f36ff91604c2124d))
+* helmet config on http mode ([b0fdaaa](https://github.com/sasjs/server/commit/b0fdaaaa79e3135699c51effac0388d8ec5ab23b))
+* moved getAuthCode from api to web routes ([b40de8f](https://github.com/sasjs/server/commit/b40de8fa6a5aa763ed25a6fe6a381e483e0ab824))
+* reqHeadrs.txt will contain headers to access APIs ([636301e](https://github.com/sasjs/server/commit/636301e664416fb085f704d83deb7f39ee0a91a7))
+* **web:** seperate container for auth code ([5888f04](https://github.com/sasjs/server/commit/5888f04e08a32c6d2c7bcfcbc3a1d32425bff3b3))
+
 ### [0.0.74](https://github.com/sasjs/server/compare/v0.0.73...v0.0.74) (2022-05-12)
 
 
