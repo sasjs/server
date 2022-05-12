@@ -20,14 +20,11 @@ describe('web', () => {
   let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
-  let csrfToken: string
-  let cookies: string
   const userController = new UserController()
   const clientController = new ClientController()
 
   beforeAll(async () => {
     app = await appPromise
-    ;({ csrfToken, cookies } = await getCSRF(app))
 
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
@@ -50,7 +47,15 @@ describe('web', () => {
         )
     })
   })
+
   describe('SASLogon/login', () => {
+    let csrfToken: string
+    let cookies: string
+
+    beforeAll(async () => {
+      ;({ csrfToken, cookies } = await getCSRF(app))
+    })
+
     afterEach(async () => {
       const collections = mongoose.connection.collections
       const collection = collections['users']
@@ -79,9 +84,13 @@ describe('web', () => {
   })
 
   describe('SASLogon/authorize', () => {
+    let csrfToken: string
+    let cookies: string
     let authCookies: string
 
     beforeAll(async () => {
+      ;({ csrfToken, cookies } = await getCSRF(app))
+
       await userController.createUser(user)
 
       const credentials = {
@@ -146,6 +155,7 @@ const getCSRF = async (app: Express) => {
   const { header } = await request(app).get('/')
   const cookies = header['set-cookie'].join()
 
+  console.log('cookies', cookies)
   const csrfToken = extractCSRF(cookies)
   return { csrfToken, cookies }
 }

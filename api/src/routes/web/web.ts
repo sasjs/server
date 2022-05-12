@@ -7,14 +7,15 @@ const webRouter = express.Router()
 const controller = new WebController()
 
 webRouter.get('/', async (req, res) => {
+  let response
   try {
-    const response = await controller.home()
-
+    response = await controller.home()
+  } catch (_) {
+    response = 'Web Build is not present'
+  } finally {
     res.cookie('XSRF-TOKEN', req.csrfToken())
 
     return res.send(response)
-  } catch (_) {
-    return res.send('Web Build is not present')
   }
 })
 
