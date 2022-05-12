@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.74](https://github.com/sasjs/server/compare/v0.0.73...v0.0.74) (2022-05-12)
+
+
+### Bug Fixes
+
+* csp updates ([7cfa239](https://github.com/sasjs/server/commit/7cfa2398e12c5e515d27c896f36ff91604c2124d))
+
 ### [0.0.73](https://github.com/sasjs/server/compare/v0.0.72...v0.0.73) (2022-05-10)
 
 
