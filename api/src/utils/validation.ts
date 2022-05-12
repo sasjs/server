@@ -13,8 +13,6 @@ export const loginWebValidation = (data: any): Joi.ValidationResult =>
 
 export const authorizeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    username: usernameSchema.required(),
-    password: passwordSchema.required(),
     clientId: Joi.string().required()
   }).validate(data)
 

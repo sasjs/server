@@ -13,19 +13,6 @@ import { InfoJWT } from '../../types'
 const authRouter = express.Router()
 const controller = new AuthController()
 
-authRouter.post('/authorize', async (req, res) => {
-  const { error, value: body } = authorizeValidation(req.body)
-  if (error) return res.status(400).send(error.details[0].message)
-
-  try {
-    const response = await controller.authorize(body)
-
-    res.send(response)
-  } catch (err: any) {
-    res.status(403).send(err.toString())
-  }
-})
-
 authRouter.post('/token', async (req, res) => {
   const { error, value: body } = tokenValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)

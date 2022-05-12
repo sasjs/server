@@ -5,51 +5,6 @@ components:
     requestBodies: {}
     responses: {}
     schemas:
-        LoginPayload:
-            properties:
-                username:
-                    type: string
-                    description: 'Username for user'
-                    example: secretuser
-                password:
-                    type: string
-                    description: 'Password for user'
-                    example: secretpassword
-            required:
-                - username
-                - password
-            type: object
-            additionalProperties: false
-        AuthorizeResponse:
-            properties:
-                code:
-                    type: string
-                    description: 'Authorization code'
-                    example: someRandomCryptoString
-            required:
-                - code
-            type: object
-            additionalProperties: false
-        AuthorizePayload:
-            properties:
-                username:
-                    type: string
-                    description: 'Username for user'
-                    example: secretuser
-                password:
-                    type: string
-                    description: 'Password for user'
-                    example: secretpassword
-                clientId:
-                    type: string
-                    description: 'Client ID'
-                    example: clientID1
-            required:
-                - username
-                - password
-                - clientId
-            type: object
-            additionalProperties: false
         TokenResponse:
             properties:
                 accessToken:
@@ -90,6 +45,41 @@ components:
             required:
                 - clientId
                 - userId
+            type: object
+            additionalProperties: false
+        LoginPayload:
+            properties:
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: secretuser
+                password:
+                    type: string
+                    description: 'Password for user'
+                    example: secretpassword
+            required:
+                - username
+                - password
+            type: object
+            additionalProperties: false
+        AuthorizeResponse:
+            properties:
+                code:
+                    type: string
+                    description: 'Authorization code'
+                    example: someRandomCryptoString
+            required:
+                - code
+            type: object
+            additionalProperties: false
+        AuthorizePayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: clientID1
+            required:
+                - clientId
             type: object
             additionalProperties: false
         ClientPayload:
@@ -425,14 +415,6 @@ components:
                 - description
             type: object
             additionalProperties: false
-        ExecuteReturnJsonPayload:
-            properties:
-                _program:
-                    type: string
-                    description: 'Location of SAS program'
-                    example: /Public/somefolder/some.file
-            type: object
-            additionalProperties: false
         InfoResponse:
             properties:
                 mode:
@@ -452,6 +434,14 @@ components:
                 - protocol
             type: object
             additionalProperties: false
+        ExecuteReturnJsonPayload:
+            properties:
+                _program:
+                    type: string
+                    description: 'Location of SAS program'
+                    example: /Public/somefolder/some.file
+            type: object
+            additionalProperties: false
     securitySchemes:
         bearerAuth:
             type: http
@@ -465,86 +455,6 @@ info:
         name: '4GL Ltd'
 openapi: 3.0.0
 paths:
-    /:
-        get:
-            operationId: Home
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-            summary: 'Render index.html'
-            tags:
-                - Web
-            security: []
-            parameters: []
-    /login:
-        post:
-            operationId: Login
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                properties:
-                                    user: {properties: {displayName: {type: string}, username: {type: string}}, required: [displayName, username], type: object}
-                                    loggedIn: {type: boolean}
-                                required:
-                                    - user
-                                    - loggedIn
-                                type: object
-            summary: 'Accept a valid username/password'
-            tags:
-                - Web
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/LoginPayload'
-    /logout:
-        get:
-            operationId: Logout
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema: {}
-            summary: 'Accept a valid username/password'
-            tags:
-                - Web
-            security: []
-            parameters: []
-    /SASjsApi/auth/authorize:
-        post:
-            operationId: Authorize
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AuthorizeResponse'
-                            examples:
-                                'Example 1':
-                                    value: {code: someRandomCryptoString}
-            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
-            tags:
-                - Auth
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AuthorizePayload'
     /SASjsApi/auth/token:
         post:
             operationId: Token
@@ -601,6 +511,86 @@ paths:
             security:
                 -
                     bearerAuth: []
+            parameters: []
+    /:
+        get:
+            operationId: Home
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            summary: 'Render index.html'
+            tags:
+                - Web
+            security: []
+            parameters: []
+    /SASLogon/login:
+        post:
+            operationId: Login
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    user: {properties: {displayName: {type: string}, username: {type: string}}, required: [displayName, username], type: object}
+                                    loggedIn: {type: boolean}
+                                required:
+                                    - user
+                                    - loggedIn
+                                type: object
+            summary: 'Accept a valid username/password'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginPayload'
+    /SASLogon/authorize:
+        post:
+            operationId: Authorize
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizeResponse'
+                            examples:
+                                'Example 1':
+                                    value: {code: someRandomCryptoString}
+            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthorizePayload'
+    /logout:
+        get:
+            operationId: Logout
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema: {}
+            summary: 'Accept a valid username/password'
+            tags:
+                - Web
+            security: []
             parameters: []
     /SASjsApi/client:
         post:
@@ -1248,6 +1238,24 @@ paths:
                         format: double
                         type: number
                     example: '6789'
+    /SASjsApi/info:
+        get:
+            operationId: Info
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InfoResponse'
+                            examples:
+                                'Example 1':
+                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http}
+            summary: 'Get server info (mode, cors, whiteList, protocol).'
+            tags:
+                - Info
+            security: []
+            parameters: []
     /SASjsApi/session:
         get:
             operationId: Session
@@ -1330,24 +1338,6 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
-    /SASjsApi/info:
-        get:
-            operationId: Info
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InfoResponse'
-                            examples:
-                                'Example 1':
-                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http}
-            summary: 'Get server info (mode, cors, whiteList, protocol).'
-            tags:
-                - Info
-            security: []
-            parameters: []
 servers:
     -
         url: /

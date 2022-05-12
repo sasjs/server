@@ -54,6 +54,7 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{secrets.ACCESS_TOKEN_SECRET}}
           REFRESH_TOKEN_SECRET: ${{secrets.REFRESH_TOKEN_SECRET}}
           AUTH_CODE_SECRET: ${{secrets.AUTH_CODE_SECRET}}
+          SESSION_SECRET: ${{secrets.SESSION_SECRET}}
 
       - name: Build Package
         working-directory: ./api
