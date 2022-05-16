@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.76](https://github.com/sasjs/server/compare/v0.0.75...v0.0.76) (2022-05-16)
+
+
+### Bug Fixes
+
+* get csrf token from cookie if not present in header ([f89389b](https://github.com/sasjs/server/commit/f89389bbc6f1f8f7060db2bdeb89746cbd60f533))
+
 ### [0.0.75](https://github.com/sasjs/server/compare/v0.0.69...v0.0.75) (2022-05-12)
 
 
