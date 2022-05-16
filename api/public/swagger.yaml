@@ -465,8 +465,6 @@ components:
                     $ref: '#/components/schemas/UserResponse'
                 group:
                     $ref: '#/components/schemas/GroupResponse'
-                clientId:
-                    type: string
             required:
                 - permissionId
                 - uri
@@ -1402,7 +1400,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users'}}, {permissionId: 125, uri: /SASjsApi/code/execute, setting: Deny, clientId: clientId1}]
+                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users'}}]
             summary: 'Get list of all permissions (uri, setting and userDetail).'
             tags:
                 - Permission

@@ -7,7 +7,6 @@ interface IPermissionDocument extends Document {
   permissionId: number
   user: Schema.Types.ObjectId
   group: Schema.Types.ObjectId
-  client: Schema.Types.ObjectId
 }
 
 interface IPermission extends IPermissionDocument {}
@@ -24,8 +23,7 @@ const permissionSchema = new Schema<IPermissionDocument>({
     required: true
   },
   user: { type: Schema.Types.ObjectId, ref: 'User' },
-  group: { type: Schema.Types.ObjectId, ref: 'Group' },
-  client: { type: Schema.Types.ObjectId, ref: 'Client' }
+  group: { type: Schema.Types.ObjectId, ref: 'Group' }
 })
 
 permissionSchema.plugin(AutoIncrement, { inc_field: 'permissionId' })

@@ -14,7 +14,6 @@ import {
 import Permission from '../model/Permission'
 import User from '../model/User'
 import Group from '../model/Group'
-import Client from '../model/Client'
 import { UserResponse } from './user'
 import { GroupResponse } from './group'
 
@@ -55,7 +54,6 @@ export interface PermissionDetailsResponse {
   setting: string
   user?: UserResponse
   group?: GroupResponse
-  clientId?: string
 }
 
 @Security('bearerAuth')
@@ -82,12 +80,6 @@ export class PermissionController {
         name: 'DCGroup',
         description: 'This group represents Data Controller Users'
       }
-    },
-    {
-      permissionId: 125,
-      uri: '/SASjsApi/code/execute',
-      setting: 'Deny',
-      clientId: 'clientId1'
     }
   ])
   @Get('/')
@@ -154,10 +146,6 @@ const getAllPermissions = async (): Promise<PermissionDetailsResponse[]> =>
     .populate({
       path: 'group',
       select: 'groupId name description -_id'
-    })
-    .populate({
-      path: 'client',
-      select: 'clientId -_id'
     })) as unknown as PermissionDetailsResponse[]
 
 const createPermission = async ({
@@ -173,7 +161,6 @@ const createPermission = async ({
 
   let user: UserResponse | undefined
   let group: GroupResponse | undefined
-  let clientId: string | undefined
 
   switch (principalType) {
     case 'user':
@@ -200,18 +187,8 @@ const createPermission = async ({
         description: groupInDB.description
       }
       break
-    case 'client':
-      const clientInDB = await Client.findOne({ clientId: principalId })
-      if (!clientInDB) throw new Error('Client not found.')
-
-      permission.client = clientInDB._id
-
-      clientId = clientInDB.clientId
-      break
     default:
-      throw new Error(
-        'Invalid principal type. Valid types are user, group and client.'
-      )
+      throw new Error('Invalid principal type. Valid types are user or group.')
   }
 
   const savedPermission = await permission.save()
@@ -221,8 +198,7 @@ const createPermission = async ({
     uri: savedPermission.uri,
     setting: savedPermission.setting,
     user,
-    group,
-    clientId
+    group
   }
 }
 
@@ -247,10 +223,6 @@ const updatePermission = async (
     .populate({
       path: 'group',
       select: 'groupId name description -_id'
-    })
-    .populate({
-      path: 'client',
-      select: 'clientId -_id'
     })) as unknown as PermissionDetailsResponse
   if (!updatedPermission) throw new Error('Unable to update permission')
 

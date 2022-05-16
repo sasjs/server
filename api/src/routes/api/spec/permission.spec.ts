@@ -108,28 +108,6 @@ describe('permission', () => {
       expect(res.body.group).toBeTruthy()
     })
 
-    it('should respond with new permission when principalType is client', async () => {
-      const dbclient = await clientController.createClient({
-        clientId: '123456789',
-        clientSecret: '123456789'
-      })
-
-      const res = await request(app)
-        .post('/SASjsApi/permission')
-        .auth(adminAccessToken, { type: 'bearer' })
-        .send({
-          ...permission,
-          principalType: 'client',
-          principalId: dbclient.clientId
-        })
-        .expect(200)
-
-      expect(res.body.permissionId).toBeTruthy()
-      expect(res.body.uri).toEqual(permission.uri)
-      expect(res.body.setting).toEqual(permission.setting)
-      expect(res.body.clientId).toEqual(dbclient.clientId)
-    })
-
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
@@ -240,20 +218,6 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with forbidden Request (403) if client is not found', async () => {
-      const res = await request(app)
-        .post('/SASjsApi/permission')
-        .auth(adminAccessToken, { type: 'bearer' })
-        .send({
-          ...permission,
-          principalType: 'client'
-        })
-        .expect(403)
-
-      expect(res.text).toEqual('Error: Client not found.')
-      expect(res.body).toEqual({})
-    })
-
     it('should respond with forbidden Request (403) if principal type is not valid', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
@@ -265,7 +229,7 @@ describe('permission', () => {
         .expect(403)
 
       expect(res.text).toEqual(
-        'Error: Invalid principal type. Valid types are user, group and client.'
+        'Error: Invalid principal type. Valid types are user or group.'
       )
       expect(res.body).toEqual({})
     })
