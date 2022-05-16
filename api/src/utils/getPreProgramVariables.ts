@@ -4,7 +4,7 @@ export const getPreProgramVariables = (req: any): PreProgramVars => {
   const host = req.get('host')
   const protocol = req.protocol + '://'
   const { user, accessToken } = req
-  const csrfToken = req.headers['x-xsrf-token']
+  const csrfToken = req.headers['x-xsrf-token'] || req.cookies['XSRF-TOKEN']
   const sessionId = req.cookies['connect.sid']
   const { _csrf } = req.cookies
 
