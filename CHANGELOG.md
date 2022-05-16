@@ -1,3 +1,9 @@
+## [0.0.77](https://github.com/sasjs/server/compare/v0.0.76...v0.0.77) (2022-05-16)
+
+
+### Bug Fixes
+
+* **release:** Github workflow without npm token ([c017d13](https://github.com/sasjs/server/commit/c017d13061d21aeacd0690367992d12ca57a115b))
 
 ### [0.0.76](https://github.com/sasjs/server/compare/v0.0.75...v0.0.76) (2022-05-16)
 
