@@ -8,6 +8,7 @@ import Header from './components/header'
 import Home from './components/home'
 import Drive from './containers/Drive'
 import Studio from './containers/Studio'
+import Settings from './containers/Settings'
 
 import { AppContext } from './context/appContext'
 
@@ -45,6 +46,9 @@ function App() {
           </Route>
           <Route exact path="/SASjsStudio">
             <Studio />
+          </Route>
+          <Route exact path="/SASjsSettings">
+            <Settings />
           </Route>
           <Route exact path="/SASjsLogon">
             <Login getCodeOnly />
