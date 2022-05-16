@@ -36,7 +36,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "npx standard-version"
+        "publishCmd": "echo 'publish command'"
       }
     ]
   ]
