@@ -2,8 +2,8 @@ name: SASjs Server Executable Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
   release:
@@ -49,10 +49,11 @@ jobs:
           zip macos.zip api-macos
           zip windows.zip api-win.exe
 
+      - name: Install Semantic Release and plugins
+        run: |
+          npm i
+          npm i -g semantic-release
+
       - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ./executables/linux.zip
-            ./executables/macos.zip
-            ./executables/windows.zip
+        run: |
+          GITHUB_TOKEN=${{ secrets.GH_TOKEN }} semantic-release
