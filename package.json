@@ -7,7 +7,6 @@
     "server": "npm run server:prepare && npm run server:start",
     "server:prepare": "cd web && npm ci && npm run build && cd ../api && npm ci && npm run build && cd ..",
     "server:start": "cd api && npm run start:prod",
-    "release": "standard-version",
     "lint-api:fix": "npx prettier --write \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-api": "npx prettier --check \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-web:fix": "npx prettier --write \"web/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
@@ -16,7 +15,9 @@
     "lint:fix": "npm run lint-api:fix && npm run lint-web:fix"
   },
   "devDependencies": {
-    "prettier": "^2.3.1",
-    "standard-version": "^9.3.2"
+    "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^8.0.4"
   }
 }
