@@ -24,6 +24,7 @@ import { styled } from '@mui/material/styles'
 
 import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
+import UpdatePermissionModal from './updatePermissionModal'
 
 import { PermissionResponse } from '../../utils/types'
 
@@ -34,6 +35,10 @@ const BootstrapTableCell = styled(TableCell)({
 const Permission = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
+  const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
+    useState(false)
+  const [selectedPermissionForUpdate, setSelectedPermissionForUpdate] =
+    useState<PermissionResponse>()
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [uriFilter, setUriFilter] = useState<string[]>([])
   const [principalFilter, setPrincipalFilter] = useState<string[]>([])
@@ -114,6 +119,13 @@ const Permission = () => {
 
   const addPermission = () => {}
 
+  const handleUpdatePermissionClick = (permission: PermissionResponse) => {
+    setSelectedPermissionForUpdate(permission)
+    setUpdatePermissionModalOpen(true)
+  }
+
+  const updatePermission = () => {}
+
   return isLoading ? (
     <CircularProgress
       style={{ position: 'absolute', left: '50%', top: '50%' }}
@@ -142,6 +154,7 @@ const Permission = () => {
         <Grid item xs={12}>
           <PermissionTable
             permissions={filterApplied ? filteredPermissions : permissions}
+            handleUpdatePermissionClick={handleUpdatePermissionClick}
           />
         </Grid>
       </Grid>
@@ -164,6 +177,14 @@ const Permission = () => {
         permissions={permissions}
         addPermission={addPermission}
       />
+      {selectedPermissionForUpdate && (
+        <UpdatePermissionModal
+          open={updatePermissionModalOpen}
+          handleOpen={setUpdatePermissionModalOpen}
+          permission={selectedPermissionForUpdate}
+          updatePermission={updatePermission}
+        />
+      )}
     </Box>
   )
 }
@@ -172,9 +193,13 @@ export default Permission
 
 type PermissionTableProps = {
   permissions: PermissionResponse[]
+  handleUpdatePermissionClick: (permission: PermissionResponse) => void
 }
 
-const PermissionTable = ({ permissions }: PermissionTableProps) => {
+const PermissionTable = ({
+  permissions,
+  handleUpdatePermissionClick
+}: PermissionTableProps) => {
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }}>
@@ -196,7 +221,9 @@ const PermissionTable = ({ permissions }: PermissionTableProps) => {
               <BootstrapTableCell>{permission.setting}</BootstrapTableCell>
               <BootstrapTableCell>
                 <Tooltip title="Edit Permission">
-                  <IconButton>
+                  <IconButton
+                    onClick={() => handleUpdatePermissionClick(permission)}
+                  >
                     <EditIcon />
                   </IconButton>
                 </Tooltip>
