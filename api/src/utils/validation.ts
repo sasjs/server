@@ -79,7 +79,7 @@ export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
     uri: Joi.string().required(),
     setting: Joi.string().required(),
     principalType: Joi.string().required(),
-    principalId: Joi.any().required()
+    principalId: Joi.number().required()
   }).validate(data)
 
 export const updatePermissionValidation = (data: any): Joi.ValidationResult =>

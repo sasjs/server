@@ -34,10 +34,10 @@ interface RegisterPermissionPayload {
    */
   principalType: string
   /**
-   * The id of user(number), group(name), or client(clientId) to which a rule is assigned.
+   * The id of user or group to which a rule is assigned.
    * @example 123
    */
-  principalId: any
+  principalId: number
 }
 
 interface UpdatePermissionPayload {
