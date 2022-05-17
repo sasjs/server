@@ -1,8 +1,7 @@
-import React, { useState, useEffect, Dispatch, SetStateAction } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import {
   Box,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -13,18 +12,17 @@ import {
   Grid,
   CircularProgress,
   IconButton,
-  Dialog,
-  DialogContent,
-  DialogActions,
-  TextField
+  Tooltip
 } from '@mui/material'
-import Autocomplete from '@mui/material/Autocomplete'
 
 import FilterListIcon from '@mui/icons-material/FilterList'
+import AddIcon from '@mui/icons-material/Add'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 
 import { styled } from '@mui/material/styles'
 
-import { BootstrapDialogTitle } from '../../components/dialogTitle'
+import PermissionFilterModal from './permissionFilterModal'
 
 interface UserResponse {
   id: number
@@ -38,7 +36,7 @@ interface GroupResponse {
   description: string
 }
 
-interface PermissionResponse {
+export interface PermissionResponse {
   permissionId: number
   uri: string
   setting: string
@@ -49,15 +47,6 @@ interface PermissionResponse {
 const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
 })
-
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-  '& .MuiDialogContent-root': {
-    padding: theme.spacing(2)
-  },
-  '& .MuiDialogActions-root': {
-    padding: theme.spacing(1)
-  }
-}))
 
 const Permission = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -147,10 +136,17 @@ const Permission = () => {
     <Box className="permissions-page">
       <Grid container direction="column" spacing={1}>
         <Grid item xs={12}>
-          <Paper elevation={3}>
-            <IconButton>
-              <FilterListIcon onClick={() => setFilterModalOpen(true)} />
-            </IconButton>
+          <Paper elevation={3} sx={{ display: 'flex' }}>
+            <Tooltip title="Filter Permissions">
+              <IconButton>
+                <FilterListIcon onClick={() => setFilterModalOpen(true)} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Add Permission" placement="bottom-end">
+              <IconButton sx={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+                <AddIcon />
+              </IconButton>
+            </Tooltip>
           </Paper>
         </Grid>
         <Grid item xs={12}>
@@ -159,7 +155,7 @@ const Permission = () => {
           />
         </Grid>
       </Grid>
-      <FilterModal
+      <PermissionFilterModal
         open={filterModalOpen}
         handleClose={setFilterModalOpen}
         permissions={permissions}
@@ -191,6 +187,7 @@ const PermissionTable = ({ permissions }: PermissionTableProps) => {
             <BootstrapTableCell>Uri</BootstrapTableCell>
             <BootstrapTableCell>Principal</BootstrapTableCell>
             <BootstrapTableCell>Setting</BootstrapTableCell>
+            <BootstrapTableCell>Action</BootstrapTableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -201,6 +198,18 @@ const PermissionTable = ({ permissions }: PermissionTableProps) => {
                 {displayPrincipal(permission)}
               </BootstrapTableCell>
               <BootstrapTableCell>{permission.setting}</BootstrapTableCell>
+              <BootstrapTableCell>
+                <Tooltip title="Edit Permission">
+                  <IconButton>
+                    <EditIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Permission">
+                  <IconButton color="error">
+                    <DeleteForeverIcon />
+                  </IconButton>
+                </Tooltip>
+              </BootstrapTableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -215,104 +224,4 @@ const displayPrincipal = (permission: PermissionResponse) => {
   } else if (permission.group) {
     return permission.group?.name
   }
-}
-
-type FilterModalProps = {
-  open: boolean
-  handleClose: Dispatch<SetStateAction<boolean>>
-  permissions: PermissionResponse[]
-  uriFilter: string[]
-  setUriFilter: Dispatch<SetStateAction<string[]>>
-  principalFilter: string[]
-  setPrincipalFilter: Dispatch<SetStateAction<string[]>>
-  settingFilter: string[]
-  setSettingFilter: Dispatch<SetStateAction<string[]>>
-  applyFilter: () => void
-  resetFilter: () => void
-}
-
-const FilterModal = ({
-  open,
-  handleClose,
-  permissions,
-  uriFilter,
-  setUriFilter,
-  principalFilter,
-  setPrincipalFilter,
-  settingFilter,
-  setSettingFilter,
-  applyFilter,
-  resetFilter
-}: FilterModalProps) => {
-  const URIs = permissions.map((permission) => permission.uri)
-  const principals = permissions
-    .map((permission) => {
-      if (permission.user) return permission.user.displayName
-      if (permission.group) return permission.group.name
-      return ''
-    })
-    .filter((principal) => principal !== '')
-
-  return (
-    <BootstrapDialog onClose={handleClose} open={open}>
-      <BootstrapDialogTitle
-        id="permission-filter-dialog-title"
-        onClose={handleClose}
-      >
-        Permission Filter
-      </BootstrapDialogTitle>
-      <DialogContent dividers>
-        <Grid container spacing={1}>
-          <Grid item xs={12}>
-            <Autocomplete
-              multiple
-              options={URIs}
-              filterSelectedOptions
-              value={uriFilter}
-              onChange={(event: any, newValue: string[]) => {
-                setUriFilter(newValue)
-              }}
-              renderInput={(params) => <TextField {...params} label="URIs" />}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Autocomplete
-              multiple
-              options={principals}
-              filterSelectedOptions
-              value={principalFilter}
-              onChange={(event: any, newValue: string[]) => {
-                setPrincipalFilter(newValue)
-              }}
-              renderInput={(params) => (
-                <TextField {...params} label="Principals" />
-              )}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Autocomplete
-              multiple
-              options={['Grant', 'Deny']}
-              filterSelectedOptions
-              value={settingFilter}
-              onChange={(event: any, newValue: string[]) => {
-                setSettingFilter(newValue)
-              }}
-              renderInput={(params) => (
-                <TextField {...params} label="Settings" />
-              )}
-            />
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button variant="outlined" color="error" onClick={resetFilter}>
-          Reset
-        </Button>
-        <Button variant="outlined" onClick={applyFilter}>
-          Apply
-        </Button>
-      </DialogActions>
-    </BootstrapDialog>
-  )
 }

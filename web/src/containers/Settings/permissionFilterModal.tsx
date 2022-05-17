@@ -1,0 +1,124 @@
+import React, { Dispatch, SetStateAction } from 'react'
+import {
+  Button,
+  Grid,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  TextField
+} from '@mui/material'
+import { styled } from '@mui/material/styles'
+import Autocomplete from '@mui/material/Autocomplete'
+
+import { PermissionResponse } from './permission'
+import { BootstrapDialogTitle } from '../../components/dialogTitle'
+const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialogContent-root': {
+    padding: theme.spacing(2)
+  },
+  '& .MuiDialogActions-root': {
+    padding: theme.spacing(1)
+  }
+}))
+
+type FilterModalProps = {
+  open: boolean
+  handleClose: Dispatch<SetStateAction<boolean>>
+  permissions: PermissionResponse[]
+  uriFilter: string[]
+  setUriFilter: Dispatch<SetStateAction<string[]>>
+  principalFilter: string[]
+  setPrincipalFilter: Dispatch<SetStateAction<string[]>>
+  settingFilter: string[]
+  setSettingFilter: Dispatch<SetStateAction<string[]>>
+  applyFilter: () => void
+  resetFilter: () => void
+}
+
+const PermissionFilterModal = ({
+  open,
+  handleClose,
+  permissions,
+  uriFilter,
+  setUriFilter,
+  principalFilter,
+  setPrincipalFilter,
+  settingFilter,
+  setSettingFilter,
+  applyFilter,
+  resetFilter
+}: FilterModalProps) => {
+  const URIs = permissions.map((permission) => permission.uri)
+  const principals = permissions
+    .map((permission) => {
+      if (permission.user) return permission.user.displayName
+      if (permission.group) return permission.group.name
+      return ''
+    })
+    .filter((principal) => principal !== '')
+
+  return (
+    <BootstrapDialog onClose={handleClose} open={open}>
+      <BootstrapDialogTitle
+        id="permission-filter-dialog-title"
+        onClose={handleClose}
+      >
+        Permission Filter
+      </BootstrapDialogTitle>
+      <DialogContent dividers>
+        <Grid container spacing={1}>
+          <Grid item xs={12}>
+            <Autocomplete
+              multiple
+              options={URIs}
+              filterSelectedOptions
+              value={uriFilter}
+              onChange={(event: any, newValue: string[]) => {
+                setUriFilter(newValue)
+              }}
+              renderInput={(params) => <TextField {...params} label="URIs" />}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Autocomplete
+              multiple
+              options={principals}
+              filterSelectedOptions
+              value={principalFilter}
+              onChange={(event: any, newValue: string[]) => {
+                setPrincipalFilter(newValue)
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Principals" />
+              )}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Autocomplete
+              multiple
+              options={['Grant', 'Deny']}
+              filterSelectedOptions
+              value={settingFilter}
+              onChange={(event: any, newValue: string[]) => {
+                setSettingFilter(newValue)
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Settings" />
+              )}
+            />
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button variant="outlined" color="error" onClick={resetFilter}>
+          Reset
+        </Button>
+        <Button variant="outlined" onClick={applyFilter}>
+          Apply
+        </Button>
+      </DialogActions>
+    </BootstrapDialog>
+  )
+}
+
+export default PermissionFilterModal
