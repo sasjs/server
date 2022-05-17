@@ -7,19 +7,19 @@ import CloseIcon from '@mui/icons-material/Close'
 export interface DialogTitleProps {
   id: string
   children?: React.ReactNode
-  onClose: Dispatch<SetStateAction<boolean>>
+  handleOpen: Dispatch<SetStateAction<boolean>>
 }
 
 export const BootstrapDialogTitle = (props: DialogTitleProps) => {
-  const { children, onClose, ...other } = props
+  const { children, handleOpen, ...other } = props
 
   return (
     <DialogTitle sx={{ m: 0, p: 2 }} {...other}>
       {children}
-      {onClose ? (
+      {handleOpen ? (
         <IconButton
           aria-label="close"
-          onClick={() => onClose(false)}
+          onClick={() => handleOpen(false)}
           sx={{
             position: 'absolute',
             right: 8,

@@ -23,26 +23,9 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import { styled } from '@mui/material/styles'
 
 import PermissionFilterModal from './permissionFilterModal'
+import AddPermissionModal from './addPermissionModal'
 
-interface UserResponse {
-  id: number
-  username: string
-  displayName: string
-}
-
-interface GroupResponse {
-  groupId: number
-  name: string
-  description: string
-}
-
-export interface PermissionResponse {
-  permissionId: number
-  uri: string
-  setting: string
-  user?: UserResponse
-  group?: GroupResponse
-}
+import { PermissionResponse } from '../../utils/types'
 
 const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
@@ -50,6 +33,7 @@ const BootstrapTableCell = styled(TableCell)({
 
 const Permission = () => {
   const [isLoading, setIsLoading] = useState(false)
+  const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [uriFilter, setUriFilter] = useState<string[]>([])
   const [principalFilter, setPrincipalFilter] = useState<string[]>([])
@@ -128,6 +112,8 @@ const Permission = () => {
     setFilterApplied(false)
   }
 
+  const addPermission = () => {}
+
   return isLoading ? (
     <CircularProgress
       style={{ position: 'absolute', left: '50%', top: '50%' }}
@@ -142,8 +128,12 @@ const Permission = () => {
                 <FilterListIcon onClick={() => setFilterModalOpen(true)} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Add Permission" placement="bottom-end">
-              <IconButton sx={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+            <Tooltip
+              sx={{ marginLeft: 'auto' }}
+              title="Add Permission"
+              placement="bottom-end"
+            >
+              <IconButton onClick={() => setAddPermissionModalOpen(true)}>
                 <AddIcon />
               </IconButton>
             </Tooltip>
@@ -157,7 +147,7 @@ const Permission = () => {
       </Grid>
       <PermissionFilterModal
         open={filterModalOpen}
-        handleClose={setFilterModalOpen}
+        handleOpen={setFilterModalOpen}
         permissions={permissions}
         uriFilter={uriFilter}
         setUriFilter={setUriFilter}
@@ -167,6 +157,12 @@ const Permission = () => {
         setSettingFilter={setSettingFilter}
         applyFilter={applyFilter}
         resetFilter={resetFilter}
+      />
+      <AddPermissionModal
+        open={addPermissionModalOpen}
+        handleOpen={setAddPermissionModalOpen}
+        permissions={permissions}
+        addPermission={addPermission}
       />
     </Box>
   )
@@ -192,7 +188,7 @@ const PermissionTable = ({ permissions }: PermissionTableProps) => {
         </TableHead>
         <TableBody>
           {permissions.map((permission) => (
-            <TableRow>
+            <TableRow key={permission.permissionId}>
               <BootstrapTableCell>{permission.uri}</BootstrapTableCell>
               <BootstrapTableCell>
                 {displayPrincipal(permission)}

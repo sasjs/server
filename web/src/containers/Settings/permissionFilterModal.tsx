@@ -10,7 +10,7 @@ import {
 import { styled } from '@mui/material/styles'
 import Autocomplete from '@mui/material/Autocomplete'
 
-import { PermissionResponse } from './permission'
+import { PermissionResponse } from '../../utils/types'
 import { BootstrapDialogTitle } from '../../components/dialogTitle'
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
@@ -23,7 +23,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 
 type FilterModalProps = {
   open: boolean
-  handleClose: Dispatch<SetStateAction<boolean>>
+  handleOpen: Dispatch<SetStateAction<boolean>>
   permissions: PermissionResponse[]
   uriFilter: string[]
   setUriFilter: Dispatch<SetStateAction<string[]>>
@@ -37,7 +37,7 @@ type FilterModalProps = {
 
 const PermissionFilterModal = ({
   open,
-  handleClose,
+  handleOpen,
   permissions,
   uriFilter,
   setUriFilter,
@@ -58,10 +58,10 @@ const PermissionFilterModal = ({
     .filter((principal) => principal !== '')
 
   return (
-    <BootstrapDialog onClose={handleClose} open={open}>
+    <BootstrapDialog onClose={() => handleOpen(false)} open={open}>
       <BootstrapDialogTitle
         id="permission-filter-dialog-title"
-        onClose={handleClose}
+        handleOpen={handleOpen}
       >
         Permission Filter
       </BootstrapDialogTitle>
