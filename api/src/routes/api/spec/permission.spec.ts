@@ -53,7 +53,7 @@ describe('permission', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let adminAccessToken: string
-  let dbUser: UserDetailsResponse | undefined
+  let dbUser: UserDetailsResponse
 
   beforeAll(async () => {
     app = await appPromise
@@ -80,7 +80,7 @@ describe('permission', () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send({ ...permission, principalId: dbUser?.id })
+        .send({ ...permission, principalId: dbUser.id })
         .expect(200)
 
       expect(res.body.permissionId).toBeTruthy()
@@ -240,7 +240,7 @@ describe('permission', () => {
     beforeAll(async () => {
       dbPermission = await permissionController.createPermission({
         ...permission,
-        principalId: dbUser?.id
+        principalId: dbUser.id
       })
     })
 
@@ -313,7 +313,7 @@ describe('permission', () => {
     it('should delete permission', async () => {
       const dbPermission = await permissionController.createPermission({
         ...permission,
-        principalId: dbUser?.id
+        principalId: dbUser.id
       })
       const res = await request(app)
         .delete(`/SASjsApi/permission/${dbPermission?.permissionId}`)
@@ -340,12 +340,12 @@ describe('permission', () => {
       await permissionController.createPermission({
         ...permission,
         uri: '/test-1',
-        principalId: dbUser?.id
+        principalId: dbUser.id
       })
       await permissionController.createPermission({
         ...permission,
         uri: '/test-2',
-        principalId: dbUser?.id
+        principalId: dbUser.id
       })
     })
 

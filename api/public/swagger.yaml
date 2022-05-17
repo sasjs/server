@@ -486,7 +486,9 @@ components:
                     description: 'Indicates the type of principal'
                     example: user
                 principalId:
-                    description: 'The id of user(number), group(name), or client(clientId) to which a rule is assigned.'
+                    type: number
+                    format: double
+                    description: 'The id of user or group to which a rule is assigned.'
                     example: 123
             required:
                 - uri
