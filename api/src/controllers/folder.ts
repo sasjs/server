@@ -13,9 +13,10 @@ const addRootFolder = async () => {
 
   folder = new Folder({
     name: '/',
-    parentFolderUri: '/',
+    parentFolderUri: '',
     type: MemberType.Folder
   })
+  folder.parentFolderUri = folder._id
 
   return await folder.save()
 }
