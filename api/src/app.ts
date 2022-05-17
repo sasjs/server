@@ -8,6 +8,8 @@ import webRouter from './routes/web'
 import apiRouter from './routes/api'
 import { connectDB, getWebBuildFolderPath } from './utils'
 
+import { FolderController } from './controllers'
+
 dotenv.config()
 
 const app = express()
@@ -29,5 +31,9 @@ app.use('/SASjsApi', apiRouter)
 app.use(express.json({ limit: '50mb' }))
 
 app.use(express.static(getWebBuildFolderPath()))
+
+const folderController = new FolderController()
+
+folderController.addRootFolder()
 
 export default connectDB().then(() => app)
