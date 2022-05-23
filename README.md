@@ -125,6 +125,10 @@ HELMET_COEP=
 # }
 HELMET_CSP_CONFIG_PATH=./csp.config.json
 
+# LOG_FORMAT_MORGAN options: [combined|common|dev|short|tiny] default: `common`
+# Docs: https://www.npmjs.com/package/morgan#predefined-formats
+LOG_FORMAT_MORGAN=
+
 ```
 
 ## Persisting the Session

@@ -18,6 +18,14 @@ export enum HelmetCoepType {
   FALSE = 'false'
 }
 
+export enum LOG_FORMAT_MORGANType {
+  Combined = 'combined',
+  Common = 'common',
+  Dev = 'dev',
+  Short = 'short',
+  tiny = 'tiny'
+}
+
 export enum ReturnCode {
   Success,
   InvalidEnv
@@ -35,6 +43,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyCORS())
 
   errors.push(...verifyHELMET_COEP())
+
+  errors.push(...verifyLOG_FORMAT_MORGAN())
 
   if (errors.length) {
     process.logger?.error(
@@ -173,9 +183,29 @@ const verifyHELMET_COEP = (): string[] => {
   return errors
 }
 
+const verifyLOG_FORMAT_MORGAN = (): string[] => {
+  const errors: string[] = []
+  const { LOG_FORMAT_MORGAN } = process.env
+
+  if (LOG_FORMAT_MORGAN) {
+    const logFormatMorganTypes = Object.values(LOG_FORMAT_MORGANType)
+    if (
+      !logFormatMorganTypes.includes(LOG_FORMAT_MORGAN as LOG_FORMAT_MORGANType)
+    )
+      errors.push(
+        `- LOG_FORMAT_MORGAN '${LOG_FORMAT_MORGAN}'\n - valid options ${logFormatMorganTypes}`
+      )
+    LOG_FORMAT_MORGAN
+  } else {
+    process.env.LOG_FORMAT_MORGAN = DEFAULTS.LOG_FORMAT_MORGAN
+  }
+  return errors
+}
+
 const DEFAULTS = {
-  MODE: 'desktop',
-  PROTOCOL: 'http',
+  MODE: ModeType.Desktop,
+  PROTOCOL: ProtocolType.HTTP,
   PORT: '5000',
-  HELMET_COEP: 'true'
+  HELMET_COEP: HelmetCoepType.TRUE,
+  LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common
 }

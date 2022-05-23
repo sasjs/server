@@ -37,10 +37,18 @@ if (verifyEnvVariables()) {
 const app = express()
 
 app.use(cookieParser())
-app.use(morgan('tiny'))
 
-const { MODE, CORS, WHITELIST, PROTOCOL, HELMET_CSP_CONFIG_PATH, HELMET_COEP } =
-  process.env
+const {
+  MODE,
+  CORS,
+  WHITELIST,
+  PROTOCOL,
+  HELMET_CSP_CONFIG_PATH,
+  HELMET_COEP,
+  LOG_FORMAT_MORGAN
+} = process.env
+
+app.use(morgan(LOG_FORMAT_MORGAN as string))
 
 export const cookieOptions = {
   secure: PROTOCOL === ProtocolType.HTTPS,
