@@ -1,15 +1,18 @@
 import axios from 'axios'
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 import React, { useEffect, useState } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { useLocation } from 'react-router-dom'
 
-import { CssBaseline, Box, Typography } from '@mui/material'
+import { CssBaseline, Box, Typography, Button } from '@mui/material'
 
 const getAuthCode = async (credentials: any) =>
   axios.post('/SASLogon/authorize', credentials).then((res) => res.data)
 
 const AuthCode = () => {
   const location = useLocation()
-  const [displayCode, setDisplayCode] = useState(null)
+  const [displayCode, setDisplayCode] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -56,6 +59,20 @@ const AuthCode = () => {
       {errorMessage && <Typography>{errorMessage}</Typography>}
 
       <br />
+
+      <CopyToClipboard
+        text={displayCode}
+        onCopy={() =>
+          toast.info('Code copied to ClipBoard', {
+            theme: 'dark',
+            position: toast.POSITION.BOTTOM_RIGHT
+          })
+        }
+      >
+        <Button variant="contained">Copy to Clipboard</Button>
+      </CopyToClipboard>
+
+      <ToastContainer />
     </Box>
   )
 }

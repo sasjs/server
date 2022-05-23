@@ -24,7 +24,9 @@ const Header = (props: any) => {
   const history = useHistory()
   const { pathname } = useLocation()
   const appContext = useContext(AppContext)
-  const [tabValue, setTabValue] = useState(pathname)
+  const [tabValue, setTabValue] = useState(
+    pathname === '/SASjsLogon' ? '/' : pathname
+  )
   const [anchorEl, setAnchorEl] = useState<
     (EventTarget & HTMLButtonElement) | null
   >(null)
