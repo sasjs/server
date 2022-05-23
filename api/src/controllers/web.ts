@@ -5,7 +5,7 @@ import { readFile } from '@sasjs/utils'
 
 import User from '../model/User'
 import Client from '../model/Client'
-import { getWebBuildFolderPath, generateAuthCode } from '../utils'
+import { getWebBuildFolder, generateAuthCode } from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
 
@@ -63,7 +63,7 @@ export class WebController {
 }
 
 const home = async () => {
-  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+  const indexHtmlPath = path.join(getWebBuildFolder(), 'index.html')
 
   // Attention! Cannot use fileExists here,
   // due to limitation after building executable

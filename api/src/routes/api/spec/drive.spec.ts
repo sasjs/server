@@ -21,17 +21,17 @@ import * as fileUtilModules from '../../../utils/file'
 const timestamp = generateTimestamp()
 const tmpFolder = path.join(process.cwd(), `tmp-${timestamp}`)
 jest
-  .spyOn(fileUtilModules, 'getTmpFolderPath')
+  .spyOn(fileUtilModules, 'getSasjsRootFolder')
   .mockImplementation(() => tmpFolder)
 jest
-  .spyOn(fileUtilModules, 'getTmpUploadsPath')
+  .spyOn(fileUtilModules, 'getUploadsFolder')
   .mockImplementation(() => path.join(tmpFolder, 'uploads'))
 
 import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
-const { getTmpFilesFolderPath } = fileUtilModules
+const { getFilesFolder } = fileUtilModules
 
 const clientId = 'someclientID'
 const user = {
@@ -157,10 +157,10 @@ describe('drive', () => {
       expect(res.text).toEqual(
         '{"status":"success","message":"Files deployed successfully to @sasjs/server."}'
       )
-      await expect(folderExists(getTmpFilesFolderPath())).resolves.toEqual(true)
+      await expect(folderExists(getFilesFolder())).resolves.toEqual(true)
 
       const testJobFolder = path.join(
-        getTmpFilesFolderPath(),
+        getFilesFolder(),
         'public',
         'jobs',
         'extract'
@@ -174,7 +174,7 @@ describe('drive', () => {
 
       await expect(readFile(testJobFile)).resolves.toEqual(exampleService.code)
 
-      await deleteFolder(path.join(getTmpFilesFolderPath(), 'public'))
+      await deleteFolder(path.join(getFilesFolder(), 'public'))
     })
   })
 
@@ -192,7 +192,7 @@ describe('drive', () => {
       })
 
       it('should get a SAS folder on drive having _folderPath as query param', async () => {
-        const pathToDrive = fileUtilModules.getTmpFilesFolderPath()
+        const pathToDrive = fileUtilModules.getFilesFolder()
 
         const dirLevel1 = 'level1'
         const dirLevel2 = 'level2'
@@ -267,10 +267,7 @@ describe('drive', () => {
         const fileToCopyPath = path.join(__dirname, 'files', 'sample.sas')
         const filePath = '/my/path/code.sas'
 
-        const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
-          filePath
-        )
+        const pathToCopy = path.join(fileUtilModules.getFilesFolder(), filePath)
         await copy(fileToCopyPath, pathToCopy)
 
         const res = await request(app)
@@ -333,7 +330,7 @@ describe('drive', () => {
         const pathToUpload = `/my/path/code-${generateTimestamp()}.sas`
 
         const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
+          fileUtilModules.getFilesFolder(),
           pathToUpload
         )
         await copy(fileToAttachPath, pathToCopy)
@@ -445,7 +442,7 @@ describe('drive', () => {
         const pathToUpload = '/my/path/code.sas'
 
         const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
+          fileUtilModules.getFilesFolder(),
           pathToUpload
         )
         await copy(fileToAttachPath, pathToCopy)
@@ -467,7 +464,7 @@ describe('drive', () => {
         const pathToUpload = '/my/path/code.sas'
 
         const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
+          fileUtilModules.getFilesFolder(),
           pathToUpload
         )
         await copy(fileToAttachPath, pathToCopy)
@@ -603,10 +600,7 @@ describe('drive', () => {
         const fileToCopyContent = await readFile(fileToCopyPath)
         const filePath = '/my/path/code.sas'
 
-        const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
-          filePath
-        )
+        const pathToCopy = path.join(fileUtilModules.getFilesFolder(), filePath)
         await copy(fileToCopyPath, pathToCopy)
 
         const res = await request(app)

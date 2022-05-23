@@ -1,13 +1,13 @@
 import path from 'path'
 import { Request } from 'express'
 import multer, { FileFilterCallback, Options } from 'multer'
-import { blockFileRegex, getTmpUploadsPath } from '../utils'
+import { blockFileRegex, getUploadsFolder } from '../utils'
 
 const fieldNameSize = 300
 const fileSize = 104857600 // 100 MB
 
 const storage = multer.diskStorage({
-  destination: getTmpUploadsPath(),
+  destination: getUploadsFolder(),
   filename: function (
     _req: Request,
     file: Express.Multer.File,

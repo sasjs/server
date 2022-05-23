@@ -3,7 +3,7 @@ import { Session } from '../../types'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import {
-  getTmpSessionsFolderPath,
+  getSessionsFolder,
   generateUniqueFileName,
   sysInitCompiledPath
 } from '../../utils'
@@ -37,7 +37,7 @@ export class SessionController {
 
   private async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
-    const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
+    const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
     const creationTimeStamp = sessionId.split('-').pop() as string
     // death time of session is 15 mins from creation
