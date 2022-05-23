@@ -19,7 +19,7 @@ import {
 } from './internal'
 import {
   getPreProgramVariables,
-  getTmpFilesFolderPath,
+  getFilesFolder,
   HTTPHeaders,
   isDebugOn,
   LogLine,
@@ -132,7 +132,7 @@ const executeReturnRaw = async (
   const query = req.query as ExecutionVars
   const sasCodePath =
     path
-      .join(getTmpFilesFolderPath(), _program)
+      .join(getFilesFolder(), _program)
       .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   try {
@@ -172,7 +172,7 @@ const executeReturnJson = async (
 ): Promise<ExecuteReturnJsonResponse> => {
   const sasCodePath =
     path
-      .join(getTmpFilesFolderPath(), _program)
+      .join(getFilesFolder(), _program)
       .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   const filesNamesMap = req.files?.length ? makeFilesNamesMap(req.files) : null

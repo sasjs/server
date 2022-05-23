@@ -32,7 +32,7 @@ import {
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { TreeNode } from '../types'
-import { getTmpFilesFolderPath } from '../utils'
+import { getFilesFolder } from '../utils'
 
 interface DeployPayload {
   appLoc: string
@@ -214,12 +214,12 @@ const getFileTree = () => {
 }
 
 const deploy = async (data: DeployPayload) => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   const appLocParts = data.appLoc.replace(/^\//, '').split('/')
 
   const appLocPath = path
-    .join(getTmpFilesFolderPath(), ...appLocParts)
+    .join(getFilesFolder(), ...appLocParts)
     .replace(new RegExp('/', 'g'), path.sep)
 
   if (!appLocPath.includes(driveFilesPath)) {
@@ -238,10 +238,10 @@ const deploy = async (data: DeployPayload) => {
 }
 
 const getFile = async (req: express.Request, filePath: string) => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   const filePathFull = path
-    .join(getTmpFilesFolderPath(), filePath)
+    .join(getFilesFolder(), filePath)
     .replace(new RegExp('/', 'g'), path.sep)
 
   if (!filePathFull.includes(driveFilesPath)) {
@@ -261,11 +261,11 @@ const getFile = async (req: express.Request, filePath: string) => {
 }
 
 const getFolder = async (folderPath?: string) => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   if (folderPath) {
     const folderPathFull = path
-      .join(getTmpFilesFolderPath(), folderPath)
+      .join(getFilesFolder(), folderPath)
       .replace(new RegExp('/', 'g'), path.sep)
 
     if (!folderPathFull.includes(driveFilesPath)) {
@@ -291,10 +291,10 @@ const getFolder = async (folderPath?: string) => {
 }
 
 const deleteFile = async (filePath: string) => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   const filePathFull = path
-    .join(getTmpFilesFolderPath(), filePath)
+    .join(getFilesFolder(), filePath)
     .replace(new RegExp('/', 'g'), path.sep)
 
   if (!filePathFull.includes(driveFilesPath)) {
@@ -314,7 +314,7 @@ const saveFile = async (
   filePath: string,
   multerFile: Express.Multer.File
 ): Promise<GetFileResponse> => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   const filePathFull = path
     .join(driveFilesPath, filePath)
@@ -339,7 +339,7 @@ const updateFile = async (
   filePath: string,
   multerFile: Express.Multer.File
 ): Promise<GetFileResponse> => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   const filePathFull = path
     .join(driveFilesPath, filePath)

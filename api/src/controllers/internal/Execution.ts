@@ -12,8 +12,8 @@ import { PreProgramVars, Session, TreeNode } from '../../types'
 import {
   extractHeaders,
   generateFileUploadSasCode,
-  getTmpFilesFolderPath,
-  getTmpMacrosPath,
+  getFilesFolder,
+  getMacrosFolder,
   HTTPHeaders,
   isDebugOn
 } from '../../utils'
@@ -110,7 +110,7 @@ export class ExecutionController {
 `
 
     program = `
-options insert=(SASAUTOS="${getTmpMacrosPath()}");
+options insert=(SASAUTOS="${getMacrosFolder()}");
 
 /* runtime vars */
 ${varStatments}
@@ -191,7 +191,7 @@ ${program}`
     const root: TreeNode = {
       name: 'files',
       relativePath: '',
-      absolutePath: getTmpFilesFolderPath(),
+      absolutePath: getFilesFolder(),
       children: []
     }
 

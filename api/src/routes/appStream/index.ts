@@ -2,7 +2,7 @@ import path from 'path'
 import express from 'express'
 import { folderExists } from '@sasjs/utils'
 
-import { addEntryToAppStreamConfig, getTmpFilesFolderPath } from '../../utils'
+import { addEntryToAppStreamConfig, getFilesFolder } from '../../utils'
 import { appStreamHtml } from './appStreamHtml'
 
 const router = express.Router()
@@ -22,7 +22,7 @@ export const publishAppStream = async (
   streamLogo?: string,
   addEntryToFile: boolean = true
 ) => {
-  const driveFilesPath = getTmpFilesFolderPath()
+  const driveFilesPath = getFilesFolder()
 
   const appLocParts = appLoc.replace(/^\//, '')?.split('/')
   const appLocPath = path.join(driveFilesPath, ...appLocParts)

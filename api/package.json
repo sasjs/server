@@ -94,9 +94,6 @@
     "tsoa": "3.14.1",
     "typescript": "^4.3.2"
   },
-  "configuration": {
-    "sasPath": "/opt/sas/sas9/SASHome/SASFoundation/9.4/sas"
-  },
   "nodemonConfig": {
     "ignore": [
       "tmp/**/*"

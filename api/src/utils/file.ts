@@ -11,28 +11,26 @@ export const sysInitCompiledPath = path.join(
 export const sasJSCoreMacros = path.join(apiRoot, 'sasjscore')
 export const sasJSCoreMacrosInfo = path.join(sasJSCoreMacros, '.macrolist')
 
-export const getWebBuildFolderPath = () =>
-  path.join(codebaseRoot, 'web', 'build')
+export const getWebBuildFolder = () => path.join(codebaseRoot, 'web', 'build')
 
-export const getTmpFolderPath = () => process.driveLoc
+export const getSasjsRootFolder = () => process.driveLoc
 
-export const getTmpAppStreamConfigPath = () =>
-  path.join(getTmpFolderPath(), 'appStreamConfig.json')
+export const getAppStreamConfigPath = () =>
+  path.join(getSasjsRootFolder(), 'appStreamConfig.json')
 
-export const getTmpMacrosPath = () => path.join(getTmpFolderPath(), 'sasjscore')
+export const getMacrosFolder = () =>
+  path.join(getSasjsRootFolder(), 'sasjscore')
 
-export const getTmpUploadsPath = () => path.join(getTmpFolderPath(), 'uploads')
+export const getUploadsFolder = () => path.join(getSasjsRootFolder(), 'uploads')
 
-export const getTmpFilesFolderPath = () =>
-  path.join(getTmpFolderPath(), 'files')
+export const getFilesFolder = () => path.join(getSasjsRootFolder(), 'files')
 
-export const getTmpLogFolderPath = () => path.join(getTmpFolderPath(), 'logs')
+export const getLogFolder = () => path.join(getSasjsRootFolder(), 'logs')
 
-export const getTmpWeboutFolderPath = () =>
-  path.join(getTmpFolderPath(), 'webouts')
+export const getWeboutFolder = () => path.join(getSasjsRootFolder(), 'webouts')
 
-export const getTmpSessionsFolderPath = () =>
-  path.join(getTmpFolderPath(), 'sessions')
+export const getSessionsFolder = () =>
+  path.join(getSasjsRootFolder(), 'sessions')
 
 export const generateUniqueFileName = (fileName: string, extension = '') =>
   [

@@ -12,25 +12,46 @@ import helmet from 'helmet'
 import {
   connectDB,
   copySASjsCore,
-  getWebBuildFolderPath,
+  CorsType,
+  getWebBuildFolder,
+  HelmetCoepType,
+  instantiateLogger,
   loadAppStreamConfig,
+  ModeType,
+  ProtocolType,
+  ReturnCode,
   setProcessVariables,
-  setupFolders
+  setupFolders,
+  verifyEnvVariables
 } from './utils'
 import { getEnvCSPDirectives } from './utils/parseHelmetConfig'
 
 dotenv.config()
 
+instantiateLogger()
+
+if (verifyEnvVariables()) {
+  process.exit(ReturnCode.InvalidEnv)
+}
+
 const app = express()
 
 app.use(cookieParser())
-app.use(morgan('tiny'))
 
-const { MODE, CORS, WHITELIST, PROTOCOL, HELMET_CSP_CONFIG_PATH, HELMET_COEP } =
-  process.env
+const {
+  MODE,
+  CORS,
+  WHITELIST,
+  PROTOCOL,
+  HELMET_CSP_CONFIG_PATH,
+  HELMET_COEP,
+  LOG_FORMAT_MORGAN
+} = process.env
+
+app.use(morgan(LOG_FORMAT_MORGAN as string))
 
 export const cookieOptions = {
-  secure: PROTOCOL === 'https',
+  secure: PROTOCOL === ProtocolType.HTTPS,
   httpOnly: true,
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }
@@ -38,9 +59,8 @@ export const cookieOptions = {
 const cspConfigJson: { [key: string]: string[] | null } = getEnvCSPDirectives(
   HELMET_CSP_CONFIG_PATH
 )
-const coepFlag =
-  HELMET_COEP === 'true' || HELMET_COEP === undefined ? true : false
-if (PROTOCOL === 'http') cspConfigJson['upgrade-insecure-requests'] = null
+if (PROTOCOL === ProtocolType.HTTP)
+  cspConfigJson['upgrade-insecure-requests'] = null
 
 /***********************************
  *         CSRF Protection         *
@@ -58,14 +78,14 @@ app.use(
         ...cspConfigJson
       }
     },
-    crossOriginEmbedderPolicy: coepFlag
+    crossOriginEmbedderPolicy: HELMET_COEP === HelmetCoepType.TRUE
   })
 )
 
 /***********************************
  *         Enabling CORS           *
  ***********************************/
-if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
+if (MODE === ModeType.Server || CORS === CorsType.ENABLED) {
   const whiteList: string[] = []
   WHITELIST?.split(' ')
     ?.filter((url) => !!url)
@@ -84,7 +104,7 @@ if (MODE?.trim() !== 'server' || CORS?.trim() === 'enable') {
  *        Express Sessions          *
  *        With Mongo Store          *
  ***********************************/
-if (MODE?.trim() === 'server') {
+if (MODE === ModeType.Server) {
   let store: MongoStore | undefined
 
   // NOTE: when exporting app.js as agent for supertest
@@ -129,7 +149,7 @@ export default setProcessVariables().then(async () => {
 
   // should be served after setting up web route
   // index.html needs to be injected with some js script.
-  app.use(express.static(getWebBuildFolderPath()))
+  app.use(express.static(getWebBuildFolder()))
 
   app.use(onError)
 

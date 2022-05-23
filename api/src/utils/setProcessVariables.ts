@@ -1,29 +1,28 @@
 import path from 'path'
-import { getAbsolutePath, getRealPath } from '@sasjs/utils'
+import { createFolder, getAbsolutePath, getRealPath } from '@sasjs/utils'
 
-import { configuration } from '../../package.json'
-import { getDesktopFields } from '.'
+import { getDesktopFields, ModeType } from '.'
 
 export const setProcessVariables = async () => {
   if (process.env.NODE_ENV === 'test') {
-    process.driveLoc = path.join(process.cwd(), 'tmp')
+    process.driveLoc = path.join(process.cwd(), 'sasjs_root')
     return
   }
 
   const { MODE } = process.env
 
-  if (MODE?.trim() === 'server') {
-    const { SAS_PATH, DRIVE_PATH } = process.env
-
-    process.sasLoc = SAS_PATH ?? configuration.sasPath
-    const absPath = getAbsolutePath(DRIVE_PATH ?? 'tmp', process.cwd())
-    process.driveLoc = getRealPath(absPath)
+  if (MODE === ModeType.Server) {
+    process.sasLoc = process.env.SAS_PATH as string
   } else {
-    const { sasLoc, driveLoc } = await getDesktopFields()
+    const { sasLoc } = await getDesktopFields()
 
     process.sasLoc = sasLoc
-    process.driveLoc = driveLoc
   }
+
+  const { SASJS_ROOT } = process.env
+  const absPath = getAbsolutePath(SASJS_ROOT ?? 'sasjs_root', process.cwd())
+  await createFolder(absPath)
+  process.driveLoc = getRealPath(absPath)
 
   console.log('sasLoc: ', process.sasLoc)
   console.log('sasDrive: ', process.driveLoc)

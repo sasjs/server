@@ -63,7 +63,7 @@ SAS_PATH=/path/to/sas/executable.exe
 
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
-DRIVE_PATH=/tmp
+SASJS_ROOT=./sasjs_root
 
 # options: [http|https] default: http
 PROTOCOL=
@@ -125,6 +125,10 @@ HELMET_COEP=
 # }
 HELMET_CSP_CONFIG_PATH=./csp.config.json
 
+# LOG_FORMAT_MORGAN options: [combined|common|dev|short|tiny] default: `common`
+# Docs: https://www.npmjs.com/package/morgan#predefined-formats
+LOG_FORMAT_MORGAN=
+
 ```
 
 ## Persisting the Session
@@ -147,7 +151,7 @@ Install the npm package [pm2](https://www.npmjs.com/package/pm2) (`npm install p
 ```bash
 export SAS_PATH=/opt/sas9/SASHome/SASFoundation/9.4/sasexe/sas
 export PORT=5001
-export DRIVE_PATH=./tmp
+export SASJS_ROOT=./sasjs_root
 
 pm2 start api-linux
 ```
