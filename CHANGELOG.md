@@ -1,3 +1,16 @@
+# [0.1.0](https://github.com/sasjs/server/compare/v0.0.77...v0.1.0) (2022-05-23)
+
+
+### Bug Fixes
+
+* issue174 + issue175 + issue146 ([80b33c7](https://github.com/sasjs/server/commit/80b33c7a18c1b7727316ffeca71658346733e935))
+* **web:** click to copy + notification ([f37f8e9](https://github.com/sasjs/server/commit/f37f8e95d1a85e00ceca2413dbb5e1f3f3f72255))
+
+
+### Features
+
+* **env:** added new env variable LOG_FORMAT_MORGAN ([53bf68a](https://github.com/sasjs/server/commit/53bf68a6aff44bb7b2f40d40d6554809253a01a8))
+
 ## [0.0.77](https://github.com/sasjs/server/compare/v0.0.76...v0.0.77) (2022-05-16)
 
 
