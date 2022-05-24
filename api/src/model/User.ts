@@ -27,12 +27,18 @@ export interface UserPayload {
    * @example "true"
    */
   isActive?: boolean
+  /**
+   * User-specific auto-exec code
+   * @example "<SAS code>"
+   */
+  autoExec?: string
 }
 
 interface IUserDocument extends UserPayload, Document {
   id: number
   isAdmin: boolean
   isActive: boolean
+  autoExec: string
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
 }
@@ -65,6 +71,9 @@ const userSchema = new Schema<IUserDocument>({
   isActive: {
     type: Boolean,
     default: true
+  },
+  autoExec: {
+    type: String
   },
   groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
   tokens: [

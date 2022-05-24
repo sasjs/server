@@ -26,8 +26,11 @@ authRouter.post('/token', async (req, res) => {
   }
 })
 
-authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
-  const userInfo: InfoJWT = req.user
+authRouter.post('/refresh', authenticateRefreshToken, async (req, res) => {
+  const userInfo: InfoJWT = {
+    userId: req.user!.userId!,
+    clientId: req.user!.clientId!
+  }
 
   try {
     const response = await controller.refresh(userInfo)
@@ -38,8 +41,11 @@ authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
   }
 })
 
-authRouter.delete('/logout', authenticateAccessToken, async (req: any, res) => {
-  const userInfo: InfoJWT = req.user
+authRouter.delete('/logout', authenticateAccessToken, async (req, res) => {
+  const userInfo: InfoJWT = {
+    userId: req.user!.userId!,
+    clientId: req.user!.clientId!
+  }
 
   try {
     await controller.logout(userInfo)

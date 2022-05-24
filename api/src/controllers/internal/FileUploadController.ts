@@ -1,14 +1,15 @@
+import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
 import { getSessionController } from '.'
 
 export class FileUploadController {
   private storage = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
+    destination: function (req: Request, file: any, cb: any) {
       //Sending the intercepted files to the sessions subfolder
-      cb(null, req.sasSession.path)
+      cb(null, req.sasSession?.path)
     },
-    filename: function (req: any, file: any, cb: any) {
+    filename: function (req: Request, file: any, cb: any) {
       //req_file prefix + unique hash added to sas request files
       cb(null, `req_file_${uuidv4().replace(/-/gm, '')}`)
     }
@@ -18,7 +19,7 @@ export class FileUploadController {
 
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
-  public preUploadMiddleware = async (req: any, res: any, next: any) => {
+  public preUploadMiddleware: RequestHandler = async (req, res, next) => {
     let session
 
     const sessionController = getSessionController()

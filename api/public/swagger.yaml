@@ -323,6 +323,8 @@ components:
                     type: boolean
                 isAdmin:
                     type: boolean
+                autoExec:
+                    type: string
             required:
                 - id
                 - displayName
@@ -352,6 +354,10 @@ components:
                     type: boolean
                     description: 'Account should be active or not, defaults to true'
                     example: 'true'
+                autoExec:
+                    type: string
+                    description: 'User-specific auto-exec code'
+                    example: '<SAS code>'
             required:
                 - displayName
                 - username
@@ -989,6 +995,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UserDetailsResponse'
+            description: 'Only Admin or user itself will get user autoExec code.'
             summary: 'Get user properties - such as group memberships, userName, displayName.'
             tags:
                 - User

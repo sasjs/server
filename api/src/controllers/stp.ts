@@ -26,6 +26,7 @@ import {
   makeFilesNamesMap,
   parseLogToArray
 } from '../utils'
+import { MulterFile } from '../types/Upload'
 
 interface ExecuteReturnJsonPayload {
   /**
@@ -167,7 +168,7 @@ const executeReturnRaw = async (
 }
 
 const executeReturnJson = async (
-  req: any,
+  req: express.Request,
   _program: string
 ): Promise<ExecuteReturnJsonResponse> => {
   const sasCodePath =
@@ -175,7 +176,9 @@ const executeReturnJson = async (
       .join(getFilesFolder(), _program)
       .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
-  const filesNamesMap = req.files?.length ? makeFilesNamesMap(req.files) : null
+  const filesNamesMap = req.files?.length
+    ? makeFilesNamesMap(req.files as MulterFile[])
+    : null
 
   try {
     const { webout, log, httpHeaders } =

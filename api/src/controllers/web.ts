@@ -90,7 +90,8 @@ const login = async (
     username: user.username,
     displayName: user.displayName,
     isAdmin: user.isAdmin,
-    isActive: user.isActive
+    isActive: user.isActive,
+    autoExec: user.autoExec
   }
 
   return {

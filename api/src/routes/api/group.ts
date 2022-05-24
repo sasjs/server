@@ -33,12 +33,12 @@ groupRouter.get('/', authenticateAccessToken, async (req, res) => {
   }
 })
 
-groupRouter.get('/:groupId', authenticateAccessToken, async (req: any, res) => {
+groupRouter.get('/:groupId', authenticateAccessToken, async (req, res) => {
   const { groupId } = req.params
 
   const controller = new GroupController()
   try {
-    const response = await controller.getGroup(groupId)
+    const response = await controller.getGroup(parseInt(groupId))
     res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
@@ -49,12 +49,15 @@ groupRouter.post(
   '/:groupId/:userId',
   authenticateAccessToken,
   verifyAdmin,
-  async (req: any, res) => {
+  async (req, res) => {
     const { groupId, userId } = req.params
 
     const controller = new GroupController()
     try {
-      const response = await controller.addUserToGroup(groupId, userId)
+      const response = await controller.addUserToGroup(
+        parseInt(groupId),
+        parseInt(userId)
+      )
       res.send(response)
     } catch (err: any) {
       res.status(403).send(err.toString())
@@ -66,12 +69,15 @@ groupRouter.delete(
   '/:groupId/:userId',
   authenticateAccessToken,
   verifyAdmin,
-  async (req: any, res) => {
+  async (req, res) => {
     const { groupId, userId } = req.params
 
     const controller = new GroupController()
     try {
-      const response = await controller.removeUserFromGroup(groupId, userId)
+      const response = await controller.removeUserFromGroup(
+        parseInt(groupId),
+        parseInt(userId)
+      )
       res.send(response)
     } catch (err: any) {
       res.status(403).send(err.toString())
@@ -83,12 +89,12 @@ groupRouter.delete(
   '/:groupId',
   authenticateAccessToken,
   verifyAdmin,
-  async (req: any, res) => {
+  async (req, res) => {
     const { groupId } = req.params
 
     const controller = new GroupController()
     try {
-      await controller.deleteGroup(groupId)
+      await controller.deleteGroup(parseInt(groupId))
       res.status(200).send('Group Deleted!')
     } catch (err: any) {
       res.status(403).send(err.toString())

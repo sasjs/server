@@ -35,7 +35,8 @@ export const registerUserValidation = (data: any): Joi.ValidationResult =>
     username: usernameSchema.required(),
     password: passwordSchema.required(),
     isAdmin: Joi.boolean(),
-    isActive: Joi.boolean()
+    isActive: Joi.boolean(),
+    autoExec: Joi.string()
   }).validate(data)
 
 export const deleteUserValidation = (
@@ -57,7 +58,8 @@ export const updateUserValidation = (
   const validationChecks: any = {
     displayName: Joi.string().min(6),
     username: usernameSchema,
-    password: passwordSchema
+    password: passwordSchema,
+    autoExec: Joi.string()
   }
   if (isAdmin) {
     validationChecks.isAdmin = Joi.boolean()

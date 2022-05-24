@@ -34,7 +34,7 @@ stpRouter.post(
   '/execute',
   fileUploadController.preUploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
-  async (req: any, res: any) => {
+  async (req, res: any) => {
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
     const { error: errB, value: body } = executeProgramRawValidation(req.body)
 
