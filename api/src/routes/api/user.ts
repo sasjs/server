@@ -36,12 +36,12 @@ userRouter.get('/', authenticateAccessToken, async (req, res) => {
   }
 })
 
-userRouter.get('/:userId', authenticateAccessToken, async (req: any, res) => {
+userRouter.get('/:userId', authenticateAccessToken, async (req, res) => {
   const { userId } = req.params
 
   const controller = new UserController()
   try {
-    const response = await controller.getUser(userId)
+    const response = await controller.getUser(req, parseInt(userId))
     res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())
@@ -52,17 +52,17 @@ userRouter.patch(
   '/:userId',
   authenticateAccessToken,
   verifyAdminIfNeeded,
-  async (req: any, res) => {
+  async (req, res) => {
     const { user } = req
     const { userId } = req.params
 
     // only an admin can update `isActive` and `isAdmin` fields
-    const { error, value: body } = updateUserValidation(req.body, user.isAdmin)
+    const { error, value: body } = updateUserValidation(req.body, user!.isAdmin)
     if (error) return res.status(400).send(error.details[0].message)
 
     const controller = new UserController()
     try {
-      const response = await controller.updateUser(userId, body)
+      const response = await controller.updateUser(parseInt(userId), body)
       res.send(response)
     } catch (err: any) {
       res.status(403).send(err.toString())
@@ -74,17 +74,17 @@ userRouter.delete(
   '/:userId',
   authenticateAccessToken,
   verifyAdminIfNeeded,
-  async (req: any, res) => {
+  async (req, res) => {
     const { user } = req
     const { userId } = req.params
 
     // only an admin can delete user without providing password
-    const { error, value: data } = deleteUserValidation(req.body, user.isAdmin)
+    const { error, value: data } = deleteUserValidation(req.body, user!.isAdmin)
     if (error) return res.status(400).send(error.details[0].message)
 
     const controller = new UserController()
     try {
-      await controller.deleteUser(userId, data, user.isAdmin)
+      await controller.deleteUser(parseInt(userId), data, user!.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
       res.status(403).send(err.toString())

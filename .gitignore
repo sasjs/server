@@ -4,6 +4,7 @@ node_modules/
 .DS_Store
 .env*
 sas/
+sasjs_root/
 tmp/
 build/
 sasjsbuild/

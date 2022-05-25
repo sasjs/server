@@ -1,9 +1,14 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { ExecuteReturnJson, ExecutionController } from './internal'
-import { PreProgramVars } from '../types'
 import { ExecuteReturnJsonResponse } from '.'
-import { getPreProgramVariables, parseLogToArray } from '../utils'
+import {
+  getDesktopUserAutoExecPath,
+  getPreProgramVariables,
+  ModeType,
+  parseLogToArray
+} from '../utils'
+import { readFile } from '@sasjs/utils'
 
 interface ExecuteSASCodePayload {
   /**
@@ -30,14 +35,23 @@ export class CodeController {
   }
 }
 
-const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
+const executeSASCode = async (
+  req: express.Request,
+  { code }: ExecuteSASCodePayload
+) => {
+  const { user } = req
+  const userAutoExec =
+    process.env.MODE === ModeType.Server
+      ? user?.autoExec
+      : await readFile(getDesktopUserAutoExecPath())
+
   try {
     const { webout, log, httpHeaders } =
       (await new ExecutionController().executeProgram(
         code,
         getPreProgramVariables(req),
         { ...req.query, _debug: 131 },
-        undefined,
+        { userAutoExec },
         true
       )) as ExecuteReturnJson
 

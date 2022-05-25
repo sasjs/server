@@ -19,7 +19,8 @@ const user = {
   username: 'testUsername',
   password: '87654321',
   isAdmin: false,
-  isActive: true
+  isActive: true,
+  autoExec: 'some sas code for auto exec;'
 }
 
 const controller = new UserController()
@@ -64,6 +65,7 @@ describe('user', () => {
       expect(res.body.displayName).toEqual(user.displayName)
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
@@ -360,7 +362,25 @@ describe('user', () => {
       await deleteAllUsers()
     })
 
-    it('should respond with user', async () => {
+    it('should respond with user autoExec when same user requests', async () => {
+      const dbUser = await controller.createUser(user)
+      const userId = dbUser.id
+      const accessToken = await generateAndSaveToken(userId)
+
+      const res = await request(app)
+        .get(`/SASjsApi/user/${userId}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body.username).toEqual(user.username)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+    })
+
+    it('should respond with user autoExec when admin user requests', async () => {
       const dbUser = await controller.createUser(user)
       const userId = dbUser.id
 
@@ -374,6 +394,7 @@ describe('user', () => {
       expect(res.body.displayName).toEqual(user.displayName)
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
     })
 
     it('should respond with user when access token is not of an admin account', async () => {
@@ -395,6 +416,7 @@ describe('user', () => {
       expect(res.body.displayName).toEqual(user.displayName)
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toBeUndefined()
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {

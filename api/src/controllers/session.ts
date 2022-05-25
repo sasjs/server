@@ -23,8 +23,8 @@ export class SessionController {
   }
 }
 
-const session = (req: any) => ({
-  id: req.user.userId,
-  username: req.user.username,
-  displayName: req.user.displayName
+const session = (req: express.Request) => ({
+  id: req.user!.userId,
+  username: req.user!.username,
+  displayName: req.user!.displayName
 })

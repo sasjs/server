@@ -1,4 +1,6 @@
-export const verifyAdmin = (req: any, res: any, next: any) => {
+import { RequestHandler } from 'express'
+
+export const verifyAdmin: RequestHandler = (req, res, next) => {
   const { MODE } = process.env
   if (MODE?.trim() !== 'server') return next()
 

@@ -1,4 +1,5 @@
 import path from 'path'
+import { homedir } from 'os'
 
 export const apiRoot = path.join(__dirname, '..', '..')
 export const codebaseRoot = path.join(apiRoot, '..')
@@ -12,6 +13,11 @@ export const sasJSCoreMacros = path.join(apiRoot, 'sasjscore')
 export const sasJSCoreMacrosInfo = path.join(sasJSCoreMacros, '.macrolist')
 
 export const getWebBuildFolder = () => path.join(codebaseRoot, 'web', 'build')
+
+export const getSasjsHomeFolder = () => path.join(homedir(), '.sasjs-server')
+
+export const getDesktopUserAutoExecPath = () =>
+  path.join(getSasjsHomeFolder(), 'user-autoexec.sas')
 
 export const getSasjsRootFolder = () => process.driveLoc
 

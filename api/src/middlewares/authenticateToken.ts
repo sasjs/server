@@ -1,14 +1,27 @@
+import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { csrfProtection } from '../app'
-import { verifyTokenInDB } from '../utils'
+import { fetchLatestAutoExec, verifyTokenInDB } from '../utils'
 
-export const authenticateAccessToken = (req: any, res: any, next: any) => {
+export const authenticateAccessToken: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
   // if request is coming from web and has valid session
   // we can validate the request and check for CSRF Token
   if (req.session?.loggedIn) {
-    req.user = req.session.user
+    if (req.session.user) {
+      const user = await fetchLatestAutoExec(req.session.user)
 
-    return csrfProtection(req, res, next)
+      if (user) {
+        if (user.isActive) {
+          req.user = user
+          return csrfProtection(req, res, next)
+        } else return res.sendStatus(401)
+      }
+    }
+    return res.sendStatus(401)
   }
 
   authenticateToken(
@@ -20,7 +33,7 @@ export const authenticateAccessToken = (req: any, res: any, next: any) => {
   )
 }
 
-export const authenticateRefreshToken = (req: any, res: any, next: any) => {
+export const authenticateRefreshToken: RequestHandler = (req, res, next) => {
   authenticateToken(
     req,
     res,
@@ -31,16 +44,16 @@ export const authenticateRefreshToken = (req: any, res: any, next: any) => {
 }
 
 const authenticateToken = (
-  req: any,
-  res: any,
-  next: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
   key: string,
   tokenType: 'accessToken' | 'refreshToken'
 ) => {
   const { MODE } = process.env
   if (MODE?.trim() !== 'server') {
     req.user = {
-      userId: '1234',
+      userId: 1234,
       clientId: 'desktopModeClientId',
       username: 'desktopModeUsername',
       displayName: 'desktopModeDisplayName',

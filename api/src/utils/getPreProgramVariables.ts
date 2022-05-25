@@ -1,6 +1,7 @@
+import { Request } from 'express'
 import { PreProgramVars } from '../types'
 
-export const getPreProgramVariables = (req: any): PreProgramVars => {
+export const getPreProgramVariables = (req: Request): PreProgramVars => {
   const host = req.get('host')
   const protocol = req.protocol + '://'
   const { user, accessToken } = req
@@ -20,9 +21,9 @@ export const getPreProgramVariables = (req: any): PreProgramVars => {
   if (cookies.length) httpHeaders.push(`cookie: ${cookies.join('; ')}`)
 
   return {
-    username: user.username,
-    userId: user.userId,
-    displayName: user.displayName,
+    username: user!.username,
+    userId: user!.userId,
+    displayName: user!.displayName,
     serverUrl: protocol + host,
     httpHeaders
   }

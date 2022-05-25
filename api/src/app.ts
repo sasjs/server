@@ -30,9 +30,7 @@ dotenv.config()
 
 instantiateLogger()
 
-if (verifyEnvVariables()) {
-  process.exit(ReturnCode.InvalidEnv)
-}
+if (verifyEnvVariables()) process.exit(ReturnCode.InvalidEnv)
 
 const app = express()
 
@@ -85,7 +83,7 @@ app.use(
 /***********************************
  *         Enabling CORS           *
  ***********************************/
-if (MODE === ModeType.Server || CORS === CorsType.ENABLED) {
+if (CORS === CorsType.ENABLED) {
   const whiteList: string[] = []
   WHITELIST?.split(' ')
     ?.filter((url) => !!url)
@@ -125,6 +123,7 @@ if (MODE === ModeType.Server) {
     })
   )
 }
+
 app.use(express.json({ limit: '100mb' }))
 app.use(express.static(path.join(__dirname, '../public')))
 

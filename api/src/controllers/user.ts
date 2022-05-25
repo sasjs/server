@@ -1,3 +1,4 @@
+import express from 'express'
 import {
   Security,
   Route,
@@ -10,7 +11,8 @@ import {
   Patch,
   Delete,
   Body,
-  Hidden
+  Hidden,
+  Request
 } from 'tsoa'
 
 import User, { UserPayload } from '../model/User'
@@ -27,6 +29,7 @@ interface UserDetailsResponse {
   username: string
   isActive: boolean
   isAdmin: boolean
+  autoExec?: string
 }
 
 @Security('bearerAuth')
@@ -73,13 +76,19 @@ export class UserController {
   }
 
   /**
+   * Only Admin or user itself will get user autoExec code.
    * @summary Get user properties - such as group memberships, userName, displayName.
    * @param userId The user's identifier
    * @example userId 1234
    */
   @Get('{userId}')
-  public async getUser(@Path() userId: number): Promise<UserDetailsResponse> {
-    return getUser(userId)
+  public async getUser(
+    @Request() req: express.Request,
+    @Path() userId: number
+  ): Promise<UserDetailsResponse> {
+    const { user } = req
+    const getAutoExec = user!.isAdmin || user!.userId == userId
+    return getUser(userId, getAutoExec)
   }
 
   /**
@@ -123,7 +132,7 @@ const getAllUsers = async (): Promise<UserResponse[]> =>
     .exec()
 
 const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
-  const { displayName, username, password, isAdmin, isActive } = data
+  const { displayName, username, password, isAdmin, isActive, autoExec } = data
 
   // Checking if user is already in the database
   const usernameExist = await User.findOne({ username })
@@ -138,7 +147,8 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
     username,
     password: hashPassword,
     isAdmin,
-    isActive
+    isActive,
+    autoExec
   })
 
   const savedUser = await user.save()
@@ -148,38 +158,42 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
     displayName: savedUser.displayName,
     username: savedUser.username,
     isActive: savedUser.isActive,
-    isAdmin: savedUser.isAdmin
+    isAdmin: savedUser.isAdmin,
+    autoExec: savedUser.autoExec
   }
 }
 
-const getUser = async (id: number): Promise<UserDetailsResponse> => {
+const getUser = async (
+  id: number,
+  getAutoExec: boolean
+): Promise<UserDetailsResponse> => {
   const user = await User.findOne({ id })
-    .select({
-      _id: 0,
-      id: 1,
-      username: 1,
-      displayName: 1,
-      isAdmin: 1,
-      isActive: 1
-    })
-    .exec()
+
   if (!user) throw new Error('User is not found.')
 
-  return user
+  return {
+    id: user.id,
+    displayName: user.displayName,
+    username: user.username,
+    isActive: user.isActive,
+    isAdmin: user.isAdmin,
+    autoExec: getAutoExec ? user.autoExec : undefined
+  }
 }
 
 const updateUser = async (
   id: number,
-  data: UserPayload
+  data: Partial<UserPayload>
 ): Promise<UserDetailsResponse> => {
-  const { displayName, username, password, isAdmin, isActive } = data
+  const { displayName, username, password, isAdmin, isActive, autoExec } = data
 
-  const params: any = { displayName, isAdmin, isActive }
+  const params: any = { displayName, isAdmin, isActive, autoExec }
 
   if (username) {
     // Checking if user is already in the database
     const usernameExist = await User.findOne({ username })
-    if (usernameExist?.id != id) throw new Error('Username already exists.')
+    if (usernameExist && usernameExist.id != id)
+      throw new Error('Username already exists.')
     params.username = username
   }
 
@@ -189,18 +203,17 @@ const updateUser = async (
   }
 
   const updatedUser = await User.findOneAndUpdate({ id }, params, { new: true })
-    .select({
-      _id: 0,
-      id: 1,
-      username: 1,
-      displayName: 1,
-      isAdmin: 1,
-      isActive: 1
-    })
-    .exec()
-  if (!updatedUser) throw new Error('Unable to update user')
 
-  return updatedUser
+  if (!updatedUser) throw new Error(`Unable to find user with id: ${id}`)
+
+  return {
+    id: updatedUser.id,
+    username: updatedUser.username,
+    displayName: updatedUser.displayName,
+    isAdmin: updatedUser.isAdmin,
+    isActive: updatedUser.isActive,
+    autoExec: updatedUser.autoExec
+  }
 }
 
 const deleteUser = async (
