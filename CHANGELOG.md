@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/sasjs/server/compare/v0.2.0...v0.3.0) (2022-05-25)
+
+
+### Features
+
+* **web:** added profile + edit + autoexec changes ([c275db1](https://github.com/sasjs/server/commit/c275db184e874f0ee3a4f08f2592cfacf1e90742))
+
 # [0.2.0](https://github.com/sasjs/server/compare/v0.1.0...v0.2.0) (2022-05-25)
 
 
