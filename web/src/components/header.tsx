@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { Link, useHistory, useLocation } from 'react-router-dom'
 
 import {
@@ -11,6 +11,7 @@ import {
   MenuItem
 } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import SettingsIcon from '@mui/icons-material/Settings'
 
 import Username from './username'
 import { AppContext } from '../context/appContext'
@@ -20,16 +21,22 @@ const PORT_API = process.env.PORT_API
 const baseUrl =
   NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
 
+const validTabs = ['/', '/SASjsDrive', '/SASjsStudio']
+
 const Header = (props: any) => {
   const history = useHistory()
   const { pathname } = useLocation()
   const appContext = useContext(AppContext)
   const [tabValue, setTabValue] = useState(
-    pathname === '/SASjsLogon' ? '/' : pathname
+    validTabs.includes(pathname) ? pathname : '/'
   )
   const [anchorEl, setAnchorEl] = useState<
     (EventTarget & HTMLButtonElement) | null
   >(null)
+
+  useEffect(() => {
+    setTabValue(validTabs.includes(pathname) ? pathname : '/')
+  }, [pathname])
 
   const handleMenu = (
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -46,7 +53,10 @@ const Header = (props: any) => {
   }
 
   const handleLogout = () => {
-    if (appContext.logout) appContext.logout()
+    if (appContext.logout) {
+      handleClose()
+      appContext.logout()
+    }
   }
   return (
     <AppBar
@@ -134,6 +144,18 @@ const Header = (props: any) => {
             open={!!anchorEl}
             onClose={handleClose}
           >
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
+                component={Link}
+                to="/SASjsSettings"
+                onClick={handleClose}
+                variant="contained"
+                color="primary"
+                startIcon={<SettingsIcon />}
+              >
+                Setting
+              </Button>
+            </MenuItem>
             <MenuItem onClick={handleLogout} sx={{ justifyContent: 'center' }}>
               <Button variant="contained" color="primary">
                 Logout

@@ -29,7 +29,7 @@ export interface UserPayload {
   isActive?: boolean
   /**
    * User-specific auto-exec code
-   * @example "<SAS code>"
+   * @example ""
    */
   autoExec?: string
 }

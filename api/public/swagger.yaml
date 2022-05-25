@@ -357,7 +357,7 @@ components:
                 autoExec:
                     type: string
                     description: 'User-specific auto-exec code'
-                    example: '<SAS code>'
+                    example: ""
             required:
                 - displayName
                 - username
@@ -543,7 +543,7 @@ paths:
                         application/json:
                             schema:
                                 properties:
-                                    user: {properties: {displayName: {type: string}, username: {type: string}}, required: [displayName, username], type: object}
+                                    user: {properties: {displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [displayName, username, id], type: object}
                                     loggedIn: {type: boolean}
                                 required:
                                     - user

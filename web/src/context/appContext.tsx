@@ -13,6 +13,8 @@ interface AppContextProps {
   checkingSession: boolean
   loggedIn: boolean
   setLoggedIn: Dispatch<SetStateAction<boolean>> | null
+  userId: number
+  setUserId: Dispatch<SetStateAction<number>> | null
   username: string
   setUsername: Dispatch<SetStateAction<string>> | null
   displayName: string
@@ -24,6 +26,8 @@ export const AppContext = createContext<AppContextProps>({
   checkingSession: false,
   loggedIn: false,
   setLoggedIn: null,
+  userId: 0,
+  setUserId: null,
   username: '',
   setUsername: null,
   displayName: '',
@@ -35,6 +39,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const { children } = props
   const [checkingSession, setCheckingSession] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
+  const [userId, setUserId] = useState(0)
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
 
@@ -46,9 +51,10 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       .then((res) => res.data)
       .then((data: any) => {
         setCheckingSession(false)
-        setLoggedIn(true)
+        setUserId(data.id)
         setUsername(data.username)
         setDisplayName(data.displayName)
+        setLoggedIn(true)
       })
       .catch(() => {
         setLoggedIn(false)
@@ -70,6 +76,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         checkingSession,
         loggedIn,
         setLoggedIn,
+        userId,
+        setUserId,
         username,
         setUsername,
         displayName,

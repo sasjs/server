@@ -8,9 +8,11 @@ import Header from './components/header'
 import Home from './components/home'
 import Drive from './containers/Drive'
 import Studio from './containers/Studio'
+import Settings from './containers/Settings'
 
 import { AppContext } from './context/appContext'
 import AuthCode from './containers/AuthCode'
+import { ToastContainer } from 'react-toastify'
 
 function App() {
   const appContext = useContext(AppContext)
@@ -44,10 +46,14 @@ function App() {
           <Route exact path="/SASjsStudio">
             <Studio />
           </Route>
+          <Route exact path="/SASjsSettings">
+            <Settings />
+          </Route>
           <Route exact path="/SASjsLogon">
             <AuthCode />
           </Route>
         </Switch>
+        <ToastContainer />
       </HashRouter>
     </ThemeProvider>
   )

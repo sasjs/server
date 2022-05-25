@@ -27,9 +27,10 @@ const Login = () => {
     })
 
     if (loggedIn) {
-      appContext.setLoggedIn?.(loggedIn)
+      appContext.setUserId?.(user.id)
       appContext.setUsername?.(user.username)
       appContext.setDisplayName?.(user.displayName)
+      appContext.setLoggedIn?.(loggedIn)
     }
   }
 

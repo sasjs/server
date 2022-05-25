@@ -119,9 +119,9 @@ filename _webout "${weboutPath}" mod;
 /* dynamic user-provided vars */
 ${preProgramVarStatments}
 
-/* user auto exec starts */
-${otherArgs?.userAutoExec}
-/* user auto exec ends */
+/* user autoexec starts */
+${otherArgs?.userAutoExec ?? ''}
+/* user autoexec ends */
 
 /* actual job code */
 ${program}`

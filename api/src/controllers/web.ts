@@ -97,6 +97,7 @@ const login = async (
   return {
     loggedIn: true,
     user: {
+      id: user.id,
       username: user.username,
       displayName: user.displayName
     }
