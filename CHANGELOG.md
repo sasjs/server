@@ -1,3 +1,15 @@
+# [0.2.0](https://github.com/sasjs/server/compare/v0.1.0...v0.2.0) (2022-05-25)
+
+
+### Bug Fixes
+
+* **autoexec:** usage in case of desktop from file ([79dc2db](https://github.com/sasjs/server/commit/79dc2dba23dc48ec218a973119392a45cb3856b5))
+
+
+### Features
+
+* **api:** added autoexec + major type setting changes ([2a7223a](https://github.com/sasjs/server/commit/2a7223ad7d6b8f3d4682447fd25d9426a7c79ac3))
+
 # [0.1.0](https://github.com/sasjs/server/compare/v0.0.77...v0.1.0) (2022-05-23)
 
 
