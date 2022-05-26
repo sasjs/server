@@ -14,9 +14,9 @@ import {
   FormControlLabel,
   Checkbox
 } from '@mui/material'
+import { toast } from 'react-toastify'
 
 import { AppContext } from '../../context/appContext'
-import { toast } from 'react-toastify'
 
 const Profile = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -106,6 +106,19 @@ const Profile = () => {
             />
           </Grid>
 
+          <Grid item lg={6} md={8} sm={12} xs={12}>
+            <TextField
+              fullWidth
+              label="autoExec"
+              name="autoExec"
+              onChange={handleChange}
+              multiline
+              rows="10"
+              value={user.autoExec}
+              variant="outlined"
+            />
+          </Grid>
+
           <Grid item xs={6}>
             <FormGroup row>
               <FormControlLabel
@@ -119,19 +132,6 @@ const Profile = () => {
                 label="isAdmin"
               />
             </FormGroup>
-          </Grid>
-
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="autoExec"
-              name="autoExec"
-              onChange={handleChange}
-              multiline
-              rows="4"
-              value={user.autoExec}
-              variant="outlined"
-            />
           </Grid>
         </Grid>
       </CardContent>
