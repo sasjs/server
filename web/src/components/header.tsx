@@ -153,7 +153,7 @@ const Header = (props: any) => {
                 color="primary"
                 startIcon={<SettingsIcon />}
               >
-                Setting
+                Settings
               </Button>
             </MenuItem>
             <MenuItem onClick={handleLogout} sx={{ justifyContent: 'center' }}>
