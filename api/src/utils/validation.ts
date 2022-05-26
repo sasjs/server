@@ -1,6 +1,6 @@
 import Joi from 'joi'
 
-const usernameSchema = Joi.string().alphanum().min(3).max(16)
+const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i

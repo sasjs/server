@@ -9,14 +9,14 @@ import { generateAccessToken, saveTokensInDB } from '../../../utils'
 const clientId = 'someclientID'
 const adminUser = {
   displayName: 'Test Admin',
-  username: 'testAdminUsername',
+  username: 'testadminusername',
   password: '12345678',
   isAdmin: true,
   isActive: true
 }
 const user = {
   displayName: 'Test User',
-  username: 'testUsername',
+  username: 'testusername',
   password: '87654321',
   isAdmin: false,
   isActive: true,
@@ -59,6 +59,20 @@ describe('user', () => {
         .post('/SASjsApi/user')
         .auth(adminAccessToken, { type: 'bearer' })
         .send(user)
+        .expect(200)
+
+      expect(res.body.username).toEqual(user.username)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+    })
+
+    it('should respond with new user having username as lowercase', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/user')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({ ...user, username: user.username.toUpperCase() })
         .expect(200)
 
       expect(res.body.username).toEqual(user.username)
@@ -244,7 +258,7 @@ describe('user', () => {
       const dbUser1 = await controller.createUser(user)
       const dbUser2 = await controller.createUser({
         ...user,
-        username: 'randomUser'
+        username: 'randomuser'
       })
 
       const res = await request(app)

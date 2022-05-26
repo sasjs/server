@@ -10,7 +10,7 @@ const clientSecret = 'someclientSecret'
 const user = {
   id: 1234,
   displayName: 'Test User',
-  username: 'testUsername',
+  username: 'testusername',
   password: '87654321',
   isAdmin: false,
   isActive: true
@@ -77,6 +77,7 @@ describe('web', () => {
 
       expect(res.body.loggedIn).toBeTruthy()
       expect(res.body.user).toEqual({
+        id: expect.any(Number),
         username: user.username,
         displayName: user.displayName
       })
@@ -155,7 +156,6 @@ const getCSRF = async (app: Express) => {
   const { header } = await request(app).get('/')
   const cookies = header['set-cookie'].join()
 
-  console.log('cookies', cookies)
   const csrfToken = extractCSRF(cookies)
   return { csrfToken, cookies }
 }
