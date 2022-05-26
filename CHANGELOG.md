@@ -1,3 +1,11 @@
+## [0.3.1](https://github.com/sasjs/server/compare/v0.3.0...v0.3.1) (2022-05-26)
+
+
+### Bug Fixes
+
+* **api:** username should be lowercase ([5ad6ee5](https://github.com/sasjs/server/commit/5ad6ee5e0f5d7d6faa45b72215f1d9d55cfc37db))
+* **web:** reduced width for autoexec input ([7d11cc7](https://github.com/sasjs/server/commit/7d11cc79161e5a07f6c5392d742ef6b9d8658071))
+
 # [0.3.0](https://github.com/sasjs/server/compare/v0.2.0...v0.3.0) (2022-05-25)
 
 
