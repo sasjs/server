@@ -3,12 +3,11 @@ import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { ExecuteReturnJson, ExecutionController } from './internal'
 import { ExecuteReturnJsonResponse } from '.'
 import {
-  getDesktopUserAutoExecPath,
   getPreProgramVariables,
+  getUserAutoExec,
   ModeType,
   parseLogToArray
 } from '../utils'
-import { readFile } from '@sasjs/utils'
 
 interface ExecuteSASCodePayload {
   /**
@@ -43,7 +42,7 @@ const executeSASCode = async (
   const userAutoExec =
     process.env.MODE === ModeType.Server
       ? user?.autoExec
-      : await readFile(getDesktopUserAutoExecPath())
+      : await getUserAutoExec()
 
   try {
     const { webout, log, httpHeaders } =

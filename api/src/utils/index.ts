@@ -1,6 +1,7 @@
 export * from './appStreamConfig'
 export * from './connectDB'
 export * from './copySASjsCore'
+export * from './desktopAutoExec'
 export * from './extractHeaders'
 export * from './file'
 export * from './generateAccessToken'
