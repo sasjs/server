@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/sasjs/server/compare/v0.3.1...v0.3.2) (2022-05-27)
+
+
+### Bug Fixes
+
+* **web:** ability to use get/patch User API in desktop mode. ([2c259fe](https://github.com/sasjs/server/commit/2c259fe1de95d84e6929e311aaa6b895e66b42a3))
+
 ## [0.3.1](https://github.com/sasjs/server/compare/v0.3.0...v0.3.1) (2022-05-26)
 
 
