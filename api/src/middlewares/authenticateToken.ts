@@ -10,7 +10,7 @@ export const authenticateAccessToken: RequestHandler = async (
   next
 ) => {
   const { MODE } = process.env
-  if (MODE === ModeType.Server) {
+  if (MODE === ModeType.Desktop) {
     req.user = desktopUser
     return next()
   }
