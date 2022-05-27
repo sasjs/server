@@ -1,15 +1,22 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { csrfProtection } from '../app'
-import { fetchLatestAutoExec, verifyTokenInDB } from '../utils'
+import { fetchLatestAutoExec, ModeType, verifyTokenInDB } from '../utils'
+import { desktopUser } from './desktop'
 
 export const authenticateAccessToken: RequestHandler = async (
   req,
   res,
   next
 ) => {
+  const { MODE } = process.env
+  if (MODE === ModeType.Desktop) {
+    req.user = desktopUser
+    return next()
+  }
+
   // if request is coming from web and has valid session
-  // we can validate the request and check for CSRF Token
+  // it can be validated.
   if (req.session?.loggedIn) {
     if (req.session.user) {
       const user = await fetchLatestAutoExec(req.session.user)

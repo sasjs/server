@@ -14,8 +14,10 @@ import {
   Hidden,
   Request
 } from 'tsoa'
+import { desktopUser } from '../middlewares'
 
 import User, { UserPayload } from '../model/User'
+import { getUserAutoExec, updateUserAutoExec, ModeType } from '../utils'
 
 export interface UserResponse {
   id: number
@@ -86,6 +88,10 @@ export class UserController {
     @Request() req: express.Request,
     @Path() userId: number
   ): Promise<UserDetailsResponse> {
+    const { MODE } = process.env
+
+    if (MODE === ModeType.Desktop) return getDesktopAutoExec()
+
     const { user } = req
     const getAutoExec = user!.isAdmin || user!.userId == userId
     return getUser(userId, getAutoExec)
@@ -108,6 +114,11 @@ export class UserController {
     @Path() userId: number,
     @Body() body: UserPayload
   ): Promise<UserDetailsResponse> {
+    const { MODE } = process.env
+
+    if (MODE === ModeType.Desktop)
+      return updateDesktopAutoExec(body.autoExec ?? '')
+
     return updateUser(userId, body)
   }
 
@@ -181,6 +192,14 @@ const getUser = async (
   }
 }
 
+const getDesktopAutoExec = async () => {
+  return {
+    ...desktopUser,
+    id: desktopUser.userId,
+    autoExec: await getUserAutoExec()
+  }
+}
+
 const updateUser = async (
   id: number,
   data: Partial<UserPayload>
@@ -213,6 +232,15 @@ const updateUser = async (
     isAdmin: updatedUser.isAdmin,
     isActive: updatedUser.isActive,
     autoExec: updatedUser.autoExec
+  }
+}
+
+const updateDesktopAutoExec = async (autoExec: string) => {
+  await updateUserAutoExec(autoExec)
+  return {
+    ...desktopUser,
+    id: desktopUser.userId,
+    autoExec
   }
 }
 
