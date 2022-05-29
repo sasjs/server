@@ -47,10 +47,11 @@ stpRouter.post(
         query?._program
       )
 
-      if (response instanceof Buffer) {
-        res.writeHead(200, (req as any).sasHeaders)
-        return res.end(response)
-      }
+      // TODO: investigate if this code is required
+      // if (response instanceof Buffer) {
+      //   res.writeHead(200, (req as any).sasHeaders)
+      //   return res.end(response)
+      // }
 
       res.send(response)
     } catch (err: any) {

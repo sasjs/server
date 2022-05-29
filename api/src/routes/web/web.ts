@@ -1,6 +1,6 @@
 import express from 'express'
 import { WebController } from '../../controllers/web'
-import { authenticateAccessToken } from '../../middlewares'
+import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
 import { authorizeValidation, loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
@@ -19,7 +19,7 @@ webRouter.get('/', async (req, res) => {
   }
 })
 
-webRouter.post('/SASLogon/login', async (req, res) => {
+webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
   const { error, value: body } = loginWebValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
@@ -33,6 +33,7 @@ webRouter.post('/SASLogon/login', async (req, res) => {
 
 webRouter.post(
   '/SASLogon/authorize',
+  desktopRestrict,
   authenticateAccessToken,
   async (req, res) => {
     const { error, value: body } = authorizeValidation(req.body)
@@ -47,7 +48,7 @@ webRouter.post(
   }
 )
 
-webRouter.get('/logout', async (req, res) => {
+webRouter.get('/logout', desktopRestrict, async (req, res) => {
   try {
     await controller.logout(req)
     res.status(200).send('OK!')

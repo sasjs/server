@@ -96,7 +96,7 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "tmp/**/*"
+      "sasjs_root/**/*"
     ]
   }
 }
