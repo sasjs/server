@@ -9,6 +9,11 @@ import React, {
 } from 'react'
 import axios from 'axios'
 
+export enum ModeType {
+  Server = 'server',
+  Desktop = 'desktop'
+}
+
 interface AppContextProps {
   checkingSession: boolean
   loggedIn: boolean
@@ -19,6 +24,7 @@ interface AppContextProps {
   setUsername: Dispatch<SetStateAction<string>> | null
   displayName: string
   setDisplayName: Dispatch<SetStateAction<string>> | null
+  mode: ModeType
   logout: (() => void) | null
 }
 
@@ -32,6 +38,7 @@ export const AppContext = createContext<AppContextProps>({
   setUsername: null,
   displayName: '',
   setDisplayName: null,
+  mode: ModeType.Server,
   logout: null
 })
 
@@ -42,6 +49,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [userId, setUserId] = useState(0)
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [mode, setMode] = useState(ModeType.Server)
 
   useEffect(() => {
     setCheckingSession(true)
@@ -60,6 +68,14 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setLoggedIn(false)
         axios.get('/') // get CSRF TOKEN
       })
+
+    axios
+      .get('/SASjsApi/info')
+      .then((res) => res.data)
+      .then((data: any) => {
+        setMode(data.mode)
+      })
+      .catch(() => {})
   }, [])
 
   const logout = useCallback(() => {
@@ -82,6 +98,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setUsername,
         displayName,
         setDisplayName,
+        mode,
         logout
       }}
     >

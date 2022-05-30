@@ -1,4 +1,5 @@
 import { RequestHandler, Request } from 'express'
+import { userInfo } from 'os'
 import { RequestUser } from '../types'
 import { ModeType } from '../utils'
 
@@ -29,8 +30,8 @@ export const desktopRestrict: RequestHandler = (req, res, next) => {
 export const desktopUser: RequestUser = {
   userId: 12345,
   clientId: 'desktop_app',
-  username: 'DESKTOPusername',
-  displayName: 'DESKTOP User',
+  username: userInfo().username,
+  displayName: userInfo().username,
   isAdmin: true,
   isActive: true
 }

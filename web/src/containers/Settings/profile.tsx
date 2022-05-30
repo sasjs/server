@@ -16,7 +16,7 @@ import {
 } from '@mui/material'
 import { toast } from 'react-toastify'
 
-import { AppContext } from '../../context/appContext'
+import { AppContext, ModeType } from '../../context/appContext'
 
 const Profile = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -89,6 +89,7 @@ const Profile = () => {
               required
               value={user.displayName}
               variant="outlined"
+              disabled={appContext.mode === ModeType.Desktop}
             />
           </Grid>
 
@@ -103,6 +104,7 @@ const Profile = () => {
               required
               value={user.username}
               variant="outlined"
+              disabled={appContext.mode === ModeType.Desktop}
             />
           </Grid>
 
