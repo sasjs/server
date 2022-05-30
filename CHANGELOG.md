@@ -1,3 +1,10 @@
+## [0.3.4](https://github.com/sasjs/server/compare/v0.3.3...v0.3.4) (2022-05-30)
+
+
+### Bug Fixes
+
+* **web:** system username for DESKTOP mode ([a8ba378](https://github.com/sasjs/server/commit/a8ba378fd1ff374ba025a96fdfae5c6c36954465))
+
 ## [0.3.3](https://github.com/sasjs/server/compare/v0.3.2...v0.3.3) (2022-05-30)
 
 
