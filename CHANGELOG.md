@@ -1,3 +1,10 @@
+## [0.3.3](https://github.com/sasjs/server/compare/v0.3.2...v0.3.3) (2022-05-30)
+
+
+### Bug Fixes
+
+* usage of autoexec API in DESKTOP mode ([12d424a](https://github.com/sasjs/server/commit/12d424acce8108a6f53aefbac01fddcdc5efb48f))
+
 ## [0.3.2](https://github.com/sasjs/server/compare/v0.3.1...v0.3.2) (2022-05-27)
 
 
