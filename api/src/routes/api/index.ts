@@ -5,7 +5,6 @@ import swaggerUi from 'swagger-ui-express'
 import {
   authenticateAccessToken,
   desktopRestrict,
-  desktopUsername,
   verifyAdmin
 } from '../../middlewares'
 
@@ -22,7 +21,7 @@ import sessionRouter from './session'
 const router = express.Router()
 
 router.use('/info', infoRouter)
-router.use('/session', desktopUsername, authenticateAccessToken, sessionRouter)
+router.use('/session', authenticateAccessToken, sessionRouter)
 router.use('/auth', desktopRestrict, authRouter)
 router.use(
   '/client',

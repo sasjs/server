@@ -25,12 +25,6 @@ export const desktopRestrict: RequestHandler = (req, res, next) => {
 
   next()
 }
-export const desktopUsername: RequestHandler = (req, res, next) => {
-  const { MODE } = process.env
-  if (MODE === ModeType.Desktop) return res.status(200).send(desktopUser)
-
-  next()
-}
 
 export const desktopUser: RequestUser = {
   userId: 12345,
