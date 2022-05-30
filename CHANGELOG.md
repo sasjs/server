@@ -1,3 +1,10 @@
+## [0.3.5](https://github.com/sasjs/server/compare/v0.3.4...v0.3.5) (2022-05-30)
+
+
+### Bug Fixes
+
+* bumping sasjs/core library ([61815f8](https://github.com/sasjs/server/commit/61815f8ae18be132e17c199cd8e3afbcc2fa0b60))
+
 ## [0.3.4](https://github.com/sasjs/server/compare/v0.3.3...v0.3.4) (2022-05-30)
 
 
