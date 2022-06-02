@@ -1,9 +1,15 @@
 import path from 'path'
-import express from 'express'
+import express, { Request } from 'express'
 import { folderExists } from '@sasjs/utils'
 
-import { addEntryToAppStreamConfig, getFilesFolder } from '../../utils'
+import {
+  addEntryToAppStreamConfig,
+  getFilesFolder,
+  getFullUrl
+} from '../../utils'
 import { appStreamHtml } from './appStreamHtml'
+
+const appStreams: { [key: string]: string } = {}
 
 const router = express.Router()
 
@@ -44,7 +50,7 @@ export const publishAppStream = async (
       streamServiceName = `AppStreamName${appCount + 1}`
     }
 
-    router.use(`/${streamServiceName}`, express.static(pathToDeployment))
+    appStreams[streamServiceName] = pathToDeployment
 
     addEntryToAppStreamConfig(
       streamServiceName,
@@ -63,5 +69,25 @@ export const publishAppStream = async (
   }
   return {}
 }
+
+router.get(`/*`, function (req: Request, res, next) {
+  const reqPath = req.path.replace(/^\//, '')
+
+  // Redirecting to url with trailing slash for base appStream URL only
+  if (reqPath.split('/').length === 1 && !reqPath.endsWith('/'))
+    return res.redirect(301, `${getFullUrl(req)}/`)
+
+  const appStream = reqPath.split('/')[0]
+  const appStreamFilesPath = appStreams[appStream]
+  if (appStreamFilesPath) {
+    const resourcePath = reqPath.split('/')[1] || 'index.html'
+
+    req.url = resourcePath
+
+    return express.static(appStreamFilesPath)(req, res, next)
+  }
+
+  return res.send("There's no App Stream available here.")
+})
 
 export default router
