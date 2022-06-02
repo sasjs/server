@@ -1,3 +1,10 @@
+## [0.3.6](https://github.com/sasjs/server/compare/v0.3.5...v0.3.6) (2022-06-02)
+
+
+### Bug Fixes
+
+* **appstream:** should serve only new files for same app stream name with new deployment ([e6d1989](https://github.com/sasjs/server/commit/e6d1989847761fbe562d7861ffa0ee542839b125))
+
 ## [0.3.5](https://github.com/sasjs/server/compare/v0.3.4...v0.3.5) (2022-05-30)
 
 
