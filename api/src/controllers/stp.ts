@@ -131,15 +131,11 @@ const executeReturnRaw = async (
   _program: string
 ): Promise<string | Buffer> => {
   const query = req.query as ExecutionVars
-  const sasCodePath =
-    path
-      .join(getFilesFolder(), _program)
-      .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   try {
     const { result, httpHeaders } =
       (await new ExecutionController().executeFile(
-        sasCodePath,
+        _program,
         getPreProgramVariables(req),
         query
       )) as ExecuteReturnRaw
@@ -171,11 +167,6 @@ const executeReturnJson = async (
   req: express.Request,
   _program: string
 ): Promise<ExecuteReturnJsonResponse> => {
-  const sasCodePath =
-    path
-      .join(getFilesFolder(), _program)
-      .replace(new RegExp('/', 'g'), path.sep) + '.sas'
-
   const filesNamesMap = req.files?.length
     ? makeFilesNamesMap(req.files as MulterFile[])
     : null
@@ -183,12 +174,12 @@ const executeReturnJson = async (
   try {
     const { webout, log, httpHeaders } =
       (await new ExecutionController().executeFile(
-        sasCodePath,
+        _program,
         getPreProgramVariables(req),
         { ...req.query, ...req.body },
         { filesNamesMap: filesNamesMap },
         true,
-        req.sasSession
+        req.sasjsSession
       )) as ExecuteReturnJson
 
     let weboutRes: string | IRecordOfAny = webout
