@@ -46,7 +46,7 @@ const executeSASCode = async (
 
   try {
     const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeProgram(
+      (await new ExecutionController().executeSASProgram(
         code,
         getPreProgramVariables(req),
         { ...req.query, _debug: 131 },
