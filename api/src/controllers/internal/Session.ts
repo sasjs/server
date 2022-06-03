@@ -17,7 +17,7 @@ import {
 
 const execFilePromise = promisify(execFile)
 
-export class SessionController {
+export class SASSessionController {
   private sessions: Session[] = []
 
   private getReadySessions = (): Session[] =>
@@ -152,12 +152,51 @@ ${autoExecContent}`
   }
 }
 
-export const getSessionController = (): SessionController => {
-  if (process.sessionController) return process.sessionController
+export class JSSessionController {
+  public async getSession() {
+    const sessionId = generateUniqueFileName(generateTimestamp())
+    const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
-  process.sessionController = new SessionController()
+    const creationTimeStamp = sessionId.split('-').pop() as string
+    // death time of session is 15 mins from creation
+    const deathTimeStamp = (
+      parseInt(creationTimeStamp) +
+      15 * 60 * 1000 -
+      1000
+    ).toString()
 
-  return process.sessionController
+    const session: Session = {
+      id: sessionId,
+      ready: true,
+      inUse: true,
+      consumed: false,
+      completed: false,
+      creationTimeStamp,
+      deathTimeStamp,
+      path: sessionFolder
+    }
+
+    const headersPath = path.join(session.path, 'stpsrv_header.txt')
+    await createFile(headersPath, 'Content-type: application/json')
+
+    return session
+  }
+}
+
+export const getSASSessionController = (): SASSessionController => {
+  if (process.sasSessionController) return process.sasSessionController
+
+  process.sasSessionController = new SASSessionController()
+
+  return process.sasSessionController
+}
+
+export const getJSSessionController = (): JSSessionController => {
+  if (process.jsSessionController) return process.jsSessionController
+
+  process.jsSessionController = new JSSessionController()
+
+  return process.jsSessionController
 }
 
 const autoExecContent = `
