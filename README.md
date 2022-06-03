@@ -65,6 +65,15 @@ SAS_PATH=/path/to/sas/executable.exe
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
 SASJS_ROOT=./sasjs_root
 
+# A comma separated string that defines the available runTimes.
+# Priority is given to the runtime that comes first in string.
+# Possible options at the moment are sas and js
+
+# options: [sas,js|js,sas|sas|js] default:sas
+SASJS_RUNTIMES=
+
+
+
 # options: [http|https] default: http
 PROTOCOL=
 
