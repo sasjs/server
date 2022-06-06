@@ -44,10 +44,6 @@ export class ExecutionController {
     returnJson?: boolean,
     session?: Session
   ) {
-    if (process.runTimes.length === 0) {
-      throw 'No runtime is specified in environment variables.'
-    }
-
     for (const runTime of process.runTimes) {
       const codePath =
         path
@@ -58,17 +54,7 @@ export class ExecutionController {
       if (await fileExists(codePath)) {
         const program = await readFile(codePath)
 
-        if (runTime === 'sas') {
-          return this.executeProgram(
-            program,
-            preProgramVariables,
-            vars,
-            otherArgs,
-            returnJson,
-            session,
-            runTime
-          )
-        } else if (runTime === 'js') {
+        if (runTime === SASJSRunTimes.JS) {
           return this.executeProgram(
             program,
             preProgramVariables,
@@ -79,7 +65,15 @@ export class ExecutionController {
             runTime
           )
         } else {
-          throw `${runTime} runtime is not implemented yet.`
+          return this.executeProgram(
+            program,
+            preProgramVariables,
+            vars,
+            otherArgs,
+            returnJson,
+            session,
+            runTime
+          )
         }
       }
     }
