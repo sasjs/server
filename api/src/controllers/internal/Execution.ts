@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs'
+import { execFileSync } from 'child_process'
 import { getSASSessionController, getJSSessionController } from './'
 import {
   readFile,
@@ -15,7 +16,8 @@ import {
   getFilesFolder,
   getMacrosFolder,
   HTTPHeaders,
-  isDebugOn
+  isDebugOn,
+  SASJSRunTimes
 } from '../../utils'
 
 export interface ExecutionVars {
@@ -50,45 +52,53 @@ export class ExecutionController {
       const codePath =
         path
           .join(getFilesFolder(), programPath)
-          .replace(new RegExp('/', 'g'), path.sep) + runTime
-
-      if (await fileExists(programPath)) {
+          .replace(new RegExp('/', 'g'), path.sep) +
+        '.' +
+        runTime
+      if (await fileExists(codePath)) {
         const program = await readFile(codePath)
 
         if (runTime === 'sas') {
-          return this.executeSASProgram(
+          return this.executeProgram(
             program,
             preProgramVariables,
             vars,
             otherArgs,
             returnJson,
-            session
+            session,
+            runTime
           )
         } else if (runTime === 'js') {
-          return this.executeJSProgram(
+          return this.executeProgram(
             program,
             preProgramVariables,
             vars,
             otherArgs,
-            returnJson
+            returnJson,
+            session,
+            runTime
           )
         } else {
           throw `${runTime} runtime is not implemented yet.`
         }
       }
     }
-    throw 'ExecutionController: Program file does not exist.'
+    throw `ExecutionController: ${programPath} file does not exist.`
   }
 
-  async executeSASProgram(
+  async executeProgram(
     program: string,
     preProgramVariables: PreProgramVars,
     vars: ExecutionVars,
     otherArgs?: any,
     returnJson?: boolean,
-    sessionByFileUpload?: Session
+    sessionByFileUpload?: Session,
+    runTime: string = 'sas'
   ): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
-    const sessionController = getSASSessionController()
+    const sessionController =
+      runTime === SASJSRunTimes.JS
+        ? getJSSessionController()
+        : getSASSessionController()
 
     const session =
       sessionByFileUpload ?? (await sessionController.getSession())
@@ -106,6 +116,93 @@ export class ExecutionController {
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
 
+    if (runTime === SASJSRunTimes.JS) {
+      program = await this.createJSProgram(
+        program,
+        preProgramVariables,
+        vars,
+        weboutPath,
+        tokenFile
+      )
+
+      const codePath = path.join(session.path, 'code.js')
+
+      await createFile(codePath, program)
+
+      execFileSync('node', [codePath])
+    } else {
+      program = await this.createSASProgram(
+        program,
+        preProgramVariables,
+        vars,
+        session,
+        weboutPath,
+        tokenFile,
+        otherArgs
+      )
+
+      const codePath = path.join(session.path, 'code.sas')
+
+      // Creating this file in a RUNNING session will break out
+      // the autoexec loop and actually execute the program
+      // but - given it will take several milliseconds to create
+      // (which can mean SAS trying to run a partial program, or
+      // failing due to file lock) we first create the file THEN
+      // we rename it.
+      await createFile(codePath + '.bkp', program)
+      await moveFile(codePath + '.bkp', codePath)
+
+      // we now need to poll the session status
+      while (!session.completed) {
+        await delay(50)
+      }
+    }
+
+    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
+    const headersContent = (await fileExists(headersPath))
+      ? await readFile(headersPath)
+      : ''
+    const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
+    const fileResponse: boolean =
+      httpHeaders.hasOwnProperty('content-type') &&
+      !returnJson && // not a POST Request
+      !isDebugOn(vars) // Debug is not enabled
+
+    const webout = (await fileExists(weboutPath))
+      ? fileResponse
+        ? await readFileBinary(weboutPath)
+        : await readFile(weboutPath)
+      : ''
+
+    // it should be deleted by scheduleSessionDestroy
+    session.inUse = false
+
+    if (returnJson) {
+      return {
+        httpHeaders,
+        webout,
+        log: isDebugOn(vars) || session.crashed ? log : undefined
+      }
+    }
+
+    return {
+      httpHeaders,
+      result:
+        isDebugOn(vars) || session.crashed
+          ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
+          : webout
+    }
+  }
+
+  private async createSASProgram(
+    program: string,
+    preProgramVariables: PreProgramVars,
+    vars: ExecutionVars,
+    session: Session,
+    weboutPath: string,
+    tokenFile: string,
+    otherArgs?: any
+  ) {
     const varStatments = Object.keys(vars).reduce(
       (computed: string, key: string) =>
         `${computed}%let ${key}=${vars[key]};\n`,
@@ -161,100 +258,37 @@ ${program}`
         program = `${uploadSasCode}` + program
       }
     }
-
-    const codePath = path.join(session.path, 'code.sas')
-
-    // Creating this file in a RUNNING session will break out
-    // the autoexec loop and actually execute the program
-    // but - given it will take several milliseconds to create
-    // (which can mean SAS trying to run a partial program, or
-    // failing due to file lock) we first create the file THEN
-    // we rename it.
-    await createFile(codePath + '.bkp', program)
-    await moveFile(codePath + '.bkp', codePath)
-
-    // we now need to poll the session status
-    while (!session.completed) {
-      await delay(50)
-    }
-
-    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
-    const headersContent = (await fileExists(headersPath))
-      ? await readFile(headersPath)
-      : ''
-    const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
-    const fileResponse: boolean =
-      httpHeaders.hasOwnProperty('content-type') &&
-      !returnJson && // not a POST Request
-      !isDebugOn(vars) // Debug is not enabled
-
-    const webout = (await fileExists(weboutPath))
-      ? fileResponse
-        ? await readFileBinary(weboutPath)
-        : await readFile(weboutPath)
-      : ''
-
-    // it should be deleted by scheduleSessionDestroy
-    session.inUse = false
-
-    if (returnJson) {
-      return {
-        httpHeaders,
-        webout,
-        log: isDebugOn(vars) || session.crashed ? log : undefined
-      }
-    }
-
-    return {
-      httpHeaders,
-      result:
-        isDebugOn(vars) || session.crashed
-          ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
-          : webout
-    }
+    return program
   }
 
-  async executeJSProgram(
+  private async createJSProgram(
     program: string,
     preProgramVariables: PreProgramVars,
     vars: ExecutionVars,
-    otherArgs?: any,
-    returnJson?: boolean,
-    sessionByFileUpload?: Session
-  ): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
-    const sessionController = getJSSessionController()
-
-    const session =
-      sessionByFileUpload ?? (await sessionController.getSession())
-
-    const logPath = path.join(session.path, 'log.log')
-    const headersPath = path.join(session.path, 'stpsrv_header.txt')
-    const weboutPath = path.join(session.path, 'webout.txt')
-    const tokenFile = path.join(session.path, 'reqHeaders.txt')
-
-    await createFile(
-      tokenFile,
-      preProgramVariables?.httpHeaders.join('\n') ?? ''
-    )
-
+    weboutPath: string,
+    tokenFile: string
+  ) {
     const varStatments = Object.keys(vars).reduce(
       (computed: string, key: string) =>
-        `${computed}const ${key} = ${vars[key]};\n`,
+        `${computed}const ${key} = '${vars[key]}';\n`,
       ''
     )
 
     const preProgramVarStatments = `
-const _webout = ${weboutPath} 
-const _sasjs_tokenfile = ${tokenFile};
-const _sasjs_username = ${preProgramVariables?.username};
-const _sasjs_userid = ${preProgramVariables?.userId};
-const _sasjs_displayname = ${preProgramVariables?.displayName};
+const weboutPath = '${weboutPath}'; 
+const _sasjs_tokenfile = '${tokenFile}';
+const _sasjs_username = '${preProgramVariables?.username}';
+const _sasjs_userid = '${preProgramVariables?.userId}';
+const _sasjs_displayname = '${preProgramVariables?.displayName}';
 const _metaperson = _sasjs_displayname;
 const _metauser = _sasjs_username;
 const sasjsprocessmode = 'Stored Program';
 `
 
     program = `
+/*require module for writing webout file*/
+const fs = require('fs-extra')
+
 /* runtime vars */
 ${varStatments}
 
@@ -262,7 +296,11 @@ ${varStatments}
 ${preProgramVarStatments}
 
 /* actual job code */
-${program}`
+${program}
+
+/* write webout file*/
+fs.promises.writeFile(weboutPath, JSON.stringify(webout))
+`
 
     // todo: modify this commented block for js runtime
     // if no files are uploaded filesNamesMap will be undefined
@@ -277,42 +315,7 @@ ${program}`
     //     program = `${uploadSasCode}` + program
     //   }
     // }
-
-    const codePath = path.join(session.path, 'code.sas')
-    await createFile(codePath, program)
-
-    // todo: execute code.js file
-
-    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
-    const headersContent = (await fileExists(headersPath))
-      ? await readFile(headersPath)
-      : ''
-    const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
-    const fileResponse: boolean =
-      httpHeaders.hasOwnProperty('content-type') &&
-      !returnJson && // not a POST Request
-      !isDebugOn(vars) // Debug is not enabled
-
-    const webout = (await fileExists(weboutPath))
-      ? fileResponse
-        ? await readFileBinary(weboutPath)
-        : await readFile(weboutPath)
-      : ''
-
-    if (returnJson) {
-      return {
-        httpHeaders,
-        webout,
-        log: isDebugOn(vars) ? log : undefined
-      }
-    }
-
-    return {
-      httpHeaders,
-      result: isDebugOn(vars)
-        ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
-        : webout
-    }
+    return program
   }
 
   buildDirectoryTree() {
