@@ -33,19 +33,18 @@ export class FileUploadController {
         runTime
 
       if (await fileExists(codePath)) {
+        let sessionController
         if (runTime === SASJSRunTimes.JS) {
-          const sessionController = getJSSessionController()
-          const session = await sessionController.getSession()
-          req.sasjsSession = session
+          sessionController = getJSSessionController()
         } else {
-          const sessionController = getSASSessionController()
-          const session = await sessionController.getSession()
-          // marking consumed true, so that it's not available
-          // as readySession for any other request
-          session.consumed = true
-
-          req.sasjsSession = session
+          sessionController = getSASSessionController()
         }
+        const session = await sessionController.getSession()
+        // marking consumed true, so that it's not available
+        // as readySession for any other request
+        session.consumed = true
+        req.sasjsSession = session
+        break
       }
     }
 
