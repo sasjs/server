@@ -17,11 +17,13 @@ import {
 
 const execFilePromise = promisify(execFile)
 
-export class SASSessionController {
-  private sessions: Session[] = []
+abstract class SessionController {
+  protected sessions: Session[] = []
 
-  private getReadySessions = (): Session[] =>
+  protected getReadySessions = (): Session[] =>
     this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
+
+  protected abstract createSession(): Promise<Session>
 
   public async getSession() {
     const readySessions = this.getReadySessions()
@@ -34,8 +36,10 @@ export class SASSessionController {
 
     return session
   }
+}
 
-  private async createSession(): Promise<Session> {
+export class SASSessionController extends SessionController {
+  protected async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
     const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
@@ -152,8 +156,8 @@ ${autoExecContent}`
   }
 }
 
-export class JSSessionController {
-  public async getSession() {
+export class JSSessionController extends SessionController {
+  protected async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
     const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
@@ -179,6 +183,7 @@ export class JSSessionController {
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
     await createFile(headersPath, 'Content-type: application/json')
 
+    this.sessions.push(session)
     return session
   }
 }
