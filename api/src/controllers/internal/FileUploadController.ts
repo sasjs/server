@@ -1,9 +1,9 @@
 import path from 'path'
 import { Request, RequestHandler } from 'express'
 import multer from 'multer'
-import { uuidv4, fileExists, readFile } from '@sasjs/utils'
+import { uuidv4, fileExists } from '@sasjs/utils'
 import { getSASSessionController, getJSSessionController } from '.'
-import { getFilesFolder } from '../../utils'
+import { getFilesFolder, SASJSRunTimes } from '../../utils'
 
 export class FileUploadController {
   private storage = multer.diskStorage({
@@ -22,22 +22,22 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
-    if (process.runTimes.length === 0) {
-      throw 'No runtime is specified in environment variables.'
-    }
-
     const programPath = req.query._program as string
 
     for (const runTime of process.runTimes) {
       const codePath =
         path
           .join(getFilesFolder(), programPath)
-          .replace(new RegExp('/', 'g'), path.sep) + runTime
+          .replace(new RegExp('/', 'g'), path.sep) +
+        '.' +
+        runTime
 
-      if (await fileExists(programPath)) {
-        const program = await readFile(codePath)
-
-        if (runTime === 'sas') {
+      if (await fileExists(codePath)) {
+        if (runTime === SASJSRunTimes.JS) {
+          const sessionController = getJSSessionController()
+          const session = await sessionController.getSession()
+          req.sasjsSession = session
+        } else {
           const sessionController = getSASSessionController()
           const session = await sessionController.getSession()
           // marking consumed true, so that it's not available
@@ -45,12 +45,6 @@ export class FileUploadController {
           session.consumed = true
 
           req.sasjsSession = session
-        } else if (runTime === 'js') {
-          const sessionController = getJSSessionController()
-          const session = await sessionController.getSession()
-          req.sasjsSession = session
-        } else {
-          throw `${runTime} runtime is not implemented yet.`
         }
       }
     }
