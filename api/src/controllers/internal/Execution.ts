@@ -1,6 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import { execFileSync } from 'child_process'
+import { once } from 'stream'
 import { getSASSessionController, getJSSessionController } from './'
 import {
   readFile,
@@ -121,9 +122,29 @@ export class ExecutionController {
 
       const codePath = path.join(session.path, 'code.js')
 
-      await createFile(codePath, program)
+      try {
+        await createFile(codePath, program)
 
-      execFileSync('node', [codePath])
+        // create a stream that will write to console outputs to log file
+        const writeStream = fs.createWriteStream(logPath)
+
+        // waiting for the open event so that we can have underlying file descriptor
+        await once(writeStream, 'open')
+
+        execFileSync('node', [codePath], {
+          stdio: ['ignore', writeStream, writeStream]
+        })
+
+        // copy the code.js program to log and end write stream
+        writeStream.end(program)
+
+        session.completed = true
+        console.log('session completed', session)
+      } catch (err: any) {
+        session.completed = true
+        session.crashed = err.toString()
+        console.log('session crashed', session.id, session.crashed)
+      }
     } else {
       program = await this.createSASProgram(
         program,
