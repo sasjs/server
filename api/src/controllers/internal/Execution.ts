@@ -293,7 +293,7 @@ ${preProgramVarStatments}
 ${program}
 
 /* write webout file*/
-fs.promises.writeFile(weboutPath, JSON.stringify(webout))
+fs.promises.writeFile(weboutPath, _webout)
 `
 
     // todo: modify this commented block for js runtime
