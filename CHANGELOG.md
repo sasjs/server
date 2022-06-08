@@ -1,3 +1,10 @@
+## [0.3.7](https://github.com/sasjs/server/compare/v0.3.6...v0.3.7) (2022-06-08)
+
+
+### Bug Fixes
+
+* **appstream:** redirect to relative + nested resource should be accessed ([5ab35b0](https://github.com/sasjs/server/commit/5ab35b02c4417132dddb5a800982f31d0d50ef66))
+
 ## [0.3.6](https://github.com/sasjs/server/compare/v0.3.5...v0.3.6) (2022-06-02)
 
 
