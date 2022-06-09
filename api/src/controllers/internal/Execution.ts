@@ -14,6 +14,7 @@ import { PreProgramVars, Session, TreeNode } from '../../types'
 import {
   extractHeaders,
   generateFileUploadSasCode,
+  generateFileUploadJSCode,
   getFilesFolder,
   getMacrosFolder,
   HTTPHeaders,
@@ -116,8 +117,10 @@ export class ExecutionController {
         program,
         preProgramVariables,
         vars,
+        session,
         weboutPath,
-        tokenFile
+        tokenFile,
+        otherArgs
       )
 
       const codePath = path.join(session.path, 'code.js')
@@ -280,8 +283,10 @@ ${program}`
     program: string,
     preProgramVariables: PreProgramVars,
     vars: ExecutionVars,
+    session: Session,
     weboutPath: string,
-    tokenFile: string
+    tokenFile: string,
+    otherArgs?: any
   ) {
     const varStatments = Object.keys(vars).reduce(
       (computed: string, key: string) =>
@@ -300,10 +305,9 @@ const _metauser = _sasjs_username;
 const sasjsprocessmode = 'Stored Program';
 `
 
-    program = `
-/*require module for writing webout file*/
-const fs = require('fs-extra')
+    const requiredModules = `const fs = require('fs-extra')`
 
+    program = `
 /* runtime vars */
 ${varStatments}
 
@@ -316,21 +320,19 @@ ${program}
 /* write webout file*/
 fs.promises.writeFile(weboutPath, _webout)
 `
-
-    // todo: modify this commented block for js runtime
     // if no files are uploaded filesNamesMap will be undefined
-    // if (otherArgs?.filesNamesMap) {
-    //   const uploadSasCode = await generateFileUploadSasCode(
-    //     otherArgs.filesNamesMap,
-    //     session.path
-    //   )
+    if (otherArgs?.filesNamesMap) {
+      const uploadJSCode = await generateFileUploadJSCode(
+        otherArgs.filesNamesMap,
+        session.path
+      )
 
-    //   //If sas code for the file is generated it will be appended to the top of sasCode
-    //   if (uploadSasCode.length > 0) {
-    //     program = `${uploadSasCode}` + program
-    //   }
-    // }
-    return program
+      //If js code for the file is generated it will be appended to the top of jsCode
+      if (uploadJSCode.length > 0) {
+        program = `${uploadJSCode}\n` + program
+      }
+    }
+    return requiredModules + program
   }
 
   buildDirectoryTree() {
