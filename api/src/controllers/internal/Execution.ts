@@ -79,7 +79,7 @@ export class ExecutionController {
         }
       }
     }
-    throw `ExecutionController: ${programPath} file does not exist.`
+    throw `The Stored Program at "${programPath}" does not exist, or you do not have permission to view it.`
   }
 
   async executeProgram(

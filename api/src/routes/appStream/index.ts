@@ -2,11 +2,7 @@ import path from 'path'
 import express, { Request } from 'express'
 import { folderExists } from '@sasjs/utils'
 
-import {
-  addEntryToAppStreamConfig,
-  getFilesFolder,
-  getFullUrl
-} from '../../utils'
+import { addEntryToAppStreamConfig, getFilesFolder } from '../../utils'
 import { appStreamHtml } from './appStreamHtml'
 
 const appStreams: { [key: string]: string } = {}
@@ -73,14 +69,16 @@ export const publishAppStream = async (
 router.get(`/*`, function (req: Request, res, next) {
   const reqPath = req.path.replace(/^\//, '')
 
-  // Redirecting to url with trailing slash for base appStream URL only
+  // Redirecting to url with trailing slash for appStream base URL only
   if (reqPath.split('/').length === 1 && !reqPath.endsWith('/'))
-    return res.redirect(301, `${getFullUrl(req)}/`)
+    // navigating to same url with slash at start
+    return res.redirect(301, `${reqPath}/`)
 
   const appStream = reqPath.split('/')[0]
   const appStreamFilesPath = appStreams[appStream]
   if (appStreamFilesPath) {
-    const resourcePath = reqPath.split('/')[1] || 'index.html'
+    // resourcePath is without appStream base path
+    const resourcePath = reqPath.split('/').slice(1).join('/') || 'index.html'
 
     req.url = resourcePath
 

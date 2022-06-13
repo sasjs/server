@@ -1,3 +1,18 @@
+## [0.3.8](https://github.com/sasjs/server/compare/v0.3.7...v0.3.8) (2022-06-13)
+
+
+### Bug Fixes
+
+* execution controller better error handling ([8a617a7](https://github.com/sasjs/server/commit/8a617a73ae63233332f5788c90f173d6cd5e1283))
+* execution controller error details ([3fa2a7e](https://github.com/sasjs/server/commit/3fa2a7e2e32f90050f6b09e30ce3ef725eb0b15f))
+
+## [0.3.7](https://github.com/sasjs/server/compare/v0.3.6...v0.3.7) (2022-06-08)
+
+
+### Bug Fixes
+
+* **appstream:** redirect to relative + nested resource should be accessed ([5ab35b0](https://github.com/sasjs/server/commit/5ab35b02c4417132dddb5a800982f31d0d50ef66))
+
 ## [0.3.6](https://github.com/sasjs/server/compare/v0.3.5...v0.3.6) (2022-06-02)
 
 
