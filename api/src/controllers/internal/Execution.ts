@@ -43,7 +43,7 @@ export class ExecutionController {
     session?: Session
   ) {
     if (!(await fileExists(programPath)))
-      throw 'ExecutionController: SAS file does not exist.'
+      throw `The Stored Program at (${vars._program}) does not exist, or you do not have permission to view it.`
 
     const program = await readFile(programPath)
 
