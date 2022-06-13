@@ -43,7 +43,7 @@ export class ExecutionController {
     session?: Session
   ) {
     if (!(await fileExists(programPath)))
-      throw 'ExecutionController: SAS file does not exist.'
+      throw `ExecutionController: SAS file (${programPath}) does not exist.`
 
     const program = await readFile(programPath)
 
