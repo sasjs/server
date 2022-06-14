@@ -1,3 +1,10 @@
+## [0.3.9](https://github.com/sasjs/server/compare/v0.3.8...v0.3.9) (2022-06-14)
+
+
+### Bug Fixes
+
+* forcing utf 8 encoding. Closes [#76](https://github.com/sasjs/server/issues/76) ([8734489](https://github.com/sasjs/server/commit/8734489cf014aedaca3f325e689493e4fe0b71ca))
+
 ## [0.3.8](https://github.com/sasjs/server/compare/v0.3.7...v0.3.8) (2022-06-13)
 
 
