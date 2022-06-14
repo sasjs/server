@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/sasjs/server/compare/v0.3.10...v0.4.0) (2022-06-14)
+
+
+### Features
+
+* new APIs added for GET|PATCH|DELETE of user by username ([aef411a](https://github.com/sasjs/server/commit/aef411a0eac625c33274dfe3e88b6f75115c44d8))
+
 ## [0.3.10](https://github.com/sasjs/server/compare/v0.3.9...v0.3.10) (2022-06-14)
 
 
