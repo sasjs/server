@@ -219,7 +219,7 @@ const verifyRUN_TIMES = (): string[] => {
     const runTimeTypes = Object.values(RunTimeType)
 
     runTimes.forEach((runTime) => {
-      if (!runTimeTypes.includes(runTime.toLowerCase() as RunTimeType)) {
+      if (!runTimeTypes.includes(runTime as RunTimeType)) {
         errors.push(
           `- Invalid '${runTime}' runtime\n - valid options ${runTimeTypes}`
         )
