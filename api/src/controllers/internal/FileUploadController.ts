@@ -1,9 +1,12 @@
-import path from 'path'
 import { Request, RequestHandler } from 'express'
 import multer from 'multer'
-import { uuidv4, fileExists } from '@sasjs/utils'
+import { uuidv4 } from '@sasjs/utils'
 import { getSASSessionController, getJSSessionController } from '.'
-import { getFilesFolder, SASJSRunTimes } from '../../utils'
+import {
+  executeProgramRawValidation,
+  getRunTimeAndFilePath,
+  RunTimeType
+} from '../../utils'
 
 export class FileUploadController {
   private storage = multer.diskStorage({
@@ -22,31 +25,26 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
-    const programPath = req.query._program as string
+    const { error: errQ, value: query } = executeProgramRawValidation(req.query)
+    const { error: errB, value: body } = executeProgramRawValidation(req.body)
 
-    for (const runTime of process.runTimes) {
-      const codePath =
-        path
-          .join(getFilesFolder(), programPath)
-          .replace(new RegExp('/', 'g'), path.sep) +
-        '.' +
-        runTime
+    if (errQ && errB) return res.status(400).send(errB.details[0].message)
 
-      if (await fileExists(codePath)) {
-        let sessionController
-        if (runTime === SASJSRunTimes.JS) {
-          sessionController = getJSSessionController()
-        } else {
-          sessionController = getSASSessionController()
-        }
-        const session = await sessionController.getSession()
-        // marking consumed true, so that it's not available
-        // as readySession for any other request
-        session.consumed = true
-        req.sasjsSession = session
-        break
-      }
-    }
+    const programPath = (query?._program ?? body?._program) as string
+
+    const { runTime } = await getRunTimeAndFilePath(programPath)
+
+    const sessionController =
+      runTime === RunTimeType.SAS
+        ? getSASSessionController()
+        : getJSSessionController()
+
+    const session = await sessionController.getSession()
+    // marking consumed true, so that it's not available
+    // as readySession for any other request
+    session.consumed = true
+
+    req.sasjsSession = session
 
     next()
   }

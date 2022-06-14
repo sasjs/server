@@ -1,5 +1,4 @@
 import express from 'express'
-import path from 'path'
 import {
   Request,
   Security,
@@ -19,12 +18,12 @@ import {
 } from './internal'
 import {
   getPreProgramVariables,
-  getFilesFolder,
   HTTPHeaders,
   isDebugOn,
   LogLine,
   makeFilesNamesMap,
-  parseLogToArray
+  parseLogToArray,
+  getRunTimeAndFilePath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 
@@ -132,13 +131,16 @@ const executeReturnRaw = async (
 ): Promise<string | Buffer> => {
   const query = req.query as ExecutionVars
 
+  const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
   try {
     const { result, httpHeaders } =
-      (await new ExecutionController().executeFile(
-        _program,
-        getPreProgramVariables(req),
-        query
-      )) as ExecuteReturnRaw
+      (await new ExecutionController().executeFile({
+        programPath: codePath,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: query,
+        runTime
+      })) as ExecuteReturnRaw
 
     // Should over-ride response header for debug
     // on GET request to see entire log rendering on browser.
@@ -167,20 +169,23 @@ const executeReturnJson = async (
   req: express.Request,
   _program: string
 ): Promise<ExecuteReturnJsonResponse> => {
+  const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
   const filesNamesMap = req.files?.length
     ? makeFilesNamesMap(req.files as MulterFile[])
     : null
 
   try {
     const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeFile(
-        _program,
-        getPreProgramVariables(req),
-        { ...req.query, ...req.body },
-        { filesNamesMap: filesNamesMap },
-        true,
-        req.sasjsSession
-      )) as ExecuteReturnJson
+      (await new ExecutionController().executeFile({
+        programPath: codePath,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: { ...req.query, ...req.body },
+        otherArgs: { filesNamesMap: filesNamesMap },
+        returnJson: true,
+        session: req.sasjsSession,
+        runTime
+      })) as ExecuteReturnJson
 
     let weboutRes: string | IRecordOfAny = webout
     if (httpHeaders['content-type']?.toLowerCase() === 'application/json') {

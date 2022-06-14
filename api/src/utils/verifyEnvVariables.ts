@@ -26,7 +26,7 @@ export enum LOG_FORMAT_MORGANType {
   tiny = 'tiny'
 }
 
-export enum SASJSRunTimes {
+export enum RunTimeType {
   SAS = 'sas',
   JS = 'js'
 }
@@ -51,7 +51,7 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyLOG_FORMAT_MORGAN())
 
-  errors.push(...verifySASJSRunTimes())
+  errors.push(...verifyRUN_TIMES())
 
   if (errors.length) {
     process.logger?.error(
@@ -209,26 +209,24 @@ const verifyLOG_FORMAT_MORGAN = (): string[] => {
   return errors
 }
 
-const verifySASJSRunTimes = (): string[] => {
+const verifyRUN_TIMES = (): string[] => {
   const errors: string[] = []
-  const { SASJS_RUNTIMES } = process.env
+  const { RUN_TIMES } = process.env
 
-  if (SASJS_RUNTIMES) {
-    const runTimes = SASJS_RUNTIMES.split(',').map((runTime) =>
-      runTime.toLowerCase()
-    )
+  if (RUN_TIMES) {
+    const runTimes = RUN_TIMES.split(',')
 
-    const possibleRunTimes = Object.values(SASJSRunTimes)
+    const runTimeTypes = Object.values(RunTimeType)
 
     runTimes.forEach((runTime) => {
-      if (!possibleRunTimes.includes(runTime as SASJSRunTimes)) {
+      if (!runTimeTypes.includes(runTime.toLowerCase() as RunTimeType)) {
         errors.push(
-          `- Invalid '${runTime}' runtime\n - valid options ${possibleRunTimes}`
+          `- Invalid '${runTime}' runtime\n - valid options ${runTimeTypes}`
         )
       }
     })
   } else {
-    process.env.SASJS_RUNTIMES = DEFAULTS.SASJS_RUNTIMES
+    process.env.RUN_TIMES = DEFAULTS.RUN_TIMES
   }
   return errors
 }
@@ -239,5 +237,5 @@ const DEFAULTS = {
   PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
-  SASJS_RUNTIMES: SASJSRunTimes.SAS
+  RUN_TIMES: RunTimeType.SAS
 }
