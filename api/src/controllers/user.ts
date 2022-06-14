@@ -80,6 +80,26 @@ export class UserController {
   /**
    * Only Admin or user itself will get user autoExec code.
    * @summary Get user properties - such as group memberships, userName, displayName.
+   * @param username The User's username
+   * @example username "johnSnow01"
+   */
+  @Get('by/username/{username}')
+  public async getUserByUsername(
+    @Request() req: express.Request,
+    @Path() username: string
+  ): Promise<UserDetailsResponse> {
+    const { MODE } = process.env
+
+    if (MODE === ModeType.Desktop) return getDesktopAutoExec()
+
+    const { user } = req
+    const getAutoExec = user!.isAdmin || user!.username == username
+    return getUser({ username }, getAutoExec)
+  }
+
+  /**
+   * Only Admin or user itself will get user autoExec code.
+   * @summary Get user properties - such as group memberships, userName, displayName.
    * @param userId The user's identifier
    * @example userId 1234
    */
@@ -94,7 +114,32 @@ export class UserController {
 
     const { user } = req
     const getAutoExec = user!.isAdmin || user!.userId == userId
-    return getUser(userId, getAutoExec)
+    return getUser({ id: userId }, getAutoExec)
+  }
+
+  /**
+   * @summary Update user properties - such as displayName. Can be performed either by admins, or the user in question.
+   * @param username The User's username
+   * @example username "johnSnow01"
+   */
+  @Example<UserDetailsResponse>({
+    id: 1234,
+    displayName: 'John Snow',
+    username: 'johnSnow01',
+    isAdmin: false,
+    isActive: true
+  })
+  @Patch('by/username/{username}')
+  public async updateUserByUsername(
+    @Path() username: string,
+    @Body() body: UserPayload
+  ): Promise<UserDetailsResponse> {
+    const { MODE } = process.env
+
+    if (MODE === ModeType.Desktop)
+      return updateDesktopAutoExec(body.autoExec ?? '')
+
+    return updateUser({ username }, body)
   }
 
   /**
@@ -119,7 +164,21 @@ export class UserController {
     if (MODE === ModeType.Desktop)
       return updateDesktopAutoExec(body.autoExec ?? '')
 
-    return updateUser(userId, body)
+    return updateUser({ id: userId }, body)
+  }
+
+  /**
+   * @summary Delete a user. Can be performed either by admins, or the user in question.
+   * @param username The User's username
+   * @example username "johnSnow01"
+   */
+  @Delete('by/username/{username}')
+  public async deleteUserByUsername(
+    @Path() username: string,
+    @Body() body: { password?: string },
+    @Query() @Hidden() isAdmin: boolean = false
+  ) {
+    return deleteUser({ username }, isAdmin, body)
   }
 
   /**
@@ -133,7 +192,7 @@ export class UserController {
     @Body() body: { password?: string },
     @Query() @Hidden() isAdmin: boolean = false
   ) {
-    return deleteUser(userId, isAdmin, body)
+    return deleteUser({ id: userId }, isAdmin, body)
   }
 }
 
@@ -174,11 +233,16 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   }
 }
 
+interface GetUserBy {
+  id?: number
+  username?: string
+}
+
 const getUser = async (
-  id: number,
+  findBy: GetUserBy,
   getAutoExec: boolean
 ): Promise<UserDetailsResponse> => {
-  const user = await User.findOne({ id })
+  const user = await User.findOne(findBy)
 
   if (!user) throw new Error('User is not found.')
 
@@ -201,7 +265,7 @@ const getDesktopAutoExec = async () => {
 }
 
 const updateUser = async (
-  id: number,
+  findBy: GetUserBy,
   data: Partial<UserPayload>
 ): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive, autoExec } = data
@@ -211,8 +275,13 @@ const updateUser = async (
   if (username) {
     // Checking if user is already in the database
     const usernameExist = await User.findOne({ username })
-    if (usernameExist && usernameExist.id != id)
-      throw new Error('Username already exists.')
+    if (usernameExist) {
+      if (
+        (findBy.id && usernameExist.id != findBy.id) ||
+        (findBy.username && usernameExist.username != findBy.username)
+      )
+        throw new Error('Username already exists.')
+    }
     params.username = username
   }
 
@@ -221,9 +290,10 @@ const updateUser = async (
     params.password = User.hashPassword(password)
   }
 
-  const updatedUser = await User.findOneAndUpdate({ id }, params, { new: true })
+  const updatedUser = await User.findOneAndUpdate(findBy, params, { new: true })
 
-  if (!updatedUser) throw new Error(`Unable to find user with id: ${id}`)
+  if (!updatedUser)
+    throw new Error(`Unable to find user with ${findBy.id || findBy.username}`)
 
   return {
     id: updatedUser.id,
@@ -245,11 +315,11 @@ const updateDesktopAutoExec = async (autoExec: string) => {
 }
 
 const deleteUser = async (
-  id: number,
+  findBy: GetUserBy,
   isAdmin: boolean,
   { password }: { password?: string }
 ) => {
-  const user = await User.findOne({ id })
+  const user = await User.findOne(findBy)
   if (!user) throw new Error('User is not found.')
 
   if (!isAdmin) {
@@ -257,5 +327,5 @@ const deleteUser = async (
     if (!validPass) throw new Error('Invalid password.')
   }
 
-  await User.deleteOne({ id })
+  await User.deleteOne(findBy)
 }
