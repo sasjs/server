@@ -93,7 +93,8 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
-      '-ENCODING UTF-8',
+      '-ENCODING',
+      'UTF-8',
       process.platform === 'win32' ? '-nosplash' : ''
     ])
       .then(() => {
