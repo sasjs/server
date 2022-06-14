@@ -1,3 +1,10 @@
+## [0.3.10](https://github.com/sasjs/server/compare/v0.3.9...v0.3.10) (2022-06-14)
+
+
+### Bug Fixes
+
+* correct syntax for encoding option ([32d372b](https://github.com/sasjs/server/commit/32d372b42fbf56b6c0779e8f704164eaae1c7548))
+
 ## [0.3.9](https://github.com/sasjs/server/compare/v0.3.8...v0.3.9) (2022-06-14)
 
 
