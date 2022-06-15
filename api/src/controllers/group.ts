@@ -14,7 +14,7 @@ import Group, { GroupPayload } from '../model/Group'
 import User from '../model/User'
 import { UserResponse } from './user'
 
-interface GroupResponse {
+export interface GroupResponse {
   groupId: number
   name: string
   description: string
@@ -209,6 +209,9 @@ const updateUsersListInGroup = async (
     : await group.removeUser(user._id)) as unknown as GroupDetailsResponse
 
   if (!updatedGroup) throw new Error('Unable to update group')
+
+  if (action === 'addUser') user.addGroup(group._id)
+  else user.removeGroup(group._id)
 
   return {
     groupId: updatedGroup.groupId,

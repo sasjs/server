@@ -45,6 +45,8 @@ interface IUserDocument extends UserPayload, Document {
 
 interface IUser extends IUserDocument {
   comparePassword(password: string): boolean
+  addGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
+  removeGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
 }
 interface IUserModel extends Model<IUser> {
   hashPassword(password: string): string
@@ -106,6 +108,28 @@ userSchema.method('comparePassword', function (password: string): boolean {
   if (bcrypt.compareSync(password, this.password)) return true
   return false
 })
+userSchema.method(
+  'addGroup',
+  async function (groupObjectId: Schema.Types.ObjectId) {
+    const groupIdIndex = this.groups.indexOf(groupObjectId)
+    if (groupIdIndex === -1) {
+      this.groups.push(groupObjectId)
+    }
+    this.markModified('groups')
+    return this.save()
+  }
+)
+userSchema.method(
+  'removeGroup',
+  async function (groupObjectId: Schema.Types.ObjectId) {
+    const groupIdIndex = this.groups.indexOf(groupObjectId)
+    if (groupIdIndex > -1) {
+      this.groups.splice(groupIdIndex, 1)
+    }
+    this.markModified('groups')
+    return this.save()
+  }
+)
 
 export const User: IUserModel = model<IUser, IUserModel>('User', userSchema)
 

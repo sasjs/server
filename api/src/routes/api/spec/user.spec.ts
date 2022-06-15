@@ -3,7 +3,7 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
-import { UserController } from '../../../controllers/'
+import { UserController, GroupController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'
@@ -571,6 +571,7 @@ describe('user', () => {
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
       expect(res.body.autoExec).toEqual(user.autoExec)
+      expect(res.body.groups).toEqual([])
     })
 
     it('should respond with user autoExec when admin user requests', async () => {
@@ -588,6 +589,7 @@ describe('user', () => {
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
       expect(res.body.autoExec).toEqual(user.autoExec)
+      expect(res.body.groups).toEqual([])
     })
 
     it('should respond with user when access token is not of an admin account', async () => {
@@ -610,6 +612,34 @@ describe('user', () => {
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
       expect(res.body.autoExec).toBeUndefined()
+      expect(res.body.groups).toEqual([])
+    })
+
+    it('should respond with user along with associated groups', async () => {
+      const dbUser = await controller.createUser(user)
+      const userId = dbUser.id
+      const accessToken = await generateAndSaveToken(userId)
+
+      const group = {
+        name: 'DCGroup1',
+        description: 'DC group for testing purposes.'
+      }
+      const groupController = new GroupController()
+      const dbGroup = await groupController.createGroup(group)
+      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+
+      const res = await request(app)
+        .get(`/SASjsApi/user/${userId}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body.username).toEqual(user.username)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+      expect(res.body.groups.length).toBeGreaterThan(0)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {

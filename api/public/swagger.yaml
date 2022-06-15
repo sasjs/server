@@ -310,6 +310,21 @@ components:
                 - displayName
             type: object
             additionalProperties: false
+        GroupResponse:
+            properties:
+                groupId:
+                    type: number
+                    format: double
+                name:
+                    type: string
+                description:
+                    type: string
+            required:
+                - groupId
+                - name
+                - description
+            type: object
+            additionalProperties: false
         UserDetailsResponse:
             properties:
                 id:
@@ -325,6 +340,10 @@ components:
                     type: boolean
                 autoExec:
                     type: string
+                groups:
+                    items:
+                        $ref: '#/components/schemas/GroupResponse'
+                    type: array
             required:
                 - id
                 - displayName
@@ -362,21 +381,6 @@ components:
                 - displayName
                 - username
                 - password
-            type: object
-            additionalProperties: false
-        GroupResponse:
-            properties:
-                groupId:
-                    type: number
-                    format: double
-                name:
-                    type: string
-                description:
-                    type: string
-            required:
-                - groupId
-                - name
-                - description
             type: object
             additionalProperties: false
         GroupDetailsResponse:
