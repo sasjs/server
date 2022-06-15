@@ -18,6 +18,7 @@ import { desktopUser } from '../middlewares'
 
 import User, { UserPayload } from '../model/User'
 import { getUserAutoExec, updateUserAutoExec, ModeType } from '../utils'
+import { GroupResponse } from './group'
 
 export interface UserResponse {
   id: number
@@ -32,6 +33,7 @@ interface UserDetailsResponse {
   isActive: boolean
   isAdmin: boolean
   autoExec?: string
+  groups?: GroupResponse[]
 }
 
 @Security('bearerAuth')
@@ -242,7 +244,13 @@ const getUser = async (
   findBy: GetUserBy,
   getAutoExec: boolean
 ): Promise<UserDetailsResponse> => {
-  const user = await User.findOne(findBy)
+  const user = (await User.findOne(
+    findBy,
+    `id displayName username isActive isAdmin autoExec -_id`
+  ).populate(
+    'groups',
+    'groupId name description -_id'
+  )) as unknown as UserDetailsResponse
 
   if (!user) throw new Error('User is not found.')
 
@@ -252,7 +260,8 @@ const getUser = async (
     username: user.username,
     isActive: user.isActive,
     isAdmin: user.isAdmin,
-    autoExec: getAutoExec ? user.autoExec ?? '' : undefined
+    autoExec: getAutoExec ? user.autoExec ?? '' : undefined,
+    groups: user.groups
   }
 }
 
