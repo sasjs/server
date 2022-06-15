@@ -310,6 +310,21 @@ components:
                 - displayName
             type: object
             additionalProperties: false
+        GroupResponse:
+            properties:
+                groupId:
+                    type: number
+                    format: double
+                name:
+                    type: string
+                description:
+                    type: string
+            required:
+                - groupId
+                - name
+                - description
+            type: object
+            additionalProperties: false
         UserDetailsResponse:
             properties:
                 id:
@@ -325,6 +340,10 @@ components:
                     type: boolean
                 autoExec:
                     type: string
+                groups:
+                    items:
+                        $ref: '#/components/schemas/GroupResponse'
+                    type: array
             required:
                 - id
                 - displayName
@@ -362,21 +381,6 @@ components:
                 - displayName
                 - username
                 - password
-            type: object
-            additionalProperties: false
-        GroupResponse:
-            properties:
-                groupId:
-                    type: number
-                    format: double
-                name:
-                    type: string
-                description:
-                    type: string
-            required:
-                - groupId
-                - name
-                - description
             type: object
             additionalProperties: false
         GroupDetailsResponse:
@@ -985,6 +989,94 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/UserPayload'
+    '/SASjsApi/user/by/username/{username}':
+        get:
+            operationId: GetUserByUsername
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+            description: 'Only Admin or user itself will get user autoExec code.'
+            summary: 'Get user properties - such as group memberships, userName, displayName.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The User''s username'
+                    in: path
+                    name: username
+                    required: true
+                    schema:
+                        type: string
+                    example: johnSnow01
+        patch:
+            operationId: UpdateUserByUsername
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+            summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The User''s username'
+                    in: path
+                    name: username
+                    required: true
+                    schema:
+                        type: string
+                    example: johnSnow01
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserPayload'
+        delete:
+            operationId: DeleteUserByUsername
+            responses:
+                '204':
+                    description: 'No content'
+            summary: 'Delete a user. Can be performed either by admins, or the user in question.'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The User''s username'
+                    in: path
+                    name: username
+                    required: true
+                    schema:
+                        type: string
+                    example: johnSnow01
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                password:
+                                    type: string
+                            type: object
     '/SASjsApi/user/{userId}':
         get:
             operationId: GetUser

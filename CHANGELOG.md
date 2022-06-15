@@ -1,3 +1,31 @@
+## [0.4.1](https://github.com/sasjs/server/compare/v0.4.0...v0.4.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* add/remove group to User when adding/removing user from group and return group membership on getting user ([e08bbcc](https://github.com/sasjs/server/commit/e08bbcc5435cbabaee40a41a7fb667d4a1f078e6))
+
+# [0.4.0](https://github.com/sasjs/server/compare/v0.3.10...v0.4.0) (2022-06-14)
+
+
+### Features
+
+* new APIs added for GET|PATCH|DELETE of user by username ([aef411a](https://github.com/sasjs/server/commit/aef411a0eac625c33274dfe3e88b6f75115c44d8))
+
+## [0.3.10](https://github.com/sasjs/server/compare/v0.3.9...v0.3.10) (2022-06-14)
+
+
+### Bug Fixes
+
+* correct syntax for encoding option ([32d372b](https://github.com/sasjs/server/commit/32d372b42fbf56b6c0779e8f704164eaae1c7548))
+
+## [0.3.9](https://github.com/sasjs/server/compare/v0.3.8...v0.3.9) (2022-06-14)
+
+
+### Bug Fixes
+
+* forcing utf 8 encoding. Closes [#76](https://github.com/sasjs/server/issues/76) ([8734489](https://github.com/sasjs/server/commit/8734489cf014aedaca3f325e689493e4fe0b71ca))
+
 ## [0.3.8](https://github.com/sasjs/server/compare/v0.3.7...v0.3.8) (2022-06-13)
 
 
