@@ -727,7 +727,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            summary: 'Creates/updates files within SASjs Drive using uploaded JSON file.'
+            description: "Accepts JSON file and zipped compressed JSON file as well.\nCompressed file should only contain one JSON file and should have same name\nas of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip\nAny other file or JSON file in zipped will be ignored!"
+            summary: 'Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.'
             tags:
                 - Drive
             security:

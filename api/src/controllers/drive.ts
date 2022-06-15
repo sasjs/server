@@ -96,7 +96,12 @@ export class DriveController {
   }
 
   /**
-   * @summary Creates/updates files within SASjs Drive using uploaded JSON file.
+   * Accepts JSON file and zipped compressed JSON file as well.
+   * Compressed file should only contain one JSON file and should have same name
+   * as of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip
+   * Any other file or JSON file in zipped will be ignored!
+   *
+   * @summary Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.
    *
    */
   @Example<DeployResponse>(successDeployResponse)

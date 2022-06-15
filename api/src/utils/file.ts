@@ -1,5 +1,6 @@
 import path from 'path'
 import { homedir } from 'os'
+import fs from 'fs-extra'
 
 export const apiRoot = path.join(__dirname, '..', '..')
 export const codebaseRoot = path.join(apiRoot, '..')
@@ -47,3 +48,6 @@ export const generateUniqueFileName = (fileName: string, extension = '') =>
     new Date().getTime(),
     extension
   ].join('')
+
+export const createReadStream = async (filePath: string) =>
+  fs.createReadStream(filePath)
