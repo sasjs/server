@@ -6,7 +6,8 @@ import {
   getPreProgramVariables,
   getUserAutoExec,
   ModeType,
-  parseLogToArray
+  parseLogToArray,
+  RunTimeType
 } from '../utils'
 
 interface ExecuteSASCodePayload {
@@ -46,13 +47,14 @@ const executeSASCode = async (
 
   try {
     const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeProgram(
-        code,
-        getPreProgramVariables(req),
-        { ...req.query, _debug: 131 },
-        { userAutoExec },
-        true
-      )) as ExecuteReturnJson
+      (await new ExecutionController().executeProgram({
+        program: code,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: { ...req.query, _debug: 131 },
+        otherArgs: { userAutoExec },
+        returnJson: true,
+        runTime: RunTimeType.SAS
+      })) as ExecuteReturnJson
 
     return {
       status: 'success',
