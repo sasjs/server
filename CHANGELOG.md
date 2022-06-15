@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/sasjs/server/compare/v0.4.0...v0.4.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* add/remove group to User when adding/removing user from group and return group membership on getting user ([e08bbcc](https://github.com/sasjs/server/commit/e08bbcc5435cbabaee40a41a7fb667d4a1f078e6))
+
 # [0.4.0](https://github.com/sasjs/server/compare/v0.3.10...v0.4.0) (2022-06-14)
 
 
