@@ -1,3 +1,10 @@
+## [0.4.2](https://github.com/sasjs/server/compare/v0.4.1...v0.4.2) (2022-06-15)
+
+
+### Bug Fixes
+
+* appStream redesign ([73792fb](https://github.com/sasjs/server/commit/73792fb574c90bd280c4324e0b41c6fee7d572b6))
+
 ## [0.4.1](https://github.com/sasjs/server/compare/v0.4.0...v0.4.1) (2022-06-15)
 
 
