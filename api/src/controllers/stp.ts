@@ -131,9 +131,9 @@ const executeReturnRaw = async (
 ): Promise<string | Buffer> => {
   const query = req.query as ExecutionVars
 
-  const { codePath, runTime } = await getRunTimeAndFilePath(_program)
-
   try {
+    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
     const { result, httpHeaders } =
       (await new ExecutionController().executeFile({
         programPath: codePath,
@@ -169,13 +169,13 @@ const executeReturnJson = async (
   req: express.Request,
   _program: string
 ): Promise<ExecuteReturnJsonResponse> => {
-  const { codePath, runTime } = await getRunTimeAndFilePath(_program)
-
   const filesNamesMap = req.files?.length
     ? makeFilesNamesMap(req.files as MulterFile[])
     : null
 
   try {
+    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
     const { webout, log, httpHeaders } =
       (await new ExecutionController().executeFile({
         programPath: codePath,

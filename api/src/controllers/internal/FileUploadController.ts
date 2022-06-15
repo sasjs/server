@@ -32,7 +32,17 @@ export class FileUploadController {
 
     const programPath = (query?._program ?? body?._program) as string
 
-    const { runTime } = await getRunTimeAndFilePath(programPath)
+    let runTime
+
+    try {
+      ;({ runTime } = await getRunTimeAndFilePath(programPath))
+    } catch (err: any) {
+      res.status(400).send({
+        status: 'failure',
+        message: 'Job execution failed',
+        error: typeof err === 'object' ? err.toString() : err
+      })
+    }
 
     const sessionController =
       runTime === RunTimeType.SAS
