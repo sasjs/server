@@ -70,6 +70,19 @@ describe('group', () => {
       expect(res.body.users).toEqual([])
     })
 
+    it('should respond with Conflict when group already exists with same name', async () => {
+      await groupController.createGroup(group)
+
+      const res = await request(app)
+        .post('/SASjsApi/group')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send(group)
+        .expect(409)
+
+      expect(res.text).toEqual('Group name already exists.')
+      expect(res.body).toEqual({})
+    })
+
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app).post('/SASjsApi/group').send().expect(401)
 
@@ -162,14 +175,14 @@ describe('group', () => {
       expect(res2.body.groups).toEqual([])
     })
 
-    it('should respond with Forbidden if groupId is incorrect', async () => {
+    it('should respond with Not Found if groupId is incorrect', async () => {
       const res = await request(app)
         .delete(`/SASjsApi/group/1234`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: No Group deleted!')
+      expect(res.text).toEqual('Group not found.')
       expect(res.body).toEqual({})
     })
 
@@ -253,14 +266,14 @@ describe('group', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if groupId is incorrect', async () => {
+    it('should respond with Not Found if groupId is incorrect', async () => {
       const res = await request(app)
         .get('/SASjsApi/group/1234')
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: Group not found.')
+      expect(res.text).toEqual('Group not found.')
       expect(res.body).toEqual({})
     })
 
@@ -312,14 +325,14 @@ describe('group', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if groupname is incorrect', async () => {
+      it('should respond with Not Found if groupname is incorrect', async () => {
         const res = await request(app)
           .get('/SASjsApi/group/by/groupname/randomCharacters')
           .auth(adminAccessToken, { type: 'bearer' })
           .send()
-          .expect(403)
+          .expect(404)
 
-        expect(res.text).toEqual('Error: Group not found.')
+        expect(res.text).toEqual('Group not found.')
         expect(res.body).toEqual({})
       })
     })
@@ -487,26 +500,26 @@ describe('group', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if groupId is incorrect', async () => {
+    it('should respond with Not Found if groupId is incorrect', async () => {
       const res = await request(app)
         .post('/SASjsApi/group/123/123')
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: Group not found.')
+      expect(res.text).toEqual('Group not found.')
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if userId is incorrect', async () => {
+    it('should respond with Not Found if userId is incorrect', async () => {
       const dbGroup = await groupController.createGroup(group)
       const res = await request(app)
         .post(`/SASjsApi/group/${dbGroup.groupId}/123`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: User not found.')
+      expect(res.text).toEqual('User not found.')
       expect(res.body).toEqual({})
     })
   })
@@ -586,26 +599,26 @@ describe('group', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if groupId is incorrect', async () => {
+    it('should respond with Not Found if groupId is incorrect', async () => {
       const res = await request(app)
         .delete('/SASjsApi/group/123/123')
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: Group not found.')
+      expect(res.text).toEqual('Group not found.')
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if userId is incorrect', async () => {
+    it('should respond with Not Found if userId is incorrect', async () => {
       const dbGroup = await groupController.createGroup(group)
       const res = await request(app)
         .delete(`/SASjsApi/group/${dbGroup.groupId}/123`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: User not found.')
+      expect(res.text).toEqual('User not found.')
       expect(res.body).toEqual({})
     })
   })

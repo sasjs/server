@@ -148,7 +148,11 @@ export class GroupController {
   public async deleteGroup(@Path() groupId: number) {
     const group = await Group.findOne({ groupId })
     if (group) return await group.remove()
-    throw new Error('No Group deleted!')
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Group not found.'
+    }
   }
 }
 
@@ -162,6 +166,15 @@ const createGroup = async ({
   description,
   isActive
 }: GroupPayload): Promise<GroupDetailsResponse> => {
+  // Checking if user is already in the database
+  const groupnameExist = await Group.findOne({ name })
+  if (groupnameExist)
+    throw {
+      code: 409,
+      status: 'Conflict',
+      message: 'Group name already exists.'
+    }
+
   const group = new Group({
     name,
     description,
@@ -187,7 +200,12 @@ const getGroup = async (findBy: GetGroupBy): Promise<GroupDetailsResponse> => {
     'users',
     'id username displayName -_id'
   )) as unknown as GroupDetailsResponse
-  if (!group) throw new Error('Group not found.')
+  if (!group)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Group not found.'
+    }
 
   return {
     groupId: group.groupId,
@@ -216,16 +234,31 @@ const updateUsersListInGroup = async (
   action: 'addUser' | 'removeUser'
 ): Promise<GroupDetailsResponse> => {
   const group = await Group.findOne({ groupId })
-  if (!group) throw new Error('Group not found.')
+  if (!group)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Group not found.'
+    }
 
   const user = await User.findOne({ id: userId })
-  if (!user) throw new Error('User not found.')
+  if (!user)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'User not found.'
+    }
 
   const updatedGroup = (action === 'addUser'
     ? await group.addUser(user._id)
     : await group.removeUser(user._id)) as unknown as GroupDetailsResponse
 
-  if (!updatedGroup) throw new Error('Unable to update group')
+  if (!updatedGroup)
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: 'Unable to update group.'
+    }
 
   if (action === 'addUser') user.addGroup(group._id)
   else user.removeGroup(group._id)
