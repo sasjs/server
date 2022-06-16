@@ -1,7 +1,7 @@
 import express from 'express'
 import { GroupController } from '../../controllers/'
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
-import { registerGroupValidation } from '../../utils'
+import { getGroupValidation, registerGroupValidation } from '../../utils'
 
 const groupRouter = express.Router()
 
@@ -44,6 +44,25 @@ groupRouter.get('/:groupId', authenticateAccessToken, async (req, res) => {
     res.status(403).send(err.toString())
   }
 })
+
+groupRouter.get(
+  '/by/groupname/:name',
+  authenticateAccessToken,
+  async (req, res) => {
+    const { error, value: params } = getGroupValidation(req.params)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    const { name } = params
+
+    const controller = new GroupController()
+    try {
+      const response = await controller.getGroupByGroupName(name)
+      res.send(response)
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
+  }
+)
 
 groupRouter.post(
   '/:groupId/:userId',

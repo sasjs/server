@@ -23,7 +23,7 @@ const user = {
 }
 
 const group = {
-  name: 'DCGroup1',
+  name: 'dcgroup1',
   description: 'DC group for testing purposes.'
 }
 
@@ -123,6 +123,43 @@ describe('group', () => {
         .expect(200)
 
       expect(res.body).toEqual({})
+    })
+
+    it(`should delete group's reference from users' groups array`, async () => {
+      const dbGroup = await groupController.createGroup(group)
+      const dbUser1 = await userController.createUser({
+        ...user,
+        username: 'deletegroup1'
+      })
+      const dbUser2 = await userController.createUser({
+        ...user,
+        username: 'deletegroup2'
+      })
+
+      await groupController.addUserToGroup(dbGroup.groupId, dbUser1.id)
+      await groupController.addUserToGroup(dbGroup.groupId, dbUser2.id)
+
+      await request(app)
+        .delete(`/SASjsApi/group/${dbGroup.groupId}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      const res1 = await request(app)
+        .get(`/SASjsApi/user/${dbUser1.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res1.body.groups).toEqual([])
+
+      const res2 = await request(app)
+        .get(`/SASjsApi/user/${dbUser2.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res2.body.groups).toEqual([])
     })
 
     it('should respond with Forbidden if groupId is incorrect', async () => {
@@ -226,6 +263,66 @@ describe('group', () => {
       expect(res.text).toEqual('Error: Group not found.')
       expect(res.body).toEqual({})
     })
+
+    describe('by group name', () => {
+      it('should respond with group', async () => {
+        const { name } = await groupController.createGroup(group)
+
+        const res = await request(app)
+          .get(`/SASjsApi/group/by/groupname/${name}`)
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body.groupId).toBeTruthy()
+        expect(res.body.name).toEqual(group.name)
+        expect(res.body.description).toEqual(group.description)
+        expect(res.body.isActive).toEqual(true)
+        expect(res.body.users).toEqual([])
+      })
+
+      it('should respond with group when access token is not of an admin account', async () => {
+        const accessToken = await generateSaveTokenAndCreateUser({
+          ...user,
+          username: 'getbyname' + user.username
+        })
+
+        const { name } = await groupController.createGroup(group)
+
+        const res = await request(app)
+          .get(`/SASjsApi/group/by/groupname/${name}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body.groupId).toBeTruthy()
+        expect(res.body.name).toEqual(group.name)
+        expect(res.body.description).toEqual(group.description)
+        expect(res.body.isActive).toEqual(true)
+        expect(res.body.users).toEqual([])
+      })
+
+      it('should respond with Unauthorized if access token is not present', async () => {
+        const res = await request(app)
+          .get('/SASjsApi/group/by/groupname/dcgroup')
+          .send()
+          .expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if groupname is incorrect', async () => {
+        const res = await request(app)
+          .get('/SASjsApi/group/by/groupname/randomCharacters')
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send()
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Group not found.')
+        expect(res.body).toEqual({})
+      })
+    })
   })
 
   describe('getAll', () => {
@@ -245,8 +342,8 @@ describe('group', () => {
       expect(res.body).toEqual([
         {
           groupId: expect.anything(),
-          name: 'DCGroup1',
-          description: 'DC group for testing purposes.'
+          name: group.name,
+          description: group.description
         }
       ])
     })
@@ -267,8 +364,8 @@ describe('group', () => {
       expect(res.body).toEqual([
         {
           groupId: expect.anything(),
-          name: 'DCGroup1',
-          description: 'DC group for testing purposes.'
+          name: group.name,
+          description: group.description
         }
       ])
     })
@@ -305,6 +402,34 @@ describe('group', () => {
           id: expect.anything(),
           username: user.username,
           displayName: user.displayName
+        }
+      ])
+    })
+
+    it(`should add group to user's groups array`, async () => {
+      const dbGroup = await groupController.createGroup(group)
+      const dbUser = await userController.createUser({
+        ...user,
+        username: 'addUserToGroup'
+      })
+
+      await request(app)
+        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      const res = await request(app)
+        .get(`/SASjsApi/user/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body.groups).toEqual([
+        {
+          groupId: expect.anything(),
+          name: group.name,
+          description: group.description
         }
       ])
     })
@@ -410,6 +535,29 @@ describe('group', () => {
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
       expect(res.body.users).toEqual([])
+    })
+
+    it(`should remove group from user's groups array`, async () => {
+      const dbGroup = await groupController.createGroup(group)
+      const dbUser = await userController.createUser({
+        ...user,
+        username: 'removeGroupFromUser'
+      })
+      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+
+      await request(app)
+        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      const res = await request(app)
+        .get(`/SASjsApi/user/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body.groups).toEqual([])
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
