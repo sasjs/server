@@ -1,4 +1,5 @@
 import mongoose, { Schema, model, Document, Model } from 'mongoose'
+import User from './User'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 
 export interface GroupPayload {
@@ -34,7 +35,8 @@ interface IGroupModel extends Model<IGroup> {}
 const groupSchema = new Schema<IGroupDocument>({
   name: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   description: {
     type: String,
@@ -46,6 +48,7 @@ const groupSchema = new Schema<IGroupDocument>({
   },
   users: [{ type: Schema.Types.ObjectId, ref: 'User' }]
 })
+
 groupSchema.plugin(AutoIncrement, { inc_field: 'groupId' })
 
 // Hooks
@@ -53,6 +56,17 @@ groupSchema.post('save', function (group: IGroup, next: Function) {
   group.populate('users', 'id username displayName -_id').then(function () {
     next()
   })
+})
+
+// pre remove hook to remove all references of group from users
+groupSchema.pre('remove', async function () {
+  const userIds = this.users
+  await Promise.all(
+    userIds.map(async (userId) => {
+      const user = await User.findById(userId)
+      user?.removeGroup(this._id)
+    })
+  )
 })
 
 // Instance Methods
