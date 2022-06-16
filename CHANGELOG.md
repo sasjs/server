@@ -1,3 +1,15 @@
+# [0.5.0](https://github.com/sasjs/server/compare/v0.4.2...v0.5.0) (2022-06-16)
+
+
+### Bug Fixes
+
+* npm audit fix to avoid warnings on npm i ([28a6a36](https://github.com/sasjs/server/commit/28a6a36bb708b93fb5c2b74d587e9b2e055582be))
+
+
+### Features
+
+* **api:** deployment through zipped/compressed file ([b81d742](https://github.com/sasjs/server/commit/b81d742c6c70d4cf1cab365b0e3efc087441db00))
+
 ## [0.4.2](https://github.com/sasjs/server/compare/v0.4.1...v0.4.2) (2022-06-15)
 
 
