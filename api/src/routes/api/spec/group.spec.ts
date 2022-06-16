@@ -83,6 +83,19 @@ describe('group', () => {
       expect(res.body).toEqual({})
     })
 
+    it('should respond with Bad Request when group name does not match the group name schema', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/group')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({ ...group, name: 'Wrong Group Name' })
+        .expect(400)
+
+      expect(res.text).toEqual(
+        '"name" must only contain alpha-numeric characters'
+      )
+      expect(res.body).toEqual({})
+    })
+
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app).post('/SASjsApi/group').send().expect(401)
 
