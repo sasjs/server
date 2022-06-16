@@ -284,7 +284,7 @@ const _metauser = _sasjs_username;
 const sasjsprocessmode = 'Stored Program';
 `
 
-  const requiredModules = `const fs = require('fs-extra')`
+  const requiredModules = `const fs = require('fs')`
 
   program = `
 /* runtime vars */
@@ -297,7 +297,9 @@ ${preProgramVarStatments}
 ${program}
 
 /* write webout file*/
-fs.promises.writeFile(weboutPath, _webout)
+fs.writeFile(weboutPath, _webout, function (err) {
+  if (err) throw err;
+})
 `
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs?.filesNamesMap) {
