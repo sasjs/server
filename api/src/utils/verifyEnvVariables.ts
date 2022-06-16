@@ -237,5 +237,5 @@ const DEFAULTS = {
   PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
-  RUN_TIMES: RunTimeType.SAS
+  RUN_TIMES: `${RunTimeType.SAS},${RunTimeType.JS}`
 }
