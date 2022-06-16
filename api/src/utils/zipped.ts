@@ -30,6 +30,7 @@ export const extractJSONFromZip = async (zipFile: Express.Multer.File) => {
     const fileName = entry.path as string
     if (fileName.toUpperCase().endsWith('.JSON') && fileName === fileInZip) {
       fileContent = await entry.buffer()
+      break
     } else {
       entry.autodrain()
     }
