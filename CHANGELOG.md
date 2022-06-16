@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/sasjs/server/compare/v0.5.0...v0.6.0) (2022-06-16)
+
+
+### Features
+
+* get group by group name ([6b0b94a](https://github.com/sasjs/server/commit/6b0b94ad38215ae58e62279a4f73ac3ed2d9d0e8))
+
 # [0.5.0](https://github.com/sasjs/server/compare/v0.4.2...v0.5.0) (2022-06-16)
 
 
