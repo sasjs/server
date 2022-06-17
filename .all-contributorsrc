@@ -1,6 +1,6 @@
 {
-  "projectName": "@sasjs/server",
-  "projectOwner": "@sasjs",
+  "projectName": "server",
+  "projectOwner": "sasjs",
   "repoType": "github",
   "repoHost": "https://github.com",
   "files": [
@@ -68,7 +68,17 @@
       "contributions": [
         "test"
       ]
+    },
+    {
+      "login": "kknapen",
+      "name": "Koen Knapen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/78609432?v=4",
+      "profile": "https://github.com/kknapen",
+      "contributions": [
+        "userTesting"
+      ]
     }
   ],
-  "contributorsPerLine": 7
+  "contributorsPerLine": 7,
+  "skipCi": true
 }
