@@ -139,14 +139,24 @@ components:
                 - httpHeaders
             type: object
             additionalProperties: false
+        RunTimeType:
+            enum:
+                - sas
+                - js
+            type: string
         ExecuteSASCodePayload:
             properties:
                 code:
                     type: string
-                    description: 'Code of SAS program'
-                    example: '* SAS Code HERE;'
+                    description: 'Code of program'
+                    example: '* Code HERE;'
+                runTime:
+                    $ref: '#/components/schemas/RunTimeType'
+                    description: 'runtime for program'
+                    example: js
             required:
                 - code
+                - runTime
             type: object
             additionalProperties: false
         MemberType.folder:
@@ -437,11 +447,16 @@ components:
                     type: array
                 protocol:
                     type: string
+                runTimes:
+                    items:
+                        type: string
+                    type: array
             required:
                 - mode
                 - cors
                 - whiteList
                 - protocol
+                - runTimes
             type: object
             additionalProperties: false
         ExecuteReturnJsonPayload:
@@ -1349,7 +1364,7 @@ paths:
                                 $ref: '#/components/schemas/InfoResponse'
                             examples:
                                 'Example 1':
-                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http}
+                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http, runTimes: [sas, js]}
             summary: 'Get server info (mode, cors, whiteList, protocol).'
             tags:
                 - Info
@@ -1387,8 +1402,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a SAS program using it's location in the _program URL parameter.\nEnable debugging using the _debug URL parameter.  Setting _debug=131 will\ncause the log to be streamed in the output.\n\nAdditional URL parameters are turned into SAS macro variables.\n\nAny files provided in the request body are placed into the SAS session with\ncorresponding _WEBIN_XXX variables created.\n\nThe response headers can be adjusted using the mfs_httpheader() macro.  Any\nfile type can be returned, including binary files such as zip or xls.\n\nIf _debug is >= 131, response headers will contain Content-Type: 'text/plain'\n\nThis behaviour differs for POST requests, in which case the response is\nalways JSON."
-            summary: 'Execute Stored Program, return raw _webout content.'
+            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
+            summary: 'Execute a Stored Program, returns raw _webout content.'
             tags:
                 - STP
             security:
@@ -1396,13 +1411,13 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS program'
+                    description: 'Location of SAS or JS code'
                     in: query
                     name: _program
                     required: true
                     schema:
                         type: string
-                    example: /Public/somefolder/some.file
+                    example: /Projects/myApp/some/program
         post:
             operationId: ExecuteReturnJson
             responses:
@@ -1415,8 +1430,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
-            description: "Trigger a SAS program using it's location in the _program URL parameter.\nEnable debugging using the _debug URL parameter.  In any case, the log is\nalways returned in the log object.\n\nAdditional URL parameters are turned into SAS macro variables.\n\nAny files provided in the request body are placed into the SAS session with\ncorresponding _WEBIN_XXX variables created.\n\nThe response will be a JSON object with the following root attributes: log,\nwebout, headers.\n\nThe webout will be a nested JSON object ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content.\n\nResponse headers from the mfs_httpheader macro are simply listed in the\nheaders object, for POST requests they have no effect on the actual\nresponse header."
-            summary: 'Execute Stored Program, return JSON'
+            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms\n\nThe response will be a JSON object with the following root attributes:\nlog, webout, headers.\n\nThe webout attribute will be nested JSON ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content."
+            summary: 'Execute a Stored Program, return a JSON object'
             tags:
                 - STP
             security:
@@ -1424,13 +1439,13 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS program'
+                    description: 'Location of SAS or JS code'
                     in: query
                     name: _program
                     required: false
                     schema:
                         type: string
-                    example: /Public/somefolder/some.file
+                    example: /Projects/myApp/some/program
             requestBody:
                 required: false
                 content:

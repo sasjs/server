@@ -12,10 +12,15 @@ import {
 
 interface ExecuteSASCodePayload {
   /**
-   * Code of SAS program
-   * @example "* SAS Code HERE;"
+   * Code of program
+   * @example "* Code HERE;"
    */
   code: string
+  /**
+   * runtime for program
+   * @example "js"
+   */
+  runTime: RunTimeType
 }
 
 @Security('bearerAuth')
@@ -37,7 +42,7 @@ export class CodeController {
 
 const executeSASCode = async (
   req: express.Request,
-  { code }: ExecuteSASCodePayload
+  { code, runTime }: ExecuteSASCodePayload
 ) => {
   const { user } = req
   const userAutoExec =
@@ -53,7 +58,7 @@ const executeSASCode = async (
         vars: { ...req.query, _debug: 131 },
         otherArgs: { userAutoExec },
         returnJson: true,
-        runTime: RunTimeType.SAS
+        runTime: runTime
       })) as ExecuteReturnJson
 
     return {

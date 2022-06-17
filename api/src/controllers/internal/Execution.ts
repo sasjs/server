@@ -274,6 +274,7 @@ const createJSProgram = async (
   )
 
   const preProgramVarStatments = `
+let _webout = '';
 const weboutPath = '${weboutPath}'; 
 const _sasjs_tokenfile = '${tokenFile}';
 const _sasjs_username = '${preProgramVariables?.username}';
@@ -296,10 +297,12 @@ ${preProgramVarStatments}
 /* actual job code */
 ${program}
 
-/* write webout file*/
-fs.writeFile(weboutPath, _webout, function (err) {
-  if (err) throw err;
-})
+/* write webout file only if webout exists*/
+if (_webout) {
+  fs.writeFile(weboutPath, _webout, function (err) {
+    if (err) throw err;
+  })
+}
 `
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs?.filesNamesMap) {
