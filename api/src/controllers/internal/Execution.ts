@@ -349,7 +349,7 @@ const processProgram = async (
       // waiting for the open event so that we can have underlying file descriptor
       await once(writeStream, 'open')
 
-      execFileSync('node', [codePath], {
+      execFileSync(process.nodeLoc, [codePath], {
         stdio: ['ignore', writeStream, writeStream]
       })
 

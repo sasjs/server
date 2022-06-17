@@ -53,6 +53,8 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyRUN_TIMES())
 
+  errors.push(...verifyExecutablePaths())
+
   if (errors.length) {
     process.logger?.error(
       `Invalid environment variable(s) provided: \n${errors.join('\n')}`
@@ -228,6 +230,25 @@ const verifyRUN_TIMES = (): string[] => {
   } else {
     process.env.RUN_TIMES = DEFAULTS.RUN_TIMES
   }
+  return errors
+}
+
+const verifyExecutablePaths = () => {
+  const errors: string[] = []
+  const { RUN_TIMES, SAS_PATH, NODE_PATH, MODE } = process.env
+
+  if (MODE === ModeType.Server) {
+    const runTimes = RUN_TIMES?.split(',')
+
+    if (runTimes?.includes(RunTimeType.SAS) && !SAS_PATH) {
+      errors.push(`- SAS_PATH is required for ${RunTimeType.SAS} run time`)
+    }
+
+    if (runTimes?.includes(RunTimeType.JS) && !NODE_PATH) {
+      errors.push(`- NODE_PATH is required for ${RunTimeType.JS} run time`)
+    }
+  }
+
   return errors
 }
 

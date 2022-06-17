@@ -61,6 +61,9 @@ MODE=
 # Path to SAS executable (sas.exe / sas.sh)
 SAS_PATH=/path/to/sas/executable.exe
 
+# Path to Node.js executable
+NODE_PATH=node
+
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
 SASJS_ROOT=./sasjs_root
@@ -131,10 +134,10 @@ HELMET_CSP_CONFIG_PATH=./csp.config.json
 LOG_FORMAT_MORGAN=
 
 # A comma separated string that defines the available runTimes.
-# Priority is given to the runtime that comes first in string.
+# Priority is given to the runtime that cSAS_PATHomes first in string.
 # Possible options at the moment are sas and js
 
-# options: [sas,js|js,sas|sas|js] default:sas
+# options: [sas,js|js,sas|sas|js] default:sas,js
 RUN_TIMES=
 
 ```

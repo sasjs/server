@@ -13,10 +13,12 @@ export const setProcessVariables = async () => {
 
   if (MODE === ModeType.Server) {
     process.sasLoc = process.env.SAS_PATH as string
+    process.nodeLoc = process.env.NODE_PATH as string
   } else {
-    const { sasLoc } = await getDesktopFields()
+    const { sasLoc, nodeLoc } = await getDesktopFields()
 
     process.sasLoc = sasLoc
+    process.nodeLoc = nodeLoc
   }
 
   const { SASJS_ROOT } = process.env
