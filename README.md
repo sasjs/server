@@ -1,4 +1,7 @@
 # SASjs Server
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or locally on your desktop. It provides:
 
@@ -196,3 +199,29 @@ The following credentials can be used for the initial connection to SASjs/server
 - CLIENTID: `clientID1`
 - USERNAME: `secretuser`
 - PASSWORD: `secretpassword`
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/saadjutt01"><img src="https://avatars.githubusercontent.com/u/8914650?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Saad Jutt</b></sub></a><br /><a href="https://github.com/sasjs/server/commits?author=saadjutt01" title="Code">💻</a> <a href="https://github.com/sasjs/server/commits?author=saadjutt01" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/sabhas"><img src="https://avatars.githubusercontent.com/u/82647447?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Sabir Hassan</b></sub></a><br /><a href="https://github.com/sasjs/server/commits?author=sabhas" title="Code">💻</a> <a href="https://github.com/sasjs/server/commits?author=sabhas" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://www.erudicat.com/"><img src="https://avatars.githubusercontent.com/u/25773492?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Yury Shkoda</b></sub></a><br /><a href="https://github.com/sasjs/server/commits?author=YuryShkoda" title="Code">💻</a> <a href="https://github.com/sasjs/server/commits?author=YuryShkoda" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/medjedovicm"><img src="https://avatars.githubusercontent.com/u/18329105?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Mihajlo Medjedovic</b></sub></a><br /><a href="https://github.com/sasjs/server/commits?author=medjedovicm" title="Code">💻</a> <a href="https://github.com/sasjs/server/commits?author=medjedovicm" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://4gl.io/"><img src="https://avatars.githubusercontent.com/u/4420615?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Allan Bowe</b></sub></a><br /><a href="https://github.com/sasjs/server/commits?author=allanbowe" title="Code">💻</a> <a href="https://github.com/sasjs/server/commits?author=allanbowe" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/VladislavParhomchik"><img src="https://avatars.githubusercontent.com/u/83717836?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Vladislav Parhomchik</b></sub></a><br /><a href="https://github.com/sasjs/server/commits?author=VladislavParhomchik" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/kknapen"><img src="https://avatars.githubusercontent.com/u/78609432?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Koen Knapen</b></sub></a><br /><a href="#userTesting-kknapen" title="User Testing">📓</a></td>
+  </tr>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

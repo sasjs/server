@@ -86,6 +86,8 @@ ${autoExecContent}`
     // however we also need a promise so that we can update the
     // session array to say that it has (eventually) finished.
 
+    // Additional windows specific options to avoid the desktop popups.
+
     execFilePromise(process.sasLoc, [
       '-SYSIN',
       codePath,
@@ -99,7 +101,9 @@ ${autoExecContent}`
       autoExecPath,
       '-ENCODING',
       'UTF-8',
-      process.platform === 'win32' ? '-nosplash' : ''
+      process.platform === 'win32' ? '-nosplash' : '',
+      process.platform === 'win32' ? '-icon' : '',
+      process.platform === 'win32' ? '-nologo' : ''
     ])
       .then(() => {
         session.completed = true

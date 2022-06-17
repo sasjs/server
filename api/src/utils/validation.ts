@@ -3,6 +3,7 @@ import { RunTimeType } from '.'
 
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
+const groupnameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i
 
@@ -30,9 +31,14 @@ export const tokenValidation = (data: any): Joi.ValidationResult =>
 
 export const registerGroupValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    name: Joi.string().min(6).required(),
+    name: groupnameSchema.required(),
     description: Joi.string(),
     isActive: Joi.boolean()
+  }).validate(data)
+
+export const getGroupValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    name: groupnameSchema.required()
   }).validate(data)
 
 export const registerUserValidation = (data: any): Joi.ValidationResult =>

@@ -23,13 +23,21 @@ export const appStreamHtml = (appStreamConfig: AppStreamConfig) => `
     ${style}
   </head>
   <body>
-    <h1>App Stream</h1>
+    <header>
+      <a href="/"><img src="/logo.png" alt="logo" class="logo"></a>
+      <h1>App Stream</h1>
+    </header>
     <div class="app-container">
-      ${Object.entries(appStreamConfig)
-        .map(([streamServiceName, entry]) =>
-          singleAppStreamHtml(streamServiceName, entry.appLoc, entry.streamLogo)
-        )
-        .join('')}
+        ${Object.entries(appStreamConfig)
+          .map(([streamServiceName, entry]) =>
+            singleAppStreamHtml(
+              streamServiceName,
+              entry.appLoc,
+              entry.streamLogo
+            )
+          )
+          .join('')}
+
         <a class="app" title="Upload build.json">
           <input id="fileId" type="file" hidden />
           <button id="uploadButton" style="margin-bottom: 5px; cursor: pointer">

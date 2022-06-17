@@ -1,3 +1,36 @@
+## [0.6.1](https://github.com/sasjs/server/compare/v0.6.0...v0.6.1) (2022-06-17)
+
+
+### Bug Fixes
+
+* home page wording.  Using fix to force previous change through.. ([8702a4e](https://github.com/sasjs/server/commit/8702a4e8fd1bbfaf4f426b75e8b85a87ede0e0b0))
+
+# [0.6.0](https://github.com/sasjs/server/compare/v0.5.0...v0.6.0) (2022-06-16)
+
+
+### Features
+
+* get group by group name ([6b0b94a](https://github.com/sasjs/server/commit/6b0b94ad38215ae58e62279a4f73ac3ed2d9d0e8))
+
+# [0.5.0](https://github.com/sasjs/server/compare/v0.4.2...v0.5.0) (2022-06-16)
+
+
+### Bug Fixes
+
+* npm audit fix to avoid warnings on npm i ([28a6a36](https://github.com/sasjs/server/commit/28a6a36bb708b93fb5c2b74d587e9b2e055582be))
+
+
+### Features
+
+* **api:** deployment through zipped/compressed file ([b81d742](https://github.com/sasjs/server/commit/b81d742c6c70d4cf1cab365b0e3efc087441db00))
+
+## [0.4.2](https://github.com/sasjs/server/compare/v0.4.1...v0.4.2) (2022-06-15)
+
+
+### Bug Fixes
+
+* appStream redesign ([73792fb](https://github.com/sasjs/server/commit/73792fb574c90bd280c4324e0b41c6fee7d572b6))
+
 ## [0.4.1](https://github.com/sasjs/server/compare/v0.4.0...v0.4.1) (2022-06-15)
 
 
