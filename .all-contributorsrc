@@ -19,6 +19,16 @@
         "code",
         "test"
       ]
+    },
+    {
+      "login": "sabhas",
+      "name": "Sabir Hassan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/82647447?v=4",
+      "profile": "https://github.com/sabhas",
+      "contributions": [
+        "code",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7
