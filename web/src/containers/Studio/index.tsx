@@ -166,7 +166,7 @@ const Studio = () => {
                 <span style={{ fontSize: '12px' }}>RUN</span>
               </Button>
             </Tooltip>
-            <Box sx={{ minWidth: 75 }}>
+            <Box sx={{ minWidth: '75px', marginLeft: '10px' }}>
               <FormControl variant="standard">
                 <Select
                   labelId="run-time-select-label"
