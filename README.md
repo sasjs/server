@@ -1,6 +1,6 @@
 # SASjs Server
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or locally on your desktop. It provides:
@@ -201,6 +201,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/saadjutt01"><img src="https://avatars.githubusercontent.com/u/8914650?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Saad Jutt</b></sub></a><br /><a href="https://github.com/@sasjs/@sasjs/server/commits?author=saadjutt01" title="Code">💻</a> <a href="https://github.com/@sasjs/@sasjs/server/commits?author=saadjutt01" title="Tests">⚠️</a></td>
     <td align="center"><a href="https://github.com/sabhas"><img src="https://avatars.githubusercontent.com/u/82647447?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Sabir Hassan</b></sub></a><br /><a href="https://github.com/@sasjs/@sasjs/server/commits?author=sabhas" title="Code">💻</a> <a href="https://github.com/@sasjs/@sasjs/server/commits?author=sabhas" title="Tests">⚠️</a></td>
     <td align="center"><a href="https://www.erudicat.com/"><img src="https://avatars.githubusercontent.com/u/25773492?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Yury Shkoda</b></sub></a><br /><a href="https://github.com/@sasjs/@sasjs/server/commits?author=YuryShkoda" title="Code">💻</a> <a href="https://github.com/@sasjs/@sasjs/server/commits?author=YuryShkoda" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/medjedovicm"><img src="https://avatars.githubusercontent.com/u/18329105?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Mihajlo Medjedovic</b></sub></a><br /><a href="https://github.com/@sasjs/@sasjs/server/commits?author=medjedovicm" title="Code">💻</a> <a href="https://github.com/@sasjs/@sasjs/server/commits?author=medjedovicm" title="Tests">⚠️</a></td>
   </tr>
 </table>
 
