@@ -1,12 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useContext } from 'react'
 import axios from 'axios'
 
-import Box from '@mui/material/Box'
-import { Button, Paper, Stack, Tab, Tooltip } from '@mui/material'
+import {
+  Box,
+  MenuItem,
+  FormControl,
+  Select,
+  SelectChangeEvent,
+  Button,
+  Paper,
+  Tab,
+  Tooltip
+} from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import Editor, { EditorDidMount } from 'react-monaco-editor'
 import { useLocation } from 'react-router-dom'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
+
+import { AppContext, RunTimeType } from '../../context/appContext'
 
 const useStyles = makeStyles(() => ({
   root: {
@@ -30,12 +41,14 @@ const useStyles = makeStyles(() => ({
 }))
 
 const Studio = () => {
+  const appContext = useContext(AppContext)
   const location = useLocation()
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
   const [ctrlPressed, setCtrlPressed] = useState(false)
   const [webout, setWebout] = useState('')
-  const [tab, setTab] = React.useState('1')
+  const [tab, setTab] = useState('1')
+  const [selectedRunTime, setSelectedRunTime] = useState(RunTimeType.SAS)
 
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
@@ -57,7 +70,7 @@ const Studio = () => {
 
   const runCode = (code: string) => {
     axios
-      .post(`/SASjsApi/code/execute`, { code })
+      .post(`/SASjsApi/code/execute`, { code, runTime: selectedRunTime })
       .then((res: any) => {
         const parsedLog = res?.data?.log
           .map((logLine: any) => logLine.line)
@@ -87,6 +100,10 @@ const Studio = () => {
 
   const handleKeyUp = (event: any) => {
     if (!event.ctrlKey && ctrlPressed) setCtrlPressed(false)
+  }
+
+  const handleChangeRunTime = (event: SelectChangeEvent) => {
+    setSelectedRunTime(event.target.value as RunTimeType)
   }
 
   useEffect(() => {
@@ -149,8 +166,21 @@ const Studio = () => {
                 <span style={{ fontSize: '12px' }}>RUN</span>
               </Button>
             </Tooltip>
+            <Box sx={{ minWidth: '75px', marginLeft: '10px' }}>
+              <FormControl variant="standard">
+                <Select
+                  labelId="run-time-select-label"
+                  id="run-time-select"
+                  value={selectedRunTime}
+                  onChange={handleChangeRunTime}
+                >
+                  {appContext.runTimes.map((runTime) => (
+                    <MenuItem value={runTime}>{runTime}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
           </div>
-          {/* <Toolbar /> */}
           <Paper
             sx={{
               height: 'calc(100vh - 170px)',

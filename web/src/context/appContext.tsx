@@ -14,6 +14,11 @@ export enum ModeType {
   Desktop = 'desktop'
 }
 
+export enum RunTimeType {
+  SAS = 'sas',
+  JS = 'js'
+}
+
 interface AppContextProps {
   checkingSession: boolean
   loggedIn: boolean
@@ -25,6 +30,7 @@ interface AppContextProps {
   displayName: string
   setDisplayName: Dispatch<SetStateAction<string>> | null
   mode: ModeType
+  runTimes: RunTimeType[]
   logout: (() => void) | null
 }
 
@@ -39,6 +45,7 @@ export const AppContext = createContext<AppContextProps>({
   displayName: '',
   setDisplayName: null,
   mode: ModeType.Server,
+  runTimes: [],
   logout: null
 })
 
@@ -50,6 +57,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [mode, setMode] = useState(ModeType.Server)
+  const [runTimes, setRunTimes] = useState<RunTimeType[]>([])
 
   useEffect(() => {
     setCheckingSession(true)
@@ -74,6 +82,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       .then((res) => res.data)
       .then((data: any) => {
         setMode(data.mode)
+        setRunTimes(data.runTimes)
       })
       .catch(() => {})
   }, [])
@@ -99,6 +108,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         displayName,
         setDisplayName,
         mode,
+        runTimes,
         logout
       }}
     >

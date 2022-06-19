@@ -1,4 +1,5 @@
 import Joi from 'joi'
+import { RunTimeType } from '.'
 
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
@@ -120,9 +121,10 @@ export const folderParamValidation = (data: any): Joi.ValidationResult =>
     _folderPath: Joi.string()
   }).validate(data)
 
-export const runSASValidation = (data: any): Joi.ValidationResult =>
+export const runCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    code: Joi.string().required()
+    code: Joi.string().required(),
+    runTime: Joi.string().valid(...Object.values(RunTimeType))
   }).validate(data)
 
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>

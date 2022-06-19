@@ -1,7 +1,7 @@
 import path from 'path'
 import { createFolder, getAbsolutePath, getRealPath } from '@sasjs/utils'
 
-import { getDesktopFields, ModeType } from '.'
+import { getDesktopFields, ModeType, RunTimeType } from '.'
 
 export const setProcessVariables = async () => {
   if (process.env.NODE_ENV === 'test') {
@@ -13,10 +13,12 @@ export const setProcessVariables = async () => {
 
   if (MODE === ModeType.Server) {
     process.sasLoc = process.env.SAS_PATH as string
+    process.nodeLoc = process.env.NODE_PATH as string
   } else {
-    const { sasLoc } = await getDesktopFields()
+    const { sasLoc, nodeLoc } = await getDesktopFields()
 
     process.sasLoc = sasLoc
+    process.nodeLoc = nodeLoc
   }
 
   const { SASJS_ROOT } = process.env
@@ -24,6 +26,10 @@ export const setProcessVariables = async () => {
   await createFolder(absPath)
   process.driveLoc = getRealPath(absPath)
 
+  const { RUN_TIMES } = process.env
+  process.runTimes = (RUN_TIMES as string).split(',') as RunTimeType[]
+
   console.log('sasLoc: ', process.sasLoc)
   console.log('sasDrive: ', process.driveLoc)
+  console.log('runTimes: ', process.runTimes)
 }

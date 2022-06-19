@@ -5,12 +5,13 @@ import { createFolder, fileExists, folderExists } from '@sasjs/utils'
 const isWindows = () => process.platform === 'win32'
 
 export const getDesktopFields = async () => {
-  const { SAS_PATH } = process.env
+  const { SAS_PATH, NODE_PATH } = process.env
 
   const sasLoc = SAS_PATH ?? (await getSASLocation())
+  const nodeLoc = NODE_PATH ?? (await getNodeLocation())
   // const driveLoc = DRIVE_PATH ?? (await getDriveLocation())
 
-  return { sasLoc }
+  return { sasLoc, nodeLoc }
 }
 
 const getDriveLocation = async (): Promise<string> => {
@@ -55,6 +56,30 @@ const getSASLocation = async (): Promise<string> => {
 
   const targetName = await getString(
     'Please enter path to SAS executable (absolute path): ',
+    validator,
+    defaultLocation
+  )
+
+  return targetName
+}
+
+const getNodeLocation = async (): Promise<string> => {
+  const validator = async (filePath: string) => {
+    if (!filePath) return 'Path to NodeJS executable is required.'
+
+    if (!(await fileExists(filePath))) {
+      return 'No file found at provided path.'
+    }
+
+    return true
+  }
+
+  const defaultLocation = isWindows()
+    ? 'C:\\Program Files\\nodejs\\'
+    : '/usr/local/nodejs/bin'
+
+  const targetName = await getString(
+    'Please enter path to nodejs executable (absolute path): ',
     validator,
     defaultLocation
   )

@@ -1,21 +1,18 @@
 import path from 'path'
 import fs from 'fs'
-import { getSessionController } from './'
 import {
-  readFile,
-  fileExists,
-  createFile,
-  moveFile,
-  readFileBinary
-} from '@sasjs/utils'
+  getSASSessionController,
+  getJSSessionController,
+  processProgram
+} from './'
+import { readFile, fileExists, createFile, readFileBinary } from '@sasjs/utils'
 import { PreProgramVars, Session, TreeNode } from '../../types'
 import {
   extractHeaders,
-  generateFileUploadSasCode,
   getFilesFolder,
-  getMacrosFolder,
   HTTPHeaders,
-  isDebugOn
+  isDebugOn,
+  RunTimeType
 } from '../../utils'
 
 export interface ExecutionVars {
@@ -33,39 +30,56 @@ export interface ExecuteReturnJson {
   log?: string
 }
 
-export class ExecutionController {
-  async executeFile(
-    programPath: string,
-    preProgramVariables: PreProgramVars,
-    vars: ExecutionVars,
-    otherArgs?: any,
-    returnJson?: boolean,
-    session?: Session
-  ) {
-    if (!(await fileExists(programPath)))
-      throw `The Stored Program at (${vars._program}) does not exist, or you do not have permission to view it.`
+interface ExecuteFileParams {
+  programPath: string
+  preProgramVariables: PreProgramVars
+  vars: ExecutionVars
+  otherArgs?: any
+  returnJson?: boolean
+  session?: Session
+  runTime: RunTimeType
+}
 
+interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
+  program: string
+}
+
+export class ExecutionController {
+  async executeFile({
+    programPath,
+    preProgramVariables,
+    vars,
+    otherArgs,
+    returnJson,
+    session,
+    runTime
+  }: ExecuteFileParams) {
     const program = await readFile(programPath)
 
-    return this.executeProgram(
+    return this.executeProgram({
       program,
       preProgramVariables,
       vars,
       otherArgs,
       returnJson,
-      session
-    )
+      session,
+      runTime
+    })
   }
 
-  async executeProgram(
-    program: string,
-    preProgramVariables: PreProgramVars,
-    vars: ExecutionVars,
-    otherArgs?: any,
-    returnJson?: boolean,
-    sessionByFileUpload?: Session
-  ): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
-    const sessionController = getSessionController()
+  async executeProgram({
+    program,
+    preProgramVariables,
+    vars,
+    otherArgs,
+    returnJson,
+    session: sessionByFileUpload,
+    runTime
+  }: ExecuteProgramParams): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
+    const sessionController =
+      runTime === RunTimeType.SAS
+        ? getSASSessionController()
+        : getJSSessionController()
 
     const session =
       sessionByFileUpload ?? (await sessionController.getSession())
@@ -83,77 +97,17 @@ export class ExecutionController {
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
 
-    const varStatments = Object.keys(vars).reduce(
-      (computed: string, key: string) =>
-        `${computed}%let ${key}=${vars[key]};\n`,
-      ''
+    await processProgram(
+      program,
+      preProgramVariables,
+      vars,
+      session,
+      weboutPath,
+      tokenFile,
+      runTime,
+      logPath,
+      otherArgs
     )
-
-    const preProgramVarStatments = `
-%let _sasjs_tokenfile=${tokenFile};
-%let _sasjs_username=${preProgramVariables?.username};
-%let _sasjs_userid=${preProgramVariables?.userId};
-%let _sasjs_displayname=${preProgramVariables?.displayName};
-%let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
-%let _sasjs_apipath=/SASjsApi/stp/execute;
-%let _metaperson=&_sasjs_displayname;
-%let _metauser=&_sasjs_username;
-%let sasjsprocessmode=Stored Program;
-%let sasjs_stpsrv_header_loc=%sysfunc(pathname(work))/../stpsrv_header.txt;
-
-%global SYSPROCESSMODE SYSTCPIPHOSTNAME SYSHOSTINFOLONG;
-%macro _sasjs_server_init();
-  %if "&SYSPROCESSMODE"="" %then %let SYSPROCESSMODE=&sasjsprocessmode;
-  %if "&SYSTCPIPHOSTNAME"="" %then %let SYSTCPIPHOSTNAME=&_sasjs_apiserverurl;
-%mend;
-%_sasjs_server_init()
-`
-
-    program = `
-options insert=(SASAUTOS="${getMacrosFolder()}");
-
-/* runtime vars */
-${varStatments}
-filename _webout "${weboutPath}" mod;
-
-/* dynamic user-provided vars */
-${preProgramVarStatments}
-
-/* user autoexec starts */
-${otherArgs?.userAutoExec ?? ''}
-/* user autoexec ends */
-
-/* actual job code */
-${program}`
-
-    // if no files are uploaded filesNamesMap will be undefined
-    if (otherArgs?.filesNamesMap) {
-      const uploadSasCode = await generateFileUploadSasCode(
-        otherArgs.filesNamesMap,
-        session.path
-      )
-
-      //If sas code for the file is generated it will be appended to the top of sasCode
-      if (uploadSasCode.length > 0) {
-        program = `${uploadSasCode}` + program
-      }
-    }
-
-    const codePath = path.join(session.path, 'code.sas')
-
-    // Creating this file in a RUNNING session will break out
-    // the autoexec loop and actually execute the program
-    // but - given it will take several milliseconds to create
-    // (which can mean SAS trying to run a partial program, or
-    // failing due to file lock) we first create the file THEN
-    // we rename it.
-    await createFile(codePath + '.bkp', program)
-    await moveFile(codePath + '.bkp', codePath)
-
-    // we now need to poll the session status
-    while (!session.completed) {
-      await delay(50)
-    }
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
     const headersContent = (await fileExists(headersPath))
@@ -228,5 +182,3 @@ ${program}`
     return root
   }
 }
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

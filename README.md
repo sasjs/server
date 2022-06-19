@@ -1,6 +1,9 @@
 # SASjs Server
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or locally on your desktop. It provides:
@@ -64,9 +67,13 @@ MODE=
 # Path to SAS executable (sas.exe / sas.sh)
 SAS_PATH=/path/to/sas/executable.exe
 
+# Path to Node.js executable
+NODE_PATH=~/.nvm/versions/node/v16.14.0/bin/node
+
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
 SASJS_ROOT=./sasjs_root
+
 
 # options: [http|https] default: http
 PROTOCOL=
@@ -131,6 +138,13 @@ HELMET_CSP_CONFIG_PATH=./csp.config.json
 # LOG_FORMAT_MORGAN options: [combined|common|dev|short|tiny] default: `common`
 # Docs: https://www.npmjs.com/package/morgan#predefined-formats
 LOG_FORMAT_MORGAN=
+
+# A comma separated string that defines the available runTimes.
+# Priority is given to the runtime that cSAS_PATHomes first in string.
+# Possible options at the moment are sas and js
+
+# options: [sas,js|js,sas|sas|js] default:sas,js
+RUN_TIMES=
 
 ```
 

@@ -26,6 +26,11 @@ export enum LOG_FORMAT_MORGANType {
   tiny = 'tiny'
 }
 
+export enum RunTimeType {
+  SAS = 'sas',
+  JS = 'js'
+}
+
 export enum ReturnCode {
   Success,
   InvalidEnv
@@ -45,6 +50,10 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyHELMET_COEP())
 
   errors.push(...verifyLOG_FORMAT_MORGAN())
+
+  errors.push(...verifyRUN_TIMES())
+
+  errors.push(...verifyExecutablePaths())
 
   if (errors.length) {
     process.logger?.error(
@@ -202,10 +211,52 @@ const verifyLOG_FORMAT_MORGAN = (): string[] => {
   return errors
 }
 
+const verifyRUN_TIMES = (): string[] => {
+  const errors: string[] = []
+  const { RUN_TIMES } = process.env
+
+  if (RUN_TIMES) {
+    const runTimes = RUN_TIMES.split(',')
+
+    const runTimeTypes = Object.values(RunTimeType)
+
+    runTimes.forEach((runTime) => {
+      if (!runTimeTypes.includes(runTime as RunTimeType)) {
+        errors.push(
+          `- Invalid '${runTime}' runtime\n - valid options ${runTimeTypes}`
+        )
+      }
+    })
+  } else {
+    process.env.RUN_TIMES = DEFAULTS.RUN_TIMES
+  }
+  return errors
+}
+
+const verifyExecutablePaths = () => {
+  const errors: string[] = []
+  const { RUN_TIMES, SAS_PATH, NODE_PATH, MODE } = process.env
+
+  if (MODE === ModeType.Server) {
+    const runTimes = RUN_TIMES?.split(',')
+
+    if (runTimes?.includes(RunTimeType.SAS) && !SAS_PATH) {
+      errors.push(`- SAS_PATH is required for ${RunTimeType.SAS} run time`)
+    }
+
+    if (runTimes?.includes(RunTimeType.JS) && !NODE_PATH) {
+      errors.push(`- NODE_PATH is required for ${RunTimeType.JS} run time`)
+    }
+  }
+
+  return errors
+}
+
 const DEFAULTS = {
   MODE: ModeType.Desktop,
   PROTOCOL: ProtocolType.HTTP,
   PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
-  LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common
+  LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
+  RUN_TIMES: `${RunTimeType.SAS},${RunTimeType.JS}`
 }

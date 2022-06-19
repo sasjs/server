@@ -94,10 +94,7 @@ const Main = (props: Props) => {
       setEditMode(false)
     } else {
       window.open(
-        `${baseUrl}/SASjsApi/stp/execute?_program=${props.selectedFilePath.replace(
-          /.sas$/,
-          ''
-        )}`
+        `${baseUrl}/SASjsApi/stp/execute?_program=${props.selectedFilePath}`
       )
     }
   }

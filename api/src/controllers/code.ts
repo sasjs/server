@@ -6,15 +6,21 @@ import {
   getPreProgramVariables,
   getUserAutoExec,
   ModeType,
-  parseLogToArray
+  parseLogToArray,
+  RunTimeType
 } from '../utils'
 
-interface ExecuteSASCodePayload {
+interface ExecuteCodePayload {
   /**
-   * Code of SAS program
-   * @example "* SAS Code HERE;"
+   * Code of program
+   * @example "* Code HERE;"
    */
   code: string
+  /**
+   * runtime for program
+   * @example "js"
+   */
+  runTime: RunTimeType
 }
 
 @Security('bearerAuth')
@@ -26,17 +32,17 @@ export class CodeController {
    * @summary Run SAS Code and returns log
    */
   @Post('/execute')
-  public async executeSASCode(
+  public async executeCode(
     @Request() request: express.Request,
-    @Body() body: ExecuteSASCodePayload
+    @Body() body: ExecuteCodePayload
   ): Promise<ExecuteReturnJsonResponse> {
-    return executeSASCode(request, body)
+    return executeCode(request, body)
   }
 }
 
-const executeSASCode = async (
+const executeCode = async (
   req: express.Request,
-  { code }: ExecuteSASCodePayload
+  { code, runTime }: ExecuteCodePayload
 ) => {
   const { user } = req
   const userAutoExec =
@@ -46,13 +52,14 @@ const executeSASCode = async (
 
   try {
     const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeProgram(
-        code,
-        getPreProgramVariables(req),
-        { ...req.query, _debug: 131 },
-        { userAutoExec },
-        true
-      )) as ExecuteReturnJson
+      (await new ExecutionController().executeProgram({
+        program: code,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: { ...req.query, _debug: 131 },
+        otherArgs: { userAutoExec },
+        returnJson: true,
+        runTime: runTime
+      })) as ExecuteReturnJson
 
     return {
       status: 'success',
