@@ -1,6 +1,9 @@
 # SASjs Server
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
 [![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
+
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or locally on your desktop. It provides:
@@ -65,7 +68,7 @@ MODE=
 SAS_PATH=/path/to/sas/executable.exe
 
 # Path to Node.js executable
-NODE_PATH=node
+NODE_PATH=~/.nvm/versions/node/v16.14.0/bin/node
 
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc

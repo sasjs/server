@@ -10,7 +10,7 @@ import {
   RunTimeType
 } from '../utils'
 
-interface ExecuteSASCodePayload {
+interface ExecuteCodePayload {
   /**
    * Code of program
    * @example "* Code HERE;"
@@ -32,17 +32,17 @@ export class CodeController {
    * @summary Run SAS Code and returns log
    */
   @Post('/execute')
-  public async executeSASCode(
+  public async executeCode(
     @Request() request: express.Request,
-    @Body() body: ExecuteSASCodePayload
+    @Body() body: ExecuteCodePayload
   ): Promise<ExecuteReturnJsonResponse> {
-    return executeSASCode(request, body)
+    return executeCode(request, body)
   }
 }
 
-const executeSASCode = async (
+const executeCode = async (
   req: express.Request,
-  { code, runTime }: ExecuteSASCodePayload
+  { code, runTime }: ExecuteCodePayload
 ) => {
   const { user } = req
   const userAutoExec =
