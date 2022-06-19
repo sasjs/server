@@ -1,3 +1,28 @@
+# [0.7.0](https://github.com/sasjs/server/compare/v0.6.1...v0.7.0) (2022-06-19)
+
+
+### Bug Fixes
+
+* add runtimes to global process object ([194eaec](https://github.com/sasjs/server/commit/194eaec7d4a561468f83bf6efce484909ee532eb))
+* code fixes for executing program from program path including file extension ([53854d0](https://github.com/sasjs/server/commit/53854d001279462104b24c0e59a8c94ab4938a94))
+* code/execute controller logic to handle different runtimes ([23b6692](https://github.com/sasjs/server/commit/23b6692f02e4afa33c9dc95d242eb8645c19d546))
+* convert single executeProgram method to two methods i.e. executeSASProgram and executeJSProgram ([c58666e](https://github.com/sasjs/server/commit/c58666eb81514de500519e7b96c1981778ec149b))
+* no need to stringify _webout in preProgramVarStatements, developer should have _webout as string in actual code ([9d5a5e0](https://github.com/sasjs/server/commit/9d5a5e051fd821295664ddb3a1fd64629894a44c))
+* pass _program to execute file without extension ([5df619b](https://github.com/sasjs/server/commit/5df619b3f63571e8e326261d8114869d33881d91))
+* refactor code for session selection in preUploadMiddleware function ([b444381](https://github.com/sasjs/server/commit/b4443819d42afecebc0f382c58afb9010d4775ef))
+* refactor code in executeFile method of session controller ([dffe6d7](https://github.com/sasjs/server/commit/dffe6d7121d569e5c7d13023c6ca68d8c901c88e))
+* refactor code in preUploadMiddleware function ([6d6bda5](https://github.com/sasjs/server/commit/6d6bda56267babde7b98cf69e32973d56d719f75))
+* refactor sas/js session controller classes to inherit from base session controller class ([2c704a5](https://github.com/sasjs/server/commit/2c704a544f4e31a8e8e833a9a62ba016bcfa6c7c))
+* **Studio:** style fix for runtime dropdown ([9023cf3](https://github.com/sasjs/server/commit/9023cf33b5fa4b13c2d5e9b80ae307df69c7fc02))
+
+
+### Features
+
+* configure child process with writeStream to write logs to log file ([058b3b0](https://github.com/sasjs/server/commit/058b3b00816e582e143953c2f0b8330bde2181b8))
+* conver single session controller to two controller i.e. SASSessionController and JSSessionController ([07295aa](https://github.com/sasjs/server/commit/07295aa151175db8c93eeef806fc3b7fde40ac72))
+* create and inject code for uploaded files to code.js ([1685616](https://github.com/sasjs/server/commit/16856165fb292dc9ffa897189ba105bd9f362267))
+* validate sasjs_runtimes env var ([596ada7](https://github.com/sasjs/server/commit/596ada7ca88798d6d71f6845633a006fd22438ea))
+
 ## [0.6.1](https://github.com/sasjs/server/compare/v0.6.0...v0.6.1) (2022-06-17)
 
 
