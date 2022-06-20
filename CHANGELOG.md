@@ -1,3 +1,12 @@
+## [0.7.1](https://github.com/sasjs/server/compare/v0.7.0...v0.7.1) (2022-06-20)
+
+
+### Bug Fixes
+
+* default runtime should be sas ([91d29cb](https://github.com/sasjs/server/commit/91d29cb1272c28afbceaf39d1e0a87e17fbfdcd6))
+* **Studio:** default selection of runtime fixed ([eb569c7](https://github.com/sasjs/server/commit/eb569c7b827c872ed2c4bc114559b97d87fd2aa0))
+* webout path fixed in code.js when running on windows ([99a1107](https://github.com/sasjs/server/commit/99a110736448f66f99a512396b268fc31a3feef0))
+
 # [0.7.0](https://github.com/sasjs/server/compare/v0.6.1...v0.7.0) (2022-06-19)
 
 
