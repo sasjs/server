@@ -12,7 +12,8 @@ import {
   createFile,
   fileExists,
   generateTimestamp,
-  readFile
+  readFile,
+  isWindows
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
@@ -88,7 +89,7 @@ ${autoExecContent}`
 
     // Additional windows specific options to avoid the desktop popups.
 
-    execFilePromise(process.sasLoc, [
+    execFilePromise(process.sasLoc!, [
       '-SYSIN',
       codePath,
       '-LOG',
@@ -99,9 +100,9 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
-      process.platform === 'win32' ? '-nosplash' : '',
-      process.platform === 'win32' ? '-icon' : '',
-      process.platform === 'win32' ? '-nologo' : ''
+      isWindows() ? '-nosplash' : '',
+      isWindows() ? '-icon' : '',
+      isWindows() ? '-nologo' : ''
     ])
       .then(() => {
         session.completed = true

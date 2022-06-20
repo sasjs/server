@@ -1,6 +1,8 @@
 import path from 'path'
 import fs from 'fs'
 import {
+  SASSessionController,
+  JSSessionController,
   getSASSessionController,
   getJSSessionController,
   processProgram
@@ -76,10 +78,19 @@ export class ExecutionController {
     session: sessionByFileUpload,
     runTime
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
-    const sessionController =
-      runTime === RunTimeType.SAS
-        ? getSASSessionController()
-        : getJSSessionController()
+    let sessionController: SASSessionController | JSSessionController
+
+    switch (runTime) {
+      case RunTimeType.SAS:
+        sessionController = getSASSessionController()
+        break
+      case RunTimeType.JS:
+        sessionController = getJSSessionController()
+        break
+
+      default:
+        throw new Error('No Runtime is configured1')
+    }
 
     const session =
       sessionByFileUpload ?? (await sessionController.getSession())

@@ -1,7 +1,12 @@
 import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
-import { getSASSessionController, getJSSessionController } from '.'
+import {
+  SASSessionController,
+  JSSessionController,
+  getSASSessionController,
+  getJSSessionController
+} from '.'
 import {
   executeProgramRawValidation,
   getRunTimeAndFilePath,
@@ -44,10 +49,19 @@ export class FileUploadController {
       })
     }
 
-    const sessionController =
-      runTime === RunTimeType.SAS
-        ? getSASSessionController()
-        : getJSSessionController()
+    let sessionController: SASSessionController | JSSessionController
+
+    switch (runTime) {
+      case RunTimeType.SAS:
+        sessionController = getSASSessionController()
+        break
+      case RunTimeType.JS:
+        sessionController = getJSSessionController()
+        break
+
+      default:
+        return res.status(400).send('No Runtime is configured1')
+    }
 
     const session = await sessionController.getSession()
     // marking consumed true, so that it's not available

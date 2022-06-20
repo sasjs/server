@@ -101,7 +101,8 @@ SASV9_OPTIONS= -NOXCMD
 
 # ENV variables required for PROTOCOL: `https`
 PRIVATE_KEY=privkey.pem
-FULL_CHAIN=fullchain.pem
+CERT_CHAIN=certificate.pem
+CA_ROOT=fullchain.pem
 
 # ENV variables required for MODE: `server`
 ACCESS_TOKEN_SECRET=<secret>

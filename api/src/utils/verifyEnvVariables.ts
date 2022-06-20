@@ -129,16 +129,16 @@ const verifyPROTOCOL = (): string[] => {
   }
 
   if (process.env.PROTOCOL === ProtocolType.HTTPS) {
-    const { PRIVATE_KEY, FULL_CHAIN } = process.env
+    const { PRIVATE_KEY, CERT_CHAIN } = process.env
 
     if (!PRIVATE_KEY)
       errors.push(
         `- PRIVATE_KEY is required for PROTOCOL '${ProtocolType.HTTPS}'`
       )
 
-    if (!FULL_CHAIN)
+    if (!CERT_CHAIN)
       errors.push(
-        `- FULL_CHAIN is required for PROTOCOL '${ProtocolType.HTTPS}'`
+        `- CERT_CHAIN is required for PROTOCOL '${ProtocolType.HTTPS}'`
       )
   }
 
@@ -258,5 +258,5 @@ const DEFAULTS = {
   PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
-  RUN_TIMES: `${RunTimeType.SAS}`
+  RUN_TIMES: RunTimeType.SAS
 }

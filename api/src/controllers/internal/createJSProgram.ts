@@ -1,3 +1,4 @@
+import { isWindows } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadJSCode } from '../../utils'
 import { ExecutionVars } from './'
@@ -20,9 +21,7 @@ export const createJSProgram = async (
   const preProgramVarStatments = `
 let _webout = '';
 const weboutPath = '${
-    process.platform === 'win32'
-      ? weboutPath.replace(/\\/g, '\\\\')
-      : weboutPath
+    isWindows() ? weboutPath.replace(/\\/g, '\\\\') : weboutPath
   }'; 
 const _sasjs_tokenfile = '${tokenFile}';
 const _sasjs_username = '${preProgramVariables?.username}';
