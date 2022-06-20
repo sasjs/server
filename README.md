@@ -140,10 +140,10 @@ HELMET_CSP_CONFIG_PATH=./csp.config.json
 LOG_FORMAT_MORGAN=
 
 # A comma separated string that defines the available runTimes.
-# Priority is given to the runtime that cSAS_PATHomes first in string.
+# Priority is given to the runtime that comes first in the string.
 # Possible options at the moment are sas and js
 
-# options: [sas,js|js,sas|sas|js] default:sas,js
+# options: [sas,js|js,sas|sas|js] default:sas
 RUN_TIMES=
 
 ```

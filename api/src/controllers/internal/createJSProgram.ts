@@ -19,7 +19,11 @@ export const createJSProgram = async (
 
   const preProgramVarStatments = `
 let _webout = '';
-const weboutPath = '${weboutPath}'; 
+const weboutPath = '${
+    process.platform === 'win32'
+      ? weboutPath.replace(/\\/g, '\\\\')
+      : weboutPath
+  }'; 
 const _sasjs_tokenfile = '${tokenFile}';
 const _sasjs_username = '${preProgramVariables?.username}';
 const _sasjs_userid = '${preProgramVariables?.userId}';

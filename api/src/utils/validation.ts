@@ -124,7 +124,7 @@ export const folderParamValidation = (data: any): Joi.ValidationResult =>
 export const runCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     code: Joi.string().required(),
-    runTime: Joi.string().valid(...Object.values(RunTimeType))
+    runTime: Joi.string().valid(...process.runTimes)
   }).validate(data)
 
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>

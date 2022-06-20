@@ -48,7 +48,16 @@ const Studio = () => {
   const [ctrlPressed, setCtrlPressed] = useState(false)
   const [webout, setWebout] = useState('')
   const [tab, setTab] = useState('1')
-  const [selectedRunTime, setSelectedRunTime] = useState(RunTimeType.SAS)
+  const [runTimes, setRunTimes] = useState<string[]>([])
+  const [selectedRunTime, setSelectedRunTime] = useState('')
+
+  useEffect(() => {
+    setRunTimes(Object.values(appContext.runTimes))
+  }, [appContext.runTimes])
+
+  useEffect(() => {
+    if (runTimes.length) setSelectedRunTime(runTimes[0])
+  }, [runTimes])
 
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
@@ -153,7 +162,7 @@ const Studio = () => {
           </TabList>
         </Box>
 
-        <TabPanel style={{ paddingBottom: 0 }} value="1">
+        <TabPanel sx={{ paddingBottom: 0 }} value="1">
           <div className={classes.subMenu}>
             <Tooltip title="CTRL+ENTER will also run SAS code">
               <Button onClick={handleRunBtnClick} className={classes.runButton}>
@@ -174,8 +183,10 @@ const Studio = () => {
                   value={selectedRunTime}
                   onChange={handleChangeRunTime}
                 >
-                  {appContext.runTimes.map((runTime) => (
-                    <MenuItem value={runTime}>{runTime}</MenuItem>
+                  {runTimes.map((runTime) => (
+                    <MenuItem key={runTime} value={runTime}>
+                      {runTime}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
