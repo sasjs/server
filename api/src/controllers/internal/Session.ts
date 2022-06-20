@@ -99,8 +99,6 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
-      '-ENCODING',
-      'UTF-8',
       process.platform === 'win32' ? '-nosplash' : '',
       process.platform === 'win32' ? '-icon' : '',
       process.platform === 'win32' ? '-nologo' : ''
