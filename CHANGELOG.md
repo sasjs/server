@@ -1,3 +1,10 @@
+## [0.7.3](https://github.com/sasjs/server/compare/v0.7.2...v0.7.3) (2022-06-20)
+
+
+### Bug Fixes
+
+* path descriptions and defaults ([5d5d6ce](https://github.com/sasjs/server/commit/5d5d6ce3265a43af2e22bcd38cda54fafaf7b3ef))
+
 ## [0.7.2](https://github.com/sasjs/server/compare/v0.7.1...v0.7.2) (2022-06-20)
 
 
