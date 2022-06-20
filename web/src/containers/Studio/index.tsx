@@ -56,7 +56,7 @@ const Studio = () => {
   }, [appContext.runTimes])
 
   useEffect(() => {
-    if(runTimes.length) setSelectedRunTime(runTimes[0])
+    if (runTimes.length) setSelectedRunTime(runTimes[0])
   }, [runTimes])
 
   const handleTabChange = (_e: any, newValue: string) => {
@@ -184,7 +184,9 @@ const Studio = () => {
                   onChange={handleChangeRunTime}
                 >
                   {runTimes.map((runTime) => (
-                    <MenuItem key={runTime} value={runTime}>{runTime}</MenuItem>
+                    <MenuItem key={runTime} value={runTime}>
+                      {runTime}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
