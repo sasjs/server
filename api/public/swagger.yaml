@@ -144,7 +144,7 @@ components:
                 - sas
                 - js
             type: string
-        ExecuteSASCodePayload:
+        ExecuteCodePayload:
             properties:
                 code:
                     type: string
@@ -666,7 +666,7 @@ paths:
                             $ref: '#/components/schemas/ClientPayload'
     /SASjsApi/code/execute:
         post:
-            operationId: ExecuteSASCode
+            operationId: ExecuteCode
             responses:
                 '200':
                     description: Ok
@@ -687,7 +687,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ExecuteSASCodePayload'
+                            $ref: '#/components/schemas/ExecuteCodePayload'
     /SASjsApi/drive/deploy:
         post:
             operationId: Deploy
@@ -763,7 +763,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: "Accepts JSON file and zipped compressed JSON file as well.\nCompressed file should only contain one JSON file and should have same name\nas of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip\nAny other file or JSON file in zipped will be ignored!"
+            description: "Accepts JSON file and zipped compressed JSON file as well.\r\nCompressed file should only contain one JSON file and should have same name\r\nas of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip\r\nAny other file or JSON file in zipped will be ignored!"
             summary: 'Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.'
             tags:
                 - Drive
@@ -851,7 +851,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
+            description: "It's optional to either provide `_filePath` in url as query parameter\r\nOr provide `filePath` in body as form field.\r\nBut it's required to provide else API will respond with Bad Request."
             summary: 'Create a file in SASjs Drive'
             tags:
                 - Drive
@@ -902,7 +902,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
+            description: "It's optional to either provide `_filePath` in url as query parameter\r\nOr provide `filePath` in body as form field.\r\nBut it's required to provide else API will respond with Bad Request."
             summary: 'Modify a file in SASjs Drive'
             tags:
                 - Drive
@@ -1454,7 +1454,7 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
+            description: "Trigger a SAS or JS program using the _program URL parameter.\r\n\r\nAccepts URL parameters and file uploads.  For more details, see docs:\r\n\r\nhttps://server.sasjs.io/storedprograms"
             summary: 'Execute a Stored Program, returns raw _webout content.'
             tags:
                 - STP
@@ -1482,7 +1482,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
-            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms\n\nThe response will be a JSON object with the following root attributes:\nlog, webout, headers.\n\nThe webout attribute will be nested JSON ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content."
+            description: "Trigger a SAS or JS program using the _program URL parameter.\r\n\r\nAccepts URL parameters and file uploads.  For more details, see docs:\r\n\r\nhttps://server.sasjs.io/storedprograms\r\n\r\nThe response will be a JSON object with the following root attributes:\r\nlog, webout, headers.\r\n\r\nThe webout attribute will be nested JSON ONLY if the response-header\r\ncontains a content-type of application/json AND it is valid JSON.\r\nOtherwise it will be a stringified version of the webout content."
             summary: 'Execute a Stored Program, return a JSON object'
             tags:
                 - STP
