@@ -1,12 +1,7 @@
 import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
-import {
-  SASSessionController,
-  JSSessionController,
-  getSASSessionController,
-  getJSSessionController
-} from '.'
+import { getSessionController } from '.'
 import {
   executeProgramRawValidation,
   getRunTimeAndFilePath,
@@ -42,25 +37,22 @@ export class FileUploadController {
     try {
       ;({ runTime } = await getRunTimeAndFilePath(programPath))
     } catch (err: any) {
-      res.status(400).send({
+      return res.status(400).send({
         status: 'failure',
         message: 'Job execution failed',
         error: typeof err === 'object' ? err.toString() : err
       })
     }
 
-    let sessionController: SASSessionController | JSSessionController
-
-    switch (runTime) {
-      case RunTimeType.SAS:
-        sessionController = getSASSessionController()
-        break
-      case RunTimeType.JS:
-        sessionController = getJSSessionController()
-        break
-
-      default:
-        return res.status(400).send('No Runtime is configured1')
+    let sessionController
+    try {
+      sessionController = getSessionController(runTime)
+    } catch (err: any) {
+      return res.status(400).send({
+        status: 'failure',
+        message: err.message,
+        error: typeof err === 'object' ? err.toString() : err
+      })
     }
 
     const session = await sessionController.getSession()

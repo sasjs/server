@@ -5,7 +5,8 @@ import { execFile } from 'child_process'
 import {
   getSessionsFolder,
   generateUniqueFileName,
-  sysInitCompiledPath
+  sysInitCompiledPath,
+  RunTimeType
 } from '../../utils'
 import {
   deleteFolder,
@@ -193,7 +194,21 @@ export class JSSessionController extends SessionController {
   }
 }
 
-export const getSASSessionController = (): SASSessionController => {
+export const getSessionController = (
+  runTime: RunTimeType
+): SASSessionController | JSSessionController => {
+  if (runTime === RunTimeType.SAS) {
+    return getSASSessionController()
+  }
+
+  if (runTime === RunTimeType.JS) {
+    return getJSSessionController()
+  }
+
+  throw new Error('No Runtime is configured')
+}
+
+const getSASSessionController = (): SASSessionController => {
   if (process.sasSessionController) return process.sasSessionController
 
   process.sasSessionController = new SASSessionController()
@@ -201,7 +216,7 @@ export const getSASSessionController = (): SASSessionController => {
   return process.sasSessionController
 }
 
-export const getJSSessionController = (): JSSessionController => {
+const getJSSessionController = (): JSSessionController => {
   if (process.jsSessionController) return process.jsSessionController
 
   process.jsSessionController = new JSSessionController()
