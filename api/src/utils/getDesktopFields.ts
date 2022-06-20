@@ -55,7 +55,7 @@ const getSASLocation = async (): Promise<string> => {
     : '/opt/sas/sas9/SASHome/SASFoundation/9.4/sasexe/sas'
 
   const targetName = await getString(
-    'Please enter path to SAS executable (absolute path): ',
+    'Please enter full path to a SAS executable with UTF-8 encoding: ',
     validator,
     defaultLocation
   )
@@ -75,11 +75,11 @@ const getNodeLocation = async (): Promise<string> => {
   }
 
   const defaultLocation = isWindows()
-    ? 'C:\\Program Files\\nodejs\\'
-    : '/usr/local/nodejs/bin'
+    ? 'C:\\Program Files\\nodejs\\node.exe'
+    : '/usr/local/nodejs/bin/node.sh'
 
   const targetName = await getString(
-    'Please enter path to nodejs executable (absolute path): ',
+    'Please enter full path to a NodeJS executable: ',
     validator,
     defaultLocation
   )
