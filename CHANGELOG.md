@@ -1,3 +1,10 @@
+# [0.8.0](https://github.com/sasjs/server/compare/v0.7.3...v0.8.0) (2022-06-21)
+
+
+### Features
+
+* **certs:** ENV variables updated and set CA Root for HTTPS server ([2119e9d](https://github.com/sasjs/server/commit/2119e9de9ab1e5ce1222658f554ac74f4f35cf4d))
+
 ## [0.7.3](https://github.com/sasjs/server/compare/v0.7.2...v0.7.3) (2022-06-20)
 
 
