@@ -9,11 +9,13 @@ export const setProcessVariables = async () => {
     return
   }
 
-  const { MODE } = process.env
+  const { MODE, RUN_TIMES } = process.env
+
+  process.runTimes = (RUN_TIMES?.split(',') as RunTimeType[]) ?? []
 
   if (MODE === ModeType.Server) {
-    process.sasLoc = process.env.SAS_PATH as string
-    process.nodeLoc = process.env.NODE_PATH as string
+    process.sasLoc = process.env.SAS_PATH
+    process.nodeLoc = process.env.NODE_PATH
   } else {
     const { sasLoc, nodeLoc } = await getDesktopFields()
 
@@ -25,9 +27,6 @@ export const setProcessVariables = async () => {
   const absPath = getAbsolutePath(SASJS_ROOT ?? 'sasjs_root', process.cwd())
   await createFolder(absPath)
   process.driveLoc = getRealPath(absPath)
-
-  const { RUN_TIMES } = process.env
-  process.runTimes = (RUN_TIMES as string).split(',') as RunTimeType[]
 
   console.log('sasLoc: ', process.sasLoc)
   console.log('sasDrive: ', process.driveLoc)

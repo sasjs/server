@@ -1,7 +1,7 @@
 declare namespace NodeJS {
   export interface Process {
-    sasLoc: string
-    nodeLoc: string
+    sasLoc?: string
+    nodeLoc?: string
     driveLoc: string
     sasSessionController?: import('../../controllers/internal').SASSessionController
     jsSessionController?: import('../../controllers/internal').JSSessionController

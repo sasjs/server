@@ -1,15 +1,20 @@
 import path from 'path'
 import { getString } from '@sasjs/utils/input'
-import { createFolder, fileExists, folderExists } from '@sasjs/utils'
-
-const isWindows = () => process.platform === 'win32'
+import { createFolder, fileExists, folderExists, isWindows } from '@sasjs/utils'
+import { RunTimeType } from './verifyEnvVariables'
 
 export const getDesktopFields = async () => {
   const { SAS_PATH, NODE_PATH } = process.env
 
-  const sasLoc = SAS_PATH ?? (await getSASLocation())
-  const nodeLoc = NODE_PATH ?? (await getNodeLocation())
-  // const driveLoc = DRIVE_PATH ?? (await getDriveLocation())
+  let sasLoc, nodeLoc
+
+  if (process.runTimes.includes(RunTimeType.SAS)) {
+    sasLoc = SAS_PATH ?? (await getSASLocation())
+  }
+
+  if (process.runTimes.includes(RunTimeType.JS)) {
+    nodeLoc = NODE_PATH ?? (await getNodeLocation())
+  }
 
   return { sasLoc, nodeLoc }
 }

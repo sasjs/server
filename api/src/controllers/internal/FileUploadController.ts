@@ -1,7 +1,7 @@
 import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
-import { getSASSessionController, getJSSessionController } from '.'
+import { getSessionController } from '.'
 import {
   executeProgramRawValidation,
   getRunTimeAndFilePath,
@@ -37,17 +37,23 @@ export class FileUploadController {
     try {
       ;({ runTime } = await getRunTimeAndFilePath(programPath))
     } catch (err: any) {
-      res.status(400).send({
+      return res.status(400).send({
         status: 'failure',
         message: 'Job execution failed',
         error: typeof err === 'object' ? err.toString() : err
       })
     }
 
-    const sessionController =
-      runTime === RunTimeType.SAS
-        ? getSASSessionController()
-        : getJSSessionController()
+    let sessionController
+    try {
+      sessionController = getSessionController(runTime)
+    } catch (err: any) {
+      return res.status(400).send({
+        status: 'failure',
+        message: err.message,
+        error: typeof err === 'object' ? err.toString() : err
+      })
+    }
 
     const session = await sessionController.getSession()
     // marking consumed true, so that it's not available

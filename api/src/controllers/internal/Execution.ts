@@ -1,10 +1,6 @@
 import path from 'path'
 import fs from 'fs'
-import {
-  getSASSessionController,
-  getJSSessionController,
-  processProgram
-} from './'
+import { getSessionController, processProgram } from './'
 import { readFile, fileExists, createFile, readFileBinary } from '@sasjs/utils'
 import { PreProgramVars, Session, TreeNode } from '../../types'
 import {
@@ -76,10 +72,7 @@ export class ExecutionController {
     session: sessionByFileUpload,
     runTime
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
-    const sessionController =
-      runTime === RunTimeType.SAS
-        ? getSASSessionController()
-        : getJSSessionController()
+    const sessionController = getSessionController(runTime)
 
     const session =
       sessionByFileUpload ?? (await sessionController.getSession())
