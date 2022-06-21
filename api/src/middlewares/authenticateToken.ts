@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken'
+import { Request, Response } from 'express'
 import { verifyTokenInDB } from '../utils'
+import { headerIsNotPresentMessage, headerIsNotValidMessage } from './header'
 
 export const authenticateAccessToken = (req: any, res: any, next: any) => {
   authenticateToken(
@@ -19,6 +21,18 @@ export const authenticateRefreshToken = (req: any, res: any, next: any) => {
     process.env.REFRESH_TOKEN_SECRET as string,
     'refreshToken'
   )
+}
+
+export const verifyAuthHeaderIsPresent = (req: Request, res: Response) => {
+  console.log(`🤖[verifyAuthHeaderIsPresent]🤖`)
+
+  const authHeader = req.headers.authorization
+
+  if (!authHeader) {
+    return res.status(401).json(headerIsNotPresentMessage('Authorization'))
+  } else if (!/^Bearer\s.{1}/.test(authHeader)) {
+    return res.status(401).json(headerIsNotValidMessage('Authorization'))
+  }
 }
 
 const authenticateToken = (

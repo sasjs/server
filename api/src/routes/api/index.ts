@@ -16,6 +16,7 @@ import groupRouter from './group'
 import clientRouter from './client'
 import authRouter from './auth'
 import sessionRouter from './session'
+import foldersRouter from './folders'
 
 const router = express.Router()
 
@@ -32,6 +33,7 @@ router.use('/drive', authenticateAccessToken, driveRouter)
 router.use('/group', desktopRestrict, groupRouter)
 router.use('/stp', authenticateAccessToken, stpRouter)
 router.use('/user', desktopRestrict, userRouter)
+router.use('/folders', foldersRouter)
 router.use(
   '/',
   swaggerUi.serve,

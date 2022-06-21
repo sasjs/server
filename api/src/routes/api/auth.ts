@@ -8,11 +8,7 @@ import {
   authenticateRefreshToken
 } from '../../middlewares'
 
-import {
-  authorizeValidation,
-  getDesktopFields,
-  tokenValidation
-} from '../../utils'
+import { authorizeValidation, tokenValidation } from '../../utils'
 import { InfoJWT } from '../../types'
 
 const authRouter = express.Router()
