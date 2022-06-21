@@ -48,7 +48,7 @@ webRouter.post(
   }
 )
 
-webRouter.get('/logout', desktopRestrict, async (req, res) => {
+webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
   try {
     await controller.logout(req)
     res.status(200).send('OK!')

@@ -88,7 +88,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   }, [])
 
   const logout = useCallback(() => {
-    axios.get('/logout').then(() => {
+    axios.get('/SASLogon/logout').then(() => {
       setLoggedIn(false)
       setUsername('')
       setDisplayName('')
