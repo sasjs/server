@@ -1,3 +1,11 @@
+## [0.8.1](https://github.com/sasjs/server/compare/v0.8.0...v0.8.1) (2022-06-21)
+
+
+### Bug Fixes
+
+* make CA_ROOT optional in getCertificates method ([1b5859e](https://github.com/sasjs/server/commit/1b5859ee37ae73c419115b9debfd5141a79733de))
+* update /logout route to /SASLogon/logout ([65380be](https://github.com/sasjs/server/commit/65380be2f3945bae559f1749064845b514447a53))
+
 # [0.8.0](https://github.com/sasjs/server/compare/v0.7.3...v0.8.0) (2022-06-21)
 
 
