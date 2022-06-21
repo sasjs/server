@@ -49,10 +49,10 @@ export class WebController {
   }
 
   /**
-   * @summary Accept a valid username/password
+   * @summary Destroy the session stored in cookies
    *
    */
-  @Get('/logout')
+  @Get('/SASLogon/logout')
   public async logout(@Request() req: express.Request) {
     return new Promise((resolve) => {
       req.session.destroy(() => {
