@@ -1,3 +1,10 @@
+## [0.8.2](https://github.com/sasjs/server/compare/v0.8.1...v0.8.2) (2022-06-22)
+
+
+### Bug Fixes
+
+* getRuntimeAndFilePath function to handle the scenarion when path is provided with an extension other than runtimes ([5cc85b5](https://github.com/sasjs/server/commit/5cc85b57f80b13296156811fe966d7b37d45f213))
+
 ## [0.8.1](https://github.com/sasjs/server/compare/v0.8.0...v0.8.1) (2022-06-21)
 
 
