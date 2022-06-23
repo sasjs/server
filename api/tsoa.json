@@ -13,7 +13,7 @@
     "tags": [
       {
         "name": "Info",
-        "description": "Get Server Info"
+        "description": "Get Server Information"
       },
       {
         "name": "Session",
@@ -21,7 +21,7 @@
       },
       {
         "name": "User",
-        "description": "Operations about users"
+        "description": "Operations with users"
       },
       {
         "name": "Client",
@@ -33,19 +33,19 @@
       },
       {
         "name": "Drive",
-        "description": "Operations about drive"
+        "description": "Operations on SASjs Drive"
       },
       {
         "name": "Group",
-        "description": "Operations about group"
+        "description": "Operations on groups and group memberships"
       },
       {
         "name": "STP",
-        "description": "Operations about STP"
+        "description": "Execution of Stored Programs"
       },
       {
         "name": "CODE",
-        "description": "Operations on SAS code"
+        "description": "Execution of code (various runtimes are supported)"
       },
       {
         "name": "Web",
