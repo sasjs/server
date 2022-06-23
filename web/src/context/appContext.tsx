@@ -29,6 +29,8 @@ interface AppContextProps {
   setUsername: Dispatch<SetStateAction<string>> | null
   displayName: string
   setDisplayName: Dispatch<SetStateAction<string>> | null
+  isAdmin: boolean
+  setIsAdmin: Dispatch<SetStateAction<boolean>> | null
   mode: ModeType
   runTimes: RunTimeType[]
   logout: (() => void) | null
@@ -44,6 +46,8 @@ export const AppContext = createContext<AppContextProps>({
   setUsername: null,
   displayName: '',
   setDisplayName: null,
+  isAdmin: false,
+  setIsAdmin: null,
   mode: ModeType.Server,
   runTimes: [],
   logout: null
@@ -56,6 +60,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [userId, setUserId] = useState(0)
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
   const [mode, setMode] = useState(ModeType.Server)
   const [runTimes, setRunTimes] = useState<RunTimeType[]>([])
 
@@ -70,6 +75,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setUserId(data.id)
         setUsername(data.username)
         setDisplayName(data.displayName)
+        setIsAdmin(data.isAdmin)
         setLoggedIn(true)
       })
       .catch(() => {
@@ -107,6 +113,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setUsername,
         displayName,
         setDisplayName,
+        isAdmin,
+        setIsAdmin,
         mode,
         runTimes,
         logout

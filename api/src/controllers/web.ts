@@ -99,7 +99,8 @@ const login = async (
     user: {
       id: user.id,
       username: user.username,
-      displayName: user.displayName
+      displayName: user.displayName,
+      isAdmin: user.isAdmin
     }
   }
 }

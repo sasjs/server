@@ -30,6 +30,7 @@ const Login = () => {
       appContext.setUserId?.(user.id)
       appContext.setUsername?.(user.username)
       appContext.setDisplayName?.(user.displayName)
+      appContext.setIsAdmin?.(user.isAdmin)
       appContext.setLoggedIn?.(loggedIn)
     }
   }

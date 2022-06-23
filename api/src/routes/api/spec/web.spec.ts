@@ -79,7 +79,8 @@ describe('web', () => {
       expect(res.body.user).toEqual({
         id: expect.any(Number),
         username: user.username,
-        displayName: user.displayName
+        displayName: user.displayName,
+        isAdmin: user.isAdmin
       })
     })
   })
