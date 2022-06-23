@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import {
   Box,
@@ -27,12 +27,14 @@ import AddPermissionModal from './addPermissionModal'
 import UpdatePermissionModal from './updatePermissionModal'
 
 import { PermissionResponse } from '../../utils/types'
+import { AppContext } from '../../context/appContext'
 
 const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
 })
 
 const Permission = () => {
+  const appContext = useContext(AppContext)
   const [isLoading, setIsLoading] = useState(false)
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
@@ -140,15 +142,17 @@ const Permission = () => {
                 <FilterListIcon onClick={() => setFilterModalOpen(true)} />
               </IconButton>
             </Tooltip>
-            <Tooltip
-              sx={{ marginLeft: 'auto' }}
-              title="Add Permission"
-              placement="bottom-end"
-            >
-              <IconButton onClick={() => setAddPermissionModalOpen(true)}>
-                <AddIcon />
-              </IconButton>
-            </Tooltip>
+            {appContext.isAdmin && (
+              <Tooltip
+                sx={{ marginLeft: 'auto' }}
+                title="Add Permission"
+                placement="bottom-end"
+              >
+                <IconButton onClick={() => setAddPermissionModalOpen(true)}>
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+            )}
           </Paper>
         </Grid>
         <Grid item xs={12}>
@@ -200,6 +204,8 @@ const PermissionTable = ({
   permissions,
   handleUpdatePermissionClick
 }: PermissionTableProps) => {
+  const appContext = useContext(AppContext)
+
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }}>
@@ -208,7 +214,9 @@ const PermissionTable = ({
             <BootstrapTableCell>Uri</BootstrapTableCell>
             <BootstrapTableCell>Principal</BootstrapTableCell>
             <BootstrapTableCell>Setting</BootstrapTableCell>
-            <BootstrapTableCell>Action</BootstrapTableCell>
+            {appContext.isAdmin && (
+              <BootstrapTableCell>Action</BootstrapTableCell>
+            )}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -219,20 +227,22 @@ const PermissionTable = ({
                 {displayPrincipal(permission)}
               </BootstrapTableCell>
               <BootstrapTableCell>{permission.setting}</BootstrapTableCell>
-              <BootstrapTableCell>
-                <Tooltip title="Edit Permission">
-                  <IconButton
-                    onClick={() => handleUpdatePermissionClick(permission)}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete Permission">
-                  <IconButton color="error">
-                    <DeleteForeverIcon />
-                  </IconButton>
-                </Tooltip>
-              </BootstrapTableCell>
+              {appContext.isAdmin && (
+                <BootstrapTableCell>
+                  <Tooltip title="Edit Permission">
+                    <IconButton
+                      onClick={() => handleUpdatePermissionClick(permission)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete Permission">
+                    <IconButton color="error">
+                      <DeleteForeverIcon />
+                    </IconButton>
+                  </Tooltip>
+                </BootstrapTableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
