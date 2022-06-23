@@ -1,5 +1,4 @@
 import express from 'express'
-import path from 'path'
 import {
   Request,
   Security,
@@ -17,15 +16,16 @@ import {
   ExecutionController,
   ExecutionVars
 } from './internal'
-import { PreProgramVars } from '../types'
 import {
-  getTmpFilesFolderPath,
+  getPreProgramVariables,
   HTTPHeaders,
   isDebugOn,
   LogLine,
   makeFilesNamesMap,
-  parseLogToArray
+  parseLogToArray,
+  getRunTimeAndFilePath
 } from '../utils'
+import { MulterFile } from '../types/Upload'
 
 interface ExecuteReturnJsonPayload {
   /**
@@ -51,26 +51,15 @@ export interface ExecuteReturnJsonResponse {
 @Tags('STP')
 export class STPController {
   /**
-   * Trigger a SAS program using it's location in the _program URL parameter.
-   * Enable debugging using the _debug URL parameter.  Setting _debug=131 will
-   * cause the log to be streamed in the output.
+   * Trigger a SAS or JS program using the _program URL parameter.
    *
-   * Additional URL parameters are turned into SAS macro variables.
+   * Accepts URL parameters and file uploads.  For more details, see docs:
    *
-   * Any files provided in the request body are placed into the SAS session with
-   * corresponding _WEBIN_XXX variables created.
+   * https://server.sasjs.io/storedprograms
    *
-   * The response headers can be adjusted using the mfs_httpheader() macro.  Any
-   * file type can be returned, including binary files such as zip or xls.
-   *
-   * If _debug is >= 131, response headers will contain Content-Type: 'text/plain'
-   *
-   * This behaviour differs for POST requests, in which case the response is
-   * always JSON.
-   *
-   * @summary Execute Stored Program, return raw _webout content.
-   * @param _program Location of SAS program
-   * @example _program "/Public/somefolder/some.file"
+   * @summary Execute a Stored Program, returns raw _webout content.
+   * @param _program Location of SAS or JS code
+   * @example _program "/Projects/myApp/some/program"
    */
   @Get('/execute')
   public async executeReturnRaw(
@@ -81,29 +70,22 @@ export class STPController {
   }
 
   /**
-   * Trigger a SAS program using it's location in the _program URL parameter.
-   * Enable debugging using the _debug URL parameter.  In any case, the log is
-   * always returned in the log object.
+   * Trigger a SAS or JS program using the _program URL parameter.
    *
-   * Additional URL parameters are turned into SAS macro variables.
+   * Accepts URL parameters and file uploads.  For more details, see docs:
    *
-   * Any files provided in the request body are placed into the SAS session with
-   * corresponding _WEBIN_XXX variables created.
+   * https://server.sasjs.io/storedprograms
    *
-   * The response will be a JSON object with the following root attributes: log,
-   * webout, headers.
+   * The response will be a JSON object with the following root attributes:
+   * log, webout, headers.
    *
-   * The webout will be a nested JSON object ONLY if the response-header
+   * The webout attribute will be nested JSON ONLY if the response-header
    * contains a content-type of application/json AND it is valid JSON.
    * Otherwise it will be a stringified version of the webout content.
    *
-   * Response headers from the mfs_httpheader macro are simply listed in the
-   * headers object, for POST requests they have no effect on the actual
-   * response header.
-   *
-   * @summary Execute Stored Program, return JSON
-   * @param _program Location of SAS program
-   * @example _program "/Public/somefolder/some.file"
+   * @summary Execute a Stored Program, return a JSON object
+   * @param _program Location of SAS or JS code
+   * @example _program "/Projects/myApp/some/program"
    */
   @Example<ExecuteReturnJsonResponse>({
     status: 'success',
@@ -130,18 +112,17 @@ const executeReturnRaw = async (
   _program: string
 ): Promise<string | Buffer> => {
   const query = req.query as ExecutionVars
-  const sasCodePath =
-    path
-      .join(getTmpFilesFolderPath(), _program)
-      .replace(new RegExp('/', 'g'), path.sep) + '.sas'
 
   try {
+    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
     const { result, httpHeaders } =
-      (await new ExecutionController().executeFile(
-        sasCodePath,
-        getPreProgramVariables(req),
-        query
-      )) as ExecuteReturnRaw
+      (await new ExecutionController().executeFile({
+        programPath: codePath,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: query,
+        runTime
+      })) as ExecuteReturnRaw
 
     // Should over-ride response header for debug
     // on GET request to see entire log rendering on browser.
@@ -167,26 +148,26 @@ const executeReturnRaw = async (
 }
 
 const executeReturnJson = async (
-  req: any,
+  req: express.Request,
   _program: string
 ): Promise<ExecuteReturnJsonResponse> => {
-  const sasCodePath =
-    path
-      .join(getTmpFilesFolderPath(), _program)
-      .replace(new RegExp('/', 'g'), path.sep) + '.sas'
-
-  const filesNamesMap = req.files?.length ? makeFilesNamesMap(req.files) : null
+  const filesNamesMap = req.files?.length
+    ? makeFilesNamesMap(req.files as MulterFile[])
+    : null
 
   try {
+    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
     const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeFile(
-        sasCodePath,
-        getPreProgramVariables(req),
-        { ...req.query, ...req.body },
-        { filesNamesMap: filesNamesMap },
-        true,
-        req.sasSession
-      )) as ExecuteReturnJson
+      (await new ExecutionController().executeFile({
+        programPath: codePath,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: { ...req.query, ...req.body },
+        otherArgs: { filesNamesMap: filesNamesMap },
+        returnJson: true,
+        session: req.sasjsSession,
+        runTime
+      })) as ExecuteReturnJson
 
     let weboutRes: string | IRecordOfAny = webout
     if (httpHeaders['content-type']?.toLowerCase() === 'application/json') {
@@ -208,18 +189,5 @@ const executeReturnJson = async (
       message: 'Job execution failed.',
       error: typeof err === 'object' ? err.toString() : err
     }
-  }
-}
-
-const getPreProgramVariables = (req: any): PreProgramVars => {
-  const host = req.get('host')
-  const protocol = req.protocol + '://'
-  const { user, accessToken } = req
-  return {
-    username: user.username,
-    userId: user.userId,
-    displayName: user.displayName,
-    serverUrl: protocol + host,
-    accessToken
   }
 }

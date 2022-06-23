@@ -1,11 +1,30 @@
 import User from '../model/User'
+import { RequestUser } from '../types'
+
+export const fetchLatestAutoExec = async (
+  reqUser: RequestUser
+): Promise<RequestUser | undefined> => {
+  const dbUser = await User.findOne({ id: reqUser.userId })
+
+  if (!dbUser) return undefined
+
+  return {
+    userId: reqUser.userId,
+    clientId: reqUser.clientId,
+    username: dbUser.username,
+    displayName: dbUser.displayName,
+    isAdmin: dbUser.isAdmin,
+    isActive: dbUser.isActive,
+    autoExec: dbUser.autoExec
+  }
+}
 
 export const verifyTokenInDB = async (
   userId: number,
   clientId: string,
   token: string,
   tokenType: 'accessToken' | 'refreshToken'
-) => {
+): Promise<RequestUser | undefined> => {
   const dbUser = await User.findOne({ id: userId })
 
   if (!dbUser) return undefined
@@ -21,7 +40,8 @@ export const verifyTokenInDB = async (
         username: dbUser.username,
         displayName: dbUser.displayName,
         isAdmin: dbUser.isAdmin,
-        isActive: dbUser.isActive
+        isActive: dbUser.isActive,
+        autoExec: dbUser.autoExec
       }
     : undefined
 }

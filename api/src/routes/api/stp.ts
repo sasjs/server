@@ -34,23 +34,25 @@ stpRouter.post(
   '/execute',
   fileUploadController.preUploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
-  async (req: any, res: any) => {
-    const { error: errQ, value: query } = executeProgramRawValidation(req.query)
-    const { error: errB, value: body } = executeProgramRawValidation(req.body)
+  async (req, res: any) => {
+    // below validations are moved to preUploadMiddleware
+    // const { error: errQ, value: query } = executeProgramRawValidation(req.query)
+    // const { error: errB, value: body } = executeProgramRawValidation(req.body)
 
-    if (errQ && errB) return res.status(400).send(errB.details[0].message)
+    // if (errQ && errB) return res.status(400).send(errB.details[0].message)
 
     try {
       const response = await controller.executeReturnJson(
         req,
-        body,
-        query?._program
+        req.body,
+        req.query?._program as string
       )
 
-      if (response instanceof Buffer) {
-        res.writeHead(200, (req as any).sasHeaders)
-        return res.end(response)
-      }
+      // TODO: investigate if this code is required
+      // if (response instanceof Buffer) {
+      //   res.writeHead(200, (req as any).sasHeaders)
+      //   return res.end(response)
+      // }
 
       res.send(response)
     } catch (err: any) {

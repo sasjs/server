@@ -3,25 +3,29 @@ import { Session } from '../../types'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import {
-  getTmpSessionsFolderPath,
+  getSessionsFolder,
   generateUniqueFileName,
-  sysInitCompiledPath
+  sysInitCompiledPath,
+  RunTimeType
 } from '../../utils'
 import {
   deleteFolder,
   createFile,
   fileExists,
   generateTimestamp,
-  readFile
+  readFile,
+  isWindows
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
 
-export class SessionController {
-  private sessions: Session[] = []
+abstract class SessionController {
+  protected sessions: Session[] = []
 
-  private getReadySessions = (): Session[] =>
+  protected getReadySessions = (): Session[] =>
     this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
+
+  protected abstract createSession(): Promise<Session>
 
   public async getSession() {
     const readySessions = this.getReadySessions()
@@ -34,10 +38,12 @@ export class SessionController {
 
     return session
   }
+}
 
-  private async createSession(): Promise<Session> {
+export class SASSessionController extends SessionController {
+  protected async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
-    const sessionFolder = path.join(getTmpSessionsFolderPath(), sessionId)
+    const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
     const creationTimeStamp = sessionId.split('-').pop() as string
     // death time of session is 15 mins from creation
@@ -82,7 +88,9 @@ ${autoExecContent}`
     // however we also need a promise so that we can update the
     // session array to say that it has (eventually) finished.
 
-    execFilePromise(process.sasLoc, [
+    // Additional windows specific options to avoid the desktop popups.
+
+    execFilePromise(process.sasLoc!, [
       '-SYSIN',
       codePath,
       '-LOG',
@@ -93,7 +101,9 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
-      process.platform === 'win32' ? '-nosplash' : ''
+      isWindows() ? '-nosplash' : '',
+      isWindows() ? '-icon' : '',
+      isWindows() ? '-nologo' : ''
     ])
       .then(() => {
         session.completed = true
@@ -152,12 +162,66 @@ ${autoExecContent}`
   }
 }
 
-export const getSessionController = (): SessionController => {
-  if (process.sessionController) return process.sessionController
+export class JSSessionController extends SessionController {
+  protected async createSession(): Promise<Session> {
+    const sessionId = generateUniqueFileName(generateTimestamp())
+    const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
-  process.sessionController = new SessionController()
+    const creationTimeStamp = sessionId.split('-').pop() as string
+    // death time of session is 15 mins from creation
+    const deathTimeStamp = (
+      parseInt(creationTimeStamp) +
+      15 * 60 * 1000 -
+      1000
+    ).toString()
 
-  return process.sessionController
+    const session: Session = {
+      id: sessionId,
+      ready: true,
+      inUse: true,
+      consumed: false,
+      completed: false,
+      creationTimeStamp,
+      deathTimeStamp,
+      path: sessionFolder
+    }
+
+    const headersPath = path.join(session.path, 'stpsrv_header.txt')
+    await createFile(headersPath, 'Content-type: application/json')
+
+    this.sessions.push(session)
+    return session
+  }
+}
+
+export const getSessionController = (
+  runTime: RunTimeType
+): SASSessionController | JSSessionController => {
+  if (runTime === RunTimeType.SAS) {
+    return getSASSessionController()
+  }
+
+  if (runTime === RunTimeType.JS) {
+    return getJSSessionController()
+  }
+
+  throw new Error('No Runtime is configured')
+}
+
+const getSASSessionController = (): SASSessionController => {
+  if (process.sasSessionController) return process.sasSessionController
+
+  process.sasSessionController = new SASSessionController()
+
+  return process.sasSessionController
+}
+
+const getJSSessionController = (): JSSessionController => {
+  if (process.jsSessionController) return process.jsSessionController
+
+  process.jsSessionController = new JSSessionController()
+
+  return process.jsSessionController
 }
 
 const autoExecContent = `

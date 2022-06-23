@@ -16,9 +16,9 @@ appPromise.then(async (app) => {
       )
     })
   } else {
-    const { key, cert } = await getCertificates()
+    const { key, cert, ca } = await getCertificates()
 
-    const httpsServer = createServer({ key, cert }, app)
+    const httpsServer = createServer({ key, cert, ca }, app)
     httpsServer.listen(sasJsPort, () => {
       console.log(
         `⚡️[server]: Server is running at https://localhost:${sasJsPort}`

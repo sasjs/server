@@ -1,5 +1,5 @@
 import path from 'path'
-import { getTmpFilesFolderPath } from '../../utils/file'
+import { getFilesFolder } from '../../utils/file'
 import {
   createFolder,
   createFile,
@@ -17,7 +17,7 @@ export const createFileTree = async (
   parentFolders: string[] = []
 ) => {
   const destinationPath = path.join(
-    getTmpFilesFolderPath(),
+    getFilesFolder(),
     path.join(...parentFolders)
   )
 

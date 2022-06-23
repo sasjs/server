@@ -1,44 +1,59 @@
-import path from 'path'
 import express from 'express'
-import { fileExists } from '@sasjs/utils'
 import { WebController } from '../../controllers/web'
-import { getWebBuildFolderPath, loginWebValidation } from '../../utils'
+import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
+import { authorizeValidation, loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
+const controller = new WebController()
 
-webRouter.get('/', async (_, res) => {
-  const indexHtmlPath = path.join(getWebBuildFolderPath(), 'index.html')
+webRouter.get('/', async (req, res) => {
+  let response
+  try {
+    response = await controller.home()
+  } catch (_) {
+    response = 'Web Build is not present'
+  } finally {
+    res.cookie('XSRF-TOKEN', req.csrfToken())
 
-  if (await fileExists(indexHtmlPath)) return res.sendFile(indexHtmlPath)
-
-  return res.send('Web Build is not present')
+    return res.send(response)
+  }
 })
 
-webRouter.get('/form', function (req, res) {
-  // pass the csrfToken to the view
-  res.send({ csrfToken: req.csrfToken() })
-})
-
-webRouter.post('/login', async (req, res) => {
+webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
   const { error, value: body } = loginWebValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
-  const controller = new WebController()
   try {
     const response = await controller.login(req, body)
     res.send(response)
   } catch (err: any) {
-    res.status(400).send(err.toString())
+    res.status(403).send(err.toString())
   }
 })
 
-webRouter.get('/logout', async (req, res) => {
-  const controller = new WebController()
+webRouter.post(
+  '/SASLogon/authorize',
+  desktopRestrict,
+  authenticateAccessToken,
+  async (req, res) => {
+    const { error, value: body } = authorizeValidation(req.body)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    try {
+      const response = await controller.authorize(req, body)
+      res.send(response)
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
+  }
+)
+
+webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
   try {
     await controller.logout(req)
-    res.status(200).send()
+    res.status(200).send('OK!')
   } catch (err: any) {
-    res.status(400).send(err.toString())
+    res.status(403).send(err.toString())
   }
 })
 

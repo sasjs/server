@@ -1,16 +1,26 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { ExecuteReturnJson, ExecutionController } from './internal'
-import { PreProgramVars } from '../types'
 import { ExecuteReturnJsonResponse } from '.'
-import { parseLogToArray } from '../utils'
+import {
+  getPreProgramVariables,
+  getUserAutoExec,
+  ModeType,
+  parseLogToArray,
+  RunTimeType
+} from '../utils'
 
-interface ExecuteSASCodePayload {
+interface ExecuteCodePayload {
   /**
-   * Code of SAS program
-   * @example "* SAS Code HERE;"
+   * Code of program
+   * @example "* Code HERE;"
    */
   code: string
+  /**
+   * runtime for program
+   * @example "js"
+   */
+  runTime: RunTimeType
 }
 
 @Security('bearerAuth')
@@ -22,24 +32,34 @@ export class CodeController {
    * @summary Run SAS Code and returns log
    */
   @Post('/execute')
-  public async executeSASCode(
+  public async executeCode(
     @Request() request: express.Request,
-    @Body() body: ExecuteSASCodePayload
+    @Body() body: ExecuteCodePayload
   ): Promise<ExecuteReturnJsonResponse> {
-    return executeSASCode(request, body)
+    return executeCode(request, body)
   }
 }
 
-const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
+const executeCode = async (
+  req: express.Request,
+  { code, runTime }: ExecuteCodePayload
+) => {
+  const { user } = req
+  const userAutoExec =
+    process.env.MODE === ModeType.Server
+      ? user?.autoExec
+      : await getUserAutoExec()
+
   try {
     const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeProgram(
-        code,
-        getPreProgramVariables(req),
-        { ...req.query, _debug: 131 },
-        undefined,
-        true
-      )) as ExecuteReturnJson
+      (await new ExecutionController().executeProgram({
+        program: code,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: { ...req.query, _debug: 131 },
+        otherArgs: { userAutoExec },
+        returnJson: true,
+        runTime: runTime
+      })) as ExecuteReturnJson
 
     return {
       status: 'success',
@@ -54,18 +74,5 @@ const executeSASCode = async (req: any, { code }: ExecuteSASCodePayload) => {
       message: 'Job execution failed.',
       error: typeof err === 'object' ? err.toString() : err
     }
-  }
-}
-
-const getPreProgramVariables = (req: any): PreProgramVars => {
-  const host = req.get('host')
-  const protocol = req.protocol + '://'
-  const { user, accessToken } = req
-  return {
-    username: user.username,
-    userId: user.userId,
-    displayName: user.displayName,
-    serverUrl: protocol + host,
-    accessToken
   }
 }

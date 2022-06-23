@@ -1,9 +1,16 @@
 import Joi from 'joi'
+import { RunTimeType } from '.'
 
-const usernameSchema = Joi.string().alphanum().min(3).max(16)
+const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
+const groupnameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i
+
+export const getUserValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    username: usernameSchema.required()
+  }).validate(data)
 
 export const loginWebValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
@@ -13,8 +20,6 @@ export const loginWebValidation = (data: any): Joi.ValidationResult =>
 
 export const authorizeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    username: usernameSchema.required(),
-    password: passwordSchema.required(),
     clientId: Joi.string().required()
   }).validate(data)
 
@@ -26,9 +31,14 @@ export const tokenValidation = (data: any): Joi.ValidationResult =>
 
 export const registerGroupValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    name: Joi.string().min(6).required(),
+    name: groupnameSchema.required(),
     description: Joi.string(),
     isActive: Joi.boolean()
+  }).validate(data)
+
+export const getGroupValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    name: groupnameSchema.required()
   }).validate(data)
 
 export const registerUserValidation = (data: any): Joi.ValidationResult =>
@@ -37,7 +47,8 @@ export const registerUserValidation = (data: any): Joi.ValidationResult =>
     username: usernameSchema.required(),
     password: passwordSchema.required(),
     isAdmin: Joi.boolean(),
-    isActive: Joi.boolean()
+    isActive: Joi.boolean(),
+    autoExec: Joi.string().allow('')
   }).validate(data)
 
 export const deleteUserValidation = (
@@ -59,7 +70,8 @@ export const updateUserValidation = (
   const validationChecks: any = {
     displayName: Joi.string().min(6),
     username: usernameSchema,
-    password: passwordSchema
+    password: passwordSchema,
+    autoExec: Joi.string().allow('')
   }
   if (isAdmin) {
     validationChecks.isAdmin = Joi.boolean()
@@ -122,9 +134,10 @@ export const folderParamValidation = (data: any): Joi.ValidationResult =>
     _folderPath: Joi.string()
   }).validate(data)
 
-export const runSASValidation = (data: any): Joi.ValidationResult =>
+export const runCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    code: Joi.string().required()
+    code: Joi.string().required(),
+    runTime: Joi.string().valid(...process.runTimes)
   }).validate(data)
 
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>

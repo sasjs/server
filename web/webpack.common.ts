@@ -1,4 +1,5 @@
 import path from 'path'
+import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin'
 import { Configuration } from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import CopyPlugin from 'copy-webpack-plugin'
@@ -53,7 +54,8 @@ const config: Configuration = {
     new CopyPlugin({
       patterns: [{ from: 'public' }]
     }),
-    new dotenv()
+    new dotenv(),
+    new MonacoWebpackPlugin()
   ]
 }
 

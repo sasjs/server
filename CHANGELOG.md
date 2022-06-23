@@ -1,6 +1,359 @@
-# Changelog
+## [0.8.2](https://github.com/sasjs/server/compare/v0.8.1...v0.8.2) (2022-06-22)
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### Bug Fixes
+
+* getRuntimeAndFilePath function to handle the scenarion when path is provided with an extension other than runtimes ([5cc85b5](https://github.com/sasjs/server/commit/5cc85b57f80b13296156811fe966d7b37d45f213))
+
+## [0.8.1](https://github.com/sasjs/server/compare/v0.8.0...v0.8.1) (2022-06-21)
+
+
+### Bug Fixes
+
+* make CA_ROOT optional in getCertificates method ([1b5859e](https://github.com/sasjs/server/commit/1b5859ee37ae73c419115b9debfd5141a79733de))
+* update /logout route to /SASLogon/logout ([65380be](https://github.com/sasjs/server/commit/65380be2f3945bae559f1749064845b514447a53))
+
+# [0.8.0](https://github.com/sasjs/server/compare/v0.7.3...v0.8.0) (2022-06-21)
+
+
+### Features
+
+* **certs:** ENV variables updated and set CA Root for HTTPS server ([2119e9d](https://github.com/sasjs/server/commit/2119e9de9ab1e5ce1222658f554ac74f4f35cf4d))
+
+## [0.7.3](https://github.com/sasjs/server/compare/v0.7.2...v0.7.3) (2022-06-20)
+
+
+### Bug Fixes
+
+* path descriptions and defaults ([5d5d6ce](https://github.com/sasjs/server/commit/5d5d6ce3265a43af2e22bcd38cda54fafaf7b3ef))
+
+## [0.7.2](https://github.com/sasjs/server/compare/v0.7.1...v0.7.2) (2022-06-20)
+
+
+### Bug Fixes
+
+* removing UTF-8 options from commandline.  There appears to be no reliable way to enforce ([f6dc74f](https://github.com/sasjs/server/commit/f6dc74f16bddafa1de9c83c2f27671a241abdad4))
+
+## [0.7.1](https://github.com/sasjs/server/compare/v0.7.0...v0.7.1) (2022-06-20)
+
+
+### Bug Fixes
+
+* default runtime should be sas ([91d29cb](https://github.com/sasjs/server/commit/91d29cb1272c28afbceaf39d1e0a87e17fbfdcd6))
+* **Studio:** default selection of runtime fixed ([eb569c7](https://github.com/sasjs/server/commit/eb569c7b827c872ed2c4bc114559b97d87fd2aa0))
+* webout path fixed in code.js when running on windows ([99a1107](https://github.com/sasjs/server/commit/99a110736448f66f99a512396b268fc31a3feef0))
+
+# [0.7.0](https://github.com/sasjs/server/compare/v0.6.1...v0.7.0) (2022-06-19)
+
+
+### Bug Fixes
+
+* add runtimes to global process object ([194eaec](https://github.com/sasjs/server/commit/194eaec7d4a561468f83bf6efce484909ee532eb))
+* code fixes for executing program from program path including file extension ([53854d0](https://github.com/sasjs/server/commit/53854d001279462104b24c0e59a8c94ab4938a94))
+* code/execute controller logic to handle different runtimes ([23b6692](https://github.com/sasjs/server/commit/23b6692f02e4afa33c9dc95d242eb8645c19d546))
+* convert single executeProgram method to two methods i.e. executeSASProgram and executeJSProgram ([c58666e](https://github.com/sasjs/server/commit/c58666eb81514de500519e7b96c1981778ec149b))
+* no need to stringify _webout in preProgramVarStatements, developer should have _webout as string in actual code ([9d5a5e0](https://github.com/sasjs/server/commit/9d5a5e051fd821295664ddb3a1fd64629894a44c))
+* pass _program to execute file without extension ([5df619b](https://github.com/sasjs/server/commit/5df619b3f63571e8e326261d8114869d33881d91))
+* refactor code for session selection in preUploadMiddleware function ([b444381](https://github.com/sasjs/server/commit/b4443819d42afecebc0f382c58afb9010d4775ef))
+* refactor code in executeFile method of session controller ([dffe6d7](https://github.com/sasjs/server/commit/dffe6d7121d569e5c7d13023c6ca68d8c901c88e))
+* refactor code in preUploadMiddleware function ([6d6bda5](https://github.com/sasjs/server/commit/6d6bda56267babde7b98cf69e32973d56d719f75))
+* refactor sas/js session controller classes to inherit from base session controller class ([2c704a5](https://github.com/sasjs/server/commit/2c704a544f4e31a8e8e833a9a62ba016bcfa6c7c))
+* **Studio:** style fix for runtime dropdown ([9023cf3](https://github.com/sasjs/server/commit/9023cf33b5fa4b13c2d5e9b80ae307df69c7fc02))
+
+
+### Features
+
+* configure child process with writeStream to write logs to log file ([058b3b0](https://github.com/sasjs/server/commit/058b3b00816e582e143953c2f0b8330bde2181b8))
+* conver single session controller to two controller i.e. SASSessionController and JSSessionController ([07295aa](https://github.com/sasjs/server/commit/07295aa151175db8c93eeef806fc3b7fde40ac72))
+* create and inject code for uploaded files to code.js ([1685616](https://github.com/sasjs/server/commit/16856165fb292dc9ffa897189ba105bd9f362267))
+* validate sasjs_runtimes env var ([596ada7](https://github.com/sasjs/server/commit/596ada7ca88798d6d71f6845633a006fd22438ea))
+
+## [0.6.1](https://github.com/sasjs/server/compare/v0.6.0...v0.6.1) (2022-06-17)
+
+
+### Bug Fixes
+
+* home page wording.  Using fix to force previous change through.. ([8702a4e](https://github.com/sasjs/server/commit/8702a4e8fd1bbfaf4f426b75e8b85a87ede0e0b0))
+
+# [0.6.0](https://github.com/sasjs/server/compare/v0.5.0...v0.6.0) (2022-06-16)
+
+
+### Features
+
+* get group by group name ([6b0b94a](https://github.com/sasjs/server/commit/6b0b94ad38215ae58e62279a4f73ac3ed2d9d0e8))
+
+# [0.5.0](https://github.com/sasjs/server/compare/v0.4.2...v0.5.0) (2022-06-16)
+
+
+### Bug Fixes
+
+* npm audit fix to avoid warnings on npm i ([28a6a36](https://github.com/sasjs/server/commit/28a6a36bb708b93fb5c2b74d587e9b2e055582be))
+
+
+### Features
+
+* **api:** deployment through zipped/compressed file ([b81d742](https://github.com/sasjs/server/commit/b81d742c6c70d4cf1cab365b0e3efc087441db00))
+
+## [0.4.2](https://github.com/sasjs/server/compare/v0.4.1...v0.4.2) (2022-06-15)
+
+
+### Bug Fixes
+
+* appStream redesign ([73792fb](https://github.com/sasjs/server/commit/73792fb574c90bd280c4324e0b41c6fee7d572b6))
+
+## [0.4.1](https://github.com/sasjs/server/compare/v0.4.0...v0.4.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* add/remove group to User when adding/removing user from group and return group membership on getting user ([e08bbcc](https://github.com/sasjs/server/commit/e08bbcc5435cbabaee40a41a7fb667d4a1f078e6))
+
+# [0.4.0](https://github.com/sasjs/server/compare/v0.3.10...v0.4.0) (2022-06-14)
+
+
+### Features
+
+* new APIs added for GET|PATCH|DELETE of user by username ([aef411a](https://github.com/sasjs/server/commit/aef411a0eac625c33274dfe3e88b6f75115c44d8))
+
+## [0.3.10](https://github.com/sasjs/server/compare/v0.3.9...v0.3.10) (2022-06-14)
+
+
+### Bug Fixes
+
+* correct syntax for encoding option ([32d372b](https://github.com/sasjs/server/commit/32d372b42fbf56b6c0779e8f704164eaae1c7548))
+
+## [0.3.9](https://github.com/sasjs/server/compare/v0.3.8...v0.3.9) (2022-06-14)
+
+
+### Bug Fixes
+
+* forcing utf 8 encoding. Closes [#76](https://github.com/sasjs/server/issues/76) ([8734489](https://github.com/sasjs/server/commit/8734489cf014aedaca3f325e689493e4fe0b71ca))
+
+## [0.3.8](https://github.com/sasjs/server/compare/v0.3.7...v0.3.8) (2022-06-13)
+
+
+### Bug Fixes
+
+* execution controller better error handling ([8a617a7](https://github.com/sasjs/server/commit/8a617a73ae63233332f5788c90f173d6cd5e1283))
+* execution controller error details ([3fa2a7e](https://github.com/sasjs/server/commit/3fa2a7e2e32f90050f6b09e30ce3ef725eb0b15f))
+
+## [0.3.7](https://github.com/sasjs/server/compare/v0.3.6...v0.3.7) (2022-06-08)
+
+
+### Bug Fixes
+
+* **appstream:** redirect to relative + nested resource should be accessed ([5ab35b0](https://github.com/sasjs/server/commit/5ab35b02c4417132dddb5a800982f31d0d50ef66))
+
+## [0.3.6](https://github.com/sasjs/server/compare/v0.3.5...v0.3.6) (2022-06-02)
+
+
+### Bug Fixes
+
+* **appstream:** should serve only new files for same app stream name with new deployment ([e6d1989](https://github.com/sasjs/server/commit/e6d1989847761fbe562d7861ffa0ee542839b125))
+
+## [0.3.5](https://github.com/sasjs/server/compare/v0.3.4...v0.3.5) (2022-05-30)
+
+
+### Bug Fixes
+
+* bumping sasjs/core library ([61815f8](https://github.com/sasjs/server/commit/61815f8ae18be132e17c199cd8e3afbcc2fa0b60))
+
+## [0.3.4](https://github.com/sasjs/server/compare/v0.3.3...v0.3.4) (2022-05-30)
+
+
+### Bug Fixes
+
+* **web:** system username for DESKTOP mode ([a8ba378](https://github.com/sasjs/server/commit/a8ba378fd1ff374ba025a96fdfae5c6c36954465))
+
+## [0.3.3](https://github.com/sasjs/server/compare/v0.3.2...v0.3.3) (2022-05-30)
+
+
+### Bug Fixes
+
+* usage of autoexec API in DESKTOP mode ([12d424a](https://github.com/sasjs/server/commit/12d424acce8108a6f53aefbac01fddcdc5efb48f))
+
+## [0.3.2](https://github.com/sasjs/server/compare/v0.3.1...v0.3.2) (2022-05-27)
+
+
+### Bug Fixes
+
+* **web:** ability to use get/patch User API in desktop mode. ([2c259fe](https://github.com/sasjs/server/commit/2c259fe1de95d84e6929e311aaa6b895e66b42a3))
+
+## [0.3.1](https://github.com/sasjs/server/compare/v0.3.0...v0.3.1) (2022-05-26)
+
+
+### Bug Fixes
+
+* **api:** username should be lowercase ([5ad6ee5](https://github.com/sasjs/server/commit/5ad6ee5e0f5d7d6faa45b72215f1d9d55cfc37db))
+* **web:** reduced width for autoexec input ([7d11cc7](https://github.com/sasjs/server/commit/7d11cc79161e5a07f6c5392d742ef6b9d8658071))
+
+# [0.3.0](https://github.com/sasjs/server/compare/v0.2.0...v0.3.0) (2022-05-25)
+
+
+### Features
+
+* **web:** added profile + edit + autoexec changes ([c275db1](https://github.com/sasjs/server/commit/c275db184e874f0ee3a4f08f2592cfacf1e90742))
+
+# [0.2.0](https://github.com/sasjs/server/compare/v0.1.0...v0.2.0) (2022-05-25)
+
+
+### Bug Fixes
+
+* **autoexec:** usage in case of desktop from file ([79dc2db](https://github.com/sasjs/server/commit/79dc2dba23dc48ec218a973119392a45cb3856b5))
+
+
+### Features
+
+* **api:** added autoexec + major type setting changes ([2a7223a](https://github.com/sasjs/server/commit/2a7223ad7d6b8f3d4682447fd25d9426a7c79ac3))
+
+# [0.1.0](https://github.com/sasjs/server/compare/v0.0.77...v0.1.0) (2022-05-23)
+
+
+### Bug Fixes
+
+* issue174 + issue175 + issue146 ([80b33c7](https://github.com/sasjs/server/commit/80b33c7a18c1b7727316ffeca71658346733e935))
+* **web:** click to copy + notification ([f37f8e9](https://github.com/sasjs/server/commit/f37f8e95d1a85e00ceca2413dbb5e1f3f3f72255))
+
+
+### Features
+
+* **env:** added new env variable LOG_FORMAT_MORGAN ([53bf68a](https://github.com/sasjs/server/commit/53bf68a6aff44bb7b2f40d40d6554809253a01a8))
+
+## [0.0.77](https://github.com/sasjs/server/compare/v0.0.76...v0.0.77) (2022-05-16)
+
+
+### Bug Fixes
+
+* **release:** Github workflow without npm token ([c017d13](https://github.com/sasjs/server/commit/c017d13061d21aeacd0690367992d12ca57a115b))
+
+### [0.0.76](https://github.com/sasjs/server/compare/v0.0.75...v0.0.76) (2022-05-16)
+
+
+### Bug Fixes
+
+* get csrf token from cookie if not present in header ([f89389b](https://github.com/sasjs/server/commit/f89389bbc6f1f8f7060db2bdeb89746cbd60f533))
+
+### [0.0.75](https://github.com/sasjs/server/compare/v0.0.69...v0.0.75) (2022-05-12)
+
+
+### Features
+
+* CSP_DISABLE env option ([dd3acce](https://github.com/sasjs/server/commit/dd3acce3935e7cfc0b2c44a401314306915a3a10))
+
+
+### Bug Fixes
+
+* added more cookies to req ([4a8e32d](https://github.com/sasjs/server/commit/4a8e32dd20b540b6dc92d749fad90d6c7fc69376))
+* bumping core ([c0b57b9](https://github.com/sasjs/server/commit/c0b57b9e76d6db33fc64a68556a8be979dd69e40))
+* csp updates ([7cfa239](https://github.com/sasjs/server/commit/7cfa2398e12c5e515d27c896f36ff91604c2124d))
+* helmet config on http mode ([b0fdaaa](https://github.com/sasjs/server/commit/b0fdaaaa79e3135699c51effac0388d8ec5ab23b))
+* moved getAuthCode from api to web routes ([b40de8f](https://github.com/sasjs/server/commit/b40de8fa6a5aa763ed25a6fe6a381e483e0ab824))
+* reqHeadrs.txt will contain headers to access APIs ([636301e](https://github.com/sasjs/server/commit/636301e664416fb085f704d83deb7f39ee0a91a7))
+* **web:** seperate container for auth code ([5888f04](https://github.com/sasjs/server/commit/5888f04e08a32c6d2c7bcfcbc3a1d32425bff3b3))
+
+### [0.0.74](https://github.com/sasjs/server/compare/v0.0.73...v0.0.74) (2022-05-12)
+
+
+### Bug Fixes
+
+* csp updates ([7cfa239](https://github.com/sasjs/server/commit/7cfa2398e12c5e515d27c896f36ff91604c2124d))
+
+### [0.0.73](https://github.com/sasjs/server/compare/v0.0.72...v0.0.73) (2022-05-10)
+
+
+### Bug Fixes
+
+* helmet config on http mode ([b0fdaaa](https://github.com/sasjs/server/commit/b0fdaaaa79e3135699c51effac0388d8ec5ab23b))
+
+### [0.0.72](https://github.com/sasjs/server/compare/v0.0.71...v0.0.72) (2022-05-09)
+
+### [0.0.71](https://github.com/sasjs/server/compare/v0.0.70...v0.0.71) (2022-05-07)
+
+
+### Bug Fixes
+
+* added more cookies to req ([4a8e32d](https://github.com/sasjs/server/commit/4a8e32dd20b540b6dc92d749fad90d6c7fc69376))
+* bumping core ([c0b57b9](https://github.com/sasjs/server/commit/c0b57b9e76d6db33fc64a68556a8be979dd69e40))
+* reqHeadrs.txt will contain headers to access APIs ([636301e](https://github.com/sasjs/server/commit/636301e664416fb085f704d83deb7f39ee0a91a7))
+
+### [0.0.70](https://github.com/sasjs/server/compare/v0.0.69...v0.0.70) (2022-05-06)
+
+
+### Features
+
+* CSP_DISABLE env option ([dd3acce](https://github.com/sasjs/server/commit/dd3acce3935e7cfc0b2c44a401314306915a3a10))
+
+### [0.0.69](https://github.com/sasjs/server/compare/v0.0.68...v0.0.69) (2022-05-02)
+
+
+### Bug Fixes
+
+* **upload:** appStream uses CSRF + Session authentication ([1f89279](https://github.com/sasjs/server/commit/1f8927926405887f3d134c0a1dd6452ffa33876e))
+
+### [0.0.68](https://github.com/sasjs/server/compare/v0.0.67...v0.0.68) (2022-05-02)
+
+
+### Bug Fixes
+
+* using monaco editor locally ([2548c82](https://github.com/sasjs/server/commit/2548c82dfe1149e62a570a00546dddd9e30049b1))
+
+### [0.0.67](https://github.com/sasjs/server/compare/v0.0.66...v0.0.67) (2022-05-01)
+
+### [0.0.66](https://github.com/sasjs/server/compare/v0.0.64...v0.0.66) (2022-05-01)
+
+
+### Bug Fixes
+
+* added swagger ui init file manually ([e2a97fc](https://github.com/sasjs/server/commit/e2a97fcb7c54a57a7ca118677cfce93fe9430d8f))
+* consume swagger api with CSRF ([5aaac24](https://github.com/sasjs/server/commit/5aaac24080362d6ce0c5d1157798a9343f40ae2a))
+
+### [0.0.65](https://github.com/sasjs/server/compare/v0.0.64...v0.0.65) (2022-05-01)
+
+
+### Bug Fixes
+
+* consume swagger api with CSRF ([5aaac24](https://github.com/sasjs/server/commit/5aaac24080362d6ce0c5d1157798a9343f40ae2a))
+
+### [0.0.64](https://github.com/sasjs/server/compare/v0.0.63...v0.0.64) (2022-04-30)
+
+
+### Bug Fixes
+
+* removed fileExists for serving web ([7b39cc0](https://github.com/sasjs/server/commit/7b39cc06d358f5ffecb87955040c4eb0fcc7469e))
+
+### [0.0.63](https://github.com/sasjs/server/compare/v0.0.62...v0.0.63) (2022-04-30)
+
+### [0.0.62](https://github.com/sasjs/server/compare/v0.0.61...v0.0.62) (2022-04-30)
+
+### [0.0.61](https://github.com/sasjs/server/compare/v0.0.59...v0.0.61) (2022-04-30)
+
+
+### Bug Fixes
+
+* added CSRF check for granting access via session authentication ([b060ad1](https://github.com/sasjs/server/commit/b060ad1b8e0bbc61c20dc25be553bba4cc4d2716))
+* setting CSRF Token for only rendering SPA ([b4b60c6](https://github.com/sasjs/server/commit/b4b60c69cf67a42f4797f7f1afe68b7a5eec2998))
+
+### [0.0.60](https://github.com/sasjs/server/compare/v0.0.59...v0.0.60) (2022-04-30)
+
+
+### Bug Fixes
+
+* added CSRF check for granting access via session authentication ([b060ad1](https://github.com/sasjs/server/commit/b060ad1b8e0bbc61c20dc25be553bba4cc4d2716))
+* setting CSRF Token for only rendering SPA ([b4b60c6](https://github.com/sasjs/server/commit/b4b60c69cf67a42f4797f7f1afe68b7a5eec2998))
+
+### [0.0.59](https://github.com/sasjs/server/compare/v0.0.58...v0.0.59) (2022-04-29)
+
+
+### Features
+
+* enabled csrf tokens for web component ([e462aeb](https://github.com/sasjs/server/commit/e462aebdc01f3c0068ed0074473a2063412dcf45))
+* enabled session based authentication for web ([5da93f3](https://github.com/sasjs/server/commit/5da93f318aad10b1c67032a467191e4dbb99f411))
+
+
+### Bug Fixes
+
+* fetch client from DB for each request ([4ad8c81](https://github.com/sasjs/server/commit/4ad8c81e4927c1a82220ec015a781b095c8e859e))
+* **web:** show display name instead of username ([e57443f](https://github.com/sasjs/server/commit/e57443f1ed662a022494bb93d79c3d2f10a2d082))
 
 ### [0.0.58](https://github.com/sasjs/server/compare/v0.0.57...v0.0.58) (2022-04-24)
 

@@ -3,23 +3,24 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
-import { UserController } from '../../../controllers/'
+import { UserController, GroupController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
 
 const clientId = 'someclientID'
 const adminUser = {
   displayName: 'Test Admin',
-  username: 'testAdminUsername',
+  username: 'testadminusername',
   password: '12345678',
   isAdmin: true,
   isActive: true
 }
 const user = {
   displayName: 'Test User',
-  username: 'testUsername',
+  username: 'testusername',
   password: '87654321',
   isAdmin: false,
-  isActive: true
+  isActive: true,
+  autoExec: 'some sas code for auto exec;'
 }
 
 const controller = new UserController()
@@ -64,6 +65,21 @@ describe('user', () => {
       expect(res.body.displayName).toEqual(user.displayName)
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+    })
+
+    it('should respond with new user having username as lowercase', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/user')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({ ...user, username: user.username.toUpperCase() })
+        .expect(200)
+
+      expect(res.body.username).toEqual(user.username)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
@@ -242,7 +258,7 @@ describe('user', () => {
       const dbUser1 = await controller.createUser(user)
       const dbUser2 = await controller.createUser({
         ...user,
-        username: 'randomUser'
+        username: 'randomuser'
       })
 
       const res = await request(app)
@@ -253,6 +269,102 @@ describe('user', () => {
 
       expect(res.text).toEqual('Error: Username already exists.')
       expect(res.body).toEqual({})
+    })
+
+    describe('by username', () => {
+      it('should respond with updated user when admin user requests', async () => {
+        const dbUser = await controller.createUser(user)
+        const newDisplayName = 'My new display Name'
+
+        const res = await request(app)
+          .patch(`/SASjsApi/user/by/username/${user.username}`)
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send({ ...user, displayName: newDisplayName })
+          .expect(200)
+
+        expect(res.body.username).toEqual(user.username)
+        expect(res.body.displayName).toEqual(newDisplayName)
+        expect(res.body.isAdmin).toEqual(user.isAdmin)
+        expect(res.body.isActive).toEqual(user.isActive)
+      })
+
+      it('should respond with updated user when user himself requests', async () => {
+        const dbUser = await controller.createUser(user)
+        const accessToken = await generateAndSaveToken(dbUser.id)
+        const newDisplayName = 'My new display Name'
+
+        const res = await request(app)
+          .patch(`/SASjsApi/user/by/username/${user.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send({
+            displayName: newDisplayName,
+            username: user.username,
+            password: user.password
+          })
+          .expect(200)
+
+        expect(res.body.username).toEqual(user.username)
+        expect(res.body.displayName).toEqual(newDisplayName)
+        expect(res.body.isAdmin).toEqual(user.isAdmin)
+        expect(res.body.isActive).toEqual(user.isActive)
+      })
+
+      it('should respond with Bad Request, only admin can update isAdmin/isActive', async () => {
+        const dbUser = await controller.createUser(user)
+        const accessToken = await generateAndSaveToken(dbUser.id)
+        const newDisplayName = 'My new display Name'
+
+        await request(app)
+          .patch(`/SASjsApi/user/by/username/${user.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ ...user, displayName: newDisplayName })
+          .expect(400)
+      })
+
+      it('should respond with Unauthorized if access token is not present', async () => {
+        const res = await request(app)
+          .patch('/SASjsApi/user/by/username/1234')
+          .send(user)
+          .expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Unauthorized when access token is not of an admin account or himself', async () => {
+        const dbUser1 = await controller.createUser(user)
+        const dbUser2 = await controller.createUser({
+          ...user,
+          username: 'randomUser'
+        })
+        const accessToken = await generateAndSaveToken(dbUser2.id)
+
+        const res = await request(app)
+          .patch(`/SASjsApi/user/${dbUser1.id}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send(user)
+          .expect(401)
+
+        expect(res.text).toEqual('Admin account required')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if username is already present', async () => {
+        const dbUser1 = await controller.createUser(user)
+        const dbUser2 = await controller.createUser({
+          ...user,
+          username: 'randomuser'
+        })
+
+        const res = await request(app)
+          .patch(`/SASjsApi/user/by/username/${dbUser1.username}`)
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send({ username: dbUser2.username })
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Username already exists.')
+        expect(res.body).toEqual({})
+      })
     })
   })
 
@@ -347,6 +459,89 @@ describe('user', () => {
       expect(res.text).toEqual('Error: Invalid password.')
       expect(res.body).toEqual({})
     })
+
+    describe('by username', () => {
+      it('should respond with OK when admin user requests', async () => {
+        const dbUser = await controller.createUser(user)
+
+        const res = await request(app)
+          .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with OK when user himself requests', async () => {
+        const dbUser = await controller.createUser(user)
+        const accessToken = await generateAndSaveToken(dbUser.id)
+
+        const res = await request(app)
+          .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ password: user.password })
+          .expect(200)
+
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Bad Request when user himself requests and password is missing', async () => {
+        const dbUser = await controller.createUser(user)
+        const accessToken = await generateAndSaveToken(dbUser.id)
+
+        const res = await request(app)
+          .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send()
+          .expect(400)
+
+        expect(res.text).toEqual(`"password" is required`)
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Unauthorized when access token is not present', async () => {
+        const res = await request(app)
+          .delete('/SASjsApi/user/by/username/RandomUsername')
+          .send(user)
+          .expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Unauthorized when access token is not of an admin account or himself', async () => {
+        const dbUser1 = await controller.createUser(user)
+        const dbUser2 = await controller.createUser({
+          ...user,
+          username: 'randomUser'
+        })
+        const accessToken = await generateAndSaveToken(dbUser2.id)
+
+        const res = await request(app)
+          .delete(`/SASjsApi/user/by/username/${dbUser1.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send(user)
+          .expect(401)
+
+        expect(res.text).toEqual('Admin account required')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden when user himself requests and password is incorrect', async () => {
+        const dbUser = await controller.createUser(user)
+        const accessToken = await generateAndSaveToken(dbUser.id)
+
+        const res = await request(app)
+          .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ password: 'incorrectpassword' })
+          .expect(403)
+
+        expect(res.text).toEqual('Error: Invalid password.')
+        expect(res.body).toEqual({})
+      })
+    })
   })
 
   describe('get', () => {
@@ -360,7 +555,26 @@ describe('user', () => {
       await deleteAllUsers()
     })
 
-    it('should respond with user', async () => {
+    it('should respond with user autoExec when same user requests', async () => {
+      const dbUser = await controller.createUser(user)
+      const userId = dbUser.id
+      const accessToken = await generateAndSaveToken(userId)
+
+      const res = await request(app)
+        .get(`/SASjsApi/user/${userId}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body.username).toEqual(user.username)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+      expect(res.body.groups).toEqual([])
+    })
+
+    it('should respond with user autoExec when admin user requests', async () => {
       const dbUser = await controller.createUser(user)
       const userId = dbUser.id
 
@@ -374,6 +588,8 @@ describe('user', () => {
       expect(res.body.displayName).toEqual(user.displayName)
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+      expect(res.body.groups).toEqual([])
     })
 
     it('should respond with user when access token is not of an admin account', async () => {
@@ -395,6 +611,35 @@ describe('user', () => {
       expect(res.body.displayName).toEqual(user.displayName)
       expect(res.body.isAdmin).toEqual(user.isAdmin)
       expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toBeUndefined()
+      expect(res.body.groups).toEqual([])
+    })
+
+    it('should respond with user along with associated groups', async () => {
+      const dbUser = await controller.createUser(user)
+      const userId = dbUser.id
+      const accessToken = await generateAndSaveToken(userId)
+
+      const group = {
+        name: 'DCGroup1',
+        description: 'DC group for testing purposes.'
+      }
+      const groupController = new GroupController()
+      const dbGroup = await groupController.createGroup(group)
+      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+
+      const res = await request(app)
+        .get(`/SASjsApi/user/${userId}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(res.body.username).toEqual(user.username)
+      expect(res.body.displayName).toEqual(user.displayName)
+      expect(res.body.isAdmin).toEqual(user.isAdmin)
+      expect(res.body.isActive).toEqual(user.isActive)
+      expect(res.body.autoExec).toEqual(user.autoExec)
+      expect(res.body.groups.length).toBeGreaterThan(0)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
@@ -418,6 +663,86 @@ describe('user', () => {
 
       expect(res.text).toEqual('Error: User is not found.')
       expect(res.body).toEqual({})
+    })
+
+    describe('by username', () => {
+      it('should respond with user autoExec when same user requests', async () => {
+        const dbUser = await controller.createUser(user)
+        const userId = dbUser.id
+        const accessToken = await generateAndSaveToken(userId)
+
+        const res = await request(app)
+          .get(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body.username).toEqual(user.username)
+        expect(res.body.displayName).toEqual(user.displayName)
+        expect(res.body.isAdmin).toEqual(user.isAdmin)
+        expect(res.body.isActive).toEqual(user.isActive)
+        expect(res.body.autoExec).toEqual(user.autoExec)
+      })
+
+      it('should respond with user autoExec when admin user requests', async () => {
+        const dbUser = await controller.createUser(user)
+
+        const res = await request(app)
+          .get(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body.username).toEqual(user.username)
+        expect(res.body.displayName).toEqual(user.displayName)
+        expect(res.body.isAdmin).toEqual(user.isAdmin)
+        expect(res.body.isActive).toEqual(user.isActive)
+        expect(res.body.autoExec).toEqual(user.autoExec)
+      })
+
+      it('should respond with user when access token is not of an admin account', async () => {
+        const accessToken = await generateSaveTokenAndCreateUser({
+          ...user,
+          username: 'randomUser'
+        })
+
+        const dbUser = await controller.createUser(user)
+
+        const res = await request(app)
+          .get(`/SASjsApi/user/by/username/${dbUser.username}`)
+          .auth(accessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body.username).toEqual(user.username)
+        expect(res.body.displayName).toEqual(user.displayName)
+        expect(res.body.isAdmin).toEqual(user.isAdmin)
+        expect(res.body.isActive).toEqual(user.isActive)
+        expect(res.body.autoExec).toBeUndefined()
+      })
+
+      it('should respond with Unauthorized if access token is not present', async () => {
+        const res = await request(app)
+          .get('/SASjsApi/user/by/username/randomUsername')
+          .send()
+          .expect(401)
+
+        expect(res.text).toEqual('Unauthorized')
+        expect(res.body).toEqual({})
+      })
+
+      it('should respond with Forbidden if username is incorrect', async () => {
+        await controller.createUser(user)
+
+        const res = await request(app)
+          .get('/SASjsApi/user/by/username/randomUsername')
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send()
+          .expect(403)
+
+        expect(res.text).toEqual('Error: User is not found.')
+        expect(res.body).toEqual({})
+      })
     })
   })
 

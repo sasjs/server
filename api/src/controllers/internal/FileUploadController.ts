@@ -1,14 +1,20 @@
+import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
 import { getSessionController } from '.'
+import {
+  executeProgramRawValidation,
+  getRunTimeAndFilePath,
+  RunTimeType
+} from '../../utils'
 
 export class FileUploadController {
   private storage = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
+    destination: function (req: Request, file: any, cb: any) {
       //Sending the intercepted files to the sessions subfolder
-      cb(null, req.sasSession.path)
+      cb(null, req.sasjsSession?.path)
     },
-    filename: function (req: any, file: any, cb: any) {
+    filename: function (req: Request, file: any, cb: any) {
       //req_file prefix + unique hash added to sas request files
       cb(null, `req_file_${uuidv4().replace(/-/gm, '')}`)
     }
@@ -18,16 +24,43 @@ export class FileUploadController {
 
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
-  public preUploadMiddleware = async (req: any, res: any, next: any) => {
-    let session
+  public preUploadMiddleware: RequestHandler = async (req, res, next) => {
+    const { error: errQ, value: query } = executeProgramRawValidation(req.query)
+    const { error: errB, value: body } = executeProgramRawValidation(req.body)
 
-    const sessionController = getSessionController()
-    session = await sessionController.getSession()
+    if (errQ && errB) return res.status(400).send(errB.details[0].message)
+
+    const programPath = (query?._program ?? body?._program) as string
+
+    let runTime
+
+    try {
+      ;({ runTime } = await getRunTimeAndFilePath(programPath))
+    } catch (err: any) {
+      return res.status(400).send({
+        status: 'failure',
+        message: 'Job execution failed',
+        error: typeof err === 'object' ? err.toString() : err
+      })
+    }
+
+    let sessionController
+    try {
+      sessionController = getSessionController(runTime)
+    } catch (err: any) {
+      return res.status(400).send({
+        status: 'failure',
+        message: err.message,
+        error: typeof err === 'object' ? err.toString() : err
+      })
+    }
+
+    const session = await sessionController.getSession()
     // marking consumed true, so that it's not available
     // as readySession for any other request
     session.consumed = true
 
-    req.sasSession = session
+    req.sasjsSession = session
 
     next()
   }

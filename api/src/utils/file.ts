@@ -1,4 +1,6 @@
 import path from 'path'
+import { homedir } from 'os'
+import fs from 'fs-extra'
 
 export const apiRoot = path.join(__dirname, '..', '..')
 export const codebaseRoot = path.join(apiRoot, '..')
@@ -11,28 +13,31 @@ export const sysInitCompiledPath = path.join(
 export const sasJSCoreMacros = path.join(apiRoot, 'sasjscore')
 export const sasJSCoreMacrosInfo = path.join(sasJSCoreMacros, '.macrolist')
 
-export const getWebBuildFolderPath = () =>
-  path.join(codebaseRoot, 'web', 'build')
+export const getWebBuildFolder = () => path.join(codebaseRoot, 'web', 'build')
 
-export const getTmpFolderPath = () => process.driveLoc
+export const getSasjsHomeFolder = () => path.join(homedir(), '.sasjs-server')
 
-export const getTmpAppStreamConfigPath = () =>
-  path.join(getTmpFolderPath(), 'appStreamConfig.json')
+export const getDesktopUserAutoExecPath = () =>
+  path.join(getSasjsHomeFolder(), 'user-autoexec.sas')
 
-export const getTmpMacrosPath = () => path.join(getTmpFolderPath(), 'sasjscore')
+export const getSasjsRootFolder = () => process.driveLoc
 
-export const getTmpUploadsPath = () => path.join(getTmpFolderPath(), 'uploads')
+export const getAppStreamConfigPath = () =>
+  path.join(getSasjsRootFolder(), 'appStreamConfig.json')
 
-export const getTmpFilesFolderPath = () =>
-  path.join(getTmpFolderPath(), 'files')
+export const getMacrosFolder = () =>
+  path.join(getSasjsRootFolder(), 'sasjscore')
 
-export const getTmpLogFolderPath = () => path.join(getTmpFolderPath(), 'logs')
+export const getUploadsFolder = () => path.join(getSasjsRootFolder(), 'uploads')
 
-export const getTmpWeboutFolderPath = () =>
-  path.join(getTmpFolderPath(), 'webouts')
+export const getFilesFolder = () => path.join(getSasjsRootFolder(), 'files')
 
-export const getTmpSessionsFolderPath = () =>
-  path.join(getTmpFolderPath(), 'sessions')
+export const getLogFolder = () => path.join(getSasjsRootFolder(), 'logs')
+
+export const getWeboutFolder = () => path.join(getSasjsRootFolder(), 'webouts')
+
+export const getSessionsFolder = () =>
+  path.join(getSasjsRootFolder(), 'sessions')
 
 export const generateUniqueFileName = (fileName: string, extension = '') =>
   [
@@ -43,3 +48,6 @@ export const generateUniqueFileName = (fileName: string, extension = '') =>
     new Date().getTime(),
     extension
   ].join('')
+
+export const createReadStream = async (filePath: string) =>
+  fs.createReadStream(filePath)

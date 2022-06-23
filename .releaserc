@@ -1,0 +1,43 @@
+{
+  "branches": [
+    "main"
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md"
+        ]
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "./executables/linux.zip",
+            "label": "Linux Executable Binary"
+          },
+          {
+            "path": "./executables/macos.zip",
+            "label": "Macos Executable Binary"
+          },
+          {
+            "path": "./executables/windows.zip",
+            "label": "Windows Executable Binary"
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "echo 'publish command'"
+      }
+    ]
+  ]
+}

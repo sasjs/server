@@ -7,14 +7,14 @@ import {
   readFile
 } from '@sasjs/utils'
 
-import { getTmpMacrosPath, sasJSCoreMacros, sasJSCoreMacrosInfo } from '.'
+import { getMacrosFolder, sasJSCoreMacros, sasJSCoreMacrosInfo } from '.'
 
 export const copySASjsCore = async () => {
   if (process.env.NODE_ENV === 'test') return
 
   console.log('Copying Macros from container to drive(tmp).')
 
-  const macrosDrivePath = getTmpMacrosPath()
+  const macrosDrivePath = getMacrosFolder()
 
   await deleteFolder(macrosDrivePath)
   await createFolder(macrosDrivePath)

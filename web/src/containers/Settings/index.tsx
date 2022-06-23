@@ -6,6 +6,7 @@ import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 
 import Permission from './permission'
+import Profile from './profile'
 
 const StyledTab = styled(Tab)({
   background: 'black',
@@ -45,7 +46,9 @@ const Settings = () => {
             <StyledTab label="Permission" value="permission" />
           </TabList>
         </Box>
-        <StyledTabpanel value="profile">Profile Page</StyledTabpanel>
+        <StyledTabpanel value="profile">
+          <Profile />
+        </StyledTabpanel>
         <StyledTabpanel value="permission">
           <Permission />
         </StyledTabpanel>

@@ -1,11 +1,8 @@
 import { Security, Route, Tags, Example, Post, Body, Query, Hidden } from 'tsoa'
 import jwt from 'jsonwebtoken'
-import User from '../model/User'
-import Client from '../model/Client'
 import { InfoJWT } from '../types'
 import {
   generateAccessToken,
-  generateAuthCode,
   generateRefreshToken,
   removeTokensInDB,
   saveTokensInDB
@@ -24,20 +21,6 @@ export class AuthController {
   }
   static deleteCode = (userId: number, clientId: string) =>
     delete AuthController.authCodes[userId][clientId]
-
-  /**
-   * @summary Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE
-   *
-   */
-  @Example<AuthorizeResponse>({
-    code: 'someRandomCryptoString'
-  })
-  @Post('/authorize')
-  public async authorize(
-    @Body() body: AuthorizePayload
-  ): Promise<AuthorizeResponse> {
-    return authorize(body)
-  }
 
   /**
    * @summary Accepts client/auth code and returns access/refresh tokens
@@ -79,33 +62,6 @@ export class AuthController {
   }
 }
 
-const authorize = async (data: any): Promise<AuthorizeResponse> => {
-  const { username, password, clientId } = data
-
-  const client = await Client.findOne({ clientId })
-  if (!client) throw new Error('Invalid clientId.')
-
-  // Authenticate User
-  const user = await User.findOne({ username })
-  if (!user) throw new Error('Username is not found.')
-
-  const validPass = user.comparePassword(password)
-  if (!validPass) throw new Error('Invalid password.')
-
-  // generate authorization code against clientId
-  const userInfo: InfoJWT = {
-    clientId,
-    userId: user.id
-  }
-  const code = AuthController.saveCode(
-    user.id,
-    clientId,
-    generateAuthCode(userInfo)
-  )
-
-  return { code }
-}
-
 const token = async (data: any): Promise<TokenResponse> => {
   const { clientId, code } = data
 
@@ -141,32 +97,6 @@ const refresh = async (userInfo: InfoJWT): Promise<TokenResponse> => {
 
 const logout = async (userInfo: InfoJWT) => {
   await removeTokensInDB(userInfo.userId, userInfo.clientId)
-}
-
-interface AuthorizePayload {
-  /**
-   * Username for user
-   * @example "secretuser"
-   */
-  username: string
-  /**
-   * Password for user
-   * @example "secretpassword"
-   */
-  password: string
-  /**
-   * Client ID
-   * @example "clientID1"
-   */
-  clientId: string
-}
-
-interface AuthorizeResponse {
-  /**
-   * Authorization code
-   * @example "someRandomCryptoString"
-   */
-  code: string
 }
 
 interface TokenPayload {

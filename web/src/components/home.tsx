@@ -9,8 +9,8 @@ const Home = () => {
       <CssBaseline />
       <h2>Welcome to SASjs Server!</h2>
       <p>
-        This portal provides an interface for executing Stored Programs (drive)
-        and ad hoc code (studio) against a SAS executable. The source code is
+        SASjs Server provides a REST interface for executing Stored Programs and
+        ad hoc code (studio) against SAS and JS executables. The source is
         available on{' '}
         <a
           href="https://github.com/sasjs/server"

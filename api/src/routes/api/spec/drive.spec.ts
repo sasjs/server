@@ -3,6 +3,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
+import AdmZip from 'adm-zip'
 
 import {
   folderExists,
@@ -21,17 +22,17 @@ import * as fileUtilModules from '../../../utils/file'
 const timestamp = generateTimestamp()
 const tmpFolder = path.join(process.cwd(), `tmp-${timestamp}`)
 jest
-  .spyOn(fileUtilModules, 'getTmpFolderPath')
+  .spyOn(fileUtilModules, 'getSasjsRootFolder')
   .mockImplementation(() => tmpFolder)
 jest
-  .spyOn(fileUtilModules, 'getTmpUploadsPath')
+  .spyOn(fileUtilModules, 'getUploadsFolder')
   .mockImplementation(() => path.join(tmpFolder, 'uploads'))
 
 import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
-const { getTmpFilesFolderPath } = fileUtilModules
+const { getFilesFolder } = fileUtilModules
 
 const clientId = 'someclientID'
 const user = {
@@ -72,11 +73,52 @@ describe('drive', () => {
   })
 
   describe('deploy', () => {
-    const shouldFailAssertion = async (payload: any) => {
-      const res = await request(app)
-        .post('/SASjsApi/drive/deploy')
-        .auth(accessToken, { type: 'bearer' })
-        .send({ appLoc: '/Public', fileTree: payload })
+    const makeRequest = async (payload: any, type: string = 'payload') => {
+      const requestUrl =
+        type === 'payload'
+          ? '/SASjsApi/drive/deploy'
+          : '/SASjsApi/drive/deploy/upload'
+
+      if (type === 'payload') {
+        return await request(app)
+          .post(requestUrl)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ appLoc: '/Public', fileTree: payload })
+      }
+      if (type === 'file') {
+        const deployContents = JSON.stringify({
+          appLoc: '/Public',
+          fileTree: payload
+        })
+        return await request(app)
+          .post(requestUrl)
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', Buffer.from(deployContents), 'deploy.json')
+      } else {
+        const deployContents = JSON.stringify({
+          appLoc: '/Public',
+          fileTree: payload
+        })
+        const zip = new AdmZip()
+        // add file directly
+        zip.addFile(
+          'deploy.json',
+          Buffer.from(deployContents, 'utf8'),
+          'entry comment goes here'
+        )
+
+        return await request(app)
+          .post(requestUrl)
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', zip.toBuffer(), 'deploy.json.zip')
+      }
+    }
+
+    const shouldFailAssertion = async (
+      payload: any,
+      type: string = 'payload'
+    ) => {
+      const res = await makeRequest(payload, type)
 
       expect(res.statusCode).toEqual(400)
 
@@ -157,10 +199,10 @@ describe('drive', () => {
       expect(res.text).toEqual(
         '{"status":"success","message":"Files deployed successfully to @sasjs/server."}'
       )
-      await expect(folderExists(getTmpFilesFolderPath())).resolves.toEqual(true)
+      await expect(folderExists(getFilesFolder())).resolves.toEqual(true)
 
       const testJobFolder = path.join(
-        getTmpFilesFolderPath(),
+        getFilesFolder(),
         'public',
         'jobs',
         'extract'
@@ -174,7 +216,241 @@ describe('drive', () => {
 
       await expect(readFile(testJobFile)).resolves.toEqual(exampleService.code)
 
-      await deleteFolder(path.join(getTmpFilesFolderPath(), 'public'))
+      await deleteFolder(path.join(getFilesFolder(), 'public'))
+    })
+
+    describe('upload', () => {
+      it('should respond with payload example if valid JSON file was not provided', async () => {
+        await shouldFailAssertion(null, 'file')
+        await shouldFailAssertion(undefined, 'file')
+        await shouldFailAssertion('data', 'file')
+        await shouldFailAssertion({}, 'file')
+        await shouldFailAssertion(
+          {
+            userId: 1,
+            title: 'test is cool'
+          },
+          'file'
+        )
+        await shouldFailAssertion(
+          {
+            membersWRONG: []
+          },
+          'file'
+        )
+        await shouldFailAssertion(
+          {
+            members: {}
+          },
+          'file'
+        )
+        await shouldFailAssertion(
+          {
+            members: [
+              {
+                nameWRONG: 'jobs',
+                type: 'folder',
+                members: []
+              }
+            ]
+          },
+          'file'
+        )
+        await shouldFailAssertion(
+          {
+            members: [
+              {
+                name: 'jobs',
+                type: 'WRONG',
+                members: []
+              }
+            ]
+          },
+          'file'
+        )
+        await shouldFailAssertion(
+          {
+            members: [
+              {
+                name: 'jobs',
+                type: 'folder',
+                members: [
+                  {
+                    name: 'extract',
+                    type: 'folder',
+                    members: [
+                      {
+                        name: 'makedata1',
+                        type: 'service',
+                        codeWRONG: '%put Hello World!;'
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          'file'
+        )
+      })
+
+      it('should successfully deploy if valid JSON file was provided', async () => {
+        const deployContents = JSON.stringify({
+          appLoc: '/public',
+          fileTree: getTreeExample()
+        })
+        const res = await request(app)
+          .post('/SASjsApi/drive/deploy/upload')
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', Buffer.from(deployContents), 'deploy.json')
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.text).toEqual(
+          '{"status":"success","message":"Files deployed successfully to @sasjs/server."}'
+        )
+        await expect(folderExists(getFilesFolder())).resolves.toEqual(true)
+
+        const testJobFolder = path.join(
+          getFilesFolder(),
+          'public',
+          'jobs',
+          'extract'
+        )
+        await expect(folderExists(testJobFolder)).resolves.toEqual(true)
+
+        const exampleService = getExampleService()
+        const testJobFile =
+          path.join(testJobFolder, exampleService.name) + '.sas'
+
+        await expect(fileExists(testJobFile)).resolves.toEqual(true)
+
+        await expect(readFile(testJobFile)).resolves.toEqual(
+          exampleService.code
+        )
+
+        await deleteFolder(path.join(getFilesFolder(), 'public'))
+      })
+    })
+
+    describe('upload - zipped', () => {
+      it('should respond with payload example if valid Zipped file was not provided', async () => {
+        await shouldFailAssertion(null, 'zip')
+        await shouldFailAssertion(undefined, 'zip')
+        await shouldFailAssertion('data', 'zip')
+        await shouldFailAssertion({}, 'zip')
+        await shouldFailAssertion(
+          {
+            userId: 1,
+            title: 'test is cool'
+          },
+          'zip'
+        )
+        await shouldFailAssertion(
+          {
+            membersWRONG: []
+          },
+          'zip'
+        )
+        await shouldFailAssertion(
+          {
+            members: {}
+          },
+          'zip'
+        )
+        await shouldFailAssertion(
+          {
+            members: [
+              {
+                nameWRONG: 'jobs',
+                type: 'folder',
+                members: []
+              }
+            ]
+          },
+          'zip'
+        )
+        await shouldFailAssertion(
+          {
+            members: [
+              {
+                name: 'jobs',
+                type: 'WRONG',
+                members: []
+              }
+            ]
+          },
+          'zip'
+        )
+        await shouldFailAssertion(
+          {
+            members: [
+              {
+                name: 'jobs',
+                type: 'folder',
+                members: [
+                  {
+                    name: 'extract',
+                    type: 'folder',
+                    members: [
+                      {
+                        name: 'makedata1',
+                        type: 'service',
+                        codeWRONG: '%put Hello World!;'
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          'zip'
+        )
+      })
+
+      it('should successfully deploy if valid Zipped file was provided', async () => {
+        const deployContents = JSON.stringify({
+          appLoc: '/public',
+          fileTree: getTreeExample()
+        })
+
+        const zip = new AdmZip()
+        // add file directly
+        zip.addFile(
+          'deploy.json',
+          Buffer.from(deployContents, 'utf8'),
+          'entry comment goes here'
+        )
+        const res = await request(app)
+          .post('/SASjsApi/drive/deploy/upload')
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', zip.toBuffer(), 'deploy.json.zip')
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.text).toEqual(
+          '{"status":"success","message":"Files deployed successfully to @sasjs/server."}'
+        )
+        await expect(folderExists(getFilesFolder())).resolves.toEqual(true)
+
+        const testJobFolder = path.join(
+          getFilesFolder(),
+          'public',
+          'jobs',
+          'extract'
+        )
+        await expect(folderExists(testJobFolder)).resolves.toEqual(true)
+
+        const exampleService = getExampleService()
+        const testJobFile =
+          path.join(testJobFolder, exampleService.name) + '.sas'
+
+        await expect(fileExists(testJobFile)).resolves.toEqual(true)
+
+        await expect(readFile(testJobFile)).resolves.toEqual(
+          exampleService.code
+        )
+
+        await deleteFolder(path.join(getFilesFolder(), 'public'))
+      })
     })
   })
 
@@ -192,7 +468,7 @@ describe('drive', () => {
       })
 
       it('should get a SAS folder on drive having _folderPath as query param', async () => {
-        const pathToDrive = fileUtilModules.getTmpFilesFolderPath()
+        const pathToDrive = fileUtilModules.getFilesFolder()
 
         const dirLevel1 = 'level1'
         const dirLevel2 = 'level2'
@@ -267,10 +543,7 @@ describe('drive', () => {
         const fileToCopyPath = path.join(__dirname, 'files', 'sample.sas')
         const filePath = '/my/path/code.sas'
 
-        const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
-          filePath
-        )
+        const pathToCopy = path.join(fileUtilModules.getFilesFolder(), filePath)
         await copy(fileToCopyPath, pathToCopy)
 
         const res = await request(app)
@@ -333,7 +606,7 @@ describe('drive', () => {
         const pathToUpload = `/my/path/code-${generateTimestamp()}.sas`
 
         const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
+          fileUtilModules.getFilesFolder(),
           pathToUpload
         )
         await copy(fileToAttachPath, pathToCopy)
@@ -445,7 +718,7 @@ describe('drive', () => {
         const pathToUpload = '/my/path/code.sas'
 
         const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
+          fileUtilModules.getFilesFolder(),
           pathToUpload
         )
         await copy(fileToAttachPath, pathToCopy)
@@ -467,7 +740,7 @@ describe('drive', () => {
         const pathToUpload = '/my/path/code.sas'
 
         const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
+          fileUtilModules.getFilesFolder(),
           pathToUpload
         )
         await copy(fileToAttachPath, pathToCopy)
@@ -603,10 +876,7 @@ describe('drive', () => {
         const fileToCopyContent = await readFile(fileToCopyPath)
         const filePath = '/my/path/code.sas'
 
-        const pathToCopy = path.join(
-          fileUtilModules.getTmpFilesFolderPath(),
-          filePath
-        )
+        const pathToCopy = path.join(fileUtilModules.getFilesFolder(), filePath)
         await copy(fileToCopyPath, pathToCopy)
 
         const res = await request(app)

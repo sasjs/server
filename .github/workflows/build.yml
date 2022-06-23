@@ -54,6 +54,10 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{secrets.ACCESS_TOKEN_SECRET}}
           REFRESH_TOKEN_SECRET: ${{secrets.REFRESH_TOKEN_SECRET}}
           AUTH_CODE_SECRET: ${{secrets.AUTH_CODE_SECRET}}
+          SESSION_SECRET: ${{secrets.SESSION_SECRET}}
+          RUN_TIMES: 'sas,js'
+          SAS_PATH: '/some/path/to/sas'
+          NODE_PATH: '/some/path/to/node'
 
       - name: Build Package
         working-directory: ./api

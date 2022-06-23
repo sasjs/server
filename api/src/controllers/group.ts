@@ -28,6 +28,11 @@ interface GroupDetailsResponse {
   users: UserResponse[]
 }
 
+interface GetGroupBy {
+  groupId?: number
+  name?: string
+}
+
 @Security('bearerAuth')
 @Route('SASjsApi/group')
 @Tags('Group')
@@ -68,6 +73,18 @@ export class GroupController {
 
   /**
    * @summary Get list of members of a group (userName). All users can request this.
+   * @param name The group's name
+   * @example dcgroup
+   */
+  @Get('by/groupname/{name}')
+  public async getGroupByGroupName(
+    @Path() name: string
+  ): Promise<GroupDetailsResponse> {
+    return getGroup({ name })
+  }
+
+  /**
+   * @summary Get list of members of a group (userName). All users can request this.
    * @param groupId The group's identifier
    * @example groupId 1234
    */
@@ -75,7 +92,7 @@ export class GroupController {
   public async getGroup(
     @Path() groupId: number
   ): Promise<GroupDetailsResponse> {
-    return getGroup(groupId)
+    return getGroup({ groupId })
   }
 
   /**
@@ -129,9 +146,13 @@ export class GroupController {
    */
   @Delete('{groupId}')
   public async deleteGroup(@Path() groupId: number) {
-    const { deletedCount } = await Group.deleteOne({ groupId })
-    if (deletedCount) return
-    throw new Error('No Group deleted!')
+    const group = await Group.findOne({ groupId })
+    if (group) return await group.remove()
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Group not found.'
+    }
   }
 }
 
@@ -145,6 +166,15 @@ const createGroup = async ({
   description,
   isActive
 }: GroupPayload): Promise<GroupDetailsResponse> => {
+  // Checking if user is already in the database
+  const groupnameExist = await Group.findOne({ name })
+  if (groupnameExist)
+    throw {
+      code: 409,
+      status: 'Conflict',
+      message: 'Group name already exists.'
+    }
+
   const group = new Group({
     name,
     description,
@@ -162,15 +192,20 @@ const createGroup = async ({
   }
 }
 
-const getGroup = async (groupId: number): Promise<GroupDetailsResponse> => {
+const getGroup = async (findBy: GetGroupBy): Promise<GroupDetailsResponse> => {
   const group = (await Group.findOne(
-    { groupId },
+    findBy,
     'groupId name description isActive users -_id'
   ).populate(
     'users',
     'id username displayName -_id'
   )) as unknown as GroupDetailsResponse
-  if (!group) throw new Error('Group not found.')
+  if (!group)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Group not found.'
+    }
 
   return {
     groupId: group.groupId,
@@ -199,16 +234,34 @@ const updateUsersListInGroup = async (
   action: 'addUser' | 'removeUser'
 ): Promise<GroupDetailsResponse> => {
   const group = await Group.findOne({ groupId })
-  if (!group) throw new Error('Group not found.')
+  if (!group)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Group not found.'
+    }
 
   const user = await User.findOne({ id: userId })
-  if (!user) throw new Error('User not found.')
+  if (!user)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'User not found.'
+    }
 
   const updatedGroup = (action === 'addUser'
     ? await group.addUser(user._id)
     : await group.removeUser(user._id)) as unknown as GroupDetailsResponse
 
-  if (!updatedGroup) throw new Error('Unable to update group')
+  if (!updatedGroup)
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: 'Unable to update group.'
+    }
+
+  if (action === 'addUser') user.addGroup(group._id)
+  else user.removeGroup(group._id)
 
   return {
     groupId: updatedGroup.groupId,

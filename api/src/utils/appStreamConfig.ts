@@ -2,12 +2,12 @@ import { createFile, fileExists, readFile } from '@sasjs/utils'
 import { publishAppStream } from '../routes/appStream'
 import { AppStreamConfig } from '../types'
 
-import { getTmpAppStreamConfigPath } from './file'
+import { getAppStreamConfigPath } from './file'
 
 export const loadAppStreamConfig = async () => {
   if (process.env.NODE_ENV === 'test') return
 
-  const appStreamConfigPath = getTmpAppStreamConfigPath()
+  const appStreamConfigPath = getAppStreamConfigPath()
 
   const content = (await fileExists(appStreamConfigPath))
     ? await readFile(appStreamConfigPath)
@@ -63,7 +63,7 @@ export const removeEntryFromAppStreamConfig = (streamServiceName: string) => {
 }
 
 const saveAppStreamConfig = async () => {
-  const appStreamConfigPath = getTmpAppStreamConfigPath()
+  const appStreamConfigPath = getAppStreamConfigPath()
 
   try {
     await createFile(

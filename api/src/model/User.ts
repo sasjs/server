@@ -27,18 +27,26 @@ export interface UserPayload {
    * @example "true"
    */
   isActive?: boolean
+  /**
+   * User-specific auto-exec code
+   * @example ""
+   */
+  autoExec?: string
 }
 
 interface IUserDocument extends UserPayload, Document {
   id: number
   isAdmin: boolean
   isActive: boolean
+  autoExec: string
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
 }
 
 interface IUser extends IUserDocument {
   comparePassword(password: string): boolean
+  addGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
+  removeGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
 }
 interface IUserModel extends Model<IUser> {
   hashPassword(password: string): string
@@ -65,6 +73,9 @@ const userSchema = new Schema<IUserDocument>({
   isActive: {
     type: Boolean,
     default: true
+  },
+  autoExec: {
+    type: String
   },
   groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
   tokens: [
@@ -97,6 +108,28 @@ userSchema.method('comparePassword', function (password: string): boolean {
   if (bcrypt.compareSync(password, this.password)) return true
   return false
 })
+userSchema.method(
+  'addGroup',
+  async function (groupObjectId: Schema.Types.ObjectId) {
+    const groupIdIndex = this.groups.indexOf(groupObjectId)
+    if (groupIdIndex === -1) {
+      this.groups.push(groupObjectId)
+    }
+    this.markModified('groups')
+    return this.save()
+  }
+)
+userSchema.method(
+  'removeGroup',
+  async function (groupObjectId: Schema.Types.ObjectId) {
+    const groupIdIndex = this.groups.indexOf(groupObjectId)
+    if (groupIdIndex > -1) {
+      this.groups.splice(groupIdIndex, 1)
+    }
+    this.markModified('groups')
+    return this.save()
+  }
+)
 
 export const User: IUserModel = model<IUser, IUserModel>('User', userSchema)
 

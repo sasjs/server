@@ -1,7 +1,7 @@
 import express from 'express'
 import { GroupController } from '../../controllers/'
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
-import { registerGroupValidation } from '../../utils'
+import { getGroupValidation, registerGroupValidation } from '../../utils'
 
 const groupRouter = express.Router()
 
@@ -18,7 +18,11 @@ groupRouter.post(
       const response = await controller.createGroup(body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -29,35 +33,73 @@ groupRouter.get('/', authenticateAccessToken, async (req, res) => {
     const response = await controller.getAllGroups()
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
-groupRouter.get('/:groupId', authenticateAccessToken, async (req: any, res) => {
+groupRouter.get('/:groupId', authenticateAccessToken, async (req, res) => {
   const { groupId } = req.params
 
   const controller = new GroupController()
   try {
-    const response = await controller.getGroup(groupId)
+    const response = await controller.getGroup(parseInt(groupId))
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
+
+groupRouter.get(
+  '/by/groupname/:name',
+  authenticateAccessToken,
+  async (req, res) => {
+    const { error, value: params } = getGroupValidation(req.params)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    const { name } = params
+
+    const controller = new GroupController()
+    try {
+      const response = await controller.getGroupByGroupName(name)
+      res.send(response)
+    } catch (err: any) {
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
+    }
+  }
+)
 
 groupRouter.post(
   '/:groupId/:userId',
   authenticateAccessToken,
   verifyAdmin,
-  async (req: any, res) => {
+  async (req, res) => {
     const { groupId, userId } = req.params
 
     const controller = new GroupController()
     try {
-      const response = await controller.addUserToGroup(groupId, userId)
+      const response = await controller.addUserToGroup(
+        parseInt(groupId),
+        parseInt(userId)
+      )
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -66,15 +108,22 @@ groupRouter.delete(
   '/:groupId/:userId',
   authenticateAccessToken,
   verifyAdmin,
-  async (req: any, res) => {
+  async (req, res) => {
     const { groupId, userId } = req.params
 
     const controller = new GroupController()
     try {
-      const response = await controller.removeUserFromGroup(groupId, userId)
+      const response = await controller.removeUserFromGroup(
+        parseInt(groupId),
+        parseInt(userId)
+      )
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -83,15 +132,19 @@ groupRouter.delete(
   '/:groupId',
   authenticateAccessToken,
   verifyAdmin,
-  async (req: any, res) => {
+  async (req, res) => {
     const { groupId } = req.params
 
     const controller = new GroupController()
     try {
-      await controller.deleteGroup(groupId)
+      await controller.deleteGroup(parseInt(groupId))
       res.status(200).send('Group Deleted!')
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
     }
   }
 )

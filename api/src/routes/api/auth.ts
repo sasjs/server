@@ -13,19 +13,6 @@ import { InfoJWT } from '../../types'
 const authRouter = express.Router()
 const controller = new AuthController()
 
-authRouter.post('/authorize', async (req, res) => {
-  const { error, value: body } = authorizeValidation(req.body)
-  if (error) return res.status(400).send(error.details[0].message)
-
-  try {
-    const response = await controller.authorize(body)
-
-    res.send(response)
-  } catch (err: any) {
-    res.status(403).send(err.toString())
-  }
-})
-
 authRouter.post('/token', async (req, res) => {
   const { error, value: body } = tokenValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
@@ -39,8 +26,11 @@ authRouter.post('/token', async (req, res) => {
   }
 })
 
-authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
-  const userInfo: InfoJWT = req.user
+authRouter.post('/refresh', authenticateRefreshToken, async (req, res) => {
+  const userInfo: InfoJWT = {
+    userId: req.user!.userId!,
+    clientId: req.user!.clientId!
+  }
 
   try {
     const response = await controller.refresh(userInfo)
@@ -51,8 +41,11 @@ authRouter.post('/refresh', authenticateRefreshToken, async (req: any, res) => {
   }
 })
 
-authRouter.delete('/logout', authenticateAccessToken, async (req: any, res) => {
-  const userInfo: InfoJWT = req.user
+authRouter.delete('/logout', authenticateAccessToken, async (req, res) => {
+  const userInfo: InfoJWT = {
+    userId: req.user!.userId!,
+    clientId: req.user!.clientId!
+  }
 
   try {
     await controller.logout(userInfo)

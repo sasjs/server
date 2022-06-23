@@ -21,17 +21,21 @@ const PORT_API = process.env.PORT_API
 const baseUrl =
   NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
 
+const validTabs = ['/', '/SASjsDrive', '/SASjsStudio']
+
 const Header = (props: any) => {
   const history = useHistory()
   const { pathname } = useLocation()
   const appContext = useContext(AppContext)
-  const [tabValue, setTabValue] = useState(pathname)
+  const [tabValue, setTabValue] = useState(
+    validTabs.includes(pathname) ? pathname : '/'
+  )
   const [anchorEl, setAnchorEl] = useState<
     (EventTarget & HTMLButtonElement) | null
   >(null)
 
   useEffect(() => {
-    setTabValue(pathname)
+    setTabValue(validTabs.includes(pathname) ? pathname : '/')
   }, [pathname])
 
   const handleMenu = (
@@ -49,7 +53,10 @@ const Header = (props: any) => {
   }
 
   const handleLogout = () => {
-    if (appContext.logout) appContext.logout()
+    if (appContext.logout) {
+      handleClose()
+      appContext.logout()
+    }
   }
   return (
     <AppBar
@@ -141,11 +148,12 @@ const Header = (props: any) => {
               <Button
                 component={Link}
                 to="/SASjsSettings"
+                onClick={handleClose}
                 variant="contained"
                 color="primary"
                 startIcon={<SettingsIcon />}
               >
-                Setting
+                Settings
               </Button>
             </MenuItem>
             <MenuItem onClick={handleLogout} sx={{ justifyContent: 'center' }}>

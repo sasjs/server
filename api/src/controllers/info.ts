@@ -5,6 +5,7 @@ export interface InfoResponse {
   cors: string
   whiteList: string[]
   protocol: string
+  runTimes: string[]
 }
 
 @Route('SASjsApi/info')
@@ -18,7 +19,8 @@ export class InfoController {
     mode: 'desktop',
     cors: 'enable',
     whiteList: ['http://example.com', 'http://example2.com'],
-    protocol: 'http'
+    protocol: 'http',
+    runTimes: ['sas', 'js']
   })
   @Get('/')
   public info(): InfoResponse {
@@ -29,7 +31,8 @@ export class InfoController {
         (process.env.MODE === 'server' ? 'disable' : 'enable'),
       whiteList:
         process.env.WHITELIST?.split(' ')?.filter((url) => !!url) ?? [],
-      protocol: process.env.PROTOCOL ?? 'http'
+      protocol: process.env.PROTOCOL ?? 'http',
+      runTimes: process.runTimes
     }
     return response
   }

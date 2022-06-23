@@ -5,7 +5,6 @@ import swaggerUi from 'swagger-ui-express'
 import {
   authenticateAccessToken,
   desktopRestrict,
-  desktopUsername,
   verifyAdmin
 } from '../../middlewares'
 
@@ -23,7 +22,7 @@ import permissionRouter from './permission'
 const router = express.Router()
 
 router.use('/info', infoRouter)
-router.use('/session', desktopUsername, authenticateAccessToken, sessionRouter)
+router.use('/session', authenticateAccessToken, sessionRouter)
 router.use('/auth', desktopRestrict, authRouter)
 router.use(
   '/client',
@@ -38,12 +37,22 @@ router.use('/stp', authenticateAccessToken, stpRouter)
 router.use('/code', authenticateAccessToken, codeRouter)
 router.use('/user', desktopRestrict, userRouter)
 router.use('/permission', desktopRestrict, permissionRouter)
+
 router.use(
   '/',
   swaggerUi.serve,
   swaggerUi.setup(undefined, {
     swaggerOptions: {
-      url: '/swagger.yaml'
+      url: '/swagger.yaml',
+      requestInterceptor: (request: any) => {
+        request.credentials = 'include'
+
+        const cookie = document.cookie
+        const startIndex = cookie.indexOf('XSRF-TOKEN')
+        const csrf = cookie.slice(startIndex + 11).split('; ')[0]
+        request.headers['X-XSRF-TOKEN'] = csrf
+        return request
+      }
     }
   })
 )

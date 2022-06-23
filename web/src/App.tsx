@@ -11,6 +11,8 @@ import Studio from './containers/Studio'
 import Settings from './containers/Settings'
 
 import { AppContext } from './context/appContext'
+import AuthCode from './containers/AuthCode'
+import { ToastContainer } from 'react-toastify'
 
 function App() {
   const appContext = useContext(AppContext)
@@ -21,9 +23,6 @@ function App() {
         <HashRouter>
           <Header />
           <Switch>
-            <Route exact path="/SASjsLogon">
-              <Login getCodeOnly />
-            </Route>
             <Route path="/">
               <Login />
             </Route>
@@ -51,9 +50,10 @@ function App() {
             <Settings />
           </Route>
           <Route exact path="/SASjsLogon">
-            <Login getCodeOnly />
+            <AuthCode />
           </Route>
         </Switch>
+        <ToastContainer />
       </HashRouter>
     </ThemeProvider>
   )

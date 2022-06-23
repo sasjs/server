@@ -2,15 +2,25 @@ name: SASjs Server Executable Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [lts/*]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
 
       - name: Install Dependencies WEB
         working-directory: ./web
@@ -39,10 +49,11 @@ jobs:
           zip macos.zip api-macos
           zip windows.zip api-win.exe
 
+      - name: Install Semantic Release and plugins
+        run: |
+          npm i
+          npm i -g semantic-release
+
       - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ./executables/linux.zip
-            ./executables/macos.zip
-            ./executables/windows.zip
+        run: |
+          GITHUB_TOKEN=${{ secrets.GH_TOKEN }} semantic-release

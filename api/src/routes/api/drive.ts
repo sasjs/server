@@ -7,9 +7,12 @@ import { multerSingle } from '../../middlewares/multer'
 import { DriveController } from '../../controllers/'
 import {
   deployValidation,
+  extractJSONFromZip,
+  extractName,
   fileBodyValidation,
   fileParamValidation,
-  folderParamValidation
+  folderParamValidation,
+  isZipFile
 } from '../../utils'
 
 const controller = new DriveController()
@@ -49,7 +52,24 @@ driveRouter.post(
   async (req, res) => {
     if (!req.file) return res.status(400).send('"file" is not present.')
 
-    const fileContent = await readFile(req.file.path)
+    let fileContent: string = ''
+
+    const { value: zipFile } = isZipFile(req.file)
+    if (zipFile) {
+      fileContent = await extractJSONFromZip(zipFile)
+      const fileInZip = extractName(zipFile.originalname)
+
+      if (!fileContent) {
+        deleteFile(req.file.path)
+        return res
+          .status(400)
+          .send(
+            `No content present in ${fileInZip} of compressed file ${zipFile.originalname}`
+          )
+      }
+    } else {
+      fileContent = await readFile(req.file.path)
+    }
 
     let jsonContent
     try {

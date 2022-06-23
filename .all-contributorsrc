@@ -1,0 +1,84 @@
+{
+  "projectName": "server",
+  "projectOwner": "sasjs",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "saadjutt01",
+      "name": "Saad Jutt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/8914650?v=4",
+      "profile": "https://github.com/saadjutt01",
+      "contributions": [
+        "code",
+        "test"
+      ]
+    },
+    {
+      "login": "sabhas",
+      "name": "Sabir Hassan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/82647447?v=4",
+      "profile": "https://github.com/sabhas",
+      "contributions": [
+        "code",
+        "test"
+      ]
+    },
+    {
+      "login": "YuryShkoda",
+      "name": "Yury Shkoda",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25773492?v=4",
+      "profile": "https://www.erudicat.com/",
+      "contributions": [
+        "code",
+        "test"
+      ]
+    },
+    {
+      "login": "medjedovicm",
+      "name": "Mihajlo Medjedovic",
+      "avatar_url": "https://avatars.githubusercontent.com/u/18329105?v=4",
+      "profile": "https://github.com/medjedovicm",
+      "contributions": [
+        "code",
+        "test"
+      ]
+    },
+    {
+      "login": "allanbowe",
+      "name": "Allan Bowe",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4420615?v=4",
+      "profile": "https://4gl.io/",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "VladislavParhomchik",
+      "name": "Vladislav Parhomchik",
+      "avatar_url": "https://avatars.githubusercontent.com/u/83717836?v=4",
+      "profile": "https://github.com/VladislavParhomchik",
+      "contributions": [
+        "test"
+      ]
+    },
+    {
+      "login": "kknapen",
+      "name": "Koen Knapen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/78609432?v=4",
+      "profile": "https://github.com/kknapen",
+      "contributions": [
+        "userTesting"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true
+}

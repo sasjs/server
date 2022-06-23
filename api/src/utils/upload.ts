@@ -1,5 +1,6 @@
+import path from 'path'
 import { MulterFile } from '../types/Upload'
-import { listFilesInFolder } from '@sasjs/utils'
+import { listFilesInFolder, readFileBinary } from '@sasjs/utils'
 
 interface FilenameMapSingle {
   fieldName: string
@@ -97,4 +98,35 @@ export const generateFileUploadSasCode = async (
   uploadSasCode += `\n`
 
   return uploadSasCode
+}
+
+/**
+ * Generates the js code that references uploaded files in the concurrent request
+ * @param filesNamesMap object that maps hashed file names and original file names
+ * @param sessionFolder name of the folder that is created for the purpose of files in concurrent request
+ * @returns generated js code
+ */
+export const generateFileUploadJSCode = async (
+  filesNamesMap: FilenamesMap,
+  sessionFolder: string
+) => {
+  let uploadCode = ''
+  let fileCount = 0
+
+  const sessionFolderList: string[] = await listFilesInFolder(sessionFolder)
+  sessionFolderList.forEach(async (fileName) => {
+    if (fileName.includes('req_file')) {
+      fileCount++
+      const filePath = path.join(sessionFolder, fileName)
+      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = fs.readFileSync('${filePath}')`
+      uploadCode += `\nconst _WEBIN_FILENAME${fileCount} = '${filesNamesMap[fileName].originalName}'`
+      uploadCode += `\nconst _WEBIN_NAME${fileCount} = '${filesNamesMap[fileName].fieldName}'`
+    }
+  })
+
+  if (fileCount) {
+    uploadCode = `\nconst _WEBIN_FILE_COUNT = ${fileCount}` + uploadCode
+  }
+
+  return uploadCode
 }
