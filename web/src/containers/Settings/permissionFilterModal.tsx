@@ -49,13 +49,21 @@ const PermissionFilterModal = ({
   resetFilter
 }: FilterModalProps) => {
   const URIs = permissions.map((permission) => permission.uri)
-  const principals = permissions
-    .map((permission) => {
-      if (permission.user) return permission.user.displayName
-      if (permission.group) return permission.group.name
-      return ''
-    })
-    .filter((principal) => principal !== '')
+
+  // fetch all the principals from permissions array
+  let principals = permissions.map((permission) => {
+    if (permission.user) return permission.user.displayName
+    if (permission.group) return permission.group.name
+    return ''
+  })
+
+  // removes empty strings
+  principals = principals.filter((principal) => principal !== '')
+
+  // removes the duplicates
+  principals = principals.filter(
+    (value, index, self) => self.indexOf(value) === index
+  )
 
   return (
     <BootstrapDialog onClose={() => handleOpen(false)} open={open}>
