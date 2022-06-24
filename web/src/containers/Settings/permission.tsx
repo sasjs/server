@@ -38,7 +38,7 @@ const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
 })
 
-enum PrincipalType {
+export enum PrincipalType {
   User = 'User',
   Group = 'Group'
 }
@@ -58,6 +58,9 @@ const Permission = () => {
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [uriFilter, setUriFilter] = useState<string[]>([])
   const [principalFilter, setPrincipalFilter] = useState<string[]>([])
+  const [principalTypeFilter, setPrincipalTypeFilter] = useState<
+    PrincipalType[]
+  >([])
   const [settingFilter, setSettingFilter] = useState<string[]>([])
   const [permissions, setPermissions] = useState<PermissionResponse[]>([])
   const [filteredPermissions, setFilteredPermissions] = useState<
@@ -93,17 +96,33 @@ const Permission = () => {
       uriFilter.length > 0
         ? permissions.filter((permission) => uriFilter.includes(permission.uri))
         : permissions
+
     const principalFilteredPermissions =
       principalFilter.length > 0
         ? permissions.filter((permission) => {
             if (permission.user) {
-              return principalFilter.includes(permission.user.displayName)
-            } else if (permission.group) {
+              return principalFilter.includes(permission.user.username)
+            }
+            if (permission.group) {
               return principalFilter.includes(permission.group.name)
             }
             return false
           })
         : permissions
+
+    const principalTypeFilteredPermissions =
+      principalTypeFilter.length > 0
+        ? permissions.filter((permission) => {
+            if (permission.user) {
+              return principalTypeFilter.includes(PrincipalType.User)
+            }
+            if (permission.group) {
+              return principalTypeFilter.includes(PrincipalType.Group)
+            }
+            return false
+          })
+        : permissions
+
     const settingFilteredPermissions =
       settingFilter.length > 0
         ? permissions.filter((permission) =>
@@ -113,6 +132,12 @@ const Permission = () => {
 
     let filteredArray = uriFilteredPermissions.filter((permission) =>
       principalFilteredPermissions.some(
+        (item) => item.permissionId === permission.permissionId
+      )
+    )
+
+    filteredArray = filteredArray.filter((permission) =>
+      principalTypeFilteredPermissions.some(
         (item) => item.permissionId === permission.permissionId
       )
     )
@@ -261,6 +286,8 @@ const Permission = () => {
         setUriFilter={setUriFilter}
         principalFilter={principalFilter}
         setPrincipalFilter={setPrincipalFilter}
+        principalTypeFilter={principalTypeFilter}
+        setPrincipalTypeFilter={setPrincipalTypeFilter}
         settingFilter={settingFilter}
         setSettingFilter={setSettingFilter}
         applyFilter={applyFilter}
@@ -355,7 +382,7 @@ const PermissionTable = ({
 }
 
 const displayPrincipal = (permission: PermissionResponse) => {
-  if (permission.user) return permission.user?.displayName
+  if (permission.user) return permission.user?.username
   if (permission.group) return permission.group?.name
 }
 

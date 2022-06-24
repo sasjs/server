@@ -12,6 +12,8 @@ import Autocomplete from '@mui/material/Autocomplete'
 
 import { PermissionResponse } from '../../utils/types'
 import { BootstrapDialogTitle } from '../../components/dialogTitle'
+import { PrincipalType } from './permission'
+
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
     padding: theme.spacing(2)
@@ -29,6 +31,8 @@ type FilterModalProps = {
   setUriFilter: Dispatch<SetStateAction<string[]>>
   principalFilter: string[]
   setPrincipalFilter: Dispatch<SetStateAction<string[]>>
+  principalTypeFilter: PrincipalType[]
+  setPrincipalTypeFilter: Dispatch<SetStateAction<PrincipalType[]>>
   settingFilter: string[]
   setSettingFilter: Dispatch<SetStateAction<string[]>>
   applyFilter: () => void
@@ -43,6 +47,8 @@ const PermissionFilterModal = ({
   setUriFilter,
   principalFilter,
   setPrincipalFilter,
+  principalTypeFilter,
+  setPrincipalTypeFilter,
   settingFilter,
   setSettingFilter,
   applyFilter,
@@ -54,7 +60,7 @@ const PermissionFilterModal = ({
 
   // fetch all the principals from permissions array
   let principals = permissions.map((permission) => {
-    if (permission.user) return permission.user.displayName
+    if (permission.user) return permission.user.username
     if (permission.group) return permission.group.name
     return ''
   })
@@ -100,6 +106,20 @@ const PermissionFilterModal = ({
               }}
               renderInput={(params) => (
                 <TextField {...params} label="Principals" />
+              )}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Autocomplete
+              multiple
+              options={Object.values(PrincipalType)}
+              filterSelectedOptions
+              value={principalTypeFilter}
+              onChange={(event: any, newValue: PrincipalType[]) => {
+                setPrincipalTypeFilter(newValue)
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Principal Type" />
               )}
             />
           </Grid>
