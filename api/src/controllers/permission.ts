@@ -167,10 +167,14 @@ const createPermission = async ({
       const userInDB = await User.findOne({ id: principalId })
       if (!userInDB) throw new Error('User not found.')
 
+      if (userInDB.isAdmin)
+        throw new Error('Can not add permission for admin user.')
+
       const alreadyExists = await Permission.findOne({
         uri,
         user: userInDB._id
       })
+
       if (alreadyExists)
         throw new Error('Permission already exists with provided URI and User.')
 
