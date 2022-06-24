@@ -163,9 +163,16 @@ const createPermission = async ({
   let group: GroupResponse | undefined
 
   switch (principalType) {
-    case 'user':
+    case 'user': {
       const userInDB = await User.findOne({ id: principalId })
       if (!userInDB) throw new Error('User not found.')
+
+      const alreadyExists = await Permission.findOne({
+        uri,
+        user: userInDB._id
+      })
+      if (alreadyExists)
+        throw new Error('Permission already exists with provided URI and User.')
 
       permission.user = userInDB._id
 
@@ -175,9 +182,19 @@ const createPermission = async ({
         displayName: userInDB.displayName
       }
       break
-    case 'group':
+    }
+    case 'group': {
       const groupInDB = await Group.findOne({ groupId: principalId })
       if (!groupInDB) throw new Error('Group not found.')
+
+      const alreadyExists = await Permission.findOne({
+        uri,
+        group: groupInDB._id
+      })
+      if (alreadyExists)
+        throw new Error(
+          'Permission already exists with provided URI and Group.'
+        )
 
       permission.group = groupInDB._id
 
@@ -187,6 +204,7 @@ const createPermission = async ({
         description: groupInDB.description
       }
       break
+    }
     default:
       throw new Error('Invalid principal type. Valid types are user or group.')
   }
