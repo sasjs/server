@@ -92,6 +92,8 @@ const Permission = () => {
    * take intersection of resultant arrays
    */
   const applyFilter = () => {
+    setFilterModalOpen(false)
+
     const uriFilteredPermissions =
       uriFilter.length > 0
         ? permissions.filter((permission) => uriFilter.includes(permission.uri))
@@ -153,6 +155,7 @@ const Permission = () => {
   }
 
   const resetFilter = () => {
+    setFilterModalOpen(false)
     setUriFilter([])
     setPrincipalFilter([])
     setSettingFilter([])
