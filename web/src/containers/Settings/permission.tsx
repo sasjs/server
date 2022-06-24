@@ -38,6 +38,11 @@ const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
 })
 
+enum PrincipalType {
+  User = 'User',
+  Group = 'Group'
+}
+
 const Permission = () => {
   const appContext = useContext(AppContext)
   const [isLoading, setIsLoading] = useState(false)
@@ -304,6 +309,7 @@ const PermissionTable = ({
           <TableRow>
             <BootstrapTableCell>Uri</BootstrapTableCell>
             <BootstrapTableCell>Principal</BootstrapTableCell>
+            <BootstrapTableCell>Type</BootstrapTableCell>
             <BootstrapTableCell>Setting</BootstrapTableCell>
             {appContext.isAdmin && (
               <BootstrapTableCell>Action</BootstrapTableCell>
@@ -316,6 +322,9 @@ const PermissionTable = ({
               <BootstrapTableCell>{permission.uri}</BootstrapTableCell>
               <BootstrapTableCell>
                 {displayPrincipal(permission)}
+              </BootstrapTableCell>
+              <BootstrapTableCell>
+                {displayPrincipalType(permission)}
               </BootstrapTableCell>
               <BootstrapTableCell>{permission.setting}</BootstrapTableCell>
               {appContext.isAdmin && (
@@ -346,9 +355,11 @@ const PermissionTable = ({
 }
 
 const displayPrincipal = (permission: PermissionResponse) => {
-  if (permission.user) {
-    return permission.user?.displayName
-  } else if (permission.group) {
-    return permission.group?.name
-  }
+  if (permission.user) return permission.user?.displayName
+  if (permission.group) return permission.group?.name
+}
+
+const displayPrincipalType = (permission: PermissionResponse) => {
+  if (permission.user) return PrincipalType.User
+  if (permission.group) return PrincipalType.Group
 }
