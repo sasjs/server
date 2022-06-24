@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect, useContext, useCallback } from 'react'
 import axios from 'axios'
 import {
   Box,
@@ -22,11 +22,16 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 
 import { styled } from '@mui/material/styles'
 
+import Modal from '../../components/modal'
 import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
 import UpdatePermissionModal from './updatePermissionModal'
+import DeleteModal from './deletePermissionModal'
 
-import { PermissionResponse } from '../../utils/types'
+import {
+  PermissionResponse,
+  RegisterPermissionPayload
+} from '../../utils/types'
 import { AppContext } from '../../context/appContext'
 
 const BootstrapTableCell = styled(TableCell)({
@@ -36,10 +41,14 @@ const BootstrapTableCell = styled(TableCell)({
 const Permission = () => {
   const appContext = useContext(AppContext)
   const [isLoading, setIsLoading] = useState(false)
+  const [openModal, setOpenModal] = useState(false)
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalPayload, setModalPayload] = useState('')
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
     useState(false)
-  const [selectedPermissionForUpdate, setSelectedPermissionForUpdate] =
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [selectedPermission, setSelectedPermission] =
     useState<PermissionResponse>()
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [uriFilter, setUriFilter] = useState<string[]>([])
@@ -51,8 +60,7 @@ const Permission = () => {
   >([])
   const [filterApplied, setFilterApplied] = useState(false)
 
-  useEffect(() => {
-    setIsLoading(true)
+  const fetchPermissions = useCallback(() => {
     axios
       .get(`/SASjsApi/permission`)
       .then((res: any) => {
@@ -61,12 +69,15 @@ const Permission = () => {
         }
       })
       .catch((err) => {
-        console.log(err)
-      })
-      .finally(() => {
-        setIsLoading(false)
+        setModalTitle('Abort')
+        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setOpenModal(true)
       })
   }, [])
+
+  useEffect(() => {
+    fetchPermissions()
+  }, [fetchPermissions])
 
   /**
    * first find the permissions w.r.t each filter type
@@ -119,14 +130,82 @@ const Permission = () => {
     setFilterApplied(false)
   }
 
-  const addPermission = () => {}
+  const addPermission = (addPermissionPayload: RegisterPermissionPayload) => {
+    setAddPermissionModalOpen(false)
+    setIsLoading(true)
+    axios
+      .post('/SASjsApi/permission', addPermissionPayload)
+      .then((res: any) => {
+        fetchPermissions()
+        setModalTitle('Success')
+        setModalPayload('Permission added Successfully.')
+        setOpenModal(true)
+      })
+      .catch((err) => {
+        setModalTitle('Abort')
+        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setOpenModal(true)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
   const handleUpdatePermissionClick = (permission: PermissionResponse) => {
-    setSelectedPermissionForUpdate(permission)
+    setSelectedPermission(permission)
     setUpdatePermissionModalOpen(true)
   }
 
-  const updatePermission = () => {}
+  const updatePermission = (setting: string) => {
+    setUpdatePermissionModalOpen(false)
+    setIsLoading(true)
+    axios
+      .patch(`/SASjsApi/permission/${selectedPermission?.permissionId}`, {
+        setting
+      })
+      .then((res: any) => {
+        fetchPermissions()
+        setModalTitle('Success')
+        setModalPayload('Permission updated Successfully.')
+        setOpenModal(true)
+      })
+      .catch((err) => {
+        setModalTitle('Abort')
+        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setOpenModal(true)
+      })
+      .finally(() => {
+        setIsLoading(false)
+        setSelectedPermission(undefined)
+      })
+  }
+
+  const handleDeletePermissionClick = (permission: PermissionResponse) => {
+    setSelectedPermission(permission)
+    setDeleteModalOpen(true)
+  }
+
+  const deletePermission = () => {
+    setDeleteModalOpen(false)
+    setIsLoading(true)
+    axios
+      .delete(`/SASjsApi/permission/${selectedPermission?.permissionId}`)
+      .then((res: any) => {
+        fetchPermissions()
+        setModalTitle('Success')
+        setModalPayload('Permission deleted Successfully.')
+        setOpenModal(true)
+      })
+      .catch((err) => {
+        setModalTitle('Abort')
+        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setOpenModal(true)
+      })
+      .finally(() => {
+        setIsLoading(false)
+        setSelectedPermission(undefined)
+      })
+  }
 
   return isLoading ? (
     <CircularProgress
@@ -159,9 +238,16 @@ const Permission = () => {
           <PermissionTable
             permissions={filterApplied ? filteredPermissions : permissions}
             handleUpdatePermissionClick={handleUpdatePermissionClick}
+            handleDeletePermissionClick={handleDeletePermissionClick}
           />
         </Grid>
       </Grid>
+      <Modal
+        open={openModal}
+        setOpen={setOpenModal}
+        title={modalTitle}
+        payload={modalPayload}
+      />
       <PermissionFilterModal
         open={filterModalOpen}
         handleOpen={setFilterModalOpen}
@@ -181,14 +267,17 @@ const Permission = () => {
         permissions={permissions}
         addPermission={addPermission}
       />
-      {selectedPermissionForUpdate && (
-        <UpdatePermissionModal
-          open={updatePermissionModalOpen}
-          handleOpen={setUpdatePermissionModalOpen}
-          permission={selectedPermissionForUpdate}
-          updatePermission={updatePermission}
-        />
-      )}
+      <UpdatePermissionModal
+        open={updatePermissionModalOpen}
+        handleOpen={setUpdatePermissionModalOpen}
+        permission={selectedPermission}
+        updatePermission={updatePermission}
+      />
+      <DeleteModal
+        open={deleteModalOpen}
+        setOpen={setDeleteModalOpen}
+        deletePermission={deletePermission}
+      />
     </Box>
   )
 }
@@ -198,11 +287,13 @@ export default Permission
 type PermissionTableProps = {
   permissions: PermissionResponse[]
   handleUpdatePermissionClick: (permission: PermissionResponse) => void
+  handleDeletePermissionClick: (permission: PermissionResponse) => void
 }
 
 const PermissionTable = ({
   permissions,
-  handleUpdatePermissionClick
+  handleUpdatePermissionClick,
+  handleDeletePermissionClick
 }: PermissionTableProps) => {
   const appContext = useContext(AppContext)
 
@@ -237,7 +328,10 @@ const PermissionTable = ({
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Delete Permission">
-                    <IconButton color="error">
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDeletePermissionClick(permission)}
+                    >
                       <DeleteForeverIcon />
                     </IconButton>
                   </Tooltip>

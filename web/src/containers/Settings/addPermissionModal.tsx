@@ -93,7 +93,9 @@ const AddPermissionModal = ({
   }
 
   const URIs = useMemo(() => {
-    return permissions.map((permission) => permission.uri)
+    return permissions
+      .map((permission) => permission.uri)
+      .filter((uri, index, array) => array.indexOf(uri) === index)
   }, [permissions])
 
   const addButtonDisabled =

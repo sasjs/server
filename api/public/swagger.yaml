@@ -535,6 +535,24 @@ components:
                 - setting
             type: object
             additionalProperties: false
+        SessionResponse:
+            properties:
+                id:
+                    type: number
+                    format: double
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+            required:
+                - id
+                - username
+                - displayName
+                - isAdmin
+            type: object
+            additionalProperties: false
         ExecuteReturnJsonPayload:
             properties:
                 _program:
@@ -638,7 +656,7 @@ paths:
                         application/json:
                             schema:
                                 properties:
-                                    user: {properties: {displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [displayName, username, id], type: object}
+                                    user: {properties: {isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [isAdmin, displayName, username, id], type: object}
                                     loggedIn: {type: boolean}
                                 required:
                                     - user
@@ -1589,10 +1607,10 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserResponse'
+                                $ref: '#/components/schemas/SessionResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: 123, username: johnusername, displayName: John}
+                                    value: {id: 123, username: johnusername, displayName: John, isAdmin: false}
             summary: 'Get session info (username).'
             tags:
                 - Session

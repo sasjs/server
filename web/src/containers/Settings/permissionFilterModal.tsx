@@ -48,7 +48,9 @@ const PermissionFilterModal = ({
   applyFilter,
   resetFilter
 }: FilterModalProps) => {
-  const URIs = permissions.map((permission) => permission.uri)
+  const URIs = permissions
+    .map((permission) => permission.uri)
+    .filter((uri, index, array) => array.indexOf(uri) === index)
 
   // fetch all the principals from permissions array
   let principals = permissions.map((permission) => {
@@ -62,7 +64,7 @@ const PermissionFilterModal = ({
 
   // removes the duplicates
   principals = principals.filter(
-    (value, index, self) => self.indexOf(value) === index
+    (principal, index, array) => array.indexOf(principal) === index
   )
 
   return (

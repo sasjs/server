@@ -26,7 +26,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 type UpdatePermissionModalProps = {
   open: boolean
   handleOpen: Dispatch<SetStateAction<boolean>>
-  permission: PermissionResponse
+  permission: PermissionResponse | undefined
   updatePermission: (setting: string) => void
 }
 
@@ -68,7 +68,7 @@ const UpdatePermissionModal = ({
         <Button
           variant="outlined"
           onClick={() => updatePermission(permissionSetting)}
-          disabled={permission.setting === permissionSetting}
+          disabled={permission?.setting === permissionSetting}
         >
           Update
         </Button>
