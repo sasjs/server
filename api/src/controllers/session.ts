@@ -2,10 +2,6 @@ import express from 'express'
 import { Request, Security, Route, Tags, Example, Get } from 'tsoa'
 import { UserResponse } from './user'
 
-interface SessionResponse extends UserResponse {
-  isAdmin: boolean
-}
-
 @Security('bearerAuth')
 @Route('SASjsApi/session')
 @Tags('Session')
@@ -14,7 +10,7 @@ export class SessionController {
    * @summary Get session info (username).
    *
    */
-  @Example<SessionResponse>({
+  @Example<UserResponse>({
     id: 123,
     username: 'johnusername',
     displayName: 'John',
@@ -23,7 +19,7 @@ export class SessionController {
   @Get('/')
   public async session(
     @Request() request: express.Request
-  ): Promise<SessionResponse> {
+  ): Promise<UserResponse> {
     return session(request)
   }
 }

@@ -198,7 +198,7 @@ const getGroup = async (findBy: GetGroupBy): Promise<GroupDetailsResponse> => {
     'groupId name description isActive users -_id'
   ).populate(
     'users',
-    'id username displayName -_id'
+    'id username displayName isAdmin -_id'
   )) as unknown as GroupDetailsResponse
   if (!group)
     throw {

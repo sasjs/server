@@ -69,7 +69,12 @@ export class PermissionController {
       permissionId: 123,
       uri: '/SASjsApi/code/execute',
       setting: 'Grant',
-      user: { id: 1, username: 'johnSnow01', displayName: 'John Snow' }
+      user: {
+        id: 1,
+        username: 'johnSnow01',
+        displayName: 'John Snow',
+        isAdmin: false
+      }
     },
     {
       permissionId: 124,
@@ -95,7 +100,12 @@ export class PermissionController {
     permissionId: 123,
     uri: '/SASjsApi/code/execute',
     setting: 'Grant',
-    user: { id: 1, username: 'johnSnow01', displayName: 'John Snow' }
+    user: {
+      id: 1,
+      username: 'johnSnow01',
+      displayName: 'John Snow',
+      isAdmin: false
+    }
   })
   @Post('/')
   public async createPermission(
@@ -113,7 +123,12 @@ export class PermissionController {
     permissionId: 123,
     uri: '/SASjsApi/code/execute',
     setting: 'Grant',
-    user: { id: 1, username: 'johnSnow01', displayName: 'John Snow' }
+    user: {
+      id: 1,
+      username: 'johnSnow01',
+      displayName: 'John Snow',
+      isAdmin: false
+    }
   })
   @Patch('{permissionId}')
   public async updatePermission(
@@ -142,7 +157,7 @@ const getAllPermissions = async (): Promise<PermissionDetailsResponse[]> =>
       uri: 1,
       setting: 1
     })
-    .populate({ path: 'user', select: 'id username displayName -_id' })
+    .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })
     .populate({
       path: 'group',
       select: 'groupId name description -_id'
@@ -183,7 +198,8 @@ const createPermission = async ({
       user = {
         id: userInDB.id,
         username: userInDB.username,
-        displayName: userInDB.displayName
+        displayName: userInDB.displayName,
+        isAdmin: userInDB.isAdmin
       }
       break
     }
@@ -241,7 +257,7 @@ const updatePermission = async (
       uri: 1,
       setting: 1
     })
-    .populate({ path: 'user', select: 'id username displayName -_id' })
+    .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })
     .populate({
       path: 'group',
       select: 'groupId name description -_id'

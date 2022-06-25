@@ -314,10 +314,13 @@ components:
                     type: string
                 displayName:
                     type: string
+                isAdmin:
+                    type: boolean
             required:
                 - id
                 - username
                 - displayName
+                - isAdmin
             type: object
             additionalProperties: false
         GroupResponse:
@@ -533,24 +536,6 @@ components:
                     example: Grant
             required:
                 - setting
-            type: object
-            additionalProperties: false
-        SessionResponse:
-            properties:
-                id:
-                    type: number
-                    format: double
-                username:
-                    type: string
-                displayName:
-                    type: string
-                isAdmin:
-                    type: boolean
-            required:
-                - id
-                - username
-                - displayName
-                - isAdmin
             type: object
             additionalProperties: false
         ExecuteReturnJsonPayload:
@@ -1066,7 +1051,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{id: 123, username: johnusername, displayName: John}, {id: 456, username: starkusername, displayName: Stark}]
+                                    value: [{id: 123, username: johnusername, displayName: John, isAdmin: false}, {id: 456, username: starkusername, displayName: Stark, isAdmin: true}]
             summary: 'Get list of all users (username, displayname). All users can request this.'
             tags:
                 - User
@@ -1509,7 +1494,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users'}}]
+                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users'}}]
             summary: 'Get list of all permissions (uri, setting and userDetail).'
             tags:
                 - Permission
@@ -1528,7 +1513,7 @@ paths:
                                 $ref: '#/components/schemas/PermissionDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}
+                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
             summary: 'Create a new permission. Admin only.'
             tags:
                 - Permission
@@ -1554,7 +1539,7 @@ paths:
                                 $ref: '#/components/schemas/PermissionDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow'}}
+                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
             summary: 'Update permission setting. Admin only'
             tags:
                 - Permission
@@ -1607,7 +1592,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/SessionResponse'
+                                $ref: '#/components/schemas/UserResponse'
                             examples:
                                 'Example 1':
                                     value: {id: 123, username: johnusername, displayName: John, isAdmin: false}
