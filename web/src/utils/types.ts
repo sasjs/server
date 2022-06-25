@@ -2,6 +2,7 @@ export interface UserResponse {
   id: number
   username: string
   displayName: string
+  isAdmin: boolean
 }
 
 export interface GroupResponse {

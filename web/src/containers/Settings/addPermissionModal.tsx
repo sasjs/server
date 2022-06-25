@@ -66,8 +66,13 @@ const AddPermissionModal = ({
       .get(`/SASjsApi/${principalType}`)
       .then((res: any) => {
         if (res.data) {
-          if (principalType === 'user') setUserPrincipals(res.data)
-          else setGroupPrincipals(res.data)
+          if (principalType === 'user') {
+            const users: UserResponse[] = res.data
+            const nonAdminUsers = users.filter((user) => !user.isAdmin)
+            setUserPrincipals(nonAdminUsers)
+          } else {
+            setGroupPrincipals(res.data)
+          }
         }
       })
       .catch((err) => {
