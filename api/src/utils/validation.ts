@@ -1,5 +1,6 @@
 import Joi from 'joi'
 import { RunTimeType } from '.'
+import { PermissionSetting, PrincipalType } from '../controllers'
 
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
@@ -89,8 +90,12 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
 export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     uri: Joi.string().required(),
-    setting: Joi.string().required(),
-    principalType: Joi.string().required(),
+    setting: Joi.string()
+      .required()
+      .valid(...Object.values(PermissionSetting)),
+    principalType: Joi.string()
+      .required()
+      .valid(...Object.values(PrincipalType)),
     principalId: Joi.number().required()
   }).validate(data)
 

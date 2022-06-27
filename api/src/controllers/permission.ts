@@ -17,6 +17,16 @@ import Group from '../model/Group'
 import { UserResponse } from './user'
 import { GroupResponse } from './group'
 
+export enum PrincipalType {
+  user = 'user',
+  group = 'group'
+}
+
+export enum PermissionSetting {
+  grant = 'Grant',
+  deny = 'Deny'
+}
+
 interface RegisterPermissionPayload {
   /**
    * Name of affected resource
@@ -27,12 +37,12 @@ interface RegisterPermissionPayload {
    * The indication of whether (and to what extent) access is provided
    * @example "Grant"
    */
-  setting: string
+  setting: PermissionSetting
   /**
    * Indicates the type of principal
    * @example "user"
    */
-  principalType: string
+  principalType: PrincipalType
   /**
    * The id of user or group to which a rule is assigned.
    * @example 123
@@ -45,7 +55,7 @@ interface UpdatePermissionPayload {
    * The indication of whether (and to what extent) access is provided
    * @example "Grant"
    */
-  setting: string
+  setting: PermissionSetting
 }
 
 export interface PermissionDetailsResponse {
@@ -178,7 +188,7 @@ const createPermission = async ({
   let group: GroupResponse | undefined
 
   switch (principalType) {
-    case 'user': {
+    case PrincipalType.user: {
       const userInDB = await User.findOne({ id: principalId })
       if (!userInDB)
         throw {
@@ -216,7 +226,7 @@ const createPermission = async ({
       }
       break
     }
-    case 'group': {
+    case PrincipalType.group: {
       const groupInDB = await Group.findOne({ groupId: principalId })
       if (!groupInDB)
         throw {

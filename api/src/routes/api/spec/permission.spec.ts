@@ -7,7 +7,9 @@ import {
   UserController,
   GroupController,
   ClientController,
-  PermissionController
+  PermissionController,
+  PrincipalType,
+  PermissionSetting
 } from '../../../controllers/'
 import {
   UserDetailsResponse,
@@ -33,8 +35,8 @@ const user = {
 
 const permission = {
   uri: '/SASjsApi/code/execute',
-  setting: 'Grant',
-  principalType: 'user',
+  setting: PermissionSetting.grant,
+  principalType: PrincipalType.user,
   principalId: 123
 }
 
@@ -228,9 +230,7 @@ describe('permission', () => {
         })
         .expect(400)
 
-      expect(res.text).toEqual(
-        'Invalid principal type. Valid types are user or group.'
-      )
+      expect(res.text).toEqual('"principalType" must be one of [user, group]')
       expect(res.body).toEqual({})
     })
   })
