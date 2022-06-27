@@ -190,7 +190,7 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with forbidden Request (403) if user is not found', async () => {
+    it('should respond with not found (404) if user is not found', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
@@ -198,13 +198,13 @@ describe('permission', () => {
           ...permission,
           principalId: 123
         })
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: User not found.')
+      expect(res.text).toEqual('User not found.')
       expect(res.body).toEqual({})
     })
 
-    it('should respond with forbidden Request (403) if group is not found', async () => {
+    it('should respond with not found (404) if group is not found', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
@@ -212,13 +212,13 @@ describe('permission', () => {
           ...permission,
           principalType: 'group'
         })
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: Group not found.')
+      expect(res.text).toEqual('Group not found.')
       expect(res.body).toEqual({})
     })
 
-    it('should respond with forbidden Request (403) if principal type is not valid', async () => {
+    it('should respond with Bad Request if principal type is not valid', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
@@ -226,10 +226,10 @@ describe('permission', () => {
           ...permission,
           principalType: 'invalid'
         })
-        .expect(403)
+        .expect(400)
 
       expect(res.text).toEqual(
-        'Error: Invalid principal type. Valid types are user or group.'
+        'Invalid principal type. Valid types are user or group.'
       )
       expect(res.body).toEqual({})
     })
@@ -295,16 +295,16 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with forbidden Request (403) if permission with provided id does not exists', async () => {
+    it('should respond with not found (404) if permission with provided id does not exists', async () => {
       const res = await request(app)
         .patch('/SASjsApi/permission/123')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           setting: 'deny'
         })
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: Unable to update permission')
+      expect(res.text).toEqual('Permission not found.')
       expect(res.body).toEqual({})
     })
   })
@@ -324,14 +324,14 @@ describe('permission', () => {
       expect(res.text).toEqual('Permission Deleted!')
     })
 
-    it('should respond with forbidden Request (403) if permission with provided id does not exists', async () => {
+    it('should respond with not found (404) if permission with provided id does not exists', async () => {
       const res = await request(app)
         .delete('/SASjsApi/permission/123')
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: Permission is not found.')
+      expect(res.text).toEqual('Permission not found.')
     })
   })
 

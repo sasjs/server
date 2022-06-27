@@ -180,10 +180,19 @@ const createPermission = async ({
   switch (principalType) {
     case 'user': {
       const userInDB = await User.findOne({ id: principalId })
-      if (!userInDB) throw new Error('User not found.')
+      if (!userInDB)
+        throw {
+          code: 404,
+          status: 'Not Found',
+          message: 'User not found.'
+        }
 
       if (userInDB.isAdmin)
-        throw new Error('Can not add permission for admin user.')
+        throw {
+          code: 400,
+          status: 'Bad Request',
+          message: 'Can not add permission for admin user.'
+        }
 
       const alreadyExists = await Permission.findOne({
         uri,
@@ -191,7 +200,11 @@ const createPermission = async ({
       })
 
       if (alreadyExists)
-        throw new Error('Permission already exists with provided URI and User.')
+        throw {
+          code: 409,
+          status: 'Conflict',
+          message: 'Permission already exists with provided URI and User.'
+        }
 
       permission.user = userInDB._id
 
@@ -205,16 +218,23 @@ const createPermission = async ({
     }
     case 'group': {
       const groupInDB = await Group.findOne({ groupId: principalId })
-      if (!groupInDB) throw new Error('Group not found.')
+      if (!groupInDB)
+        throw {
+          code: 404,
+          status: 'Not Found',
+          message: 'Group not found.'
+        }
 
       const alreadyExists = await Permission.findOne({
         uri,
         group: groupInDB._id
       })
       if (alreadyExists)
-        throw new Error(
-          'Permission already exists with provided URI and Group.'
-        )
+        throw {
+          code: 409,
+          status: 'Conflict',
+          message: 'Permission already exists with provided URI and Group.'
+        }
 
       permission.group = groupInDB._id
 
@@ -226,7 +246,11 @@ const createPermission = async ({
       break
     }
     default:
-      throw new Error('Invalid principal type. Valid types are user or group.')
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: 'Invalid principal type. Valid types are user or group.'
+      }
   }
 
   const savedPermission = await permission.save()
@@ -262,13 +286,23 @@ const updatePermission = async (
       path: 'group',
       select: 'groupId name description -_id'
     })) as unknown as PermissionDetailsResponse
-  if (!updatedPermission) throw new Error('Unable to update permission')
+  if (!updatedPermission)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Permission not found.'
+    }
 
   return updatedPermission
 }
 
 const deletePermission = async (id: number) => {
   const permission = await Permission.findOne({ id })
-  if (!permission) throw new Error('Permission is not found.')
+  if (!permission)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Permission not found.'
+    }
   await Permission.deleteOne({ id })
 }

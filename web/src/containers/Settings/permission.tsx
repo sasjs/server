@@ -78,7 +78,11 @@ const Permission = () => {
       })
       .catch((err) => {
         setModalTitle('Abort')
-        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setModalPayload(
+          typeof err.response.data === 'object'
+            ? JSON.stringify(err.response.data)
+            : err.response.data
+        )
         setOpenModal(true)
       })
   }, [])
@@ -176,7 +180,11 @@ const Permission = () => {
       })
       .catch((err) => {
         setModalTitle('Abort')
-        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setModalPayload(
+          typeof err.response.data === 'object'
+            ? JSON.stringify(err.response.data)
+            : err.response.data
+        )
         setOpenModal(true)
       })
       .finally(() => {
@@ -204,7 +212,11 @@ const Permission = () => {
       })
       .catch((err) => {
         setModalTitle('Abort')
-        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setModalPayload(
+          typeof err.response.data === 'object'
+            ? JSON.stringify(err.response.data)
+            : err.response.data
+        )
         setOpenModal(true)
       })
       .finally(() => {
@@ -231,7 +243,11 @@ const Permission = () => {
       })
       .catch((err) => {
         setModalTitle('Abort')
-        setModalPayload(typeof err === 'object' ? err.toSting() : err)
+        setModalPayload(
+          typeof err.response.data === 'object'
+            ? JSON.stringify(err.response.data)
+            : err.response.data
+        )
         setOpenModal(true)
       })
       .finally(() => {

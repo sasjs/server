@@ -14,7 +14,9 @@ permissionRouter.get('/', authenticateAccessToken, async (req, res) => {
     const response = await controller.getAllPermissions()
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+    delete err.code
+    res.status(statusCode).send(err.message)
   }
 })
 
@@ -30,7 +32,9 @@ permissionRouter.post(
       const response = await controller.createPermission(body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+      delete err.code
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -49,7 +53,9 @@ permissionRouter.patch(
       const response = await controller.updatePermission(permissionId, body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+      delete err.code
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -65,7 +71,9 @@ permissionRouter.delete(
       await controller.deletePermission(permissionId)
       res.status(200).send('Permission Deleted!')
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      const statusCode = err.code
+      delete err.code
+      res.status(statusCode).send(err.message)
     }
   }
 )
