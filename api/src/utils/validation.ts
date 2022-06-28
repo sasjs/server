@@ -101,7 +101,9 @@ export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
 
 export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    setting: Joi.string().required()
+    setting: Joi.string()
+      .required()
+      .valid(...Object.values(PermissionSetting))
   }).validate(data)
 
 export const deployValidation = (data: any): Joi.ValidationResult =>

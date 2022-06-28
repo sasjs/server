@@ -192,7 +192,69 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with not found (404) if user is not found', async () => {
+    it('should respond with Bad Request if principal type is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          principalType: 'invalid'
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('"principalType" must be one of [user, group]')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if setting is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          setting: 'invalid'
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('"setting" must be one of [Grant, Deny]')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if principalId is not a number', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          principalId: 'someCharacters'
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('"principalId" must be a number')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if adding permission for admin user', async () => {
+      const adminUser = await userController.createUser({
+        ...user,
+        username: 'adminUser',
+        isAdmin: true
+      })
+
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          principalId: adminUser.id
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('Can not add permission for admin user.')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Not Found (404) if user is not found', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
@@ -206,7 +268,7 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with not found (404) if group is not found', async () => {
+    it('should respond with Not Found (404) if group is not found', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
@@ -220,17 +282,21 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if principal type is not valid', async () => {
+    it('should respond with Conflict (409) if permission already exists', async () => {
+      await permissionController.createPermission({
+        ...permission,
+        principalId: dbUser.id
+      })
+
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
-        .send({
-          ...permission,
-          principalType: 'invalid'
-        })
-        .expect(400)
+        .send({ ...permission, principalId: dbUser.id })
+        .expect(409)
 
-      expect(res.text).toEqual('"principalType" must be one of [user, group]')
+      expect(res.text).toEqual(
+        'Permission already exists with provided URI and User.'
+      )
       expect(res.body).toEqual({})
     })
   })
@@ -295,12 +361,26 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
+    it('should respond with Bad Request if setting is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          setting: 'invalid'
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('"setting" must be one of [Grant, Deny]')
+      expect(res.body).toEqual({})
+    })
+
     it('should respond with not found (404) if permission with provided id does not exists', async () => {
       const res = await request(app)
         .patch('/SASjsApi/permission/123')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
-          setting: 'deny'
+          setting: PermissionSetting.deny
         })
         .expect(404)
 
