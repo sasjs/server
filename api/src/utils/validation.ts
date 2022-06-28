@@ -1,6 +1,5 @@
 import Joi from 'joi'
-import { RunTimeType } from '.'
-import { PermissionSetting, PrincipalType } from '../controllers'
+import { PermissionSetting, PrincipalType } from '../controllers/permission'
 
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
