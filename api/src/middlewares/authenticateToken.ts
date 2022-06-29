@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { csrfProtection } from '../app'
 import { fetchLatestAutoExec, ModeType, verifyTokenInDB } from '../utils'
 import { desktopUser } from './desktop'
+import { authorize } from './authorize'
 
 export const authenticateAccessToken: RequestHandler = async (
   req,
@@ -24,7 +25,7 @@ export const authenticateAccessToken: RequestHandler = async (
       if (user) {
         if (user.isActive) {
           req.user = user
-          return csrfProtection(req, res, next)
+          return csrfProtection(req, res, () => authorize(req, res, next))
         } else return res.sendStatus(401)
       }
     }
@@ -34,7 +35,7 @@ export const authenticateAccessToken: RequestHandler = async (
   authenticateToken(
     req,
     res,
-    next,
+    () => authorize(req, res, next),
     process.env.ACCESS_TOKEN_SECRET as string,
     'accessToken'
   )
