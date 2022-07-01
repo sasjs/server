@@ -15,7 +15,7 @@ import Permission from '../model/Permission'
 import User from '../model/User'
 import Group from '../model/Group'
 import { UserResponse } from './user'
-import { GroupResponse } from './group'
+import { GroupDetailsResponse } from './group'
 
 export enum PrincipalType {
   user = 'user',
@@ -63,7 +63,7 @@ export interface PermissionDetailsResponse {
   uri: string
   setting: string
   user?: UserResponse
-  group?: GroupResponse
+  group?: GroupDetailsResponse
 }
 
 @Security('bearerAuth')
@@ -93,7 +93,9 @@ export class PermissionController {
       group: {
         groupId: 1,
         name: 'DCGroup',
-        description: 'This group represents Data Controller Users'
+        description: 'This group represents Data Controller Users',
+        isActive: true,
+        users: []
       }
     }
   ])
@@ -170,7 +172,12 @@ const getAllPermissions = async (): Promise<PermissionDetailsResponse[]> =>
     .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })
     .populate({
       path: 'group',
-      select: 'groupId name description -_id'
+      select: 'groupId name description -_id',
+      populate: {
+        path: 'users',
+        select: 'id username displayName isAdmin -_id',
+        options: { limit: 15 }
+      }
     })) as unknown as PermissionDetailsResponse[]
 
 const createPermission = async ({
@@ -185,7 +192,7 @@ const createPermission = async ({
   })
 
   let user: UserResponse | undefined
-  let group: GroupResponse | undefined
+  let group: GroupDetailsResponse | undefined
 
   switch (principalType) {
     case PrincipalType.user: {
@@ -251,7 +258,13 @@ const createPermission = async ({
       group = {
         groupId: groupInDB.groupId,
         name: groupInDB.name,
-        description: groupInDB.description
+        description: groupInDB.description,
+        isActive: groupInDB.isActive,
+        users: groupInDB.populate({
+          path: 'users',
+          select: 'id username displayName isAdmin -_id',
+          options: { limit: 15 }
+        }) as unknown as UserResponse[]
       }
       break
     }

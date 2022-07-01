@@ -11,12 +11,17 @@ export interface GroupResponse {
   description: string
 }
 
+export interface GroupDetailsResponse extends GroupResponse {
+  isActive: boolean
+  users: UserResponse[]
+}
+
 export interface PermissionResponse {
   permissionId: number
   uri: string
   setting: string
   user?: UserResponse
-  group?: GroupResponse
+  group?: GroupDetailsResponse
 }
 
 export interface RegisterPermissionPayload {

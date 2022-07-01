@@ -20,7 +20,7 @@ export interface GroupResponse {
   description: string
 }
 
-interface GroupDetailsResponse {
+export interface GroupDetailsResponse {
   groupId: number
   name: string
   description: string

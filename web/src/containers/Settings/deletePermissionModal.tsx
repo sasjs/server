@@ -29,7 +29,7 @@ const DeleteModal = ({ open, setOpen, deletePermission }: DeleteModalProps) => {
     <BootstrapDialog onClose={() => setOpen(false)} open={open}>
       <DialogContent dividers>
         <Typography gutterBottom>
-          Are you sure to delete this permission?
+          Are you sure you want to delete this permission?
         </Typography>
       </DialogContent>
       <DialogActions>
