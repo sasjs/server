@@ -1,6 +1,10 @@
 import express from 'express'
 import { PermissionController } from '../../controllers/'
-import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
+import {
+  authenticateAccessToken,
+  verifyAdmin,
+  authorize
+} from '../../middlewares'
 import {
   registerPermissionValidation,
   updatePermissionValidation
@@ -9,16 +13,21 @@ import {
 const permissionRouter = express.Router()
 const controller = new PermissionController()
 
-permissionRouter.get('/', authenticateAccessToken, async (req, res) => {
-  try {
-    const response = await controller.getAllPermissions()
-    res.send(response)
-  } catch (err: any) {
-    const statusCode = err.code
-    delete err.code
-    res.status(statusCode).send(err.message)
+permissionRouter.get(
+  '/',
+  authenticateAccessToken,
+  authorize,
+  async (req, res) => {
+    try {
+      const response = await controller.getAllPermissions()
+      res.send(response)
+    } catch (err: any) {
+      const statusCode = err.code
+      delete err.code
+      res.status(statusCode).send(err.message)
+    }
   }
-})
+)
 
 permissionRouter.post(
   '/',

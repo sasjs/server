@@ -13,13 +13,15 @@ export const authorize: RequestHandler = async (req, res, next) => {
     const dbUser = await User.findOne({ id: user.userId })
     if (!dbUser) return res.sendStatus(401)
 
-    const uri = req.baseUrl + req.path
+    const uri = req.baseUrl + req.route.path
 
     // find permission w.r.t user
     permission = await Permission.findOne({ uri, user: dbUser._id })
 
-    if (permission && permission.setting === PermissionSetting.grant)
-      return next()
+    if (permission) {
+      if (permission.setting === PermissionSetting.grant) return next()
+      else res.sendStatus(401)
+    }
 
     // find permission w.r.t user's groups
     for (const group of dbUser.groups) {

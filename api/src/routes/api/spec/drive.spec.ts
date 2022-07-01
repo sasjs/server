@@ -29,7 +29,12 @@ jest
   .mockImplementation(() => path.join(tmpFolder, 'uploads'))
 
 import appPromise from '../../../app'
-import { UserController } from '../../../controllers/'
+import {
+  UserController,
+  PermissionController,
+  PermissionSetting,
+  PrincipalType
+} from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
 const { getFilesFolder } = fileUtilModules
@@ -48,6 +53,7 @@ describe('drive', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   const controller = new UserController()
+  const permissionController = new PermissionController()
 
   let accessToken: string
 
@@ -58,11 +64,31 @@ describe('drive', () => {
     con = await mongoose.connect(mongoServer.getUri())
 
     const dbUser = await controller.createUser(user)
-    accessToken = generateAccessToken({
-      clientId,
-      userId: dbUser.id
+    accessToken = await generateAndSaveToken(dbUser.id)
+    permissionController.createPermission({
+      uri: '/SASjsApi/drive/deploy',
+      principalType: PrincipalType.user,
+      principalId: dbUser.id,
+      setting: PermissionSetting.grant
     })
-    await saveTokensInDB(dbUser.id, clientId, accessToken, 'refreshToken')
+    permissionController.createPermission({
+      uri: '/SASjsApi/drive/deploy/upload',
+      principalType: PrincipalType.user,
+      principalId: dbUser.id,
+      setting: PermissionSetting.grant
+    })
+    permissionController.createPermission({
+      uri: '/SASjsApi/drive/file',
+      principalType: PrincipalType.user,
+      principalId: dbUser.id,
+      setting: PermissionSetting.grant
+    })
+    permissionController.createPermission({
+      uri: '/SASjsApi/drive/folder',
+      principalType: PrincipalType.user,
+      principalId: dbUser.id,
+      setting: PermissionSetting.grant
+    })
   })
 
   afterAll(async () => {
@@ -945,3 +971,12 @@ describe('drive', () => {
 const getExampleService = (): ServiceMember =>
   ((getTreeExample().members[0] as FolderMember).members[0] as FolderMember)
     .members[0] as ServiceMember
+
+const generateAndSaveToken = async (userId: number) => {
+  const adminAccessToken = generateAccessToken({
+    clientId,
+    userId
+  })
+  await saveTokensInDB(userId, clientId, adminAccessToken, 'refreshToken')
+  return adminAccessToken
+}

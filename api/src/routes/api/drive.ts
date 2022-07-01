@@ -3,6 +3,7 @@ import { deleteFile, readFile } from '@sasjs/utils'
 
 import { publishAppStream } from '../appStream'
 
+import { authorize } from '../../middlewares'
 import { multerSingle } from '../../middlewares/multer'
 import { DriveController } from '../../controllers/'
 import {
@@ -19,7 +20,7 @@ const controller = new DriveController()
 
 const driveRouter = express.Router()
 
-driveRouter.post('/deploy', async (req, res) => {
+driveRouter.post('/deploy', authorize, async (req, res) => {
   const { error, value: body } = deployValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
@@ -48,6 +49,7 @@ driveRouter.post('/deploy', async (req, res) => {
 
 driveRouter.post(
   '/deploy/upload',
+  authorize,
   (...arg) => multerSingle('file', arg),
   async (req, res) => {
     if (!req.file) return res.status(400).send('"file" is not present.')
@@ -111,7 +113,7 @@ driveRouter.post(
   }
 )
 
-driveRouter.get('/file', async (req, res) => {
+driveRouter.get('/file', authorize, async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
 
   if (errQ) return res.status(400).send(errQ.details[0].message)
@@ -123,7 +125,7 @@ driveRouter.get('/file', async (req, res) => {
   }
 })
 
-driveRouter.get('/folder', async (req, res) => {
+driveRouter.get('/folder', authorize, async (req, res) => {
   const { error: errQ, value: query } = folderParamValidation(req.query)
 
   if (errQ) return res.status(400).send(errQ.details[0].message)
@@ -136,7 +138,7 @@ driveRouter.get('/folder', async (req, res) => {
   }
 })
 
-driveRouter.delete('/file', async (req, res) => {
+driveRouter.delete('/file', authorize, async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
 
   if (errQ) return res.status(400).send(errQ.details[0].message)
@@ -151,6 +153,7 @@ driveRouter.delete('/file', async (req, res) => {
 
 driveRouter.post(
   '/file',
+  authorize,
   (...arg) => multerSingle('file', arg),
   async (req, res) => {
     const { error: errQ, value: query } = fileParamValidation(req.query)
@@ -179,6 +182,7 @@ driveRouter.post(
 
 driveRouter.patch(
   '/file',
+  authorize,
   (...arg) => multerSingle('file', arg),
   async (req, res) => {
     const { error: errQ, value: query } = fileParamValidation(req.query)
@@ -205,7 +209,7 @@ driveRouter.patch(
   }
 )
 
-driveRouter.get('/fileTree', async (req, res) => {
+driveRouter.get('/fileTree', authorize, async (req, res) => {
   try {
     const response = await controller.getFileTree()
     res.send(response)

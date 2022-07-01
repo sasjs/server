@@ -440,17 +440,25 @@ describe('permission', () => {
     })
 
     it('should give a list of all permissions when user is not admin', async () => {
-      const accessToken = await generateSaveTokenAndCreateUser({
+      const dbUser = await userController.createUser({
         ...user,
         username: 'get' + user.username
       })
+      const accessToken = await generateAndSaveToken(dbUser.id)
+      await permissionController.createPermission({
+        uri: '/SASjsApi/permission/',
+        principalType: PrincipalType.user,
+        principalId: dbUser.id,
+        setting: PermissionSetting.grant
+      })
+
       const res = await request(app)
         .get('/SASjsApi/permission/')
         .auth(accessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body).toHaveLength(2)
+      expect(res.body).toHaveLength(3)
     })
   })
 })

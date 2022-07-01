@@ -1,12 +1,13 @@
 import express from 'express'
 import { runCodeValidation } from '../../utils'
 import { CodeController } from '../../controllers/'
+import { authorize } from '../../middlewares'
 
 const runRouter = express.Router()
 
 const controller = new CodeController()
 
-runRouter.post('/execute', async (req, res) => {
+runRouter.post('/execute', authorize, async (req, res) => {
   const { error, value: body } = runCodeValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
