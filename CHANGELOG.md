@@ -1,3 +1,10 @@
+## [0.8.3](https://github.com/sasjs/server/compare/v0.8.2...v0.8.3) (2022-07-02)
+
+
+### Bug Fixes
+
+* **deploy:** extract first json from zip file ([e290751](https://github.com/sasjs/server/commit/e290751c872d24009482871a8c398e834357dcde))
+
 ## [0.8.2](https://github.com/sasjs/server/compare/v0.8.1...v0.8.2) (2022-06-22)
 
 
