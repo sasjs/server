@@ -1,5 +1,6 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
+import mongoose from 'mongoose'
 import csrf from 'csurf'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
@@ -97,45 +98,44 @@ if (CORS === CorsType.ENABLED) {
   app.use(cors({ credentials: true, origin: whiteList }))
 }
 
-/***********************************
- *         DB Connection &          *
- *        Express Sessions          *
- *        With Mongo Store          *
- ***********************************/
-if (MODE === ModeType.Server) {
-  let store: MongoStore | undefined
+export default setProcessVariables().then(async () => {
+  /***********************************
+   *         DB Connection &          *
+   *        Express Sessions          *
+   *        With Mongo Store          *
+   ***********************************/
+  if (MODE === ModeType.Server) {
+    let store: MongoStore | undefined
 
-  // NOTE: when exporting app.js as agent for supertest
-  // we should exclude connecting to the real database
-  if (process.env.NODE_ENV !== 'test') {
-    const clientPromise = connectDB().then((conn) => conn!.getClient() as any)
+    if (process.env.NODE_ENV !== 'test') {
+      store = MongoStore.create({
+        client: mongoose.connection!.getClient() as any,
+        collectionName: 'sessions'
+      })
+    }
 
-    store = MongoStore.create({ clientPromise, collectionName: 'sessions' })
+    app.use(
+      session({
+        secret: process.secrets.SESSION_SECRET,
+        saveUninitialized: false, // don't create session until something stored
+        resave: false, //don't save session if unmodified
+        store,
+        cookie: cookieOptions
+      })
+    )
   }
 
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET as string,
-      saveUninitialized: false, // don't create session until something stored
-      resave: false, //don't save session if unmodified
-      store,
-      cookie: cookieOptions
-    })
-  )
-}
+  app.use(express.json({ limit: '100mb' }))
+  app.use(express.static(path.join(__dirname, '../public')))
 
-app.use(express.json({ limit: '100mb' }))
-app.use(express.static(path.join(__dirname, '../public')))
+  const onError: ErrorRequestHandler = (err, req, res, next) => {
+    if (err.code === 'EBADCSRFTOKEN')
+      return res.status(400).send('Invalid CSRF token!')
 
-const onError: ErrorRequestHandler = (err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN')
-    return res.status(400).send('Invalid CSRF token!')
+    console.error(err.stack)
+    res.status(500).send('Something broke!')
+  }
 
-  console.error(err.stack)
-  res.status(500).send('Something broke!')
-}
-
-export default setProcessVariables().then(async () => {
   await setupFolders()
   await copySASjsCore()
 

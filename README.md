@@ -105,10 +105,6 @@ CERT_CHAIN=certificate.pem (required)
 CA_ROOT=fullchain.pem (optional)
 
 # ENV variables required for MODE: `server`
-ACCESS_TOKEN_SECRET=<secret>
-REFRESH_TOKEN_SECRET=<secret>
-AUTH_CODE_SECRET=<secret>
-SESSION_SECRET=<secret>
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 
 # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`

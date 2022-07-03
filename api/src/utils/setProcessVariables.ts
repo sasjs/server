@@ -1,15 +1,27 @@
 import path from 'path'
 import { createFolder, getAbsolutePath, getRealPath } from '@sasjs/utils'
 
-import { getDesktopFields, ModeType, RunTimeType } from '.'
+import { connectDB, getDesktopFields, ModeType, RunTimeType, SECRETS } from '.'
 
 export const setProcessVariables = async () => {
+  const { MODE, RUN_TIMES } = process.env
+
+  if (MODE === ModeType.Server) {
+    // NOTE: when exporting app.js as agent for supertest
+    // it should prevent connecting to the real database
+    if (process.env.NODE_ENV !== 'test') {
+      const secrets = await connectDB()
+
+      process.secrets = secrets
+    } else {
+      process.secrets = SECRETS
+    }
+  }
+
   if (process.env.NODE_ENV === 'test') {
     process.driveLoc = path.join(process.cwd(), 'sasjs_root')
     return
   }
-
-  const { MODE, RUN_TIMES } = process.env
 
   process.runTimes = (RUN_TIMES?.split(',') as RunTimeType[]) ?? []
 

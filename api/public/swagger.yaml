@@ -47,41 +47,6 @@ components:
                 - userId
             type: object
             additionalProperties: false
-        LoginPayload:
-            properties:
-                username:
-                    type: string
-                    description: 'Username for user'
-                    example: secretuser
-                password:
-                    type: string
-                    description: 'Password for user'
-                    example: secretpassword
-            required:
-                - username
-                - password
-            type: object
-            additionalProperties: false
-        AuthorizeResponse:
-            properties:
-                code:
-                    type: string
-                    description: 'Authorization code'
-                    example: someRandomCryptoString
-            required:
-                - code
-            type: object
-            additionalProperties: false
-        AuthorizePayload:
-            properties:
-                clientId:
-                    type: string
-                    description: 'Client ID'
-                    example: clientID1
-            required:
-                - clientId
-            type: object
-            additionalProperties: false
         ClientPayload:
             properties:
                 clientId:
@@ -440,13 +405,13 @@ components:
             type: object
         Pick__LeanDocument_T_.Exclude_keyof_LeanDocument_T_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested__:
             properties:
-                id:
-                    description: 'The string version of this documents _id.'
                 _id:
                     $ref: '#/components/schemas/_LeanDocument__LeanDocument_T__'
                     description: 'This documents _id.'
                 __v:
                     description: 'This documents __v.'
+                id:
+                    description: 'The string version of this documents _id.'
             type: object
             description: 'From T, pick a set of properties whose keys are in the union K'
         Omit__LeanDocument_this_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested_:
@@ -486,6 +451,41 @@ components:
                     type: string
                     description: 'Location of SAS program'
                     example: /Public/somefolder/some.file
+            type: object
+            additionalProperties: false
+        LoginPayload:
+            properties:
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: secretuser
+                password:
+                    type: string
+                    description: 'Password for user'
+                    example: secretpassword
+            required:
+                - username
+                - password
+            type: object
+            additionalProperties: false
+        AuthorizeResponse:
+            properties:
+                code:
+                    type: string
+                    description: 'Authorization code'
+                    example: someRandomCryptoString
+            required:
+                - code
+            type: object
+            additionalProperties: false
+        AuthorizePayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: clientID1
+            required:
+                - clientId
             type: object
             additionalProperties: false
     securitySchemes:
@@ -557,86 +557,6 @@ paths:
             security:
                 -
                     bearerAuth: []
-            parameters: []
-    /:
-        get:
-            operationId: Home
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-            summary: 'Render index.html'
-            tags:
-                - Web
-            security: []
-            parameters: []
-    /SASLogon/login:
-        post:
-            operationId: Login
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                properties:
-                                    user: {properties: {displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [displayName, username, id], type: object}
-                                    loggedIn: {type: boolean}
-                                required:
-                                    - user
-                                    - loggedIn
-                                type: object
-            summary: 'Accept a valid username/password'
-            tags:
-                - Web
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/LoginPayload'
-    /SASLogon/authorize:
-        post:
-            operationId: Authorize
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AuthorizeResponse'
-                            examples:
-                                'Example 1':
-                                    value: {code: someRandomCryptoString}
-            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
-            tags:
-                - Web
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AuthorizePayload'
-    /SASLogon/logout:
-        get:
-            operationId: Logout
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema: {}
-            summary: 'Destroy the session stored in cookies'
-            tags:
-                - Web
-            security: []
             parameters: []
     /SASjsApi/client:
         post:
@@ -1504,6 +1424,86 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteReturnJsonPayload'
+    /:
+        get:
+            operationId: Home
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            summary: 'Render index.html'
+            tags:
+                - Web
+            security: []
+            parameters: []
+    /SASLogon/login:
+        post:
+            operationId: Login
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    user: {properties: {displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [displayName, username, id], type: object}
+                                    loggedIn: {type: boolean}
+                                required:
+                                    - user
+                                    - loggedIn
+                                type: object
+            summary: 'Accept a valid username/password'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginPayload'
+    /SASLogon/authorize:
+        post:
+            operationId: Authorize
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizeResponse'
+                            examples:
+                                'Example 1':
+                                    value: {code: someRandomCryptoString}
+            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthorizePayload'
+    /SASLogon/logout:
+        get:
+            operationId: Logout
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema: {}
+            summary: 'Destroy the session stored in cookies'
+            tags:
+                - Web
+            security: []
+            parameters: []
 servers:
     -
         url: /
