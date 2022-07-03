@@ -78,33 +78,7 @@ const verifyMODE = (): string[] => {
   }
 
   if (process.env.MODE === ModeType.Server) {
-    const {
-      ACCESS_TOKEN_SECRET,
-      REFRESH_TOKEN_SECRET,
-      AUTH_CODE_SECRET,
-      SESSION_SECRET,
-      DB_CONNECT
-    } = process.env
-
-    if (!ACCESS_TOKEN_SECRET)
-      errors.push(
-        `- ACCESS_TOKEN_SECRET is required for PROTOCOL '${ModeType.Server}'`
-      )
-
-    if (!REFRESH_TOKEN_SECRET)
-      errors.push(
-        `- REFRESH_TOKEN_SECRET is required for PROTOCOL '${ModeType.Server}'`
-      )
-
-    if (!AUTH_CODE_SECRET)
-      errors.push(
-        `- AUTH_CODE_SECRET is required for PROTOCOL '${ModeType.Server}'`
-      )
-
-    if (!SESSION_SECRET)
-      errors.push(
-        `- SESSION_SECRET is required for PROTOCOL '${ModeType.Server}'`
-      )
+    const { DB_CONNECT } = process.env
 
     if (process.env.NODE_ENV !== 'test')
       if (!DB_CONNECT)

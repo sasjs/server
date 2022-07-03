@@ -8,5 +8,6 @@ declare namespace NodeJS {
     appStreamConfig: import('../').AppStreamConfig
     logger: import('@sasjs/utils/logger').Logger
     runTimes: import('../../utils').RunTimeType[]
+    secrets: import('../../model/Configuration').ConfigurationType
   }
 }
