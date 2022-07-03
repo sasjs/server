@@ -320,12 +320,12 @@ const updatePermission = async (
 }
 
 const deletePermission = async (id: number) => {
-  const permission = await Permission.findOne({ id })
+  const permission = await Permission.findOne({ permissionId: id })
   if (!permission)
     throw {
       code: 404,
       status: 'Not Found',
       message: 'Permission not found.'
     }
-  await Permission.deleteOne({ id })
+  await Permission.deleteOne({ permissionId: id })
 }
