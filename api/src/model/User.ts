@@ -35,6 +35,7 @@ export interface UserPayload {
 }
 
 interface IUserDocument extends UserPayload, Document {
+  _id: Schema.Types.ObjectId
   id: number
   isAdmin: boolean
   isActive: boolean
@@ -43,7 +44,7 @@ interface IUserDocument extends UserPayload, Document {
   tokens: [{ [key: string]: string }]
 }
 
-interface IUser extends IUserDocument {
+export interface IUser extends IUserDocument {
   comparePassword(password: string): boolean
   addGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
   removeGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>

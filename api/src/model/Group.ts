@@ -1,5 +1,6 @@
 import mongoose, { Schema, model, Document, Model } from 'mongoose'
-import User from './User'
+import { GroupDetailsResponse } from '../controllers'
+import User, { IUser } from './User'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 
 export interface GroupPayload {
@@ -27,8 +28,9 @@ interface IGroupDocument extends GroupPayload, Document {
 }
 
 interface IGroup extends IGroupDocument {
-  addUser(userObjectId: Schema.Types.ObjectId): Promise<IGroup>
-  removeUser(userObjectId: Schema.Types.ObjectId): Promise<IGroup>
+  addUser(user: IUser): Promise<GroupDetailsResponse>
+  removeUser(user: IUser): Promise<GroupDetailsResponse>
+  hasUser(user: IUser): boolean
 }
 interface IGroupModel extends Model<IGroup> {}
 
@@ -70,28 +72,31 @@ groupSchema.pre('remove', async function () {
 })
 
 // Instance Methods
-groupSchema.method(
-  'addUser',
-  async function (userObjectId: Schema.Types.ObjectId) {
-    const userIdIndex = this.users.indexOf(userObjectId)
-    if (userIdIndex === -1) {
-      this.users.push(userObjectId)
-    }
-    this.markModified('users')
-    return this.save()
+groupSchema.method('addUser', async function (user: IUser) {
+  const userObjectId = user._id
+  const userIdIndex = this.users.indexOf(userObjectId)
+  if (userIdIndex === -1) {
+    this.users.push(userObjectId)
+    user.addGroup(this._id)
   }
-)
-groupSchema.method(
-  'removeUser',
-  async function (userObjectId: Schema.Types.ObjectId) {
-    const userIdIndex = this.users.indexOf(userObjectId)
-    if (userIdIndex > -1) {
-      this.users.splice(userIdIndex, 1)
-    }
-    this.markModified('users')
-    return this.save()
+  this.markModified('users')
+  return this.save()
+})
+groupSchema.method('removeUser', async function (user: IUser) {
+  const userObjectId = user._id
+  const userIdIndex = this.users.indexOf(userObjectId)
+  if (userIdIndex > -1) {
+    this.users.splice(userIdIndex, 1)
+    user.removeGroup(this._id)
   }
-)
+  this.markModified('users')
+  return this.save()
+})
+groupSchema.method('hasUser', function (user: IUser) {
+  const userObjectId = user._id
+  const userIdIndex = this.users.indexOf(userObjectId)
+  return userIdIndex > -1
+})
 
 export const Group: IGroupModel = model<IGroup, IGroupModel>(
   'Group',
