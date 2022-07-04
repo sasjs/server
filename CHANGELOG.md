@@ -1,3 +1,17 @@
+# [0.9.0](https://github.com/sasjs/server/compare/v0.8.3...v0.9.0) (2022-07-03)
+
+
+### Features
+
+* removed secrets from env variables ([9c3da56](https://github.com/sasjs/server/commit/9c3da56901672a818f54267f9defc9f4701ab7fb))
+
+## [0.8.3](https://github.com/sasjs/server/compare/v0.8.2...v0.8.3) (2022-07-02)
+
+
+### Bug Fixes
+
+* **deploy:** extract first json from zip file ([e290751](https://github.com/sasjs/server/commit/e290751c872d24009482871a8c398e834357dcde))
+
 ## [0.8.2](https://github.com/sasjs/server/compare/v0.8.1...v0.8.2) (2022-06-22)
 
 

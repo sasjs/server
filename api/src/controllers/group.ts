@@ -249,9 +249,10 @@ const updateUsersListInGroup = async (
       message: 'User not found.'
     }
 
-  const updatedGroup = (action === 'addUser'
-    ? await group.addUser(user._id)
-    : await group.removeUser(user._id)) as unknown as GroupDetailsResponse
+  const updatedGroup =
+    action === 'addUser'
+      ? await group.addUser(user)
+      : await group.removeUser(user)
 
   if (!updatedGroup)
     throw {
@@ -259,9 +260,6 @@ const updateUsersListInGroup = async (
       status: 'Bad Request',
       message: 'Unable to update group.'
     }
-
-  if (action === 'addUser') user.addGroup(group._id)
-  else user.removeGroup(group._id)
 
   return {
     groupId: updatedGroup.groupId,

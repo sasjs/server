@@ -129,8 +129,8 @@ const verifyAuthCode = async (
   clientId: string,
   code: string
 ): Promise<InfoJWT | undefined> => {
-  return new Promise((resolve, reject) => {
-    jwt.verify(code, process.env.AUTH_CODE_SECRET as string, (err, data) => {
+  return new Promise((resolve) => {
+    jwt.verify(code, process.secrets.AUTH_CODE_SECRET, (err, data) => {
       if (err) return resolve(undefined)
 
       const clientInfo: InfoJWT = {

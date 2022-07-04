@@ -9,7 +9,5 @@ export const connectDB = async () => {
   }
 
   console.log('Connected to DB!')
-  await seedDB()
-
-  return mongoose.connection
+  return seedDB()
 }

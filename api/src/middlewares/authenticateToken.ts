@@ -47,7 +47,7 @@ export const authenticateAccessToken: RequestHandler = async (
     req,
     res,
     nextFunction,
-    process.env.ACCESS_TOKEN_SECRET as string,
+    process.secrets.ACCESS_TOKEN_SECRET,
     'accessToken'
   )
 }
@@ -57,7 +57,7 @@ export const authenticateRefreshToken: RequestHandler = (req, res, next) => {
     req,
     res,
     next,
-    process.env.REFRESH_TOKEN_SECRET as string,
+    process.secrets.REFRESH_TOKEN_SECRET,
     'refreshToken'
   )
 }
