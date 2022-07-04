@@ -11,7 +11,6 @@ import cors from 'cors'
 import helmet from 'helmet'
 
 import {
-  connectDB,
   copySASjsCore,
   CorsType,
   getWebBuildFolder,

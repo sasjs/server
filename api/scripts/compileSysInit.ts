@@ -6,7 +6,7 @@ import {
   readFile,
   SASJsFileType
 } from '@sasjs/utils'
-import { apiRoot, sysInitCompiledPath } from '../src/utils'
+import { apiRoot, sysInitCompiledPath } from '../src/utils/file'
 
 const macroCorePath = path.join(apiRoot, 'node_modules', '@sasjs', 'core')
 
