@@ -36,7 +36,12 @@ router.use('/group', desktopRestrict, groupRouter)
 router.use('/stp', authenticateAccessToken, stpRouter)
 router.use('/code', authenticateAccessToken, codeRouter)
 router.use('/user', desktopRestrict, userRouter)
-router.use('/permission', desktopRestrict, permissionRouter)
+router.use(
+  '/permission',
+  desktopRestrict,
+  authenticateAccessToken,
+  permissionRouter
+)
 
 router.use(
   '/',

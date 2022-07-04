@@ -2,14 +2,13 @@ import express from 'express'
 import { executeProgramRawValidation } from '../../utils'
 import { STPController } from '../../controllers/'
 import { FileUploadController } from '../../controllers/internal'
-import { authorize } from '../../middlewares'
 
 const stpRouter = express.Router()
 
 const fileUploadController = new FileUploadController()
 const controller = new STPController()
 
-stpRouter.get('/execute', authorize, async (req, res) => {
+stpRouter.get('/execute', async (req, res) => {
   const { error, value: query } = executeProgramRawValidation(req.query)
   if (error) return res.status(400).send(error.details[0].message)
 
@@ -33,7 +32,6 @@ stpRouter.get('/execute', authorize, async (req, res) => {
 
 stpRouter.post(
   '/execute',
-  authorize,
   fileUploadController.preUploadMiddleware,
   fileUploadController.getMulterUploadObject().any(),
   async (req, res: any) => {

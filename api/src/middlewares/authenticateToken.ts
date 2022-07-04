@@ -1,8 +1,14 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { csrfProtection } from '../app'
-import { fetchLatestAutoExec, ModeType, verifyTokenInDB } from '../utils'
+import {
+  fetchLatestAutoExec,
+  ModeType,
+  verifyTokenInDB,
+  getAuthorizedRoutes
+} from '../utils'
 import { desktopUser } from './desktop'
+import { authorize } from './authorize'
 
 export const authenticateAccessToken: RequestHandler = async (
   req,
@@ -15,6 +21,12 @@ export const authenticateAccessToken: RequestHandler = async (
     return next()
   }
 
+  const authorizedRoutes = getAuthorizedRoutes()
+  const uri = req.baseUrl + req.path
+  const nextFunction = authorizedRoutes.includes(uri)
+    ? () => authorize(req, res, next)
+    : next
+
   // if request is coming from web and has valid session
   // it can be validated.
   if (req.session?.loggedIn) {
@@ -24,7 +36,7 @@ export const authenticateAccessToken: RequestHandler = async (
       if (user) {
         if (user.isActive) {
           req.user = user
-          return csrfProtection(req, res, next)
+          return csrfProtection(req, res, nextFunction)
         } else return res.sendStatus(401)
       }
     }
@@ -34,7 +46,7 @@ export const authenticateAccessToken: RequestHandler = async (
   authenticateToken(
     req,
     res,
-    next,
+    nextFunction,
     process.env.ACCESS_TOKEN_SECRET as string,
     'accessToken'
   )

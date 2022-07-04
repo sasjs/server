@@ -150,6 +150,19 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
+    it('should respond with Bad Request if uri is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          uri: '/some/random/api/endpoint'
+        })
+        .expect(400)
+
+      expect(res.body).toEqual({})
+    })
+
     it('should respond with Bad Request if setting is missing', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')

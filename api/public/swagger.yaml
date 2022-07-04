@@ -550,12 +550,12 @@ components:
             additionalProperties: false
         AuthorizedRoutesResponse:
             properties:
-                routes:
+                URIs:
                     items:
                         type: string
                     type: array
             required:
-                - routes
+                - URIs
             type: object
             additionalProperties: false
         ExecuteReturnJsonPayload:
@@ -1615,7 +1615,7 @@ paths:
                                 $ref: '#/components/schemas/AuthorizedRoutesResponse'
                             examples:
                                 'Example 1':
-                                    value: {routes: [/AppStream, /SASjsApi/stp/execute]}
+                                    value: {URIs: [/AppStream, /SASjsApi/stp/execute]}
             summary: 'Get authorized routes.'
             tags:
                 - Info
