@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  Dispatch,
-  SetStateAction
-} from 'react'
+import React, { useState, useEffect, Dispatch, SetStateAction } from 'react'
 import axios from 'axios'
 import {
   Button,
@@ -13,15 +7,14 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  CircularProgress
+  CircularProgress,
+  Autocomplete
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 
 import { BootstrapDialogTitle } from '../../components/dialogTitle'
 
 import {
-  PermissionResponse,
   UserResponse,
   GroupResponse,
   RegisterPermissionPayload
@@ -39,18 +32,16 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 type AddPermissionModalProps = {
   open: boolean
   handleOpen: Dispatch<SetStateAction<boolean>>
-  permissions: PermissionResponse[]
   addPermission: (addPermissionPayload: RegisterPermissionPayload) => void
 }
-
-const filter = createFilterOptions<string>()
 
 const AddPermissionModal = ({
   open,
   handleOpen,
-  permissions,
   addPermission
 }: AddPermissionModalProps) => {
+  const [URIs, setURIs] = useState<string[]>([])
+  const [loadingURIs, setLoadingURIs] = useState(false)
   const [uri, setUri] = useState<string>()
   const [principalType, setPrincipalType] = useState('user')
   const [userPrincipal, setUserPrincipal] = useState<UserResponse>()
@@ -59,6 +50,23 @@ const AddPermissionModal = ({
   const [loadingPrincipals, setLoadingPrincipals] = useState(false)
   const [userPrincipals, setUserPrincipals] = useState<UserResponse[]>([])
   const [groupPrincipals, setGroupPrincipals] = useState<GroupResponse[]>([])
+
+  useEffect(() => {
+    setLoadingURIs(true)
+    axios
+      .get('/SASjsApi/info/authorizedRoutes')
+      .then((res: any) => {
+        if (res.data) {
+          setURIs(res.data.URIs)
+        }
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+      .finally(() => {
+        setLoadingURIs(false)
+      })
+  }, [])
 
   useEffect(() => {
     setLoadingPrincipals(true)
@@ -97,12 +105,6 @@ const AddPermissionModal = ({
     addPermission(addPermissionPayload)
   }
 
-  const URIs = useMemo(() => {
-    return permissions
-      .map((permission) => permission.uri)
-      .filter((uri, index, array) => array.indexOf(uri) === index)
-  }, [permissions])
-
   const addButtonDisabled =
     !uri || (principalType === 'user' ? !userPrincipal : !groupPrincipal)
 
@@ -118,29 +120,17 @@ const AddPermissionModal = ({
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <Autocomplete
+              options={URIs}
               disableClearable
               value={uri}
-              onChange={(event, newValue) => setUri(newValue)}
-              filterOptions={(options, params) => {
-                const filtered = filter(options, params)
-
-                const { inputValue } = params
-
-                const isExisting = options.some(
-                  (option) => inputValue === option
+              onChange={(event: any, newValue: string) => setUri(newValue)}
+              renderInput={(params) =>
+                loadingURIs ? (
+                  <CircularProgress />
+                ) : (
+                  <TextField {...params} label="Principal" />
                 )
-                if (inputValue !== '' && !isExisting) {
-                  filtered.push(inputValue)
-                }
-                return filtered
-              }}
-              selectOnFocus
-              clearOnBlur
-              handleHomeEndKeys
-              options={URIs}
-              renderOption={(props, option) => <li {...props}>{option}</li>}
-              freeSolo
-              renderInput={(params) => <TextField {...params} label="URI" />}
+              }
             />
           </Grid>
           <Grid item xs={12}>

@@ -1,4 +1,8 @@
 import { Route, Tags, Example, Get } from 'tsoa'
+import { getAuthorizedRoutes } from '../utils'
+export interface AuthorizedRoutesResponse {
+  URIs: string[]
+}
 
 export interface InfoResponse {
   mode: string
@@ -33,6 +37,21 @@ export class InfoController {
         process.env.WHITELIST?.split(' ')?.filter((url) => !!url) ?? [],
       protocol: process.env.PROTOCOL ?? 'http',
       runTimes: process.runTimes
+    }
+    return response
+  }
+
+  /**
+   * @summary Get authorized routes.
+   *
+   */
+  @Example<AuthorizedRoutesResponse>({
+    URIs: ['/AppStream', '/SASjsApi/stp/execute']
+  })
+  @Get('/authorizedRoutes')
+  public authorizedRoutes(): AuthorizedRoutesResponse {
+    const response = {
+      URIs: getAuthorizedRoutes()
     }
     return response
   }

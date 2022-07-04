@@ -330,7 +330,6 @@ const Permission = () => {
       <AddPermissionModal
         open={addPermissionModalOpen}
         handleOpen={setAddPermissionModalOpen}
-        permissions={permissions}
         addPermission={addPermission}
       />
       <UpdatePermissionModal

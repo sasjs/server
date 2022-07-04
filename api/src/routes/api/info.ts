@@ -13,4 +13,14 @@ infoRouter.get('/', async (req, res) => {
   }
 })
 
+infoRouter.get('/authorizedRoutes', async (req, res) => {
+  const controller = new InfoController()
+  try {
+    const response = controller.authorizedRoutes()
+    res.send(response)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
 export default infoRouter

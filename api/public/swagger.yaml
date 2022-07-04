@@ -548,6 +548,16 @@ components:
                 - runTimes
             type: object
             additionalProperties: false
+        AuthorizedRoutesResponse:
+            properties:
+                routes:
+                    items:
+                        type: string
+                    type: array
+            required:
+                - routes
+            type: object
+            additionalProperties: false
         ExecuteReturnJsonPayload:
             properties:
                 _program:
@@ -1589,6 +1599,24 @@ paths:
                                 'Example 1':
                                     value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http, runTimes: [sas, js]}
             summary: 'Get server info (mode, cors, whiteList, protocol).'
+            tags:
+                - Info
+            security: []
+            parameters: []
+    /SASjsApi/info/authorizedRoutes:
+        get:
+            operationId: AuthorizedRoutes
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizedRoutesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {routes: [/AppStream, /SASjsApi/stp/execute]}
+            summary: 'Get authorized routes.'
             tags:
                 - Info
             security: []
