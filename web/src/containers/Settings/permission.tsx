@@ -29,6 +29,7 @@ import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
 import UpdatePermissionModal from './updatePermissionModal'
 import DeleteModal from './deletePermissionModal'
+import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 
 import {
   GroupDetailsResponse,
@@ -52,6 +53,11 @@ const Permission = () => {
   const [openModal, setOpenModal] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalPayload, setModalPayload] = useState('')
+  const [openSnackbar, setOpenSnackbar] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState('')
+  const [snackbarSeverity, setSnackbarSeverity] = useState<AlertSeverityType>(
+    AlertSeverityType.Success
+  )
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
     useState(false)
@@ -177,9 +183,9 @@ const Permission = () => {
       .post('/SASjsApi/permission', addPermissionPayload)
       .then((res: any) => {
         fetchPermissions()
-        setModalTitle('Success')
-        setModalPayload('Permission added Successfully.')
-        setOpenModal(true)
+        setSnackbarMessage('Permission added!')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -209,9 +215,9 @@ const Permission = () => {
       })
       .then((res: any) => {
         fetchPermissions()
-        setModalTitle('Success')
-        setModalPayload('Permission updated Successfully.')
-        setOpenModal(true)
+        setSnackbarMessage('Permission updated!')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -240,9 +246,9 @@ const Permission = () => {
       .delete(`/SASjsApi/permission/${selectedPermission?.permissionId}`)
       .then((res: any) => {
         fetchPermissions()
-        setModalTitle('Success')
-        setModalPayload('Permission deleted Successfully.')
-        setOpenModal(true)
+        setSnackbarMessage('Permission deleted!')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -294,6 +300,12 @@ const Permission = () => {
           />
         </Grid>
       </Grid>
+      <BootstrapSnackbar
+        open={openSnackbar}
+        setOpen={setOpenSnackbar}
+        message={snackbarMessage}
+        severity={snackbarSeverity}
+      />
       <Modal
         open={openModal}
         setOpen={setOpenModal}
@@ -454,7 +466,7 @@ const DisplayGroup = ({ group }: DisplayGroupProps) => {
         disableRestoreFocus
       >
         <Typography sx={{ p: 1 }} variant="h6" component="div">
-          Group Users
+          Group Members
         </Typography>
         {group.users.map((user) => (
           <Typography sx={{ p: 1 }} component="li">
