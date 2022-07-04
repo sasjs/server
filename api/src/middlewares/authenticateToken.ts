@@ -5,7 +5,7 @@ import {
   fetchLatestAutoExec,
   ModeType,
   verifyTokenInDB,
-  getAuthorizedRoutes
+  isAuthorizingRoute
 } from '../utils'
 import { desktopUser } from './desktop'
 import { authorize } from './authorize'
@@ -21,9 +21,7 @@ export const authenticateAccessToken: RequestHandler = async (
     return next()
   }
 
-  const authorizedRoutes = getAuthorizedRoutes()
-  const uri = req.baseUrl + req.path
-  const nextFunction = authorizedRoutes.includes(uri)
+  const nextFunction = isAuthorizingRoute(req)
     ? () => authorize(req, res, next)
     : next
 

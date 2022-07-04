@@ -1,8 +1,4 @@
-export const getAuthorizedRoutes = () => {
-  const streamingApps = Object.keys(process.appStreamConfig)
-  const streamingAppsRoutes = streamingApps.map((app) => `/AppStream/${app}`)
-  return [...StaticAuthorizedRoutes, ...streamingAppsRoutes]
-}
+import { Request } from 'express'
 
 const StaticAuthorizedRoutes = [
   '/AppStream',
@@ -15,3 +11,21 @@ const StaticAuthorizedRoutes = [
   '/SASjsApi/drive/fileTree',
   '/SASjsApi/permission'
 ]
+
+export const getAuthorizedRoutes = () => {
+  const streamingApps = Object.keys(process.appStreamConfig)
+  const streamingAppsRoutes = streamingApps.map((app) => `/AppStream/${app}`)
+  return [...StaticAuthorizedRoutes, ...streamingAppsRoutes]
+}
+
+export const getUri = (req: Request) => {
+  const { baseUrl, path: reqPath } = req
+
+  const appStream = reqPath.split('/')[1]
+
+  // removing trailing slash of URLs
+  return (baseUrl + '/' + appStream).replace(/\/$/, '')
+}
+
+export const isAuthorizingRoute = (req: Request): boolean =>
+  getAuthorizedRoutes().includes(getUri(req))

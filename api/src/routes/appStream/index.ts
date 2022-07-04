@@ -1,6 +1,6 @@
 import path from 'path'
 import express, { Request } from 'express'
-import { authorize } from '../../middlewares/authorize'
+import { authenticateAccessToken } from '../../middlewares'
 import { folderExists } from '@sasjs/utils'
 
 import { addEntryToAppStreamConfig, getFilesFolder } from '../../utils'
@@ -10,7 +10,7 @@ const appStreams: { [key: string]: string } = {}
 
 const router = express.Router()
 
-router.get('/', authorize, async (req, res) => {
+router.get('/', authenticateAccessToken, async (req, res) => {
   const content = appStreamHtml(process.appStreamConfig)
 
   res.cookie('XSRF-TOKEN', req.csrfToken())
@@ -67,7 +67,7 @@ export const publishAppStream = async (
   return {}
 }
 
-router.get(`/*`, authorize, function (req: Request, res, next) {
+router.get(`/*`, authenticateAccessToken, function (req: Request, res, next) {
   const reqPath = req.path.replace(/^\//, '')
 
   // Redirecting to url with trailing slash for appStream base URL only

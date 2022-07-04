@@ -1,4 +1,4 @@
-import React, { useState, Dispatch, SetStateAction } from 'react'
+import React, { useState, Dispatch, SetStateAction, useEffect } from 'react'
 import {
   Button,
   Grid,
@@ -37,6 +37,10 @@ const UpdatePermissionModal = ({
   updatePermission
 }: UpdatePermissionModalProps) => {
   const [permissionSetting, setPermissionSetting] = useState('Grant')
+
+  useEffect(() => {
+    if (permission) setPermissionSetting(permission.setting)
+  }, [permission])
 
   return (
     <BootstrapDialog onClose={() => handleOpen(false)} open={open}>

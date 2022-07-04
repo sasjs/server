@@ -22,7 +22,7 @@ const Login = () => {
       username,
       password
     }).catch((err: any) => {
-      setErrorMessage(err.response.data)
+      setErrorMessage(err.response?.data || err.toString())
       return {}
     })
 

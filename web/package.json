@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "npx webpack-dev-server --config webpack.dev.ts --hot",
-    "build": "npx webpack --config webpack.prod.ts"
+    "start": "webpack-dev-server --config webpack.dev.ts --hot",
+    "build": "webpack --config webpack.prod.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.4.1",
