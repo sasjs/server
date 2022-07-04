@@ -1,4 +1,4 @@
-import { extractHeaders } from '..'
+import { extractHeaders } from '../extractHeaders'
 
 describe('extractHeaders', () => {
   it('should return valid http headers', () => {

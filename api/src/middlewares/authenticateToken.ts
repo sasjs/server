@@ -68,7 +68,7 @@ const authenticateToken = (
   tokenType: 'accessToken' | 'refreshToken'
 ) => {
   const { MODE } = process.env
-  if (MODE?.trim() !== 'server') {
+  if (MODE === ModeType.Desktop) {
     req.user = {
       userId: 1234,
       clientId: 'desktopModeClientId',

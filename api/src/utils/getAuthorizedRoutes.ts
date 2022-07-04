@@ -5,7 +5,7 @@ const StaticAuthorizedRoutes = [
   '/SASjsApi/code/execute',
   '/SASjsApi/stp/execute',
   '/SASjsApi/drive/deploy',
-  '/SASjsApi/drive/upload',
+  '/SASjsApi/drive/deploy/upload',
   '/SASjsApi/drive/file',
   '/SASjsApi/drive/folder',
   '/SASjsApi/drive/fileTree',

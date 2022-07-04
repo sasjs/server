@@ -65,25 +65,25 @@ describe('drive', () => {
 
     const dbUser = await controller.createUser(user)
     accessToken = await generateAndSaveToken(dbUser.id)
-    permissionController.createPermission({
+    await permissionController.createPermission({
       uri: '/SASjsApi/drive/deploy',
       principalType: PrincipalType.user,
       principalId: dbUser.id,
       setting: PermissionSetting.grant
     })
-    permissionController.createPermission({
+    await permissionController.createPermission({
       uri: '/SASjsApi/drive/deploy/upload',
       principalType: PrincipalType.user,
       principalId: dbUser.id,
       setting: PermissionSetting.grant
     })
-    permissionController.createPermission({
+    await permissionController.createPermission({
       uri: '/SASjsApi/drive/file',
       principalType: PrincipalType.user,
       principalId: dbUser.id,
       setting: PermissionSetting.grant
     })
-    permissionController.createPermission({
+    await permissionController.createPermission({
       uri: '/SASjsApi/drive/folder',
       principalType: PrincipalType.user,
       principalId: dbUser.id,

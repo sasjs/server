@@ -120,10 +120,14 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Unauthorized if access token is not of an admin account', async () => {
-      const accessToken = await generateSaveTokenAndCreateUser({
-        ...user,
-        username: 'create' + user.username
+    it('should respond with Unauthorized if access token is not of an admin account even if user has permission', async () => {
+      const accessToken = await generateAndSaveToken(dbUser.id)
+
+      await permissionController.createPermission({
+        uri: '/SASjsApi/permission',
+        principalType: PrincipalType.user,
+        principalId: dbUser.id,
+        setting: PermissionSetting.grant
       })
 
       const res = await request(app)
@@ -459,7 +463,7 @@ describe('permission', () => {
       })
       const accessToken = await generateAndSaveToken(dbUser.id)
       await permissionController.createPermission({
-        uri: '/SASjsApi/permission/',
+        uri: '/SASjsApi/permission',
         principalType: PrincipalType.user,
         principalId: dbUser.id,
         setting: PermissionSetting.grant
