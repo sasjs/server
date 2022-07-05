@@ -4,6 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import {
+  DriveController,
   UserController,
   GroupController,
   ClientController,
@@ -16,6 +17,27 @@ import {
   PermissionDetailsResponse
 } from '../../../controllers'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
+
+const deployPayload = {
+  appLoc: 'string',
+  streamWebFolder: 'string',
+  fileTree: {
+    members: [
+      {
+        name: 'string',
+        type: 'folder',
+        members: [
+          'string',
+          {
+            name: 'string',
+            type: 'service',
+            code: 'string'
+          }
+        ]
+      }
+    ]
+  }
+}
 
 const clientId = 'someclientID'
 const adminUser = {
@@ -476,6 +498,51 @@ describe('permission', () => {
         .expect(200)
 
       expect(res.body).toHaveLength(3)
+    })
+  })
+
+  describe.only('verify', () => {
+    beforeAll(async () => {
+      await permissionController.createPermission({
+        ...permission,
+        uri: '/SASjsApi/drive/deploy',
+        principalId: dbUser.id
+      })
+    })
+
+    beforeEach(() => {
+      jest
+        .spyOn(DriveController.prototype, 'deploy')
+        .mockImplementation((deployPayload) =>
+          Promise.resolve({
+            status: 'success',
+            message: 'Files deployed successfully to @sasjs/server.'
+          })
+        )
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('should create files in SASJS drive', async () => {
+      const accessToken = await generateAndSaveToken(dbUser.id)
+
+      await request(app)
+        .get('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
+        .send(deployPayload)
+        .expect(200)
+    })
+
+    it('should respond unauthorized', async () => {
+      const accessToken = await generateAndSaveToken(dbUser.id)
+
+      await request(app)
+        .get('/SASjsApi/drive/deploy/upload')
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(401)
     })
   })
 })
