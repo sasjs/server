@@ -21,10 +21,14 @@ export const getAuthorizedRoutes = () => {
 export const getUri = (req: Request) => {
   const { baseUrl, path: reqPath } = req
 
-  const appStream = reqPath.split('/')[1]
+  if (baseUrl === '/AppStream') {
+    const appStream = reqPath.split('/')[1]
 
-  // removing trailing slash of URLs
-  return (baseUrl + '/' + appStream).replace(/\/$/, '')
+    // removing trailing slash of URLs
+    return (baseUrl + '/' + appStream).replace(/\/$/, '')
+  }
+
+  return baseUrl + reqPath
 }
 
 export const isAuthorizingRoute = (req: Request): boolean =>
