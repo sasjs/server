@@ -28,7 +28,7 @@ export const getUri = (req: Request) => {
     return (baseUrl + '/' + appStream).replace(/\/$/, '')
   }
 
-  return baseUrl + reqPath
+  return (baseUrl + reqPath).replace(/\/$/, '')
 }
 
 export const isAuthorizingRoute = (req: Request): boolean =>
