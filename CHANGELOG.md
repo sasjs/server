@@ -1,3 +1,42 @@
+# [0.10.0](https://github.com/sasjs/server/compare/v0.9.0...v0.10.0) (2022-07-06)
+
+
+### Bug Fixes
+
+* add authorize middleware for appStreams ([e54a09d](https://github.com/sasjs/server/commit/e54a09db19ec8690e54a40760531a4e06d250974))
+* add isAdmin attribute to return response of get session and login requests ([bdf63df](https://github.com/sasjs/server/commit/bdf63df1d915892486005ec904807749786b1c0c))
+* add permission authorization middleware to only specific routes ([f3dfc70](https://github.com/sasjs/server/commit/f3dfc7083fbfb4b447521341b1a86730fb90b4c0))
+* bumping core and running lint ([a2d1396](https://github.com/sasjs/server/commit/a2d13960578014312d2cb5e03145bfd1829d99ec))
+* controller fixed for deleting permission ([b5f595a](https://github.com/sasjs/server/commit/b5f595a25c50550d62482409353c7629c5a5c3e0))
+* do not show admin users in add permission modal ([a75edba](https://github.com/sasjs/server/commit/a75edbaa327ec2af49523c13996ac283061da7d8))
+* export GroupResponse interface ([38a7db8](https://github.com/sasjs/server/commit/38a7db8514de0acd94d74ba96bc1efb732add30c))
+* move permission filter modal to separate file and icons for different actions ([d000f75](https://github.com/sasjs/server/commit/d000f7508f6d7384afffafee4179151fca802ca8))
+* principalId type changed to  number from any ([4fcc191](https://github.com/sasjs/server/commit/4fcc191ce9edc7e4dcd8821fb8019f4eea5db4ea))
+* remove clientId from principal types ([0781ddd](https://github.com/sasjs/server/commit/0781ddd64e3b5e5ca39647bb4e4e1a9332a0f4f8))
+* remove duplicates principals from permission filter modal ([5b319f9](https://github.com/sasjs/server/commit/5b319f9ad1f941b306db6b9473a2128b2e42bf76))
+* show loading spinner in studio while executing code ([496247d](https://github.com/sasjs/server/commit/496247d0b9975097a008cf4d3a999d77648fd930))
+* show permission component only in server mode ([f863b81](https://github.com/sasjs/server/commit/f863b81a7d40a1296a061ec93946f204382af2c3))
+* update permission model ([39fc908](https://github.com/sasjs/server/commit/39fc908de1945f2aaea18d14e6bce703f6bf0c06))
+* update permission response ([e516b77](https://github.com/sasjs/server/commit/e516b7716da5ff7e23350a5f77cfa073b1171175))
+* **web:** only admin should be able to add, update or delete permission ([be8635c](https://github.com/sasjs/server/commit/be8635ccc5eb34c3f0a5951c8a0421292ef69c97))
+
+
+### Features
+
+* add api endpoint for deleting permission ([0171344](https://github.com/sasjs/server/commit/01713440a4fa661b76368785c0ca731f096ac70a))
+* add api endpoint for updating permission setting ([540f54f](https://github.com/sasjs/server/commit/540f54fb77b364822da7889dbe75c02242f48a59))
+* add authorize middleware for validating permissions ([7d916ec](https://github.com/sasjs/server/commit/7d916ec3e9ef579dde1b73015715cd01098c2018))
+* add basic UI for settings and permissions ([5652325](https://github.com/sasjs/server/commit/56523254525a66e756196e90b39a2b8cdadc1518))
+* add documentation link under usename dropdown menu ([eeb63b3](https://github.com/sasjs/server/commit/eeb63b330c292afcdd5c8f006882b224c4235068))
+* add permission model ([6bea1f7](https://github.com/sasjs/server/commit/6bea1f76668ddb070ad95b3e02c31238af67c346))
+* add UI for updating permission ([e8c21a4](https://github.com/sasjs/server/commit/e8c21a43b215f5fced0463b70747cda1191a4e01))
+* add validation for registering permission ([e5200c1](https://github.com/sasjs/server/commit/e5200c1000903185dfad9ee49c99583e473c4388))
+* add, remove and update permissions from web component ([97ecfdc](https://github.com/sasjs/server/commit/97ecfdc95563c72dbdecaebcb504e5194250a763))
+* added get authorizedRoutes api endpoint ([b10e932](https://github.com/sasjs/server/commit/b10e9326058193dd65a57fab2d2f05b7b06096e7))
+* created modal for adding permission ([1413b18](https://github.com/sasjs/server/commit/1413b1850838ecc988ab289da4541bde36a9a346))
+* defined register permission and get all permissions api endpoints ([1103ffe](https://github.com/sasjs/server/commit/1103ffe07b88496967cb03683b08f058ca3bbb9f))
+* update swagger docs ([797c2bc](https://github.com/sasjs/server/commit/797c2bcc39005a05a995be15a150d584fecae259))
+
 # [0.9.0](https://github.com/sasjs/server/compare/v0.8.3...v0.9.0) (2022-07-03)
 
 
