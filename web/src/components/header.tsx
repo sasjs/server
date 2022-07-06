@@ -146,6 +146,18 @@ const Header = (props: any) => {
           >
             <MenuItem sx={{ justifyContent: 'center' }}>
               <Button
+                href={'https://server.sasjs.io'}
+                target="_blank"
+                rel="noreferrer"
+                variant="contained"
+                color="primary"
+                size="large"
+              >
+                Documentation
+              </Button>
+            </MenuItem>
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
                 component={Link}
                 to="/SASjsSettings"
                 onClick={handleClose}

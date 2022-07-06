@@ -2,13 +2,15 @@ import React, { useEffect, useRef, useState, useContext } from 'react'
 import axios from 'axios'
 
 import {
+  Backdrop,
   Box,
-  MenuItem,
+  Button,
+  CircularProgress,
   FormControl,
+  MenuItem,
+  Paper,
   Select,
   SelectChangeEvent,
-  Button,
-  Paper,
   Tab,
   Tooltip
 } from '@mui/material'
@@ -50,6 +52,7 @@ const Studio = () => {
   const [tab, setTab] = useState('1')
   const [runTimes, setRunTimes] = useState<string[]>([])
   const [selectedRunTime, setSelectedRunTime] = useState('')
+  const [isRunning, setIsRunning] = useState(false)
 
   useEffect(() => {
     setRunTimes(Object.values(appContext.runTimes))
@@ -78,6 +81,7 @@ const Studio = () => {
   const handleRunBtnClick = () => runCode(getSelection() || fileContent)
 
   const runCode = (code: string) => {
+    setIsRunning(true)
     axios
       .post(`/SASjsApi/code/execute`, { code, runTime: selectedRunTime })
       .then((res: any) => {
@@ -94,6 +98,7 @@ const Studio = () => {
         window.scrollTo(0, document.body.scrollHeight)
       })
       .catch((err) => console.log(err))
+      .finally(() => setIsRunning(false))
   }
 
   const handleKeyDown = (event: any) => {
@@ -163,6 +168,12 @@ const Studio = () => {
         </Box>
 
         <TabPanel sx={{ paddingBottom: 0 }} value="1">
+          <Backdrop
+            sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={isRunning}
+          >
+            <CircularProgress color="inherit" />
+          </Backdrop>
           <div className={classes.subMenu}>
             <Tooltip title="CTRL+ENTER will also run SAS code">
               <Button onClick={handleRunBtnClick} className={classes.runButton}>
