@@ -279,10 +279,13 @@ components:
                     type: string
                 displayName:
                     type: string
+                isAdmin:
+                    type: boolean
             required:
                 - id
                 - username
                 - displayName
+                - isAdmin
             type: object
             additionalProperties: false
         GroupResponse:
@@ -445,6 +448,16 @@ components:
                 - runTimes
             type: object
             additionalProperties: false
+        AuthorizedRoutesResponse:
+            properties:
+                URIs:
+                    items:
+                        type: string
+                    type: array
+            required:
+                - URIs
+            type: object
+            additionalProperties: false
         ExecuteReturnJsonPayload:
             properties:
                 _program:
@@ -486,6 +499,71 @@ components:
                     example: clientID1
             required:
                 - clientId
+            type: object
+            additionalProperties: false
+        PermissionDetailsResponse:
+            properties:
+                permissionId:
+                    type: number
+                    format: double
+                uri:
+                    type: string
+                setting:
+                    type: string
+                user:
+                    $ref: '#/components/schemas/UserResponse'
+                group:
+                    $ref: '#/components/schemas/GroupDetailsResponse'
+            required:
+                - permissionId
+                - uri
+                - setting
+            type: object
+            additionalProperties: false
+        PermissionSetting:
+            enum:
+                - Grant
+                - Deny
+            type: string
+        PrincipalType:
+            enum:
+                - user
+                - group
+            type: string
+        RegisterPermissionPayload:
+            properties:
+                uri:
+                    type: string
+                    description: 'Name of affected resource'
+                    example: /SASjsApi/code/execute
+                setting:
+                    $ref: '#/components/schemas/PermissionSetting'
+                    description: 'The indication of whether (and to what extent) access is provided'
+                    example: Grant
+                principalType:
+                    $ref: '#/components/schemas/PrincipalType'
+                    description: 'Indicates the type of principal'
+                    example: user
+                principalId:
+                    type: number
+                    format: double
+                    description: 'The id of user or group to which a rule is assigned.'
+                    example: 123
+            required:
+                - uri
+                - setting
+                - principalType
+                - principalId
+            type: object
+            additionalProperties: false
+        UpdatePermissionPayload:
+            properties:
+                setting:
+                    $ref: '#/components/schemas/PermissionSetting'
+                    description: 'The indication of whether (and to what extent) access is provided'
+                    example: Grant
+            required:
+                - setting
             type: object
             additionalProperties: false
     securitySchemes:
@@ -913,7 +991,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{id: 123, username: johnusername, displayName: John}, {id: 456, username: starkusername, displayName: Stark}]
+                                    value: [{id: 123, username: johnusername, displayName: John, isAdmin: false}, {id: 456, username: starkusername, displayName: Stark, isAdmin: true}]
             summary: 'Get list of all users (username, displayname). All users can request this.'
             tags:
                 - User
@@ -1342,6 +1420,24 @@ paths:
                 - Info
             security: []
             parameters: []
+    /SASjsApi/info/authorizedRoutes:
+        get:
+            operationId: AuthorizedRoutes
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizedRoutesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {URIs: [/AppStream, /SASjsApi/stp/execute]}
+            summary: 'Get authorized routes.'
+            tags:
+                - Info
+            security: []
+            parameters: []
     /SASjsApi/session:
         get:
             operationId: Session
@@ -1354,7 +1450,7 @@ paths:
                                 $ref: '#/components/schemas/UserResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: 123, username: johnusername, displayName: John}
+                                    value: {id: 123, username: johnusername, displayName: John, isAdmin: false}
             summary: 'Get session info (username).'
             tags:
                 - Session
@@ -1449,7 +1545,7 @@ paths:
                         application/json:
                             schema:
                                 properties:
-                                    user: {properties: {displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [displayName, username, id], type: object}
+                                    user: {properties: {isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [isAdmin, displayName, username, id], type: object}
                                     loggedIn: {type: boolean}
                                 required:
                                     - user
@@ -1504,6 +1600,109 @@ paths:
                 - Web
             security: []
             parameters: []
+    /SASjsApi/permission:
+        get:
+            operationId: GetAllPermissions
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/PermissionDetailsResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
+            summary: 'Get list of all permissions (uri, setting and userDetail).'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreatePermission
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PermissionDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+            summary: 'Create a new permission. Admin only.'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RegisterPermissionPayload'
+    '/SASjsApi/permission/{permissionId}':
+        patch:
+            operationId: UpdatePermission
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PermissionDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+            summary: 'Update permission setting. Admin only'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The permission''s identifier'
+                    in: path
+                    name: permissionId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePermissionPayload'
+        delete:
+            operationId: DeletePermission
+            responses:
+                '204':
+                    description: 'No content'
+            summary: 'Delete a permission. Admin only.'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: permissionId
+                    required: true
+                    schema:
+                        format: double
+                        type: number
+                    example: 1234
 servers:
     -
         url: /
@@ -1517,6 +1716,9 @@ tags:
     -
         name: User
         description: 'Operations about users'
+    -
+        name: Permission
+        description: 'Operations about permissions'
     -
         name: Client
         description: 'Operations about clients'

@@ -22,7 +22,7 @@ const Login = () => {
       username,
       password
     }).catch((err: any) => {
-      setErrorMessage(err.response.data)
+      setErrorMessage(err.response?.data || err.toString())
       return {}
     })
 
@@ -30,6 +30,7 @@ const Login = () => {
       appContext.setUserId?.(user.id)
       appContext.setUsername?.(user.username)
       appContext.setDisplayName?.(user.displayName)
+      appContext.setIsAdmin?.(user.isAdmin)
       appContext.setLoggedIn?.(loggedIn)
     }
   }

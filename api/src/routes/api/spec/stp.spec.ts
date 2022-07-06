@@ -4,7 +4,12 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
-import { UserController } from '../../../controllers/'
+import {
+  UserController,
+  PermissionController,
+  PermissionSetting,
+  PrincipalType
+} from '../../../controllers/'
 import {
   generateAccessToken,
   saveTokensInDB,
@@ -41,12 +46,21 @@ describe('stp', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let accessToken: string
+  const userController = new UserController()
+  const permissionController = new PermissionController()
 
   beforeAll(async () => {
     app = await appPromise
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
-    accessToken = await generateSaveTokenAndCreateUser(user)
+    const dbUser = await userController.createUser(user)
+    accessToken = await generateAndSaveToken(dbUser.id)
+    await permissionController.createPermission({
+      uri: '/SASjsApi/stp/execute',
+      principalType: PrincipalType.user,
+      principalId: dbUser.id,
+      setting: PermissionSetting.grant
+    })
   })
 
   afterAll(async () => {

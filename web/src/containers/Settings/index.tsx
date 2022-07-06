@@ -1,11 +1,14 @@
-import * as React from 'react'
+import React, { useState, useContext } from 'react'
 
 import { Box, Paper, Tab, styled } from '@mui/material'
 import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 
+import Permission from './permission'
 import Profile from './profile'
+
+import { AppContext, ModeType } from '../../context/appContext'
 
 const StyledTab = styled(Tab)({
   background: 'black',
@@ -17,7 +20,8 @@ const StyledTabpanel = styled(TabPanel)({
 })
 
 const Settings = () => {
-  const [value, setValue] = React.useState('profile')
+  const appContext = useContext(AppContext)
+  const [value, setValue] = useState('profile')
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue)
@@ -42,10 +46,16 @@ const Settings = () => {
             onChange={handleChange}
           >
             <StyledTab label="Profile" value="profile" />
+            {appContext.mode === ModeType.Server && (
+              <StyledTab label="Uri Access" value="permission" />
+            )}
           </TabList>
         </Box>
         <StyledTabpanel value="profile">
           <Profile />
+        </StyledTabpanel>
+        <StyledTabpanel value="permission">
+          <Permission />
         </StyledTabpanel>
       </TabContext>
     </Box>

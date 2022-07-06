@@ -8,7 +8,11 @@ import {
   listFilesInFolder
 } from '@sasjs/utils'
 
-import { apiRoot, sasJSCoreMacros, sasJSCoreMacrosInfo } from '../src/utils'
+import {
+  apiRoot,
+  sasJSCoreMacros,
+  sasJSCoreMacrosInfo
+} from '../src/utils/file'
 
 const macroCorePath = path.join(apiRoot, 'node_modules', '@sasjs', 'core')
 

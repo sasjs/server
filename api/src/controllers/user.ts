@@ -24,9 +24,10 @@ export interface UserResponse {
   id: number
   username: string
   displayName: string
+  isAdmin: boolean
 }
 
-interface UserDetailsResponse {
+export interface UserDetailsResponse {
   id: number
   displayName: string
   username: string
@@ -48,12 +49,14 @@ export class UserController {
     {
       id: 123,
       username: 'johnusername',
-      displayName: 'John'
+      displayName: 'John',
+      isAdmin: false
     },
     {
       id: 456,
       username: 'starkusername',
-      displayName: 'Stark'
+      displayName: 'Stark',
+      isAdmin: true
     }
   ])
   @Get('/')
@@ -200,7 +203,7 @@ export class UserController {
 
 const getAllUsers = async (): Promise<UserResponse[]> =>
   await User.find({})
-    .select({ _id: 0, id: 1, username: 1, displayName: 1 })
+    .select({ _id: 0, id: 1, username: 1, displayName: 1, isAdmin: 1 })
     .exec()
 
 const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {

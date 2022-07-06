@@ -1,8 +1,14 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { csrfProtection } from '../app'
-import { fetchLatestAutoExec, ModeType, verifyTokenInDB } from '../utils'
+import {
+  fetchLatestAutoExec,
+  ModeType,
+  verifyTokenInDB,
+  isAuthorizingRoute
+} from '../utils'
 import { desktopUser } from './desktop'
+import { authorize } from './authorize'
 
 export const authenticateAccessToken: RequestHandler = async (
   req,
@@ -15,6 +21,10 @@ export const authenticateAccessToken: RequestHandler = async (
     return next()
   }
 
+  const nextFunction = isAuthorizingRoute(req)
+    ? () => authorize(req, res, next)
+    : next
+
   // if request is coming from web and has valid session
   // it can be validated.
   if (req.session?.loggedIn) {
@@ -24,7 +34,7 @@ export const authenticateAccessToken: RequestHandler = async (
       if (user) {
         if (user.isActive) {
           req.user = user
-          return csrfProtection(req, res, next)
+          return csrfProtection(req, res, nextFunction)
         } else return res.sendStatus(401)
       }
     }
@@ -34,7 +44,7 @@ export const authenticateAccessToken: RequestHandler = async (
   authenticateToken(
     req,
     res,
-    next,
+    nextFunction,
     process.secrets.ACCESS_TOKEN_SECRET,
     'accessToken'
   )
@@ -58,7 +68,7 @@ const authenticateToken = (
   tokenType: 'accessToken' | 'refreshToken'
 ) => {
   const { MODE } = process.env
-  if (MODE?.trim() !== 'server') {
+  if (MODE === ModeType.Desktop) {
     req.user = {
       userId: 1234,
       clientId: 'desktopModeClientId',

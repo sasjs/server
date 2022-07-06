@@ -17,6 +17,7 @@ import groupRouter from './group'
 import clientRouter from './client'
 import authRouter from './auth'
 import sessionRouter from './session'
+import permissionRouter from './permission'
 
 const router = express.Router()
 
@@ -35,6 +36,12 @@ router.use('/group', desktopRestrict, groupRouter)
 router.use('/stp', authenticateAccessToken, stpRouter)
 router.use('/code', authenticateAccessToken, codeRouter)
 router.use('/user', desktopRestrict, userRouter)
+router.use(
+  '/permission',
+  desktopRestrict,
+  authenticateAccessToken,
+  permissionRouter
+)
 
 router.use(
   '/',

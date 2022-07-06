@@ -770,12 +770,14 @@ describe('user', () => {
         {
           id: expect.anything(),
           username: adminUser.username,
-          displayName: adminUser.displayName
+          displayName: adminUser.displayName,
+          isAdmin: adminUser.isAdmin
         },
         {
           id: expect.anything(),
           username: user.username,
-          displayName: user.displayName
+          displayName: user.displayName,
+          isAdmin: user.isAdmin
         }
       ])
     })
@@ -796,12 +798,14 @@ describe('user', () => {
         {
           id: expect.anything(),
           username: adminUser.username,
-          displayName: adminUser.displayName
+          displayName: adminUser.displayName,
+          isAdmin: adminUser.isAdmin
         },
         {
           id: expect.anything(),
           username: 'randomUser',
-          displayName: user.displayName
+          displayName: user.displayName,
+          isAdmin: user.isAdmin
         }
       ])
     })

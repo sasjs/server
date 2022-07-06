@@ -1,4 +1,4 @@
-import { parseLogToArray } from '..'
+import { parseLogToArray } from '../parseLogToArray'
 
 describe('parseLogToArray', () => {
   it('should parse log to array type', () => {

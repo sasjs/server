@@ -13,7 +13,8 @@ export class SessionController {
   @Example<UserResponse>({
     id: 123,
     username: 'johnusername',
-    displayName: 'John'
+    displayName: 'John',
+    isAdmin: false
   })
   @Get('/')
   public async session(
@@ -26,5 +27,6 @@ export class SessionController {
 const session = (req: express.Request) => ({
   id: req.user!.userId,
   username: req.user!.username,
-  displayName: req.user!.displayName
+  displayName: req.user!.displayName,
+  isAdmin: req.user!.isAdmin
 })

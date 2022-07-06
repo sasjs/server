@@ -5,6 +5,8 @@ import { AppStreamConfig } from '../types'
 import { getAppStreamConfigPath } from './file'
 
 export const loadAppStreamConfig = async () => {
+  process.appStreamConfig = {}
+
   if (process.env.NODE_ENV === 'test') return
 
   const appStreamConfigPath = getAppStreamConfigPath()
@@ -21,7 +23,6 @@ export const loadAppStreamConfig = async () => {
   } catch (_) {
     appStreamConfig = {}
   }
-  process.appStreamConfig = {}
 
   for (const [streamServiceName, entry] of Object.entries(appStreamConfig)) {
     const { appLoc, streamWebFolder, streamLogo } = entry
