@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react'
-import { Link, useHistory, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 
 import {
   AppBar,
@@ -24,7 +24,7 @@ const baseUrl =
 const validTabs = ['/', '/SASjsDrive', '/SASjsStudio']
 
 const Header = (props: any) => {
-  const history = useHistory()
+  const navigate = useNavigate()
   const { pathname } = useLocation()
   const appContext = useContext(AppContext)
   const [tabValue, setTabValue] = useState(
@@ -74,7 +74,7 @@ const Header = (props: any) => {
           }}
           onClick={() => {
             setTabValue('/')
-            history.push('/')
+            navigate('/')
           }}
         />
         <Tabs

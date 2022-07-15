@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { Route, HashRouter, Switch } from 'react-router-dom'
+import { Route, HashRouter, Routes } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { theme } from './theme'
 
@@ -22,11 +22,9 @@ function App() {
       <ThemeProvider theme={theme}>
         <HashRouter>
           <Header />
-          <Switch>
-            <Route path="/">
-              <Login />
-            </Route>
-          </Switch>
+          <Routes>
+            <Route path="/" element={<Login />} />
+          </Routes>
         </HashRouter>
       </ThemeProvider>
     )
@@ -36,23 +34,13 @@ function App() {
     <ThemeProvider theme={theme}>
       <HashRouter>
         <Header />
-        <Switch>
-          <Route exact path="/">
-            <Home />
-          </Route>
-          <Route exact path="/SASjsDrive">
-            <Drive />
-          </Route>
-          <Route exact path="/SASjsStudio">
-            <Studio />
-          </Route>
-          <Route exact path="/SASjsSettings">
-            <Settings />
-          </Route>
-          <Route exact path="/SASjsLogon">
-            <AuthCode />
-          </Route>
-        </Switch>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/SASjsDrive" element={<Drive />} />
+          <Route path="/SASjsStudio" element={<Studio />} />
+          <Route path="/SASjsSettings" element={<Settings />} />
+          <Route path="/SASjsLogon" element={<AuthCode />} />
+        </Routes>
         <ToastContainer />
       </HashRouter>
     </ThemeProvider>
