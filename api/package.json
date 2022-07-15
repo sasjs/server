@@ -7,7 +7,7 @@
     "initial": "npm run swagger && npm run compileSysInit && npm run copySASjsCore",
     "prestart": "npm run initial",
     "prebuild": "npm run initial",
-    "start": "nodemon ./src/server.ts",
+    "start": "NODE_ENV=development nodemon ./src/server.ts",
     "start:prod": "node ./build/src/server.js",
     "build": "rimraf build && tsc",
     "postbuild": "npm run copy:files",
@@ -63,6 +63,7 @@
     "mongoose-sequence": "^5.3.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.3",
+    "rotating-file-stream": "^3.0.4",
     "swagger-ui-express": "4.3.0",
     "unzipper": "^0.10.11",
     "url": "^0.10.3"

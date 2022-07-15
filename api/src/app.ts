@@ -1,30 +1,26 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
-import mongoose from 'mongoose'
 import csrf from 'csurf'
-import session from 'express-session'
-import MongoStore from 'connect-mongo'
-import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
-import cors from 'cors'
-import helmet from 'helmet'
 
 import {
   copySASjsCore,
-  CorsType,
   getWebBuildFolder,
-  HelmetCoepType,
   instantiateLogger,
   loadAppStreamConfig,
-  ModeType,
   ProtocolType,
   ReturnCode,
   setProcessVariables,
   setupFolders,
   verifyEnvVariables
 } from './utils'
-import { getEnvCSPDirectives } from './utils/parseHelmetConfig'
+import {
+  configureCors,
+  configureExpressSession,
+  configureLogger,
+  configureSecurity
+} from './app-modules'
 
 dotenv.config()
 
@@ -34,19 +30,7 @@ if (verifyEnvVariables()) process.exit(ReturnCode.InvalidEnv)
 
 const app = express()
 
-app.use(cookieParser())
-
-const {
-  MODE,
-  CORS,
-  WHITELIST,
-  PROTOCOL,
-  HELMET_CSP_CONFIG_PATH,
-  HELMET_COEP,
-  LOG_FORMAT_MORGAN
-} = process.env
-
-app.use(morgan(LOG_FORMAT_MORGAN as string))
+const { PROTOCOL } = process.env
 
 export const cookieOptions = {
   secure: PROTOCOL === ProtocolType.HTTPS,
@@ -54,86 +38,43 @@ export const cookieOptions = {
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }
 
-const cspConfigJson: { [key: string]: string[] | null } = getEnvCSPDirectives(
-  HELMET_CSP_CONFIG_PATH
-)
-if (PROTOCOL === ProtocolType.HTTP)
-  cspConfigJson['upgrade-insecure-requests'] = null
-
 /***********************************
  *         CSRF Protection         *
  ***********************************/
 export const csrfProtection = csrf({ cookie: cookieOptions })
 
-/***********************************
- *   Handle security and origin    *
- ***********************************/
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        ...cspConfigJson
-      }
-    },
-    crossOriginEmbedderPolicy: HELMET_COEP === HelmetCoepType.TRUE
-  })
-)
+const onError: ErrorRequestHandler = (err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN')
+    return res.status(400).send('Invalid CSRF token!')
 
-/***********************************
- *         Enabling CORS           *
- ***********************************/
-if (CORS === CorsType.ENABLED) {
-  const whiteList: string[] = []
-  WHITELIST?.split(' ')
-    ?.filter((url) => !!url)
-    .forEach((url) => {
-      if (url.startsWith('http'))
-        // removing trailing slash of URLs listing for CORS
-        whiteList.push(url.replace(/\/$/, ''))
-    })
-
-  console.log('All CORS Requests are enabled for:', whiteList)
-  app.use(cors({ credentials: true, origin: whiteList }))
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
 }
 
 export default setProcessVariables().then(async () => {
+  app.use(cookieParser())
+
+  configureLogger(app)
+
+  /***********************************
+   *   Handle security and origin    *
+   ***********************************/
+  configureSecurity(app)
+
+  /***********************************
+   *         Enabling CORS           *
+   ***********************************/
+  configureCors(app)
+
   /***********************************
    *         DB Connection &          *
    *        Express Sessions          *
    *        With Mongo Store          *
    ***********************************/
-  if (MODE === ModeType.Server) {
-    let store: MongoStore | undefined
-
-    if (process.env.NODE_ENV !== 'test') {
-      store = MongoStore.create({
-        client: mongoose.connection!.getClient() as any,
-        collectionName: 'sessions'
-      })
-    }
-
-    app.use(
-      session({
-        secret: process.secrets.SESSION_SECRET,
-        saveUninitialized: false, // don't create session until something stored
-        resave: false, //don't save session if unmodified
-        store,
-        cookie: cookieOptions
-      })
-    )
-  }
+  configureExpressSession(app)
 
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
-
-  const onError: ErrorRequestHandler = (err, req, res, next) => {
-    if (err.code === 'EBADCSRFTOKEN')
-      return res.status(400).send('Invalid CSRF token!')
-
-    console.error(err.stack)
-    res.status(500).send('Something broke!')
-  }
 
   await setupFolders()
   await copySASjsCore()
