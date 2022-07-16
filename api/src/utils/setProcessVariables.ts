@@ -40,7 +40,16 @@ export const setProcessVariables = async () => {
   await createFolder(absPath)
   process.driveLoc = getRealPath(absPath)
 
+  const { LOG_LOCATION } = process.env
+  const absLogsPath = getAbsolutePath(
+    LOG_LOCATION ?? `sasjs_root${path.sep}logs`,
+    process.cwd()
+  )
+  await createFolder(absLogsPath)
+  process.logsLoc = getRealPath(absLogsPath)
+
   console.log('sasLoc: ', process.sasLoc)
   console.log('sasDrive: ', process.driveLoc)
+  console.log('sasLogs: ', process.logsLoc)
   console.log('runTimes: ', process.runTimes)
 }
