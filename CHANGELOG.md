@@ -1,3 +1,15 @@
+# [0.11.0](https://github.com/sasjs/server/compare/v0.10.0...v0.11.0) (2022-07-16)
+
+
+### Bug Fixes
+
+* **logs:** logs location is configurable ([e024a92](https://github.com/sasjs/server/commit/e024a92f165990e08db8aa26ee326dbcb30e2e46))
+
+
+### Features
+
+* **logs:** logs to file with rotating + code split into files ([92fda18](https://github.com/sasjs/server/commit/92fda183f3f0f3956b7c791669eb8dd52c389d1b))
+
 # [0.10.0](https://github.com/sasjs/server/compare/v0.9.0...v0.10.0) (2022-07-06)
 
 
