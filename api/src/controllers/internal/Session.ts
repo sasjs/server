@@ -16,7 +16,6 @@ import {
   readFile,
   isWindows
 } from '@sasjs/utils'
-import { processProgram } from './processProgram'
 
 const execFilePromise = promisify(execFile)
 
