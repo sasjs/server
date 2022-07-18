@@ -1,3 +1,11 @@
+## [0.11.1](https://github.com/sasjs/server/compare/v0.11.0...v0.11.1) (2022-07-18)
+
+
+### Bug Fixes
+
+* bank operator ([aa02741](https://github.com/sasjs/server/commit/aa027414ed3ce51f1014ef36c4191e064b2e963d))
+* ensuring nosplash option only applies for sas.exe ([65e6de9](https://github.com/sasjs/server/commit/65e6de966383fe49a919b1f901d77c7f1e402c9b)), closes [#229](https://github.com/sasjs/server/issues/229)
+
 # [0.11.0](https://github.com/sasjs/server/compare/v0.10.0...v0.11.0) (2022-07-16)
 
 
