@@ -101,7 +101,7 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
-      isWindows() ? '-nosplash' : '',
+      process.sasLoc.endsWith('sas.exe') ? '-nosplash' : '',
       isWindows() ? '-icon' : '',
       isWindows() ? '-nologo' : ''
     ])
