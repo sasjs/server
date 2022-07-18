@@ -102,7 +102,7 @@ ${autoExecContent}`
       '-AUTOEXEC',
       autoExecPath,
       process.sasLoc!.endsWith('sas.exe') ? '-nosplash' : '',
-      isWindows() ? '-icon' : '',
+      process.sasLoc!.endsWith('sas.exe') ? '-icon' : '',
       isWindows() ? '-nologo' : ''
     ])
       .then(() => {
