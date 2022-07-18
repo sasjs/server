@@ -1,3 +1,10 @@
+## [0.11.2](https://github.com/sasjs/server/compare/v0.11.1...v0.11.2) (2022-07-18)
+
+
+### Bug Fixes
+
+* apply icon option only for sas.exe ([d2ddd8a](https://github.com/sasjs/server/commit/d2ddd8aacadfdd143026881f2c6ae8c6b277610a))
+
 ## [0.11.1](https://github.com/sasjs/server/compare/v0.11.0...v0.11.1) (2022-07-18)
 
 
