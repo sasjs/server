@@ -23,7 +23,9 @@ let _webout = '';
 const weboutPath = '${
     isWindows() ? weboutPath.replace(/\\/g, '\\\\') : weboutPath
   }'; 
-const _sasjs_tokenfile = '${isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile }';
+const _sasjs_tokenfile = '${
+    isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile
+  }';
 const _sasjs_username = '${preProgramVariables?.username}';
 const _sasjs_userid = '${preProgramVariables?.userId}';
 const _sasjs_displayname = '${preProgramVariables?.displayName}';

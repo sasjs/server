@@ -118,7 +118,9 @@ export const generateFileUploadJSCode = async (
     if (fileName.includes('req_file')) {
       fileCount++
       const filePath = path.join(sessionFolder, fileName)
-      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = fs.readFileSync('${isWindows() ? filePath.replace(/\\/g, '\\\\') :  filePath}')`
+      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = fs.readFileSync('${
+        isWindows() ? filePath.replace(/\\/g, '\\\\') : filePath
+      }')`
       uploadCode += `\nconst _WEBIN_FILENAME${fileCount} = '${filesNamesMap[fileName].originalName}'`
       uploadCode += `\nconst _WEBIN_NAME${fileCount} = '${filesNamesMap[fileName].fieldName}'`
     }
