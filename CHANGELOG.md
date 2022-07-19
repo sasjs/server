@@ -1,3 +1,10 @@
+## [0.11.5](https://github.com/sasjs/server/compare/v0.11.4...v0.11.5) (2022-07-19)
+
+
+### Bug Fixes
+
+* Revert "fix(security): missing cookie flags are added" ([ce5218a](https://github.com/sasjs/server/commit/ce5218a2278cc750f2b1032024685dc6cd72f796))
+
 ## [0.11.4](https://github.com/sasjs/server/compare/v0.11.3...v0.11.4) (2022-07-19)
 
 
