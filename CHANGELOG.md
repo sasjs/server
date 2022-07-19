@@ -1,3 +1,10 @@
+## [0.11.3](https://github.com/sasjs/server/compare/v0.11.2...v0.11.3) (2022-07-19)
+
+
+### Bug Fixes
+
+* filePath fix in code.js file for windows ([2995121](https://github.com/sasjs/server/commit/299512135d77c2ac9e34853cf35aee6f2e1d4da4))
+
 ## [0.11.2](https://github.com/sasjs/server/compare/v0.11.1...v0.11.2) (2022-07-18)
 
 
