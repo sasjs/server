@@ -126,7 +126,7 @@ const TreeViewNode = ({
             : undefined
         }
       >
-        {hasChild &&
+        {node.isFolder &&
           ['Add Folder', 'Add File'].map((item) => (
             <MenuItem key={item}>{item}</MenuItem>
           ))}

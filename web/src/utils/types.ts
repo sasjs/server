@@ -34,5 +34,6 @@ export interface RegisterPermissionPayload {
 export interface TreeNode {
   name: string
   relativePath: string
+  isFolder: boolean
   children: Array<TreeNode>
 }
