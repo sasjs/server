@@ -18,22 +18,27 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   }
 }))
 
-type DeleteModalProps = {
+type DeleteConfirmationModalProps = {
   open: boolean
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
-  deletePermission: () => void
+  message: string
+  _delete: () => void
 }
 
-const DeleteModal = ({ open, setOpen, deletePermission }: DeleteModalProps) => {
+const DeleteConfirmationModal = ({
+  open,
+  setOpen,
+  message,
+  _delete
+}: DeleteConfirmationModalProps) => {
   return (
     <BootstrapDialog onClose={() => setOpen(false)} open={open}>
       <DialogContent dividers>
-        <Typography gutterBottom>
-          Are you sure you want to delete this permission?
-        </Typography>
+        <Typography gutterBottom>{message}</Typography>
       </DialogContent>
       <DialogActions>
-        <Button color="error" onClick={() => deletePermission()}>
+        <Button onClick={() => setOpen(false)}>Cancel</Button>
+        <Button color="error" onClick={() => _delete()}>
           Delete
         </Button>
       </DialogActions>
@@ -41,4 +46,4 @@ const DeleteModal = ({ open, setOpen, deletePermission }: DeleteModalProps) => {
   )
 }
 
-export default DeleteModal
+export default DeleteConfirmationModal
