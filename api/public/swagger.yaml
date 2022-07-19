@@ -248,6 +248,8 @@ components:
                     type: string
                 absolutePath:
                     type: string
+                isFolder:
+                    type: boolean
                 children:
                     items:
                         $ref: '#/components/schemas/TreeNode'
@@ -256,6 +258,7 @@ components:
                 - name
                 - relativePath
                 - absolutePath
+                - isFolder
                 - children
             type: object
             additionalProperties: false
