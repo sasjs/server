@@ -1,4 +1,5 @@
 import express from 'express'
+import { cookieOptions } from '../../app'
 import { WebController } from '../../controllers/web'
 import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
 import { authorizeValidation, loginWebValidation } from '../../utils'
@@ -13,7 +14,7 @@ webRouter.get('/', async (req, res) => {
   } catch (_) {
     response = 'Web Build is not present'
   } finally {
-    res.cookie('XSRF-TOKEN', req.csrfToken())
+    res.cookie('XSRF-TOKEN', req.csrfToken(), cookieOptions)
 
     return res.send(response)
   }
