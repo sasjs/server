@@ -3,12 +3,15 @@ import { Menu, MenuItem } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
+import DeleteConfirmationModal from './deleteConfirmationModal'
+
 import { TreeNode } from '../utils/types'
 
-type TreeViewProps = {
+type Props = {
   node: TreeNode
   selectedFilePath: string
   handleSelect: (filePath: string) => void
+  deleteNode: (path: string, isFolder: boolean) => void
   defaultExpanded?: string[]
 }
 
@@ -16,8 +19,9 @@ const TreeView = ({
   node,
   selectedFilePath,
   handleSelect,
+  deleteNode,
   defaultExpanded
-}: TreeViewProps) => {
+}: Props) => {
   return (
     <ul
       style={{
@@ -30,6 +34,7 @@ const TreeView = ({
         node={node}
         selectedFilePath={selectedFilePath}
         handleSelect={handleSelect}
+        deleteNode={deleteNode}
         defaultExpanded={defaultExpanded}
       />
     </ul>
@@ -38,19 +43,17 @@ const TreeView = ({
 
 export default TreeView
 
-type TreeViewNodeProps = {
-  node: TreeNode
-  selectedFilePath: string
-  handleSelect: (filePath: string) => void
-  defaultExpanded?: string[]
-}
-
 const TreeViewNode = ({
   node,
   selectedFilePath,
   handleSelect,
+  deleteNode,
   defaultExpanded
-}: TreeViewNodeProps) => {
+}: Props) => {
+  const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
+    useState(false)
+  const [deleteConfirmationModalMessage, setDeleteConfirmationModalMessage] =
+    useState('')
   const [childVisible, setChildVisibility] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number
@@ -90,6 +93,21 @@ const TreeViewNode = ({
     }
   }, [defaultExpanded, node.relativePath])
 
+  const handleDeleteItemClick = () => {
+    setContextMenu(null)
+    setDeleteConfirmationModalOpen(true)
+    setDeleteConfirmationModalMessage(
+      `Are you sure you want to delete ${node.isFolder ? 'folder' : 'file'} "${
+        node.relativePath
+      }"?`
+    )
+  }
+
+  const deleteConfirm = () => {
+    setDeleteConfirmationModalOpen(false)
+    deleteNode(node.relativePath, node.isFolder)
+  }
+
   return (
     <div onContextMenu={handleContextMenu} style={{ cursor: 'context-menu' }}>
       <li style={{ display: 'list-item' }}>
@@ -112,10 +130,17 @@ const TreeViewNode = ({
               node={child}
               selectedFilePath={selectedFilePath}
               handleSelect={handleSelect}
+              deleteNode={deleteNode}
               defaultExpanded={defaultExpanded}
             />
           ))}
       </li>
+      <DeleteConfirmationModal
+        open={deleteConfirmationModalOpen}
+        setOpen={setDeleteConfirmationModalOpen}
+        message={deleteConfirmationModalMessage}
+        _delete={deleteConfirm}
+      />
       <Menu
         open={contextMenu !== null}
         onClose={() => setContextMenu(null)}
@@ -131,7 +156,9 @@ const TreeViewNode = ({
             <MenuItem key={item}>{item}</MenuItem>
           ))}
         <MenuItem>Rename</MenuItem>
-        <MenuItem>Delete</MenuItem>
+        <MenuItem disabled={!node.relativePath} onClick={handleDeleteItemClick}>
+          Delete
+        </MenuItem>
       </Menu>
     </div>
   )

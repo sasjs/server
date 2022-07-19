@@ -107,6 +107,8 @@ const SASjsEditor = ({
           setOpenModal(true)
         })
         .finally(() => setIsLoading(false))
+    } else {
+      setFileContent('')
     }
   }, [selectedFilePath])
 

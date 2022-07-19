@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-
+import axios from 'axios'
 import { Box, Drawer, Toolbar } from '@mui/material'
 
 import TreeView from '../../components/tree'
@@ -11,9 +11,15 @@ type Props = {
   selectedFilePath: string
   directoryData: TreeNode | null
   handleSelect: (filePath: string) => void
+  removeFileFromTree: (filePath: string) => void
 }
 
-const SideBar = ({ selectedFilePath, directoryData, handleSelect }: Props) => {
+const SideBar = ({
+  selectedFilePath,
+  directoryData,
+  handleSelect,
+  removeFileFromTree
+}: Props) => {
   const defaultExpanded = useMemo(() => {
     const splittedPath = selectedFilePath.split('/')
     const arr = ['']
@@ -26,6 +32,20 @@ const SideBar = ({ selectedFilePath, directoryData, handleSelect }: Props) => {
     })
     return arr
   }, [selectedFilePath])
+
+  const deleteNode = (path: string, isFolder: boolean) => {
+    const axiosPromise = axios.delete(
+      `/SASjsApi/drive/${
+        isFolder ? `folder?_folderPath=${path}` : `file?_filePath=${path}`
+      }`
+    )
+
+    axiosPromise
+      .then(() => removeFileFromTree(path))
+      .catch((err) => {
+        console.log(err)
+      })
+  }
 
   return (
     <Drawer
@@ -43,6 +63,7 @@ const SideBar = ({ selectedFilePath, directoryData, handleSelect }: Props) => {
             node={directoryData}
             selectedFilePath={selectedFilePath}
             handleSelect={handleSelect}
+            deleteNode={deleteNode}
             defaultExpanded={defaultExpanded}
           />
         )}

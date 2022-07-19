@@ -56,6 +56,12 @@ const Studio = () => {
   ) => {
     if (node.relativePath === path) {
       removeNodeFromParent(parentNode, path)
+      // reset selected file path and file path query param
+      if (
+        node.relativePath === selectedFilePath ||
+        selectedFilePath.startsWith(node.relativePath)
+      )
+        setSearchParams({})
       return true
     }
     if (Array.isArray(node.children)) {
@@ -81,6 +87,7 @@ const Studio = () => {
         selectedFilePath={selectedFilePath}
         directoryData={directoryData}
         handleSelect={handleSelect}
+        removeFileFromTree={removeFileFromTree}
       />
       <SASjsEditor
         selectedFilePath={selectedFilePath}
