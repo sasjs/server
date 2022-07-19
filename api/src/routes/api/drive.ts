@@ -149,6 +149,19 @@ driveRouter.delete('/file', async (req, res) => {
   }
 })
 
+driveRouter.delete('/folder', async (req, res) => {
+  const { error: errQ, value: query } = folderParamValidation(req.query)
+
+  if (errQ) return res.status(400).send(errQ.details[0].message)
+
+  try {
+    const response = await controller.deleteFolder(query._folderPath)
+    res.send(response)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
 driveRouter.post(
   '/file',
   (...arg) => multerSingle('file', arg),

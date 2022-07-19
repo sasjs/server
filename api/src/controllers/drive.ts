@@ -22,6 +22,7 @@ import {
   moveFile,
   createFolder,
   deleteFile as deleteFileOnSystem,
+  deleteFolder as deleteFolderOnSystem,
   folderExists,
   listFilesInFolder,
   listSubFoldersInFolder,
@@ -138,6 +139,17 @@ export class DriveController {
   @Get('/folder')
   public async getFolder(@Query() _folderPath?: string) {
     return getFolder(_folderPath)
+  }
+
+  /**
+   *
+   * @summary Delete folder from SASjs Drive
+   * @query _folderPath Location of folder
+   * @example _folderPath "/Public/somefolder/"
+   */
+  @Delete('/folder')
+  public async deleteFolder(@Query() _folderPath: string) {
+    return deleteFolder(_folderPath)
   }
 
   /**
@@ -311,6 +323,26 @@ const deleteFile = async (filePath: string) => {
   }
 
   await deleteFileOnSystem(filePathFull)
+
+  return { status: 'success' }
+}
+
+const deleteFolder = async (folderPath: string) => {
+  const driveFolderPath = getFilesFolder()
+
+  const folderPathFull = path
+    .join(getFilesFolder(), folderPath)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  if (!folderPathFull.includes(driveFolderPath)) {
+    throw new Error('Cannot delete file outside drive.')
+  }
+
+  if (!(await fileExists(folderPathFull))) {
+    throw new Error('Folder does not exist.')
+  }
+
+  await deleteFolderOnSystem(folderPathFull)
 
   return { status: 'success' }
 }
