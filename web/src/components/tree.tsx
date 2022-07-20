@@ -4,6 +4,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 import DeleteConfirmationModal from './deleteConfirmationModal'
+import NameInputModal from './nameInputModal'
 
 import { TreeNode } from '../utils/types'
 
@@ -12,6 +13,8 @@ type Props = {
   selectedFilePath: string
   handleSelect: (filePath: string) => void
   deleteNode: (path: string, isFolder: boolean) => void
+  addFile: (path: string) => void
+  addFolder: (path: string) => void
   defaultExpanded?: string[]
 }
 
@@ -20,6 +23,8 @@ const TreeView = ({
   selectedFilePath,
   handleSelect,
   deleteNode,
+  addFile,
+  addFolder,
   defaultExpanded
 }: Props) => {
   return (
@@ -35,6 +40,8 @@ const TreeView = ({
         selectedFilePath={selectedFilePath}
         handleSelect={handleSelect}
         deleteNode={deleteNode}
+        addFile={addFile}
+        addFolder={addFolder}
         defaultExpanded={defaultExpanded}
       />
     </ul>
@@ -48,12 +55,16 @@ const TreeViewNode = ({
   selectedFilePath,
   handleSelect,
   deleteNode,
+  addFile,
+  addFolder,
   defaultExpanded
 }: Props) => {
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false)
   const [deleteConfirmationModalMessage, setDeleteConfirmationModalMessage] =
     useState('')
+  const [nameInputModalOpen, setNameInputModalOpen] = useState(false)
+  const [nameInputModalForFolder, setNameInputModalForFolder] = useState(false)
   const [childVisible, setChildVisibility] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number
@@ -108,6 +119,25 @@ const TreeViewNode = ({
     deleteNode(node.relativePath, node.isFolder)
   }
 
+  const handleNewFolderItemClick = () => {
+    setContextMenu(null)
+    setNameInputModalOpen(true)
+    setNameInputModalForFolder(true)
+  }
+
+  const handleNewFileItemClick = () => {
+    setContextMenu(null)
+    setNameInputModalOpen(true)
+    setNameInputModalForFolder(false)
+  }
+
+  const addFileFolder = (name: string) => {
+    setNameInputModalOpen(false)
+    const path = node.relativePath + '/' + name
+    if (nameInputModalForFolder) addFolder(path)
+    else addFile(path)
+  }
+
   return (
     <div onContextMenu={handleContextMenu} style={{ cursor: 'context-menu' }}>
       <li style={{ display: 'list-item' }}>
@@ -131,6 +161,8 @@ const TreeViewNode = ({
               selectedFilePath={selectedFilePath}
               handleSelect={handleSelect}
               deleteNode={deleteNode}
+              addFile={addFile}
+              addFolder={addFolder}
               defaultExpanded={defaultExpanded}
             />
           ))}
@@ -140,6 +172,12 @@ const TreeViewNode = ({
         setOpen={setDeleteConfirmationModalOpen}
         message={deleteConfirmationModalMessage}
         _delete={deleteConfirm}
+      />
+      <NameInputModal
+        open={nameInputModalOpen}
+        setOpen={setNameInputModalOpen}
+        isFolder={nameInputModalForFolder}
+        add={addFileFolder}
       />
       <Menu
         open={contextMenu !== null}
@@ -153,7 +191,16 @@ const TreeViewNode = ({
       >
         {node.isFolder &&
           ['Add Folder', 'Add File'].map((item) => (
-            <MenuItem key={item}>{item}</MenuItem>
+            <MenuItem
+              key={item}
+              onClick={() =>
+                item === 'Add Folder'
+                  ? handleNewFolderItemClick()
+                  : handleNewFileItemClick()
+              }
+            >
+              {item}
+            </MenuItem>
           ))}
         <MenuItem>Rename</MenuItem>
         <MenuItem disabled={!node.relativePath} onClick={handleDeleteItemClick}>

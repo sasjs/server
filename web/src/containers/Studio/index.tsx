@@ -88,6 +88,7 @@ const Studio = () => {
         directoryData={directoryData}
         handleSelect={handleSelect}
         removeFileFromTree={removeFileFromTree}
+        refreshSideBar={fetchDirectoryData}
       />
       <SASjsEditor
         selectedFilePath={selectedFilePath}
