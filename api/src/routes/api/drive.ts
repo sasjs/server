@@ -11,6 +11,7 @@ import {
   extractName,
   fileBodyValidation,
   fileParamValidation,
+  folderBodyValidation,
   folderParamValidation,
   isZipFile
 } from '../../utils'
@@ -189,6 +190,19 @@ driveRouter.post(
     }
   }
 )
+
+driveRouter.post('/folder', async (req, res) => {
+  const { error, value: body } = folderBodyValidation(req.body)
+
+  if (error) return res.status(400).send(error.details[0].message)
+
+  try {
+    const response = await controller.addFolder(body)
+    res.send(response)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
 
 driveRouter.patch(
   '/file',

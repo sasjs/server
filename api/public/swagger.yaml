@@ -230,7 +230,7 @@ components:
                 - fileTree
             type: object
             additionalProperties: false
-        UpdateFileResponse:
+        FileFolderResponse:
             properties:
                 status:
                     type: string
@@ -238,6 +238,16 @@ components:
                     type: string
             required:
                 - status
+            type: object
+            additionalProperties: false
+        AddFolderPayload:
+            properties:
+                folderPath:
+                    type: string
+                    description: 'Location of folder'
+                    example: /Public/someFolder
+            required:
+                - folderPath
             type: object
             additionalProperties: false
         TreeNode:
@@ -839,7 +849,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
+                                $ref: '#/components/schemas/FileFolderResponse'
                             examples:
                                 'Example 1':
                                     value: {status: success}
@@ -848,7 +858,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
+                                $ref: '#/components/schemas/FileFolderResponse'
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
@@ -861,7 +871,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS program'
+                    description: 'Location of file'
                     in: query
                     name: _filePath
                     required: false
@@ -890,7 +900,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
+                                $ref: '#/components/schemas/FileFolderResponse'
                             examples:
                                 'Example 1':
                                     value: {status: success}
@@ -899,7 +909,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
+                                $ref: '#/components/schemas/FileFolderResponse'
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
@@ -990,6 +1000,40 @@ paths:
                     schema:
                         type: string
                     example: /Public/somefolder/
+        post:
+            operationId: AddFolder
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '409':
+                    description: 'Folder already exists'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Add folder request failed.'}
+            summary: 'Create an empty folder in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddFolderPayload'
     /SASjsApi/drive/filetree:
         get:
             operationId: GetFileTree

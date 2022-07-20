@@ -59,9 +59,17 @@ interface GetFileTreeResponse {
   tree: TreeNode
 }
 
-interface UpdateFileResponse {
+interface FileFolderResponse {
   status: string
   message?: string
+}
+
+interface AddFolderPayload {
+  /**
+   * Location of folder
+   * @example "/Public/someFolder"
+   */
+  folderPath: string
 }
 
 const fileTreeExample = getTreeExample()
@@ -143,6 +151,17 @@ export class DriveController {
 
   /**
    *
+   * @summary Delete file from SASjs Drive
+   * @query _filePath Location of file
+   * @example _filePath "/Public/somefolder/some.file"
+   */
+  @Delete('/file')
+  public async deleteFile(@Query() _filePath: string) {
+    return deleteFile(_filePath)
+  }
+
+  /**
+   *
    * @summary Delete folder from SASjs Drive
    * @query _folderPath Location of folder
    * @example _folderPath "/Public/somefolder/"
@@ -153,30 +172,19 @@ export class DriveController {
   }
 
   /**
-   *
-   * @summary Delete file from SASjs Drive
-   * @query _filePath Location of SAS program
-   * @example _filePath "/Public/somefolder/some.file"
-   */
-  @Delete('/file')
-  public async deleteFile(@Query() _filePath: string) {
-    return deleteFile(_filePath)
-  }
-
-  /**
    * It's optional to either provide `_filePath` in url as query parameter
    * Or provide `filePath` in body as form field.
    * But it's required to provide else API will respond with Bad Request.
    *
    * @summary Create a file in SASjs Drive
-   * @param _filePath Location of SAS program
+   * @param _filePath Location of file
    * @example _filePath "/Public/somefolder/some.file.sas"
    *
    */
-  @Example<UpdateFileResponse>({
+  @Example<FileFolderResponse>({
     status: 'success'
   })
-  @Response<UpdateFileResponse>(403, 'File already exists', {
+  @Response<FileFolderResponse>(403, 'File already exists', {
     status: 'failure',
     message: 'File request failed.'
   })
@@ -185,8 +193,26 @@ export class DriveController {
     @UploadedFile() file: Express.Multer.File,
     @Query() _filePath?: string,
     @FormField() filePath?: string
-  ): Promise<UpdateFileResponse> {
+  ): Promise<FileFolderResponse> {
     return saveFile((_filePath ?? filePath)!, file)
+  }
+
+  /**
+   * @summary Create an empty folder in SASjs Drive
+   *
+   */
+  @Example<FileFolderResponse>({
+    status: 'success'
+  })
+  @Response<FileFolderResponse>(409, 'Folder already exists', {
+    status: 'failure',
+    message: 'Add folder request failed.'
+  })
+  @Post('/folder')
+  public async addFolder(
+    @Body() body: AddFolderPayload
+  ): Promise<FileFolderResponse> {
+    return addFolder(body.folderPath)
   }
 
   /**
@@ -199,10 +225,10 @@ export class DriveController {
    * @example _filePath "/Public/somefolder/some.file.sas"
    *
    */
-  @Example<UpdateFileResponse>({
+  @Example<FileFolderResponse>({
     status: 'success'
   })
-  @Response<UpdateFileResponse>(403, `File doesn't exist`, {
+  @Response<FileFolderResponse>(403, `File doesn't exist`, {
     status: 'failure',
     message: 'File request failed.'
   })
@@ -211,7 +237,7 @@ export class DriveController {
     @UploadedFile() file: Express.Multer.File,
     @Query() _filePath?: string,
     @FormField() filePath?: string
-  ): Promise<UpdateFileResponse> {
+  ): Promise<FileFolderResponse> {
     return updateFile((_filePath ?? filePath)!, file)
   }
 
@@ -368,6 +394,26 @@ const saveFile = async (
   const folderPath = path.dirname(filePathFull)
   await createFolder(folderPath)
   await moveFile(multerFile.path, filePathFull)
+
+  return { status: 'success' }
+}
+
+const addFolder = async (folderPath: string): Promise<FileFolderResponse> => {
+  const drivePath = getFilesFolder()
+
+  const folderPathFull = path
+    .join(drivePath, folderPath)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  if (!folderPathFull.includes(drivePath)) {
+    throw new Error('Cannot put folder outside drive.')
+  }
+
+  if (await folderExists(folderPathFull)) {
+    throw new Error('Folder already exists.')
+  }
+
+  await createFolder(folderPathFull)
 
   return { status: 'success' }
 }

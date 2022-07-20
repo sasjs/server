@@ -143,6 +143,11 @@ export const folderParamValidation = (data: any): Joi.ValidationResult =>
     _folderPath: Joi.string()
   }).validate(data)
 
+export const folderBodyValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    folderPath: Joi.string()
+  }).validate(data)
+
 export const runCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     code: Joi.string().required(),
