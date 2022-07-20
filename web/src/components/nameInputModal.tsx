@@ -8,15 +8,19 @@ import { BootstrapDialog } from './modal'
 type NameInputModalProps = {
   open: boolean
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
+  title: string
   isFolder: boolean
-  add: (name: string) => void
+  actionLabel: string
+  action: (name: string) => void
 }
 
 const NameInputModal = ({
   open,
   setOpen,
+  title,
   isFolder,
-  add
+  actionLabel,
+  action
 }: NameInputModalProps) => {
   const [name, setName] = useState('')
   const [hasError, setHasError] = useState(false)
@@ -48,7 +52,7 @@ const NameInputModal = ({
   return (
     <BootstrapDialog fullWidth onClose={() => setOpen(false)} open={open}>
       <BootstrapDialogTitle id="abort-modal" handleOpen={setOpen}>
-        {isFolder ? 'Add Folder' : 'Add File'}
+        {title}
       </BootstrapDialogTitle>
       <DialogContent dividers>
         <TextField
@@ -68,11 +72,11 @@ const NameInputModal = ({
         <Button
           variant="contained"
           onClick={() => {
-            add(name)
+            action(name)
           }}
           disabled={hasError || !name}
         >
-          Add
+          {actionLabel}
         </Button>
       </DialogActions>
     </BootstrapDialog>

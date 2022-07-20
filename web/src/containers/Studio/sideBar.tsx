@@ -122,6 +122,31 @@ const SideBar = ({
       .finally(() => setIsLoading(false))
   }
 
+  const rename = (oldPath: string, newPath: string) => {
+    setIsLoading(true)
+    axios
+      .post('/SASjsApi/drive/rename', { oldPath, newPath })
+      .then(() => {
+        setSnackbarMessage('Successfully Renamed')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
+        if (oldPath === selectedFilePath) handleSelect(newPath)
+        else if (selectedFilePath.startsWith(oldPath))
+          handleSelect(selectedFilePath.replace(oldPath, newPath))
+        refreshSideBar()
+      })
+      .catch((err) => {
+        setModalTitle('Abort')
+        setModalPayload(
+          typeof err.response.data === 'object'
+            ? JSON.stringify(err.response.data)
+            : err.response.data
+        )
+        setOpenModal(true)
+      })
+      .finally(() => setIsLoading(false))
+  }
+
   return (
     <Drawer
       variant="permanent"
@@ -147,6 +172,7 @@ const SideBar = ({
             deleteNode={deleteNode}
             addFile={addFile}
             addFolder={addFolder}
+            rename={rename}
             defaultExpanded={defaultExpanded}
           />
         )}
