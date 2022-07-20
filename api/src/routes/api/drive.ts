@@ -13,7 +13,8 @@ import {
   fileParamValidation,
   folderBodyValidation,
   folderParamValidation,
-  isZipFile
+  isZipFile,
+  renameBodyValidation
 } from '../../utils'
 
 const controller = new DriveController()
@@ -231,6 +232,19 @@ driveRouter.patch(
     }
   }
 )
+
+driveRouter.post('/rename', async (req, res) => {
+  const { error, value: body } = renameBodyValidation(req.body)
+
+  if (error) return res.status(400).send(error.details[0].message)
+
+  try {
+    const response = await controller.rename(body)
+    res.send(response)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
 
 driveRouter.get('/fileTree', async (req, res) => {
   try {

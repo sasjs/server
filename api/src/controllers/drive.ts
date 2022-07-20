@@ -72,6 +72,19 @@ interface AddFolderPayload {
   folderPath: string
 }
 
+interface RenamePayload {
+  /**
+   * Old path of file/folder
+   * @example "/Public/someFolder"
+   */
+  oldPath: string
+  /**
+   * New path of file/folder
+   * @example "/Public/newFolder"
+   */
+  newPath: string
+}
+
 const fileTreeExample = getTreeExample()
 
 const successDeployResponse: DeployResponse = {
@@ -239,6 +252,24 @@ export class DriveController {
     @FormField() filePath?: string
   ): Promise<FileFolderResponse> {
     return updateFile((_filePath ?? filePath)!, file)
+  }
+
+  /**
+   * @summary Renames a file/folder in SASjs Drive
+   *
+   */
+  @Example<FileFolderResponse>({
+    status: 'success'
+  })
+  @Response<FileFolderResponse>(409, 'Folder already exists', {
+    status: 'failure',
+    message: 'rename request failed.'
+  })
+  @Post('/rename')
+  public async rename(
+    @Body() body: RenamePayload
+  ): Promise<FileFolderResponse> {
+    return rename(body.oldPath, body.newPath)
   }
 
   /**
@@ -416,6 +447,46 @@ const addFolder = async (folderPath: string): Promise<FileFolderResponse> => {
   await createFolder(folderPathFull)
 
   return { status: 'success' }
+}
+
+const rename = async (
+  oldPath: string,
+  newPath: string
+): Promise<FileFolderResponse> => {
+  const drivePath = getFilesFolder()
+
+  const oldPathFull = path
+    .join(drivePath, oldPath)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  const newPathFull = path
+    .join(drivePath, newPath)
+    .replace(new RegExp('/', 'g'), path.sep)
+
+  if (!oldPathFull.includes(drivePath)) {
+    throw new Error('Old path is outside drive.')
+  }
+
+  if (!newPathFull.includes(drivePath)) {
+    throw new Error('New path is outside drive.')
+  }
+
+  if (await folderExists(oldPathFull)) {
+    if (await folderExists(newPathFull)) {
+      throw new Error('Folder already exists.')
+    } else moveFile(oldPathFull, newPathFull)
+
+    return { status: 'success' }
+  }
+
+  if (await fileExists(oldPathFull)) {
+    if (await fileExists(newPathFull)) {
+      throw new Error('File already exists.')
+    } else moveFile(oldPath, newPathFull)
+    return { status: 'success' }
+  }
+
+  throw new Error('No file/folder found for provided path.')
 }
 
 const updateFile = async (

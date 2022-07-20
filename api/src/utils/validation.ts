@@ -140,12 +140,18 @@ export const fileParamValidation = (data: any): Joi.ValidationResult =>
 
 export const folderParamValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    _folderPath: Joi.string()
+    _folderPath: Joi.string().required()
   }).validate(data)
 
 export const folderBodyValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    folderPath: Joi.string()
+    folderPath: Joi.string().required()
+  }).validate(data)
+
+export const renameBodyValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    oldPath: Joi.string().required(),
+    newPath: Joi.string().required()
   }).validate(data)
 
 export const runCodeValidation = (data: any): Joi.ValidationResult =>

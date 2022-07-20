@@ -250,6 +250,21 @@ components:
                 - folderPath
             type: object
             additionalProperties: false
+        RenamePayload:
+            properties:
+                oldPath:
+                    type: string
+                    description: 'Old path of file/folder'
+                    example: /Public/someFolder
+                newPath:
+                    type: string
+                    description: 'New path of file/folder'
+                    example: /Public/newFolder
+            required:
+                - oldPath
+                - newPath
+            type: object
+            additionalProperties: false
         TreeNode:
             properties:
                 name:
@@ -1034,6 +1049,41 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/AddFolderPayload'
+    /SASjsApi/drive/rename:
+        post:
+            operationId: Rename
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '409':
+                    description: 'Folder already exists'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'rename request failed.'}
+            summary: 'Renames a file/folder in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RenamePayload'
     /SASjsApi/drive/filetree:
         get:
             operationId: GetFileTree
