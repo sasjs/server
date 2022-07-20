@@ -84,12 +84,6 @@ const Header = (props: any) => {
         >
           <Tab label="Home" value="/" to="/" component={Link} />
           <Tab
-            label="Drive"
-            value="/SASjsDrive"
-            to="/SASjsDrive"
-            component={Link}
-          />
-          <Tab
             label="Studio"
             value="/SASjsStudio"
             to="/SASjsStudio"

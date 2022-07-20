@@ -6,7 +6,6 @@ import { theme } from './theme'
 import Login from './components/login'
 import Header from './components/header'
 import Home from './components/home'
-import Drive from './containers/Drive'
 import Studio from './containers/Studio'
 import Settings from './containers/Settings'
 
@@ -36,7 +35,6 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/SASjsDrive" element={<Drive />} />
           <Route path="/SASjsStudio" element={<Studio />} />
           <Route path="/SASjsSettings" element={<Settings />} />
           <Route path="/SASjsLogon" element={<AuthCode />} />
