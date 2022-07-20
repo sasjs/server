@@ -1782,23 +1782,14 @@ servers:
         url: /
 tags:
     -
-        name: Info
-        description: 'Get Server Information'
-    -
-        name: Session
-        description: 'Get Session information'
-    -
-        name: User
-        description: 'Operations with users'
-    -
-        name: Permission
-        description: 'Operations about permissions'
+        name: Auth
+        description: 'Operations about auth'
     -
         name: Client
         description: 'Operations about clients'
     -
-        name: Auth
-        description: 'Operations about auth'
+        name: CODE
+        description: 'Execution of code (various runtimes are supported)'
     -
         name: Drive
         description: 'Operations on SASjs Drive'
@@ -1806,11 +1797,20 @@ tags:
         name: Group
         description: 'Operations on groups and group memberships'
     -
+        name: Info
+        description: 'Get Server Information'
+    -
+        name: Permission
+        description: 'Operations about permissions'
+    -
+        name: Session
+        description: 'Get Session information'
+    -
         name: STP
         description: 'Execution of Stored Programs'
     -
-        name: CODE
-        description: 'Execution of code (various runtimes are supported)'
+        name: User
+        description: 'Operations with users'
     -
         name: Web
         description: 'Operations on Web'
