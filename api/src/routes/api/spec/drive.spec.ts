@@ -89,6 +89,12 @@ describe('drive', () => {
       principalId: dbUser.id,
       setting: PermissionSetting.grant
     })
+    await permissionController.createPermission({
+      uri: '/SASjsApi/drive/rename',
+      principalType: PrincipalType.user,
+      principalId: dbUser.id,
+      setting: PermissionSetting.grant
+    })
   })
 
   afterAll(async () => {
@@ -582,6 +588,84 @@ describe('drive', () => {
         expect(res.body).toEqual({})
       })
     })
+
+    describe('post', () => {
+      const folderApi = '/SASjsApi/drive/folder'
+      const pathToDrive = fileUtilModules.getFilesFolder()
+
+      afterEach(async () => {
+        await deleteFolder(path.join(pathToDrive, 'post'))
+      })
+
+      it('should create a folder on drive', async () => {
+        const res = await request(app)
+          .post(folderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ folderPath: '/post/folder' })
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({
+          status: 'success'
+        })
+      })
+
+      it('should respond with Forbidden if the folder already exists', async () => {
+        await createFolder(path.join(pathToDrive, '/post/folder'))
+
+        const res = await request(app)
+          .post(folderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ folderPath: '/post/folder' })
+
+        expect(res.statusCode).toEqual(403)
+      })
+
+      it('should respond with Forbidden if the folderPath is outside drive', async () => {
+        const res = await request(app)
+          .post(folderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .send({ folderPath: '../sample' })
+
+        expect(res.statusCode).toEqual(403)
+      })
+    })
+
+    describe('delete', () => {
+      const folderApi = '/SASjsApi/drive/folder'
+      const pathToDrive = fileUtilModules.getFilesFolder()
+
+      it('should delete a folder on drive', async () => {
+        await createFolder(path.join(pathToDrive, 'delete'))
+
+        const res = await request(app)
+          .delete(folderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _folderPath: 'delete' })
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toEqual({
+          status: 'success'
+        })
+      })
+
+      it('should respond with Forbidden if the folder does not  exists', async () => {
+        const res = await request(app)
+          .delete(folderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _folderPath: 'notExists' })
+
+        expect(res.statusCode).toEqual(403)
+      })
+
+      it('should respond with Forbidden if the folderPath is outside drive', async () => {
+        const res = await request(app)
+          .delete(folderApi)
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _folderPath: '../outsideDrive' })
+
+        expect(res.statusCode).toEqual(403)
+      })
+    })
   })
 
   describe('file', () => {
@@ -964,6 +1048,113 @@ describe('drive', () => {
         expect(res.text).toEqual(`"_filePath" is required`)
         expect(res.body).toEqual({})
       })
+    })
+  })
+
+  describe('rename', () => {
+    const renameApi = '/SASjsApi/drive/rename'
+    const pathToDrive = fileUtilModules.getFilesFolder()
+
+    afterEach(async () => {
+      await deleteFolder(path.join(pathToDrive, 'rename'))
+    })
+
+    it('should rename a folder', async () => {
+      await createFolder(path.join(pathToDrive, 'rename', 'folder'))
+
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: '/rename/folder', newPath: '/rename/renamed' })
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body).toEqual({
+        status: 'success'
+      })
+    })
+
+    it('should rename a file', async () => {
+      await createFile(
+        path.join(pathToDrive, 'rename', 'file.txt'),
+        'some file content'
+      )
+
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({
+          oldPath: '/rename/file.txt',
+          newPath: '/rename/renamed.txt'
+        })
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body).toEqual({
+        status: 'success'
+      })
+    })
+
+    it('should respond with forbidden if the oldPath is outside drive', async () => {
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: '../outside', newPath: 'renamed' })
+
+      expect(res.statusCode).toEqual(403)
+    })
+
+    it('should respond with forbidden if the newPath is outside drive', async () => {
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: 'older', newPath: '../outside' })
+
+      expect(res.statusCode).toEqual(403)
+    })
+
+    it('should respond with forbidden if the folder does not exist', async () => {
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: '/rename/not exists', newPath: '/rename/renamed' })
+
+      expect(res.statusCode).toEqual(403)
+    })
+
+    it('should respond with forbidden if the folder already exists', async () => {
+      await createFolder(path.join(pathToDrive, 'rename', 'folder'))
+      await createFolder(path.join(pathToDrive, 'rename', 'exists'))
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: '/rename/folder', newPath: '/rename/exists' })
+
+      expect(res.statusCode).toEqual(403)
+    })
+
+    it('should respond with forbidden if the file does not exist', async () => {
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: '/rename/file.txt', newPath: '/rename/renamed.txt' })
+
+      expect(res.statusCode).toEqual(403)
+    })
+
+    it('should respond with forbidden if the file already exists', async () => {
+      await createFile(
+        path.join(pathToDrive, 'rename', 'file.txt'),
+        'some file content'
+      )
+      await createFile(
+        path.join(pathToDrive, 'rename', 'exists.txt'),
+        'some existing content'
+      )
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: '/rename/file.txt', newPath: '/rename/exists.txt' })
+
+      expect(res.statusCode).toEqual(403)
     })
   })
 })
