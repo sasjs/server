@@ -215,11 +215,7 @@ const SASjsEditor = ({
   }
 
   return (
-    <Box
-      onKeyUp={handleKeyUp}
-      onKeyDown={handleKeyDown}
-      sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}
-    >
+    <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
         sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={isLoading}
@@ -298,6 +294,8 @@ const SASjsEditor = ({
               />
             </Box>
             <Paper
+              onKeyUp={handleKeyUp}
+              onKeyDown={handleKeyDown}
               sx={{
                 height: 'calc(100vh - 170px)',
                 padding: '10px',
