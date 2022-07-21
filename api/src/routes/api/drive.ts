@@ -152,7 +152,7 @@ driveRouter.delete('/file', async (req, res) => {
 })
 
 driveRouter.delete('/folder', async (req, res) => {
-  const { error: errQ, value: query } = folderParamValidation(req.query)
+  const { error: errQ, value: query } = folderParamValidation(req.query, true)
 
   if (errQ) return res.status(400).send(errQ.details[0].message)
 
