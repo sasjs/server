@@ -221,19 +221,17 @@ const TreeViewNode = ({
             : undefined
         }
       >
-        {node.isFolder &&
-          ['Add Folder', 'Add File'].map((item) => (
+        {node.isFolder && (
+          <div>
+            <MenuItem onClick={handleNewFolderItemClick}>Add Folder</MenuItem>
             <MenuItem
-              key={item}
-              onClick={() =>
-                item === 'Add Folder'
-                  ? handleNewFolderItemClick()
-                  : handleNewFileItemClick()
-              }
+              disabled={!node.relativePath}
+              onClick={handleNewFileItemClick}
             >
-              {item}
+              Add File
             </MenuItem>
-          ))}
+          </div>
+        )}
         <MenuItem disabled={!node.relativePath} onClick={handleRenameItemClick}>
           Rename
         </MenuItem>

@@ -395,7 +395,7 @@ const deleteFolder = async (folderPath: string) => {
     throw new Error('Cannot delete file outside drive.')
   }
 
-  if (!(await fileExists(folderPathFull))) {
+  if (!(await folderExists(folderPathFull))) {
     throw new Error('Folder does not exist.')
   }
 
@@ -482,7 +482,7 @@ const rename = async (
   if (await fileExists(oldPathFull)) {
     if (await fileExists(newPathFull)) {
       throw new Error('File already exists.')
-    } else moveFile(oldPath, newPathFull)
+    } else moveFile(oldPathFull, newPathFull)
     return { status: 'success' }
   }
 
