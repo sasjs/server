@@ -22,6 +22,8 @@ export const getDesktopUserAutoExecPath = () =>
 
 export const getSasjsRootFolder = () => process.driveLoc
 
+export const getLogFolder = () => process.logsLoc
+
 export const getAppStreamConfigPath = () =>
   path.join(getSasjsRootFolder(), 'appStreamConfig.json')
 
@@ -31,8 +33,6 @@ export const getMacrosFolder = () =>
 export const getUploadsFolder = () => path.join(getSasjsRootFolder(), 'uploads')
 
 export const getFilesFolder = () => path.join(getSasjsRootFolder(), 'files')
-
-export const getLogFolder = () => path.join(getSasjsRootFolder(), 'logs')
 
 export const getWeboutFolder = () => path.join(getSasjsRootFolder(), 'webouts')
 

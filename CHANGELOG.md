@@ -1,3 +1,51 @@
+## [0.11.5](https://github.com/sasjs/server/compare/v0.11.4...v0.11.5) (2022-07-19)
+
+
+### Bug Fixes
+
+* Revert "fix(security): missing cookie flags are added" ([ce5218a](https://github.com/sasjs/server/commit/ce5218a2278cc750f2b1032024685dc6cd72f796))
+
+## [0.11.4](https://github.com/sasjs/server/compare/v0.11.3...v0.11.4) (2022-07-19)
+
+
+### Bug Fixes
+
+* **security:** missing cookie flags are added ([526402f](https://github.com/sasjs/server/commit/526402fd73407ee4fa2d31092111a7e6a1741487))
+
+## [0.11.3](https://github.com/sasjs/server/compare/v0.11.2...v0.11.3) (2022-07-19)
+
+
+### Bug Fixes
+
+* filePath fix in code.js file for windows ([2995121](https://github.com/sasjs/server/commit/299512135d77c2ac9e34853cf35aee6f2e1d4da4))
+
+## [0.11.2](https://github.com/sasjs/server/compare/v0.11.1...v0.11.2) (2022-07-18)
+
+
+### Bug Fixes
+
+* apply icon option only for sas.exe ([d2ddd8a](https://github.com/sasjs/server/commit/d2ddd8aacadfdd143026881f2c6ae8c6b277610a))
+
+## [0.11.1](https://github.com/sasjs/server/compare/v0.11.0...v0.11.1) (2022-07-18)
+
+
+### Bug Fixes
+
+* bank operator ([aa02741](https://github.com/sasjs/server/commit/aa027414ed3ce51f1014ef36c4191e064b2e963d))
+* ensuring nosplash option only applies for sas.exe ([65e6de9](https://github.com/sasjs/server/commit/65e6de966383fe49a919b1f901d77c7f1e402c9b)), closes [#229](https://github.com/sasjs/server/issues/229)
+
+# [0.11.0](https://github.com/sasjs/server/compare/v0.10.0...v0.11.0) (2022-07-16)
+
+
+### Bug Fixes
+
+* **logs:** logs location is configurable ([e024a92](https://github.com/sasjs/server/commit/e024a92f165990e08db8aa26ee326dbcb30e2e46))
+
+
+### Features
+
+* **logs:** logs to file with rotating + code split into files ([92fda18](https://github.com/sasjs/server/commit/92fda183f3f0f3956b7c791669eb8dd52c389d1b))
+
 # [0.10.0](https://github.com/sasjs/server/compare/v0.9.0...v0.10.0) (2022-07-06)
 
 

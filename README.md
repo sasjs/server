@@ -136,6 +136,9 @@ HELMET_CSP_CONFIG_PATH=./csp.config.json
 # Docs: https://www.npmjs.com/package/morgan#predefined-formats
 LOG_FORMAT_MORGAN=
 
+# This location is for server logs with classical UNIX logrotate behavior
+LOG_LOCATION=./sasjs_root/logs
+
 # A comma separated string that defines the available runTimes.
 # Priority is given to the runtime that comes first in the string.
 # Possible options at the moment are sas and js
