@@ -1099,6 +1099,26 @@ describe('drive', () => {
       })
     })
 
+    it('should respond with Bad Request if the oldPath is missing', async () => {
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ newPath: 'newPath' })
+        .expect(400)
+
+      expect(res.text).toEqual(`\"oldPath\" is required`)
+    })
+
+    it('should respond with Bad Request if the newPath is missing', async () => {
+      const res = await request(app)
+        .post(renameApi)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ oldPath: 'oldPath' })
+        .expect(400)
+
+      expect(res.text).toEqual(`\"newPath\" is required`)
+    })
+
     it('should respond with Bad Request if the oldPath is outside drive', async () => {
       const res = await request(app)
         .post(renameApi)
