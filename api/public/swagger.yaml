@@ -1,1742 +1,1963 @@
 components:
-    examples: {}
-    headers: {}
-    parameters: {}
-    requestBodies: {}
-    responses: {}
-    schemas:
-        TokenResponse:
-            properties:
-                accessToken:
-                    type: string
-                    description: 'Access Token'
-                    example: someRandomCryptoString
-                refreshToken:
-                    type: string
-                    description: 'Refresh Token'
-                    example: someRandomCryptoString
-            required:
-                - accessToken
-                - refreshToken
-            type: object
-            additionalProperties: false
-        TokenPayload:
-            properties:
-                clientId:
-                    type: string
-                    description: 'Client ID'
-                    example: clientID1
-                code:
-                    type: string
-                    description: 'Authorization code'
-                    example: someRandomCryptoString
-            required:
-                - clientId
-                - code
-            type: object
-            additionalProperties: false
-        InfoJWT:
-            properties:
-                clientId:
-                    type: string
-                userId:
-                    type: number
-                    format: double
-            required:
-                - clientId
-                - userId
-            type: object
-            additionalProperties: false
-        ClientPayload:
-            properties:
-                clientId:
-                    type: string
-                    description: 'Client ID'
-                    example: someFormattedClientID1234
-                clientSecret:
-                    type: string
-                    description: 'Client Secret'
-                    example: someRandomCryptoString
-            required:
-                - clientId
-                - clientSecret
-            type: object
-            additionalProperties: false
-        IRecordOfAny:
-            properties: {}
-            type: object
-            additionalProperties: {}
-        LogLine:
-            properties:
-                line:
-                    type: string
-            required:
-                - line
-            type: object
-            additionalProperties: false
-        HTTPHeaders:
-            properties: {}
-            type: object
-            additionalProperties:
-                type: string
-        ExecuteReturnJsonResponse:
-            properties:
-                status:
-                    type: string
-                _webout:
-                    anyOf:
-                        -
-                            type: string
-                        -
-                            $ref: '#/components/schemas/IRecordOfAny'
-                log:
-                    items:
-                        $ref: '#/components/schemas/LogLine'
-                    type: array
-                message:
-                    type: string
-                httpHeaders:
-                    $ref: '#/components/schemas/HTTPHeaders'
-            required:
-                - status
-                - _webout
-                - log
-                - httpHeaders
-            type: object
-            additionalProperties: false
-        RunTimeType:
-            enum:
-                - sas
-                - js
+  examples: {}
+  headers: {}
+  parameters: {}
+  requestBodies: {}
+  responses: {}
+  schemas:
+    TokenResponse:
+      properties:
+        accessToken:
+          type: string
+          description: 'Access Token'
+          example: someRandomCryptoString
+        refreshToken:
+          type: string
+          description: 'Refresh Token'
+          example: someRandomCryptoString
+      required:
+        - accessToken
+        - refreshToken
+      type: object
+      additionalProperties: false
+    TokenPayload:
+      properties:
+        clientId:
+          type: string
+          description: 'Client ID'
+          example: clientID1
+        code:
+          type: string
+          description: 'Authorization code'
+          example: someRandomCryptoString
+      required:
+        - clientId
+        - code
+      type: object
+      additionalProperties: false
+    InfoJWT:
+      properties:
+        clientId:
+          type: string
+        userId:
+          type: number
+          format: double
+      required:
+        - clientId
+        - userId
+      type: object
+      additionalProperties: false
+    ClientPayload:
+      properties:
+        clientId:
+          type: string
+          description: 'Client ID'
+          example: someFormattedClientID1234
+        clientSecret:
+          type: string
+          description: 'Client Secret'
+          example: someRandomCryptoString
+      required:
+        - clientId
+        - clientSecret
+      type: object
+      additionalProperties: false
+    IRecordOfAny:
+      properties: {}
+      type: object
+      additionalProperties: {}
+    LogLine:
+      properties:
+        line:
+          type: string
+      required:
+        - line
+      type: object
+      additionalProperties: false
+    HTTPHeaders:
+      properties: {}
+      type: object
+      additionalProperties:
+        type: string
+    ExecuteReturnJsonResponse:
+      properties:
+        status:
+          type: string
+        _webout:
+          anyOf:
+            - type: string
+            - $ref: '#/components/schemas/IRecordOfAny'
+        log:
+          items:
+            $ref: '#/components/schemas/LogLine'
+          type: array
+        message:
+          type: string
+        httpHeaders:
+          $ref: '#/components/schemas/HTTPHeaders'
+      required:
+        - status
+        - _webout
+        - log
+        - httpHeaders
+      type: object
+      additionalProperties: false
+    RunTimeType:
+      enum:
+        - sas
+        - js
+      type: string
+    ExecuteCodePayload:
+      properties:
+        code:
+          type: string
+          description: 'Code of program'
+          example: '* Code HERE;'
+        runTime:
+          $ref: '#/components/schemas/RunTimeType'
+          description: 'runtime for program'
+          example: js
+      required:
+        - code
+        - runTime
+      type: object
+      additionalProperties: false
+    MemberType.folder:
+      enum:
+        - folder
+      type: string
+    FolderMember:
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/MemberType.folder'
+        members:
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/FolderMember'
+              - $ref: '#/components/schemas/ServiceMember'
+              - $ref: '#/components/schemas/FileMember'
+          type: array
+      required:
+        - name
+        - type
+        - members
+      type: object
+      additionalProperties: false
+    MemberType.service:
+      enum:
+        - service
+      type: string
+    ServiceMember:
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/MemberType.service'
+        code:
+          type: string
+      required:
+        - name
+        - type
+        - code
+      type: object
+      additionalProperties: false
+    MemberType.file:
+      enum:
+        - file
+      type: string
+    FileMember:
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/MemberType.file'
+        code:
+          type: string
+      required:
+        - name
+        - type
+        - code
+      type: object
+      additionalProperties: false
+    FileTree:
+      properties:
+        members:
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/FolderMember'
+              - $ref: '#/components/schemas/ServiceMember'
+              - $ref: '#/components/schemas/FileMember'
+          type: array
+      required:
+        - members
+      type: object
+      additionalProperties: false
+    DeployResponse:
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        streamServiceName:
+          type: string
+        example:
+          $ref: '#/components/schemas/FileTree'
+      required:
+        - status
+        - message
+      type: object
+      additionalProperties: false
+    DeployPayload:
+      properties:
+        appLoc:
+          type: string
+        streamWebFolder:
+          type: string
+        fileTree:
+          $ref: '#/components/schemas/FileTree'
+      required:
+        - appLoc
+        - fileTree
+      type: object
+      additionalProperties: false
+    FileFolderResponse:
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+      required:
+        - status
+      type: object
+      additionalProperties: false
+    AddFolderPayload:
+      properties:
+        folderPath:
+          type: string
+          description: 'Location of folder'
+          example: /Public/someFolder
+      required:
+        - folderPath
+      type: object
+      additionalProperties: false
+    RenamePayload:
+      properties:
+        oldPath:
+          type: string
+          description: 'Old path of file/folder'
+          example: /Public/someFolder
+        newPath:
+          type: string
+          description: 'New path of file/folder'
+          example: /Public/newFolder
+      required:
+        - oldPath
+        - newPath
+      type: object
+      additionalProperties: false
+    TreeNode:
+      properties:
+        name:
+          type: string
+        relativePath:
+          type: string
+        absolutePath:
+          type: string
+        isFolder:
+          type: boolean
+        children:
+          items:
+            $ref: '#/components/schemas/TreeNode'
+          type: array
+      required:
+        - name
+        - relativePath
+        - absolutePath
+        - isFolder
+        - children
+      type: object
+      additionalProperties: false
+    GetFileTreeResponse:
+      properties:
+        status:
+          type: string
+        tree:
+          $ref: '#/components/schemas/TreeNode'
+      required:
+        - status
+        - tree
+      type: object
+      additionalProperties: false
+    UserResponse:
+      properties:
+        id:
+          type: number
+          format: double
+        username:
+          type: string
+        displayName:
+          type: string
+        isAdmin:
+          type: boolean
+      required:
+        - id
+        - username
+        - displayName
+        - isAdmin
+      type: object
+      additionalProperties: false
+    GroupResponse:
+      properties:
+        groupId:
+          type: number
+          format: double
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - groupId
+        - name
+        - description
+      type: object
+      additionalProperties: false
+    UserDetailsResponse:
+      properties:
+        id:
+          type: number
+          format: double
+        displayName:
+          type: string
+        username:
+          type: string
+        isActive:
+          type: boolean
+        isAdmin:
+          type: boolean
+        autoExec:
+          type: string
+        groups:
+          items:
+            $ref: '#/components/schemas/GroupResponse'
+          type: array
+      required:
+        - id
+        - displayName
+        - username
+        - isActive
+        - isAdmin
+      type: object
+      additionalProperties: false
+    UserPayload:
+      properties:
+        displayName:
+          type: string
+          description: 'Display name for user'
+          example: 'John Snow'
+        username:
+          type: string
+          description: 'Username for user'
+          example: johnSnow01
+        password:
+          type: string
+          description: 'Password for user'
+        isAdmin:
+          type: boolean
+          description: 'Account should be admin or not, defaults to false'
+          example: 'false'
+        isActive:
+          type: boolean
+          description: 'Account should be active or not, defaults to true'
+          example: 'true'
+        autoExec:
+          type: string
+          description: 'User-specific auto-exec code'
+          example: ''
+      required:
+        - displayName
+        - username
+        - password
+      type: object
+      additionalProperties: false
+    GroupDetailsResponse:
+      properties:
+        groupId:
+          type: number
+          format: double
+        name:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+        users:
+          items:
+            $ref: '#/components/schemas/UserResponse'
+          type: array
+      required:
+        - groupId
+        - name
+        - description
+        - isActive
+        - users
+      type: object
+      additionalProperties: false
+    GroupPayload:
+      properties:
+        name:
+          type: string
+          description: 'Name of the group'
+          example: DCGroup
+        description:
+          type: string
+          description: 'Description of the group'
+          example: 'This group represents Data Controller Users'
+        isActive:
+          type: boolean
+          description: 'Group should be active or not, defaults to true'
+          example: 'true'
+      required:
+        - name
+        - description
+      type: object
+      additionalProperties: false
+    _LeanDocument__LeanDocument_T__:
+      properties: {}
+      type: object
+    Pick__LeanDocument_T_.Exclude_keyof_LeanDocument_T_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested__:
+      properties:
+        _id:
+          $ref: '#/components/schemas/_LeanDocument__LeanDocument_T__'
+          description: 'This documents _id.'
+        __v:
+          description: 'This documents __v.'
+        id:
+          description: 'The string version of this documents _id.'
+      type: object
+      description: 'From T, pick a set of properties whose keys are in the union K'
+    Omit__LeanDocument_this_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested_:
+      $ref: '#/components/schemas/Pick__LeanDocument_T_.Exclude_keyof_LeanDocument_T_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested__'
+      description: 'Construct a type with the properties of T except for those in type K.'
+    LeanDocument_this_:
+      $ref: '#/components/schemas/Omit__LeanDocument_this_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested_'
+    IGroup:
+      $ref: '#/components/schemas/LeanDocument_this_'
+    InfoResponse:
+      properties:
+        mode:
+          type: string
+        cors:
+          type: string
+        whiteList:
+          items:
             type: string
-        ExecuteCodePayload:
-            properties:
-                code:
-                    type: string
-                    description: 'Code of program'
-                    example: '* Code HERE;'
-                runTime:
-                    $ref: '#/components/schemas/RunTimeType'
-                    description: 'runtime for program'
-                    example: js
-            required:
-                - code
-                - runTime
-            type: object
-            additionalProperties: false
-        MemberType.folder:
-            enum:
-                - folder
+          type: array
+        protocol:
+          type: string
+        runTimes:
+          items:
             type: string
-        FolderMember:
-            properties:
-                name:
-                    type: string
-                type:
-                    $ref: '#/components/schemas/MemberType.folder'
-                members:
-                    items:
-                        anyOf:
-                            -
-                                $ref: '#/components/schemas/FolderMember'
-                            -
-                                $ref: '#/components/schemas/ServiceMember'
-                            -
-                                $ref: '#/components/schemas/FileMember'
-                    type: array
-            required:
-                - name
-                - type
-                - members
-            type: object
-            additionalProperties: false
-        MemberType.service:
-            enum:
-                - service
+          type: array
+      required:
+        - mode
+        - cors
+        - whiteList
+        - protocol
+        - runTimes
+      type: object
+      additionalProperties: false
+    AuthorizedRoutesResponse:
+      properties:
+        URIs:
+          items:
             type: string
-        ServiceMember:
-            properties:
-                name:
-                    type: string
-                type:
-                    $ref: '#/components/schemas/MemberType.service'
-                code:
-                    type: string
-            required:
-                - name
-                - type
-                - code
-            type: object
-            additionalProperties: false
-        MemberType.file:
-            enum:
-                - file
-            type: string
-        FileMember:
-            properties:
-                name:
-                    type: string
-                type:
-                    $ref: '#/components/schemas/MemberType.file'
-                code:
-                    type: string
-            required:
-                - name
-                - type
-                - code
-            type: object
-            additionalProperties: false
-        FileTree:
-            properties:
-                members:
-                    items:
-                        anyOf:
-                            -
-                                $ref: '#/components/schemas/FolderMember'
-                            -
-                                $ref: '#/components/schemas/ServiceMember'
-                            -
-                                $ref: '#/components/schemas/FileMember'
-                    type: array
-            required:
-                - members
-            type: object
-            additionalProperties: false
-        DeployResponse:
-            properties:
-                status:
-                    type: string
-                message:
-                    type: string
-                streamServiceName:
-                    type: string
-                example:
-                    $ref: '#/components/schemas/FileTree'
-            required:
-                - status
-                - message
-            type: object
-            additionalProperties: false
-        DeployPayload:
-            properties:
-                appLoc:
-                    type: string
-                streamWebFolder:
-                    type: string
-                fileTree:
-                    $ref: '#/components/schemas/FileTree'
-            required:
-                - appLoc
-                - fileTree
-            type: object
-            additionalProperties: false
-        UpdateFileResponse:
-            properties:
-                status:
-                    type: string
-                message:
-                    type: string
-            required:
-                - status
-            type: object
-            additionalProperties: false
-        TreeNode:
-            properties:
-                name:
-                    type: string
-                relativePath:
-                    type: string
-                absolutePath:
-                    type: string
-                children:
-                    items:
-                        $ref: '#/components/schemas/TreeNode'
-                    type: array
-            required:
-                - name
-                - relativePath
-                - absolutePath
-                - children
-            type: object
-            additionalProperties: false
-        GetFileTreeResponse:
-            properties:
-                status:
-                    type: string
-                tree:
-                    $ref: '#/components/schemas/TreeNode'
-            required:
-                - status
-                - tree
-            type: object
-            additionalProperties: false
-        UserResponse:
-            properties:
-                id:
-                    type: number
-                    format: double
-                username:
-                    type: string
-                displayName:
-                    type: string
-                isAdmin:
-                    type: boolean
-            required:
-                - id
-                - username
-                - displayName
-                - isAdmin
-            type: object
-            additionalProperties: false
-        GroupResponse:
-            properties:
-                groupId:
-                    type: number
-                    format: double
-                name:
-                    type: string
-                description:
-                    type: string
-            required:
-                - groupId
-                - name
-                - description
-            type: object
-            additionalProperties: false
-        UserDetailsResponse:
-            properties:
-                id:
-                    type: number
-                    format: double
-                displayName:
-                    type: string
-                username:
-                    type: string
-                isActive:
-                    type: boolean
-                isAdmin:
-                    type: boolean
-                autoExec:
-                    type: string
-                groups:
-                    items:
-                        $ref: '#/components/schemas/GroupResponse'
-                    type: array
-            required:
-                - id
-                - displayName
-                - username
-                - isActive
-                - isAdmin
-            type: object
-            additionalProperties: false
-        UserPayload:
-            properties:
-                displayName:
-                    type: string
-                    description: 'Display name for user'
-                    example: 'John Snow'
-                username:
-                    type: string
-                    description: 'Username for user'
-                    example: johnSnow01
-                password:
-                    type: string
-                    description: 'Password for user'
-                isAdmin:
-                    type: boolean
-                    description: 'Account should be admin or not, defaults to false'
-                    example: 'false'
-                isActive:
-                    type: boolean
-                    description: 'Account should be active or not, defaults to true'
-                    example: 'true'
-                autoExec:
-                    type: string
-                    description: 'User-specific auto-exec code'
-                    example: ""
-            required:
-                - displayName
-                - username
-                - password
-            type: object
-            additionalProperties: false
-        GroupDetailsResponse:
-            properties:
-                groupId:
-                    type: number
-                    format: double
-                name:
-                    type: string
-                description:
-                    type: string
-                isActive:
-                    type: boolean
-                users:
-                    items:
-                        $ref: '#/components/schemas/UserResponse'
-                    type: array
-            required:
-                - groupId
-                - name
-                - description
-                - isActive
-                - users
-            type: object
-            additionalProperties: false
-        GroupPayload:
-            properties:
-                name:
-                    type: string
-                    description: 'Name of the group'
-                    example: DCGroup
-                description:
-                    type: string
-                    description: 'Description of the group'
-                    example: 'This group represents Data Controller Users'
-                isActive:
-                    type: boolean
-                    description: 'Group should be active or not, defaults to true'
-                    example: 'true'
-            required:
-                - name
-                - description
-            type: object
-            additionalProperties: false
-        _LeanDocument__LeanDocument_T__:
-            properties: {}
-            type: object
-        Pick__LeanDocument_T_.Exclude_keyof_LeanDocument_T_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested__:
-            properties:
-                _id:
-                    $ref: '#/components/schemas/_LeanDocument__LeanDocument_T__'
-                    description: 'This documents _id.'
-                __v:
-                    description: 'This documents __v.'
-                id:
-                    description: 'The string version of this documents _id.'
-            type: object
-            description: 'From T, pick a set of properties whose keys are in the union K'
-        Omit__LeanDocument_this_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested_:
-            $ref: '#/components/schemas/Pick__LeanDocument_T_.Exclude_keyof_LeanDocument_T_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested__'
-            description: 'Construct a type with the properties of T except for those in type K.'
-        LeanDocument_this_:
-            $ref: '#/components/schemas/Omit__LeanDocument_this_.Exclude_keyofDocument._id-or-id-or-__v_-or-%24isSingleNested_'
-        IGroup:
-            $ref: '#/components/schemas/LeanDocument_this_'
-        InfoResponse:
-            properties:
-                mode:
-                    type: string
-                cors:
-                    type: string
-                whiteList:
-                    items:
-                        type: string
-                    type: array
-                protocol:
-                    type: string
-                runTimes:
-                    items:
-                        type: string
-                    type: array
-            required:
-                - mode
-                - cors
-                - whiteList
-                - protocol
-                - runTimes
-            type: object
-            additionalProperties: false
-        AuthorizedRoutesResponse:
-            properties:
-                URIs:
-                    items:
-                        type: string
-                    type: array
-            required:
-                - URIs
-            type: object
-            additionalProperties: false
-        ExecuteReturnJsonPayload:
-            properties:
-                _program:
-                    type: string
-                    description: 'Location of SAS program'
-                    example: /Public/somefolder/some.file
-            type: object
-            additionalProperties: false
-        LoginPayload:
-            properties:
-                username:
-                    type: string
-                    description: 'Username for user'
-                    example: secretuser
-                password:
-                    type: string
-                    description: 'Password for user'
-                    example: secretpassword
-            required:
-                - username
-                - password
-            type: object
-            additionalProperties: false
-        AuthorizeResponse:
-            properties:
-                code:
-                    type: string
-                    description: 'Authorization code'
-                    example: someRandomCryptoString
-            required:
-                - code
-            type: object
-            additionalProperties: false
-        AuthorizePayload:
-            properties:
-                clientId:
-                    type: string
-                    description: 'Client ID'
-                    example: clientID1
-            required:
-                - clientId
-            type: object
-            additionalProperties: false
-        PermissionDetailsResponse:
-            properties:
-                permissionId:
-                    type: number
-                    format: double
-                uri:
-                    type: string
-                setting:
-                    type: string
-                user:
-                    $ref: '#/components/schemas/UserResponse'
-                group:
-                    $ref: '#/components/schemas/GroupDetailsResponse'
-            required:
-                - permissionId
-                - uri
-                - setting
-            type: object
-            additionalProperties: false
-        PermissionSetting:
-            enum:
-                - Grant
-                - Deny
-            type: string
-        PrincipalType:
-            enum:
-                - user
-                - group
-            type: string
-        RegisterPermissionPayload:
-            properties:
-                uri:
-                    type: string
-                    description: 'Name of affected resource'
-                    example: /SASjsApi/code/execute
-                setting:
-                    $ref: '#/components/schemas/PermissionSetting'
-                    description: 'The indication of whether (and to what extent) access is provided'
-                    example: Grant
-                principalType:
-                    $ref: '#/components/schemas/PrincipalType'
-                    description: 'Indicates the type of principal'
-                    example: user
-                principalId:
-                    type: number
-                    format: double
-                    description: 'The id of user or group to which a rule is assigned.'
-                    example: 123
-            required:
-                - uri
-                - setting
-                - principalType
-                - principalId
-            type: object
-            additionalProperties: false
-        UpdatePermissionPayload:
-            properties:
-                setting:
-                    $ref: '#/components/schemas/PermissionSetting'
-                    description: 'The indication of whether (and to what extent) access is provided'
-                    example: Grant
-            required:
-                - setting
-            type: object
-            additionalProperties: false
-    securitySchemes:
-        bearerAuth:
-            type: http
-            scheme: bearer
-            bearerFormat: JWT
+          type: array
+      required:
+        - URIs
+      type: object
+      additionalProperties: false
+    ExecuteReturnJsonPayload:
+      properties:
+        _program:
+          type: string
+          description: 'Location of SAS program'
+          example: /Public/somefolder/some.file
+      type: object
+      additionalProperties: false
+    LoginPayload:
+      properties:
+        username:
+          type: string
+          description: 'Username for user'
+          example: secretuser
+        password:
+          type: string
+          description: 'Password for user'
+          example: secretpassword
+      required:
+        - username
+        - password
+      type: object
+      additionalProperties: false
+    AuthorizeResponse:
+      properties:
+        code:
+          type: string
+          description: 'Authorization code'
+          example: someRandomCryptoString
+      required:
+        - code
+      type: object
+      additionalProperties: false
+    AuthorizePayload:
+      properties:
+        clientId:
+          type: string
+          description: 'Client ID'
+          example: clientID1
+      required:
+        - clientId
+      type: object
+      additionalProperties: false
+    PermissionDetailsResponse:
+      properties:
+        permissionId:
+          type: number
+          format: double
+        uri:
+          type: string
+        setting:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        group:
+          $ref: '#/components/schemas/GroupDetailsResponse'
+      required:
+        - permissionId
+        - uri
+        - setting
+      type: object
+      additionalProperties: false
+    PermissionSetting:
+      enum:
+        - Grant
+        - Deny
+      type: string
+    PrincipalType:
+      enum:
+        - user
+        - group
+      type: string
+    RegisterPermissionPayload:
+      properties:
+        uri:
+          type: string
+          description: 'Name of affected resource'
+          example: /SASjsApi/code/execute
+        setting:
+          $ref: '#/components/schemas/PermissionSetting'
+          description: 'The indication of whether (and to what extent) access is provided'
+          example: Grant
+        principalType:
+          $ref: '#/components/schemas/PrincipalType'
+          description: 'Indicates the type of principal'
+          example: user
+        principalId:
+          type: number
+          format: double
+          description: 'The id of user or group to which a rule is assigned.'
+          example: 123
+      required:
+        - uri
+        - setting
+        - principalType
+        - principalId
+      type: object
+      additionalProperties: false
+    UpdatePermissionPayload:
+      properties:
+        setting:
+          $ref: '#/components/schemas/PermissionSetting'
+          description: 'The indication of whether (and to what extent) access is provided'
+          example: Grant
+      required:
+        - setting
+      type: object
+      additionalProperties: false
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 info:
-    title: api
-    version: 0.0.2
-    description: 'Api of SASjs server'
-    contact:
-        name: '4GL Ltd'
+  title: api
+  version: 0.0.2
+  description: 'Api of SASjs server'
+  contact:
+    name: '4GL Ltd'
 openapi: 3.0.0
 paths:
-    /SASjsApi/auth/token:
-        post:
-            operationId: Token
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/TokenResponse'
-                            examples:
-                                'Example 1':
-                                    value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
-            summary: 'Accepts client/auth code and returns access/refresh tokens'
-            tags:
-                - Auth
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/TokenPayload'
-    /SASjsApi/auth/refresh:
-        post:
-            operationId: Refresh
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/TokenResponse'
-                            examples:
-                                'Example 1':
-                                    value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
-            summary: 'Returns new access/refresh tokens'
-            tags:
-                - Auth
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-    /SASjsApi/auth/logout:
-        post:
-            operationId: Logout
-            responses:
-                '204':
-                    description: 'No content'
-            summary: 'Logout terminate access/refresh tokens and returns nothing'
-            tags:
-                - Auth
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-    /SASjsApi/client:
-        post:
-            operationId: CreateClient
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ClientPayload'
-                            examples:
-                                'Example 1':
-                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString}
-            summary: 'Create client with the following attributes: ClientId, ClientSecret. Admin only task.'
-            tags:
-                - Client
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ClientPayload'
-    /SASjsApi/code/execute:
-        post:
-            operationId: ExecuteCode
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
-            description: 'Execute SAS code.'
-            summary: 'Run SAS Code and returns log'
-            tags:
-                - CODE
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ExecuteCodePayload'
-    /SASjsApi/drive/deploy:
-        post:
-            operationId: Deploy
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeployResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success, message: 'Files deployed successfully to @sasjs/server.'}
-                '400':
-                    description: 'Invalid Format'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeployResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'Provided not supported data format.'}
-                '500':
-                    description: 'Execution Error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeployResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'Deployment failed!'}
-            summary: 'Creates/updates files within SASjs Drive using provided payload.'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DeployPayload'
-    /SASjsApi/drive/deploy/upload:
-        post:
-            operationId: DeployUpload
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeployResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success, message: 'Files deployed successfully to @sasjs/server.'}
-                '400':
-                    description: 'Invalid Format'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeployResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'Provided not supported data format.'}
-                '500':
-                    description: 'Execution Error'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeployResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'Deployment failed!'}
-            description: "Accepts JSON file and zipped compressed JSON file as well.\nCompressed file should only contain one JSON file and should have same name\nas of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip\nAny other file or JSON file in zipped will be ignored!"
-            summary: 'Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                file:
-                                    type: string
-                                    format: binary
-                            required:
-                                - file
-    /SASjsApi/drive/file:
-        get:
-            operationId: GetFile
-            responses:
-                '204':
-                    description: 'No content'
-            summary: 'Get file from SASjs Drive'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    in: query
-                    name: _filePath
-                    required: true
-                    schema:
-                        type: string
-                    example: /Public/somefolder/some.file
-        delete:
-            operationId: DeleteFile
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                properties:
-                                    status: {type: string}
-                                required:
-                                    - status
-                                type: object
-            summary: 'Delete file from SASjs Drive'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    in: query
-                    name: _filePath
-                    required: true
-                    schema:
-                        type: string
-                    example: /Public/somefolder/some.file
-        post:
-            operationId: SaveFile
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success}
-                '403':
-                    description: 'File already exists'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
-            summary: 'Create a file in SASjs Drive'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'Location of SAS program'
-                    in: query
-                    name: _filePath
-                    required: false
-                    schema:
-                        type: string
-                    example: /Public/somefolder/some.file.sas
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                file:
-                                    type: string
-                                    format: binary
-                                filePath:
-                                    type: string
-                            required:
-                                - file
-        patch:
-            operationId: UpdateFile
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success}
-                '403':
-                    description: ""
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UpdateFileResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
-            summary: 'Modify a file in SASjs Drive'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'Location of SAS program'
-                    in: query
-                    name: _filePath
-                    required: false
-                    schema:
-                        type: string
-                    example: /Public/somefolder/some.file.sas
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                file:
-                                    type: string
-                                    format: binary
-                                filePath:
-                                    type: string
-                            required:
-                                - file
-    /SASjsApi/drive/folder:
-        get:
-            operationId: GetFolder
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                properties:
-                                    folders: {items: {type: string}, type: array}
-                                    files: {items: {type: string}, type: array}
-                                required:
-                                    - folders
-                                    - files
-                                type: object
-            summary: 'Get folder contents from SASjs Drive'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    in: query
-                    name: _folderPath
-                    required: false
-                    schema:
-                        type: string
-                    example: /Public/somefolder
-    /SASjsApi/drive/filetree:
-        get:
-            operationId: GetFileTree
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetFileTreeResponse'
-            summary: 'Fetch file tree within SASjs Drive.'
-            tags:
-                - Drive
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-    /SASjsApi/user:
-        get:
-            operationId: GetAllUsers
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                items:
-                                    $ref: '#/components/schemas/UserResponse'
-                                type: array
-                            examples:
-                                'Example 1':
-                                    value: [{id: 123, username: johnusername, displayName: John, isAdmin: false}, {id: 456, username: starkusername, displayName: Stark, isAdmin: true}]
-            summary: 'Get list of all users (username, displayname). All users can request this.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-        post:
-            operationId: CreateUser
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            summary: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UserPayload'
-    '/SASjsApi/user/by/username/{username}':
-        get:
-            operationId: GetUserByUsername
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserDetailsResponse'
-            description: 'Only Admin or user itself will get user autoExec code.'
-            summary: 'Get user properties - such as group memberships, userName, displayName.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The User''s username'
-                    in: path
-                    name: username
-                    required: true
-                    schema:
-                        type: string
-                    example: johnSnow01
-        patch:
-            operationId: UpdateUserByUsername
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The User''s username'
-                    in: path
-                    name: username
-                    required: true
-                    schema:
-                        type: string
-                    example: johnSnow01
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UserPayload'
-        delete:
-            operationId: DeleteUserByUsername
-            responses:
-                '204':
-                    description: 'No content'
-            summary: 'Delete a user. Can be performed either by admins, or the user in question.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The User''s username'
-                    in: path
-                    name: username
-                    required: true
-                    schema:
-                        type: string
-                    example: johnSnow01
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                password:
-                                    type: string
-                            type: object
-    '/SASjsApi/user/{userId}':
-        get:
-            operationId: GetUser
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserDetailsResponse'
-            description: 'Only Admin or user itself will get user autoExec code.'
-            summary: 'Get user properties - such as group memberships, userName, displayName.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The user''s identifier'
-                    in: path
-                    name: userId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: 1234
-        patch:
-            operationId: UpdateUser
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The user''s identifier'
-                    in: path
-                    name: userId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: '1234'
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UserPayload'
-        delete:
-            operationId: DeleteUser
-            responses:
-                '204':
-                    description: 'No content'
-            summary: 'Delete a user. Can be performed either by admins, or the user in question.'
-            tags:
-                - User
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The user''s identifier'
-                    in: path
-                    name: userId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: 1234
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            properties:
-                                password:
-                                    type: string
-                            type: object
-    /SASjsApi/group:
-        get:
-            operationId: GetAllGroups
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                items:
-                                    $ref: '#/components/schemas/GroupResponse'
-                                type: array
-                            examples:
-                                'Example 1':
-                                    value: [{groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users'}]
-            summary: 'Get list of all groups (groupName and groupDescription). All users can request this.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-        post:
-            operationId: CreateGroup
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Create a new group. Admin only.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/GroupPayload'
-    '/SASjsApi/group/by/groupname/{name}':
-        get:
-            operationId: GetGroupByGroupName
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupDetailsResponse'
-            summary: 'Get list of members of a group (userName). All users can request this.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The group''s name'
-                    in: path
-                    name: name
-                    required: true
-                    schema:
-                        type: string
-    '/SASjsApi/group/{groupId}':
-        get:
-            operationId: GetGroup
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupDetailsResponse'
-            summary: 'Get list of members of a group (userName). All users can request this.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The group''s identifier'
-                    in: path
-                    name: groupId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: 1234
-        delete:
-            operationId: DeleteGroup
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                allOf:
-                                    - {$ref: '#/components/schemas/IGroup'}
-                                    - {properties: {_id: {}}, required: [_id], type: object}
-            summary: 'Delete a group. Admin task only.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The group''s identifier'
-                    in: path
-                    name: groupId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: 1234
-    '/SASjsApi/group/{groupId}/{userId}':
-        post:
-            operationId: AddUserToGroup
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Add a user to a group. Admin task only.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The group''s identifier'
-                    in: path
-                    name: groupId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: '1234'
-                -
-                    description: 'The user''s identifier'
-                    in: path
-                    name: userId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: '6789'
-        delete:
-            operationId: RemoveUserFromGroup
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GroupDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Remove a user to a group. Admin task only.'
-            tags:
-                - Group
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The group''s identifier'
-                    in: path
-                    name: groupId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: '1234'
-                -
-                    description: 'The user''s identifier'
-                    in: path
-                    name: userId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: '6789'
-    /SASjsApi/info:
-        get:
-            operationId: Info
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InfoResponse'
-                            examples:
-                                'Example 1':
-                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http, runTimes: [sas, js]}
-            summary: 'Get server info (mode, cors, whiteList, protocol).'
-            tags:
-                - Info
-            security: []
-            parameters: []
-    /SASjsApi/info/authorizedRoutes:
-        get:
-            operationId: AuthorizedRoutes
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AuthorizedRoutesResponse'
-                            examples:
-                                'Example 1':
-                                    value: {URIs: [/AppStream, /SASjsApi/stp/execute]}
-            summary: 'Get authorized routes.'
-            tags:
-                - Info
-            security: []
-            parameters: []
-    /SASjsApi/session:
-        get:
-            operationId: Session
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UserResponse'
-                            examples:
-                                'Example 1':
-                                    value: {id: 123, username: johnusername, displayName: John, isAdmin: false}
-            summary: 'Get session info (username).'
-            tags:
-                - Session
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-    /SASjsApi/stp/execute:
-        get:
-            operationId: ExecuteReturnRaw
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                anyOf:
-                                    - {type: string}
-                                    - {type: string, format: byte}
-            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
-            summary: 'Execute a Stored Program, returns raw _webout content.'
-            tags:
-                - STP
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'Location of SAS or JS code'
-                    in: query
-                    name: _program
-                    required: true
-                    schema:
-                        type: string
-                    example: /Projects/myApp/some/program
-        post:
-            operationId: ExecuteReturnJson
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
-            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms\n\nThe response will be a JSON object with the following root attributes:\nlog, webout, headers.\n\nThe webout attribute will be nested JSON ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content."
-            summary: 'Execute a Stored Program, return a JSON object'
-            tags:
-                - STP
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'Location of SAS or JS code'
-                    in: query
-                    name: _program
-                    required: false
-                    schema:
-                        type: string
-                    example: /Projects/myApp/some/program
-            requestBody:
-                required: false
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ExecuteReturnJsonPayload'
-    /:
-        get:
-            operationId: Home
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                type: string
-            summary: 'Render index.html'
-            tags:
-                - Web
-            security: []
-            parameters: []
-    /SASLogon/login:
-        post:
-            operationId: Login
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                properties:
-                                    user: {properties: {isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [isAdmin, displayName, username, id], type: object}
-                                    loggedIn: {type: boolean}
-                                required:
-                                    - user
-                                    - loggedIn
-                                type: object
-            summary: 'Accept a valid username/password'
-            tags:
-                - Web
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/LoginPayload'
-    /SASLogon/authorize:
-        post:
-            operationId: Authorize
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AuthorizeResponse'
-                            examples:
-                                'Example 1':
-                                    value: {code: someRandomCryptoString}
-            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
-            tags:
-                - Web
-            security: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AuthorizePayload'
-    /SASLogon/logout:
-        get:
-            operationId: Logout
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema: {}
-            summary: 'Destroy the session stored in cookies'
-            tags:
-                - Web
-            security: []
-            parameters: []
-    /SASjsApi/permission:
-        get:
-            operationId: GetAllPermissions
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                items:
-                                    $ref: '#/components/schemas/PermissionDetailsResponse'
-                                type: array
-                            examples:
-                                'Example 1':
-                                    value: [{permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {permissionId: 124, uri: /SASjsApi/code/execute, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
-            summary: 'Get list of all permissions (uri, setting and userDetail).'
-            tags:
-                - Permission
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-        post:
-            operationId: CreatePermission
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PermissionDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
-            summary: 'Create a new permission. Admin only.'
-            tags:
-                - Permission
-            security:
-                -
-                    bearerAuth: []
-            parameters: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/RegisterPermissionPayload'
-    '/SASjsApi/permission/{permissionId}':
-        patch:
-            operationId: UpdatePermission
-            responses:
-                '200':
-                    description: Ok
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PermissionDetailsResponse'
-                            examples:
-                                'Example 1':
-                                    value: {permissionId: 123, uri: /SASjsApi/code/execute, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
-            summary: 'Update permission setting. Admin only'
-            tags:
-                - Permission
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The permission''s identifier'
-                    in: path
-                    name: permissionId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: 1234
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdatePermissionPayload'
-        delete:
-            operationId: DeletePermission
-            responses:
-                '204':
-                    description: 'No content'
-            summary: 'Delete a permission. Admin only.'
-            tags:
-                - Permission
-            security:
-                -
-                    bearerAuth: []
-            parameters:
-                -
-                    description: 'The user''s identifier'
-                    in: path
-                    name: permissionId
-                    required: true
-                    schema:
-                        format: double
-                        type: number
-                    example: 1234
+  /SASjsApi/auth/token:
+    post:
+      operationId: Token
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      accessToken: someRandomCryptoString,
+                      refreshToken: someRandomCryptoString
+                    }
+      summary: 'Accepts client/auth code and returns access/refresh tokens'
+      tags:
+        - Auth
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenPayload'
+  /SASjsApi/auth/refresh:
+    post:
+      operationId: Refresh
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      accessToken: someRandomCryptoString,
+                      refreshToken: someRandomCryptoString
+                    }
+      summary: 'Returns new access/refresh tokens'
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      parameters: []
+  /SASjsApi/auth/logout:
+    post:
+      operationId: Logout
+      responses:
+        '204':
+          description: 'No content'
+      summary: 'Logout terminate access/refresh tokens and returns nothing'
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      parameters: []
+  /SASjsApi/client:
+    post:
+      operationId: CreateClient
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientPayload'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      clientId: someFormattedClientID1234,
+                      clientSecret: someRandomCryptoString
+                    }
+      summary: 'Create client with the following attributes: ClientId, ClientSecret. Admin only task.'
+      tags:
+        - Client
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientPayload'
+  /SASjsApi/code/execute:
+    post:
+      operationId: ExecuteCode
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+      description: 'Execute SAS code.'
+      summary: 'Run SAS Code and returns log'
+      tags:
+        - CODE
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteCodePayload'
+  /SASjsApi/drive/deploy:
+    post:
+      operationId: Deploy
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      status: success,
+                      message: 'Files deployed successfully to @sasjs/server.'
+                    }
+        '400':
+          description: 'Invalid Format'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      status: failure,
+                      message: 'Provided not supported data format.'
+                    }
+        '500':
+          description: 'Execution Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployResponse'
+              examples:
+                'Example 1':
+                  value: { status: failure, message: 'Deployment failed!' }
+      summary: 'Creates/updates files within SASjs Drive using provided payload.'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeployPayload'
+  /SASjsApi/drive/deploy/upload:
+    post:
+      operationId: DeployUpload
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      status: success,
+                      message: 'Files deployed successfully to @sasjs/server.'
+                    }
+        '400':
+          description: 'Invalid Format'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      status: failure,
+                      message: 'Provided not supported data format.'
+                    }
+        '500':
+          description: 'Execution Error'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployResponse'
+              examples:
+                'Example 1':
+                  value: { status: failure, message: 'Deployment failed!' }
+      description: "Accepts JSON file and zipped compressed JSON file as well.\nCompressed file should only contain one JSON file and should have same name\nas of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip\nAny other file or JSON file in zipped will be ignored!"
+      summary: 'Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+  /SASjsApi/drive/file:
+    get:
+      operationId: GetFile
+      responses:
+        '204':
+          description: 'No content'
+      summary: 'Get file from SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _filePath
+          required: true
+          schema:
+            type: string
+          example: /Public/somefolder/some.file
+    delete:
+      operationId: DeleteFile
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                properties:
+                  status: { type: string }
+                required:
+                  - status
+                type: object
+      summary: 'Delete file from SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _filePath
+          required: true
+          schema:
+            type: string
+          example: /Public/somefolder/some.file
+    post:
+      operationId: SaveFile
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: success }
+        '403':
+          description: 'File already exists'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: failure, message: 'File request failed.' }
+      description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
+      summary: 'Create a file in SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: 'Location of file'
+          in: query
+          name: _filePath
+          required: false
+          schema:
+            type: string
+          example: /Public/somefolder/some.file.sas
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                filePath:
+                  type: string
+              required:
+                - file
+    patch:
+      operationId: UpdateFile
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: success }
+        '403':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: failure, message: 'File request failed.' }
+      description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
+      summary: 'Modify a file in SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: 'Location of SAS program'
+          in: query
+          name: _filePath
+          required: false
+          schema:
+            type: string
+          example: /Public/somefolder/some.file.sas
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                filePath:
+                  type: string
+              required:
+                - file
+  /SASjsApi/drive/folder:
+    get:
+      operationId: GetFolder
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                properties:
+                  folders: { items: { type: string }, type: array }
+                  files: { items: { type: string }, type: array }
+                required:
+                  - folders
+                  - files
+                type: object
+      summary: 'Get folder contents from SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _folderPath
+          required: false
+          schema:
+            type: string
+          example: /Public/somefolder
+    delete:
+      operationId: DeleteFolder
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                properties:
+                  status: { type: string }
+                required:
+                  - status
+                type: object
+      summary: 'Delete folder from SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: _folderPath
+          required: true
+          schema:
+            type: string
+          example: /Public/somefolder/
+    post:
+      operationId: AddFolder
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: success }
+        '409':
+          description: 'Folder already exists'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value:
+                    { status: failure, message: 'Add folder request failed.' }
+      summary: 'Create an empty folder in SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFolderPayload'
+  /SASjsApi/drive/rename:
+    post:
+      operationId: Rename
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: success }
+        '409':
+          description: 'Folder already exists'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileFolderResponse'
+              examples:
+                'Example 1':
+                  value: { status: failure, message: 'rename request failed.' }
+      summary: 'Renames a file/folder in SASjs Drive'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenamePayload'
+  /SASjsApi/drive/filetree:
+    get:
+      operationId: GetFileTree
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFileTreeResponse'
+      summary: 'Fetch file tree within SASjs Drive.'
+      tags:
+        - Drive
+      security:
+        - bearerAuth: []
+      parameters: []
+  /SASjsApi/user:
+    get:
+      operationId: GetAllUsers
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+                type: array
+              examples:
+                'Example 1':
+                  value:
+                    [
+                      {
+                        id: 123,
+                        username: johnusername,
+                        displayName: John,
+                        isAdmin: false
+                      },
+                      {
+                        id: 456,
+                        username: starkusername,
+                        displayName: Stark,
+                        isAdmin: true
+                      }
+                    ]
+      summary: 'Get list of all users (username, displayname). All users can request this.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters: []
+    post:
+      operationId: CreateUser
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      id: 1234,
+                      displayName: 'John Snow',
+                      username: johnSnow01,
+                      isAdmin: false,
+                      isActive: true
+                    }
+      summary: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPayload'
+  '/SASjsApi/user/by/username/{username}':
+    get:
+      operationId: GetUserByUsername
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailsResponse'
+      description: 'Only Admin or user itself will get user autoExec code.'
+      summary: 'Get user properties - such as group memberships, userName, displayName.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The User's username"
+          in: path
+          name: username
+          required: true
+          schema:
+            type: string
+          example: johnSnow01
+    patch:
+      operationId: UpdateUserByUsername
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      id: 1234,
+                      displayName: 'John Snow',
+                      username: johnSnow01,
+                      isAdmin: false,
+                      isActive: true
+                    }
+      summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The User's username"
+          in: path
+          name: username
+          required: true
+          schema:
+            type: string
+          example: johnSnow01
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPayload'
+    delete:
+      operationId: DeleteUserByUsername
+      responses:
+        '204':
+          description: 'No content'
+      summary: 'Delete a user. Can be performed either by admins, or the user in question.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The User's username"
+          in: path
+          name: username
+          required: true
+          schema:
+            type: string
+          example: johnSnow01
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                password:
+                  type: string
+              type: object
+  '/SASjsApi/user/{userId}':
+    get:
+      operationId: GetUser
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailsResponse'
+      description: 'Only Admin or user itself will get user autoExec code.'
+      summary: 'Get user properties - such as group memberships, userName, displayName.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The user's identifier"
+          in: path
+          name: userId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: 1234
+    patch:
+      operationId: UpdateUser
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      id: 1234,
+                      displayName: 'John Snow',
+                      username: johnSnow01,
+                      isAdmin: false,
+                      isActive: true
+                    }
+      summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The user's identifier"
+          in: path
+          name: userId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: '1234'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPayload'
+    delete:
+      operationId: DeleteUser
+      responses:
+        '204':
+          description: 'No content'
+      summary: 'Delete a user. Can be performed either by admins, or the user in question.'
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The user's identifier"
+          in: path
+          name: userId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: 1234
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                password:
+                  type: string
+              type: object
+  /SASjsApi/group:
+    get:
+      operationId: GetAllGroups
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GroupResponse'
+                type: array
+              examples:
+                'Example 1':
+                  value:
+                    [
+                      {
+                        groupId: 123,
+                        name: DCGroup,
+                        description: 'This group represents Data Controller Users'
+                      }
+                    ]
+      summary: 'Get list of all groups (groupName and groupDescription). All users can request this.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters: []
+    post:
+      operationId: CreateGroup
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      groupId: 123,
+                      name: DCGroup,
+                      description: 'This group represents Data Controller Users',
+                      isActive: true,
+                      users: []
+                    }
+      summary: 'Create a new group. Admin only.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupPayload'
+  '/SASjsApi/group/by/groupname/{name}':
+    get:
+      operationId: GetGroupByGroupName
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailsResponse'
+      summary: 'Get list of members of a group (userName). All users can request this.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The group's name"
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+  '/SASjsApi/group/{groupId}':
+    get:
+      operationId: GetGroup
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailsResponse'
+      summary: 'Get list of members of a group (userName). All users can request this.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The group's identifier"
+          in: path
+          name: groupId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: 1234
+    delete:
+      operationId: DeleteGroup
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/IGroup' }
+                  - { properties: { _id: {} }, required: [_id], type: object }
+      summary: 'Delete a group. Admin task only.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The group's identifier"
+          in: path
+          name: groupId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: 1234
+  '/SASjsApi/group/{groupId}/{userId}':
+    post:
+      operationId: AddUserToGroup
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      groupId: 123,
+                      name: DCGroup,
+                      description: 'This group represents Data Controller Users',
+                      isActive: true,
+                      users: []
+                    }
+      summary: 'Add a user to a group. Admin task only.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The group's identifier"
+          in: path
+          name: groupId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: '1234'
+        - description: "The user's identifier"
+          in: path
+          name: userId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: '6789'
+    delete:
+      operationId: RemoveUserFromGroup
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      groupId: 123,
+                      name: DCGroup,
+                      description: 'This group represents Data Controller Users',
+                      isActive: true,
+                      users: []
+                    }
+      summary: 'Remove a user to a group. Admin task only.'
+      tags:
+        - Group
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The group's identifier"
+          in: path
+          name: groupId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: '1234'
+        - description: "The user's identifier"
+          in: path
+          name: userId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: '6789'
+  /SASjsApi/info:
+    get:
+      operationId: Info
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      mode: desktop,
+                      cors: enable,
+                      whiteList: ['http://example.com', 'http://example2.com'],
+                      protocol: http,
+                      runTimes: [sas, js]
+                    }
+      summary: 'Get server info (mode, cors, whiteList, protocol).'
+      tags:
+        - Info
+      security: []
+      parameters: []
+  /SASjsApi/info/authorizedRoutes:
+    get:
+      operationId: AuthorizedRoutes
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizedRoutesResponse'
+              examples:
+                'Example 1':
+                  value: { URIs: [/AppStream, /SASjsApi/stp/execute] }
+      summary: 'Get authorized routes.'
+      tags:
+        - Info
+      security: []
+      parameters: []
+  /SASjsApi/session:
+    get:
+      operationId: Session
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      id: 123,
+                      username: johnusername,
+                      displayName: John,
+                      isAdmin: false
+                    }
+      summary: 'Get session info (username).'
+      tags:
+        - Session
+      security:
+        - bearerAuth: []
+      parameters: []
+  /SASjsApi/stp/execute:
+    get:
+      operationId: ExecuteReturnRaw
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - { type: string }
+                  - { type: string, format: byte }
+      description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
+      summary: 'Execute a Stored Program, returns raw _webout content.'
+      tags:
+        - STP
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: 'Location of SAS or JS code'
+          in: query
+          name: _program
+          required: true
+          schema:
+            type: string
+          example: /Projects/myApp/some/program
+    post:
+      operationId: ExecuteReturnJson
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      status: success,
+                      _webout: 'webout content',
+                      log: [],
+                      httpHeaders:
+                        {
+                          Content-type: application/zip,
+                          Cache-Control: 'public, max-age=1000'
+                        }
+                    }
+      description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms\n\nThe response will be a JSON object with the following root attributes:\nlog, webout, headers.\n\nThe webout attribute will be nested JSON ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content."
+      summary: 'Execute a Stored Program, return a JSON object'
+      tags:
+        - STP
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: 'Location of SAS or JS code'
+          in: query
+          name: _program
+          required: false
+          schema:
+            type: string
+          example: /Projects/myApp/some/program
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteReturnJsonPayload'
+  /:
+    get:
+      operationId: Home
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: string
+      summary: 'Render index.html'
+      tags:
+        - Web
+      security: []
+      parameters: []
+  /SASLogon/login:
+    post:
+      operationId: Login
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                properties:
+                  user:
+                    {
+                      properties:
+                        {
+                          isAdmin: { type: boolean },
+                          displayName: { type: string },
+                          username: { type: string },
+                          id: { type: number, format: double }
+                        },
+                      required: [isAdmin, displayName, username, id],
+                      type: object
+                    }
+                  loggedIn: { type: boolean }
+                required:
+                  - user
+                  - loggedIn
+                type: object
+      summary: 'Accept a valid username/password'
+      tags:
+        - Web
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginPayload'
+  /SASLogon/authorize:
+    post:
+      operationId: Authorize
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizeResponse'
+              examples:
+                'Example 1':
+                  value: { code: someRandomCryptoString }
+      summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
+      tags:
+        - Web
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizePayload'
+  /SASLogon/logout:
+    get:
+      operationId: Logout
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema: {}
+      summary: 'Destroy the session stored in cookies'
+      tags:
+        - Web
+      security: []
+      parameters: []
+  /SASjsApi/permission:
+    get:
+      operationId: GetAllPermissions
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PermissionDetailsResponse'
+                type: array
+              examples:
+                'Example 1':
+                  value:
+                    [
+                      {
+                        permissionId: 123,
+                        uri: /SASjsApi/code/execute,
+                        setting: Grant,
+                        user:
+                          {
+                            id: 1,
+                            username: johnSnow01,
+                            displayName: 'John Snow',
+                            isAdmin: false
+                          }
+                      },
+                      {
+                        permissionId: 124,
+                        uri: /SASjsApi/code/execute,
+                        setting: Grant,
+                        group:
+                          {
+                            groupId: 1,
+                            name: DCGroup,
+                            description: 'This group represents Data Controller Users',
+                            isActive: true,
+                            users: []
+                          }
+                      }
+                    ]
+      summary: 'Get list of all permissions (uri, setting and userDetail).'
+      tags:
+        - Permission
+      security:
+        - bearerAuth: []
+      parameters: []
+    post:
+      operationId: CreatePermission
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      permissionId: 123,
+                      uri: /SASjsApi/code/execute,
+                      setting: Grant,
+                      user:
+                        {
+                          id: 1,
+                          username: johnSnow01,
+                          displayName: 'John Snow',
+                          isAdmin: false
+                        }
+                    }
+      summary: 'Create a new permission. Admin only.'
+      tags:
+        - Permission
+      security:
+        - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPermissionPayload'
+  '/SASjsApi/permission/{permissionId}':
+    patch:
+      operationId: UpdatePermission
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDetailsResponse'
+              examples:
+                'Example 1':
+                  value:
+                    {
+                      permissionId: 123,
+                      uri: /SASjsApi/code/execute,
+                      setting: Grant,
+                      user:
+                        {
+                          id: 1,
+                          username: johnSnow01,
+                          displayName: 'John Snow',
+                          isAdmin: false
+                        }
+                    }
+      summary: 'Update permission setting. Admin only'
+      tags:
+        - Permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The permission's identifier"
+          in: path
+          name: permissionId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: 1234
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissionPayload'
+    delete:
+      operationId: DeletePermission
+      responses:
+        '204':
+          description: 'No content'
+      summary: 'Delete a permission. Admin only.'
+      tags:
+        - Permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - description: "The user's identifier"
+          in: path
+          name: permissionId
+          required: true
+          schema:
+            format: double
+            type: number
+          example: 1234
 servers:
-    -
-        url: /
+  - url: /
 tags:
-    -
-        name: Info
-        description: 'Get Server Information'
-    -
-        name: Session
-        description: 'Get Session information'
-    -
-        name: User
-        description: 'Operations with users'
-    -
-        name: Permission
-        description: 'Operations about permissions'
-    -
-        name: Client
-        description: 'Operations about clients'
-    -
-        name: Auth
-        description: 'Operations about auth'
-    -
-        name: Drive
-        description: 'Operations on SASjs Drive'
-    -
-        name: Group
-        description: 'Operations on groups and group memberships'
-    -
-        name: STP
-        description: 'Execution of Stored Programs'
-    -
-        name: CODE
-        description: 'Execution of code (various runtimes are supported)'
-    -
-        name: Web
-        description: 'Operations on Web'
+  - name: Auth
+    description: 'Operations about auth'
+  - name: Client
+    description: 'Operations about clients'
+  - name: CODE
+    description: 'Execution of code (various runtimes are supported)'
+  - name: Drive
+    description: 'Operations on SASjs Drive'
+  - name: Group
+    description: 'Operations on groups and group memberships'
+  - name: Info
+    description: 'Get Server Information'
+  - name: Permission
+    description: 'Operations about permissions'
+  - name: Session
+    description: 'Get Session information'
+  - name: STP
+    description: 'Execution of Stored Programs'
+  - name: User
+    description: 'Operations with users'
+  - name: Web
+    description: 'Operations on Web'
