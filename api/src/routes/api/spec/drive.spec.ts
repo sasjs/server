@@ -549,29 +549,29 @@ describe('drive', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if folder is not present', async () => {
+      it('should respond with Not Found if folder is not present', async () => {
         const res = await request(app)
           .get(getFolderApi)
           .auth(accessToken, { type: 'bearer' })
           .query({ _folderPath: `/my/path/code-${generateTimestamp()}` })
-          .expect(403)
+          .expect(404)
 
-        expect(res.text).toEqual(`Error: Folder doesn't exist.`)
+        expect(res.text).toEqual(`Folder doesn't exist.`)
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if folderPath outside Drive', async () => {
+      it('should respond with Bad Request if folderPath outside Drive', async () => {
         const res = await request(app)
           .get(getFolderApi)
           .auth(accessToken, { type: 'bearer' })
           .query({ _folderPath: '/../path/code.sas' })
-          .expect(403)
+          .expect(400)
 
-        expect(res.text).toEqual('Error: Cannot get folder outside drive.')
+        expect(res.text).toEqual(`Can't get folder outside drive.`)
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if folderPath is of a file', async () => {
+      it('should respond with Bad Request if folderPath is of a file', async () => {
         const fileToCopyPath = path.join(__dirname, 'files', 'sample.sas')
         const filePath = '/my/path/code.sas'
 
@@ -582,9 +582,9 @@ describe('drive', () => {
           .get(getFolderApi)
           .auth(accessToken, { type: 'bearer' })
           .query({ _folderPath: filePath })
-          .expect(403)
+          .expect(400)
 
-        expect(res.text).toEqual('Error: Not a Folder.')
+        expect(res.text).toEqual('Not a Folder.')
         expect(res.body).toEqual({})
       })
     })
@@ -609,24 +609,28 @@ describe('drive', () => {
         })
       })
 
-      it('should respond with Forbidden if the folder already exists', async () => {
+      it('should respond with Conflict if the folder already exists', async () => {
         await createFolder(path.join(pathToDrive, '/post/folder'))
 
         const res = await request(app)
           .post(folderApi)
           .auth(accessToken, { type: 'bearer' })
           .send({ folderPath: '/post/folder' })
+          .expect(409)
 
-        expect(res.statusCode).toEqual(403)
+        expect(res.text).toEqual(`Folder already exists.`)
+
+        expect(res.statusCode).toEqual(409)
       })
 
-      it('should respond with Forbidden if the folderPath is outside drive', async () => {
+      it('should respond with Bad Request if the folderPath is outside drive', async () => {
         const res = await request(app)
           .post(folderApi)
           .auth(accessToken, { type: 'bearer' })
           .send({ folderPath: '../sample' })
+          .expect(400)
 
-        expect(res.statusCode).toEqual(403)
+        expect(res.text).toEqual(`Can't put folder outside drive.`)
       })
     })
 
@@ -648,22 +652,24 @@ describe('drive', () => {
         })
       })
 
-      it('should respond with Forbidden if the folder does not  exists', async () => {
+      it('should respond with Not Found if the folder does not  exists', async () => {
         const res = await request(app)
           .delete(folderApi)
           .auth(accessToken, { type: 'bearer' })
           .query({ _folderPath: 'notExists' })
+          .expect(404)
 
-        expect(res.statusCode).toEqual(403)
+        expect(res.text).toEqual(`Folder doesn't exist.`)
       })
 
-      it('should respond with Forbidden if the folderPath is outside drive', async () => {
+      it('should respond with Bad Request if the folderPath is outside drive', async () => {
         const res = await request(app)
           .delete(folderApi)
           .auth(accessToken, { type: 'bearer' })
           .query({ _folderPath: '../outsideDrive' })
+          .expect(400)
 
-        expect(res.statusCode).toEqual(403)
+        expect(res.text).toEqual(`Can't delete folder outside drive.`)
       })
     })
   })
@@ -711,7 +717,7 @@ describe('drive', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if file is already present', async () => {
+      it('should respond with Conflict if file is already present', async () => {
         const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
         const pathToUpload = `/my/path/code-${generateTimestamp()}.sas`
 
@@ -726,13 +732,13 @@ describe('drive', () => {
           .auth(accessToken, { type: 'bearer' })
           .field('filePath', pathToUpload)
           .attach('file', fileToAttachPath)
-          .expect(403)
+          .expect(409)
 
-        expect(res.text).toEqual('Error: File already exists.')
+        expect(res.text).toEqual('File already exists.')
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if filePath outside Drive', async () => {
+      it('should respond with Bad Request if filePath outside Drive', async () => {
         const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
         const pathToUpload = '/../path/code.sas'
 
@@ -741,9 +747,9 @@ describe('drive', () => {
           .auth(accessToken, { type: 'bearer' })
           .field('filePath', pathToUpload)
           .attach('file', fileToAttachPath)
-          .expect(403)
+          .expect(400)
 
-        expect(res.text).toEqual('Error: Cannot put file outside drive.')
+        expect(res.text).toEqual(`Can't put file outside drive.`)
         expect(res.body).toEqual({})
       })
 
@@ -878,19 +884,19 @@ describe('drive', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if file is not present', async () => {
+      it('should respond with Not Found if file is not present', async () => {
         const res = await request(app)
           .patch('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
           .field('filePath', `/my/path/code-3.sas`)
           .attach('file', path.join(__dirname, 'files', 'sample.sas'))
-          .expect(403)
+          .expect(404)
 
-        expect(res.text).toEqual(`Error: File doesn't exist.`)
+        expect(res.text).toEqual(`File doesn't exist.`)
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if filePath outside Drive', async () => {
+      it('should respond with Bad Request if filePath outside Drive', async () => {
         const fileToAttachPath = path.join(__dirname, 'files', 'sample.sas')
         const pathToUpload = '/../path/code.sas'
 
@@ -899,9 +905,9 @@ describe('drive', () => {
           .auth(accessToken, { type: 'bearer' })
           .field('filePath', pathToUpload)
           .attach('file', fileToAttachPath)
-          .expect(403)
+          .expect(400)
 
-        expect(res.text).toEqual('Error: Cannot modify file outside drive.')
+        expect(res.text).toEqual(`Can't modify file outside drive.`)
         expect(res.body).toEqual({})
       })
 
@@ -1006,25 +1012,25 @@ describe('drive', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if file is not present', async () => {
+      it('should respond with Not Found if file is not present', async () => {
         const res = await request(app)
           .get('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
           .query({ _filePath: `/my/path/code-4.sas` })
-          .expect(403)
+          .expect(404)
 
-        expect(res.text).toEqual(`Error: File doesn't exist.`)
+        expect(res.text).toEqual(`File doesn't exist.`)
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if filePath outside Drive', async () => {
+      it('should respond with Bad Request if filePath outside Drive', async () => {
         const res = await request(app)
           .get('/SASjsApi/drive/file')
           .auth(accessToken, { type: 'bearer' })
           .query({ _filePath: '/../path/code.sas' })
-          .expect(403)
+          .expect(400)
 
-        expect(res.text).toEqual('Error: Cannot get file outside drive.')
+        expect(res.text).toEqual(`Can't get file outside drive.`)
         expect(res.body).toEqual({})
       })
 
@@ -1093,54 +1099,59 @@ describe('drive', () => {
       })
     })
 
-    it('should respond with forbidden if the oldPath is outside drive', async () => {
+    it('should respond with Bad Request if the oldPath is outside drive', async () => {
       const res = await request(app)
         .post(renameApi)
         .auth(accessToken, { type: 'bearer' })
         .send({ oldPath: '../outside', newPath: 'renamed' })
+        .expect(400)
 
-      expect(res.statusCode).toEqual(403)
+      expect(res.text).toEqual(`Old path can't be outside of drive.`)
     })
 
-    it('should respond with forbidden if the newPath is outside drive', async () => {
+    it('should respond with Bad Request if the newPath is outside drive', async () => {
       const res = await request(app)
         .post(renameApi)
         .auth(accessToken, { type: 'bearer' })
         .send({ oldPath: 'older', newPath: '../outside' })
+        .expect(400)
 
-      expect(res.statusCode).toEqual(403)
+      expect(res.text).toEqual(`New path can't be outside of drive.`)
     })
 
-    it('should respond with forbidden if the folder does not exist', async () => {
+    it('should respond with Not Found if the folder does not exist', async () => {
       const res = await request(app)
         .post(renameApi)
         .auth(accessToken, { type: 'bearer' })
         .send({ oldPath: '/rename/not exists', newPath: '/rename/renamed' })
+        .expect(404)
 
-      expect(res.statusCode).toEqual(403)
+      expect(res.text).toEqual('No file/folder found for provided path.')
     })
 
-    it('should respond with forbidden if the folder already exists', async () => {
+    it('should respond with Conflict if the folder already exists', async () => {
       await createFolder(path.join(pathToDrive, 'rename', 'folder'))
       await createFolder(path.join(pathToDrive, 'rename', 'exists'))
       const res = await request(app)
         .post(renameApi)
         .auth(accessToken, { type: 'bearer' })
         .send({ oldPath: '/rename/folder', newPath: '/rename/exists' })
+        .expect(409)
 
-      expect(res.statusCode).toEqual(403)
+      expect(res.text).toEqual('Folder with new name already exists.')
     })
 
-    it('should respond with forbidden if the file does not exist', async () => {
+    it('should respond with Not Found if the file does not exist', async () => {
       const res = await request(app)
         .post(renameApi)
         .auth(accessToken, { type: 'bearer' })
         .send({ oldPath: '/rename/file.txt', newPath: '/rename/renamed.txt' })
+        .expect(404)
 
-      expect(res.statusCode).toEqual(403)
+      expect(res.text).toEqual('No file/folder found for provided path.')
     })
 
-    it('should respond with forbidden if the file already exists', async () => {
+    it('should respond with Conflict if the file already exists', async () => {
       await createFile(
         path.join(pathToDrive, 'rename', 'file.txt'),
         'some file content'
@@ -1153,8 +1164,9 @@ describe('drive', () => {
         .post(renameApi)
         .auth(accessToken, { type: 'bearer' })
         .send({ oldPath: '/rename/file.txt', newPath: '/rename/exists.txt' })
+        .expect(409)
 
-      expect(res.statusCode).toEqual(403)
+      expect(res.text).toEqual('File with new name already exists.')
     })
   })
 })

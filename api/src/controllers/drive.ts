@@ -318,13 +318,19 @@ const getFile = async (req: express.Request, filePath: string) => {
     .join(getFilesFolder(), filePath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!filePathFull.includes(driveFilesPath)) {
-    throw new Error('Cannot get file outside drive.')
-  }
+  if (!filePathFull.includes(driveFilesPath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't get file outside drive.`
+    }
 
-  if (!(await fileExists(filePathFull))) {
-    throw new Error("File doesn't exist.")
-  }
+  if (!(await fileExists(filePathFull)))
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: `File doesn't exist.`
+    }
 
   const extension = path.extname(filePathFull).toLowerCase()
   if (extension === '.sas') {
@@ -342,17 +348,26 @@ const getFolder = async (folderPath?: string) => {
       .join(getFilesFolder(), folderPath)
       .replace(new RegExp('/', 'g'), path.sep)
 
-    if (!folderPathFull.includes(driveFilesPath)) {
-      throw new Error('Cannot get folder outside drive.')
-    }
+    if (!folderPathFull.includes(driveFilesPath))
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: `Can't get folder outside drive.`
+      }
 
-    if (!(await folderExists(folderPathFull))) {
-      throw new Error("Folder doesn't exist.")
-    }
+    if (!(await folderExists(folderPathFull)))
+      throw {
+        code: 404,
+        status: 'Not Found',
+        message: `Folder doesn't exist.`
+      }
 
-    if (!(await isFolder(folderPathFull))) {
-      throw new Error('Not a Folder.')
-    }
+    if (!(await isFolder(folderPathFull)))
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: 'Not a Folder.'
+      }
 
     const files: string[] = await listFilesInFolder(folderPathFull)
     const folders: string[] = await listSubFoldersInFolder(folderPathFull)
@@ -371,13 +386,19 @@ const deleteFile = async (filePath: string) => {
     .join(getFilesFolder(), filePath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!filePathFull.includes(driveFilesPath)) {
-    throw new Error('Cannot delete file outside drive.')
-  }
+  if (!filePathFull.includes(driveFilesPath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't delete file outside drive.`
+    }
 
-  if (!(await fileExists(filePathFull))) {
-    throw new Error('File does not exist.')
-  }
+  if (!(await fileExists(filePathFull)))
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: `File doesn't exist.`
+    }
 
   await deleteFileOnSystem(filePathFull)
 
@@ -391,13 +412,19 @@ const deleteFolder = async (folderPath: string) => {
     .join(getFilesFolder(), folderPath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!folderPathFull.includes(driveFolderPath)) {
-    throw new Error('Cannot delete file outside drive.')
-  }
+  if (!folderPathFull.includes(driveFolderPath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't delete folder outside drive.`
+    }
 
-  if (!(await folderExists(folderPathFull))) {
-    throw new Error('Folder does not exist.')
-  }
+  if (!(await folderExists(folderPathFull)))
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: `Folder doesn't exist.`
+    }
 
   await deleteFolderOnSystem(folderPathFull)
 
@@ -414,13 +441,19 @@ const saveFile = async (
     .join(driveFilesPath, filePath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!filePathFull.includes(driveFilesPath)) {
-    throw new Error('Cannot put file outside drive.')
-  }
+  if (!filePathFull.includes(driveFilesPath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't put file outside drive.`
+    }
 
-  if (await fileExists(filePathFull)) {
-    throw new Error('File already exists.')
-  }
+  if (await fileExists(filePathFull))
+    throw {
+      code: 409,
+      status: 'Conflict',
+      message: 'File already exists.'
+    }
 
   const folderPath = path.dirname(filePathFull)
   await createFolder(folderPath)
@@ -436,13 +469,19 @@ const addFolder = async (folderPath: string): Promise<FileFolderResponse> => {
     .join(drivePath, folderPath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!folderPathFull.includes(drivePath)) {
-    throw new Error('Cannot put folder outside drive.')
-  }
+  if (!folderPathFull.includes(drivePath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't put folder outside drive.`
+    }
 
-  if (await folderExists(folderPathFull)) {
-    throw new Error('Folder already exists.')
-  }
+  if (await folderExists(folderPathFull))
+    throw {
+      code: 409,
+      status: 'Conflict',
+      message: 'Folder already exists.'
+    }
 
   await createFolder(folderPathFull)
 
@@ -463,30 +502,46 @@ const rename = async (
     .join(drivePath, newPath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!oldPathFull.includes(drivePath)) {
-    throw new Error('Old path is outside drive.')
-  }
+  if (!oldPathFull.includes(drivePath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Old path can't be outside of drive.`
+    }
 
-  if (!newPathFull.includes(drivePath)) {
-    throw new Error('New path is outside drive.')
-  }
+  if (!newPathFull.includes(drivePath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `New path can't be outside of drive.`
+    }
 
-  if (await folderExists(oldPathFull)) {
-    if (await folderExists(newPathFull)) {
-      throw new Error('Folder already exists.')
-    } else moveFile(oldPathFull, newPathFull)
+  if (await isFolder(oldPathFull)) {
+    if (await folderExists(newPathFull))
+      throw {
+        code: 409,
+        status: 'Conflict',
+        message: 'Folder with new name already exists.'
+      }
+    else moveFile(oldPathFull, newPathFull)
 
+    return { status: 'success' }
+  } else if (await fileExists(oldPathFull)) {
+    if (await fileExists(newPathFull))
+      throw {
+        code: 409,
+        status: 'Conflict',
+        message: 'File with new name already exists.'
+      }
+    else moveFile(oldPathFull, newPathFull)
     return { status: 'success' }
   }
 
-  if (await fileExists(oldPathFull)) {
-    if (await fileExists(newPathFull)) {
-      throw new Error('File already exists.')
-    } else moveFile(oldPathFull, newPathFull)
-    return { status: 'success' }
+  throw {
+    code: 404,
+    status: 'Not Found',
+    message: 'No file/folder found for provided path.'
   }
-
-  throw new Error('No file/folder found for provided path.')
 }
 
 const updateFile = async (
@@ -499,13 +554,19 @@ const updateFile = async (
     .join(driveFilesPath, filePath)
     .replace(new RegExp('/', 'g'), path.sep)
 
-  if (!filePathFull.includes(driveFilesPath)) {
-    throw new Error('Cannot modify file outside drive.')
-  }
+  if (!filePathFull.includes(driveFilesPath))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't modify file outside drive.`
+    }
 
-  if (!(await fileExists(filePathFull))) {
-    throw new Error(`File doesn't exist.`)
-  }
+  if (!(await fileExists(filePathFull)))
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: `File doesn't exist.`
+    }
 
   await moveFile(multerFile.path, filePathFull)
 

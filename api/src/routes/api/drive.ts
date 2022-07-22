@@ -121,7 +121,11 @@ driveRouter.get('/file', async (req, res) => {
   try {
     await controller.getFile(req, query._filePath)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
@@ -134,7 +138,11 @@ driveRouter.get('/folder', async (req, res) => {
     const response = await controller.getFolder(query._folderPath)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
@@ -147,7 +155,11 @@ driveRouter.delete('/file', async (req, res) => {
     const response = await controller.deleteFile(query._filePath)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
@@ -160,7 +172,11 @@ driveRouter.delete('/folder', async (req, res) => {
     const response = await controller.deleteFolder(query._folderPath)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
@@ -187,7 +203,12 @@ driveRouter.post(
       res.send(response)
     } catch (err: any) {
       await deleteFile(req.file.path)
-      res.status(403).send(err.toString())
+
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -201,7 +222,11 @@ driveRouter.post('/folder', async (req, res) => {
     const response = await controller.addFolder(body)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
@@ -228,7 +253,12 @@ driveRouter.patch(
       res.send(response)
     } catch (err: any) {
       await deleteFile(req.file.path)
-      res.status(403).send(err.toString())
+
+      const statusCode = err.code
+
+      delete err.code
+
+      res.status(statusCode).send(err.message)
     }
   }
 )
@@ -242,7 +272,11 @@ driveRouter.post('/rename', async (req, res) => {
     const response = await controller.rename(body)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err.message)
   }
 })
 
