@@ -98,8 +98,6 @@ const TreeViewNode = ({
       return
     }
 
-    if (!node.name.includes('.')) return
-
     handleSelect(node.relativePath)
   }
 

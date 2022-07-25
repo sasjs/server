@@ -138,6 +138,11 @@ const SASjsEditor = ({
     }
   }, [selectedFilePath])
 
+  useEffect(() => {
+    if (runTimes.includes(selectedFileExtension))
+      setSelectedRunTime(selectedFileExtension)
+  }, [selectedFileExtension, runTimes])
+
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
   }
@@ -587,15 +592,11 @@ const FileMenu = ({
 }
 
 const getLanguage = (extension: string) => {
-  if (extension === 'sas') return 'sas'
-
   if (extension === 'js') return 'javascript'
 
   if (extension === 'ts') return 'typescript'
 
-  if (extension === 'html') return 'html'
+  if (extension === 'md' || extension === 'mdx') return 'markdown'
 
-  if (extension === 'css') return 'css'
-
-  return ''
+  return extension
 }
