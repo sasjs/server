@@ -33,7 +33,7 @@ const TreeView = ({
     <ul
       style={{
         listStyle: 'none',
-        padding: '0.75rem 1.25rem',
+        padding: '0.25rem 1.25rem',
         width: 'max-content'
       }}
     >
