@@ -18,8 +18,19 @@ import {
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
 
-import { RocketLaunch, MoreVert, Save, SaveAs } from '@mui/icons-material'
-import Editor, { EditorDidMount } from 'react-monaco-editor'
+import {
+  RocketLaunch,
+  MoreVert,
+  Save,
+  SaveAs,
+  Difference,
+  Edit
+} from '@mui/icons-material'
+import Editor, {
+  MonacoDiffEditor,
+  DiffEditorDidMount,
+  EditorDidMount
+} from 'react-monaco-editor'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import { AppContext, RunTimeType } from '../../context/appContext'
@@ -71,12 +82,20 @@ const SASjsEditor = ({
   const [selectedRunTime, setSelectedRunTime] = useState('')
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)
+  const [showDiff, setShowDiff] = useState(false)
 
   const editorRef = useRef(null as any)
+
+  const diffEditorRef = useRef(null as any)
 
   const handleEditorDidMount: EditorDidMount = (editor) => {
     editor.focus()
     editorRef.current = editor
+  }
+
+  const handleDiffEditorDidMount: DiffEditorDidMount = (diffEditor) => {
+    diffEditor.focus()
+    diffEditorRef.current = diffEditor
   }
 
   useEffect(() => {
@@ -226,6 +245,8 @@ const SASjsEditor = ({
         <Box sx={{ marginTop: '10px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <FileMenu
+              showDiff={showDiff}
+              setShowDiff={setShowDiff}
               prevFileContent={prevFileContent}
               currentFileContent={fileContent}
               selectedFilePath={selectedFilePath}
@@ -243,14 +264,26 @@ const SASjsEditor = ({
             }}
             elevation={3}
           >
-            <Editor
-              height="98%"
-              language="sas"
-              value={fileContent}
-              editorDidMount={handleEditorDidMount}
-              options={{ readOnly: ctrlPressed }}
-              onChange={(val) => setFileContent(val)}
-            />
+            {showDiff ? (
+              <MonacoDiffEditor
+                height="98%"
+                language={getLanguage(selectedFileExtension)}
+                original={prevFileContent}
+                value={fileContent}
+                editorDidMount={handleDiffEditorDidMount}
+                options={{ readOnly: ctrlPressed }}
+                onChange={(val) => setFileContent(val)}
+              />
+            ) : (
+              <Editor
+                height="98%"
+                language={getLanguage(selectedFileExtension)}
+                value={fileContent}
+                editorDidMount={handleEditorDidMount}
+                options={{ readOnly: ctrlPressed }}
+                onChange={(val) => setFileContent(val)}
+              />
+            )}
           </Paper>
         </Box>
       ) : (
@@ -286,6 +319,8 @@ const SASjsEditor = ({
                 handleRunBtnClick={handleRunBtnClick}
               />
               <FileMenu
+                showDiff={showDiff}
+                setShowDiff={setShowDiff}
                 prevFileContent={prevFileContent}
                 currentFileContent={fileContent}
                 selectedFilePath={selectedFilePath}
@@ -304,14 +339,26 @@ const SASjsEditor = ({
               }}
               elevation={3}
             >
-              <Editor
-                height="98%"
-                language="sas"
-                value={fileContent}
-                editorDidMount={handleEditorDidMount}
-                options={{ readOnly: ctrlPressed }}
-                onChange={(val) => setFileContent(val)}
-              />
+              {showDiff ? (
+                <MonacoDiffEditor
+                  height="98%"
+                  language={getLanguage(selectedFileExtension)}
+                  original={prevFileContent}
+                  value={fileContent}
+                  editorDidMount={handleDiffEditorDidMount}
+                  options={{ readOnly: ctrlPressed }}
+                  onChange={(val) => setFileContent(val)}
+                />
+              ) : (
+                <Editor
+                  height="98%"
+                  language={getLanguage(selectedFileExtension)}
+                  value={fileContent}
+                  editorDidMount={handleEditorDidMount}
+                  options={{ readOnly: ctrlPressed }}
+                  onChange={(val) => setFileContent(val)}
+                />
+              )}
               <p
                 style={{
                   position: 'absolute',
@@ -433,6 +480,8 @@ const RunMenu = ({
 }
 
 type FileMenuProps = {
+  showDiff: boolean
+  setShowDiff: React.Dispatch<React.SetStateAction<boolean>>
   prevFileContent: string
   currentFileContent: string
   selectedFilePath: string
@@ -441,6 +490,8 @@ type FileMenuProps = {
 }
 
 const FileMenu = ({
+  showDiff,
+  setShowDiff,
   prevFileContent,
   currentFileContent,
   selectedFilePath,
@@ -492,6 +543,16 @@ const FileMenu = ({
       >
         <MenuItem sx={{ justifyContent: 'center' }}>
           <Button
+            onClick={() => setShowDiff(!showDiff)}
+            variant="contained"
+            color="primary"
+            startIcon={showDiff ? <Edit /> : <Difference />}
+          >
+            {showDiff ? 'Edit' : 'Diff'}
+          </Button>
+        </MenuItem>
+        <MenuItem sx={{ justifyContent: 'center' }}>
+          <Button
             onClick={handleSaveBtnClick}
             variant="contained"
             color="primary"
@@ -516,4 +577,18 @@ const FileMenu = ({
       </Menu>
     </>
   )
+}
+
+const getLanguage = (extension: string) => {
+  if (extension === 'sas') return 'sas'
+
+  if (extension === 'js') return 'javascript'
+
+  if (extension === 'ts') return 'typescript'
+
+  if (extension === 'html') return 'html'
+
+  if (extension === 'css') return 'css'
+
+  return ''
 }
