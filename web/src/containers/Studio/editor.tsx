@@ -39,6 +39,8 @@ import FilePathInputModal from '../../components/filePathInputModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 import Modal from '../../components/modal'
 
+import usePrompt from '../../utils/usePrompt'
+
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
 }))
@@ -97,6 +99,11 @@ const SASjsEditor = ({
     diffEditor.focus()
     diffEditorRef.current = diffEditor
   }
+
+  usePrompt(
+    'Changes you made may not be saved.',
+    prevFileContent !== fileContent
+  )
 
   useEffect(() => {
     setRunTimes(Object.values(appContext.runTimes))
