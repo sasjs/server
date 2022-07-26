@@ -357,6 +357,8 @@ const SASjsEditor = ({
           >
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <RunMenu
+                fileContent={fileContent}
+                prevFileContent={prevFileContent}
                 selectedFilePath={selectedFilePath}
                 selectedRunTime={selectedRunTime}
                 runTimes={runTimes}
@@ -456,6 +458,8 @@ export default SASjsEditor
 
 type RunMenuProps = {
   selectedFilePath: string
+  fileContent: string
+  prevFileContent: string
   selectedRunTime: string
   runTimes: string[]
   handleChangeRunTime: (event: SelectChangeEvent) => void
@@ -464,6 +468,8 @@ type RunMenuProps = {
 
 const RunMenu = ({
   selectedFilePath,
+  fileContent,
+  prevFileContent,
   selectedRunTime,
   runTimes,
   handleChangeRunTime,
@@ -496,10 +502,21 @@ const RunMenu = ({
       </Tooltip>
       {selectedFilePath ? (
         <Box sx={{ marginLeft: '10px' }}>
-          <Tooltip title="Launch program in new window">
-            <IconButton onClick={launchProgram}>
-              <RocketLaunch />
-            </IconButton>
+          <Tooltip
+            title={
+              fileContent !== prevFileContent
+                ? 'Save file before launching program'
+                : 'Launch program in new window'
+            }
+          >
+            <span>
+              <IconButton
+                disabled={fileContent !== prevFileContent}
+                onClick={launchProgram}
+              >
+                <RocketLaunch />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       ) : (
