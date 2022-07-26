@@ -223,6 +223,10 @@ const SASjsEditor = ({
   const saveFile = (filePath?: string) => {
     setIsLoading(true)
 
+    if (filePath) {
+      filePath = filePath.startsWith('/') ? filePath : `/${filePath}`
+    }
+
     const formData = new FormData()
 
     const stringBlob = new Blob([fileContent], { type: 'text/plain' })
