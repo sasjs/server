@@ -102,7 +102,7 @@ const SASjsEditor = ({
 
   usePrompt(
     'Changes you made may not be saved.',
-    prevFileContent !== fileContent
+    prevFileContent !== fileContent && !!selectedFilePath
   )
 
   useEffect(() => {
@@ -134,10 +134,17 @@ const SASjsEditor = ({
         })
         .finally(() => setIsLoading(false))
     } else {
-      setFileContent('')
+      const content = localStorage.getItem('fileContent') ?? ''
+      setFileContent(content)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
+
+  useEffect(() => {
+    if (fileContent.length && !selectedFilePath) {
+      localStorage.setItem('fileContent', fileContent)
+    }
+  }, [fileContent, selectedFilePath])
 
   useEffect(() => {
     if (runTimes.includes(selectedFileExtension))
