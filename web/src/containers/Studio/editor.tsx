@@ -14,7 +14,8 @@ import {
   Select,
   SelectChangeEvent,
   Tab,
-  Tooltip
+  Tooltip,
+  Typography
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
 
@@ -137,6 +138,9 @@ const SASjsEditor = ({
       const content = localStorage.getItem('fileContent') ?? ''
       setFileContent(content)
     }
+    setLog('')
+    setWebout('')
+    setTab('1')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
 
@@ -332,9 +336,14 @@ const SASjsEditor = ({
             <TabList onChange={handleTabChange} centered>
               <StyledTab label="Code" value="1" />
               <StyledTab label="Log" value="2" />
-              <Tooltip title="Displays content from the _webout fileref">
-                <StyledTab label="Webout" value="3" />
-              </Tooltip>
+              <StyledTab
+                label={
+                  <Tooltip title="Displays content from the _webout fileref">
+                    <Typography>Webout</Typography>
+                  </Tooltip>
+                }
+                value="3"
+              />
             </TabList>
           </Box>
 
