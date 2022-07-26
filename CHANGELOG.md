@@ -1,3 +1,24 @@
+# [0.12.0](https://github.com/sasjs/server/compare/v0.11.5...v0.12.0) (2022-07-26)
+
+
+### Bug Fixes
+
+* fileTree api response to include an additional attribute isFolder ([0f19384](https://github.com/sasjs/server/commit/0f193849994f1ac8a071afa8f10af5b46f86663d))
+* remove drive component ([06d7c91](https://github.com/sasjs/server/commit/06d7c91fc34620a954df1fd1c682eff370f79ca6))
+
+
+### Features
+
+* add api end point for delete folder ([08e0c61](https://github.com/sasjs/server/commit/08e0c61e0fd7041d6cded6f4d71fbb410e5615ce))
+* add sidebar(drive) to left of studio ([6c35412](https://github.com/sasjs/server/commit/6c35412d2f5180d4e49b12e616576d8b8dacb7d8))
+* created api endpoint for adding empty folder in drive ([941917e](https://github.com/sasjs/server/commit/941917e508ece5009135f9dddf99775dd4002f78))
+* implemented api for renaming file/folder ([fdcaba9](https://github.com/sasjs/server/commit/fdcaba9d56cddea5d56d7de5a172f1bb49be3db5))
+* implemented delete file/folder functionality ([177675b](https://github.com/sasjs/server/commit/177675bc897416f7994dd849dc7bb11ba072efe9))
+* implemented functionality for adding file/folder from sidebar context menu ([0ce94a5](https://github.com/sasjs/server/commit/0ce94a553e53bfcdbd6273b26b322095a080a341))
+* implemented the functionality for renaming file/folder from context menu ([7010a6a](https://github.com/sasjs/server/commit/7010a6a1201720d0eb4093267a344fb828b90a2f))
+* prevent user from leaving studio page when there are unsaved changes ([6c75502](https://github.com/sasjs/server/commit/6c7550286b5f505e9dfe8ca63c62fa1db1b60b2e))
+* **web:** add difference view editor in studio ([420a61a](https://github.com/sasjs/server/commit/420a61a5a6b11dcb5eb0a652ea9cecea5c3bee5f))
+
 ## [0.11.5](https://github.com/sasjs/server/compare/v0.11.4...v0.11.5) (2022-07-19)
 
 
