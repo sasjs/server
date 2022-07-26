@@ -1,3 +1,14 @@
+## [0.12.1](https://github.com/sasjs/server/compare/v0.12.0...v0.12.1) (2022-07-26)
+
+
+### Bug Fixes
+
+* **web:** disable launch icon button when file content is not saved ([c574b42](https://github.com/sasjs/server/commit/c574b4223591c4a6cd3ef5e146ce99cd8f7c9190))
+* **web:** saveAs functionality fixed in studio page ([3c987c6](https://github.com/sasjs/server/commit/3c987c61ddc258f991e2bf38c1f16a0c4248d6ae))
+* **web:** show original name as default name in rename file/folder modal ([9640f65](https://github.com/sasjs/server/commit/9640f6526496f3564664ccb1f834d0f659dcad4e))
+* **web:** webout tab item fixed in studio page ([7cdffe3](https://github.com/sasjs/server/commit/7cdffe30e36e5cad0284f48ea97925958e12704c))
+* **web:** when no file is selected save the editor content to local storage ([3b1fcb9](https://github.com/sasjs/server/commit/3b1fcb937d06d02ab99c9e8dbe307012d48a7a3a))
+
 # [0.12.0](https://github.com/sasjs/server/compare/v0.11.5...v0.12.0) (2022-07-26)
 
 
