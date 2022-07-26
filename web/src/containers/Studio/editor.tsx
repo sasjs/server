@@ -306,7 +306,7 @@ const SASjsEditor = ({
               borderColor: 'divider',
               position: 'fixed',
               background: 'white',
-              width: '100%'
+              width: '85%'
             }}
           >
             <TabList onChange={handleTabChange} centered>

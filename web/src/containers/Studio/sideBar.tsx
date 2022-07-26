@@ -7,7 +7,7 @@ import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 import Modal from '../../components/modal'
 import { TreeNode } from '../../utils/types'
 
-const drawerWidth = 240
+const drawerWidth = '15%'
 
 type Props = {
   selectedFilePath: string

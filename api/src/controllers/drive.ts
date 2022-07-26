@@ -337,7 +337,7 @@ const getFile = async (req: express.Request, filePath: string) => {
     req.res?.setHeader('Content-type', 'text/plain')
   }
 
-  req.res?.sendFile(path.resolve(filePathFull))
+  req.res?.sendFile(path.resolve(filePathFull), { dotfiles: 'allow' })
 }
 
 const getFolder = async (folderPath?: string) => {
