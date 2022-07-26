@@ -2,7 +2,7 @@ import { useEffect, useCallback, useContext } from 'react'
 import { UNSAFE_NavigationContext as NavigationContext } from 'react-router-dom'
 import { History, Blocker, Transition } from 'history'
 
-function useBlocker(blocker: Blocker, when = true) {
+const useBlocker = (blocker: Blocker, when = true) => {
   const navigator = useContext(NavigationContext).navigator as History
 
   useEffect(() => {
@@ -24,7 +24,7 @@ function useBlocker(blocker: Blocker, when = true) {
   }, [navigator, blocker, when])
 }
 
-export default function usePrompt(message: string, when = true) {
+export const usePrompt = (message: string, when = true) => {
   const blocker = useCallback(
     (tx) => {
       if (window.confirm(message)) tx.retry()
