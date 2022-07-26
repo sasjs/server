@@ -143,6 +143,7 @@ export class ExecutionController {
       name: 'files',
       relativePath: '',
       absolutePath: getFilesFolder(),
+      isFolder: true,
       children: []
     }
 
@@ -152,15 +153,22 @@ export class ExecutionController {
       const currentNode = stack.pop()
 
       if (currentNode) {
+        currentNode.isFolder = fs
+          .statSync(currentNode.absolutePath)
+          .isDirectory()
+
         const children = fs.readdirSync(currentNode.absolutePath)
 
         for (let child of children) {
-          const absoluteChildPath = `${currentNode.absolutePath}/${child}`
+          const absoluteChildPath = path.join(currentNode.absolutePath, child)
+          // relative path will only be used in frontend component
+          // so, no need to convert '/' to platform specific separator
           const relativeChildPath = `${currentNode.relativePath}/${child}`
           const childNode: TreeNode = {
             name: child,
             relativePath: relativeChildPath,
             absolutePath: absoluteChildPath,
+            isFolder: false,
             children: []
           }
           currentNode.children.push(childNode)

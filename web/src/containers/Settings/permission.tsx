@@ -28,7 +28,7 @@ import Modal from '../../components/modal'
 import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
 import UpdatePermissionModal from './updatePermissionModal'
-import DeleteModal from './deletePermissionModal'
+import DeleteConfirmationModal from '../../components/deleteConfirmationModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 
 import {
@@ -61,7 +61,10 @@ const Permission = () => {
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
     useState(false)
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
+    useState(false)
+  const [deleteConfirmationModalMessage, setDeleteConfirmationModalMessage] =
+    useState('')
   const [selectedPermission, setSelectedPermission] =
     useState<PermissionResponse>()
   const [filterModalOpen, setFilterModalOpen] = useState(false)
@@ -236,11 +239,14 @@ const Permission = () => {
 
   const handleDeletePermissionClick = (permission: PermissionResponse) => {
     setSelectedPermission(permission)
-    setDeleteModalOpen(true)
+    setDeleteConfirmationModalOpen(true)
+    setDeleteConfirmationModalMessage(
+      'Are you sure you want to delete this permission?'
+    )
   }
 
   const deletePermission = () => {
-    setDeleteModalOpen(false)
+    setDeleteConfirmationModalOpen(false)
     setIsLoading(true)
     axios
       .delete(`/SASjsApi/permission/${selectedPermission?.permissionId}`)
@@ -338,10 +344,11 @@ const Permission = () => {
         permission={selectedPermission}
         updatePermission={updatePermission}
       />
-      <DeleteModal
-        open={deleteModalOpen}
-        setOpen={setDeleteModalOpen}
-        deletePermission={deletePermission}
+      <DeleteConfirmationModal
+        open={deleteConfirmationModalOpen}
+        setOpen={setDeleteConfirmationModalOpen}
+        message={deleteConfirmationModalMessage}
+        _delete={deletePermission}
       />
     </Box>
   )

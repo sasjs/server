@@ -5,7 +5,7 @@ import { styled } from '@mui/material/styles'
 
 import { BootstrapDialogTitle } from './dialogTitle'
 
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+export const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
     padding: theme.spacing(2)
   },
@@ -14,7 +14,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   }
 }))
 
-export interface ModalProps {
+type ModalProps = {
   open: boolean
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
   title: string
