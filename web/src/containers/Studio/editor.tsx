@@ -14,7 +14,8 @@ import {
   Select,
   SelectChangeEvent,
   Tab,
-  Tooltip
+  Tooltip,
+  Typography
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
 
@@ -39,7 +40,7 @@ import FilePathInputModal from '../../components/filePathInputModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 import Modal from '../../components/modal'
 
-import usePrompt from '../../utils/usePrompt'
+import { usePrompt, useStateWithCallback } from '../../utils/hooks'
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
@@ -74,7 +75,7 @@ const SASjsEditor = ({
   const [snackbarSeverity, setSnackbarSeverity] = useState<AlertSeverityType>(
     AlertSeverityType.Success
   )
-  const [prevFileContent, setPrevFileContent] = useState('')
+  const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
   const [ctrlPressed, setCtrlPressed] = useState(false)
@@ -102,7 +103,7 @@ const SASjsEditor = ({
 
   usePrompt(
     'Changes you made may not be saved.',
-    prevFileContent !== fileContent
+    prevFileContent !== fileContent && !!selectedFilePath
   )
 
   useEffect(() => {
@@ -134,9 +135,20 @@ const SASjsEditor = ({
         })
         .finally(() => setIsLoading(false))
     } else {
-      setFileContent('')
+      const content = localStorage.getItem('fileContent') ?? ''
+      setFileContent(content)
     }
+    setLog('')
+    setWebout('')
+    setTab('1')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
+
+  useEffect(() => {
+    if (fileContent.length && !selectedFilePath) {
+      localStorage.setItem('fileContent', fileContent)
+    }
+  }, [fileContent, selectedFilePath])
 
   useEffect(() => {
     if (runTimes.includes(selectedFileExtension))
@@ -211,6 +223,10 @@ const SASjsEditor = ({
   const saveFile = (filePath?: string) => {
     setIsLoading(true)
 
+    if (filePath) {
+      filePath = filePath.startsWith('/') ? filePath : `/${filePath}`
+    }
+
     const formData = new FormData()
 
     const stringBlob = new Blob([fileContent], { type: 'text/plain' })
@@ -223,10 +239,22 @@ const SASjsEditor = ({
 
     axiosPromise
       .then(() => {
-        if (filePath) {
+        if (filePath && fileContent === prevFileContent) {
+          // when fileContent and prevFileContent is same,
+          // callback function in setPrevFileContent method is not called
+          // because behind the scene useEffect hook is being used
+          // for calling callback function, and it's only fired when the
+          // new value is not equal to old value.
+          // So, we'll have to explicitly update the selected file path
+
           setSelectedFilePath(filePath, true)
+        } else {
+          setPrevFileContent(fileContent, () => {
+            if (filePath) {
+              setSelectedFilePath(filePath, true)
+            }
+          })
         }
-        setPrevFileContent(fileContent)
         setSnackbarMessage('File saved!')
         setSnackbarSeverity(AlertSeverityType.Success)
         setOpenSnackbar(true)
@@ -312,9 +340,14 @@ const SASjsEditor = ({
             <TabList onChange={handleTabChange} centered>
               <StyledTab label="Code" value="1" />
               <StyledTab label="Log" value="2" />
-              <Tooltip title="Displays content from the _webout fileref">
-                <StyledTab label="Webout" value="3" />
-              </Tooltip>
+              <StyledTab
+                label={
+                  <Tooltip title="Displays content from the _webout fileref">
+                    <Typography>Webout</Typography>
+                  </Tooltip>
+                }
+                value="3"
+              />
             </TabList>
           </Box>
 
@@ -324,6 +357,8 @@ const SASjsEditor = ({
           >
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <RunMenu
+                fileContent={fileContent}
+                prevFileContent={prevFileContent}
                 selectedFilePath={selectedFilePath}
                 selectedRunTime={selectedRunTime}
                 runTimes={runTimes}
@@ -423,6 +458,8 @@ export default SASjsEditor
 
 type RunMenuProps = {
   selectedFilePath: string
+  fileContent: string
+  prevFileContent: string
   selectedRunTime: string
   runTimes: string[]
   handleChangeRunTime: (event: SelectChangeEvent) => void
@@ -431,6 +468,8 @@ type RunMenuProps = {
 
 const RunMenu = ({
   selectedFilePath,
+  fileContent,
+  prevFileContent,
   selectedRunTime,
   runTimes,
   handleChangeRunTime,
@@ -463,10 +502,21 @@ const RunMenu = ({
       </Tooltip>
       {selectedFilePath ? (
         <Box sx={{ marginLeft: '10px' }}>
-          <Tooltip title="Launch program in new window">
-            <IconButton onClick={launchProgram}>
-              <RocketLaunch />
-            </IconButton>
+          <Tooltip
+            title={
+              fileContent !== prevFileContent
+                ? 'Save file before launching program'
+                : 'Launch program in new window'
+            }
+          >
+            <span>
+              <IconButton
+                disabled={fileContent !== prevFileContent}
+                onClick={launchProgram}
+              >
+                <RocketLaunch />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       ) : (

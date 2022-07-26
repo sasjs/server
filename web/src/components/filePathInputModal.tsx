@@ -22,8 +22,14 @@ const FilePathInputModal = ({
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
-    const regex = /\.(exe|sh|htaccess)$/i
-    if (regex.test(value)) {
+
+    const specialChars = /[`!@#$%^&*()_+\-=[\]{};':"\\|,<>?~]/
+    const fileExtension = /\.(exe|sh|htaccess)$/i
+
+    if (specialChars.test(value)) {
+      setHasError(true)
+      setErrorText('can not have special characters')
+    } else if (fileExtension.test(value)) {
       setHasError(true)
       setErrorText('can not save file with extensions [exe, sh, htaccess]')
     } else {
