@@ -208,6 +208,7 @@ const TreeViewNode = ({
         action={
           nameInputModalActionLabel === 'Add' ? addFileFolder : renameFileFolder
         }
+        defaultName={node.relativePath.split('/').pop()}
       />
       <Menu
         open={contextMenu !== null}

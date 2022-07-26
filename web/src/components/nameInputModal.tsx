@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { Button, DialogActions, DialogContent, TextField } from '@mui/material'
 
@@ -12,6 +12,7 @@ type NameInputModalProps = {
   isFolder: boolean
   actionLabel: string
   action: (name: string) => void
+  defaultName?: string
 }
 
 const NameInputModal = ({
@@ -20,11 +21,16 @@ const NameInputModal = ({
   title,
   isFolder,
   actionLabel,
-  action
+  action,
+  defaultName
 }: NameInputModalProps) => {
   const [name, setName] = useState('')
   const [hasError, setHasError] = useState(false)
   const [errorText, setErrorText] = useState('')
+
+  useEffect(() => {
+    if (defaultName) setName(defaultName)
+  }, [defaultName])
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
