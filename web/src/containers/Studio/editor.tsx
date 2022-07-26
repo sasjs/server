@@ -39,7 +39,7 @@ import FilePathInputModal from '../../components/filePathInputModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 import Modal from '../../components/modal'
 
-import usePrompt from '../../utils/usePrompt'
+import { usePrompt, useStateWithCallback } from '../../utils/hooks'
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
@@ -74,7 +74,7 @@ const SASjsEditor = ({
   const [snackbarSeverity, setSnackbarSeverity] = useState<AlertSeverityType>(
     AlertSeverityType.Success
   )
-  const [prevFileContent, setPrevFileContent] = useState('')
+  const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
   const [ctrlPressed, setCtrlPressed] = useState(false)
@@ -136,6 +136,7 @@ const SASjsEditor = ({
     } else {
       setFileContent('')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
 
   useEffect(() => {
@@ -223,10 +224,22 @@ const SASjsEditor = ({
 
     axiosPromise
       .then(() => {
-        if (filePath) {
+        if (filePath && fileContent === prevFileContent) {
+          // when fileContent and prevFileContent is same,
+          // callback function in setPrevFileContent method is not called
+          // because behind the scene useEffect hook is being used
+          // for calling callback function, and it's only fired when the
+          // new value is not equal to old value.
+          // So, we'll have to explicitly update the selected file path
+
           setSelectedFilePath(filePath, true)
+        } else {
+          setPrevFileContent(fileContent, () => {
+            if (filePath) {
+              setSelectedFilePath(filePath, true)
+            }
+          })
         }
-        setPrevFileContent(fileContent)
         setSnackbarMessage('File saved!')
         setSnackbarSeverity(AlertSeverityType.Success)
         setOpenSnackbar(true)
