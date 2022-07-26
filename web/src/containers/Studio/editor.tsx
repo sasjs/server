@@ -521,6 +521,11 @@ const FileMenu = ({
     else setAnchorEl(null)
   }
 
+  const handleDiffBtnClick = () => {
+    setAnchorEl(null)
+    setShowDiff(!showDiff)
+  }
+
   const handleSaveAsBtnClick = () => {
     setAnchorEl(null)
     setOpenFilePathInputModal(true)
@@ -555,7 +560,7 @@ const FileMenu = ({
       >
         <MenuItem sx={{ justifyContent: 'center' }}>
           <Button
-            onClick={() => setShowDiff(!showDiff)}
+            onClick={handleDiffBtnClick}
             variant="contained"
             color="primary"
             startIcon={showDiff ? <Edit /> : <Difference />}
