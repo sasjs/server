@@ -1,3 +1,16 @@
+# [0.13.0](https://github.com/sasjs/server/compare/v0.12.1...v0.13.0) (2022-07-28)
+
+
+### Bug Fixes
+
+* autofocus input field and submit on enter ([7681722](https://github.com/sasjs/server/commit/7681722e5afdc2df0c9eed201b05add3beda92a7))
+* move api button to user menu ([8de032b](https://github.com/sasjs/server/commit/8de032b5431b47daabcf783c47ff078bf817247d))
+
+
+### Features
+
+* add action and command to editor ([706e228](https://github.com/sasjs/server/commit/706e228a8e1924786fd9dc97de387974eda504b1))
+
 ## [0.12.1](https://github.com/sasjs/server/compare/v0.12.0...v0.12.1) (2022-07-26)
 
 
