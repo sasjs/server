@@ -67,6 +67,7 @@ const TreeViewNode = ({
     useState(false)
   const [deleteConfirmationModalMessage, setDeleteConfirmationModalMessage] =
     useState('')
+  const [defaultInputModalName, setDefaultInputModalName] = useState('')
   const [nameInputModalOpen, setNameInputModalOpen] = useState(false)
   const [nameInputModalTitle, setNameInputModalTitle] = useState('')
   const [nameInputModalActionLabel, setNameInputModalActionLabel] = useState('')
@@ -129,6 +130,7 @@ const TreeViewNode = ({
     setNameInputModalTitle('Add Folder')
     setNameInputModalActionLabel('Add')
     setNameInputModalForFolder(true)
+    setDefaultInputModalName('')
   }
 
   const handleNewFileItemClick = () => {
@@ -137,6 +139,7 @@ const TreeViewNode = ({
     setNameInputModalTitle('Add File')
     setNameInputModalActionLabel('Add')
     setNameInputModalForFolder(false)
+    setDefaultInputModalName('')
   }
 
   const addFileFolder = (name: string) => {
@@ -152,6 +155,7 @@ const TreeViewNode = ({
     setNameInputModalTitle('Rename')
     setNameInputModalActionLabel('Rename')
     setNameInputModalForFolder(node.isFolder)
+    setDefaultInputModalName(node.relativePath.split('/').pop() ?? '')
   }
 
   const renameFileFolder = (name: string) => {
@@ -208,7 +212,7 @@ const TreeViewNode = ({
         action={
           nameInputModalActionLabel === 'Add' ? addFileFolder : renameFileFolder
         }
-        defaultName={node.relativePath.split('/').pop()}
+        defaultName={defaultInputModalName}
       />
       <Menu
         open={contextMenu !== null}

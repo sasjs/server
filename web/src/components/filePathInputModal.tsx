@@ -39,21 +39,30 @@ const FilePathInputModal = ({
     setFilePath(value)
   }
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (hasError || !filePath) return
+    saveFile(filePath)
+  }
+
   return (
     <BootstrapDialog fullWidth onClose={() => setOpen(false)} open={open}>
       <BootstrapDialogTitle id="abort-modal" handleOpen={setOpen}>
         Save File
       </BootstrapDialogTitle>
       <DialogContent dividers>
-        <TextField
-          fullWidth
-          variant="outlined"
-          label="File Path"
-          value={filePath}
-          onChange={handleChange}
-          error={hasError}
-          helperText={errorText}
-        />
+        <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            autoFocus
+            variant="outlined"
+            label="File Path"
+            value={filePath}
+            onChange={handleChange}
+            error={hasError}
+            helperText={errorText}
+          />
+        </form>
       </DialogContent>
       <DialogActions>
         <Button variant="contained" onClick={() => setOpen(false)}>
@@ -61,9 +70,7 @@ const FilePathInputModal = ({
         </Button>
         <Button
           variant="contained"
-          onClick={() => {
-            saveFile(filePath)
-          }}
+          onClick={() => saveFile(filePath)}
           disabled={hasError || !filePath}
         >
           Save
