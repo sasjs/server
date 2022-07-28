@@ -32,6 +32,14 @@ const NameInputModal = ({
     if (defaultName) setName(defaultName)
   }, [defaultName])
 
+  const handleFocus = (
+    event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement, Element>
+  ) => {
+    if (defaultName) {
+      event.target.select()
+    }
+  }
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
 
@@ -55,21 +63,32 @@ const NameInputModal = ({
     setName(value)
   }
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (hasError || !name) return
+    action(name)
+  }
+
   return (
     <BootstrapDialog fullWidth onClose={() => setOpen(false)} open={open}>
       <BootstrapDialogTitle id="abort-modal" handleOpen={setOpen}>
         {title}
       </BootstrapDialogTitle>
       <DialogContent dividers>
-        <TextField
-          fullWidth
-          variant="outlined"
-          label={isFolder ? 'Folder Name' : 'File Name'}
-          value={name}
-          onChange={handleChange}
-          error={hasError}
-          helperText={errorText}
-        />
+        <form onSubmit={handleSubmit}>
+          <TextField
+            id="input-box"
+            fullWidth
+            autoFocus
+            onFocus={handleFocus}
+            variant="outlined"
+            label={isFolder ? 'Folder Name' : 'File Name'}
+            value={name}
+            onChange={handleChange}
+            error={hasError}
+            helperText={errorText}
+          />
+        </form>
       </DialogContent>
       <DialogActions>
         <Button variant="contained" onClick={() => setOpen(false)}>
@@ -77,9 +96,7 @@ const NameInputModal = ({
         </Button>
         <Button
           variant="contained"
-          onClick={() => {
-            action(name)
-          }}
+          onClick={() => action(name)}
           disabled={hasError || !name}
         >
           {actionLabel}

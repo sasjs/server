@@ -30,7 +30,8 @@ import {
 import Editor, {
   MonacoDiffEditor,
   DiffEditorDidMount,
-  EditorDidMount
+  EditorDidMount,
+  monaco
 } from 'react-monaco-editor'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
@@ -89,16 +90,36 @@ const SASjsEditor = ({
 
   const editorRef = useRef(null as any)
 
-  const diffEditorRef = useRef(null as any)
-
   const handleEditorDidMount: EditorDidMount = (editor) => {
-    editor.focus()
     editorRef.current = editor
+    editor.focus()
+    editor.addAction({
+      // An unique identifier of the contributed action.
+      id: 'show-difference',
+
+      // A label of the action that will be presented to the user.
+      label: 'Show Differences',
+
+      // An optional array of keybindings for the action.
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD],
+
+      contextMenuGroupId: 'navigation',
+
+      contextMenuOrder: 1,
+
+      // Method that will be executed when the action is triggered.
+      // @param editor The editor instance is passed in as a convenience
+      run: function (ed) {
+        setShowDiff(true)
+      }
+    })
   }
 
   const handleDiffEditorDidMount: DiffEditorDidMount = (diffEditor) => {
     diffEditor.focus()
-    diffEditorRef.current = diffEditor
+    diffEditor.addCommand(monaco.KeyCode.Escape, function () {
+      setShowDiff(false)
+    })
   }
 
   usePrompt(

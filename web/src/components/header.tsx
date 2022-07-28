@@ -91,17 +91,6 @@ const Header = (props: any) => {
           />
         </Tabs>
         <Button
-          href={`${baseUrl}/SASjsApi`}
-          target="_blank"
-          rel="noreferrer"
-          variant="contained"
-          color="primary"
-          size="large"
-          endIcon={<OpenInNewIcon />}
-        >
-          API Docs
-        </Button>
-        <Button
           href={`${baseUrl}/AppStream`}
           target="_blank"
           rel="noreferrer"
@@ -110,7 +99,7 @@ const Header = (props: any) => {
           size="large"
           endIcon={<OpenInNewIcon />}
         >
-          App Stream
+          Apps
         </Button>
         <div
           style={{
@@ -140,18 +129,6 @@ const Header = (props: any) => {
           >
             <MenuItem sx={{ justifyContent: 'center' }}>
               <Button
-                href={'https://server.sasjs.io'}
-                target="_blank"
-                rel="noreferrer"
-                variant="contained"
-                color="primary"
-                size="large"
-              >
-                Documentation
-              </Button>
-            </MenuItem>
-            <MenuItem sx={{ justifyContent: 'center' }}>
-              <Button
                 component={Link}
                 to="/SASjsSettings"
                 onClick={handleClose}
@@ -160,6 +137,32 @@ const Header = (props: any) => {
                 startIcon={<SettingsIcon />}
               >
                 Settings
+              </Button>
+            </MenuItem>
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
+                href={'https://server.sasjs.io'}
+                target="_blank"
+                rel="noreferrer"
+                variant="contained"
+                size="large"
+                color="primary"
+                endIcon={<OpenInNewIcon />}
+              >
+                Docs
+              </Button>
+            </MenuItem>
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
+                href={`${baseUrl}/SASjsApi`}
+                target="_blank"
+                rel="noreferrer"
+                variant="contained"
+                color="primary"
+                size="large"
+                endIcon={<OpenInNewIcon />}
+              >
+                API
               </Button>
             </MenuItem>
             <MenuItem onClick={handleLogout} sx={{ justifyContent: 'center' }}>
