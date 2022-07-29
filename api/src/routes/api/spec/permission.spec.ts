@@ -7,7 +7,6 @@ import {
   DriveController,
   UserController,
   GroupController,
-  ClientController,
   PermissionController,
   PrincipalType,
   PermissionSetting
@@ -69,7 +68,6 @@ const group = {
 
 const userController = new UserController()
 const groupController = new GroupController()
-const clientController = new ClientController()
 const permissionController = new PermissionController()
 
 describe('permission', () => {
@@ -478,16 +476,16 @@ describe('permission', () => {
       expect(res.body).toHaveLength(2)
     })
 
-    it('should give a list of all permissions when user is not admin', async () => {
-      const dbUser = await userController.createUser({
+    it(`should give a list of user's own  permissions when user is not admin`, async () => {
+      const nonAdminUser = await userController.createUser({
         ...user,
         username: 'get' + user.username
       })
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(nonAdminUser.id)
       await permissionController.createPermission({
-        uri: '/SASjsApi/permission',
+        uri: '/test-1',
         principalType: PrincipalType.user,
-        principalId: dbUser.id,
+        principalId: nonAdminUser.id,
         setting: PermissionSetting.grant
       })
 
@@ -497,11 +495,11 @@ describe('permission', () => {
         .send()
         .expect(200)
 
-      expect(res.body).toHaveLength(3)
+      expect(res.body).toHaveLength(1)
     })
   })
 
-  describe.only('verify', () => {
+  describe('verify', () => {
     beforeAll(async () => {
       await permissionController.createPermission({
         ...permission,
