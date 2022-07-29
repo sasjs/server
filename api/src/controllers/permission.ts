@@ -1,3 +1,4 @@
+import express from 'express'
 import {
   Security,
   Route,
@@ -8,7 +9,8 @@ import {
   Post,
   Patch,
   Delete,
-  Body
+  Body,
+  Request
 } from 'tsoa'
 
 import Permission from '../model/Permission'
@@ -71,7 +73,7 @@ export interface PermissionDetailsResponse {
 @Tags('Permission')
 export class PermissionController {
   /**
-   * @summary Get list of all permissions (uri, setting and userDetail).
+   * @summary Get a list of user's permissions, if user is admin all permissions are returned.
    *
    */
   @Example<PermissionDetailsResponse[]>([
@@ -100,8 +102,10 @@ export class PermissionController {
     }
   ])
   @Get('/')
-  public async getAllPermissions(): Promise<PermissionDetailsResponse[]> {
-    return getAllPermissions()
+  public async getAllPermissions(
+    @Request() request: express.Request
+  ): Promise<PermissionDetailsResponse[]> {
+    return getAllPermissions(request)
   }
 
   /**
@@ -161,24 +165,32 @@ export class PermissionController {
   }
 }
 
-const getAllPermissions = async (): Promise<PermissionDetailsResponse[]> =>
-  (await Permission.find({})
-    .select({
-      _id: 0,
-      permissionId: 1,
-      uri: 1,
-      setting: 1
-    })
-    .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })
-    .populate({
-      path: 'group',
-      select: 'groupId name description -_id',
-      populate: {
-        path: 'users',
-        select: 'id username displayName isAdmin -_id',
-        options: { limit: 15 }
+const getAllPermissions = async (
+  req: express.Request
+): Promise<PermissionDetailsResponse[]> => {
+  const { user } = req
+
+  if (user?.isAdmin) return await Permission.get({})
+  else {
+    const permissions: PermissionDetailsResponse[] = []
+
+    const dbUser = await User.findOne({ id: user?.userId })
+    if (!dbUser)
+      throw {
+        code: 404,
+        status: 'Not Found',
+        message: 'User not found.'
       }
-    })) as unknown as PermissionDetailsResponse[]
+
+    permissions.push(...(await Permission.get({ user: dbUser._id })))
+
+    for (const group of dbUser.groups) {
+      permissions.push(...(await Permission.get({ group })))
+    }
+
+    return permissions
+  }
+}
 
 const createPermission = async ({
   uri,

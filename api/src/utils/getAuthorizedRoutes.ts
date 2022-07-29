@@ -9,8 +9,7 @@ const StaticAuthorizedRoutes = [
   '/SASjsApi/drive/file',
   '/SASjsApi/drive/folder',
   '/SASjsApi/drive/fileTree',
-  '/SASjsApi/drive/rename',
-  '/SASjsApi/permission'
+  '/SASjsApi/drive/rename'
 ]
 
 export const getAuthorizedRoutes = () => {

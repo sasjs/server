@@ -1,5 +1,11 @@
 import mongoose, { Schema, model, Document, Model } from 'mongoose'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
+import { PermissionDetailsResponse } from '../controllers'
+
+interface GetPermissionBy {
+  user?: Schema.Types.ObjectId
+  group?: Schema.Types.ObjectId
+}
 
 interface IPermissionDocument extends Document {
   uri: string
@@ -11,7 +17,9 @@ interface IPermissionDocument extends Document {
 
 interface IPermission extends IPermissionDocument {}
 
-interface IPermissionModel extends Model<IPermission> {}
+interface IPermissionModel extends Model<IPermission> {
+  get(getBy: GetPermissionBy): Promise<PermissionDetailsResponse[]>
+}
 
 const permissionSchema = new Schema<IPermissionDocument>({
   uri: {
@@ -27,6 +35,29 @@ const permissionSchema = new Schema<IPermissionDocument>({
 })
 
 permissionSchema.plugin(AutoIncrement, { inc_field: 'permissionId' })
+
+// Static Methods
+permissionSchema.static('get', async function (getBy: GetPermissionBy): Promise<
+  PermissionDetailsResponse[]
+> {
+  return (await this.find(getBy)
+    .select({
+      _id: 0,
+      permissionId: 1,
+      uri: 1,
+      setting: 1
+    })
+    .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })
+    .populate({
+      path: 'group',
+      select: 'groupId name description -_id',
+      populate: {
+        path: 'users',
+        select: 'id username displayName isAdmin -_id',
+        options: { limit: 15 }
+      }
+    })) as unknown as PermissionDetailsResponse[]
+})
 
 export const Permission: IPermissionModel = model<
   IPermission,
