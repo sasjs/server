@@ -1,3 +1,10 @@
+## [0.13.1](https://github.com/sasjs/server/compare/v0.13.0...v0.13.1) (2022-07-31)
+
+
+### Bug Fixes
+
+* adding options to prevent unwanted windows on windows.  Closes [#244](https://github.com/sasjs/server/issues/244) ([77db14c](https://github.com/sasjs/server/commit/77db14c690e18145d733ac2b0d646ab0dbe4d521))
+
 # [0.13.0](https://github.com/sasjs/server/compare/v0.12.1...v0.13.0) (2022-07-28)
 
 
