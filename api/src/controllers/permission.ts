@@ -19,12 +19,16 @@ import Group from '../model/Group'
 import { UserResponse } from './user'
 import { GroupDetailsResponse } from './group'
 
+export enum PermissionType {
+  route = 'Route'
+}
+
 export enum PrincipalType {
   user = 'user',
   group = 'group'
 }
 
-export enum PermissionSetting {
+export enum PermissionSettingForRoute {
   grant = 'Grant',
   deny = 'Deny'
 }
@@ -34,12 +38,17 @@ interface RegisterPermissionPayload {
    * Name of affected resource
    * @example "/SASjsApi/code/execute"
    */
-  uri: string
+  path: string
+  /**
+   * Type of affected resource
+   * @example "Route"
+   */
+  type: PermissionType
   /**
    * The indication of whether (and to what extent) access is provided
    * @example "Grant"
    */
-  setting: PermissionSetting
+  setting: PermissionSettingForRoute
   /**
    * Indicates the type of principal
    * @example "user"
@@ -57,12 +66,13 @@ interface UpdatePermissionPayload {
    * The indication of whether (and to what extent) access is provided
    * @example "Grant"
    */
-  setting: PermissionSetting
+  setting: PermissionSettingForRoute
 }
 
 export interface PermissionDetailsResponse {
   permissionId: number
-  uri: string
+  path: string
+  type: string
   setting: string
   user?: UserResponse
   group?: GroupDetailsResponse
@@ -73,13 +83,17 @@ export interface PermissionDetailsResponse {
 @Tags('Permission')
 export class PermissionController {
   /**
-   * @summary Get a list of user's permissions, if user is admin all permissions are returned.
+   * Get the list of permission rules applicable the authenticated user.
+   * If the user is an admin, all rules are returned.
+   *
+   * @summary Get the list of permission rules. If the user is admin, all rules are returned.
    *
    */
   @Example<PermissionDetailsResponse[]>([
     {
       permissionId: 123,
-      uri: '/SASjsApi/code/execute',
+      path: '/SASjsApi/code/execute',
+      type: 'Route',
       setting: 'Grant',
       user: {
         id: 1,
@@ -90,7 +104,8 @@ export class PermissionController {
     },
     {
       permissionId: 124,
-      uri: '/SASjsApi/code/execute',
+      path: '/SASjsApi/code/execute',
+      type: 'Route',
       setting: 'Grant',
       group: {
         groupId: 1,
@@ -114,7 +129,8 @@ export class PermissionController {
    */
   @Example<PermissionDetailsResponse>({
     permissionId: 123,
-    uri: '/SASjsApi/code/execute',
+    path: '/SASjsApi/code/execute',
+    type: 'Route',
     setting: 'Grant',
     user: {
       id: 1,
@@ -137,7 +153,8 @@ export class PermissionController {
    */
   @Example<PermissionDetailsResponse>({
     permissionId: 123,
-    uri: '/SASjsApi/code/execute',
+    path: '/SASjsApi/code/execute',
+    type: 'Route',
     setting: 'Grant',
     user: {
       id: 1,
@@ -193,13 +210,15 @@ const getAllPermissions = async (
 }
 
 const createPermission = async ({
-  uri,
+  path,
+  type,
   setting,
   principalType,
   principalId
 }: RegisterPermissionPayload): Promise<PermissionDetailsResponse> => {
   const permission = new Permission({
-    uri,
+    path,
+    type,
     setting
   })
 
@@ -224,7 +243,8 @@ const createPermission = async ({
         }
 
       const alreadyExists = await Permission.findOne({
-        uri,
+        path,
+        type,
         user: userInDB._id
       })
 
@@ -232,7 +252,8 @@ const createPermission = async ({
         throw {
           code: 409,
           status: 'Conflict',
-          message: 'Permission already exists with provided URI and User.'
+          message:
+            'Permission already exists with provided Path, Type and User.'
         }
 
       permission.user = userInDB._id
@@ -255,14 +276,16 @@ const createPermission = async ({
         }
 
       const alreadyExists = await Permission.findOne({
-        uri,
+        path,
+        type,
         group: groupInDB._id
       })
       if (alreadyExists)
         throw {
           code: 409,
           status: 'Conflict',
-          message: 'Permission already exists with provided URI and Group.'
+          message:
+            'Permission already exists with provided Path, Type and Group.'
         }
 
       permission.group = groupInDB._id
@@ -292,7 +315,8 @@ const createPermission = async ({
 
   return {
     permissionId: savedPermission.permissionId,
-    uri: savedPermission.uri,
+    path: savedPermission.path,
+    type: savedPermission.type,
     setting: savedPermission.setting,
     user,
     group
@@ -313,7 +337,8 @@ const updatePermission = async (
     .select({
       _id: 0,
       permissionId: 1,
-      uri: 1,
+      path: 1,
+      type: 1,
       setting: 1
     })
     .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })

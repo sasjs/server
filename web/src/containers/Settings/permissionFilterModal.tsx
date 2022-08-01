@@ -27,8 +27,8 @@ type FilterModalProps = {
   open: boolean
   handleOpen: Dispatch<SetStateAction<boolean>>
   permissions: PermissionResponse[]
-  uriFilter: string[]
-  setUriFilter: Dispatch<SetStateAction<string[]>>
+  pathFilter: string[]
+  setPathFilter: Dispatch<SetStateAction<string[]>>
   principalFilter: string[]
   setPrincipalFilter: Dispatch<SetStateAction<string[]>>
   principalTypeFilter: PrincipalType[]
@@ -43,8 +43,8 @@ const PermissionFilterModal = ({
   open,
   handleOpen,
   permissions,
-  uriFilter,
-  setUriFilter,
+  pathFilter,
+  setPathFilter,
   principalFilter,
   setPrincipalFilter,
   principalTypeFilter,
@@ -54,8 +54,8 @@ const PermissionFilterModal = ({
   applyFilter,
   resetFilter
 }: FilterModalProps) => {
-  const URIs = permissions
-    .map((permission) => permission.uri)
+  const paths = permissions
+    .map((permission) => permission.path)
     .filter((uri, index, array) => array.indexOf(uri) === index)
 
   // fetch all the principals from permissions array
@@ -86,11 +86,11 @@ const PermissionFilterModal = ({
           <Grid item xs={12}>
             <Autocomplete
               multiple
-              options={URIs}
+              options={paths}
               filterSelectedOptions
-              value={uriFilter}
+              value={pathFilter}
               onChange={(event: any, newValue: string[]) => {
-                setUriFilter(newValue)
+                setPathFilter(newValue)
               }}
               renderInput={(params) => <TextField {...params} label="URIs" />}
             />

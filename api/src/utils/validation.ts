@@ -1,5 +1,9 @@
 import Joi from 'joi'
-import { PermissionSetting, PrincipalType } from '../controllers/permission'
+import {
+  PermissionType,
+  PermissionSettingForRoute,
+  PrincipalType
+} from '../controllers/permission'
 import { getAuthorizedRoutes } from './getAuthorizedRoutes'
 
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
@@ -89,12 +93,15 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
 
 export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    uri: Joi.string()
+    path: Joi.string()
       .required()
       .valid(...getAuthorizedRoutes()),
+    type: Joi.string()
+      .required()
+      .valid(...Object.values(PermissionType)),
     setting: Joi.string()
       .required()
-      .valid(...Object.values(PermissionSetting)),
+      .valid(...Object.values(PermissionSettingForRoute)),
     principalType: Joi.string()
       .required()
       .valid(...Object.values(PrincipalType)),
@@ -105,7 +112,7 @@ export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     setting: Joi.string()
       .required()
-      .valid(...Object.values(PermissionSetting))
+      .valid(...Object.values(PermissionSettingForRoute))
   }).validate(data)
 
 export const deployValidation = (data: any): Joi.ValidationResult =>

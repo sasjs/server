@@ -40,10 +40,11 @@ const AddPermissionModal = ({
   handleOpen,
   addPermission
 }: AddPermissionModalProps) => {
-  const [URIs, setURIs] = useState<string[]>([])
-  const [loadingURIs, setLoadingURIs] = useState(false)
-  const [uri, setUri] = useState<string>()
-  const [principalType, setPrincipalType] = useState('user')
+  const [paths, setPaths] = useState<string[]>([])
+  const [loadingPaths, setLoadingPaths] = useState(false)
+  const [path, setPath] = useState<string>()
+  const [permissionType, setPermissionType] = useState('Route')
+  const [principalType, setPrincipalType] = useState('group')
   const [userPrincipal, setUserPrincipal] = useState<UserResponse>()
   const [groupPrincipal, setGroupPrincipal] = useState<GroupResponse>()
   const [permissionSetting, setPermissionSetting] = useState('Grant')
@@ -52,19 +53,19 @@ const AddPermissionModal = ({
   const [groupPrincipals, setGroupPrincipals] = useState<GroupResponse[]>([])
 
   useEffect(() => {
-    setLoadingURIs(true)
+    setLoadingPaths(true)
     axios
       .get('/SASjsApi/info/authorizedRoutes')
       .then((res: any) => {
         if (res.data) {
-          setURIs(res.data.URIs)
+          setPaths(res.data.paths)
         }
       })
       .catch((err) => {
         console.log(err)
       })
       .finally(() => {
-        setLoadingURIs(false)
+        setLoadingPaths(false)
       })
   }, [])
 
@@ -93,7 +94,8 @@ const AddPermissionModal = ({
 
   const handleAddPermission = () => {
     const addPermissionPayload: any = {
-      uri,
+      path,
+      type: permissionType,
       setting: permissionSetting,
       principalType
     }
@@ -106,7 +108,7 @@ const AddPermissionModal = ({
   }
 
   const addButtonDisabled =
-    !uri || (principalType === 'user' ? !userPrincipal : !groupPrincipal)
+    !path || (principalType === 'user' ? !userPrincipal : !groupPrincipal)
 
   return (
     <BootstrapDialog onClose={() => handleOpen(false)} open={open}>
@@ -120,22 +122,40 @@ const AddPermissionModal = ({
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <Autocomplete
-              options={URIs}
+              options={paths}
               disableClearable
-              value={uri}
-              onChange={(event: any, newValue: string) => setUri(newValue)}
+              value={path}
+              onChange={(event: any, newValue: string) => setPath(newValue)}
               renderInput={(params) =>
-                loadingURIs ? (
+                loadingPaths ? (
                   <CircularProgress />
                 ) : (
-                  <TextField {...params} label="Principal" />
+                  <TextField {...params} autoFocus label="URI" />
                 )
               }
             />
           </Grid>
           <Grid item xs={12}>
             <Autocomplete
-              options={['user', 'group']}
+              options={['Route']}
+              disableClearable
+              value={permissionType}
+              onChange={(event: any, newValue: string) =>
+                setPermissionType(newValue)
+              }
+              renderInput={(params) =>
+                loadingPaths ? (
+                  <CircularProgress />
+                ) : (
+                  <TextField {...params} label="Permission Type" />
+                )
+              }
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Autocomplete
+              options={['group', 'user']}
+              getOptionLabel={(option) => option.toUpperCase()}
               disableClearable
               value={principalType}
               onChange={(event: any, newValue: string) =>

@@ -8,7 +8,8 @@ interface GetPermissionBy {
 }
 
 interface IPermissionDocument extends Document {
-  uri: string
+  path: string
+  type: string
   setting: string
   permissionId: number
   user: Schema.Types.ObjectId
@@ -22,7 +23,11 @@ interface IPermissionModel extends Model<IPermission> {
 }
 
 const permissionSchema = new Schema<IPermissionDocument>({
-  uri: {
+  path: {
+    type: String,
+    required: true
+  },
+  type: {
     type: String,
     required: true
   },
@@ -44,7 +49,8 @@ permissionSchema.static('get', async function (getBy: GetPermissionBy): Promise<
     .select({
       _id: 0,
       permissionId: 1,
-      uri: 1,
+      path: 1,
+      type: 1,
       setting: 1
     })
     .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })

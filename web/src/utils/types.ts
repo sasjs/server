@@ -18,14 +18,16 @@ export interface GroupDetailsResponse extends GroupResponse {
 
 export interface PermissionResponse {
   permissionId: number
-  uri: string
+  path: string
+  type: string
   setting: string
   user?: UserResponse
   group?: GroupDetailsResponse
 }
 
 export interface RegisterPermissionPayload {
-  uri: string
+  path: string
+  type: string
   setting: string
   principalType: string
   principalId: number

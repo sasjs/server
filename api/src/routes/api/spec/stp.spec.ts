@@ -7,7 +7,8 @@ import appPromise from '../../../app'
 import {
   UserController,
   PermissionController,
-  PermissionSetting,
+  PermissionType,
+  PermissionSettingForRoute,
   PrincipalType
 } from '../../../controllers/'
 import {
@@ -56,10 +57,11 @@ describe('stp', () => {
     const dbUser = await userController.createUser(user)
     accessToken = await generateAndSaveToken(dbUser.id)
     await permissionController.createPermission({
-      uri: '/SASjsApi/stp/execute',
+      path: '/SASjsApi/stp/execute',
+      type: PermissionType.route,
       principalType: PrincipalType.user,
       principalId: dbUser.id,
-      setting: PermissionSetting.grant
+      setting: PermissionSettingForRoute.grant
     })
   })
 

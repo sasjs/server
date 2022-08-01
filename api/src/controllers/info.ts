@@ -1,7 +1,7 @@
 import { Route, Tags, Example, Get } from 'tsoa'
 import { getAuthorizedRoutes } from '../utils'
 export interface AuthorizedRoutesResponse {
-  URIs: string[]
+  paths: string[]
 }
 
 export interface InfoResponse {
@@ -42,16 +42,16 @@ export class InfoController {
   }
 
   /**
-   * @summary Get authorized routes.
+   * @summary Get the list of available routes to which permissions can be applied.  Used to populate the dialog in the URI Permissions feature.
    *
    */
   @Example<AuthorizedRoutesResponse>({
-    URIs: ['/AppStream', '/SASjsApi/stp/execute']
+    paths: ['/AppStream', '/SASjsApi/stp/execute']
   })
   @Get('/authorizedRoutes')
   public authorizedRoutes(): AuthorizedRoutesResponse {
     const response = {
-      URIs: getAuthorizedRoutes()
+      paths: getAuthorizedRoutes()
     }
     return response
   }

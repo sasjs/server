@@ -18,7 +18,7 @@ export const getAuthorizedRoutes = () => {
   return [...StaticAuthorizedRoutes, ...streamingAppsRoutes]
 }
 
-export const getUri = (req: Request) => {
+export const getPath = (req: Request) => {
   const { baseUrl, path: reqPath } = req
 
   if (baseUrl === '/AppStream') {
@@ -32,4 +32,4 @@ export const getUri = (req: Request) => {
 }
 
 export const isAuthorizingRoute = (req: Request): boolean =>
-  getAuthorizedRoutes().includes(getUri(req))
+  getAuthorizedRoutes().includes(getPath(req))
