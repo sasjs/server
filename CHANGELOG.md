@@ -1,3 +1,10 @@
+## [0.13.2](https://github.com/sasjs/server/compare/v0.13.1...v0.13.2) (2022-08-01)
+
+
+### Bug Fixes
+
+* adding ls=max to reduce log size and improve readability ([916947d](https://github.com/sasjs/server/commit/916947dffacd902ff23ac3e899d1bf5ab6238b75))
+
 ## [0.13.1](https://github.com/sasjs/server/compare/v0.13.0...v0.13.1) (2022-07-31)
 
 
