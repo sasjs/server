@@ -130,7 +130,7 @@ const AddPermissionModal = ({
                 loadingPaths ? (
                   <CircularProgress />
                 ) : (
-                  <TextField {...params} autoFocus label="URI" />
+                  <TextField {...params} autoFocus label="Path" />
                 )
               }
             />
