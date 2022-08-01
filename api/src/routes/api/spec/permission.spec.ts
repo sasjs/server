@@ -514,13 +514,15 @@ describe('permission', () => {
         setting: PermissionSettingForRoute.grant
       })
 
+      const permissionCount = 1
+
       const res = await request(app)
         .get('/SASjsApi/permission/')
         .auth(accessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body).toHaveLength(1)
+      expect(res.body).toHaveLength(permissionCount)
     })
   })
 
