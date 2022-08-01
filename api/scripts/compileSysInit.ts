@@ -11,7 +11,7 @@ import { apiRoot, sysInitCompiledPath } from '../src/utils/file'
 const macroCorePath = path.join(apiRoot, 'node_modules', '@sasjs', 'core')
 
 const compiledSystemInit = async (systemInit: string) =>
-  'options ps=max;\n' +
+  'options ls=max ps=max;\n' +
   (await loadDependenciesFile({
     fileContent: systemInit,
     type: SASJsFileType.job,
