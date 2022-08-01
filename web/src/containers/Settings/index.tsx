@@ -47,7 +47,7 @@ const Settings = () => {
           >
             <StyledTab label="Profile" value="profile" />
             {appContext.mode === ModeType.Server && (
-              <StyledTab label="Uri Access" value="permission" />
+              <StyledTab label="Permission" value="permission" />
             )}
           </TabList>
         </Box>
