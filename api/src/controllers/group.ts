@@ -10,7 +10,7 @@ import {
   Body
 } from 'tsoa'
 
-import Group, { GroupPayload } from '../model/Group'
+import Group, { GroupPayload, PUBLIC_GROUP_NAME } from '../model/Group'
 import User from '../model/User'
 import { UserResponse } from './user'
 
@@ -239,6 +239,13 @@ const updateUsersListInGroup = async (
       code: 404,
       status: 'Not Found',
       message: 'Group not found.'
+    }
+
+  if (group.name === PUBLIC_GROUP_NAME)
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: `Can't add/remove user to '${PUBLIC_GROUP_NAME}' group.`
     }
 
   const user = await User.findOne({ id: userId })
