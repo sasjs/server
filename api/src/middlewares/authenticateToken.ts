@@ -5,7 +5,9 @@ import {
   fetchLatestAutoExec,
   ModeType,
   verifyTokenInDB,
-  isAuthorizingRoute
+  isAuthorizingRoute,
+  isPublicRoute,
+  publicUser
 } from '../utils'
 import { desktopUser } from './desktop'
 import { authorize } from './authorize'
@@ -18,6 +20,11 @@ export const authenticateAccessToken: RequestHandler = async (
   const { MODE } = process.env
   if (MODE === ModeType.Desktop) {
     req.user = desktopUser
+    return next()
+  }
+
+  if (await isPublicRoute(req)) {
+    req.user = publicUser
     return next()
   }
 
