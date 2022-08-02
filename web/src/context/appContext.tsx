@@ -80,7 +80,18 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       })
       .catch(() => {
         setLoggedIn(false)
-        axios.get('/') // get CSRF TOKEN
+        // get CSRF TOKEN and set cookie
+        axios
+          .get('/')
+          .then((res) => res.data)
+          .then((data: string) => {
+            const result =
+              /<script>document.cookie = '(XSRF-TOKEN=[A-Za-z-0-9; =/]*)'<\/script>/.exec(
+                data
+              )?.[1]
+
+            if (result) document.cookie = result
+          })
       })
 
     axios

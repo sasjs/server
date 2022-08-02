@@ -11,11 +11,15 @@ webRouter.get('/', async (req, res) => {
   try {
     response = await controller.home()
   } catch (_) {
-    response = 'Web Build is not present'
+    response = '<html><head></head><body>Web Build is not present</body></html>'
   } finally {
-    res.cookie('XSRF-TOKEN', req.csrfToken())
+    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${req.csrfToken()}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
+    const injectedContent = response?.replace(
+      '</head>',
+      `${codeToInject}</head>`
+    )
 
-    return res.send(response)
+    return res.send(injectedContent)
   }
 })
 
