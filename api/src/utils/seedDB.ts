@@ -1,5 +1,5 @@
 import Client from '../model/Client'
-import Group from '../model/Group'
+import Group, { PUBLIC_GROUP_NAME } from '../model/Group'
 import User from '../model/User'
 import Configuration, { ConfigurationType } from '../model/Configuration'
 
@@ -29,6 +29,15 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     groupExist = await group.save()
 
     console.log(`DB Seed - Group created: ${GROUP.name}`)
+  }
+
+  // Checking if 'Public' Group is already in the database
+  const publicGroupExist = await Group.findOne({ name: PUBLIC_GROUP.name })
+  if (!publicGroupExist) {
+    const group = new Group(PUBLIC_GROUP)
+    await group.save()
+
+    console.log(`DB Seed - Group created: ${PUBLIC_GROUP.name}`)
   }
 
   // Checking if user is already in the database
@@ -68,6 +77,13 @@ const GROUP = {
   name: 'AllUsers',
   description: 'Group contains all users'
 }
+
+const PUBLIC_GROUP = {
+  name: PUBLIC_GROUP_NAME,
+  description:
+    'It is a special group that bypasses authentication for particular routes.'
+}
+
 const CLIENT = {
   clientId: 'clientID1',
   clientSecret: 'clientSecret'
