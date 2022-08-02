@@ -5,7 +5,9 @@ import {
   fetchLatestAutoExec,
   ModeType,
   verifyTokenInDB,
-  isAuthorizingRoute
+  isAuthorizingRoute,
+  isPublicRoute,
+  publicUser
 } from '../utils'
 import { desktopUser } from './desktop'
 import { authorize } from './authorize'
@@ -41,7 +43,7 @@ export const authenticateAccessToken: RequestHandler = async (
     return res.sendStatus(401)
   }
 
-  authenticateToken(
+  await authenticateToken(
     req,
     res,
     nextFunction,
@@ -50,8 +52,12 @@ export const authenticateAccessToken: RequestHandler = async (
   )
 }
 
-export const authenticateRefreshToken: RequestHandler = (req, res, next) => {
-  authenticateToken(
+export const authenticateRefreshToken: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  await authenticateToken(
     req,
     res,
     next,
@@ -60,7 +66,7 @@ export const authenticateRefreshToken: RequestHandler = (req, res, next) => {
   )
 }
 
-const authenticateToken = (
+const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -83,12 +89,12 @@ const authenticateToken = (
 
   const authHeader = req.headers['authorization']
   const token = authHeader?.split(' ')[1]
-  if (!token) return res.sendStatus(401)
 
-  jwt.verify(token, key, async (err: any, data: any) => {
-    if (err) return res.sendStatus(401)
+  try {
+    if (!token) throw 'Unauthorized'
 
-    // verify this valid token's entry in DB
+    const data: any = jwt.verify(token, key)
+
     const user = await verifyTokenInDB(
       data?.userId,
       data?.clientId,
@@ -101,8 +107,16 @@ const authenticateToken = (
         req.user = user
         if (tokenType === 'accessToken') req.accessToken = token
         return next()
-      } else return res.sendStatus(401)
+      } else throw 'Unauthorized'
     }
-    return res.sendStatus(401)
-  })
+
+    throw 'Unauthorized'
+  } catch (error) {
+    if (await isPublicRoute(req)) {
+      req.user = publicUser
+      return next()
+    }
+
+    res.sendStatus(401)
+  }
 }

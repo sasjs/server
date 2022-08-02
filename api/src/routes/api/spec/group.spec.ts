@@ -5,6 +5,7 @@ import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController, GroupController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import { PUBLIC_GROUP_NAME } from '../../../model/Group'
 
 const clientId = 'someclientID'
 const adminUser = {
@@ -25,6 +26,12 @@ const user = {
 const group = {
   name: 'dcgroup1',
   description: 'DC group for testing purposes.'
+}
+
+const PUBLIC_GROUP = {
+  name: PUBLIC_GROUP_NAME,
+  description:
+    'A special group that can be used to bypass authentication for particular routes.'
 }
 
 const userController = new UserController()
@@ -534,6 +541,24 @@ describe('group', () => {
 
       expect(res.text).toEqual('User not found.')
       expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request when adding user to Public group', async () => {
+      const dbGroup = await groupController.createGroup(PUBLIC_GROUP)
+      const dbUser = await userController.createUser({
+        ...user,
+        username: 'publicUser'
+      })
+
+      const res = await request(app)
+        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(400)
+
+      expect(res.text).toEqual(
+        `Can't add/remove user to '${PUBLIC_GROUP_NAME}' group.`
+      )
     })
   })
 

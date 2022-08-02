@@ -3,6 +3,8 @@ import { GroupDetailsResponse } from '../controllers'
 import User, { IUser } from './User'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 
+export const PUBLIC_GROUP_NAME = 'Public'
+
 export interface GroupPayload {
   /**
    * Name of the group
