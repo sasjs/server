@@ -93,27 +93,24 @@ const authenticateToken = async (
   try {
     if (!token) throw 'Unauthorized'
 
-    jwt.verify(token, key, async (err: any, data: any) => {
-      if (err) throw 'Unauthorized'
+    const data: any = jwt.verify(token, key)
 
-      // verify this valid token's entry in DB
-      const user = await verifyTokenInDB(
-        data?.userId,
-        data?.clientId,
-        token,
-        tokenType
-      )
+    const user = await verifyTokenInDB(
+      data?.userId,
+      data?.clientId,
+      token,
+      tokenType
+    )
 
-      if (user) {
-        if (user.isActive) {
-          req.user = user
-          if (tokenType === 'accessToken') req.accessToken = token
-          return next()
-        } else throw 'Unauthorized'
-      }
+    if (user) {
+      if (user.isActive) {
+        req.user = user
+        if (tokenType === 'accessToken') req.accessToken = token
+        return next()
+      } else throw 'Unauthorized'
+    }
 
-      throw 'Unauthorized'
-    })
+    throw 'Unauthorized'
   } catch (error) {
     if (await isPublicRoute(req)) {
       req.user = publicUser
