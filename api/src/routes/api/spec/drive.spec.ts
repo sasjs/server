@@ -32,7 +32,8 @@ import appPromise from '../../../app'
 import {
   UserController,
   PermissionController,
-  PermissionSetting,
+  PermissionType,
+  PermissionSettingForRoute,
   PrincipalType
 } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
@@ -46,6 +47,12 @@ const user = {
   password: '87654321',
   isAdmin: false,
   isActive: true
+}
+
+const permission = {
+  type: PermissionType.route,
+  principalType: PrincipalType.user,
+  setting: PermissionSettingForRoute.grant
 }
 
 describe('drive', () => {
@@ -66,34 +73,29 @@ describe('drive', () => {
     const dbUser = await controller.createUser(user)
     accessToken = await generateAndSaveToken(dbUser.id)
     await permissionController.createPermission({
-      uri: '/SASjsApi/drive/deploy',
-      principalType: PrincipalType.user,
-      principalId: dbUser.id,
-      setting: PermissionSetting.grant
+      ...permission,
+      path: '/SASjsApi/drive/deploy',
+      principalId: dbUser.id
     })
     await permissionController.createPermission({
-      uri: '/SASjsApi/drive/deploy/upload',
-      principalType: PrincipalType.user,
-      principalId: dbUser.id,
-      setting: PermissionSetting.grant
+      ...permission,
+      path: '/SASjsApi/drive/deploy/upload',
+      principalId: dbUser.id
     })
     await permissionController.createPermission({
-      uri: '/SASjsApi/drive/file',
-      principalType: PrincipalType.user,
-      principalId: dbUser.id,
-      setting: PermissionSetting.grant
+      ...permission,
+      path: '/SASjsApi/drive/file',
+      principalId: dbUser.id
     })
     await permissionController.createPermission({
-      uri: '/SASjsApi/drive/folder',
-      principalType: PrincipalType.user,
-      principalId: dbUser.id,
-      setting: PermissionSetting.grant
+      ...permission,
+      path: '/SASjsApi/drive/folder',
+      principalId: dbUser.id
     })
     await permissionController.createPermission({
-      uri: '/SASjsApi/drive/rename',
-      principalType: PrincipalType.user,
-      principalId: dbUser.id,
-      setting: PermissionSetting.grant
+      ...permission,
+      path: '/SASjsApi/drive/rename',
+      principalId: dbUser.id
     })
   })
 

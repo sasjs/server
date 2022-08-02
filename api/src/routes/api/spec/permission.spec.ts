@@ -7,10 +7,10 @@ import {
   DriveController,
   UserController,
   GroupController,
-  ClientController,
   PermissionController,
   PrincipalType,
-  PermissionSetting
+  PermissionType,
+  PermissionSettingForRoute
 } from '../../../controllers/'
 import {
   UserDetailsResponse,
@@ -56,10 +56,10 @@ const user = {
 }
 
 const permission = {
-  uri: '/SASjsApi/code/execute',
-  setting: PermissionSetting.grant,
-  principalType: PrincipalType.user,
-  principalId: 123
+  path: '/SASjsApi/code/execute',
+  type: PermissionType.route,
+  setting: PermissionSettingForRoute.grant,
+  principalType: PrincipalType.user
 }
 
 const group = {
@@ -69,7 +69,6 @@ const group = {
 
 const userController = new UserController()
 const groupController = new GroupController()
-const clientController = new ClientController()
 const permissionController = new PermissionController()
 
 describe('permission', () => {
@@ -108,7 +107,8 @@ describe('permission', () => {
         .expect(200)
 
       expect(res.body.permissionId).toBeTruthy()
-      expect(res.body.uri).toEqual(permission.uri)
+      expect(res.body.path).toEqual(permission.path)
+      expect(res.body.type).toEqual(permission.type)
       expect(res.body.setting).toEqual(permission.setting)
       expect(res.body.user).toBeTruthy()
     })
@@ -127,7 +127,8 @@ describe('permission', () => {
         .expect(200)
 
       expect(res.body.permissionId).toBeTruthy()
-      expect(res.body.uri).toEqual(permission.uri)
+      expect(res.body.path).toEqual(permission.path)
+      expect(res.body.type).toEqual(permission.type)
       expect(res.body.setting).toEqual(permission.setting)
       expect(res.body.group).toBeTruthy()
     })
@@ -142,50 +143,71 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Unauthorized if access token is not of an admin account even if user has permission', async () => {
+    it('should respond with Unauthorized if access token is not of an admin account', async () => {
       const accessToken = await generateAndSaveToken(dbUser.id)
-
-      await permissionController.createPermission({
-        uri: '/SASjsApi/permission',
-        principalType: PrincipalType.user,
-        principalId: dbUser.id,
-        setting: PermissionSetting.grant
-      })
 
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(accessToken, { type: 'bearer' })
-        .send()
+        .send(permission)
         .expect(401)
 
       expect(res.text).toEqual('Admin account required')
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if uri is missing', async () => {
+    it('should respond with Bad Request if path is missing', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          uri: undefined
+          path: undefined
         })
         .expect(400)
 
-      expect(res.text).toEqual(`"uri" is required`)
+      expect(res.text).toEqual(`"path" is required`)
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if uri is not valid', async () => {
+    it('should respond with Bad Request if path is not valid', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          uri: '/some/random/api/endpoint'
+          path: '/some/random/api/endpoint'
         })
         .expect(400)
 
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if type is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          type: 'invalid'
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('"type" must be [Route]')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if type is missing', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          type: undefined
+        })
+        .expect(400)
+
+      expect(res.text).toEqual(`"type" is required`)
       expect(res.body).toEqual({})
     })
 
@@ -203,6 +225,20 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
+    it('should respond with Bad Request if setting is not valid', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/permission')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({
+          ...permission,
+          setting: 'invalid'
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('"setting" must be one of [Grant, Deny]')
+      expect(res.body).toEqual({})
+    })
+
     it('should respond with Bad Request if principalType is missing', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
@@ -214,20 +250,6 @@ describe('permission', () => {
         .expect(400)
 
       expect(res.text).toEqual(`"principalType" is required`)
-      expect(res.body).toEqual({})
-    })
-
-    it('should respond with Bad Request if principalId is missing', async () => {
-      const res = await request(app)
-        .post('/SASjsApi/permission')
-        .auth(adminAccessToken, { type: 'bearer' })
-        .send({
-          ...permission,
-          principalId: undefined
-        })
-        .expect(400)
-
-      expect(res.text).toEqual(`"principalId" is required`)
       expect(res.body).toEqual({})
     })
 
@@ -245,17 +267,17 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if setting is not valid', async () => {
+    it('should respond with Bad Request if principalId is missing', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          setting: 'invalid'
+          principalId: undefined
         })
         .expect(400)
 
-      expect(res.text).toEqual('"setting" must be one of [Grant, Deny]')
+      expect(res.text).toEqual(`"principalId" is required`)
       expect(res.body).toEqual({})
     })
 
@@ -313,7 +335,8 @@ describe('permission', () => {
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          principalType: 'group'
+          principalType: 'group',
+          principalId: 123
         })
         .expect(404)
 
@@ -334,7 +357,7 @@ describe('permission', () => {
         .expect(409)
 
       expect(res.text).toEqual(
-        'Permission already exists with provided URI and User.'
+        'Permission already exists with provided Path, Type and User.'
       )
       expect(res.body).toEqual({})
     })
@@ -357,7 +380,7 @@ describe('permission', () => {
       const res = await request(app)
         .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
         .auth(adminAccessToken, { type: 'bearer' })
-        .send({ setting: 'Deny' })
+        .send({ setting: PermissionSettingForRoute.deny })
         .expect(200)
 
       expect(res.body.setting).toEqual('Deny')
@@ -366,7 +389,7 @@ describe('permission', () => {
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app)
         .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
-        .send(permission)
+        .send()
         .expect(401)
 
       expect(res.text).toEqual('Unauthorized')
@@ -400,12 +423,11 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if setting is not valid', async () => {
+    it('should respond with Bad Request if setting is  invalid', async () => {
       const res = await request(app)
-        .post('/SASjsApi/permission')
+        .patch(`/SASjsApi/permission/${dbPermission?.permissionId}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
-          ...permission,
           setting: 'invalid'
         })
         .expect(400)
@@ -414,12 +436,12 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with not found (404) if permission with provided id does not exists', async () => {
+    it('should respond with not found (404) if permission with provided id does not exist', async () => {
       const res = await request(app)
         .patch('/SASjsApi/permission/123')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
-          setting: PermissionSetting.deny
+          setting: PermissionSettingForRoute.deny
         })
         .expect(404)
 
@@ -458,12 +480,12 @@ describe('permission', () => {
     beforeAll(async () => {
       await permissionController.createPermission({
         ...permission,
-        uri: '/test-1',
+        path: '/test-1',
         principalId: dbUser.id
       })
       await permissionController.createPermission({
         ...permission,
-        uri: '/test-2',
+        path: '/test-2',
         principalId: dbUser.id
       })
     })
@@ -478,18 +500,21 @@ describe('permission', () => {
       expect(res.body).toHaveLength(2)
     })
 
-    it('should give a list of all permissions when user is not admin', async () => {
-      const dbUser = await userController.createUser({
+    it(`should give a list of user's own  permissions when user is not admin`, async () => {
+      const nonAdminUser = await userController.createUser({
         ...user,
         username: 'get' + user.username
       })
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(nonAdminUser.id)
       await permissionController.createPermission({
-        uri: '/SASjsApi/permission',
+        path: '/test-1',
+        type: PermissionType.route,
         principalType: PrincipalType.user,
-        principalId: dbUser.id,
-        setting: PermissionSetting.grant
+        principalId: nonAdminUser.id,
+        setting: PermissionSettingForRoute.grant
       })
+
+      const permissionCount = 1
 
       const res = await request(app)
         .get('/SASjsApi/permission/')
@@ -497,15 +522,15 @@ describe('permission', () => {
         .send()
         .expect(200)
 
-      expect(res.body).toHaveLength(3)
+      expect(res.body).toHaveLength(permissionCount)
     })
   })
 
-  describe.only('verify', () => {
+  describe('verify', () => {
     beforeAll(async () => {
       await permissionController.createPermission({
         ...permission,
-        uri: '/SASjsApi/drive/deploy',
+        path: '/SASjsApi/drive/deploy',
         principalId: dbUser.id
       })
     })

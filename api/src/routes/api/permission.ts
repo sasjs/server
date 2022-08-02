@@ -11,7 +11,7 @@ const controller = new PermissionController()
 
 permissionRouter.get('/', async (req, res) => {
   try {
-    const response = await controller.getAllPermissions()
+    const response = await controller.getAllPermissions(req)
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code

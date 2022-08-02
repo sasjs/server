@@ -68,7 +68,7 @@ const Permission = () => {
   const [selectedPermission, setSelectedPermission] =
     useState<PermissionResponse>()
   const [filterModalOpen, setFilterModalOpen] = useState(false)
-  const [uriFilter, setUriFilter] = useState<string[]>([])
+  const [pathFilter, setPathFilter] = useState<string[]>([])
   const [principalFilter, setPrincipalFilter] = useState<string[]>([])
   const [principalTypeFilter, setPrincipalTypeFilter] = useState<
     PrincipalType[]
@@ -111,8 +111,10 @@ const Permission = () => {
     setFilterModalOpen(false)
 
     const uriFilteredPermissions =
-      uriFilter.length > 0
-        ? permissions.filter((permission) => uriFilter.includes(permission.uri))
+      pathFilter.length > 0
+        ? permissions.filter((permission) =>
+            pathFilter.includes(permission.path)
+          )
         : permissions
 
     const principalFilteredPermissions =
@@ -172,7 +174,7 @@ const Permission = () => {
 
   const resetFilter = () => {
     setFilterModalOpen(false)
-    setUriFilter([])
+    setPathFilter([])
     setPrincipalFilter([])
     setSettingFilter([])
     setFilteredPermissions([])
@@ -322,8 +324,8 @@ const Permission = () => {
         open={filterModalOpen}
         handleOpen={setFilterModalOpen}
         permissions={permissions}
-        uriFilter={uriFilter}
-        setUriFilter={setUriFilter}
+        pathFilter={pathFilter}
+        setPathFilter={setPathFilter}
         principalFilter={principalFilter}
         setPrincipalFilter={setPrincipalFilter}
         principalTypeFilter={principalTypeFilter}
@@ -374,9 +376,10 @@ const PermissionTable = ({
       <Table sx={{ minWidth: 650 }}>
         <TableHead sx={{ background: 'rgb(0,0,0, 0.3)' }}>
           <TableRow>
-            <BootstrapTableCell>Uri</BootstrapTableCell>
+            <BootstrapTableCell>Path</BootstrapTableCell>
+            <BootstrapTableCell>Permission Type</BootstrapTableCell>
             <BootstrapTableCell>Principal</BootstrapTableCell>
-            <BootstrapTableCell>Type</BootstrapTableCell>
+            <BootstrapTableCell>Principal Type</BootstrapTableCell>
             <BootstrapTableCell>Setting</BootstrapTableCell>
             {appContext.isAdmin && (
               <BootstrapTableCell>Action</BootstrapTableCell>
@@ -386,7 +389,8 @@ const PermissionTable = ({
         <TableBody>
           {permissions.map((permission) => (
             <TableRow key={permission.permissionId}>
-              <BootstrapTableCell>{permission.uri}</BootstrapTableCell>
+              <BootstrapTableCell>{permission.path}</BootstrapTableCell>
+              <BootstrapTableCell>{permission.type}</BootstrapTableCell>
               <BootstrapTableCell>
                 {displayPrincipal(permission)}
               </BootstrapTableCell>
