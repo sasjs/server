@@ -81,7 +81,7 @@ const GROUP = {
 const PUBLIC_GROUP = {
   name: PUBLIC_GROUP_NAME,
   description:
-    'It is a special group that bypasses authentication for particular routes.'
+    'A special group that can be used to bypass authentication for particular routes.'
 }
 
 const CLIENT = {
