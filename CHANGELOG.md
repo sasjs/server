@@ -1,3 +1,17 @@
+# [0.14.0](https://github.com/sasjs/server/compare/v0.13.3...v0.14.0) (2022-08-02)
+
+
+### Bug Fixes
+
+* add restriction on  add/remove user to public group ([d3a516c](https://github.com/sasjs/server/commit/d3a516c36e45aa1cc76c30c744e6a0e5bd553165))
+* call jwt.verify in synchronous way ([254bc07](https://github.com/sasjs/server/commit/254bc07da744a9708109bfb792be70aa3f6284f4))
+
+
+### Features
+
+* add public group to DB on seed ([c3e3bef](https://github.com/sasjs/server/commit/c3e3befc17102ee1754e1403193040b4f79fb2a7))
+* bypass authentication when route is enabled for public group ([68515f9](https://github.com/sasjs/server/commit/68515f95a65d422e29c0ed6028f3ea0ae8d9b1bf))
+
 ## [0.13.3](https://github.com/sasjs/server/compare/v0.13.2...v0.13.3) (2022-08-02)
 
 
