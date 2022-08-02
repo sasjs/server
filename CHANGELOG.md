@@ -1,3 +1,11 @@
+## [0.13.3](https://github.com/sasjs/server/compare/v0.13.2...v0.13.3) (2022-08-02)
+
+
+### Bug Fixes
+
+* show non-admin user his own permissions only ([8a3054e](https://github.com/sasjs/server/commit/8a3054e19ade82e2792cfb0f2a8af9e502c5eb52))
+* update schema of Permission ([5d5a9d3](https://github.com/sasjs/server/commit/5d5a9d3788281d75c56f68f0dff231abc9c9c275))
+
 ## [0.13.2](https://github.com/sasjs/server/compare/v0.13.1...v0.13.2) (2022-08-01)
 
 
