@@ -5,7 +5,7 @@ import {
   PermissionSettingForRoute,
   PermissionType
 } from '../controllers/permission'
-import { getPath } from '../utils'
+import { getPath, isPublicRoute } from '../utils'
 
 export const authorize: RequestHandler = async (req, res, next) => {
   const { user } = req
@@ -16,6 +16,9 @@ export const authorize: RequestHandler = async (req, res, next) => {
 
   // no need to check for permissions when user is admin
   if (user.isAdmin) return next()
+
+  // no need to check for permissions when route is Public
+  if (await isPublicRoute(req)) return next()
 
   const dbUser = await User.findOne({ id: user.userId })
   if (!dbUser) return res.sendStatus(401)

@@ -23,11 +23,6 @@ export const authenticateAccessToken: RequestHandler = async (
     return next()
   }
 
-  if (await isPublicRoute(req)) {
-    req.user = publicUser
-    return next()
-  }
-
   const nextFunction = isAuthorizingRoute(req)
     ? () => authorize(req, res, next)
     : next
@@ -48,7 +43,7 @@ export const authenticateAccessToken: RequestHandler = async (
     return res.sendStatus(401)
   }
 
-  authenticateToken(
+  await authenticateToken(
     req,
     res,
     nextFunction,
@@ -57,8 +52,12 @@ export const authenticateAccessToken: RequestHandler = async (
   )
 }
 
-export const authenticateRefreshToken: RequestHandler = (req, res, next) => {
-  authenticateToken(
+export const authenticateRefreshToken: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  await authenticateToken(
     req,
     res,
     next,
@@ -67,7 +66,7 @@ export const authenticateRefreshToken: RequestHandler = (req, res, next) => {
   )
 }
 
-const authenticateToken = (
+const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -90,26 +89,37 @@ const authenticateToken = (
 
   const authHeader = req.headers['authorization']
   const token = authHeader?.split(' ')[1]
-  if (!token) return res.sendStatus(401)
 
-  jwt.verify(token, key, async (err: any, data: any) => {
-    if (err) return res.sendStatus(401)
+  try {
+    if (!token) throw 'Unauthorized'
 
-    // verify this valid token's entry in DB
-    const user = await verifyTokenInDB(
-      data?.userId,
-      data?.clientId,
-      token,
-      tokenType
-    )
+    jwt.verify(token, key, async (err: any, data: any) => {
+      if (err) throw 'Unauthorized'
 
-    if (user) {
-      if (user.isActive) {
-        req.user = user
-        if (tokenType === 'accessToken') req.accessToken = token
-        return next()
-      } else return res.sendStatus(401)
+      // verify this valid token's entry in DB
+      const user = await verifyTokenInDB(
+        data?.userId,
+        data?.clientId,
+        token,
+        tokenType
+      )
+
+      if (user) {
+        if (user.isActive) {
+          req.user = user
+          if (tokenType === 'accessToken') req.accessToken = token
+          return next()
+        } else throw 'Unauthorized'
+      }
+
+      throw 'Unauthorized'
+    })
+  } catch (error) {
+    if (await isPublicRoute(req)) {
+      req.user = publicUser
+      return next()
     }
-    return res.sendStatus(401)
-  })
+
+    res.sendStatus(401)
+  }
 }
