@@ -86,7 +86,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
           .then((res) => res.data)
           .then((data: string) => {
             const result =
-              /<script>document.cookie = '(XSRF-TOKEN=[A-Za-z-0-9; =/]*)'<\/script>/.exec(
+              /<script>document.cookie = '(XSRF-TOKEN=.*; Max-Age=86400; SameSite=Strict; Path=\/;)'<\/script>/.exec(
                 data
               )?.[1]
 

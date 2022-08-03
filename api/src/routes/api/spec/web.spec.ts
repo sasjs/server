@@ -39,12 +39,11 @@ describe('web', () => {
 
   describe('home', () => {
     it('should respond with CSRF Token', async () => {
-      await request(app)
-        .get('/')
-        .expect(
-          'set-cookie',
-          /_csrf=.*; Max-Age=86400000; Path=\/; HttpOnly,XSRF-TOKEN=.*; Path=\//
-        )
+      const res = await request(app).get('/').expect(200)
+
+      expect(res.text).toMatch(
+        /<script>document.cookie = '(XSRF-TOKEN=.*; Max-Age=86400; SameSite=Strict; Path=\/;)'<\/script>/
+      )
     })
   })
 
@@ -154,10 +153,10 @@ describe('web', () => {
 
 const getCSRF = async (app: Express) => {
   // make request to get CSRF
-  const { header } = await request(app).get('/')
+  const { header, text } = await request(app).get('/')
   const cookies = header['set-cookie'].join()
 
-  const csrfToken = extractCSRF(cookies)
+  const csrfToken = extractCSRF(text)
   return { csrfToken, cookies }
 }
 
@@ -177,7 +176,7 @@ const performLogin = async (
   return { cookies: newCookies }
 }
 
-const extractCSRF = (cookies: string) =>
-  /_csrf=(.*); Max-Age=86400000; Path=\/; HttpOnly,XSRF-TOKEN=(.*); Path=\//.exec(
-    cookies
-  )![2]
+const extractCSRF = (text: string) =>
+  /<script>document.cookie = 'XSRF-TOKEN=(.*); Max-Age=86400; SameSite=Strict; Path=\/;'<\/script>/.exec(
+    text
+  )![1]
