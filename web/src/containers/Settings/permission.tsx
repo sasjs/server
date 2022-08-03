@@ -27,7 +27,9 @@ import { styled } from '@mui/material/styles'
 import Modal from '../../components/modal'
 import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
-import PermissionResponseModal from './addPermissionResponseModal'
+import PermissionResponseModal, {
+  PermissionResponsePayload
+} from './addPermissionResponseModal'
 import UpdatePermissionModal from './updatePermissionModal'
 import DeleteConfirmationModal from '../../components/deleteConfirmationModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
@@ -37,6 +39,11 @@ import {
   PermissionResponse,
   RegisterPermissionPayload
 } from '../../utils/types'
+import {
+  findExistingPermission,
+  findUpdatingPermission
+} from '../../utils/helper'
+
 import { AppContext } from '../../context/appContext'
 
 const BootstrapTableCell = styled(TableCell)({
@@ -62,10 +69,13 @@ const Permission = () => {
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
   const [openPermissionResponseModal, setOpenPermissionResponseModal] =
     useState(false)
-  const [addedPermissions, setAddedPermission] = useState<PermissionResponse[]>(
-    []
-  )
-  const [errorResponses, setErrorResponses] = useState<any[]>([])
+  const [permissionResponsePayload, setPermissionResponsePayload] =
+    useState<PermissionResponsePayload>({
+      existingPermissions: [],
+      newAddedPermissions: [],
+      updatedPermissions: [],
+      errorPaths: []
+    })
 
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
     useState(false)
@@ -189,31 +199,69 @@ const Permission = () => {
     setFilterApplied(false)
   }
 
-  const addPermission = (permissions: RegisterPermissionPayload[]) => {
+  const addPermission = async (
+    permissionsToAdd: RegisterPermissionPayload[]
+  ) => {
     setAddPermissionModalOpen(false)
-    setAddedPermission([])
-    setErrorResponses([])
     setIsLoading(true)
 
-    const permissionResponses: PermissionResponse[] = []
-    const errors: any = []
+    const newAddedPermissions: PermissionResponse[] = []
+    const updatedPermissions: PermissionResponse[] = []
+    const errorPaths: string[] = []
 
-    permissions.forEach(async (permission) => {
+    const existingPermissions: PermissionResponse[] = []
+    const updatingPermissions: PermissionResponse[] = []
+    const newPermissions: RegisterPermissionPayload[] = []
+
+    permissionsToAdd.forEach((permission) => {
+      const existingPermission = findExistingPermission(permissions, permission)
+      if (existingPermission) {
+        existingPermissions.push(existingPermission)
+        return
+      }
+
+      const updatingPermission = findUpdatingPermission(permissions, permission)
+      if (updatingPermission) {
+        updatingPermissions.push(updatingPermission)
+        return
+      }
+
+      newPermissions.push(permission)
+    })
+
+    for (const permission of newPermissions) {
       await axios
         .post('/SASjsApi/permission', permission)
         .then((res) => {
-          permissionResponses.push(res.data)
+          newAddedPermissions.push(res.data)
         })
         .catch((error) => {
-          errors.push({ error, permission })
+          errorPaths.push(permission.path)
         })
-    })
+    }
+
+    for (const permission of updatingPermissions) {
+      await axios
+        .patch(`/SASjsApi/permission/${permission.permissionId}`, {
+          setting: permission.setting === 'Grant' ? 'Deny' : 'Grant'
+        })
+        .then((res) => {
+          updatedPermissions.push(res.data)
+        })
+        .catch((error) => {
+          errorPaths.push(permission.path)
+        })
+    }
 
     fetchPermissions()
     setIsLoading(false)
+    setPermissionResponsePayload({
+      existingPermissions,
+      updatedPermissions,
+      newAddedPermissions,
+      errorPaths
+    })
     setOpenPermissionResponseModal(true)
-    setAddedPermission(permissionResponses)
-    setErrorResponses(errors)
   }
 
   const handleUpdatePermissionClick = (permission: PermissionResponse) => {
@@ -353,8 +401,7 @@ const Permission = () => {
       <PermissionResponseModal
         open={openPermissionResponseModal}
         setOpen={setOpenPermissionResponseModal}
-        permissionResponses={addedPermissions}
-        errorResponses={errorResponses}
+        payload={permissionResponsePayload}
       />
       <UpdatePermissionModal
         open={updatePermissionModalOpen}

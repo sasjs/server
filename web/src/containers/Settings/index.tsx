@@ -47,7 +47,7 @@ const Settings = () => {
           >
             <StyledTab label="Profile" value="profile" />
             {appContext.mode === ModeType.Server && (
-              <StyledTab label="Permission" value="permission" />
+              <StyledTab label="Permissions" value="permission" />
             )}
           </TabList>
         </Box>

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 
 import {
   Paper,
@@ -16,19 +16,92 @@ import { BootstrapDialog } from '../../components/modal'
 import { BootstrapDialogTitle } from '../../components/dialogTitle'
 import { PermissionResponse } from '../../utils/types'
 
+export interface PermissionResponsePayload {
+  existingPermissions: PermissionResponse[]
+  newAddedPermissions: PermissionResponse[]
+  updatedPermissions: PermissionResponse[]
+  errorPaths: string[]
+}
+
 type Props = {
   open: boolean
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
-  permissionResponses: PermissionResponse[]
-  errorResponses: any[]
+  payload: PermissionResponsePayload
 }
 
-const PermissionResponseModal = ({
-  open,
-  setOpen,
-  permissionResponses,
-  errorResponses
-}: Props) => {
+const PermissionResponseModal = ({ open, setOpen, payload }: Props) => {
+  const rows = useMemo(() => {
+    const paths: any = []
+
+    const existingPermissionsLength = payload.existingPermissions.length
+    const newAddedPermissionsLength = payload.newAddedPermissions.length
+    const updatedPermissionsLength = payload.updatedPermissions.length
+    if (
+      existingPermissionsLength >= newAddedPermissionsLength &&
+      existingPermissionsLength >= updatedPermissionsLength
+    ) {
+      payload.existingPermissions.forEach((permission, index) => {
+        const obj = {
+          existing: permission.path,
+          newAdded:
+            index < newAddedPermissionsLength
+              ? payload.newAddedPermissions[index].path
+              : '-',
+          updated:
+            index < updatedPermissionsLength
+              ? payload.updatedPermissions[index].path
+              : '-'
+        }
+        paths.push(obj)
+      })
+      return paths
+    }
+
+    if (
+      newAddedPermissionsLength >= existingPermissionsLength &&
+      newAddedPermissionsLength >= updatedPermissionsLength
+    ) {
+      payload.newAddedPermissions.forEach((permission, index) => {
+        const obj = {
+          newAdded: permission.path,
+          existing:
+            index < existingPermissionsLength
+              ? payload.existingPermissions[index].path
+              : '-',
+          updated:
+            index < updatedPermissionsLength
+              ? payload.updatedPermissions[index].path
+              : '-'
+        }
+        paths.push(obj)
+      })
+      return paths
+    }
+
+    if (
+      updatedPermissionsLength >= existingPermissionsLength &&
+      updatedPermissionsLength >= newAddedPermissionsLength
+    ) {
+      payload.updatedPermissions.forEach((permission, index) => {
+        const obj = {
+          updated: permission.path,
+          existing:
+            index < existingPermissionsLength
+              ? payload.existingPermissions[index].path
+              : '-',
+          newAdded:
+            index < newAddedPermissionsLength
+              ? payload.newAddedPermissions[index].path
+              : '-'
+        }
+        paths.push(obj)
+      })
+      return paths
+    }
+
+    return paths
+  }, [payload])
+
   return (
     <div>
       <BootstrapDialog onClose={() => setOpen(false)} open={open}>
@@ -39,52 +112,38 @@ const PermissionResponseModal = ({
           Permission Response
         </BootstrapDialogTitle>
         <DialogContent dividers>
-          {permissionResponses.length > 0 && (
-            <>
-              <Typography gutterBottom>Added Permissions</Typography>
-              {permissionResponses.length > 0 && (
-                <TableContainer component={Paper}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Path</TableCell>
-                        <TableCell>Type</TableCell>
-                        <TableCell>Setting</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {permissionResponses.map((permission, index) => {
-                        return (
-                          <TableRow key={index}>
-                            <TableCell>{permission.path}</TableCell>
-                            <TableCell>{permission.type}</TableCell>
-                            <TableCell>{permission.setting}</TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </>
-          )}
+          <TableContainer component={Paper}>
+            <Table size="small">
+              <TableHead sx={{ background: 'rgb(0,0,0, 0.3)' }}>
+                <TableRow>
+                  <TableCell>New</TableCell>
+                  <TableCell>Updated</TableCell>
+                  <TableCell>Unchanged</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((obj: any, index: number) => {
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>{obj.newAdded}</TableCell>
+                      <TableCell>{obj.updated}</TableCell>
+                      <TableCell>{obj.existing}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-          {errorResponses.length > 0 && (
+          {payload.errorPaths.length > 0 && (
             <>
               <Typography style={{ color: 'red', marginTop: '10px' }}>
-                Errors
+                Errors occurred for following paths:
               </Typography>
               <ul>
-                {errorResponses.map((err, index) => (
+                {payload.errorPaths.map((path, index) => (
                   <li key={index}>
-                    <Typography>
-                      Error occurred for Path: {err.permission.path}
-                    </Typography>
-                    <Typography>
-                      {typeof err.error.response.data === 'object'
-                        ? JSON.stringify(err.error.response.data)
-                        : err.error.response.data}
-                    </Typography>
+                    <Typography>{path}</Typography>
                   </li>
                 ))}
               </ul>
