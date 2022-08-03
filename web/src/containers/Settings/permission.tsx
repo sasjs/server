@@ -27,6 +27,7 @@ import { styled } from '@mui/material/styles'
 import Modal from '../../components/modal'
 import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
+import PermissionResponseModal from './addPermissionResponseModal'
 import UpdatePermissionModal from './updatePermissionModal'
 import DeleteConfirmationModal from '../../components/deleteConfirmationModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
@@ -59,6 +60,13 @@ const Permission = () => {
     AlertSeverityType.Success
   )
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
+  const [openPermissionResponseModal, setOpenPermissionResponseModal] =
+    useState(false)
+  const [addedPermissions, setAddedPermission] = useState<PermissionResponse[]>(
+    []
+  )
+  const [errorResponses, setErrorResponses] = useState<any[]>([])
+
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
     useState(false)
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
@@ -181,29 +189,31 @@ const Permission = () => {
     setFilterApplied(false)
   }
 
-  const addPermission = (addPermissionPayload: RegisterPermissionPayload) => {
+  const addPermission = (permissions: RegisterPermissionPayload[]) => {
     setAddPermissionModalOpen(false)
+    setAddedPermission([])
+    setErrorResponses([])
     setIsLoading(true)
-    axios
-      .post('/SASjsApi/permission', addPermissionPayload)
-      .then((res: any) => {
-        fetchPermissions()
-        setSnackbarMessage('Permission added!')
-        setSnackbarSeverity(AlertSeverityType.Success)
-        setOpenSnackbar(true)
-      })
-      .catch((err) => {
-        setModalTitle('Abort')
-        setModalPayload(
-          typeof err.response.data === 'object'
-            ? JSON.stringify(err.response.data)
-            : err.response.data
-        )
-        setOpenModal(true)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+
+    const permissionResponses: PermissionResponse[] = []
+    const errors: any = []
+
+    permissions.forEach(async (permission) => {
+      await axios
+        .post('/SASjsApi/permission', permission)
+        .then((res) => {
+          permissionResponses.push(res.data)
+        })
+        .catch((error) => {
+          errors.push({ error, permission })
+        })
+    })
+
+    fetchPermissions()
+    setIsLoading(false)
+    setOpenPermissionResponseModal(true)
+    setAddedPermission(permissionResponses)
+    setErrorResponses(errors)
   }
 
   const handleUpdatePermissionClick = (permission: PermissionResponse) => {
@@ -339,6 +349,12 @@ const Permission = () => {
         open={addPermissionModalOpen}
         handleOpen={setAddPermissionModalOpen}
         addPermission={addPermission}
+      />
+      <PermissionResponseModal
+        open={openPermissionResponseModal}
+        setOpen={setOpenPermissionResponseModal}
+        permissionResponses={addedPermissions}
+        errorResponses={errorResponses}
       />
       <UpdatePermissionModal
         open={updatePermissionModalOpen}
