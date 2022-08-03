@@ -26,6 +26,7 @@ export const style = `<style>
 }
 .app-container .app img{
   width: 100%;
+  height: calc(100% - 30px);
   margin-bottom: 10px;
   border-radius: 10px;
 }
