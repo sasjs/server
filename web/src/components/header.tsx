@@ -273,11 +273,16 @@ const Header = (props: any) => {
                 API
               </Button>
             </MenuItem>
-            <MenuItem onClick={handleLogout} sx={{ justifyContent: 'center' }}>
-              <Button variant="contained" color="primary">
-                Logout
-              </Button>
-            </MenuItem>
+            {appContext.loggedIn && (
+              <MenuItem
+                onClick={handleLogout}
+                sx={{ justifyContent: 'center' }}
+              >
+                <Button variant="contained" color="primary">
+                  Logout
+                </Button>
+              </MenuItem>
+            )}
           </Menu>
         </div>
       </Toolbar>
