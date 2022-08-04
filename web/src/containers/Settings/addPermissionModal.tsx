@@ -147,6 +147,7 @@ const AddPermissionModal = ({
           <Grid item xs={12}>
             <Autocomplete
               multiple
+              disableClearable
               options={paths}
               filterSelectedOptions
               value={selectedPaths}
