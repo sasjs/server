@@ -71,6 +71,10 @@ const Permission = () => {
     useState(false)
   const [permissionResponsePayload, setPermissionResponsePayload] =
     useState<PermissionResponsePayload>({
+      permissionType: '',
+      principalType: '',
+      principal: '',
+      permissionSetting: '',
       existingPermissions: [],
       newAddedPermissions: [],
       updatedPermissions: [],
@@ -200,7 +204,11 @@ const Permission = () => {
   }
 
   const addPermission = async (
-    permissionsToAdd: RegisterPermissionPayload[]
+    permissionsToAdd: RegisterPermissionPayload[],
+    permissionType: string,
+    principalType: string,
+    principal: string,
+    permissionSetting: string
   ) => {
     setAddPermissionModalOpen(false)
     setIsLoading(true)
@@ -256,6 +264,10 @@ const Permission = () => {
     fetchPermissions()
     setIsLoading(false)
     setPermissionResponsePayload({
+      permissionType,
+      principalType,
+      principal,
+      permissionSetting,
       existingPermissions,
       updatedPermissions,
       newAddedPermissions,

@@ -1,22 +1,16 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 
-import {
-  Paper,
-  Typography,
-  DialogContent,
-  TableContainer,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell
-} from '@mui/material'
+import { Typography, DialogContent } from '@mui/material'
 
 import { BootstrapDialog } from '../../components/modal'
 import { BootstrapDialogTitle } from '../../components/dialogTitle'
 import { PermissionResponse } from '../../utils/types'
 
 export interface PermissionResponsePayload {
+  permissionType: string
+  principalType: string
+  principal: string
+  permissionSetting: string
   existingPermissions: PermissionResponse[]
   newAddedPermissions: PermissionResponse[]
   updatedPermissions: PermissionResponse[]
@@ -30,77 +24,11 @@ type Props = {
 }
 
 const PermissionResponseModal = ({ open, setOpen, payload }: Props) => {
-  const rows = useMemo(() => {
-    const paths: any = []
-
-    const existingPermissionsLength = payload.existingPermissions.length
-    const newAddedPermissionsLength = payload.newAddedPermissions.length
-    const updatedPermissionsLength = payload.updatedPermissions.length
-    if (
-      existingPermissionsLength >= newAddedPermissionsLength &&
-      existingPermissionsLength >= updatedPermissionsLength
-    ) {
-      payload.existingPermissions.forEach((permission, index) => {
-        const obj = {
-          existing: permission.path,
-          newAdded:
-            index < newAddedPermissionsLength
-              ? payload.newAddedPermissions[index].path
-              : '-',
-          updated:
-            index < updatedPermissionsLength
-              ? payload.updatedPermissions[index].path
-              : '-'
-        }
-        paths.push(obj)
-      })
-      return paths
-    }
-
-    if (
-      newAddedPermissionsLength >= existingPermissionsLength &&
-      newAddedPermissionsLength >= updatedPermissionsLength
-    ) {
-      payload.newAddedPermissions.forEach((permission, index) => {
-        const obj = {
-          newAdded: permission.path,
-          existing:
-            index < existingPermissionsLength
-              ? payload.existingPermissions[index].path
-              : '-',
-          updated:
-            index < updatedPermissionsLength
-              ? payload.updatedPermissions[index].path
-              : '-'
-        }
-        paths.push(obj)
-      })
-      return paths
-    }
-
-    if (
-      updatedPermissionsLength >= existingPermissionsLength &&
-      updatedPermissionsLength >= newAddedPermissionsLength
-    ) {
-      payload.updatedPermissions.forEach((permission, index) => {
-        const obj = {
-          updated: permission.path,
-          existing:
-            index < existingPermissionsLength
-              ? payload.existingPermissions[index].path
-              : '-',
-          newAdded:
-            index < newAddedPermissionsLength
-              ? payload.newAddedPermissions[index].path
-              : '-'
-        }
-        paths.push(obj)
-      })
-      return paths
-    }
-
-    return paths
-  }, [payload])
+  const newAddedPermissionsLength = payload.newAddedPermissions.length
+  const updatedPermissionsLength = payload.updatedPermissions.length
+  const existingPermissionsLength = payload.existingPermissions.length
+  const appliedPermissionsLength =
+    newAddedPermissionsLength + updatedPermissionsLength
 
   return (
     <div>
@@ -112,28 +40,62 @@ const PermissionResponseModal = ({ open, setOpen, payload }: Props) => {
           Permission Response
         </BootstrapDialogTitle>
         <DialogContent dividers>
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead sx={{ background: 'rgb(0,0,0, 0.3)' }}>
-                <TableRow>
-                  <TableCell>New</TableCell>
-                  <TableCell>Updated</TableCell>
-                  <TableCell>Unchanged</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((obj: any, index: number) => {
-                  return (
-                    <TableRow key={index}>
-                      <TableCell>{obj.newAdded}</TableCell>
-                      <TableCell>{obj.updated}</TableCell>
-                      <TableCell>{obj.existing}</TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Typography sx={{ fontWeight: 'bold', marginBottom: '15px' }}>
+            {`${appliedPermissionsLength} "${payload.permissionSetting}", "${
+              payload.permissionType
+            }", "${payload.principalType}", "${payload.principal}" ${
+              appliedPermissionsLength > 1 ? 'Rules' : 'Rule'
+            }`}{' '}
+            Applied:
+          </Typography>
+
+          {newAddedPermissionsLength > 0 && (
+            <>
+              <Typography>
+                {`${newAddedPermissionsLength} ${
+                  newAddedPermissionsLength > 1 ? 'Rules' : 'Rule'
+                }`}{' '}
+                Added:
+              </Typography>
+              <ul>
+                {payload.newAddedPermissions.map((permission, index) => (
+                  <li key={index}>{permission.path}</li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {updatedPermissionsLength > 0 && (
+            <>
+              <Typography>
+                {` ${updatedPermissionsLength} ${
+                  updatedPermissionsLength > 1 ? 'Rules' : 'Rule'
+                }`}{' '}
+                Updated:
+              </Typography>
+              <ul>
+                {payload.updatedPermissions.map((permission, index) => (
+                  <li key={index}>{permission.path}</li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {existingPermissionsLength > 0 && (
+            <>
+              <Typography>
+                {`${existingPermissionsLength} ${
+                  existingPermissionsLength > 1 ? 'Rules' : 'Rule'
+                }`}{' '}
+                Unchanged:
+              </Typography>
+              <ul>
+                {payload.existingPermissions.map((permission, index) => (
+                  <li key={index}>{permission.path}</li>
+                ))}
+              </ul>
+            </>
+          )}
 
           {payload.errorPaths.length > 0 && (
             <>

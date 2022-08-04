@@ -32,7 +32,13 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 type AddPermissionModalProps = {
   open: boolean
   handleOpen: Dispatch<SetStateAction<boolean>>
-  addPermission: (permissions: RegisterPermissionPayload[]) => void
+  addPermission: (
+    permissions: RegisterPermissionPayload[],
+    permissionType: string,
+    principalType: string,
+    principal: string,
+    permissionSetting: string
+  ) => void
 }
 
 const AddPermissionModal = ({
@@ -110,7 +116,18 @@ const AddPermissionModal = ({
       permissions.push(addPermissionPayload)
     })
 
-    addPermission(permissions)
+    const principal =
+      principalType.toLowerCase() === 'user'
+        ? userPrincipal?.username
+        : groupPrincipal?.name
+
+    addPermission(
+      permissions,
+      permissionType,
+      principalType,
+      principal!,
+      permissionSetting
+    )
   }
 
   const addButtonDisabled =
