@@ -1,3 +1,13 @@
+## [0.14.1](https://github.com/sasjs/server/compare/v0.14.0...v0.14.1) (2022-08-04)
+
+
+### Bug Fixes
+
+* **apps:** App Stream logo fix ([87c03c5](https://github.com/sasjs/server/commit/87c03c5f8dbdfc151d4ff3722ecbcd3f7e409aea))
+* **cookie:** XSRF cookie is removed and passed token in head section ([77f8d30](https://github.com/sasjs/server/commit/77f8d30baf9b1077279c29f1c3e5ca02a5436bc0))
+* **env:** check added for not providing WHITELIST ([5966016](https://github.com/sasjs/server/commit/5966016853369146b27ac5781808cb51d65c887f))
+* **web:** show login on logged-out state ([f7fcc77](https://github.com/sasjs/server/commit/f7fcc7741aa2af93a4a2b1e651003704c9bbff0c))
+
 # [0.14.0](https://github.com/sasjs/server/compare/v0.13.3...v0.14.0) (2022-08-02)
 
 
