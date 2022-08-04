@@ -22,7 +22,7 @@ function App() {
         <HashRouter>
           <Header />
           <Routes>
-            <Route path="/" element={<Login />} />
+            <Route path="*" element={<Login />} />
           </Routes>
         </HashRouter>
       </ThemeProvider>

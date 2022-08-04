@@ -125,8 +125,27 @@ const verifyCORS = (): string[] => {
 
   if (CORS) {
     const corsTypes = Object.values(CorsType)
+
     if (!corsTypes.includes(CORS as CorsType))
       errors.push(`- CORS '${CORS}'\n - valid options ${corsTypes}`)
+
+    if (CORS === CorsType.ENABLED) {
+      const { WHITELIST } = process.env
+
+      const urls = WHITELIST?.trim()
+        .split(' ')
+        .filter((url) => !!url)
+      if (urls?.length) {
+        urls.forEach((url) => {
+          if (!url.startsWith('http://') && !url.startsWith('https://'))
+            errors.push(
+              `- CORS '${CORS}'\n - provided WHITELIST ${url} is not valid`
+            )
+        })
+      } else {
+        errors.push(`- CORS '${CORS}'\n - provide at least one WHITELIST URL`)
+      }
+    }
   } else {
     const { MODE } = process.env
     process.env.CORS =

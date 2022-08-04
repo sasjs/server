@@ -1,6 +1,6 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
-import csrf from 'csurf'
+import csrf, { CookieOptions } from 'csurf'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 
@@ -32,9 +32,10 @@ const app = express()
 
 const { PROTOCOL } = process.env
 
-export const cookieOptions = {
+export const cookieOptions: CookieOptions = {
   secure: PROTOCOL === ProtocolType.HTTPS,
   httpOnly: true,
+  sameSite: PROTOCOL === ProtocolType.HTTPS ? 'none' : undefined,
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }
 
