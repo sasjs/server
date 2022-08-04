@@ -50,6 +50,12 @@ const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
 })
 
+const BootstrapGridItem = styled(Grid)({
+  '&.MuiGrid-item': {
+    maxWidth: '100%'
+  }
+})
+
 export enum PrincipalType {
   User = 'User',
   Group = 'Group'
@@ -350,11 +356,11 @@ const Permission = () => {
   ) : (
     <Box className="permissions-page">
       <Grid container direction="column" spacing={1}>
-        <Grid item xs={12}>
+        <BootstrapGridItem item xs={12}>
           <Paper elevation={3} sx={{ display: 'flex' }}>
             <Tooltip title="Filter Permissions">
-              <IconButton>
-                <FilterListIcon onClick={() => setFilterModalOpen(true)} />
+              <IconButton onClick={() => setFilterModalOpen(true)}>
+                <FilterListIcon />
               </IconButton>
             </Tooltip>
             {appContext.isAdmin && (
@@ -369,14 +375,14 @@ const Permission = () => {
               </Tooltip>
             )}
           </Paper>
-        </Grid>
-        <Grid item xs={12}>
+        </BootstrapGridItem>
+        <BootstrapGridItem item xs={12}>
           <PermissionTable
             permissions={filterApplied ? filteredPermissions : permissions}
             handleUpdatePermissionClick={handleUpdatePermissionClick}
             handleDeletePermissionClick={handleDeletePermissionClick}
           />
-        </Grid>
+        </BootstrapGridItem>
       </Grid>
       <BootstrapSnackbar
         open={openSnackbar}
@@ -553,8 +559,8 @@ const DisplayGroup = ({ group }: DisplayGroupProps) => {
         <Typography sx={{ p: 1 }} variant="h6" component="div">
           Group Members
         </Typography>
-        {group.users.map((user) => (
-          <Typography sx={{ p: 1 }} component="li">
+        {group.users.map((user, index) => (
+          <Typography key={index} sx={{ p: 1 }} component="li">
             {user.username}
           </Typography>
         ))}
