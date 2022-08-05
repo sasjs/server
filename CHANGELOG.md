@@ -1,3 +1,19 @@
+# [0.15.0](https://github.com/sasjs/server/compare/v0.14.1...v0.15.0) (2022-08-05)
+
+
+### Bug Fixes
+
+* after selecting file in sidebar collapse sidebar in mobile view ([e215958](https://github.com/sasjs/server/commit/e215958b8b05d7a8ce9d82395e0640b5b37fb40d))
+* improve mobile view for studio page ([c67d3ee](https://github.com/sasjs/server/commit/c67d3ee2f102155e2e9781e13d5d33c1ab227cb4))
+* improve responsiveness for mobile view ([6ef40b9](https://github.com/sasjs/server/commit/6ef40b954a87ebb0a2621119064f38d58ea85148))
+* improve user experience for adding permissions ([7a162ed](https://github.com/sasjs/server/commit/7a162eda8fc60383ff647d93e6611799e2e6af7a))
+* show logout button only when user is logged in ([9227cd4](https://github.com/sasjs/server/commit/9227cd449dc46fd960a488eb281804a9b9ffc284))
+
+
+### Features
+
+* add multiple permission for same combination of type and principal at once ([754704b](https://github.com/sasjs/server/commit/754704bca89ecbdbcc3bd4ef04b94124c4f24167))
+
 ## [0.14.1](https://github.com/sasjs/server/compare/v0.14.0...v0.14.1) (2022-08-04)
 
 
