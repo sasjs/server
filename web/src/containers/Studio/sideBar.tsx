@@ -48,6 +48,11 @@ const SideBar = ({
     setMobileOpen(!mobileOpen)
   }
 
+  const handleFileSelect = (filePath: string) => {
+    setMobileOpen(false)
+    handleSelect(filePath)
+  }
+
   const defaultExpanded = useMemo(() => {
     const splittedPath = selectedFilePath.split('/')
     const arr = ['']
@@ -176,7 +181,7 @@ const SideBar = ({
           <TreeView
             node={directoryData}
             selectedFilePath={selectedFilePath}
-            handleSelect={handleSelect}
+            handleSelect={handleFileSelect}
             deleteNode={deleteNode}
             addFile={addFile}
             addFolder={addFolder}
