@@ -1,6 +1,15 @@
 import React, { useState, useMemo } from 'react'
 import axios from 'axios'
-import { Backdrop, Box, CircularProgress, Drawer, Toolbar } from '@mui/material'
+import {
+  Backdrop,
+  Box,
+  Paper,
+  CircularProgress,
+  Drawer,
+  Toolbar,
+  IconButton
+} from '@mui/material'
+import { FolderOpen } from '@mui/icons-material'
 
 import TreeView from '../../components/tree'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
@@ -33,6 +42,17 @@ const SideBar = ({
   const [snackbarSeverity, setSnackbarSeverity] = useState<AlertSeverityType>(
     AlertSeverityType.Success
   )
+  const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen)
+  }
+
+  const handleFileSelect = (filePath: string) => {
+    setMobileOpen(false)
+    handleSelect(filePath)
+  }
+
   const defaultExpanded = useMemo(() => {
     const splittedPath = selectedFilePath.split('/')
     const arr = ['']
@@ -147,15 +167,8 @@ const SideBar = ({
       .finally(() => setIsLoading(false))
   }
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' }
-      }}
-    >
+  const drawer = (
+    <div>
       <Backdrop
         sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={isLoading}
@@ -168,7 +181,7 @@ const SideBar = ({
           <TreeView
             node={directoryData}
             selectedFilePath={selectedFilePath}
-            handleSelect={handleSelect}
+            handleSelect={handleFileSelect}
             deleteNode={deleteNode}
             addFile={addFile}
             addFolder={addFolder}
@@ -189,7 +202,64 @@ const SideBar = ({
         title={modalTitle}
         payload={modalPayload}
       />
-    </Drawer>
+    </div>
+  )
+
+  return (
+    <>
+      <Box
+        component={Paper}
+        sx={{
+          margin: '5px',
+          paddingTop: '45px',
+          display: 'flex',
+          alignItems: 'flex-start'
+        }}
+      >
+        <IconButton
+          color="inherit"
+          size="large"
+          aria-label="open drawer"
+          edge="start"
+          onClick={handleDrawerToggle}
+          sx={{ left: '5px', display: { md: 'none' } }}
+        >
+          <FolderOpen />
+        </IconButton>
+      </Box>
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: {
+            width: 240,
+            boxSizing: 'border-box'
+          }
+        }}
+      >
+        {drawer}
+      </Drawer>
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          width: drawerWidth,
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: {
+            width: drawerWidth,
+            boxSizing: 'border-box'
+          }
+        }}
+      >
+        {drawer}
+      </Drawer>
+    </>
   )
 }
 

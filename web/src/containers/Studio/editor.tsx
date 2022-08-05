@@ -353,9 +353,7 @@ const SASjsEditor = ({
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
-              position: 'fixed',
-              background: 'white',
-              width: '85%'
+              background: 'white'
             }}
           >
             <TabList onChange={handleTabChange} centered>
@@ -372,10 +370,7 @@ const SASjsEditor = ({
             </TabList>
           </Box>
 
-          <StyledTabPanel
-            sx={{ paddingBottom: 0, marginTop: '45px' }}
-            value="1"
-          >
+          <StyledTabPanel sx={{ paddingBottom: 0 }} value="1">
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <RunMenu
                 fileContent={fileContent}
@@ -442,13 +437,13 @@ const SASjsEditor = ({
             </Paper>
           </StyledTabPanel>
           <StyledTabPanel value="2">
-            <div style={{ marginTop: '50px' }}>
+            <div>
               <h2>SAS Log</h2>
               <pre>{log}</pre>
             </div>
           </StyledTabPanel>
           <StyledTabPanel value="3">
-            <div style={{ marginTop: '50px' }}>
+            <div>
               <pre>{webout}</pre>
             </div>
           </StyledTabPanel>

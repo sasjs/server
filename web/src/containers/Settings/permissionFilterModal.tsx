@@ -92,7 +92,7 @@ const PermissionFilterModal = ({
               onChange={(event: any, newValue: string[]) => {
                 setPathFilter(newValue)
               }}
-              renderInput={(params) => <TextField {...params} label="URIs" />}
+              renderInput={(params) => <TextField {...params} label="Paths" />}
             />
           </Grid>
           <Grid item xs={12}>

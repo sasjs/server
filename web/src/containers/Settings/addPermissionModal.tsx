@@ -32,7 +32,13 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 type AddPermissionModalProps = {
   open: boolean
   handleOpen: Dispatch<SetStateAction<boolean>>
-  addPermission: (addPermissionPayload: RegisterPermissionPayload) => void
+  addPermission: (
+    permissions: RegisterPermissionPayload[],
+    permissionType: string,
+    principalType: string,
+    principal: string,
+    permissionSetting: string
+  ) => void
 }
 
 const AddPermissionModal = ({
@@ -42,9 +48,9 @@ const AddPermissionModal = ({
 }: AddPermissionModalProps) => {
   const [paths, setPaths] = useState<string[]>([])
   const [loadingPaths, setLoadingPaths] = useState(false)
-  const [path, setPath] = useState<string>()
+  const [selectedPaths, setSelectedPaths] = useState<string[]>([])
   const [permissionType, setPermissionType] = useState('Route')
-  const [principalType, setPrincipalType] = useState('group')
+  const [principalType, setPrincipalType] = useState('Group')
   const [userPrincipal, setUserPrincipal] = useState<UserResponse>()
   const [groupPrincipal, setGroupPrincipal] = useState<GroupResponse>()
   const [permissionSetting, setPermissionSetting] = useState('Grant')
@@ -72,10 +78,10 @@ const AddPermissionModal = ({
   useEffect(() => {
     setLoadingPrincipals(true)
     axios
-      .get(`/SASjsApi/${principalType}`)
+      .get(`/SASjsApi/${principalType.toLowerCase()}`)
       .then((res: any) => {
         if (res.data) {
-          if (principalType === 'user') {
+          if (principalType.toLowerCase() === 'user') {
             const users: UserResponse[] = res.data
             const nonAdminUsers = users.filter((user) => !user.isAdmin)
             setUserPrincipals(nonAdminUsers)
@@ -93,22 +99,40 @@ const AddPermissionModal = ({
   }, [principalType])
 
   const handleAddPermission = () => {
-    const addPermissionPayload: any = {
-      path,
-      type: permissionType,
-      setting: permissionSetting,
-      principalType
-    }
-    if (principalType === 'user' && userPrincipal) {
-      addPermissionPayload.principalId = userPrincipal.id
-    } else if (principalType === 'group' && groupPrincipal) {
-      addPermissionPayload.principalId = groupPrincipal.groupId
-    }
-    addPermission(addPermissionPayload)
+    const permissions: RegisterPermissionPayload[] = []
+
+    selectedPaths.forEach((path) => {
+      const addPermissionPayload: any = {
+        path,
+        type: permissionType,
+        setting: permissionSetting,
+        principalType: principalType.toLowerCase(),
+        principalId:
+          principalType.toLowerCase() === 'user'
+            ? userPrincipal?.id
+            : groupPrincipal?.groupId
+      }
+
+      permissions.push(addPermissionPayload)
+    })
+
+    const principal =
+      principalType.toLowerCase() === 'user'
+        ? userPrincipal?.username
+        : groupPrincipal?.name
+
+    addPermission(
+      permissions,
+      permissionType,
+      principalType,
+      principal!,
+      permissionSetting
+    )
   }
 
   const addButtonDisabled =
-    !path || (principalType === 'user' ? !userPrincipal : !groupPrincipal)
+    !selectedPaths.length ||
+    (principalType.toLowerCase() === 'user' ? !userPrincipal : !groupPrincipal)
 
   return (
     <BootstrapDialog onClose={() => handleOpen(false)} open={open}>
@@ -122,17 +146,15 @@ const AddPermissionModal = ({
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <Autocomplete
-              options={paths}
+              multiple
               disableClearable
-              value={path}
-              onChange={(event: any, newValue: string) => setPath(newValue)}
-              renderInput={(params) =>
-                loadingPaths ? (
-                  <CircularProgress />
-                ) : (
-                  <TextField {...params} autoFocus label="Path" />
-                )
-              }
+              options={paths}
+              filterSelectedOptions
+              value={selectedPaths}
+              onChange={(event: any, newValue: string[]) => {
+                setSelectedPaths(newValue)
+              }}
+              renderInput={(params) => <TextField {...params} label="Paths" />}
             />
           </Grid>
           <Grid item xs={12}>
@@ -154,8 +176,7 @@ const AddPermissionModal = ({
           </Grid>
           <Grid item xs={12}>
             <Autocomplete
-              options={['group', 'user']}
-              getOptionLabel={(option) => option.toUpperCase()}
+              options={['Group', 'User']}
               disableClearable
               value={principalType}
               onChange={(event: any, newValue: string) =>
@@ -167,7 +188,7 @@ const AddPermissionModal = ({
             />
           </Grid>
           <Grid item xs={12}>
-            {principalType === 'user' ? (
+            {principalType.toLowerCase() === 'user' ? (
               <Autocomplete
                 options={userPrincipals}
                 getOptionLabel={(option) => option.displayName}

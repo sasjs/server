@@ -20,7 +20,14 @@ const Username = (props: any) => {
       ) : (
         <AccountCircle></AccountCircle>
       )}
-      <Typography variant="h6" sx={{ color: 'white', padding: '0 8px' }}>
+      <Typography
+        variant="h6"
+        sx={{
+          color: 'white',
+          padding: '0 8px',
+          display: { xs: 'none', md: 'flex' }
+        }}
+      >
         {props.username}
       </Typography>
     </IconButton>

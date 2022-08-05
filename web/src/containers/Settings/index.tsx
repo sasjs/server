@@ -31,11 +31,20 @@ const Settings = () => {
     <Box
       sx={{
         display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
         marginTop: '65px'
       }}
     >
       <TabContext value={value}>
-        <Box component={Paper} sx={{ margin: '0 5px', height: '92vh' }}>
+        <Box
+          component={Paper}
+          sx={{
+            margin: '0 5px',
+            height: { md: '92vh' },
+            display: 'flex',
+            justifyContent: 'center'
+          }}
+        >
           <TabList
             TabIndicatorProps={{
               style: {
@@ -47,7 +56,7 @@ const Settings = () => {
           >
             <StyledTab label="Profile" value="profile" />
             {appContext.mode === ModeType.Server && (
-              <StyledTab label="Permission" value="permission" />
+              <StyledTab label="Permissions" value="permission" />
             )}
           </TabList>
         </Box>

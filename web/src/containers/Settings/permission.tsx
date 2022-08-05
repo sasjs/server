@@ -27,6 +27,9 @@ import { styled } from '@mui/material/styles'
 import Modal from '../../components/modal'
 import PermissionFilterModal from './permissionFilterModal'
 import AddPermissionModal from './addPermissionModal'
+import PermissionResponseModal, {
+  PermissionResponsePayload
+} from './addPermissionResponseModal'
 import UpdatePermissionModal from './updatePermissionModal'
 import DeleteConfirmationModal from '../../components/deleteConfirmationModal'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
@@ -36,10 +39,21 @@ import {
   PermissionResponse,
   RegisterPermissionPayload
 } from '../../utils/types'
+import {
+  findExistingPermission,
+  findUpdatingPermission
+} from '../../utils/helper'
+
 import { AppContext } from '../../context/appContext'
 
 const BootstrapTableCell = styled(TableCell)({
   textAlign: 'left'
+})
+
+const BootstrapGridItem = styled(Grid)({
+  '&.MuiGrid-item': {
+    maxWidth: '100%'
+  }
 })
 
 export enum PrincipalType {
@@ -59,6 +73,20 @@ const Permission = () => {
     AlertSeverityType.Success
   )
   const [addPermissionModalOpen, setAddPermissionModalOpen] = useState(false)
+  const [openPermissionResponseModal, setOpenPermissionResponseModal] =
+    useState(false)
+  const [permissionResponsePayload, setPermissionResponsePayload] =
+    useState<PermissionResponsePayload>({
+      permissionType: '',
+      principalType: '',
+      principal: '',
+      permissionSetting: '',
+      existingPermissions: [],
+      newAddedPermissions: [],
+      updatedPermissions: [],
+      errorPaths: []
+    })
+
   const [updatePermissionModalOpen, setUpdatePermissionModalOpen] =
     useState(false)
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
@@ -181,29 +209,77 @@ const Permission = () => {
     setFilterApplied(false)
   }
 
-  const addPermission = (addPermissionPayload: RegisterPermissionPayload) => {
+  const addPermission = async (
+    permissionsToAdd: RegisterPermissionPayload[],
+    permissionType: string,
+    principalType: string,
+    principal: string,
+    permissionSetting: string
+  ) => {
     setAddPermissionModalOpen(false)
     setIsLoading(true)
-    axios
-      .post('/SASjsApi/permission', addPermissionPayload)
-      .then((res: any) => {
-        fetchPermissions()
-        setSnackbarMessage('Permission added!')
-        setSnackbarSeverity(AlertSeverityType.Success)
-        setOpenSnackbar(true)
-      })
-      .catch((err) => {
-        setModalTitle('Abort')
-        setModalPayload(
-          typeof err.response.data === 'object'
-            ? JSON.stringify(err.response.data)
-            : err.response.data
-        )
-        setOpenModal(true)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+
+    const newAddedPermissions: PermissionResponse[] = []
+    const updatedPermissions: PermissionResponse[] = []
+    const errorPaths: string[] = []
+
+    const existingPermissions: PermissionResponse[] = []
+    const updatingPermissions: PermissionResponse[] = []
+    const newPermissions: RegisterPermissionPayload[] = []
+
+    permissionsToAdd.forEach((permission) => {
+      const existingPermission = findExistingPermission(permissions, permission)
+      if (existingPermission) {
+        existingPermissions.push(existingPermission)
+        return
+      }
+
+      const updatingPermission = findUpdatingPermission(permissions, permission)
+      if (updatingPermission) {
+        updatingPermissions.push(updatingPermission)
+        return
+      }
+
+      newPermissions.push(permission)
+    })
+
+    for (const permission of newPermissions) {
+      await axios
+        .post('/SASjsApi/permission', permission)
+        .then((res) => {
+          newAddedPermissions.push(res.data)
+        })
+        .catch((error) => {
+          errorPaths.push(permission.path)
+        })
+    }
+
+    for (const permission of updatingPermissions) {
+      await axios
+        .patch(`/SASjsApi/permission/${permission.permissionId}`, {
+          setting: permission.setting === 'Grant' ? 'Deny' : 'Grant'
+        })
+        .then((res) => {
+          updatedPermissions.push(res.data)
+        })
+        .catch((error) => {
+          errorPaths.push(permission.path)
+        })
+    }
+
+    fetchPermissions()
+    setIsLoading(false)
+    setPermissionResponsePayload({
+      permissionType,
+      principalType,
+      principal,
+      permissionSetting,
+      existingPermissions,
+      updatedPermissions,
+      newAddedPermissions,
+      errorPaths
+    })
+    setOpenPermissionResponseModal(true)
   }
 
   const handleUpdatePermissionClick = (permission: PermissionResponse) => {
@@ -280,11 +356,11 @@ const Permission = () => {
   ) : (
     <Box className="permissions-page">
       <Grid container direction="column" spacing={1}>
-        <Grid item xs={12}>
+        <BootstrapGridItem item xs={12}>
           <Paper elevation={3} sx={{ display: 'flex' }}>
             <Tooltip title="Filter Permissions">
-              <IconButton>
-                <FilterListIcon onClick={() => setFilterModalOpen(true)} />
+              <IconButton onClick={() => setFilterModalOpen(true)}>
+                <FilterListIcon />
               </IconButton>
             </Tooltip>
             {appContext.isAdmin && (
@@ -299,14 +375,14 @@ const Permission = () => {
               </Tooltip>
             )}
           </Paper>
-        </Grid>
-        <Grid item xs={12}>
+        </BootstrapGridItem>
+        <BootstrapGridItem item xs={12}>
           <PermissionTable
             permissions={filterApplied ? filteredPermissions : permissions}
             handleUpdatePermissionClick={handleUpdatePermissionClick}
             handleDeletePermissionClick={handleDeletePermissionClick}
           />
-        </Grid>
+        </BootstrapGridItem>
       </Grid>
       <BootstrapSnackbar
         open={openSnackbar}
@@ -339,6 +415,11 @@ const Permission = () => {
         open={addPermissionModalOpen}
         handleOpen={setAddPermissionModalOpen}
         addPermission={addPermission}
+      />
+      <PermissionResponseModal
+        open={openPermissionResponseModal}
+        setOpen={setOpenPermissionResponseModal}
+        payload={permissionResponsePayload}
       />
       <UpdatePermissionModal
         open={updatePermissionModalOpen}
@@ -478,8 +559,8 @@ const DisplayGroup = ({ group }: DisplayGroupProps) => {
         <Typography sx={{ p: 1 }} variant="h6" component="div">
           Group Members
         </Typography>
-        {group.users.map((user) => (
-          <Typography sx={{ p: 1 }} component="li">
+        {group.users.map((user, index) => (
+          <Typography key={index} sx={{ p: 1 }} component="li">
             {user.username}
           </Typography>
         ))}
