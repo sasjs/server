@@ -62,7 +62,7 @@
     "mongoose": "^6.0.12",
     "mongoose-sequence": "^5.3.1",
     "morgan": "^1.10.0",
-    "multer": "^1.4.3",
+    "multer": "^1.4.5-lts.1",
     "rotating-file-stream": "^3.0.4",
     "swagger-ui-express": "4.3.0",
     "unzipper": "^0.10.11",
