@@ -1,3 +1,10 @@
+## [0.15.2](https://github.com/sasjs/server/compare/v0.15.1...v0.15.2) (2022-08-10)
+
+
+### Bug Fixes
+
+* remove vulnerabitities ([f27ac51](https://github.com/sasjs/server/commit/f27ac51fc4beb21070d0ab551cfdaec1f6ba39e0))
+
 ## [0.15.1](https://github.com/sasjs/server/compare/v0.15.0...v0.15.1) (2022-08-10)
 
 
