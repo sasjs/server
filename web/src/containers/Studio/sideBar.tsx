@@ -211,6 +211,7 @@ const SideBar = ({
         component={Paper}
         sx={{
           margin: '5px',
+          height: '97vh',
           paddingTop: '45px',
           display: 'flex',
           alignItems: 'flex-start'

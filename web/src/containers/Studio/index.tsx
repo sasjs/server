@@ -14,6 +14,7 @@ const Studio = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedFilePath, setSelectedFilePath] = useState('')
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
+  const [tab, setTab] = useState('code')
 
   useEffect(() => {
     setSelectedFilePath(searchParams.get('filePath') ?? '')
@@ -83,16 +84,20 @@ const Studio = () => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <SideBar
-        selectedFilePath={selectedFilePath}
-        directoryData={directoryData}
-        handleSelect={handleSelect}
-        removeFileFromTree={removeFileFromTree}
-        refreshSideBar={fetchDirectoryData}
-      />
+      {tab === 'code' && (
+        <SideBar
+          selectedFilePath={selectedFilePath}
+          directoryData={directoryData}
+          handleSelect={handleSelect}
+          removeFileFromTree={removeFileFromTree}
+          refreshSideBar={fetchDirectoryData}
+        />
+      )}
       <SASjsEditor
         selectedFilePath={selectedFilePath}
         setSelectedFilePath={handleSelect}
+        tab={tab}
+        setTab={setTab}
       />
     </Box>
   )

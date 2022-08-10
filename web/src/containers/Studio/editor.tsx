@@ -1,4 +1,11 @@
-import React, { useEffect, useRef, useState, useContext } from 'react'
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+  useContext
+} from 'react'
 import axios from 'axios'
 
 import {
@@ -58,13 +65,17 @@ const StyledTab = styled(Tab)(() => ({
 type SASjsEditorProps = {
   selectedFilePath: string
   setSelectedFilePath: (filePath: string, refreshSideBar?: boolean) => void
+  tab: string
+  setTab: Dispatch<SetStateAction<string>>
 }
 
 const baseUrl = window.location.origin
 
 const SASjsEditor = ({
   selectedFilePath,
-  setSelectedFilePath
+  setSelectedFilePath,
+  tab,
+  setTab
 }: SASjsEditorProps) => {
   const appContext = useContext(AppContext)
   const [isLoading, setIsLoading] = useState(false)
@@ -81,7 +92,6 @@ const SASjsEditor = ({
   const [log, setLog] = useState('')
   const [ctrlPressed, setCtrlPressed] = useState(false)
   const [webout, setWebout] = useState('')
-  const [tab, setTab] = useState('1')
   const [runTimes, setRunTimes] = useState<string[]>([])
   const [selectedRunTime, setSelectedRunTime] = useState('')
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
@@ -161,7 +171,7 @@ const SASjsEditor = ({
     }
     setLog('')
     setWebout('')
-    setTab('1')
+    setTab('code')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
 
@@ -200,10 +210,11 @@ const SASjsEditor = ({
         setLog(parsedLog)
 
         setWebout(`${res.data?._webout}`)
-        setTab('2')
+        setTab('log')
 
         // Scroll to bottom of log
-        window.scrollTo(0, document.body.scrollHeight)
+        const logElement = document.getElementById('log')
+        if (logElement) logElement.scrollTop = logElement.scrollHeight
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -357,20 +368,20 @@ const SASjsEditor = ({
             }}
           >
             <TabList onChange={handleTabChange} centered>
-              <StyledTab label="Code" value="1" />
-              <StyledTab label="Log" value="2" />
+              <StyledTab label="Code" value="code" />
+              <StyledTab label="Log" value="log" />
               <StyledTab
                 label={
                   <Tooltip title="Displays content from the _webout fileref">
                     <Typography>Webout</Typography>
                   </Tooltip>
                 }
-                value="3"
+                value="webout"
               />
             </TabList>
           </Box>
 
-          <StyledTabPanel sx={{ paddingBottom: 0 }} value="1">
+          <StyledTabPanel sx={{ paddingBottom: 0 }} value="code">
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <RunMenu
                 fileContent={fileContent}
@@ -436,13 +447,15 @@ const SASjsEditor = ({
               </p>
             </Paper>
           </StyledTabPanel>
-          <StyledTabPanel value="2">
+          <StyledTabPanel value="log">
             <div>
-              <h2>SAS Log</h2>
-              <pre>{log}</pre>
+              <h2>Log</h2>
+              <pre id="log" style={{ overflow: 'auto', height: '75vh' }}>
+                {log}
+              </pre>
             </div>
           </StyledTabPanel>
-          <StyledTabPanel value="3">
+          <StyledTabPanel value="webout">
             <div>
               <pre>{webout}</pre>
             </div>
