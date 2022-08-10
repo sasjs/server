@@ -1,3 +1,10 @@
+## [0.15.1](https://github.com/sasjs/server/compare/v0.15.0...v0.15.1) (2022-08-10)
+
+
+### Bug Fixes
+
+* **web:** fix UI responsiveness ([d99fdd1](https://github.com/sasjs/server/commit/d99fdd1ec7991b94a0d98338d7a7a6216f46ce45))
+
 # [0.15.0](https://github.com/sasjs/server/compare/v0.14.1...v0.15.0) (2022-08-05)
 
 
