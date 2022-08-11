@@ -34,6 +34,9 @@ export const createSASProgram = async (
 %if "&SYSTCPIPHOSTNAME"="" %then %let SYSTCPIPHOSTNAME=&_sasjs_apiserverurl;
 %mend;
 %_sasjs_server_init()
+
+proc printto print="%sysfunc(getoption(log))";
+run;
 `
 
   program = `
