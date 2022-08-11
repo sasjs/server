@@ -1,3 +1,10 @@
+## [0.15.3](https://github.com/sasjs/server/compare/v0.15.2...v0.15.3) (2022-08-11)
+
+
+### Bug Fixes
+
+* adding proc printto in precode to enable print output in log.  Closes [#253](https://github.com/sasjs/server/issues/253) ([f8bb732](https://github.com/sasjs/server/commit/f8bb7327a8a4649ac77bb6237e31cea075d46bb9))
+
 ## [0.15.2](https://github.com/sasjs/server/compare/v0.15.1...v0.15.2) (2022-08-10)
 
 
