@@ -4,9 +4,9 @@ import { createFolder, fileExists, folderExists, isWindows } from '@sasjs/utils'
 import { RunTimeType } from './verifyEnvVariables'
 
 export const getDesktopFields = async () => {
-  const { SAS_PATH, NODE_PATH } = process.env
+  const { SAS_PATH, NODE_PATH, PYTHON_PATH } = process.env
 
-  let sasLoc, nodeLoc
+  let sasLoc, nodeLoc, pythonLoc
 
   if (process.runTimes.includes(RunTimeType.SAS)) {
     sasLoc = SAS_PATH ?? (await getSASLocation())
@@ -16,7 +16,11 @@ export const getDesktopFields = async () => {
     nodeLoc = NODE_PATH ?? (await getNodeLocation())
   }
 
-  return { sasLoc, nodeLoc }
+  if (process.runTimes.includes(RunTimeType.JS)) {
+    pythonLoc = PYTHON_PATH ?? (await getPythonLocation())
+  }
+
+  return { sasLoc, nodeLoc, pythonLoc }
 }
 
 const getDriveLocation = async (): Promise<string> => {
@@ -85,6 +89,28 @@ const getNodeLocation = async (): Promise<string> => {
 
   const targetName = await getString(
     'Please enter full path to a NodeJS executable: ',
+    validator,
+    defaultLocation
+  )
+
+  return targetName
+}
+
+const getPythonLocation = async (): Promise<string> => {
+  const validator = async (filePath: string) => {
+    if (!filePath) return 'Path to Python executable is required.'
+
+    if (!(await fileExists(filePath))) {
+      return 'No file found at provided path.'
+    }
+
+    return true
+  }
+
+  const defaultLocation = isWindows() ? 'C:\\Python' : '/usr/bin/python'
+
+  const targetName = await getString(
+    'Please enter full path to a Python executable: ',
     validator,
     defaultLocation
   )

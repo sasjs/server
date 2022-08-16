@@ -5,7 +5,12 @@ import { once } from 'stream'
 import { createFile, moveFile } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { RunTimeType } from '../../utils'
-import { ExecutionVars, createSASProgram, createJSProgram } from './'
+import {
+  ExecutionVars,
+  createSASProgram,
+  createJSProgram,
+  createPythonProgram
+} from './'
 
 export const processProgram = async (
   program: string,
@@ -45,6 +50,42 @@ export const processProgram = async (
       })
 
       // copy the code.js program to log and end write stream
+      writeStream.end(program)
+
+      session.completed = true
+      console.log('session completed', session)
+    } catch (err: any) {
+      session.completed = true
+      session.crashed = err.toString()
+      console.log('session crashed', session.id, session.crashed)
+    }
+  } else if (runTime === RunTimeType.PY) {
+    program = await createPythonProgram(
+      program,
+      preProgramVariables,
+      vars,
+      session,
+      weboutPath,
+      tokenFile,
+      otherArgs
+    )
+
+    const codePath = path.join(session.path, 'code.py')
+
+    try {
+      await createFile(codePath, program)
+
+      // create a stream that will write to console outputs to log file
+      const writeStream = fs.createWriteStream(logPath)
+
+      // waiting for the open event so that we can have underlying file descriptor
+      await once(writeStream, 'open')
+
+      execFileSync(process.pythonLoc!, [codePath], {
+        stdio: ['ignore', writeStream, writeStream]
+      })
+
+      // copy the code.py program to log and end write stream
       writeStream.end(program)
 
       session.completed = true

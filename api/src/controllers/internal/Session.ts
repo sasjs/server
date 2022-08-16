@@ -197,15 +197,51 @@ export class JSSessionController extends SessionController {
   }
 }
 
+export class PythonSessionController extends SessionController {
+  protected async createSession(): Promise<Session> {
+    const sessionId = generateUniqueFileName(generateTimestamp())
+    const sessionFolder = path.join(getSessionsFolder(), sessionId)
+
+    const creationTimeStamp = sessionId.split('-').pop() as string
+    // death time of session is 15 mins from creation
+    const deathTimeStamp = (
+      parseInt(creationTimeStamp) +
+      15 * 60 * 1000 -
+      1000
+    ).toString()
+
+    const session: Session = {
+      id: sessionId,
+      ready: true,
+      inUse: true,
+      consumed: false,
+      completed: false,
+      creationTimeStamp,
+      deathTimeStamp,
+      path: sessionFolder
+    }
+
+    const headersPath = path.join(session.path, 'stpsrv_header.txt')
+    await createFile(headersPath, 'Content-type: application/json')
+
+    this.sessions.push(session)
+    return session
+  }
+}
+
 export const getSessionController = (
   runTime: RunTimeType
-): SASSessionController | JSSessionController => {
+): SASSessionController | JSSessionController | PythonSessionController => {
   if (runTime === RunTimeType.SAS) {
     return getSASSessionController()
   }
 
   if (runTime === RunTimeType.JS) {
     return getJSSessionController()
+  }
+
+  if (runTime === RunTimeType.PY) {
+    return getPythonSessionController()
   }
 
   throw new Error('No Runtime is configured')
@@ -225,6 +261,14 @@ const getJSSessionController = (): JSSessionController => {
   process.jsSessionController = new JSSessionController()
 
   return process.jsSessionController
+}
+
+const getPythonSessionController = (): PythonSessionController => {
+  if (process.pythonSessionController) return process.pythonSessionController
+
+  process.pythonSessionController = new PythonSessionController()
+
+  return process.pythonSessionController
 }
 
 const autoExecContent = `
