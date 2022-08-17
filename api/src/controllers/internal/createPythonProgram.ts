@@ -53,14 +53,15 @@ ${program}
 `
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs?.filesNamesMap) {
-    const uploadJSCode = await generateFileUploadPythonCode(
+    const uploadPythonCode = await generateFileUploadPythonCode(
       otherArgs.filesNamesMap,
       session.path
     )
 
-    //If js code for the file is generated it will be appended to the top of jsCode
-    if (uploadJSCode.length > 0) {
-      program = `${uploadJSCode}\n` + program
+    // If any files are uploaded, the program needs to be updated with some
+    // dynamically generated variables (pointers) for ease of ingestion
+    if (uploadPythonCode.length > 0) {
+      program = `${uploadPythonCode}\n` + program
     }
   }
   return requiredModules + program

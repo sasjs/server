@@ -67,7 +67,8 @@ ${program}`
       session.path
     )
 
-    //If sas code for the file is generated it will be appended to the top of sasCode
+    // If any files are uploaded, the program needs to be updated with some
+    // dynamically generated variables (pointers) for ease of ingestion
     if (uploadSasCode.length > 0) {
       program = `${uploadSasCode}` + program
     }
