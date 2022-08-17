@@ -68,7 +68,12 @@ MODE=
 # Priority is given to the runtime that comes first in the string.
 # Possible options at the moment are sas and js
 
-# options: [sas|js|py|sas,js|js,sas|py,sas|sas,py|py,js|js,py|sas,js,py|sas,py,js|js,sas,py|js,py,sas|py,sas,js|py,js,sas] default:sas
+# This string sets the priority of the available analytic runtimes
+# Valid runtimes are SAS (sas), JavaScript (js) and Python (py)
+# For each option provided, there should be a corresponding path,
+# eg SAS_PATH, NODE_PATH or PYTHON_PATH
+# Priority is given to runtimes earlier in the string
+# Example options:  [sas,js,py | js,py | sas | sas,js]
 RUN_TIMES=
 
 # Path to SAS executable (sas.exe / sas.sh)

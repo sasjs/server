@@ -43,6 +43,7 @@ const sampleJsProgram = `console.log('hello world!/')`
 const samplePyProgram = `print('hello world!/')`
 
 const filesFolder = getFilesFolder()
+const testFilesFolder = `test-stp-${generateTimestamp()}`
 
 let app: Express
 let accessToken: string
@@ -75,8 +76,6 @@ describe('stp', () => {
   })
 
   describe('execute', () => {
-    const testFilesFolder = `test-stp-${generateTimestamp()}`
-
     describe('get', () => {
       describe('with runtime js', () => {
         const testFilesFolder = `test-stp-${generateTimestamp()}`
@@ -96,21 +95,15 @@ describe('stp', () => {
         })
 
         it('should execute js program when both js and sas program are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.JS)
+          await makeRequestAndAssert(
+            [RunTimeType.JS, RunTimeType.SAS],
+            200,
+            RunTimeType.JS
+          )
         })
 
         it('should throw error when js program is not present but sas program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          await createFile(sasProgramPath, sampleSasProgram)
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -132,23 +125,15 @@ describe('stp', () => {
         })
 
         it('should execute python program when python, js and sas programs are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.PY)
+          await makeRequestAndAssert(
+            [RunTimeType.PY, RunTimeType.SAS, RunTimeType.JS],
+            200,
+            RunTimeType.PY
+          )
         })
 
         it('should throw error when py program is not present but js or sas program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          await createFile(sasProgramPath, sampleSasProgram)
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -168,21 +153,11 @@ describe('stp', () => {
         })
 
         it('should execute sas program when both sas and js programs are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert([RunTimeType.SAS], 200, RunTimeType.SAS)
         })
 
         it('should throw error when sas program do not exit but js exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -202,27 +177,19 @@ describe('stp', () => {
         })
 
         it('should execute js program when both js and sas program are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.JS)
+          await makeRequestAndAssert(
+            [RunTimeType.SAS, RunTimeType.JS],
+            200,
+            RunTimeType.JS
+          )
         })
 
         it('should execute sas program when js program is not present but sas program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          await createFile(sasProgramPath, sampleSasProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert([RunTimeType.SAS], 200, RunTimeType.SAS)
         })
 
         it('should throw error when both sas and js programs do not exist', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -242,27 +209,19 @@ describe('stp', () => {
         })
 
         it('should execute python program when both python and sas program are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.PY)
+          await makeRequestAndAssert(
+            [RunTimeType.PY, RunTimeType.SAS],
+            200,
+            RunTimeType.PY
+          )
         })
 
         it('should execute sas program when python program is not present but sas program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          await createFile(sasProgramPath, sampleSasProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert([RunTimeType.SAS], 200, RunTimeType.SAS)
         })
 
         it('should throw error when both sas and js programs do not exist', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -282,27 +241,19 @@ describe('stp', () => {
         })
 
         it('should execute sas program when both sas and js programs  exist', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert(
+            [RunTimeType.SAS, RunTimeType.JS],
+            200,
+            RunTimeType.SAS
+          )
         })
 
         it('should execute js program when sas program is not present but js program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.JS)
+          await makeRequestAndAssert([RunTimeType.JS], 200, RunTimeType.JS)
         })
 
         it('should throw error when both sas and js programs do not exist', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -322,27 +273,19 @@ describe('stp', () => {
         })
 
         it('should execute sas program when both sas and python programs exist', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert(
+            [RunTimeType.SAS, RunTimeType.PY],
+            200,
+            RunTimeType.SAS
+          )
         })
 
         it('should execute python program when sas program is not present but python program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.PY)
+          await makeRequestAndAssert([RunTimeType.PY], 200, RunTimeType.PY)
         })
 
         it('should throw error when both sas and python programs do not exist', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -362,39 +305,27 @@ describe('stp', () => {
         })
 
         it('should execute sas program when it exists, no matter js and python programs exist or not', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert(
+            [RunTimeType.SAS, RunTimeType.PY, RunTimeType.JS],
+            200,
+            RunTimeType.SAS
+          )
         })
 
         it('should execute js program when sas program is absent but js and python programs are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(jsProgramPath, sampleJsProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.JS)
+          await makeRequestAndAssert(
+            [RunTimeType.JS, RunTimeType.PY],
+            200,
+            RunTimeType.JS
+          )
         })
 
         it('should execute python program when both sas and js programs are not present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.PY)
+          await makeRequestAndAssert([RunTimeType.PY], 200, RunTimeType.PY)
         })
 
         it('should throw error when no program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -414,39 +345,27 @@ describe('stp', () => {
         })
 
         it('should execute js program when it exists, no matter sas and python programs exist or not', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(jsProgramPath, sampleJsProgram)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.JS)
+          await makeRequestAndAssert(
+            [RunTimeType.JS, RunTimeType.SAS, RunTimeType.PY],
+            200,
+            RunTimeType.JS
+          )
         })
 
         it('should execute sas program when js program is absent but sas and python programs are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert(
+            [RunTimeType.SAS, RunTimeType.PY],
+            200,
+            RunTimeType.SAS
+          )
         })
 
         it('should execute python program when both sas and js programs are not present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          await createFile(pyProgramPath, samplePyProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.PY)
+          await makeRequestAndAssert([RunTimeType.PY], 200, RunTimeType.PY)
         })
 
         it('should throw error when no program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
 
@@ -466,38 +385,27 @@ describe('stp', () => {
         })
 
         it('should execute python program when it exists, no matter sas and js programs exist or not', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const pyProgramPath = path.join(filesFolder, `${programPath}.py`)
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(pyProgramPath, samplePyProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-          await createFile(sasProgramPath, sampleSasProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.PY)
+          await makeRequestAndAssert(
+            [RunTimeType.PY, RunTimeType.SAS, RunTimeType.JS],
+            200,
+            RunTimeType.PY
+          )
         })
 
         it('should execute sas program when python program is absent but sas and js programs are present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const sasProgramPath = path.join(filesFolder, `${programPath}.sas`)
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(sasProgramPath, sampleSasProgram)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.SAS)
+          await makeRequestAndAssert(
+            [RunTimeType.SAS, RunTimeType.JS],
+            200,
+            RunTimeType.SAS
+          )
         })
 
         it('should execute js program when both sas and python programs are not present', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          const jsProgramPath = path.join(filesFolder, `${programPath}.js`)
-          await createFile(jsProgramPath, sampleJsProgram)
-
-          await makeRequestAndAssert(programPath, 200, RunTimeType.JS)
+          await makeRequestAndAssert([RunTimeType.JS], 200, RunTimeType.JS)
         })
 
         it('should throw error when no program exists', async () => {
-          const programPath = path.join(testFilesFolder, 'program')
-          await makeRequestAndAssert(programPath, 400)
+          await makeRequestAndAssert([], 400)
         })
       })
     })
@@ -505,10 +413,29 @@ describe('stp', () => {
 })
 
 const makeRequestAndAssert = async (
-  programPath: string,
+  programTypes: RunTimeType[],
   expectedStatusCode: number,
   expectedRuntime?: RunTimeType
 ) => {
+  const programPath = path.join(testFilesFolder, 'program')
+  for (const programType of programTypes) {
+    if (programType === RunTimeType.JS)
+      await createFile(
+        path.join(filesFolder, `${programPath}.js`),
+        sampleJsProgram
+      )
+    else if (programType === RunTimeType.PY)
+      await createFile(
+        path.join(filesFolder, `${programPath}.py`),
+        samplePyProgram
+      )
+    else if (programType === RunTimeType.SAS)
+      await createFile(
+        path.join(filesFolder, `${programPath}.sas`),
+        sampleSasProgram
+      )
+  }
+
   await request(app)
     .get(`/SASjsApi/stp/execute?_program=${programPath}`)
     .auth(accessToken, { type: 'bearer' })
