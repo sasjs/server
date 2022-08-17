@@ -1,3 +1,17 @@
+# [0.16.0](https://github.com/sasjs/server/compare/v0.15.3...v0.16.0) (2022-08-17)
+
+
+### Bug Fixes
+
+* add a new variable _SASJS_WEBOUT_HEADERS to code.js and code.py ([882bedd](https://github.com/sasjs/server/commit/882bedd5d5da22de6ed45c03d0a261aadfb3a33c))
+* update content for code.sas file ([02e88ae](https://github.com/sasjs/server/commit/02e88ae7280d020a753bc2c095a931c79ac392d1))
+* update default content type for python and js runtimes ([8780b80](https://github.com/sasjs/server/commit/8780b800a34aa618631821e5d97e26e8b0f15806))
+
+
+### Features
+
+* implement the logic for running python stored programs ([b06993a](https://github.com/sasjs/server/commit/b06993ab9ea24b28d9e553763187387685aaa666))
+
 ## [0.15.3](https://github.com/sasjs/server/compare/v0.15.2...v0.15.3) (2022-08-11)
 
 
