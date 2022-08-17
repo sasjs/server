@@ -23,10 +23,14 @@ export const createSASProgram = async (
 %let _sasjs_displayname=${preProgramVariables?.displayName};
 %let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
 %let _sasjs_apipath=/SASjsApi/stp/execute;
+%let _sasjs_webout_headers=%sysfunc(pathname(work))/../stpsrv_header.txt;
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
+
+/* the below is here for compatibility and will be removed in a future release */
+%let sasjs_stpsrv_header_loc=&_sasjs_webout_headers;
+
 %let sasjsprocessmode=Stored Program;
-%let sasjs_stpsrv_header_loc=%sysfunc(pathname(work))/../stpsrv_header.txt;
 
 %global SYSPROCESSMODE SYSTCPIPHOSTNAME SYSHOSTINFOLONG;
 %macro _sasjs_server_init();
