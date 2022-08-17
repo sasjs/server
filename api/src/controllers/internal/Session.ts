@@ -190,7 +190,7 @@ export class JSSessionController extends SessionController {
     }
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
-    await createFile(headersPath, 'Content-type: application/json')
+    await createFile(headersPath, 'Content-type: text/plain')
 
     this.sessions.push(session)
     return session
@@ -222,7 +222,7 @@ export class PythonSessionController extends SessionController {
     }
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
-    await createFile(headersPath, 'Content-type: application/json')
+    await createFile(headersPath, 'Content-type: text/plain')
 
     this.sessions.push(session)
     return session
