@@ -89,6 +89,8 @@ export class ExecutionController {
       tokenFile,
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
+    if (returnJson)
+      await createFile(headersPath, 'Content-type: application/json')
 
     await processProgram(
       program,
@@ -96,6 +98,7 @@ export class ExecutionController {
       vars,
       session,
       weboutPath,
+      headersPath,
       tokenFile,
       runTime,
       logPath,

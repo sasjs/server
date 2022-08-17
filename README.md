@@ -64,11 +64,26 @@ Example contents of a `.env` file:
 # Server mode is multi-user and suitable for intranet / internet use
 MODE=
 
+# A comma separated string that defines the available runTimes.
+# Priority is given to the runtime that comes first in the string.
+# Possible options at the moment are sas and js
+
+# This string sets the priority of the available analytic runtimes
+# Valid runtimes are SAS (sas), JavaScript (js) and Python (py)
+# For each option provided, there should be a corresponding path,
+# eg SAS_PATH, NODE_PATH or PYTHON_PATH
+# Priority is given to runtimes earlier in the string
+# Example options:  [sas,js,py | js,py | sas | sas,js]
+RUN_TIMES=
+
 # Path to SAS executable (sas.exe / sas.sh)
 SAS_PATH=/path/to/sas/executable.exe
 
 # Path to Node.js executable
 NODE_PATH=~/.nvm/versions/node/v16.14.0/bin/node
+
+# Path to Python executable
+PYTHON_PATH=/usr/bin/python
 
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
@@ -138,13 +153,6 @@ LOG_FORMAT_MORGAN=
 
 # This location is for server logs with classical UNIX logrotate behavior
 LOG_LOCATION=./sasjs_root/logs
-
-# A comma separated string that defines the available runTimes.
-# Priority is given to the runtime that comes first in the string.
-# Possible options at the moment are sas and js
-
-# options: [sas,js|js,sas|sas|js] default:sas
-RUN_TIMES=
 
 ```
 

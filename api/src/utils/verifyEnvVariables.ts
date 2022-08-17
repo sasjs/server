@@ -28,7 +28,8 @@ export enum LOG_FORMAT_MORGANType {
 
 export enum RunTimeType {
   SAS = 'sas',
-  JS = 'js'
+  JS = 'js',
+  PY = 'py'
 }
 
 export enum ReturnCode {
@@ -228,7 +229,7 @@ const verifyRUN_TIMES = (): string[] => {
 
 const verifyExecutablePaths = () => {
   const errors: string[] = []
-  const { RUN_TIMES, SAS_PATH, NODE_PATH, MODE } = process.env
+  const { RUN_TIMES, SAS_PATH, NODE_PATH, PYTHON_PATH, MODE } = process.env
 
   if (MODE === ModeType.Server) {
     const runTimes = RUN_TIMES?.split(',')
@@ -239,6 +240,10 @@ const verifyExecutablePaths = () => {
 
     if (runTimes?.includes(RunTimeType.JS) && !NODE_PATH) {
       errors.push(`- NODE_PATH is required for ${RunTimeType.JS} run time`)
+    }
+
+    if (runTimes?.includes(RunTimeType.PY) && !PYTHON_PATH) {
+      errors.push(`- PYTHON_PATH is required for ${RunTimeType.PY} run time`)
     }
   }
 
