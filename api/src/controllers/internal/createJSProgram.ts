@@ -9,6 +9,7 @@ export const createJSProgram = async (
   vars: ExecutionVars,
   session: Session,
   weboutPath: string,
+  headersPath: string,
   tokenFile: string,
   otherArgs?: any
 ) => {
@@ -23,15 +24,16 @@ let _webout = '';
 const weboutPath = '${
     isWindows() ? weboutPath.replace(/\\/g, '\\\\') : weboutPath
   }'; 
-const _sasjs_tokenfile = '${
+const _SASJS_TOKENFILE = '${
     isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile
   }';
-const _sasjs_username = '${preProgramVariables?.username}';
-const _sasjs_userid = '${preProgramVariables?.userId}';
-const _sasjs_displayname = '${preProgramVariables?.displayName}';
-const _metaperson = _sasjs_displayname;
-const _metauser = _sasjs_username;
-const sasjsprocessmode = 'Stored Program';
+const _SASJS_WEBOUT_HEADERS = '${headersPath}';
+const _SASJS_USERNAME = '${preProgramVariables?.username}';
+const _SASJS_USERID = '${preProgramVariables?.userId}';
+const _SASJS_DISPLAYNAME = '${preProgramVariables?.displayName}';
+const _METAPERSON = _SASJS_DISPLAYNAME;
+const _METAUSER = _SASJS_USERNAME;
+const SASJSPROCESSMODE = 'Stored Program';
 `
 
   const requiredModules = `const fs = require('fs')`

@@ -18,6 +18,7 @@ export const processProgram = async (
   vars: ExecutionVars,
   session: Session,
   weboutPath: string,
+  headersPath: string,
   tokenFile: string,
   runTime: RunTimeType,
   logPath: string,
@@ -30,6 +31,7 @@ export const processProgram = async (
       vars,
       session,
       weboutPath,
+      headersPath,
       tokenFile,
       otherArgs
     )
@@ -66,6 +68,7 @@ export const processProgram = async (
       vars,
       session,
       weboutPath,
+      headersPath,
       tokenFile,
       otherArgs
     )
