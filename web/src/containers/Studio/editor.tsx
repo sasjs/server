@@ -70,6 +70,8 @@ type SASjsEditorProps = {
 }
 
 const baseUrl = window.location.origin
+const SASJS_LOGS_SEPARATOR =
+  'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
 
 const SASjsEditor = ({
   selectedFilePath,
@@ -203,13 +205,8 @@ const SASjsEditor = ({
     axios
       .post(`/SASjsApi/code/execute`, { code, runTime: selectedRunTime })
       .then((res: any) => {
-        const parsedLog = res?.data?.log
-          .map((logLine: any) => logLine.line)
-          .join('\n')
-
-        setLog(parsedLog)
-
-        setWebout(`${res.data?._webout}`)
+        setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
+        setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
         setTab('log')
 
         // Scroll to bottom of log

@@ -1,49 +1,21 @@
 import express from 'express'
-import {
-  Request,
-  Security,
-  Route,
-  Tags,
-  Post,
-  Body,
-  Get,
-  Query,
-  Example
-} from 'tsoa'
-import {
-  ExecuteReturnJson,
-  ExecuteReturnRaw,
-  ExecutionController,
-  ExecutionVars
-} from './internal'
+import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
+import { ExecutionController, ExecutionVars } from './internal'
 import {
   getPreProgramVariables,
   HTTPHeaders,
-  isDebugOn,
   LogLine,
   makeFilesNamesMap,
-  parseLogToArray,
   getRunTimeAndFilePath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 
-interface ExecuteReturnJsonPayload {
+interface ExecutePostRequestPayload {
   /**
    * Location of SAS program
    * @example "/Public/somefolder/some.file"
    */
   _program?: string
-}
-
-interface IRecordOfAny {
-  [key: string]: any
-}
-export interface ExecuteReturnJsonResponse {
-  status: string
-  _webout: string | IRecordOfAny
-  log: LogLine[]
-  message?: string
-  httpHeaders: HTTPHeaders
 }
 
 @Security('bearerAuth')
@@ -62,11 +34,12 @@ export class STPController {
    * @example _program "/Projects/myApp/some/program"
    */
   @Get('/execute')
-  public async executeReturnRaw(
+  public async executeGetRequest(
     @Request() request: express.Request,
     @Query() _program: string
   ): Promise<string | Buffer> {
-    return executeReturnRaw(request, _program)
+    const vars = request.query as ExecutionVars
+    return execute(request, _program, vars)
   }
 
   /**
@@ -87,101 +60,48 @@ export class STPController {
    * @param _program Location of SAS or JS code
    * @example _program "/Projects/myApp/some/program"
    */
-  @Example<ExecuteReturnJsonResponse>({
-    status: 'success',
-    _webout: 'webout content',
-    log: [],
-    httpHeaders: {
-      'Content-type': 'application/zip',
-      'Cache-Control': 'public, max-age=1000'
-    }
-  })
   @Post('/execute')
-  public async executeReturnJson(
+  public async executePostRequest(
     @Request() request: express.Request,
-    @Body() body?: ExecuteReturnJsonPayload,
+    @Body() body?: ExecutePostRequestPayload,
     @Query() _program?: string
-  ): Promise<ExecuteReturnJsonResponse> {
+  ): Promise<string | Buffer> {
     const program = _program ?? body?._program
-    return executeReturnJson(request, program!)
+    const vars = { ...request.query, ...request.body }
+    const filesNamesMap = request.files?.length
+      ? makeFilesNamesMap(request.files as MulterFile[])
+      : null
+    const otherArgs = { filesNamesMap: filesNamesMap }
+
+    return execute(request, program!, vars, otherArgs)
   }
 }
 
-const executeReturnRaw = async (
+const execute = async (
   req: express.Request,
-  _program: string
+  _program: string,
+  vars: ExecutionVars,
+  otherArgs?: any
 ): Promise<string | Buffer> => {
-  const query = req.query as ExecutionVars
-
   try {
     const { codePath, runTime } = await getRunTimeAndFilePath(_program)
 
-    const { result, httpHeaders } =
-      (await new ExecutionController().executeFile({
+    const { result, httpHeaders } = await new ExecutionController().executeFile(
+      {
         programPath: codePath,
+        runTime,
         preProgramVariables: getPreProgramVariables(req),
-        vars: query,
-        runTime
-      })) as ExecuteReturnRaw
-
-    // Should over-ride response header for debug
-    // on GET request to see entire log rendering on browser.
-    if (isDebugOn(query)) {
-      httpHeaders['content-type'] = 'text/plain'
-    }
-
-    req.res?.set(httpHeaders)
+        vars,
+        otherArgs,
+        session: req.sasjsSession
+      }
+    )
 
     if (result instanceof Buffer) {
       ;(req as any).sasHeaders = httpHeaders
     }
 
     return result
-  } catch (err: any) {
-    throw {
-      code: 400,
-      status: 'failure',
-      message: 'Job execution failed.',
-      error: typeof err === 'object' ? err.toString() : err
-    }
-  }
-}
-
-const executeReturnJson = async (
-  req: express.Request,
-  _program: string
-): Promise<ExecuteReturnJsonResponse> => {
-  const filesNamesMap = req.files?.length
-    ? makeFilesNamesMap(req.files as MulterFile[])
-    : null
-
-  try {
-    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
-
-    const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeFile({
-        programPath: codePath,
-        preProgramVariables: getPreProgramVariables(req),
-        vars: { ...req.query, ...req.body },
-        otherArgs: { filesNamesMap: filesNamesMap },
-        returnJson: true,
-        session: req.sasjsSession,
-        runTime
-      })) as ExecuteReturnJson
-
-    let weboutRes: string | IRecordOfAny = webout
-    if (httpHeaders['content-type']?.toLowerCase() === 'application/json') {
-      try {
-        weboutRes = JSON.parse(webout as string)
-      } catch (_) {}
-    }
-
-    return {
-      status: 'success',
-      _webout: weboutRes,
-      log: parseLogToArray(log),
-      httpHeaders
-    }
   } catch (err: any) {
     throw {
       code: 400,

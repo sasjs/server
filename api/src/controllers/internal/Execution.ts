@@ -20,12 +20,6 @@ export interface ExecuteReturnRaw {
   result: string | Buffer
 }
 
-export interface ExecuteReturnJson {
-  httpHeaders: HTTPHeaders
-  webout: string | Buffer
-  log?: string
-}
-
 interface ExecuteFileParams {
   programPath: string
   preProgramVariables: PreProgramVars
@@ -68,10 +62,9 @@ export class ExecutionController {
     preProgramVariables,
     vars,
     otherArgs,
-    returnJson,
     session: sessionByFileUpload,
     runTime
-  }: ExecuteProgramParams): Promise<ExecuteReturnRaw | ExecuteReturnJson> {
+  }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
     const session =
@@ -89,8 +82,6 @@ export class ExecutionController {
       tokenFile,
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
-    if (returnJson)
-      await createFile(headersPath, 'Content-type: application/json')
 
     await processProgram(
       program,
@@ -110,10 +101,7 @@ export class ExecutionController {
       ? await readFile(headersPath)
       : ''
     const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
-    const fileResponse: boolean =
-      httpHeaders.hasOwnProperty('content-type') &&
-      !returnJson && // not a POST Request
-      !isDebugOn(vars) // Debug is not enabled
+    const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
 
     const webout = (await fileExists(weboutPath))
       ? fileResponse
@@ -124,19 +112,11 @@ export class ExecutionController {
     // it should be deleted by scheduleSessionDestroy
     session.inUse = false
 
-    if (returnJson) {
-      return {
-        httpHeaders,
-        webout,
-        log: isDebugOn(vars) || session.crashed ? log : undefined
-      }
-    }
-
     return {
       httpHeaders,
       result:
         isDebugOn(vars) || session.crashed
-          ? `<html><body>${webout}<div style="text-align:left"><hr /><h2>SAS Log</h2><pre>${log}</pre></div></body></html>`
+          ? `${webout}\n${process.logsUUID}\n${log}`
           : webout
     }
   }
