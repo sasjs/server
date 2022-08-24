@@ -13,7 +13,7 @@ stpRouter.get('/execute', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.executeReturnRaw(req, query._program)
+    const response = await controller.executeGetRequest(req, query._program)
 
     if (response instanceof Buffer) {
       res.writeHead(200, (req as any).sasHeaders)
@@ -42,7 +42,7 @@ stpRouter.post(
     // if (errQ && errB) return res.status(400).send(errB.details[0].message)
 
     try {
-      const response = await controller.executeReturnJson(
+      const response = await controller.executePostRequest(
         req,
         req.body,
         req.query?._program as string

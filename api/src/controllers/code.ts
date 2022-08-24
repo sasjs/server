@@ -1,7 +1,6 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
-import { ExecuteReturnJson, ExecutionController } from './internal'
-import { ExecuteReturnJsonResponse } from '.'
+import { ExecutionController } from './internal'
 import {
   getPreProgramVariables,
   getUserAutoExec,
@@ -35,7 +34,7 @@ export class CodeController {
   public async executeCode(
     @Request() request: express.Request,
     @Body() body: ExecuteCodePayload
-  ): Promise<ExecuteReturnJsonResponse> {
+  ): Promise<string | Buffer> {
     return executeCode(request, body)
   }
 }
@@ -51,22 +50,15 @@ const executeCode = async (
       : await getUserAutoExec()
 
   try {
-    const { webout, log, httpHeaders } =
-      (await new ExecutionController().executeProgram({
-        program: code,
-        preProgramVariables: getPreProgramVariables(req),
-        vars: { ...req.query, _debug: 131 },
-        otherArgs: { userAutoExec },
-        returnJson: true,
-        runTime: runTime
-      })) as ExecuteReturnJson
+    const { result } = await new ExecutionController().executeProgram({
+      program: code,
+      preProgramVariables: getPreProgramVariables(req),
+      vars: { ...req.query, _debug: 131 },
+      otherArgs: { userAutoExec },
+      runTime: runTime
+    })
 
-    return {
-      status: 'success',
-      _webout: webout as string,
-      log: parseLogToArray(log),
-      httpHeaders
-    }
+    return result
   } catch (err: any) {
     throw {
       code: 400,

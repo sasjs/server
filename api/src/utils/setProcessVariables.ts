@@ -50,6 +50,8 @@ export const setProcessVariables = async () => {
   await createFolder(absLogsPath)
   process.logsLoc = getRealPath(absLogsPath)
 
+  process.logsUUID = 'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
+
   console.log('sasLoc: ', process.sasLoc)
   console.log('sasDrive: ', process.driveLoc)
   console.log('sasLogs: ', process.logsLoc)
