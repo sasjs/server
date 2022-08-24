@@ -1,3 +1,10 @@
+## [0.16.1](https://github.com/sasjs/server/compare/v0.16.0...v0.16.1) (2022-08-24)
+
+
+### Bug Fixes
+
+* update response of /SASjsApi/stp/execute and /SASjsApi/code/execute ([98ea2ac](https://github.com/sasjs/server/commit/98ea2ac9b98631605e39e5900e533727ea0e3d85))
+
 # [0.16.0](https://github.com/sasjs/server/compare/v0.15.3...v0.16.0) (2022-08-17)
 
 
