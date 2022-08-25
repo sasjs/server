@@ -23,7 +23,7 @@ const FilePathInputModal = ({
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
 
-    const specialChars = /[`!@#$%^&*()_+\-=[\]{};':"\\|,<>?~]/
+    const specialChars = /[`!@#$%^&*()+\-=[\]{};':"\\|,<>?~]/
     const fileExtension = /\.(exe|sh|htaccess)$/i
 
     if (specialChars.test(value)) {
