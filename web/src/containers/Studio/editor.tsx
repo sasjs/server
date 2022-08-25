@@ -4,7 +4,8 @@ import React, {
   useEffect,
   useRef,
   useState,
-  useContext
+  useContext,
+  useCallback
 } from 'react'
 import axios from 'axios'
 
@@ -139,6 +140,88 @@ const SASjsEditor = ({
     prevFileContent !== fileContent && !!selectedFilePath
   )
 
+  const saveFile = useCallback(
+    (filePath?: string) => {
+      setIsLoading(true)
+
+      if (filePath) {
+        filePath = filePath.startsWith('/') ? filePath : `/${filePath}`
+      }
+
+      const formData = new FormData()
+
+      const stringBlob = new Blob([fileContent], { type: 'text/plain' })
+      formData.append('file', stringBlob)
+      formData.append('filePath', filePath ?? selectedFilePath)
+
+      const axiosPromise = filePath
+        ? axios.post('/SASjsApi/drive/file', formData)
+        : axios.patch('/SASjsApi/drive/file', formData)
+
+      axiosPromise
+        .then(() => {
+          if (filePath && fileContent === prevFileContent) {
+            // when fileContent and prevFileContent is same,
+            // callback function in setPrevFileContent method is not called
+            // because behind the scene useEffect hook is being used
+            // for calling callback function, and it's only fired when the
+            // new value is not equal to old value.
+            // So, we'll have to explicitly update the selected file path
+
+            setSelectedFilePath(filePath, true)
+          } else {
+            setPrevFileContent(fileContent, () => {
+              if (filePath) {
+                setSelectedFilePath(filePath, true)
+              }
+            })
+          }
+          setSnackbarMessage('File saved!')
+          setSnackbarSeverity(AlertSeverityType.Success)
+          setOpenSnackbar(true)
+        })
+        .catch((err) => {
+          setModalTitle('Abort')
+          setModalPayload(
+            typeof err.response.data === 'object'
+              ? JSON.stringify(err.response.data)
+              : err.response.data
+          )
+          setOpenModal(true)
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    },
+    [
+      fileContent,
+      prevFileContent,
+      selectedFilePath,
+      setPrevFileContent,
+      setSelectedFilePath
+    ]
+  )
+
+  useEffect(() => {
+    editorRef.current.addAction({
+      // An unique identifier of the contributed action.
+      id: 'save-file',
+
+      // A label of the action that will be presented to the user.
+      label: 'Save',
+
+      // An optional array of keybindings for the action.
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+
+      // Method that will be executed when the action is triggered.
+      // @param editor The editor instance is passed in as a convenience
+      run: () => {
+        if (!selectedFilePath) return setOpenFilePathInputModal(true)
+        if (prevFileContent !== fileContent) return saveFile()
+      }
+    })
+  }, [fileContent, prevFileContent, selectedFilePath, saveFile])
+
   useEffect(() => {
     setRunTimes(Object.values(appContext.runTimes))
   }, [appContext.runTimes])
@@ -247,59 +330,6 @@ const SASjsEditor = ({
   const handleFilePathInput = (filePath: string) => {
     setOpenFilePathInputModal(false)
     saveFile(filePath)
-  }
-
-  const saveFile = (filePath?: string) => {
-    setIsLoading(true)
-
-    if (filePath) {
-      filePath = filePath.startsWith('/') ? filePath : `/${filePath}`
-    }
-
-    const formData = new FormData()
-
-    const stringBlob = new Blob([fileContent], { type: 'text/plain' })
-    formData.append('file', stringBlob, 'filename.sas')
-    formData.append('filePath', filePath ?? selectedFilePath)
-
-    const axiosPromise = filePath
-      ? axios.post('/SASjsApi/drive/file', formData)
-      : axios.patch('/SASjsApi/drive/file', formData)
-
-    axiosPromise
-      .then(() => {
-        if (filePath && fileContent === prevFileContent) {
-          // when fileContent and prevFileContent is same,
-          // callback function in setPrevFileContent method is not called
-          // because behind the scene useEffect hook is being used
-          // for calling callback function, and it's only fired when the
-          // new value is not equal to old value.
-          // So, we'll have to explicitly update the selected file path
-
-          setSelectedFilePath(filePath, true)
-        } else {
-          setPrevFileContent(fileContent, () => {
-            if (filePath) {
-              setSelectedFilePath(filePath, true)
-            }
-          })
-        }
-        setSnackbarMessage('File saved!')
-        setSnackbarSeverity(AlertSeverityType.Success)
-        setOpenSnackbar(true)
-      })
-      .catch((err) => {
-        setModalTitle('Abort')
-        setModalPayload(
-          typeof err.response.data === 'object'
-            ? JSON.stringify(err.response.data)
-            : err.response.data
-        )
-        setOpenModal(true)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
   }
 
   return (
