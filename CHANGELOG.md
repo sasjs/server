@@ -1,3 +1,15 @@
+# [0.17.0](https://github.com/sasjs/server/compare/v0.16.1...v0.17.0) (2022-08-25)
+
+
+### Bug Fixes
+
+* allow underscores in file name ([bce83cb](https://github.com/sasjs/server/commit/bce83cb6fbc98f8198564c9399821f5829acc767))
+
+
+### Features
+
+* add the functionality of saving file by ctrl + s in editor ([3a3c90d](https://github.com/sasjs/server/commit/3a3c90d9e690ac5267bf1acc834b5b5c5b4dadb6))
+
 ## [0.16.1](https://github.com/sasjs/server/compare/v0.16.0...v0.16.1) (2022-08-24)
 
 
