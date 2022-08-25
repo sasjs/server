@@ -2,9 +2,12 @@ import express from 'express'
 import { WebController } from '../../controllers/web'
 import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
 import { authorizeValidation, loginWebValidation } from '../../utils'
+import mockSas9Router from '../api/mock-sas9'
 
 const webRouter = express.Router()
 const controller = new WebController()
+
+const { MOCK_SERVERTYPE } = process.env
 
 webRouter.get('/', async (req, res) => {
   let response
@@ -23,17 +26,19 @@ webRouter.get('/', async (req, res) => {
   }
 })
 
-webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
-  const { error, value: body } = loginWebValidation(req.body)
-  if (error) return res.status(400).send(error.details[0].message)
-
-  try {
-    const response = await controller.login(req, body)
-    res.send(response)
-  } catch (err: any) {
-    res.status(403).send(err.toString())
-  }
-})
+if (MOCK_SERVERTYPE !== undefined) {
+  webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
+    const { error, value: body } = loginWebValidation(req.body)
+    if (error) return res.status(400).send(error.details[0].message)
+  
+    try {
+      const response = await controller.login(req, body)
+      res.send(response)
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
+  })
+}
 
 webRouter.post(
   '/SASLogon/authorize',
@@ -60,5 +65,9 @@ webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
     res.status(403).send(err.toString())
   }
 })
+
+webRouter.use('/', mockSas9Router)
+// disabled for now
+// webRouter.use('/', mockViyaRouter)
 
 export default webRouter

@@ -96,6 +96,9 @@ PROTOCOL=
 # default: 5000
 PORT=
 
+# options: [sas9|sasviya]
+# If not present, mocking function is disabled
+MOCK_SERVERTYPE=
 
 #
 ## Additional SAS Options

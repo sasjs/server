@@ -6,6 +6,7 @@ node_modules/
 sas/
 sasjs_root/
 tmp/
+api/mocks/*
 build/
 sasjsbuild/
 sasjscore/
