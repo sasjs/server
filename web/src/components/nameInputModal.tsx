@@ -44,7 +44,7 @@ const NameInputModal = ({
     const value = event.target.value
 
     const folderNameRegex = /[`!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/
-    const fileNameRegex = /[`!@#$%^&*()_+\-=[\]{};':"\\|,<>/?~]/
+    const fileNameRegex = /[`!@#$%^&*()+\-=[\]{};':"\\|,<>/?~]/
     const fileNameExtensionRegex = /.(exe|sh|htaccess)$/i
 
     const specialChars = isFolder ? folderNameRegex : fileNameRegex
