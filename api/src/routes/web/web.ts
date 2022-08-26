@@ -26,7 +26,10 @@ webRouter.get('/', async (req, res) => {
   }
 })
 
-if (MOCK_SERVERTYPE !== undefined) {
+/**
+ * If any type of mock is enabled, we won't use regular working logon endpoints
+ */
+if (MOCK_SERVERTYPE === undefined) {
   webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
     const { error, value: body } = loginWebValidation(req.body)
     if (error) return res.status(400).send(error.details[0].message)
@@ -57,14 +60,19 @@ webRouter.post(
   }
 )
 
-webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
-  try {
-    await controller.logout(req)
-    res.status(200).send('OK!')
-  } catch (err: any) {
-    res.status(403).send(err.toString())
-  }
-})
+/**
+ * If any type of mock is enabled, we won't use regular working logon endpoints
+ */
+if (MOCK_SERVERTYPE === undefined) {
+  webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
+    try {
+      await controller.logout(req)
+      res.status(200).send('OK!')
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
+  })
+}
 
 webRouter.use('/', mockSas9Router)
 // disabled for now

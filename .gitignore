@@ -5,8 +5,8 @@ node_modules/
 .env*
 sas/
 sasjs_root/
+api/mocks/
 tmp/
-api/mocks/*
 build/
 sasjsbuild/
 sasjscore/
