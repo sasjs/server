@@ -33,7 +33,7 @@ if (MOCK_SERVERTYPE === undefined) {
   webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
     const { error, value: body } = loginWebValidation(req.body)
     if (error) return res.status(400).send(error.details[0].message)
-  
+
     try {
       const response = await controller.login(req, body)
       res.send(response)
