@@ -1,208 +1,30 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" dir="ltr" class="bg">
 
-
-
 <head>
   <meta charset="UTF-8" />
-  <link rel="shortcut icon" href="themes/default/images/favicon.ico" />
-  <title>
-
-
-
-    SAS&reg; Logon Manager
-
-
-  </title>
-  <link type="text/css" rel="stylesheet" href="themes/default/css/sas.css" />
   <meta name="viewport" content="initial-scale=1" />
 </head>
 
 
 <div class="content">
-  <div id="nonModal" class="block" aria-hidden="false">
-    <div id="loginbox" class="loginbox">
+  <form id="credentials" class="minimal" action="/SASLogon/login?service=http%3A%2F%2Flocalhost:5004%2FSASStoredProcess%2Fj_spring_cas_security_check" method="post">
+    <!--form container-->
+    <input type="hidden" name="lt" value="LT-8-WGkt9EXwICBihaVbxGc92opjufTK1D" aria-hidden="true" />
+    <input type="hidden" name="execution" value="e2s1" aria-hidden="true" />
+    <input type="hidden" name="_eventId" value="submit" aria-hidden="true" />
 
-      <!--~~~~~~~~~~~~~~~~~~~~~MESSAGE CONTAINER~~~~~~~~~~~~~~~~~~~~~-->
+    <span class="userid">
 
-      <div class="message" style='display:none;' id="nocookie-message" aria-hidden="true">
-        <div class="errorIcon"></div>
-        <h2>This application requires that your browser accept cookies. Change your browser settings accordingly.</h2>
-      </div>
+      <input id="username" name="username" tabindex="3" aria-labelledby="username1 message1 message2 message3" name="username" placeholder="User ID" type="text" autofocus="true" value="" maxlength="500" autocomplete="off" />
+    </span>
+    <span class="password">
 
+      <input id="password" name="password" tabindex="4" name="password" placeholder="Password" type="password" value="" maxlength="500" autocomplete="off" />
+    </span>
 
-
-
-
-
-      <img src="themes/default/images/transparent.png" class="logo" alt="" />
-      <!--customizable logo-->
-
-
-      <header>
-        <img src="themes/default/images/saslogo.svg" class="logo" alt="SAS Logo" />
-      </header>
-
-      <!--~~~~~~~~~~~~~~~~~~~~~MAIN CONTAINER~~~~~~~~~~~~~~~~~~~~~-->
-
-      <form id="credentials" class="minimal" action="/SASLogon/login?service=http%3A%2F%2Fsas-aap.demo.sas.com%2FSASStoredProcess%2Fj_spring_cas_security_check" method="post">
-        <!--form container-->
-        <input type="hidden" name="lt" value="LT-8-WGkt9EXwICBihaVbxGc92opjufTK1D" aria-hidden="true" />
-        <input type="hidden" name="execution" value="e2s1" aria-hidden="true" />
-        <input type="hidden" name="_eventId" value="submit" aria-hidden="true" />
-
-        <span class="userid">
-
-          <input id="username" name="username" tabindex="3" aria-labelledby="username1 message1 message2 message3" name="username" placeholder="User ID" type="text" autofocus="true" value="" maxlength="500" autocomplete="off" />
-        </span>
-        <span class="password">
-
-          <input id="password" name="password" tabindex="4" name="password" placeholder="Password" type="password" value="" maxlength="500" autocomplete="off" />
-        </span>
-
-        <button type="submit" class="btn-submit" title="Sign In" tabindex="5" onClick="this.disabled=true;setSubmitUrl(this.form);this.form.submit();return false;">Sign In</button>
+    <button type="submit" class="btn-submit" title="Sign In" tabindex="5" onClick="this.disabled=true;setSubmitUrl(this.form);this.form.submit();return false;">Sign In</button>
 
 
-      </form>
-    </div>
-
-
-  </div>
+  </form>
 </div>
-
-
-<footer>
-
-
-  <div class="copyright">
-    <!--copyright statement-->
-    <span dir="ltr">&copy; 2002-2020, SAS Institute Inc., Cary, NC, USA. All Rights Reserved.</span>
-    <a href="#openModal" onClick="$('#openModal').show()" class="about" title="About">About</a>
-  </div>
-
-</footer>
-
-
-<!--~~~~~~~~~~~~~~~~~~~~~ABOUT DIALOG MODAL CONTENT~~~~~~~~~~~~~~~~~-->
-
-<div id="openModal" class="modalDialog" style="z-index: 9999;">
-  <!--modal container-->
-  <div>
-    <div class="test" dir="auto">
-      <div>&rlm;</div>
-      <div><a href="" onClick="$('#openModal').hide();" title="Done" class="done">Done</a></div>
-      <!--done button-->
-    </div>
-    <!-- about dialog content -->
-    <br />
-    <div dir="auto">
-      <p>Product name: SAS<sup>&reg;</sup> Logon Manager</p>
-      <p>Release: 9.4</p>
-      <h2>Legal Notices</h2>
-    </div>
-    <div dir="ltr">
-      <p>Copyright 2002-2020, SAS Institute Inc., Cary, NC, USA. All Rights Reserved.
-        This software is protected by copyright laws and international treaties.</p>
-      <h3>U.S. Government Restricted Rights</h3>
-      <p>Use, duplication or disclosure of this software and related documentation by the United States government is subject to the license terms of the Agreement with SAS Institute Inc. pursuant to, as applicable, FAR 12.212, DFAR 227.7202-1(a), DFAR 227.7202-3(a) and DFAR 227.7202-4 and, to the extent required under United States federal law, the minimum restricted rights as set out in FAR 52.227-19 (DEC 2007).</p>
-      <h3>Third-Party Software Usage</h3>
-      <h4>Central Authentication Service</h4>
-      <p>Copyright &copy; 2007, JA-SIG, Inc. All rights reserved.</p>
-      <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p>
-      <ul>
-        <li>
-          <p>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.</p>
-        </li>
-        <br />
-        <li>
-          <p>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.</p>
-        </li>
-        <br />
-        <li>
-          <p>Neither the name of the JA-SIG, Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.</p>
-        </li>
-      </ul>
-      <p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-        "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-        LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-        A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-        CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-        EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-        PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-        PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-        LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-        NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-        SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
-    </div>
-  </div>
-</div>
-
-<div class="radiance"></div>
-
-
-
-
-
-<script type="text/javascript" src="/SASLogon/js/jquery.js"></script>
-
-<script type="text/javascript">
-  $(document).on('keydown', function(e) {
-    if (e.keyCode === 27) {
-      $('#openModal').hide();
-      document.location.href = '';
-      return false;
-    }
-  });
-</script>
-
-
-<script type="text/javascript">
-  function setSubmitUrl(form) {
-    var urlHash = decodeURIComponent(window.location.hash);
-
-    if (urlHash && urlHash.indexOf("#") === -1)
-      urlHash = "#" + urlHash;
-
-    form.action = form.action + urlHash;
-    return true;
-  }
-
-  function are_cookies_enabled() {
-    var cookieEnabled = (navigator.cookieEnabled) ? true : false;
-
-    if (typeof navigator.cookieEnabled == "undefined") {
-      document.cookie = "testcookie";
-      cookieEnabled = (document.cookie.indexOf("testcookie") != -1) ? true : false;
-    }
-
-    if (!cookieEnabled) {
-      document.getElementById("nocookie-message").setAttribute("aria-hidden", "false");
-      var username = document.getElementById("username");
-      username.setAttribute("aria-labelledby", username.getAttribute("aria-labelledby") + " nocookie-message");
-      $('#nocookie-message').show();
-    }
-  }
-
-  $(document).ready(function() {
-    are_cookies_enabled();
-  });
-
-  function modality() {
-    switch (location.hash) {
-      case "#openModal":
-        $('#nonModal :input').attr('disabled', true);
-        document.getElementById("nonModal").setAttribute("aria-hidden", "true");
-        document.getElementById("openModal").setAttribute("aria-hidden", "false");
-        break;
-      default:
-        $('#nonModal :input').attr('disabled', false);
-        document.getElementById("nonModal").setAttribute("aria-hidden", "false");
-        document.getElementById("openModal").setAttribute("aria-hidden", "true");
-        break;
-    }
-  }
-  window.onhashchange = modality;
-  modality();
-</script>
-
-
 </html>
