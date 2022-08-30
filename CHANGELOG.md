@@ -1,3 +1,10 @@
+## [0.17.1](https://github.com/sasjs/server/compare/v0.17.0...v0.17.1) (2022-08-30)
+
+
+### Bug Fixes
+
+* typo mistake ([ee17d37](https://github.com/sasjs/server/commit/ee17d37aa188b0ca43cea0e89d6cd1a566b765cb))
+
 # [0.17.0](https://github.com/sasjs/server/compare/v0.16.1...v0.17.0) (2022-08-25)
 
 
