@@ -1,82 +1,41 @@
 import { readFile } from '@sasjs/utils'
 import express from 'express'
 import path from 'path'
+import { MockSas9Controller } from '../../controllers/mock-sas9'
 
 const mockSas9Router = express.Router()
 
 const { MOCK_SERVERTYPE } = process.env
 
-let loggedIn: boolean = false
+// Mock controller must be singleton because it keeps the states
+// for example `isLoggedIn` and potentially more in future mocks
+const mockSas9Controller = new MockSas9Controller()
 
 mockSas9Router.get('/SASStoredProcess', async (req, res) => {
-  if (!loggedIn) {
-    res.redirect('/SASLogon/login')
-    return
-  }
+  const response = await mockSas9Controller.sasStoredProcess()
 
-  const filePath = path.join(
-    process.cwd(),
-    'mocks',
-    'generic',
-    'sas9',
-    'sas-stored-process'
-  )
-
-  let file
-
-  try {
-    file = await readFile(filePath)
-  } catch (err: any) {
-    console.error(`Mocked file on path: ${filePath} is not found.`)
-    res.status(403).send(err.toString())
+  if (response.redirect) {
+    res.redirect(response.redirect)
     return
   }
 
   try {
-    res.send(file)
+    res.send(response.content)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }
 })
 
 mockSas9Router.post('/SASStoredProcess/do/', async (req, res) => {
-  let program = req.query._program?.toString() || ''
-  program = program.replace('/', '')
-  const filePath = path.join(process.cwd(), 'mocks', ...program.split('/'))
+  const response = await mockSas9Controller.sasStoredProcessDo(req)
 
-  let file
-
-  try {
-    file = await readFile(filePath)
-  } catch (err: any) {
-    let err = `Mocked file on path: ${filePath} is not found.`
-    console.error(err)
-    res.status(403).send(err)
+  if (response.redirect) {
+    res.redirect(response.redirect)
     return
   }
 
-  if (!file) {
-    let err = `Mocked file on path: ${filePath} is not found.`
-    console.error(err)
-    res.status(403).send(err)
-    return
-  }
-
-  if (!loggedIn) {
-    res.redirect('/SASLogon/login')
-    return
-  }
-
-  let fileContent = ''
-
   try {
-    fileContent = JSON.parse(file)
-  } catch (err: any) {
-    fileContent = file
-  }
-
-  try {
-    res.send(fileContent)
+    res.send(response.content)
   } catch (err: any) {
     res.status(403).send(err.toString())
   }
@@ -84,58 +43,30 @@ mockSas9Router.post('/SASStoredProcess/do/', async (req, res) => {
 
 if (MOCK_SERVERTYPE !== undefined) {
   mockSas9Router.get('/SASLogon/login', async (req, res) => {
-    const filePath = path.join(
-      process.cwd(),
-      'mocks',
-      'generic',
-      'sas9',
-      'login'
-    )
+    const response = await mockSas9Controller.loginGet()
 
     try {
-      const file = await readFile(filePath)
-
-      res.send(file)
+      res.send(response.content)
     } catch (err: any) {
       res.status(403).send(err.toString())
     }
   })
 
   mockSas9Router.post('/SASLogon/login', async (req, res) => {
-    loggedIn = true
-
-    const filePath = path.join(
-      process.cwd(),
-      'mocks',
-      'generic',
-      'sas9',
-      'logged-in'
-    )
+    const response = await mockSas9Controller.loginPost()
 
     try {
-      const file = await readFile(filePath)
-
-      res.send(file)
+      res.send(response.content)
     } catch (err: any) {
       res.status(403).send(err.toString())
     }
   })
 
   mockSas9Router.get('/SASLogon/logout', async (req, res) => {
-    loggedIn = false
-
-    const filePath = path.join(
-      process.cwd(),
-      'mocks',
-      'generic',
-      'sas9',
-      'logged-out'
-    )
+    const response = await mockSas9Controller.logout()
 
     try {
-      const file = await readFile(filePath)
-
-      res.send(file)
+      res.send(response.content)
     } catch (err: any) {
       res.status(403).send(err.toString())
     }
