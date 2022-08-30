@@ -16,7 +16,7 @@ export const getDesktopFields = async () => {
     nodeLoc = NODE_PATH ?? (await getNodeLocation())
   }
 
-  if (process.runTimes.includes(RunTimeType.JS)) {
+  if (process.runTimes.includes(RunTimeType.PY)) {
     pythonLoc = PYTHON_PATH ?? (await getPythonLocation())
   }
 
