@@ -1,3 +1,10 @@
+## [0.17.2](https://github.com/sasjs/server/compare/v0.17.1...v0.17.2) (2022-08-31)
+
+
+### Bug Fixes
+
+* addition of SASINITIALFOLDER startup option.  Closes [#260](https://github.com/sasjs/server/issues/260) ([a5ee2f2](https://github.com/sasjs/server/commit/a5ee2f292384f90e9d95d003d652311c0d91a7a7))
+
 ## [0.17.1](https://github.com/sasjs/server/compare/v0.17.0...v0.17.1) (2022-08-30)
 
 
