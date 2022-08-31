@@ -101,6 +101,8 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
+      '-SASINITIALFOLDER',
+      session.path,
       process.sasLoc!.endsWith('sas.exe') ? '-nosplash' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-icon' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-nodms' : '',
