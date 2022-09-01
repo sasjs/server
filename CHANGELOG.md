@@ -1,3 +1,10 @@
+## [0.17.4](https://github.com/sasjs/server/compare/v0.17.3...v0.17.4) (2022-09-01)
+
+
+### Bug Fixes
+
+* invalid JS logic ([9f06080](https://github.com/sasjs/server/commit/9f06080348aed076f8188a26fb4890d38a5a3510))
+
 ## [0.17.3](https://github.com/sasjs/server/compare/v0.17.2...v0.17.3) (2022-09-01)
 
 
