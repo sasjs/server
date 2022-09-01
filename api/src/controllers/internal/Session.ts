@@ -106,7 +106,9 @@ ${autoExecContent}`
       process.sasLoc!.endsWith('sas.exe') ? '-nodms' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-noterminal' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-nostatuswin' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-SASINITIALFOLDER' : session.path,
+      process.sasLoc!.endsWith('sas.exe')
+        ? '-SASINITIALFOLDER ' + session.path
+        : '',
       isWindows() ? '-nologo' : ''
     ])
       .then(() => {
