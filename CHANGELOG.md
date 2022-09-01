@@ -1,3 +1,10 @@
+## [0.17.3](https://github.com/sasjs/server/compare/v0.17.2...v0.17.3) (2022-09-01)
+
+
+### Bug Fixes
+
+* making SASINITIALFOLDER option windows only.  Closes [#267](https://github.com/sasjs/server/issues/267) ([e63271a](https://github.com/sasjs/server/commit/e63271a67a0deb3059a5f2bec1854efee5a6e5a5))
+
 ## [0.17.2](https://github.com/sasjs/server/compare/v0.17.1...v0.17.2) (2022-08-31)
 
 
