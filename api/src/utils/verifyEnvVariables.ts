@@ -1,6 +1,6 @@
 export enum MOCK_SERVERTYPEType {
-  SAS9 = 'SAS9',
-  SASVIYA = 'SASVIYA'
+  SAS9 = 'sas9',
+  SASVIYA = 'sasviya'
 }
 
 export enum ModeType {
