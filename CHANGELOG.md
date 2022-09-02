@@ -1,3 +1,10 @@
+## [0.17.5](https://github.com/sasjs/server/compare/v0.17.4...v0.17.5) (2022-09-02)
+
+
+### Bug Fixes
+
+* SASINITIALFOLDER split over 2 params, closes [#271](https://github.com/sasjs/server/issues/271) ([393b5ea](https://github.com/sasjs/server/commit/393b5eaf990049c39eecf2b9e8dd21a001b6e298))
+
 ## [0.17.4](https://github.com/sasjs/server/compare/v0.17.3...v0.17.4) (2022-09-01)
 
 
