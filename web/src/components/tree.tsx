@@ -63,7 +63,6 @@ const TreeViewNode = ({
   rename,
   defaultExpanded
 }: Props) => {
-  // const appContext = useContext(AppContext)
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false)
   const [deleteConfirmationModalMessage, setDeleteConfirmationModalMessage] =
@@ -78,11 +77,6 @@ const TreeViewNode = ({
     mouseX: number
     mouseY: number
   } | null>(null)
-
-  // const isFileLaunchable = (filename: string) => {
-  //   const availableRuntimes = Object.values(appContext.runTimes)
-
-  // }
 
   const launchProgram = () => {
     const baseUrl = window.location.origin
