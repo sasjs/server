@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/sasjs/server/compare/v0.17.5...v0.18.0) (2022-09-02)
+
+
+### Features
+
+* add option for program launch in context menu ([ee2db27](https://github.com/sasjs/server/commit/ee2db276bb0bbd522f758e0b66f7e7b2f4afd9d5))
+
 ## [0.17.5](https://github.com/sasjs/server/compare/v0.17.4...v0.17.5) (2022-09-02)
 
 
