@@ -78,6 +78,18 @@ const TreeViewNode = ({
     mouseY: number
   } | null>(null)
 
+  const launchProgram = () => {
+    const baseUrl = window.location.origin
+    window.open(`${baseUrl}/SASjsApi/stp/execute?_program=${node.relativePath}`)
+  }
+
+  const launchProgramWithDebug = () => {
+    const baseUrl = window.location.origin
+    window.open(
+      `${baseUrl}/SASjsApi/stp/execute?_program=${node.relativePath}&_debug=131`
+    )
+  }
+
   const handleContextMenu = (event: React.MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
@@ -224,8 +236,8 @@ const TreeViewNode = ({
             : undefined
         }
       >
-        {node.isFolder && (
-          <div>
+        {node.isFolder ? (
+          <>
             <MenuItem onClick={handleNewFolderItemClick}>Add Folder</MenuItem>
             <MenuItem
               disabled={!node.relativePath}
@@ -233,14 +245,21 @@ const TreeViewNode = ({
             >
               Add File
             </MenuItem>
-          </div>
+          </>
+        ) : (
+          <>
+            <MenuItem onClick={launchProgram}>Launch</MenuItem>
+            <MenuItem onClick={launchProgramWithDebug}>
+              Launch and Debug
+            </MenuItem>
+          </>
         )}
-        <MenuItem disabled={!node.relativePath} onClick={handleRenameItemClick}>
-          Rename
-        </MenuItem>
-        <MenuItem disabled={!node.relativePath} onClick={handleDeleteItemClick}>
-          Delete
-        </MenuItem>
+        {!!node.relativePath && (
+          <>
+            <MenuItem onClick={handleRenameItemClick}>Rename</MenuItem>
+            <MenuItem onClick={handleDeleteItemClick}>Delete</MenuItem>
+          </>
+        )}
       </Menu>
     </div>
   )
