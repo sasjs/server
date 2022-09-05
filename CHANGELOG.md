@@ -1,3 +1,10 @@
+# [0.19.0](https://github.com/sasjs/server/compare/v0.18.0...v0.19.0) (2022-09-05)
+
+
+### Features
+
+* added mocking endpoints ([0a0ba2c](https://github.com/sasjs/server/commit/0a0ba2cca5db867de46fb2486d856a84ec68d3b4))
+
 # [0.18.0](https://github.com/sasjs/server/compare/v0.17.5...v0.18.0) (2022-09-02)
 
 
