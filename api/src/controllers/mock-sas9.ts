@@ -26,24 +26,13 @@ export class MockSas9Controller {
       }
     }
 
-    const content = await getMockResponseFromFile([
+    return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
       'generic',
       'sas9',
       'sas-stored-process'
     ])
-
-    if (content.error) {
-      return {
-        content: content.content,
-        error: true
-      }
-    } else {
-      return {
-        content: content.content
-      }
-    }
   }
 
   @Post('/SASStoredProcess/do/')
@@ -67,10 +56,7 @@ export class MockSas9Controller {
     ])
 
     if (content.error) {
-      return {
-        content: content.content,
-        error: true
-      }
+      return content
     }
 
     const parsedContent = parseJsonIfValid(content.content)
@@ -82,72 +68,39 @@ export class MockSas9Controller {
 
   @Get('/SASLogon/login')
   public async loginGet(): Promise<Sas9Response> {
-    const content = await getMockResponseFromFile([
+    return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
       'generic',
       'sas9',
       'login'
     ])
-
-    if (content.error) {
-      return {
-        content: content.content,
-        error: true
-      }
-    } else {
-      return {
-        content: content.content
-      }
-    }
   }
 
   @Post('/SASLogon/login')
   public async loginPost(): Promise<Sas9Response> {
     this.loggedIn = true
 
-    const content = await getMockResponseFromFile([
+    return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
       'generic',
       'sas9',
       'logged-in'
     ])
-
-    if (content.error) {
-      return {
-        content: content.content,
-        error: true
-      }
-    } else {
-      return {
-        content: content.content
-      }
-    }
   }
 
   @Get('/SASLogon/logout')
   public async logout(): Promise<Sas9Response> {
     this.loggedIn = false
 
-    const content = await getMockResponseFromFile([
+    return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
       'generic',
       'sas9',
       'logged-out'
     ])
-
-    if (content.error) {
-      return {
-        content: content.content,
-        error: true
-      }
-    } else {
-      return {
-        content: content.content
-      }
-    }
   }
 }
 

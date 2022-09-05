@@ -8,8 +8,6 @@ const router = express.Router()
 
 const { MOCK_SERVERTYPE } = process.env
 
-console.log('MOCK_SERVERTYPE', MOCK_SERVERTYPE)
-
 switch (MOCK_SERVERTYPE) {
   case MOCK_SERVERTYPEType.SAS9: {
     router.use('/', sas9WebRouter)
