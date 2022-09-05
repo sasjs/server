@@ -5,6 +5,8 @@ node_modules/
 .env*
 sas/
 sasjs_root/
+api/mocks/custom/*
+!api/mocks/custom/.keep
 tmp/
 build/
 sasjsbuild/

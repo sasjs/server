@@ -1,3 +1,8 @@
+export enum MOCK_SERVERTYPEType {
+  SAS9 = 'sas9',
+  SASVIYA = 'sasviya'
+}
+
 export enum ModeType {
   Server = 'server',
   Desktop = 'desktop'
@@ -40,6 +45,8 @@ export enum ReturnCode {
 export const verifyEnvVariables = (): ReturnCode => {
   const errors: string[] = []
 
+  errors.push(...verifyMOCK_SERVERTYPE())
+
   errors.push(...verifyMODE())
 
   errors.push(...verifyPROTOCOL())
@@ -64,6 +71,23 @@ export const verifyEnvVariables = (): ReturnCode => {
   }
 
   return ReturnCode.Success
+}
+
+const verifyMOCK_SERVERTYPE = (): string[] => {
+  const errors: string[] = []
+  const { MOCK_SERVERTYPE } = process.env
+
+  if (MOCK_SERVERTYPE) {
+    const modeTypes = Object.values(MOCK_SERVERTYPEType)
+    if (!modeTypes.includes(MOCK_SERVERTYPE as MOCK_SERVERTYPEType))
+      errors.push(
+        `- MOCK_SERVERTYPE '${MOCK_SERVERTYPE}'\n - valid options ${modeTypes}`
+      )
+  } else {
+    process.env.MOCK_SERVERTYPE = undefined
+  }
+
+  return errors
 }
 
 const verifyMODE = (): string[] => {

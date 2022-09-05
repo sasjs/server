@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" dir="ltr" class="bg">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="initial-scale=1" />
+</head>
+
+
+<div class="content">
+  <form id="credentials" class="minimal" action="/SASLogon/login?service=http%3A%2F%2Flocalhost:5004%2FSASStoredProcess%2Fj_spring_cas_security_check" method="post">
+    <!--form container-->
+    <input type="hidden" name="lt" value="LT-8-WGkt9EXwICBihaVbxGc92opjufTK1D" aria-hidden="true" />
+    <input type="hidden" name="execution" value="e2s1" aria-hidden="true" />
+    <input type="hidden" name="_eventId" value="submit" aria-hidden="true" />
+
+    <span class="userid">
+
+      <input id="username" name="username" tabindex="3" aria-labelledby="username1 message1 message2 message3" name="username" placeholder="User ID" type="text" autofocus="true" value="" maxlength="500" autocomplete="off" />
+    </span>
+    <span class="password">
+
+      <input id="password" name="password" tabindex="4" name="password" placeholder="Password" type="password" value="" maxlength="500" autocomplete="off" />
+    </span>
+
+    <button type="submit" class="btn-submit" title="Sign In" tabindex="5" onClick="this.disabled=true;setSubmitUrl(this.form);this.form.submit();return false;">Sign In</button>
+
+
+  </form>
+</div>
+</html>
