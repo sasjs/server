@@ -69,11 +69,11 @@ MODE=
 # Possible options at the moment are sas and js
 
 # This string sets the priority of the available analytic runtimes
-# Valid runtimes are SAS (sas), JavaScript (js) and Python (py)
+# Valid runtimes are SAS (sas), JavaScript (js), Python (py) and R (r)
 # For each option provided, there should be a corresponding path,
-# eg SAS_PATH, NODE_PATH or PYTHON_PATH
+# eg SAS_PATH, NODE_PATH, PYTHON_PATH or RSCRIPT_PATH
 # Priority is given to runtimes earlier in the string
-# Example options:  [sas,js,py | js,py | sas | sas,js]
+# Example options:  [sas,js,py | js,py | sas | sas,js | r | sas,r]
 RUN_TIMES=
 
 # Path to SAS executable (sas.exe / sas.sh)
@@ -84,6 +84,9 @@ NODE_PATH=~/.nvm/versions/node/v16.14.0/bin/node
 
 # Path to Python executable
 PYTHON_PATH=/usr/bin/python
+
+# Path to Rscript
+RSCRIPT_PATH=/usr/bin/Rscript
 
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
