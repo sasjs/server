@@ -62,48 +62,6 @@ components:
                 - clientSecret
             type: object
             additionalProperties: false
-        IRecordOfAny:
-            properties: {}
-            type: object
-            additionalProperties: {}
-        LogLine:
-            properties:
-                line:
-                    type: string
-            required:
-                - line
-            type: object
-            additionalProperties: false
-        HTTPHeaders:
-            properties: {}
-            type: object
-            additionalProperties:
-                type: string
-        ExecuteReturnJsonResponse:
-            properties:
-                status:
-                    type: string
-                _webout:
-                    anyOf:
-                        -
-                            type: string
-                        -
-                            $ref: '#/components/schemas/IRecordOfAny'
-                log:
-                    items:
-                        $ref: '#/components/schemas/LogLine'
-                    type: array
-                message:
-                    type: string
-                httpHeaders:
-                    $ref: '#/components/schemas/HTTPHeaders'
-            required:
-                - status
-                - _webout
-                - log
-                - httpHeaders
-            type: object
-            additionalProperties: false
         RunTimeType:
             enum:
                 - sas
@@ -550,7 +508,7 @@ components:
                 - setting
             type: object
             additionalProperties: false
-        ExecuteReturnJsonPayload:
+        ExecutePostRequestPayload:
             properties:
                 _program:
                     type: string
@@ -698,7 +656,9 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
             description: 'Execute SAS code.'
             summary: 'Run SAS Code and returns log'
             tags:
@@ -1687,7 +1647,7 @@ paths:
             parameters: []
     /SASjsApi/stp/execute:
         get:
-            operationId: ExecuteReturnRaw
+            operationId: ExecuteGetRequest
             responses:
                 '200':
                     description: Ok
@@ -1714,17 +1674,16 @@ paths:
                         type: string
                     example: /Projects/myApp/some/program
         post:
-            operationId: ExecuteReturnJson
+            operationId: ExecutePostRequest
             responses:
                 '200':
                     description: Ok
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ExecuteReturnJsonResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: success, _webout: 'webout content', log: [], httpHeaders: {Content-type: application/zip, Cache-Control: 'public, max-age=1000'}}
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
             description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms\n\nThe response will be a JSON object with the following root attributes:\nlog, webout, headers.\n\nThe webout attribute will be nested JSON ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content."
             summary: 'Execute a Stored Program, return a JSON object'
             tags:
@@ -1746,7 +1705,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ExecuteReturnJsonPayload'
+                            $ref: '#/components/schemas/ExecutePostRequestPayload'
     /:
         get:
             operationId: Home

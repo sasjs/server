@@ -3,6 +3,7 @@ import express, { ErrorRequestHandler } from 'express'
 import csrf, { CookieOptions } from 'csurf'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import bodyParser from 'body-parser'
 
 import {
   copySASjsCore,
@@ -76,6 +77,15 @@ export default setProcessVariables().then(async () => {
 
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
+
+  // Body parser is used for decoding the formdata on POST request.
+  // Currently only place we use it is SAS9 Mock - POST /SASLogon/login
+  app.use(
+    bodyParser.urlencoded({
+      extended: true
+    })
+  )
+  app.use(bodyParser.json())
 
   await setupFolders()
   await copySASjsCore()
