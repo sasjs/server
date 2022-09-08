@@ -21,9 +21,8 @@ import {
 } from '../../../utils'
 import { createFile, generateTimestamp, deleteFolder } from '@sasjs/utils'
 import {
-  SASSessionController,
-  JSSessionController,
-  PythonSessionController
+  SessionController,
+  SASSessionController
 } from '../../../controllers/internal'
 import * as ProcessProgramModule from '../../../controllers/internal/processProgram'
 import { Session } from '../../../types'
@@ -472,11 +471,7 @@ const setupMocks = async () => {
     .mockImplementation(mockedGetSession)
 
   jest
-    .spyOn(JSSessionController.prototype, 'getSession')
-    .mockImplementation(mockedGetSession)
-
-  jest
-    .spyOn(PythonSessionController.prototype, 'getSession')
+    .spyOn(SASSessionController.prototype, 'getSession')
     .mockImplementation(mockedGetSession)
 
   jest

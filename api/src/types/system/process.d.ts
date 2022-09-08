@@ -7,10 +7,7 @@ declare namespace NodeJS {
     driveLoc: string
     logsLoc: string
     logsUUID: string
-    sasSessionController?: import('../../controllers/internal').SASSessionController
-    jsSessionController?: import('../../controllers/internal').JSSessionController
-    pythonSessionController?: import('../../controllers/internal').PythonSessionController
-    rSessionController?: import('../../controllers/internal').RSessionController
+    sessionController?: import('../../controllers/internal').SessionController
     appStreamConfig: import('../').AppStreamConfig
     logger: import('@sasjs/utils/logger').Logger
     runTimes: import('../../utils').RunTimeType[]
