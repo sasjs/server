@@ -9,6 +9,7 @@ import Permission from './permission'
 import Profile from './profile'
 
 import { AppContext, ModeType } from '../../context/appContext'
+import PermissionsContextProvider from '../../context/permissionsContext'
 
 const StyledTab = styled(Tab)({
   background: 'black',
@@ -64,7 +65,9 @@ const Settings = () => {
           <Profile />
         </StyledTabpanel>
         <StyledTabpanel value="permission">
-          <Permission />
+          <PermissionsContextProvider>
+            <Permission />
+          </PermissionsContextProvider>
         </StyledTabpanel>
       </TabContext>
     </Box>

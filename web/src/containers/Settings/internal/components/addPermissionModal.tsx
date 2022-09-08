@@ -3,31 +3,21 @@ import axios from 'axios'
 import {
   Button,
   Grid,
-  Dialog,
   DialogContent,
   DialogActions,
   TextField,
   CircularProgress,
   Autocomplete
 } from '@mui/material'
-import { styled } from '@mui/material/styles'
 
-import { BootstrapDialogTitle } from '../../components/dialogTitle'
+import { BootstrapDialog } from '../../../../components/modal'
+import { BootstrapDialogTitle } from '../../../../components/dialogTitle'
 
 import {
   UserResponse,
   GroupResponse,
   RegisterPermissionPayload
-} from '../../utils/types'
-
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-  '& .MuiDialogContent-root': {
-    padding: theme.spacing(2)
-  },
-  '& .MuiDialogActions-root': {
-    padding: theme.spacing(1)
-  }
-}))
+} from '../../../../utils/types'
 
 type AddPermissionModalProps = {
   open: boolean
