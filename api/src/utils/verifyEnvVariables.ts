@@ -254,7 +254,7 @@ const verifyRUN_TIMES = (): string[] => {
 
 const verifyExecutablePaths = () => {
   const errors: string[] = []
-  const { RUN_TIMES, SAS_PATH, NODE_PATH, PYTHON_PATH, RSCRIPT_PATH, MODE } =
+  const { RUN_TIMES, SAS_PATH, NODE_PATH, PYTHON_PATH, R_PATH, MODE } =
     process.env
 
   if (MODE === ModeType.Server) {
@@ -272,8 +272,8 @@ const verifyExecutablePaths = () => {
       errors.push(`- PYTHON_PATH is required for ${RunTimeType.PY} run time`)
     }
 
-    if (runTimes?.includes(RunTimeType.R) && !RSCRIPT_PATH) {
-      errors.push(`- RSCRIPT_PATH is required for ${RunTimeType.R} run time`)
+    if (runTimes?.includes(RunTimeType.R) && !R_PATH) {
+      errors.push(`- R_PATH is required for ${RunTimeType.R} run time`)
     }
   }
 

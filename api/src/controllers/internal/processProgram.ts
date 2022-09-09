@@ -97,7 +97,7 @@ export const processProgram = async (
           otherArgs
         )
         codePath = path.join(session.path, 'code.r')
-        executablePath = process.rscriptLoc!
+        executablePath = process.rLoc!
 
         break
       default:

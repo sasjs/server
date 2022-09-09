@@ -3,7 +3,7 @@ declare namespace NodeJS {
     sasLoc?: string
     nodeLoc?: string
     pythonLoc?: string
-    rscriptLoc?: string
+    rLoc?: string
     driveLoc: string
     logsLoc: string
     logsUUID: string
