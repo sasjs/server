@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/sasjs/server/compare/v0.19.0...v0.20.0) (2022-09-16)
+
+
+### Features
+
+* add support for R stored programs ([d6651bb](https://github.com/sasjs/server/commit/d6651bbdbeee5067f53c36e69a0eefa973c523b6))
+
 # [0.19.0](https://github.com/sasjs/server/compare/v0.18.0...v0.19.0) (2022-09-05)
 
 
