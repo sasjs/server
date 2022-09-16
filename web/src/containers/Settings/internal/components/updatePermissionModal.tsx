@@ -2,26 +2,17 @@ import React, { useState, Dispatch, SetStateAction, useEffect } from 'react'
 import {
   Button,
   Grid,
-  Dialog,
   DialogContent,
   DialogActions,
   TextField
 } from '@mui/material'
-import { styled } from '@mui/material/styles'
+
 import Autocomplete from '@mui/material/Autocomplete'
 
-import { BootstrapDialogTitle } from '../../components/dialogTitle'
+import { BootstrapDialog } from '../../../../components/modal'
+import { BootstrapDialogTitle } from '../../../../components/dialogTitle'
 
-import { PermissionResponse } from '../../utils/types'
-
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-  '& .MuiDialogContent-root': {
-    padding: theme.spacing(2)
-  },
-  '& .MuiDialogActions-root': {
-    padding: theme.spacing(1)
-  }
-}))
+import { PermissionResponse } from '../../../../utils/types'
 
 type UpdatePermissionModalProps = {
   open: boolean

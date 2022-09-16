@@ -9,7 +9,8 @@ import {
   ExecutionVars,
   createSASProgram,
   createJSProgram,
-  createPythonProgram
+  createPythonProgram,
+  createRProgram
 } from './'
 
 export const processProgram = async (
@@ -24,81 +25,7 @@ export const processProgram = async (
   logPath: string,
   otherArgs?: any
 ) => {
-  if (runTime === RunTimeType.JS) {
-    program = await createJSProgram(
-      program,
-      preProgramVariables,
-      vars,
-      session,
-      weboutPath,
-      headersPath,
-      tokenFile,
-      otherArgs
-    )
-
-    const codePath = path.join(session.path, 'code.js')
-
-    try {
-      await createFile(codePath, program)
-
-      // create a stream that will write to console outputs to log file
-      const writeStream = fs.createWriteStream(logPath)
-
-      // waiting for the open event so that we can have underlying file descriptor
-      await once(writeStream, 'open')
-
-      execFileSync(process.nodeLoc!, [codePath], {
-        stdio: ['ignore', writeStream, writeStream]
-      })
-
-      // copy the code.js program to log and end write stream
-      writeStream.end(program)
-
-      session.completed = true
-      console.log('session completed', session)
-    } catch (err: any) {
-      session.completed = true
-      session.crashed = err.toString()
-      console.log('session crashed', session.id, session.crashed)
-    }
-  } else if (runTime === RunTimeType.PY) {
-    program = await createPythonProgram(
-      program,
-      preProgramVariables,
-      vars,
-      session,
-      weboutPath,
-      headersPath,
-      tokenFile,
-      otherArgs
-    )
-
-    const codePath = path.join(session.path, 'code.py')
-
-    try {
-      await createFile(codePath, program)
-
-      // create a stream that will write to console outputs to log file
-      const writeStream = fs.createWriteStream(logPath)
-
-      // waiting for the open event so that we can have underlying file descriptor
-      await once(writeStream, 'open')
-
-      execFileSync(process.pythonLoc!, [codePath], {
-        stdio: ['ignore', writeStream, writeStream]
-      })
-
-      // copy the code.py program to log and end write stream
-      writeStream.end(program)
-
-      session.completed = true
-      console.log('session completed', session)
-    } catch (err: any) {
-      session.completed = true
-      session.crashed = err.toString()
-      console.log('session crashed', session.id, session.crashed)
-    }
-  } else {
+  if (runTime === RunTimeType.SAS) {
     program = await createSASProgram(
       program,
       preProgramVariables,
@@ -123,6 +50,82 @@ export const processProgram = async (
     // we now need to poll the session status
     while (!session.completed) {
       await delay(50)
+    }
+  } else {
+    let codePath: string
+    let executablePath: string
+    switch (runTime) {
+      case RunTimeType.JS:
+        program = await createJSProgram(
+          program,
+          preProgramVariables,
+          vars,
+          session,
+          weboutPath,
+          headersPath,
+          tokenFile,
+          otherArgs
+        )
+        codePath = path.join(session.path, 'code.js')
+        executablePath = process.nodeLoc!
+
+        break
+      case RunTimeType.PY:
+        program = await createPythonProgram(
+          program,
+          preProgramVariables,
+          vars,
+          session,
+          weboutPath,
+          headersPath,
+          tokenFile,
+          otherArgs
+        )
+        codePath = path.join(session.path, 'code.py')
+        executablePath = process.pythonLoc!
+
+        break
+      case RunTimeType.R:
+        program = await createRProgram(
+          program,
+          preProgramVariables,
+          vars,
+          session,
+          weboutPath,
+          headersPath,
+          tokenFile,
+          otherArgs
+        )
+        codePath = path.join(session.path, 'code.r')
+        executablePath = process.rLoc!
+
+        break
+      default:
+        throw new Error('Invalid runtime!')
+    }
+
+    try {
+      await createFile(codePath, program)
+
+      // create a stream that will write to console outputs to log file
+      const writeStream = fs.createWriteStream(logPath)
+
+      // waiting for the open event so that we can have underlying file descriptor
+      await once(writeStream, 'open')
+
+      execFileSync(executablePath, [codePath], {
+        stdio: ['ignore', writeStream, writeStream]
+      })
+
+      // copy the code file to log and end write stream
+      writeStream.end(program)
+
+      session.completed = true
+      console.log('session completed', session)
+    } catch (err: any) {
+      session.completed = true
+      session.crashed = err.toString()
+      console.log('session crashed', session.id, session.crashed)
     }
   }
 }

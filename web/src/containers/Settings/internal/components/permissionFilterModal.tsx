@@ -10,9 +10,9 @@ import {
 import { styled } from '@mui/material/styles'
 import Autocomplete from '@mui/material/Autocomplete'
 
-import { PermissionResponse } from '../../utils/types'
-import { BootstrapDialogTitle } from '../../components/dialogTitle'
-import { PrincipalType } from './permission'
+import { PermissionResponse } from '../../../../utils/types'
+import { BootstrapDialogTitle } from '../../../../components/dialogTitle'
+import { PrincipalType } from '../hooks/usePermission'
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {

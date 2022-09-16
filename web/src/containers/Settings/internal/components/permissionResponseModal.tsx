@@ -2,9 +2,9 @@ import React from 'react'
 
 import { Typography, DialogContent } from '@mui/material'
 
-import { BootstrapDialog } from '../../components/modal'
-import { BootstrapDialogTitle } from '../../components/dialogTitle'
-import { PermissionResponse } from '../../utils/types'
+import { BootstrapDialog } from '../../../../components/modal'
+import { BootstrapDialogTitle } from '../../../../components/dialogTitle'
+import { PermissionResponse } from '../../../../utils/types'
 
 export interface PermissionResponsePayload {
   permissionType: string

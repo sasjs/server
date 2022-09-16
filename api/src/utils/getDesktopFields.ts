@@ -4,9 +4,9 @@ import { createFolder, fileExists, folderExists, isWindows } from '@sasjs/utils'
 import { RunTimeType } from './verifyEnvVariables'
 
 export const getDesktopFields = async () => {
-  const { SAS_PATH, NODE_PATH, PYTHON_PATH } = process.env
+  const { SAS_PATH, NODE_PATH, PYTHON_PATH, R_PATH } = process.env
 
-  let sasLoc, nodeLoc, pythonLoc
+  let sasLoc, nodeLoc, pythonLoc, rLoc
 
   if (process.runTimes.includes(RunTimeType.SAS)) {
     sasLoc = SAS_PATH ?? (await getSASLocation())
@@ -20,7 +20,11 @@ export const getDesktopFields = async () => {
     pythonLoc = PYTHON_PATH ?? (await getPythonLocation())
   }
 
-  return { sasLoc, nodeLoc, pythonLoc }
+  if (process.runTimes.includes(RunTimeType.R)) {
+    rLoc = R_PATH ?? (await getRLocation())
+  }
+
+  return { sasLoc, nodeLoc, pythonLoc, rLoc }
 }
 
 const getDriveLocation = async (): Promise<string> => {
@@ -111,6 +115,28 @@ const getPythonLocation = async (): Promise<string> => {
 
   const targetName = await getString(
     'Please enter full path to a Python executable: ',
+    validator,
+    defaultLocation
+  )
+
+  return targetName
+}
+
+const getRLocation = async (): Promise<string> => {
+  const validator = async (filePath: string) => {
+    if (!filePath) return 'Path to R executable is required.'
+
+    if (!(await fileExists(filePath))) {
+      return 'No file found at provided path.'
+    }
+
+    return true
+  }
+
+  const defaultLocation = isWindows() ? 'C:\\Rscript' : '/usr/bin/Rscript'
+
+  const targetName = await getString(
+    'Please enter full path to a R executable: ',
     validator,
     defaultLocation
   )

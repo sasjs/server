@@ -16,7 +16,9 @@ export enum ModeType {
 
 export enum RunTimeType {
   SAS = 'sas',
-  JS = 'js'
+  JS = 'js',
+  PY = 'py',
+  R = 'r'
 }
 
 interface AppContextProps {

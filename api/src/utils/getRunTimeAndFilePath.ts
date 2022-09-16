@@ -5,7 +5,7 @@ import { RunTimeType } from '.'
 
 export const getRunTimeAndFilePath = async (programPath: string) => {
   const ext = path.extname(programPath)
-  // If programPath (_program) is provided with a ".sas", ".js" or ".py" extension
+  // If programPath (_program) is provided with a ".sas", ".js", ".py" or ".r" extension
   // we should use that extension to determine the appropriate runTime
   if (ext && Object.values(RunTimeType).includes(ext.slice(1) as RunTimeType)) {
     const runTime = ext.slice(1)
