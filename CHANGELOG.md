@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/sasjs/server/compare/v0.20.0...v0.21.0) (2022-09-19)
+
+
+### Features
+
+* sas9 mocker improved - public access denied scenario ([06d3b17](https://github.com/sasjs/server/commit/06d3b1715432ea245ee755ae1dfd0579d3eb30e9))
+
 # [0.20.0](https://github.com/sasjs/server/compare/v0.19.0...v0.20.0) (2022-09-16)
 
 
