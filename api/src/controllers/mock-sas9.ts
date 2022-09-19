@@ -18,7 +18,14 @@ export class MockSas9Controller {
   private loggedIn: boolean = false
 
   @Get('/SASStoredProcess')
-  public async sasStoredProcess(): Promise<Sas9Response> {
+  public async sasStoredProcess(
+    @Request() req: express.Request
+  ): Promise<Sas9Response> {
+    let username = req.query._username?.toString() || undefined
+    let password = req.query._password?.toString() || undefined
+    
+    if (username && password) this.loggedIn = true
+    
     if (!this.loggedIn) {
       return {
         content: '',
@@ -26,17 +33,64 @@ export class MockSas9Controller {
       }
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
+    let program = req.query._program?.toString() || undefined
+    let filePath: string[] = [
       'generic',
       'sas9',
       'sas-stored-process'
+    ]
+
+    if (program) {
+      filePath = program.replace('/', '').split('/')
+    }
+
+    console.log('filePath', filePath)
+
+    return await getMockResponseFromFile([
+      process.cwd(),
+      'mocks',
+      ...filePath
+    ])
+  }
+
+  @Get('/SASStoredProcess/do')
+  public async sasStoredProcessDoGet(
+    @Request() req: express.Request
+  ): Promise<Sas9Response> {
+    let username = req.query._username?.toString() || undefined
+    let password = req.query._password?.toString() || undefined
+    
+    if (username && password) this.loggedIn = true
+    
+    if (!this.loggedIn) {
+      return {
+        content: '',
+        redirect: '/SASLogon/login'
+      }
+    }
+
+    let program = req.query._program?.toString() || undefined
+    let filePath: string[] = [
+      'generic',
+      'sas9',
+      'sas-stored-process'
+    ]
+
+    if (program) {
+      filePath = `${program}-login`.replace('/', '').split('/')
+    }
+
+    console.log('filePath', filePath)
+
+    return await getMockResponseFromFile([
+      process.cwd(),
+      'mocks',
+      ...filePath
     ])
   }
 
   @Post('/SASStoredProcess/do/')
-  public async sasStoredProcessDo(
+  public async sasStoredProcessDoPost(
     @Request() req: express.Request
   ): Promise<Sas9Response> {
     if (!this.loggedIn) {

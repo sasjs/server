@@ -26,7 +26,22 @@ sas9WebRouter.get('/', async (req, res) => {
 })
 
 sas9WebRouter.get('/SASStoredProcess', async (req, res) => {
-  const response = await controller.sasStoredProcess()
+  const response = await controller.sasStoredProcess(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
+  try {
+    res.send(response.content)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
+sas9WebRouter.get('/SASStoredProcess/do/', async (req, res) => {
+  const response = await controller.sasStoredProcessDoGet(req)
 
   if (response.redirect) {
     res.redirect(response.redirect)
@@ -41,7 +56,7 @@ sas9WebRouter.get('/SASStoredProcess', async (req, res) => {
 })
 
 sas9WebRouter.post('/SASStoredProcess/do/', async (req, res) => {
-  const response = await controller.sasStoredProcessDo(req)
+  const response = await controller.sasStoredProcessDoPost(req)
 
   if (response.redirect) {
     res.redirect(response.redirect)

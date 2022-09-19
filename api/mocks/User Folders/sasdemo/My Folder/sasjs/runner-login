@@ -1,0 +1,635 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- Copyright(C) 2002-2011, SAS Institute Inc., Cary, NC, USA. All Rights Reserved -->
+<html><head>
+<title>Stored Process Error</title>
+<link type="text/css" href="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/styles/sasComponents_FF_5.css" rel="stylesheet" />
+<link type="text/css" href="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/styles/sasStyle.css" rel="stylesheet" />
+<link type="text/css" href="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/styles/custom.css" rel="stylesheet" />
+
+<style type="text/css">
+BODY { background-image:      url(http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/LogonArtTile.gif);
+       background-repeat:     repeat-y;
+       background-attachment: scroll;
+       background-position:   left top;
+       margin-top:            15px;
+       margin-left:           168px;
+}
+.coloredbar { position: absolute;
+              top:      70px;
+              left:     70px;
+}
+</style>
+</head>
+<body>
+<img class="coloredbar" src="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/SASColoredBarsTransparent.gif" alt="" title="" />
+<div class="solutionsErrorTitle">
+<img src="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/MessageError24.gif" border="0" height="24" width="24" alt="Error" title="Error" align="absmiddle" />
+Stored Process Error
+</div>
+<div class="solutionsSmallItem">
+<img src="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/spacer.gif" height="10" alt="" title="" /><br />
+<h3>The SAS program did not produce any output.</h3>
+</div>
+<script type="text/javascript">/*<![CDATA[*/
+function SAS_toggleLog() {
+  var button, content, SASLogDisplay;
+  button        = document.getElementById("SASLogbutton");
+  content       = document.getElementById("SASLog");
+  SASLogDisplay = content.style.display;
+  if (SASLogDisplay == "none") {
+    content.style.display = "inline";
+    button.value="Hide SAS Log";
+  }
+  else {
+    content.style.display = "none";
+    button.value="Show SAS Log";
+  }
+}
+/*]]>*/</script>
+<form>
+  <input id="SASLogbutton" class="button" type="button" onclick="SAS_toggleLog();" value="Show SAS Log" />
+</form>
+<div id="SASLog" style="display:none; text-align:left;">
+<h2>SAS Log</h2>
+<pre>1                                                                                                                        The SAS System                                                                                         10:57 Friday, September 16, 2022
+
+<font color=blue>NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M7) 
+      Licensed to VAVS7.5 Prod - EBIDIEGAnalytics - 21w47 18 Nov 21, Site 70068130.
+NOTE: This session is executing on the X64_DSRV16  platform.
+</font>
+
+
+<font color=blue>NOTE: Analytical products:
+      
+      SAS/STAT 15.2
+      SAS/ETS 15.2
+      SAS/OR 15.2
+      SAS/IML 15.2
+      SAS/QC 15.2
+
+NOTE: Additional host information:
+
+ X64_DSRV16 WIN 10.0.14393  Server
+
+NOTE: SAS Initialization used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer\autoexec.sas, was executed at server initialization.
+</font>
+&gt;&gt;&gt; SAS Macro Variables:
+
+ _APSLIST=_srvport,_reqencoding,_userlocale,_htcook,_rmthost,_rmtaddr,_grafloc,_reqmeth,_password,_srvname,_program,_username,_htua,_url,_version,_result,_metaperson,_metauser,_metafolder,_client
+     ,_SECUREUSERNAME
+ _CLIENT=StoredProcessService 9.4; JVM 1.8.0_252; Windows Server 2016 (amd64) 10.0
+ _GRAFLOC=/sasweb/graph
+ _HTCOOK=
+ _HTUA=axios/0.26.0
+ _METAFOLDER=/User Folders/sasdemo/My Folder/sasjs/
+ _METAPERSON=sasdemo
+ _METAUSER=sasdemo@SAS-AAP
+ _PASSWORD=XXXXXX
+ _PROGRAM=/User Folders/sasdemo/My Folder/sasjs/runner
+ _REPLAY="&amp;_URL?_sessionid=5A1B81EB-2300-4879-98FA-093E8836FCB6&amp;_program=replay&amp;_entry=&amp;_TMPCAT.."
+ _REQENCODING=UTF-8
+ _REQMETH=GET
+ _RESULT=STREAM
+ _RMTADDR=10.96.11.230
+ _RMTHOST=10.96.11.230
+ _SECUREUSERNAME=sasdemo
+ _SRVNAME=sas-aap.demo.sas.com
+ _SRVPORT=80
+ _TMPCAT=APSWORK.TCAT0041
+ _URL=/SASStoredProcess/do
+ _USERLOCALE=en_US
+ _USERNAME=sasdemo
+ _VERSION=Version 9.4 (Build 526)
+
+2          /* Created on  09SEP2022:07:26:17 by sasdemo */
+3          %macro mp_jsonout(action,ds,jref=_webout,dslabel=,fmt=Y
+4          ,engine=DATASTEP
+5          ,missing=NULL
+6          ,showmeta=N
+7          ,maxobs=MAX
+8          )/*/STORE SOURCE*/;
+9          %local tempds colinfo fmtds i numcols numobs stmt_obs lastobs optval
+10         tmpds1 tmpds2 tmpds3 tmpds4;
+11         %let numcols=0;
+12         %if &amp;maxobs ne MAX %then %let stmt_obs=%str(if _n_&gt;&amp;maxobs then stop;);
+13         %if &amp;action=OPEN %then %do;
+14         options nobomfile;
+15         data _null_;file &amp;jref encoding='utf-8' lrecl=200;
+16         put '{"PROCESSED_DTTM" : "' "%sysfunc(datetime(),E8601DT26.6)" '"';
+17         run;
+18         %end;
+19         %else %if (&amp;action=ARR or &amp;action=OBJ) %then %do;
+20         /* force variable names to always be uppercase in the JSON */
+                                                                                          The SAS System
+
+21         options validvarname=upcase;
+22         /* To avoid issues with _webout on EBI - such as encoding diffs and truncation
+23         (https://support.sas.com/kb/49/325.html) we use temporary files */
+24         filename _sjs1 temp lrecl=200 ;
+25         data _null_; file _sjs1 encoding='utf-8';
+26         put ", ""%lowcase(%sysfunc(coalescec(&amp;dslabel,&amp;ds)))"":";
+27         run;
+28         /* now write to _webout 1 char at a time */
+29         data _null_;
+30         infile _sjs1 lrecl=1 recfm=n;
+31         file &amp;jref mod lrecl=1 recfm=n;
+32         input sourcechar $char1. @@;
+33         format sourcechar hex2.;
+34         put sourcechar char1. @@;
+35         run;
+36         filename _sjs1 clear;
+37         /* grab col defs */
+38         proc contents noprint data=&amp;ds
+39         out=_data_(keep=name type length format formatl formatd varnum label);
+40         run;
+41         %let colinfo=%scan(&amp;syslast,2,.);
+42         proc sort data=&amp;colinfo;
+43         by varnum;
+44         run;
+45         /* move meta to mac vars */
+46         data &amp;colinfo;
+47         if _n_=1 then call symputx('numcols',nobs,'l');
+48         set &amp;colinfo end=last nobs=nobs;
+49         name=upcase(name);
+50         /* fix formats */
+51         if type=2 or type=6 then do;
+52         typelong='char';
+53         length fmt $49.;
+54         if format='' then fmt=cats('$',length,'.');
+55         else if formatl=0 then fmt=cats(format,'.');
+56         else fmt=cats(format,formatl,'.');
+57         end;
+58         else do;
+                                                                                          The SAS System
+
+59         typelong='num';
+60         if format='' then fmt='best.';
+61         else if formatl=0 then fmt=cats(format,'.');
+62         else if formatd=0 then fmt=cats(format,formatl,'.');
+63         else fmt=cats(format,formatl,'.',formatd);
+64         end;
+65         /* 32 char unique name */
+66         newname='sasjs'!!substr(cats(put(md5(name),$hex32.)),1,27);
+67         call symputx(cats('name',_n_),name,'l');
+68         call symputx(cats('newname',_n_),newname,'l');
+69         call symputx(cats('length',_n_),length,'l');
+70         call symputx(cats('fmt',_n_),fmt,'l');
+71         call symputx(cats('type',_n_),type,'l');
+72         call symputx(cats('typelong',_n_),typelong,'l');
+73         call symputx(cats('label',_n_),coalescec(label,name),'l');
+74         /* overwritten when fmt=Y and a custom format exists in catalog */
+75         if typelong='num' then call symputx(cats('fmtlen',_n_),200,'l');
+76         else call symputx(cats('fmtlen',_n_),min(32767,ceil((length+10)*1.5)),'l');
+77         run;
+78         %let tempds=%substr(_%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+79         proc sql;
+80         select count(*) into: lastobs from &amp;ds;
+81         %if &amp;maxobs ne MAX %then %let lastobs=%sysfunc(min(&amp;lastobs,&amp;maxobs));
+82         %if &amp;engine=PROCJSON %then %do;
+83         %if &amp;missing=STRING %then %do;
+84         %put &amp;sysmacroname: Special Missings not supported in proc json.;
+85         %put &amp;sysmacroname: Switching to DATASTEP engine;
+86         %goto datastep;
+87         %end;
+88         data &amp;tempds;
+89         set &amp;ds;
+90         &amp;stmt_obs;
+91         %if &amp;fmt=N %then format _numeric_ best32.;;
+92         /* PRETTY is necessary to avoid line truncation in large files */
+93         filename _sjs2 temp lrecl=131068 encoding='utf-8';
+94         proc json out=_sjs2 pretty
+95         %if &amp;action=ARR %then nokeys ;
+96         ;export &amp;tempds / nosastags fmtnumeric;
+                                                                                          The SAS System
+
+97         run;
+98         /* send back to webout */
+99         data _null_;
+100        infile _sjs2 lrecl=1 recfm=n;
+101        file &amp;jref mod lrecl=1 recfm=n;
+102        input sourcechar $char1. @@;
+103        format sourcechar hex2.;
+104        put sourcechar char1. @@;
+105        run;
+106        filename _sjs2 clear;
+107        %end;
+108        %else %if &amp;engine=DATASTEP %then %do;
+109        %datastep:
+110        %if %sysfunc(exist(&amp;ds)) ne 1 &amp; %sysfunc(exist(&amp;ds,VIEW)) ne 1
+111        %then %do;
+112        %put &amp;sysmacroname:  &amp;ds NOT FOUND!!!;
+113        %return;
+114        %end;
+115        %if &amp;fmt=Y %then %do;
+116        /**
+117        * Extract format definitions
+118        * First, by getting library locations from dictionary.formats
+119        * Then, by exporting the width using proc format
+120        * Cannot use maxw from sashelp.vformat as not always populated
+121        * Cannot use fmtinfo() as not supported in all flavours
+122        */
+123        %let tmpds1=%substr(fmtsum%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+124        %let tmpds2=%substr(cntl%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+125        %let tmpds3=%substr(cntl%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+126        %let tmpds4=%substr(col%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+127        proc sql noprint;
+128        create table &amp;tmpds1 as
+129        select cats(libname,'.',memname) as FMTCAT,
+130        FMTNAME
+131        from dictionary.formats
+132        where fmttype='F' and libname is not null
+133        and fmtname in (select format from &amp;colinfo where format is not null)
+134        order by 1;
+                                                                                          The SAS System
+
+135        create table &amp;tmpds2(
+136        FMTNAME char(32),
+137        LENGTH num
+138        );
+139        %local catlist cat fmtlist i;
+140        select distinct fmtcat into: catlist separated by ' ' from &amp;tmpds1;
+141        %do i=1 %to %sysfunc(countw(&amp;catlist,%str( )));
+142        %let cat=%scan(&amp;catlist,&amp;i,%str( ));
+143        proc sql;
+144        select distinct fmtname into: fmtlist separated by ' '
+145        from &amp;tmpds1 where fmtcat="&amp;cat";
+146        proc format lib=&amp;cat cntlout=&amp;tmpds3(keep=fmtname length);
+147        select &amp;fmtlist;
+148        run;
+149        proc sql;
+150        insert into &amp;tmpds2 select distinct fmtname,length from &amp;tmpds3;
+151        %end;
+152        proc sql;
+153        create table &amp;tmpds4 as
+154        select a.*, b.length as MAXW
+155        from &amp;colinfo a
+156        left join &amp;tmpds2 b
+157        on cats(a.format)=cats(upcase(b.fmtname))
+158        order by a.varnum;
+159        data _null_;
+160        set &amp;tmpds4;
+161        if not missing(maxw);
+162        call symputx(
+163        cats('fmtlen',_n_),
+164        /* vars need extra padding due to JSON escaping of special chars */
+165        min(32767,ceil((max(length,maxw)+10)*1.5))
+166        ,'l'
+167        );
+168        run;
+169        /* configure varlenchk - as we are explicitly shortening the variables */
+170        %let optval=%sysfunc(getoption(varlenchk));
+171        options varlenchk=NOWARN;
+172        data _data_(compress=char);
+                                                                                          The SAS System
+
+173        /* shorten the new vars */
+174        length
+175        %do i=1 %to &amp;numcols;
+176        &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i
+177        %end;
+178        ;
+179        /* rename on entry */
+180        set &amp;ds(rename=(
+181        %do i=1 %to &amp;numcols;
+182        &amp;&amp;name&amp;i=&amp;&amp;newname&amp;i
+183        %end;
+184        ));
+185        &amp;stmt_obs;
+186        drop
+187        %do i=1 %to &amp;numcols;
+188        &amp;&amp;newname&amp;i
+189        %end;
+190        ;
+191        %do i=1 %to &amp;numcols;
+192        %if &amp;&amp;typelong&amp;i=num %then %do;
+193        &amp;&amp;name&amp;i=cats(put(&amp;&amp;newname&amp;i,&amp;&amp;fmt&amp;i));
+194        %end;
+195        %else %do;
+196        &amp;&amp;name&amp;i=put(&amp;&amp;newname&amp;i,&amp;&amp;fmt&amp;i);
+197        %end;
+198        %end;
+199        if _error_ then do;
+200        call symputx('syscc',1012);
+201        stop;
+202        end;
+203        run;
+204        %let fmtds=&amp;syslast;
+205        options varlenchk=&amp;optval;
+206        %end;
+207        proc format; /* credit yabwon for special null removal */
+208        value bart (default=40)
+209        %if &amp;missing=NULL %then %do;
+210        ._ - .z = null
+                                                                                          The SAS System
+
+211        %end;
+212        %else %do;
+213        ._ = [quote()]
+214        . = null
+215        .a - .z = [quote()]
+216        %end;
+217        other = [best.];
+218        data &amp;tempds;
+219        attrib _all_ label='';
+220        %do i=1 %to &amp;numcols;
+221        %if &amp;&amp;typelong&amp;i=char or &amp;fmt=Y %then %do;
+222        length &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i...;
+223        format &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i...;
+224        %end;
+225        %end;
+226        %if &amp;fmt=Y %then %do;
+227        set &amp;fmtds;
+228        %end;
+229        %else %do;
+230        set &amp;ds;
+231        %end;
+232        &amp;stmt_obs;
+233        format _numeric_ bart.;
+234        %do i=1 %to &amp;numcols;
+235        %if &amp;&amp;typelong&amp;i=char or &amp;fmt=Y %then %do;
+236        if findc(&amp;&amp;name&amp;i,'"\'!!'0A0D09000E0F010210111A'x) then do;
+237        &amp;&amp;name&amp;i='"'!!trim(
+238        prxchange('s/"/\\"/',-1,        /* double quote */
+239        prxchange('s/\x0A/\n/',-1,      /* new line */
+240        prxchange('s/\x0D/\r/',-1,      /* carriage return */
+241        prxchange('s/\x09/\\t/',-1,     /* tab */
+242        prxchange('s/\x00/\\u0000/',-1, /* NUL */
+243        prxchange('s/\x0E/\\u000E/',-1, /* SS  */
+244        prxchange('s/\x0F/\\u000F/',-1, /* SF  */
+245        prxchange('s/\x01/\\u0001/',-1, /* SOH */
+246        prxchange('s/\x02/\\u0002/',-1, /* STX */
+247        prxchange('s/\x10/\\u0010/',-1, /* DLE */
+248        prxchange('s/\x11/\\u0011/',-1, /* DC1 */
+                                                                                          The SAS System
+
+249        prxchange('s/\x1A/\\u001A/',-1, /* SUB */
+250        prxchange('s/\\/\\\\/',-1,&amp;&amp;name&amp;i)
+251        )))))))))))))!!'"';
+252        end;
+253        else &amp;&amp;name&amp;i=quote(cats(&amp;&amp;name&amp;i));
+254        %end;
+255        %end;
+256        run;
+257        filename _sjs3 temp lrecl=131068 ;
+258        data _null_;
+259        file _sjs3 encoding='utf-8';
+260        if _n_=1 then put "[";
+261        set &amp;tempds;
+262        if _n_&gt;1 then put "," @; put
+263        %if &amp;action=ARR %then "[" ; %else "{" ;
+264        %do i=1 %to &amp;numcols;
+265        %if &amp;i&gt;1 %then  "," ;
+266        %if &amp;action=OBJ %then """&amp;&amp;name&amp;i"":" ;
+267        "&amp;&amp;name&amp;i"n /* name literal for reserved variable names */
+268        %end;
+269        %if &amp;action=ARR %then "]" ; %else "}" ; ;
+270        /* close out the table */
+271        data _null_;
+272        file _sjs3 mod encoding='utf-8';
+273        put ']';
+274        run;
+275        data _null_;
+276        infile _sjs3 lrecl=1 recfm=n;
+277        file &amp;jref mod lrecl=1 recfm=n;
+278        input sourcechar $char1. @@;
+279        format sourcechar hex2.;
+280        put sourcechar char1. @@;
+281        run;
+282        filename _sjs3 clear;
+283        %end;
+284        proc sql;
+285        drop table &amp;colinfo, &amp;tempds;
+286        %if %substr(&amp;showmeta,1,1)=Y %then %do;
+                                                                                          The SAS System
+
+287        filename _sjs4 temp lrecl=131068 encoding='utf-8';
+288        data _null_;
+289        file _sjs4;
+290        length label $350;
+291        put ", ""$%lowcase(%sysfunc(coalescec(&amp;dslabel,&amp;ds)))"":{""vars"":{";
+292        do i=1 to &amp;numcols;
+293        name=quote(trim(symget(cats('name',i))));
+294        format=quote(trim(symget(cats('fmt',i))));
+295        label=quote(prxchange('s/\\/\\\\/',-1,trim(symget(cats('label',i)))));
+296        length=quote(trim(symget(cats('length',i))));
+297        type=quote(trim(symget(cats('typelong',i))));
+298        if i&gt;1 then put "," @@;
+299        put name ':{"format":' format ',"label":' label
+300        ',"length":' length ',"type":' type '}';
+301        end;
+302        put '}}';
+303        run;
+304        /* send back to webout */
+305        data _null_;
+306        infile _sjs4 lrecl=1 recfm=n;
+307        file &amp;jref mod lrecl=1 recfm=n;
+308        input sourcechar $char1. @@;
+309        format sourcechar hex2.;
+310        put sourcechar char1. @@;
+311        run;
+312        filename _sjs4 clear;
+313        %end;
+314        %end;
+315        %else %if &amp;action=CLOSE %then %do;
+316        data _null_; file &amp;jref encoding='utf-8' mod ;
+317        put "}";
+318        run;
+319        %end;
+320        %mend mp_jsonout;
+321        %macro mf_getuser(
+322        )/*/STORE SOURCE*/;
+323        %local user;
+324        %if %symexist(_sasjs_username) %then %let user=&amp;_sasjs_username;
+                                                                                          The SAS System
+
+325        %else %if %symexist(SYS_COMPUTE_SESSION_OWNER) %then %do;
+326        %let user=&amp;SYS_COMPUTE_SESSION_OWNER;
+327        %end;
+328        %else %if %symexist(_metaperson) %then %do;
+329        %if %length(&amp;_metaperson)=0 %then %let user=&amp;sysuserid;
+330        /* sometimes SAS will add @domain extension - remove for consistency */
+331        /* but be sure to quote in case of usernames with commas */
+332        %else %let user=%unquote(%scan(%quote(&amp;_metaperson),1,@));
+333        %end;
+334        %else %let user=&amp;sysuserid;
+335        %quote(&amp;user)
+336        %mend mf_getuser;
+337        %macro mm_webout(action,ds,dslabel=,fref=_webout,fmt=N,missing=NULL
+338        ,showmeta=N,maxobs=MAX,workobs=0
+339        );
+340        %global _webin_file_count _webin_fileref1 _webin_name1 _program _debug
+341        sasjs_tables;
+342        %local i tempds jsonengine;
+343        /* see https://github.com/sasjs/core/issues/41 */
+344        %if "%upcase(&amp;SYSENCODING)" ne "UTF-8" %then %let jsonengine=PROCJSON;
+345        %else %let jsonengine=DATASTEP;
+346        %if &amp;action=FETCH %then %do;
+347        %if %str(&amp;_debug) ge 131 %then %do;
+348        options mprint notes mprintnest;
+349        %end;
+350        %let _webin_file_count=%eval(&amp;_webin_file_count+0);
+351        /* now read in the data */
+352        %do i=1 %to &amp;_webin_file_count;
+353        %if &amp;_webin_file_count=1 %then %do;
+354        %let _webin_fileref1=&amp;_webin_fileref;
+355        %let _webin_name1=&amp;_webin_name;
+356        %end;
+357        data _null_;
+358        infile &amp;&amp;_webin_fileref&amp;i termstr=crlf;
+359        input;
+360        call symputx('input_statement',_infile_);
+361        putlog "&amp;&amp;_webin_name&amp;i input statement: "  _infile_;
+362        stop;
+                                                                                          The SAS System
+
+363        data &amp;&amp;_webin_name&amp;i;
+364        infile &amp;&amp;_webin_fileref&amp;i firstobs=2 dsd termstr=crlf encoding='utf-8';
+365        input &amp;input_statement;
+366        %if %str(&amp;_debug) ge 131 %then %do;
+367        if _n_&lt;20 then putlog _infile_;
+368        %end;
+369        run;
+370        %let sasjs_tables=&amp;sasjs_tables &amp;&amp;_webin_name&amp;i;
+371        %end;
+372        %end;
+373        %else %if &amp;action=OPEN %then %do;
+374        /* fix encoding */
+375        OPTIONS NOBOMFILE;
+376        /**
+377        * check xengine type to avoid the below err message:
+378        * &gt; Function is only valid for filerefs using the CACHE access method.
+379        */
+380        data _null_;
+381        set sashelp.vextfl(where=(fileref="_WEBOUT"));
+382        if xengine='STREAM' then do;
+383        rc=stpsrv_header('Content-type',"text/html; encoding=utf-8");
+384        end;
+385        run;
+386        /* setup json */
+387        data _null_;file &amp;fref encoding='utf-8';
+388        %if %str(&amp;_debug) ge 131 %then %do;
+389        put '&gt;&gt;weboutBEGIN&lt;&lt;';
+390        %end;
+391        put '{"SYSDATE" : "' "&amp;SYSDATE" '"';
+392        put ',"SYSTIME" : "' "&amp;SYSTIME" '"';
+393        run;
+394        %end;
+395        %else %if &amp;action=ARR or &amp;action=OBJ %then %do;
+396        %mp_jsonout(&amp;action,&amp;ds,dslabel=&amp;dslabel,fmt=&amp;fmt,jref=&amp;fref
+397        ,engine=&amp;jsonengine,missing=&amp;missing,showmeta=&amp;showmeta,maxobs=&amp;maxobs
+398        )
+399        %end;
+400        %else %if &amp;action=CLOSE %then %do;
+                                                                                          The SAS System
+
+401        /* To avoid issues with _webout on EBI we use a temporary file */
+402        filename _sjsref temp lrecl=131068;
+403        %if %str(&amp;workobs) &gt; 0 %then %do;
+404        /* if debug mode, send back first XX records of each work table also */
+405        data;run;%let tempds=%scan(&amp;syslast,2,.);
+406        ods output Members=&amp;tempds;
+407        proc datasets library=WORK memtype=data;
+408        %local wtcnt;%let wtcnt=0;
+409        data _null_;
+410        set &amp;tempds;
+411        if not (upcase(name) =:"DATA"); /* ignore temp datasets */
+412        i+1;
+413        call symputx(cats('wt',i),name,'l');
+414        call symputx('wtcnt',i,'l');
+415        data _null_; file _sjsref mod encoding='utf-8';
+416        put ",""WORK"":{";
+417        %do i=1 %to &amp;wtcnt;
+418        %let wt=&amp;&amp;wt&amp;i;
+419        data _null_; file _sjsref mod encoding='utf-8';
+420        dsid=open("WORK.&amp;wt",'is');
+421        nlobs=attrn(dsid,'NLOBS');
+422        nvars=attrn(dsid,'NVARS');
+423        rc=close(dsid);
+424        if &amp;i&gt;1 then put ','@;
+425        put " ""&amp;wt"" : {";
+426        put '"nlobs":' nlobs;
+427        put ',"nvars":' nvars;
+428        %mp_jsonout(OBJ,&amp;wt,jref=_sjsref,dslabel=first10rows,showmeta=Y,maxobs=10
+429        ,maxobs=&amp;workobs
+430        )
+431        data _null_; file _sjsref mod encoding='utf-8';
+432        put "}";
+433        %end;
+434        data _null_; file _sjsref mod encoding='utf-8';
+435        put "}";
+436        run;
+437        %end;
+438        /* close off json */
+                                                                                          The SAS System
+
+439        data _null_;file _sjsref mod encoding='utf-8';
+440        length SYSPROCESSNAME syserrortext syswarningtext autoexec $512;
+441        put ",""_DEBUG"" : ""&amp;_debug"" ";
+442        _METAUSER=quote(trim(symget('_METAUSER')));
+443        put ",""_METAUSER"": " _METAUSER;
+444        _METAPERSON=quote(trim(symget('_METAPERSON')));
+445        put ',"_METAPERSON": ' _METAPERSON;
+446        _PROGRAM=quote(trim(resolve(symget('_PROGRAM'))));
+447        put ',"_PROGRAM" : ' _PROGRAM ;
+448        autoexec=quote(urlencode(trim(getoption('autoexec'))));
+449        put ',"AUTOEXEC" : ' autoexec;
+450        put ",""MF_GETUSER"" : ""%mf_getuser()"" ";
+451        put ",""SYSCC"" : ""&amp;syscc"" ";
+452        put ",""SYSENCODING"" : ""&amp;sysencoding"" ";
+453        syserrortext=cats('"',tranwrd(symget('syserrortext'),'"','\"'),'"');
+454        put ',"SYSERRORTEXT" : ' syserrortext;
+455        put ",""SYSHOSTNAME"" : ""&amp;syshostname"" ";
+456        put ",""SYSPROCESSID"" : ""&amp;SYSPROCESSID"" ";
+457        put ",""SYSPROCESSMODE"" : ""&amp;SYSPROCESSMODE"" ";
+458        SYSPROCESSNAME=quote(urlencode(cats(SYSPROCESSNAME)));
+459        put ",""SYSPROCESSNAME"" : " SYSPROCESSNAME;
+460        put ",""SYSJOBID"" : ""&amp;sysjobid"" ";
+461        put ",""SYSSCPL"" : ""&amp;sysscpl"" ";
+462        put ",""SYSSITE"" : ""&amp;syssite"" ";
+463        put ",""SYSUSERID"" : ""&amp;sysuserid"" ";
+464        sysvlong=quote(trim(symget('sysvlong')));
+465        put ',"SYSVLONG" : ' sysvlong;
+466        syswarningtext=cats('"',tranwrd(symget('syswarningtext'),'"','\"'),'"');
+467        put ',"SYSWARNINGTEXT" : ' syswarningtext;
+468        put ',"END_DTTM" : "' "%sysfunc(datetime(),E8601DT26.6)" '" ';
+469        length memsize $32;
+470        memsize="%sysfunc(INPUTN(%sysfunc(getoption(memsize)), best.),sizekmg.)";
+471        memsize=quote(cats(memsize));
+472        put ',"MEMSIZE" : ' memsize;
+473        put "}" @;
+474        %if %str(&amp;_debug) ge 131 %then %do;
+475        put '&gt;&gt;weboutEND&lt;&lt;';
+476        %end;
+                                                                                          The SAS System
+
+477        run;
+478        /* now write to _webout 1 char at a time */
+479        data _null_;
+480        infile _sjsref lrecl=1 recfm=n;
+481        file &amp;fref mod lrecl=1 recfm=n;
+482        input sourcechar $char1. @@;
+483        format sourcechar hex2.;
+484        put sourcechar char1. @@;
+485        run;
+486        filename _sjsref clear;
+487        %end;
+488        %mend mm_webout;
+489        %macro webout(action,ds,dslabel=,fmt=,missing=NULL,showmeta=NO);
+490        %mm_webout(&amp;action,ds=&amp;ds,dslabel=&amp;dslabel,fmt=&amp;fmt,missing=&amp;missing
+491        ,showmeta=&amp;showmeta
+492        )
+493        %mend;
+494        %macro sasjs_runner();
+495        %if %symexist(_webin_fileref) %then %do;
+496        %inc &amp;_webin_fileref;
+497        %end;
+498        %mend sasjs_runner;
+</pre>
+
+</div><!-- SASLOG -->
+</body></html>
