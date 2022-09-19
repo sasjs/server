@@ -1,3 +1,10 @@
+## [0.21.1](https://github.com/sasjs/server/compare/v0.21.0...v0.21.1) (2022-09-19)
+
+
+### Bug Fixes
+
+* SASJS_WEBOUT_HEADERS path for windows ([0749d65](https://github.com/sasjs/server/commit/0749d65173e8cfe9a93464711b7be1e123c289ff))
+
 # [0.21.0](https://github.com/sasjs/server/compare/v0.20.0...v0.21.0) (2022-09-19)
 
 
