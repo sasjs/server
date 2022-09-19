@@ -58,6 +58,11 @@ sas9WebRouter.post('/SASStoredProcess/do/', async (req, res) => {
 sas9WebRouter.get('/SASLogon/login', async (req, res) => {
   const response = await controller.loginGet()
 
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
   try {
     res.send(response.content)
   } catch (err: any) {
@@ -66,7 +71,12 @@ sas9WebRouter.get('/SASLogon/login', async (req, res) => {
 })
 
 sas9WebRouter.post('/SASLogon/login', async (req, res) => {
-  const response = await controller.loginPost()
+  const response = await controller.loginPost(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
 
   try {
     res.send(response.content)
@@ -76,7 +86,27 @@ sas9WebRouter.post('/SASLogon/login', async (req, res) => {
 })
 
 sas9WebRouter.get('/SASLogon/logout', async (req, res) => {
-  const response = await controller.logout()
+  const response = await controller.logout(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
+  try {
+    res.send(response.content)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
+sas9WebRouter.get('/SASStoredProcess/Logoff', async (req, res) => {
+  const response = await controller.logoff(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
 
   try {
     res.send(response.content)

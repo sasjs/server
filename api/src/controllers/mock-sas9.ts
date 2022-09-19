@@ -15,7 +15,7 @@ export interface MockFileRead {
 }
 
 export class MockSas9Controller {
-  private loggedIn: boolean = false
+  private loggedIn: string | undefined
 
   @Get('/SASStoredProcess')
   public async sasStoredProcess(): Promise<Sas9Response> {
@@ -46,6 +46,13 @@ export class MockSas9Controller {
       }
     }
 
+    if (this.isPublicAccount()) {
+      return {
+        content: '',
+        redirect: '/SASLogon/Login'
+      }
+    }
+
     let program = req.query._program?.toString() || ''
     program = program.replace('/', '')
 
@@ -68,6 +75,23 @@ export class MockSas9Controller {
 
   @Get('/SASLogon/login')
   public async loginGet(): Promise<Sas9Response> {
+    if (this.loggedIn) {
+      if (this.isPublicAccount()) {
+        return {
+          content: '',
+          redirect: '/SASStoredProcess/Logoff?publicDenied=true'
+        }
+      } else {
+        return await getMockResponseFromFile([
+          process.cwd(),
+          'mocks',
+          'generic',
+          'sas9',
+          'logged-in'
+        ])
+      }
+    }
+
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
@@ -78,8 +102,8 @@ export class MockSas9Controller {
   }
 
   @Post('/SASLogon/login')
-  public async loginPost(): Promise<Sas9Response> {
-    this.loggedIn = true
+  public async loginPost(req: express.Request): Promise<Sas9Response> {
+    this.loggedIn = req.body.username
 
     return await getMockResponseFromFile([
       process.cwd(),
@@ -91,8 +115,18 @@ export class MockSas9Controller {
   }
 
   @Get('/SASLogon/logout')
-  public async logout(): Promise<Sas9Response> {
-    this.loggedIn = false
+  public async logout(req: express.Request): Promise<Sas9Response> {
+    this.loggedIn = undefined
+
+    if (req.query.publicDenied === 'true') {
+      return await getMockResponseFromFile([
+        process.cwd(),
+        'mocks',
+        'generic',
+        'sas9',
+        'public-access-denied'
+      ])
+    }
 
     return await getMockResponseFromFile([
       process.cwd(),
@@ -102,6 +136,20 @@ export class MockSas9Controller {
       'logged-out'
     ])
   }
+
+  @Get('/SASStoredProcess/Logoff') //publicDenied=true
+  public async logoff(req: express.Request): Promise<Sas9Response> {
+    const params = req.query.publicDenied
+      ? `?publicDenied=${req.query.publicDenied}`
+      : ''
+
+    return {
+      content: '',
+      redirect: '/SASLogon/logout' + params
+    }
+  }
+
+  private isPublicAccount = () => this.loggedIn?.toLowerCase() === 'public'
 }
 
 /**
