@@ -27,7 +27,9 @@ const weboutPath = '${
 const _SASJS_TOKENFILE = '${
     isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile
   }';
-const _SASJS_WEBOUT_HEADERS = '${headersPath}';
+const _SASJS_WEBOUT_HEADERS = '${
+    isWindows() ? headersPath.replace(/\\/g, '\\\\') : headersPath
+  }';
 const _SASJS_USERNAME = '${preProgramVariables?.username}';
 const _SASJS_USERID = '${preProgramVariables?.userId}';
 const _SASJS_DISPLAYNAME = '${preProgramVariables?.displayName}';

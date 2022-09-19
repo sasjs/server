@@ -23,7 +23,9 @@ _SASJS_SESSION_PATH = '${
     isWindows() ? session.path.replace(/\\/g, '\\\\') : session.path
   }';
 _WEBOUT = '${isWindows() ? weboutPath.replace(/\\/g, '\\\\') : weboutPath}'; 
-_SASJS_WEBOUT_HEADERS = '${headersPath}';
+_SASJS_WEBOUT_HEADERS = '${
+    isWindows() ? headersPath.replace(/\\/g, '\\\\') : headersPath
+  }';
 _SASJS_TOKENFILE = '${
     isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile
   }';
