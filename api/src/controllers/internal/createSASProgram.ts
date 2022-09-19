@@ -1,3 +1,4 @@
+import { escapeWinSlashes } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadSasCode, getMacrosFolder } from '../../utils'
 import { ExecutionVars } from './'
@@ -8,6 +9,7 @@ export const createSASProgram = async (
   vars: ExecutionVars,
   session: Session,
   weboutPath: string,
+  headersPath: string,
   tokenFile: string,
   otherArgs?: any
 ) => {
@@ -23,7 +25,7 @@ export const createSASProgram = async (
 %let _sasjs_displayname=${preProgramVariables?.displayName};
 %let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
 %let _sasjs_apipath=/SASjsApi/stp/execute;
-%let _sasjs_webout_headers=%sysfunc(pathname(work))/../stpsrv_header.txt;
+%let _sasjs_webout_headers=${escapeWinSlashes(headersPath)};
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
 

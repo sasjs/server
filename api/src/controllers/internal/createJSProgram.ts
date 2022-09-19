@@ -1,4 +1,4 @@
-import { isWindows } from '@sasjs/utils'
+import { escapeWinSlashes } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadJSCode } from '../../utils'
 import { ExecutionVars } from './'
@@ -21,15 +21,9 @@ export const createJSProgram = async (
 
   const preProgramVarStatments = `
 let _webout = '';
-const weboutPath = '${
-    isWindows() ? weboutPath.replace(/\\/g, '\\\\') : weboutPath
-  }'; 
-const _SASJS_TOKENFILE = '${
-    isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile
-  }';
-const _SASJS_WEBOUT_HEADERS = '${
-    isWindows() ? headersPath.replace(/\\/g, '\\\\') : headersPath
-  }';
+const weboutPath = '${escapeWinSlashes(weboutPath)}'; 
+const _SASJS_TOKENFILE = '${escapeWinSlashes(tokenFile)}';
+const _SASJS_WEBOUT_HEADERS = '${escapeWinSlashes(headersPath)}';
 const _SASJS_USERNAME = '${preProgramVariables?.username}';
 const _SASJS_USERID = '${preProgramVariables?.userId}';
 const _SASJS_DISPLAYNAME = '${preProgramVariables?.displayName}';
