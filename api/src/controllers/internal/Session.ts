@@ -92,6 +92,9 @@ export class SASSessionController extends SessionController {
       path: sessionFolder
     }
 
+    const headersPath = path.join(session.path, 'stpsrv_header.txt')
+    await createFile(headersPath, 'Content-type: text/plain')
+
     // we do not want to leave sessions running forever
     // we clean them up after a predefined period, if unused
     this.scheduleSessionDestroy(session)
@@ -170,7 +173,7 @@ ${autoExecContent}`
     session.ready = true
   }
 
-  public async deleteSession(session: Session) {
+  private async deleteSession(session: Session) {
     // remove the temporary files, to avoid buildup
     await deleteFolder(session.path)
 
