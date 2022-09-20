@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { DiffEditorDidMount, EditorDidMount, monaco } from 'react-monaco-editor'
 import { SelectChangeEvent } from '@mui/material'
-import { getSelection } from '../helper'
+import { getSelection, programPathInjection } from '../helper'
 import { AppContext, RunTimeType } from '../../../../context/appContext'
 import { AlertSeverityType } from '../../../../components/snackbar'
 import {
@@ -151,7 +151,14 @@ const useEditor = ({
   const runCode = (code: string) => {
     setIsLoading(true)
     axios
-      .post(`/SASjsApi/code/execute`, { code, runTime: selectedRunTime })
+      .post(`/SASjsApi/code/execute`, {
+        code: programPathInjection(
+          code,
+          selectedFilePath,
+          selectedRunTime as RunTimeType
+        ),
+        runTime: selectedRunTime
+      })
       .then((res: any) => {
         setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
         setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
