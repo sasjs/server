@@ -24,7 +24,7 @@ interface ExecuteCodePayload {
 
 @Security('bearerAuth')
 @Route('SASjsApi/code')
-@Tags('CODE')
+@Tags('Code')
 export class CodeController {
   /**
    * Execute SAS code.

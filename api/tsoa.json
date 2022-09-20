@@ -20,7 +20,7 @@
         "description": "Operations about clients"
       },
       {
-        "name": "CODE",
+        "name": "Code",
         "description": "Execution of code (various runtimes are supported)"
       },
       {
