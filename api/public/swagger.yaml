@@ -663,7 +663,7 @@ paths:
             description: 'Execute SAS code.'
             summary: 'Run SAS Code and returns log'
             tags:
-                - CODE
+                - Code
             security:
                 -
                     bearerAuth: []
@@ -1658,8 +1658,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
-            summary: 'Execute a Stored Program, returns raw _webout content.'
+            description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
+            summary: 'Execute a Stored Program, returns _webout and (optionally) log.'
             tags:
                 - STP
             security:
@@ -1667,7 +1667,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS or JS code'
+                    description: 'Location of code in SASjs Drive'
                     in: query
                     name: _program
                     required: true
@@ -1685,7 +1685,7 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a SAS or JS program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms\n\nThe response will be a JSON object with the following root attributes:\nlog, webout, headers.\n\nThe webout attribute will be nested JSON ONLY if the response-header\ncontains a content-type of application/json AND it is valid JSON.\nOtherwise it will be a stringified version of the webout content."
+            description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
             summary: 'Execute a Stored Program, return a JSON object'
             tags:
                 - STP
@@ -1694,7 +1694,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS or JS code'
+                    description: 'Location of code in SASjs Drive'
                     in: query
                     name: _program
                     required: false
@@ -1798,7 +1798,7 @@ tags:
         name: Client
         description: 'Operations about clients'
     -
-        name: CODE
+        name: Code
         description: 'Execution of code (various runtimes are supported)'
     -
         name: Drive

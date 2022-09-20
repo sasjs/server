@@ -23,14 +23,14 @@ interface ExecutePostRequestPayload {
 @Tags('STP')
 export class STPController {
   /**
-   * Trigger a SAS or JS program using the _program URL parameter.
+   * Trigger a Stored Program using the _program URL parameter.
    *
    * Accepts URL parameters and file uploads.  For more details, see docs:
    *
    * https://server.sasjs.io/storedprograms
    *
-   * @summary Execute a Stored Program, returns raw _webout content.
-   * @param _program Location of SAS or JS code
+   * @summary Execute a Stored Program, returns _webout and (optionally) log.
+   * @param _program Location of code in SASjs Drive
    * @example _program "/Projects/myApp/some/program"
    */
   @Get('/execute')
@@ -43,21 +43,15 @@ export class STPController {
   }
 
   /**
-   * Trigger a SAS or JS program using the _program URL parameter.
+   * Trigger a Stored Program using the _program URL parameter.
    *
    * Accepts URL parameters and file uploads.  For more details, see docs:
    *
    * https://server.sasjs.io/storedprograms
    *
-   * The response will be a JSON object with the following root attributes:
-   * log, webout, headers.
-   *
-   * The webout attribute will be nested JSON ONLY if the response-header
-   * contains a content-type of application/json AND it is valid JSON.
-   * Otherwise it will be a stringified version of the webout content.
    *
    * @summary Execute a Stored Program, return a JSON object
-   * @param _program Location of SAS or JS code
+   * @param _program Location of code in SASjs Drive
    * @example _program "/Projects/myApp/some/program"
    */
   @Post('/execute')
