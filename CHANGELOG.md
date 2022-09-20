@@ -1,3 +1,11 @@
+## [0.21.2](https://github.com/sasjs/server/compare/v0.21.1...v0.21.2) (2022-09-20)
+
+
+### Bug Fixes
+
+* default content-type for sas programs should be text/plain ([9977c9d](https://github.com/sasjs/server/commit/9977c9d161947b11d45ab2513f99a5320a3f5a06))
+* **studio:** inject program path to code before sending for execution ([edc2e2a](https://github.com/sasjs/server/commit/edc2e2a302ccea4985f3d6b83ef8c23620ab82b6))
+
 ## [0.21.1](https://github.com/sasjs/server/compare/v0.21.0...v0.21.1) (2022-09-19)
 
 
