@@ -4,6 +4,7 @@ import { InfoJWT } from '../types'
 import {
   generateAccessToken,
   generateRefreshToken,
+  getTokensFromDB,
   removeTokensInDB,
   saveTokensInDB
 } from '../utils'
@@ -72,6 +73,15 @@ const token = async (data: any): Promise<TokenResponse> => {
     throw new Error('Invalid Auth Code')
 
   AuthController.deleteCode(userInfo.userId, clientId)
+
+  // // get tokens from DB
+  const existingTokens = await getTokensFromDB(userInfo.userId, clientId)
+  if (existingTokens) {
+    return {
+      accessToken: existingTokens.accessToken,
+      refreshToken: existingTokens.refreshToken
+    }
+  }
 
   const accessToken = generateAccessToken(userInfo)
   const refreshToken = generateRefreshToken(userInfo)
