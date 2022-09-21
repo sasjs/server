@@ -1,3 +1,10 @@
+## [0.21.4](https://github.com/sasjs/server/compare/v0.21.3...v0.21.4) (2022-09-21)
+
+
+### Bug Fixes
+
+* removing single quotes from _program value ([a0e7875](https://github.com/sasjs/server/commit/a0e7875ae61cbb6e7d3995d2e36e7300b0daec86))
+
 ## [0.21.3](https://github.com/sasjs/server/compare/v0.21.2...v0.21.3) (2022-09-21)
 
 
