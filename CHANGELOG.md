@@ -1,3 +1,10 @@
+## [0.21.3](https://github.com/sasjs/server/compare/v0.21.2...v0.21.3) (2022-09-21)
+
+
+### Bug Fixes
+
+* return same tokens if not expired ([330c020](https://github.com/sasjs/server/commit/330c020933f1080261b38f07d6b627f6d7c62446))
+
 ## [0.21.2](https://github.com/sasjs/server/compare/v0.21.1...v0.21.2) (2022-09-20)
 
 
