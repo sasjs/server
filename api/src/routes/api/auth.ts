@@ -7,7 +7,7 @@ import {
   authenticateRefreshToken
 } from '../../middlewares'
 
-import { authorizeValidation, tokenValidation } from '../../utils'
+import { tokenValidation } from '../../utils'
 import { InfoJWT } from '../../types'
 
 const authRouter = express.Router()

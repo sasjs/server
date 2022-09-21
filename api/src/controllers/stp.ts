@@ -92,7 +92,7 @@ const execute = async (
     )
 
     if (result instanceof Buffer) {
-      ; (req as any).sasHeaders = httpHeaders
+      ;(req as any).sasHeaders = httpHeaders
     }
 
     return result
