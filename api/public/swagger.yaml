@@ -660,8 +660,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: 'Execute SAS code.'
-            summary: 'Run SAS Code and returns log'
+            description: 'Execute Code on the Specified Runtime'
+            summary: 'Run Code and Return Webout Content and Log'
             tags:
                 - Code
             security:
@@ -1686,7 +1686,7 @@ paths:
                                     - {type: string}
                                     - {type: string, format: byte}
             description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
-            summary: 'Execute a Stored Program, return a JSON object'
+            summary: 'Execute a Stored Program, returns _webout and (optionally) log.'
             tags:
                 - STP
             security:

@@ -27,8 +27,8 @@ interface ExecuteCodePayload {
 @Tags('Code')
 export class CodeController {
   /**
-   * Execute SAS code.
-   * @summary Run SAS Code and returns log
+   * Execute Code on the Specified Runtime
+   * @summary Run Code and Return Webout Content and Log
    */
   @Post('/execute')
   public async executeCode(

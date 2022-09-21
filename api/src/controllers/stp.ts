@@ -50,7 +50,7 @@ export class STPController {
    * https://server.sasjs.io/storedprograms
    *
    *
-   * @summary Execute a Stored Program, return a JSON object
+   * @summary Execute a Stored Program, returns _webout and (optionally) log.
    * @param _program Location of code in SASjs Drive
    * @example _program "/Projects/myApp/some/program"
    */
@@ -92,7 +92,7 @@ const execute = async (
     )
 
     if (result instanceof Buffer) {
-      ;(req as any).sasHeaders = httpHeaders
+      ; (req as any).sasHeaders = httpHeaders
     }
 
     return result
