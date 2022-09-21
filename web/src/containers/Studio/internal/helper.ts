@@ -31,7 +31,7 @@ export const programPathInjection = (
       return `._PROGRAM = '${path}';\n${code}`
     }
     if (runtime === RunTimeType.SAS) {
-      return `%let _program = '${path}';\n${code}`
+      return `%let _program = ${path};\n${code}`
     }
   }
 
