@@ -74,7 +74,7 @@ const token = async (data: any): Promise<TokenResponse> => {
 
   AuthController.deleteCode(userInfo.userId, clientId)
 
-  // // get tokens from DB
+  // get tokens from DB
   const existingTokens = await getTokensFromDB(userInfo.userId, clientId)
   if (existingTokens) {
     return {

@@ -24,17 +24,11 @@ export const getTokensFromDB = async (userId: number, clientId: string) => {
     )
 
     if (
-      verifiedAccessToken?.userId !== userId ||
-      verifiedAccessToken?.clientId !== clientId
+      verifiedAccessToken?.userId === userId &&
+      verifiedAccessToken?.clientId === clientId &&
+      verifiedRefreshToken?.userId === userId &&
+      verifiedRefreshToken?.clientId === clientId
     )
-      return
-
-    if (
-      verifiedRefreshToken?.userId !== userId ||
-      verifiedRefreshToken?.clientId !== clientId
-    )
-      return
-
-    return { accessToken, refreshToken }
+      return { accessToken, refreshToken }
   }
 }
