@@ -236,7 +236,9 @@ const useEditor = ({
   useEffect(() => {
     if (selectedFilePath) {
       setIsLoading(true)
-      setSelectedFileExtension(selectedFilePath.split('.').pop() ?? '')
+      setSelectedFileExtension(
+        selectedFilePath.split('.').pop()?.toLowerCase() ?? ''
+      )
       axios
         .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`)
         .then((res: any) => {
@@ -270,8 +272,8 @@ const useEditor = ({
   }, [fileContent, selectedFilePath])
 
   useEffect(() => {
-    if (runTimes.includes(selectedFileExtension))
-      setSelectedRunTime(selectedFileExtension)
+    const fileExtension = selectedFileExtension.toLowerCase()
+    if (runTimes.includes(fileExtension)) setSelectedRunTime(fileExtension)
   }, [selectedFileExtension, runTimes])
 
   return {
