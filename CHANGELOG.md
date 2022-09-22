@@ -1,3 +1,10 @@
+## [0.21.5](https://github.com/sasjs/server/compare/v0.21.4...v0.21.5) (2022-09-22)
+
+
+### Bug Fixes
+
+* made files extensions case insensitive ([2496043](https://github.com/sasjs/server/commit/249604384e42be4c12c88c70a7dff90fc1917a8f))
+
 ## [0.21.4](https://github.com/sasjs/server/compare/v0.21.3...v0.21.4) (2022-09-21)
 
 
