@@ -1,3 +1,10 @@
+## [0.21.6](https://github.com/sasjs/server/compare/v0.21.5...v0.21.6) (2022-09-23)
+
+
+### Bug Fixes
+
+* in getTokensFromDB handle the scenario when tokens are expired ([40f95f9](https://github.com/sasjs/server/commit/40f95f9072c8685910138d88fd2410f8704fc975))
+
 ## [0.21.5](https://github.com/sasjs/server/compare/v0.21.4...v0.21.5) (2022-09-22)
 
 
