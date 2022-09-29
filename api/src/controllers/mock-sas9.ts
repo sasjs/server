@@ -44,8 +44,6 @@ export class MockSas9Controller {
       filePath = program.replace('/', '').split('/')
     }
 
-    console.log('filePath', filePath)
-
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
@@ -80,8 +78,6 @@ export class MockSas9Controller {
       filePath = `${program}-login`.replace('/', '').split('/')
     }
 
-    console.log('filePath', filePath)
-
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
@@ -102,6 +98,11 @@ export class MockSas9Controller {
 
     let program = req.query._program?.toString() || ''
     program = program.replace('/', '')
+    let debug = req.query._debug?.toString()
+
+    if (program.includes('runner') && debug === 'log') {
+      program += '-log' //runner-log
+    }
 
     const content = await getMockResponseFromFile([
       process.cwd(),
