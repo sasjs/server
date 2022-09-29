@@ -81,7 +81,7 @@ sas9WebRouter.get('/SASLogon/login', async (req, res) => {
 })
 
 sas9WebRouter.post('/SASLogon/login', async (req, res) => {
-  const response = await controller.loginPost()
+  const response = await controller.loginPost(req)
 
   try {
     res.send(response.content)

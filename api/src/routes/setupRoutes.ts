@@ -15,5 +15,5 @@ export const setupRoutes = (app: Express) => {
     appStreamRouter(req, res, next)
   })
 
-  app.use('/', csrfProtection, webRouter)
+  app.use('/', webRouter)
 }

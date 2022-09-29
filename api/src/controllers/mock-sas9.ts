@@ -132,7 +132,12 @@ export class MockSas9Controller {
   }
 
   @Post('/SASLogon/login')
-  public async loginPost(): Promise<Sas9Response> {
+  public async loginPost(req: express.Request): Promise<Sas9Response> {
+    if (req.body.lt && req.body.lt !== 'validtoken') return {
+      content: '',
+      redirect: '/SASLogon/login',
+    }
+
     this.loggedIn = true
 
     return await getMockResponseFromFile([
