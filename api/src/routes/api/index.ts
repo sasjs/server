@@ -18,6 +18,7 @@ import clientRouter from './client'
 import authRouter from './auth'
 import sessionRouter from './session'
 import permissionRouter from './permission'
+import authConfigRouter from './authConfig'
 
 const router = express.Router()
 
@@ -41,6 +42,14 @@ router.use(
   desktopRestrict,
   authenticateAccessToken,
   permissionRouter
+)
+
+router.use(
+  '/authConfig',
+  desktopRestrict,
+  authenticateAccessToken,
+  verifyAdmin,
+  authConfigRouter
 )
 
 router.use(

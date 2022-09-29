@@ -3,7 +3,8 @@ import { UserController } from '../../controllers/'
 import {
   authenticateAccessToken,
   verifyAdmin,
-  verifyAdminIfNeeded
+  verifyAdminIfNeeded,
+  ldapRestrict
 } from '../../middlewares'
 import {
   deleteUserValidation,
@@ -14,18 +15,24 @@ import {
 
 const userRouter = express.Router()
 
-userRouter.post('/', authenticateAccessToken, verifyAdmin, async (req, res) => {
-  const { error, value: body } = registerUserValidation(req.body)
-  if (error) return res.status(400).send(error.details[0].message)
+userRouter.post(
+  '/',
+  ldapRestrict,
+  authenticateAccessToken,
+  verifyAdmin,
+  async (req, res) => {
+    const { error, value: body } = registerUserValidation(req.body)
+    if (error) return res.status(400).send(error.details[0].message)
 
-  const controller = new UserController()
-  try {
-    const response = await controller.createUser(body)
-    res.send(response)
-  } catch (err: any) {
-    res.status(403).send(err.toString())
+    const controller = new UserController()
+    try {
+      const response = await controller.createUser(body)
+      res.send(response)
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
   }
-})
+)
 
 userRouter.get('/', authenticateAccessToken, async (req, res) => {
   const controller = new UserController()
@@ -70,6 +77,7 @@ userRouter.get('/:userId', authenticateAccessToken, async (req, res) => {
 
 userRouter.patch(
   '/by/username/:username',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -98,6 +106,7 @@ userRouter.patch(
 
 userRouter.patch(
   '/:userId',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -120,6 +129,7 @@ userRouter.patch(
 
 userRouter.delete(
   '/by/username/:username',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -148,6 +158,7 @@ userRouter.delete(
 
 userRouter.delete(
   '/:userId',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {

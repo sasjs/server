@@ -1,12 +1,17 @@
 import express from 'express'
 import { GroupController } from '../../controllers/'
-import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
+import {
+  ldapRestrict,
+  authenticateAccessToken,
+  verifyAdmin
+} from '../../middlewares'
 import { getGroupValidation, registerGroupValidation } from '../../utils'
 
 const groupRouter = express.Router()
 
 groupRouter.post(
   '/',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -82,6 +87,7 @@ groupRouter.get(
 
 groupRouter.post(
   '/:groupId/:userId',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -106,6 +112,7 @@ groupRouter.post(
 
 groupRouter.delete(
   '/:groupId/:userId',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -130,6 +137,7 @@ groupRouter.delete(
 
 groupRouter.delete(
   '/:groupId',
+  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {

@@ -318,6 +318,11 @@ components:
                 - isAdmin
             type: object
             additionalProperties: false
+        AuthProviderType:
+            enum:
+                - ldap
+                - internal
+            type: string
         UserPayload:
             properties:
                 displayName:
@@ -331,6 +336,10 @@ components:
                 password:
                     type: string
                     description: 'Password for user'
+                authProvider:
+                    $ref: '#/components/schemas/AuthProviderType'
+                    description: 'Identifies the source from which user is created'
+                    example: internal
                 isAdmin:
                     type: boolean
                     description: 'Account should be admin or not, defaults to false'
@@ -382,6 +391,10 @@ components:
                     type: string
                     description: 'Description of the group'
                     example: 'This group represents Data Controller Users'
+                authProvider:
+                    $ref: '#/components/schemas/AuthProviderType'
+                    description: 'Identifies the source from which group is created'
+                    example: 'false'
                 isActive:
                     type: boolean
                     description: 'Group should be active or not, defaults to true'
@@ -618,6 +631,51 @@ paths:
             summary: 'Logout terminate access/refresh tokens and returns nothing'
             tags:
                 - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/authConfig:
+        get:
+            operationId: GetDetail
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema: {}
+                            examples:
+                                'Example 1':
+                                    value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_BIND_PASSWORD: secret, LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron'}}
+            summary: 'Gives the detail of Auth Mechanism.'
+            tags:
+                - Auth_Config
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/authConfig/synchronizeWithLDAP:
+        post:
+            operationId: SynchronizeWithLDAP
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    groupCount: {type: number, format: double}
+                                    userCount: {type: number, format: double}
+                                required:
+                                    - groupCount
+                                    - userCount
+                                type: object
+                            examples:
+                                'Example 1':
+                                    value: {users: 5, groups: 3}
+            summary: 'Synchronizes LDAP users and groups with internal DB and returns the count of imported users and groups.'
+            tags:
+                - Auth_Config
             security:
                 -
                     bearerAuth: []
@@ -1794,6 +1852,9 @@ tags:
     -
         name: Auth
         description: 'Operations about auth'
+    -
+        name: Auth_Config
+        description: 'Operations about external auth providers'
     -
         name: Client
         description: 'Operations about clients'

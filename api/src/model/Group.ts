@@ -1,6 +1,7 @@
 import mongoose, { Schema, model, Document, Model } from 'mongoose'
 import { GroupDetailsResponse } from '../controllers'
 import User, { IUser } from './User'
+import { AuthProviderType } from '../utils'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 
 export const PUBLIC_GROUP_NAME = 'Public'
@@ -16,6 +17,11 @@ export interface GroupPayload {
    * @example "This group represents Data Controller Users"
    */
   description: string
+  /**
+   * Identifies the source from which group is created
+   * @example "false"
+   */
+  authProvider?: AuthProviderType
   /**
    * Group should be active or not, defaults to true
    * @example "true"
@@ -45,6 +51,11 @@ const groupSchema = new Schema<IGroupDocument>({
   description: {
     type: String,
     default: 'Group description.'
+  },
+  authProvider: {
+    type: String,
+    enum: AuthProviderType,
+    default: 'internal'
   },
   isActive: {
     type: Boolean,

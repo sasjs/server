@@ -5,7 +5,12 @@ import { readFile } from '@sasjs/utils'
 
 import User from '../model/User'
 import Client from '../model/Client'
-import { getWebBuildFolder, generateAuthCode } from '../utils'
+import {
+  getWebBuildFolder,
+  generateAuthCode,
+  AuthProviderType,
+  LDAPClient
+} from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
 
@@ -80,8 +85,16 @@ const login = async (
   const user = await User.findOne({ username })
   if (!user) throw new Error('Username is not found.')
 
-  const validPass = user.comparePassword(password)
-  if (!validPass) throw new Error('Invalid password.')
+  if (
+    process.env.AUTH_MECHANISM === AuthProviderType.LDAP &&
+    user.authProvider === AuthProviderType.LDAP
+  ) {
+    const ldapClient = await LDAPClient.init()
+    await ldapClient.verifyUser(username, password)
+  } else {
+    const validPass = user.comparePassword(password)
+    if (!validPass) throw new Error('Invalid password.')
+  }
 
   req.session.loggedIn = true
   req.session.user = {
