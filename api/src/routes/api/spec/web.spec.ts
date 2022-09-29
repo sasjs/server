@@ -49,10 +49,9 @@ describe('web', () => {
 
   describe('SASLogon/login', () => {
     let csrfToken: string
-    let cookies: string
 
     beforeAll(async () => {
-      ;({ csrfToken, cookies } = await getCSRF(app))
+      ;({ csrfToken } = await getCSRF(app))
     })
 
     afterEach(async () => {
@@ -66,7 +65,6 @@ describe('web', () => {
 
       const res = await request(app)
         .post('/SASLogon/login')
-        .set('Cookie', cookies)
         .set('x-xsrf-token', csrfToken)
         .send({
           username: user.username,
@@ -82,15 +80,45 @@ describe('web', () => {
         isAdmin: user.isAdmin
       })
     })
+
+    it('should respond with Bad Request if CSRF Token is not present', async () => {
+      await userController.createUser(user)
+
+      const res = await request(app)
+        .post('/SASLogon/login')
+        .send({
+          username: user.username,
+          password: user.password
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('Invalid CSRF token!')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if CSRF Token is invalid', async () => {
+      await userController.createUser(user)
+
+      const res = await request(app)
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', 'INVALID_CSRF_TOKEN')
+        .send({
+          username: user.username,
+          password: user.password
+        })
+        .expect(400)
+
+      expect(res.text).toEqual('Invalid CSRF token!')
+      expect(res.body).toEqual({})
+    })
   })
 
   describe('SASLogon/authorize', () => {
     let csrfToken: string
-    let cookies: string
     let authCookies: string
 
     beforeAll(async () => {
-      ;({ csrfToken, cookies } = await getCSRF(app))
+      ;({ csrfToken } = await getCSRF(app))
 
       await userController.createUser(user)
 
@@ -99,12 +127,7 @@ describe('web', () => {
         password: user.password
       }
 
-      ;({ cookies: authCookies } = await performLogin(
-        app,
-        credentials,
-        cookies,
-        csrfToken
-      ))
+      ;({ authCookies } = await performLogin(app, credentials, csrfToken))
     })
 
     afterAll(async () => {
@@ -116,17 +139,28 @@ describe('web', () => {
     it('should respond with authorization code', async () => {
       const res = await request(app)
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies, cookies].join('; '))
+        .set('Cookie', [authCookies].join('; '))
         .set('x-xsrf-token', csrfToken)
         .send({ clientId })
 
       expect(res.body).toHaveProperty('code')
     })
 
+    it('should respond with Bad Request if CSRF Token is missing', async () => {
+      const res = await request(app)
+        .post('/SASLogon/authorize')
+        .set('Cookie', [authCookies].join('; '))
+        .send({ clientId })
+        .expect(400)
+
+      expect(res.text).toEqual('Invalid CSRF token!')
+      expect(res.body).toEqual({})
+    })
+
     it('should respond with Bad Request if clientId is missing', async () => {
       const res = await request(app)
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies, cookies].join('; '))
+        .set('Cookie', [authCookies].join('; '))
         .set('x-xsrf-token', csrfToken)
         .send({})
         .expect(400)
@@ -138,7 +172,7 @@ describe('web', () => {
     it('should respond with Forbidden if clientId is incorrect', async () => {
       const res = await request(app)
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies, cookies].join('; '))
+        .set('Cookie', [authCookies].join('; '))
         .set('x-xsrf-token', csrfToken)
         .send({
           clientId: 'WrongClientID'
@@ -153,27 +187,22 @@ describe('web', () => {
 
 const getCSRF = async (app: Express) => {
   // make request to get CSRF
-  const { header, text } = await request(app).get('/')
-  const cookies = header['set-cookie'].join()
+  const { text } = await request(app).get('/')
 
-  const csrfToken = extractCSRF(text)
-  return { csrfToken, cookies }
+  return { csrfToken: extractCSRF(text) }
 }
 
 const performLogin = async (
   app: Express,
   credentials: { username: string; password: string },
-  cookies: string,
   csrfToken: string
 ) => {
   const { header } = await request(app)
     .post('/SASLogon/login')
-    .set('Cookie', cookies)
     .set('x-xsrf-token', csrfToken)
     .send(credentials)
 
-  const newCookies: string = header['set-cookie'].join()
-  return { cookies: newCookies }
+  return { authCookies: header['set-cookie'].join() }
 }
 
 const extractCSRF = (text: string) =>

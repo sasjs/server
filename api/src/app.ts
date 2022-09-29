@@ -1,6 +1,5 @@
 import path from 'path'
-import express, { ErrorRequestHandler } from 'express'
-import csrf, { CookieOptions } from 'csurf'
+import express, { ErrorRequestHandler, CookieOptions } from 'express'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 
@@ -39,15 +38,7 @@ export const cookieOptions: CookieOptions = {
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }
 
-/***********************************
- *         CSRF Protection         *
- ***********************************/
-export const csrfProtection = csrf({ cookie: cookieOptions })
-
 const onError: ErrorRequestHandler = (err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN')
-    return res.status(400).send('Invalid CSRF token!')
-
   console.error(err.stack)
   res.status(500).send('Something broke!')
 }
