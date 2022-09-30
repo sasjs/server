@@ -1,3 +1,10 @@
+## [0.21.7](https://github.com/sasjs/server/compare/v0.21.6...v0.21.7) (2022-09-30)
+
+
+### Bug Fixes
+
+* csrf package is changed to pillarjs-csrf ([fe3e508](https://github.com/sasjs/server/commit/fe3e5088f8dfff50042ec8e8aac9ba5ba1394deb))
+
 ## [0.21.6](https://github.com/sasjs/server/compare/v0.21.5...v0.21.6) (2022-09-23)
 
 
