@@ -1,6 +1,6 @@
 import path from 'path'
 import express, { Request } from 'express'
-import { authenticateAccessToken } from '../../middlewares'
+import { authenticateAccessToken, generateCSRFToken } from '../../middlewares'
 import { folderExists } from '@sasjs/utils'
 
 import { addEntryToAppStreamConfig, getFilesFolder } from '../../utils'
@@ -13,7 +13,7 @@ const router = express.Router()
 router.get('/', authenticateAccessToken, async (req, res) => {
   const content = appStreamHtml(process.appStreamConfig)
 
-  res.cookie('XSRF-TOKEN', req.csrfToken())
+  res.cookie('XSRF-TOKEN', generateCSRFToken())
 
   return res.send(content)
 })

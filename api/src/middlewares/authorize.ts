@@ -10,9 +10,7 @@ import { getPath, isPublicRoute } from '../utils'
 export const authorize: RequestHandler = async (req, res, next) => {
   const { user } = req
 
-  if (!user) {
-    return res.sendStatus(401)
-  }
+  if (!user) return res.sendStatus(401)
 
   // no need to check for permissions when user is admin
   if (user.isAdmin) return next()
