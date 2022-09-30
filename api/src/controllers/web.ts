@@ -86,7 +86,7 @@ const login = async (
   if (!user) throw new Error('Username is not found.')
 
   if (
-    process.env.AUTH_MECHANISM === AuthProviderType.LDAP &&
+    process.env.AUTH_PROVIDERS === AuthProviderType.LDAP &&
     user.authProvider === AuthProviderType.LDAP
   ) {
     const ldapClient = await LDAPClient.init()

@@ -1,17 +1,12 @@
 import express from 'express'
 import { GroupController } from '../../controllers/'
-import {
-  ldapRestrict,
-  authenticateAccessToken,
-  verifyAdmin
-} from '../../middlewares'
+import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
 import { getGroupValidation, registerGroupValidation } from '../../utils'
 
 const groupRouter = express.Router()
 
 groupRouter.post(
   '/',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -23,11 +18,7 @@ groupRouter.post(
       const response = await controller.createGroup(body)
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -38,11 +29,7 @@ groupRouter.get('/', authenticateAccessToken, async (req, res) => {
     const response = await controller.getAllGroups()
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err.message)
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -54,11 +41,7 @@ groupRouter.get('/:groupId', authenticateAccessToken, async (req, res) => {
     const response = await controller.getGroup(parseInt(groupId))
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err.message)
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -76,18 +59,13 @@ groupRouter.get(
       const response = await controller.getGroupByGroupName(name)
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
 
 groupRouter.post(
   '/:groupId/:userId',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -101,18 +79,13 @@ groupRouter.post(
       )
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
 
 groupRouter.delete(
   '/:groupId/:userId',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -126,18 +99,13 @@ groupRouter.delete(
       )
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
 
 groupRouter.delete(
   '/:groupId',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
@@ -148,11 +116,7 @@ groupRouter.delete(
       await controller.deleteGroup(parseInt(groupId))
       res.status(200).send('Group Deleted!')
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )

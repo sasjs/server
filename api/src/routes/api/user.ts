@@ -3,8 +3,7 @@ import { UserController } from '../../controllers/'
 import {
   authenticateAccessToken,
   verifyAdmin,
-  verifyAdminIfNeeded,
-  ldapRestrict
+  verifyAdminIfNeeded
 } from '../../middlewares'
 import {
   deleteUserValidation,
@@ -15,24 +14,18 @@ import {
 
 const userRouter = express.Router()
 
-userRouter.post(
-  '/',
-  ldapRestrict,
-  authenticateAccessToken,
-  verifyAdmin,
-  async (req, res) => {
-    const { error, value: body } = registerUserValidation(req.body)
-    if (error) return res.status(400).send(error.details[0].message)
+userRouter.post('/', authenticateAccessToken, verifyAdmin, async (req, res) => {
+  const { error, value: body } = registerUserValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
 
-    const controller = new UserController()
-    try {
-      const response = await controller.createUser(body)
-      res.send(response)
-    } catch (err: any) {
-      res.status(403).send(err.toString())
-    }
+  const controller = new UserController()
+  try {
+    const response = await controller.createUser(body)
+    res.send(response)
+  } catch (err: any) {
+    res.status(err.code).send(err.message)
   }
-)
+})
 
 userRouter.get('/', authenticateAccessToken, async (req, res) => {
   const controller = new UserController()
@@ -40,7 +33,7 @@ userRouter.get('/', authenticateAccessToken, async (req, res) => {
     const response = await controller.getAllUsers()
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -58,7 +51,7 @@ userRouter.get(
       const response = await controller.getUserByUsername(req, username)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -71,13 +64,12 @@ userRouter.get('/:userId', authenticateAccessToken, async (req, res) => {
     const response = await controller.getUser(req, parseInt(userId))
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    res.status(err.code).send(err.message)
   }
 })
 
 userRouter.patch(
   '/by/username/:username',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -99,14 +91,13 @@ userRouter.patch(
       const response = await controller.updateUserByUsername(username, body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
 
 userRouter.patch(
   '/:userId',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -122,14 +113,13 @@ userRouter.patch(
       const response = await controller.updateUser(parseInt(userId), body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
 
 userRouter.delete(
   '/by/username/:username',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -151,14 +141,13 @@ userRouter.delete(
       await controller.deleteUserByUsername(username, data, user!.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
 
 userRouter.delete(
   '/:userId',
-  ldapRestrict,
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
@@ -174,7 +163,7 @@ userRouter.delete(
       await controller.deleteUser(parseInt(userId), data, user!.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )

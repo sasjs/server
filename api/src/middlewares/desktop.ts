@@ -1,7 +1,7 @@
 import { RequestHandler, Request } from 'express'
 import { userInfo } from 'os'
 import { RequestUser } from '../types'
-import { ModeType, AuthProviderType } from '../utils'
+import { ModeType } from '../utils'
 
 const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/1
 
@@ -22,18 +22,6 @@ export const desktopRestrict: RequestHandler = (req, res, next) => {
   if (MODE === ModeType.Desktop) {
     if (!reqAllowedInDesktopMode(req))
       return res.status(403).send('Not Allowed while in Desktop Mode.')
-  }
-
-  next()
-}
-
-export const ldapRestrict: RequestHandler = (req, res, next) => {
-  const { AUTH_MECHANISM } = process.env
-
-  if (AUTH_MECHANISM === AuthProviderType.LDAP) {
-    return res
-      .status(403)
-      .send(`Not Allowed while AUTH_MECHANISM is '${AuthProviderType.LDAP}'.`)
   }
 
   next()
