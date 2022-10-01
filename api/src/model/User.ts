@@ -19,11 +19,6 @@ export interface UserPayload {
    */
   password: string
   /**
-   * Identifies the source from which user is created
-   * @example "internal"
-   */
-  authProvider?: AuthProviderType
-  /**
    * Account should be admin or not, defaults to false
    * @example "false"
    */
@@ -48,6 +43,7 @@ interface IUserDocument extends UserPayload, Document {
   autoExec: string
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
+  authProvider?: AuthProviderType
 }
 
 export interface IUser extends IUserDocument {

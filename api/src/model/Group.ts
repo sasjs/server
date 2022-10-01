@@ -18,11 +18,6 @@ export interface GroupPayload {
    */
   description: string
   /**
-   * Identifies the source from which group is created
-   * @example "false"
-   */
-  authProvider?: AuthProviderType
-  /**
    * Group should be active or not, defaults to true
    * @example "true"
    */
@@ -33,6 +28,7 @@ interface IGroupDocument extends GroupPayload, Document {
   groupId: number
   isActive: boolean
   users: Schema.Types.ObjectId[]
+  authProvider?: AuthProviderType
 }
 
 interface IGroup extends IGroupDocument {

@@ -318,11 +318,6 @@ components:
                 - isAdmin
             type: object
             additionalProperties: false
-        AuthProviderType:
-            enum:
-                - ldap
-                - internal
-            type: string
         UserPayload:
             properties:
                 displayName:
@@ -336,10 +331,6 @@ components:
                 password:
                     type: string
                     description: 'Password for user'
-                authProvider:
-                    $ref: '#/components/schemas/AuthProviderType'
-                    description: 'Identifies the source from which user is created'
-                    example: internal
                 isAdmin:
                     type: boolean
                     description: 'Account should be admin or not, defaults to false'
@@ -391,10 +382,6 @@ components:
                     type: string
                     description: 'Description of the group'
                     example: 'This group represents Data Controller Users'
-                authProvider:
-                    $ref: '#/components/schemas/AuthProviderType'
-                    description: 'Identifies the source from which group is created'
-                    example: 'false'
                 isActive:
                     type: boolean
                     description: 'Group should be active or not, defaults to true'
