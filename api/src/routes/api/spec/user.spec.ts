@@ -4,7 +4,12 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController, GroupController } from '../../../controllers/'
-import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import {
+  generateAccessToken,
+  saveTokensInDB,
+  AuthProviderType
+} from '../../../utils'
+import User from '../../../model/User'
 
 const clientId = 'someclientID'
 const adminUser = {
@@ -224,6 +229,36 @@ describe('user', () => {
         .auth(accessToken, { type: 'bearer' })
         .send({ ...user, displayName: newDisplayName })
         .expect(400)
+    })
+
+    it('should respond with Method Not Allowed, when updating username of user created by an external auth provider', async () => {
+      const dbUser = await User.create({
+        ...user,
+        authProvider: AuthProviderType.LDAP
+      })
+      const accessToken = await generateAndSaveToken(dbUser!.id)
+      const newUsername = 'newUsername'
+
+      await request(app)
+        .patch(`/SASjsApi/user/${dbUser!.id}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ username: newUsername })
+        .expect(405)
+    })
+
+    it('should respond with Method Not Allowed, when updating displayName of user created by an external auth provider', async () => {
+      const dbUser = await User.create({
+        ...user,
+        authProvider: AuthProviderType.LDAP
+      })
+      const accessToken = await generateAndSaveToken(dbUser!.id)
+      const newDisplayName = 'My new display Name'
+
+      await request(app)
+        .patch(`/SASjsApi/user/${dbUser!.id}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ displayName: newDisplayName })
+        .expect(405)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
