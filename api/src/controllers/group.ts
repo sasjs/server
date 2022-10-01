@@ -155,14 +155,6 @@ export class GroupController {
         message: 'Group not found.'
       }
 
-    if (group.authProvider !== AuthProviderType.Internal) {
-      throw {
-        code: 405,
-        status: 'Method Not Allowed',
-        message: 'Can not delete group created by an external auth provider.'
-      }
-    }
-
     return await group.remove()
   }
 }
