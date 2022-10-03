@@ -12,10 +12,10 @@ authConfigRouter.get('/', async (req, res) => {
   }
 })
 
-authConfigRouter.post('/synchronizeWithLDAP', async (req, res) => {
+authConfigRouter.post('/synchroniseWithLDAP', async (req, res) => {
   const controller = new AuthConfigController()
   try {
-    const response = await controller.synchronizeWithLDAP()
+    const response = await controller.synchroniseWithLDAP()
     res.send(response)
   } catch (err: any) {
     res.status(500).send(err.toString())

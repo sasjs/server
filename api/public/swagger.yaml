@@ -641,9 +641,9 @@ paths:
                 -
                     bearerAuth: []
             parameters: []
-    /SASjsApi/authConfig/synchronizeWithLDAP:
+    /SASjsApi/authConfig/synchroniseWithLDAP:
         post:
-            operationId: SynchronizeWithLDAP
+            operationId: SynchroniseWithLDAP
             responses:
                 '200':
                     description: Ok
@@ -660,7 +660,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {users: 5, groups: 3}
-            summary: 'Synchronizes LDAP users and groups with internal DB and returns the count of imported users and groups.'
+            summary: 'Synchronises LDAP users and groups with internal DB and returns the count of imported users and groups.'
             tags:
                 - Auth_Config
             security:

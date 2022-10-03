@@ -35,10 +35,10 @@ const AuthConfig = () => {
       .finally(() => setIsLoading(false))
   }, [])
 
-  const synchronizeWithLDAP = () => {
+  const synchroniseWithLDAP = () => {
     setIsLoading(true)
     axios
-      .post(`/SASjsApi/authConfig/synchronizeWithLDAP`)
+      .post(`/SASjsApi/authConfig/synchroniseWithLDAP`)
       .then((res: any) => {
         const { userCount, groupCount } = res.data
         toast.success(
@@ -137,9 +137,9 @@ const AuthConfig = () => {
             <Button
               type="submit"
               variant="contained"
-              onClick={synchronizeWithLDAP}
+              onClick={synchroniseWithLDAP}
             >
-              Synchronize
+              Synchronise
             </Button>
           </CardActions>
         </Card>
