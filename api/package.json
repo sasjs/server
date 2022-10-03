@@ -4,7 +4,7 @@
   "description": "Api of SASjs server",
   "main": "./src/server.ts",
   "scripts": {
-    "initial": "npm run swagger && npm run compileSysInit && npm run copySASjsCore",
+    "initial": "npm run swagger && npm run compileSysInit && npm run copySASjsCore && npm run downloadMacros",
     "prestart": "npm run initial",
     "prebuild": "npm run initial",
     "start": "NODE_ENV=development nodemon ./src/server.ts",
@@ -17,20 +17,21 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "exe": "npm run build && pkg .",
-    "copy:files": "npm run public:copy && npm run sasjsbuild:copy && npm run sasjscore:copy && npm run web:copy",
+    "copy:files": "npm run public:copy && npm run sasjsbuild:copy && npm run sas:copy && npm run web:copy",
     "public:copy": "cp -r ./public/ ./build/public/",
     "sasjsbuild:copy": "cp -r ./sasjsbuild/ ./build/sasjsbuild/",
-    "sasjscore:copy": "cp -r ./sasjscore/ ./build/sasjscore/",
+    "sas:copy": "cp -r ./sas/ ./build/sas/",
     "web:copy": "rimraf web && mkdir web && cp -r ../web/build/ ./web/build/",
     "compileSysInit": "ts-node ./scripts/compileSysInit.ts",
-    "copySASjsCore": "ts-node ./scripts/copySASjsCore.ts"
+    "copySASjsCore": "ts-node ./scripts/copySASjsCore.ts",
+    "downloadMacros": "ts-node ./scripts/downloadMacros.ts"
   },
   "bin": "./build/src/server.js",
   "pkg": {
     "assets": [
       "./build/public/**/*",
       "./build/sasjsbuild/**/*",
-      "./build/sasjscore/**/*",
+      "./build/sas/**/*",
       "./web/build/**/*"
     ],
     "targets": [
@@ -86,11 +87,13 @@
     "@types/swagger-ui-express": "^4.1.3",
     "@types/unzipper": "^0.10.5",
     "adm-zip": "^0.5.9",
+    "axios": "0.27.2",
     "csrf": "^3.1.0",
     "dotenv": "^10.0.0",
     "http-headers-validation": "^0.0.1",
     "jest": "^27.0.6",
     "mongodb-memory-server": "^8.0.0",
+    "nodejs-file-downloader": "4.10.2",
     "nodemon": "^2.0.7",
     "pkg": "5.6.0",
     "prettier": "^2.3.1",
