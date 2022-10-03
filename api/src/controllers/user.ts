@@ -299,14 +299,19 @@ const updateUser = async (
 
   const user = await User.findOne(findBy)
 
-  if (
-    user?.authProvider !== AuthProviderType.Internal &&
-    (username !== user?.username || displayName !== user?.displayName)
-  ) {
+  if (username && username !== user?.username && user?.authProvider) {
     throw {
       code: 405,
       message:
-        'Can not update username and display name of user that is created by an external auth provider.'
+        'Can not update username of user that is created by an external auth provider.'
+    }
+  }
+
+  if (displayName && displayName !== user?.displayName && user?.authProvider) {
+    throw {
+      code: 405,
+      message:
+        'Can not update display name of user that is created by an external auth provider.'
     }
   }
 
