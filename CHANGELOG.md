@@ -1,3 +1,17 @@
+# [0.22.0](https://github.com/sasjs/server/compare/v0.21.7...v0.22.0) (2022-10-03)
+
+
+### Bug Fixes
+
+* do not throw error on deleting group when it is created by an external auth provider ([68f0c5c](https://github.com/sasjs/server/commit/68f0c5c5884431e7e8f586dccf98132abebb193e))
+* no need to restrict api endpoints when ldap auth is applied ([a142660](https://github.com/sasjs/server/commit/a14266077d3541c7a33b7635efa4208335e73519))
+* remove authProvider attribute from user and group payload interface ([bbd7786](https://github.com/sasjs/server/commit/bbd7786c6ce13b374d896a45c23255b8fa3e8bd2))
+
+
+### Features
+
+* implemented LDAP authentication ([f915c51](https://github.com/sasjs/server/commit/f915c51b077a2b8c4099727355ed914ecd6364bd))
+
 ## [0.21.7](https://github.com/sasjs/server/compare/v0.21.6...v0.21.7) (2022-09-30)
 
 
