@@ -125,8 +125,18 @@ PRIVATE_KEY=privkey.pem (required)
 CERT_CHAIN=certificate.pem (required)
 CA_ROOT=fullchain.pem (optional)
 
-# ENV variables required for MODE: `server`
+## ENV variables required for MODE: `server`
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
+
+# AUTH_PROVIDERS options: [ldap|internal] default: `internal`
+AUTH_PROVIDERS=
+
+## ENV variables required for AUTH_MECHANISM: `ldap`
+LDAP_URL= <LDAP_SERVER_URL>
+LDAP_BIND_DN= <cn=admin,ou=system,dc=cloudron>
+LDAP_BIND_PASSWORD = <password>
+LDAP_USERS_BASE_DN = <ou=users,dc=cloudron>
+LDAP_GROUPS_BASE_DN = <ou=groups,dc=cloudron>
 
 # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
 # If enabled, be sure to also configure the WHITELIST of third party servers.

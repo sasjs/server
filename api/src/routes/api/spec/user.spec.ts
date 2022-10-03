@@ -4,7 +4,12 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController, GroupController } from '../../../controllers/'
-import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import {
+  generateAccessToken,
+  saveTokensInDB,
+  AuthProviderType
+} from '../../../utils'
+import User from '../../../model/User'
 
 const clientId = 'someclientID'
 const adminUser = {
@@ -110,16 +115,16 @@ describe('user', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if username is already present', async () => {
+    it('should respond with Conflict if username is already present', async () => {
       await controller.createUser(user)
 
       const res = await request(app)
         .post('/SASjsApi/user')
         .auth(adminAccessToken, { type: 'bearer' })
         .send(user)
-        .expect(403)
+        .expect(409)
 
-      expect(res.text).toEqual('Error: Username already exists.')
+      expect(res.text).toEqual('Username already exists.')
       expect(res.body).toEqual({})
     })
 
@@ -226,6 +231,36 @@ describe('user', () => {
         .expect(400)
     })
 
+    it('should respond with Method Not Allowed, when updating username of user created by an external auth provider', async () => {
+      const dbUser = await User.create({
+        ...user,
+        authProvider: AuthProviderType.LDAP
+      })
+      const accessToken = await generateAndSaveToken(dbUser!.id)
+      const newUsername = 'newUsername'
+
+      await request(app)
+        .patch(`/SASjsApi/user/${dbUser!.id}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ username: newUsername })
+        .expect(405)
+    })
+
+    it('should respond with Method Not Allowed, when updating displayName of user created by an external auth provider', async () => {
+      const dbUser = await User.create({
+        ...user,
+        authProvider: AuthProviderType.LDAP
+      })
+      const accessToken = await generateAndSaveToken(dbUser!.id)
+      const newDisplayName = 'My new display Name'
+
+      await request(app)
+        .patch(`/SASjsApi/user/${dbUser!.id}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send({ displayName: newDisplayName })
+        .expect(405)
+    })
+
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app)
         .patch('/SASjsApi/user/1234')
@@ -254,7 +289,7 @@ describe('user', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if username is already present', async () => {
+    it('should respond with Conflict if username is already present', async () => {
       const dbUser1 = await controller.createUser(user)
       const dbUser2 = await controller.createUser({
         ...user,
@@ -265,9 +300,9 @@ describe('user', () => {
         .patch(`/SASjsApi/user/${dbUser1.id}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send({ username: dbUser2.username })
-        .expect(403)
+        .expect(409)
 
-      expect(res.text).toEqual('Error: Username already exists.')
+      expect(res.text).toEqual('Username already exists.')
       expect(res.body).toEqual({})
     })
 
@@ -349,7 +384,7 @@ describe('user', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if username is already present', async () => {
+      it('should respond with Conflict if username is already present', async () => {
         const dbUser1 = await controller.createUser(user)
         const dbUser2 = await controller.createUser({
           ...user,
@@ -360,9 +395,9 @@ describe('user', () => {
           .patch(`/SASjsApi/user/by/username/${dbUser1.username}`)
           .auth(adminAccessToken, { type: 'bearer' })
           .send({ username: dbUser2.username })
-          .expect(403)
+          .expect(409)
 
-        expect(res.text).toEqual('Error: Username already exists.')
+        expect(res.text).toEqual('Username already exists.')
         expect(res.body).toEqual({})
       })
     })
@@ -446,7 +481,7 @@ describe('user', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden when user himself requests and password is incorrect', async () => {
+    it('should respond with Unauthorized when user himself requests and password is incorrect', async () => {
       const dbUser = await controller.createUser(user)
       const accessToken = await generateAndSaveToken(dbUser.id)
 
@@ -454,9 +489,9 @@ describe('user', () => {
         .delete(`/SASjsApi/user/${dbUser.id}`)
         .auth(accessToken, { type: 'bearer' })
         .send({ password: 'incorrectpassword' })
-        .expect(403)
+        .expect(401)
 
-      expect(res.text).toEqual('Error: Invalid password.')
+      expect(res.text).toEqual('Invalid password.')
       expect(res.body).toEqual({})
     })
 
@@ -528,7 +563,7 @@ describe('user', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden when user himself requests and password is incorrect', async () => {
+      it('should respond with Unauthorized when user himself requests and password is incorrect', async () => {
         const dbUser = await controller.createUser(user)
         const accessToken = await generateAndSaveToken(dbUser.id)
 
@@ -536,9 +571,9 @@ describe('user', () => {
           .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
           .auth(accessToken, { type: 'bearer' })
           .send({ password: 'incorrectpassword' })
-          .expect(403)
+          .expect(401)
 
-        expect(res.text).toEqual('Error: Invalid password.')
+        expect(res.text).toEqual('Invalid password.')
         expect(res.body).toEqual({})
       })
     })
@@ -652,16 +687,16 @@ describe('user', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if userId is incorrect', async () => {
+    it('should respond with Not Found if userId is incorrect', async () => {
       await controller.createUser(user)
 
       const res = await request(app)
         .get('/SASjsApi/user/1234')
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
-        .expect(403)
+        .expect(404)
 
-      expect(res.text).toEqual('Error: User is not found.')
+      expect(res.text).toEqual('User is not found.')
       expect(res.body).toEqual({})
     })
 
@@ -731,16 +766,16 @@ describe('user', () => {
         expect(res.body).toEqual({})
       })
 
-      it('should respond with Forbidden if username is incorrect', async () => {
+      it('should respond with Not Found if username is incorrect', async () => {
         await controller.createUser(user)
 
         const res = await request(app)
           .get('/SASjsApi/user/by/username/randomUsername')
           .auth(adminAccessToken, { type: 'bearer' })
           .send()
-          .expect(403)
+          .expect(404)
 
-        expect(res.text).toEqual('Error: User is not found.')
+        expect(res.text).toEqual('User is not found.')
         expect(res.body).toEqual({})
       })
     })

@@ -12,6 +12,7 @@ import {
 
 import Group, { GroupPayload, PUBLIC_GROUP_NAME } from '../model/Group'
 import User from '../model/User'
+import { AuthProviderType } from '../utils'
 import { UserResponse } from './user'
 
 export interface GroupResponse {
@@ -147,12 +148,14 @@ export class GroupController {
   @Delete('{groupId}')
   public async deleteGroup(@Path() groupId: number) {
     const group = await Group.findOne({ groupId })
-    if (group) return await group.remove()
-    throw {
-      code: 404,
-      status: 'Not Found',
-      message: 'Group not found.'
-    }
+    if (!group)
+      throw {
+        code: 404,
+        status: 'Not Found',
+        message: 'Group not found.'
+      }
+
+    return await group.remove()
   }
 }
 
@@ -248,12 +251,26 @@ const updateUsersListInGroup = async (
       message: `Can't add/remove user to '${PUBLIC_GROUP_NAME}' group.`
     }
 
+  if (group.authProvider !== AuthProviderType.Internal)
+    throw {
+      code: 405,
+      status: 'Method Not Allowed',
+      message: `Can't add/remove user to group created by external auth provider.`
+    }
+
   const user = await User.findOne({ id: userId })
   if (!user)
     throw {
       code: 404,
       status: 'Not Found',
       message: 'User not found.'
+    }
+
+  if (user.authProvider !== AuthProviderType.Internal)
+    throw {
+      code: 405,
+      status: 'Method Not Allowed',
+      message: `Can't add/remove user to group created by external auth provider.`
     }
 
   const updatedGroup =

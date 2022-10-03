@@ -7,6 +7,7 @@ import TabPanel from '@mui/lab/TabPanel'
 
 import Permission from './permission'
 import Profile from './profile'
+import AuthConfig from './authConfig'
 
 import { AppContext, ModeType } from '../../context/appContext'
 import PermissionsContextProvider from '../../context/permissionsContext'
@@ -59,6 +60,9 @@ const Settings = () => {
             {appContext.mode === ModeType.Server && (
               <StyledTab label="Permissions" value="permission" />
             )}
+            {appContext.mode === ModeType.Server && appContext.isAdmin && (
+              <StyledTab label="Auth Config" value="auth_config" />
+            )}
           </TabList>
         </Box>
         <StyledTabpanel value="profile">
@@ -68,6 +72,9 @@ const Settings = () => {
           <PermissionsContextProvider>
             <Permission />
           </PermissionsContextProvider>
+        </StyledTabpanel>
+        <StyledTabpanel value="auth_config">
+          <AuthConfig />
         </StyledTabpanel>
       </TabContext>
     </Box>

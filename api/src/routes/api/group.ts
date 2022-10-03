@@ -18,11 +18,7 @@ groupRouter.post(
       const response = await controller.createGroup(body)
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -33,11 +29,7 @@ groupRouter.get('/', authenticateAccessToken, async (req, res) => {
     const response = await controller.getAllGroups()
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err.message)
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -49,11 +41,7 @@ groupRouter.get('/:groupId', authenticateAccessToken, async (req, res) => {
     const response = await controller.getGroup(parseInt(groupId))
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err.message)
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -71,11 +59,7 @@ groupRouter.get(
       const response = await controller.getGroupByGroupName(name)
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -95,11 +79,7 @@ groupRouter.post(
       )
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -119,11 +99,7 @@ groupRouter.delete(
       )
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -140,11 +116,7 @@ groupRouter.delete(
       await controller.deleteGroup(parseInt(groupId))
       res.status(200).send('Group Deleted!')
     } catch (err: any) {
-      const statusCode = err.code
-
-      delete err.code
-
-      res.status(statusCode).send(err.message)
+      res.status(err.code).send(err.message)
     }
   }
 )

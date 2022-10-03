@@ -4,8 +4,13 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController, GroupController } from '../../../controllers/'
-import { generateAccessToken, saveTokensInDB } from '../../../utils'
-import { PUBLIC_GROUP_NAME } from '../../../model/Group'
+import {
+  generateAccessToken,
+  saveTokensInDB,
+  AuthProviderType
+} from '../../../utils'
+import Group, { PUBLIC_GROUP_NAME } from '../../../model/Group'
+import User from '../../../model/User'
 
 const clientId = 'someclientID'
 const adminUser = {
@@ -560,6 +565,46 @@ describe('group', () => {
         `Can't add/remove user to '${PUBLIC_GROUP_NAME}' group.`
       )
     })
+
+    it('should respond with Method Not Allowed if group is created by an external authProvider', async () => {
+      const dbGroup = await Group.create({
+        ...group,
+        authProvider: AuthProviderType.LDAP
+      })
+      const dbUser = await userController.createUser({
+        ...user,
+        username: 'ldapGroupUser'
+      })
+
+      const res = await request(app)
+        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(405)
+
+      expect(res.text).toEqual(
+        `Can't add/remove user to group created by external auth provider.`
+      )
+    })
+
+    it('should respond with Method Not Allowed if user is created by an external authProvider', async () => {
+      const dbGroup = await groupController.createGroup(group)
+      const dbUser = await User.create({
+        ...user,
+        username: 'ldapUser',
+        authProvider: AuthProviderType.LDAP
+      })
+
+      const res = await request(app)
+        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(405)
+
+      expect(res.text).toEqual(
+        `Can't add/remove user to group created by external auth provider.`
+      )
+    })
   })
 
   describe('RemoveUser', () => {
@@ -609,6 +654,46 @@ describe('group', () => {
         .expect(200)
 
       expect(res.body.groups).toEqual([])
+    })
+
+    it('should respond with Method Not Allowed if group is created by an external authProvider', async () => {
+      const dbGroup = await Group.create({
+        ...group,
+        authProvider: AuthProviderType.LDAP
+      })
+      const dbUser = await userController.createUser({
+        ...user,
+        username: 'removeLdapGroupUser'
+      })
+
+      const res = await request(app)
+        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(405)
+
+      expect(res.text).toEqual(
+        `Can't add/remove user to group created by external auth provider.`
+      )
+    })
+
+    it('should respond with Method Not Allowed if user is created by an external authProvider', async () => {
+      const dbGroup = await groupController.createGroup(group)
+      const dbUser = await User.create({
+        ...user,
+        username: 'removeLdapUser',
+        authProvider: AuthProviderType.LDAP
+      })
+
+      const res = await request(app)
+        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(405)
+
+      expect(res.text).toEqual(
+        `Can't add/remove user to group created by external auth provider.`
+      )
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
