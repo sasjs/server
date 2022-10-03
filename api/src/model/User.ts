@@ -71,8 +71,7 @@ const userSchema = new Schema<IUserDocument>({
   },
   authProvider: {
     type: String,
-    enum: AuthProviderType,
-    default: 'internal'
+    enum: AuthProviderType
   },
   isAdmin: {
     type: Boolean,

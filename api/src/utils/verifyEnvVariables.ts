@@ -9,8 +9,7 @@ export enum ModeType {
 }
 
 export enum AuthProviderType {
-  LDAP = 'ldap',
-  Internal = 'internal'
+  LDAP = 'ldap'
 }
 
 export enum ProtocolType {
@@ -111,7 +110,7 @@ const verifyMODE = (): string[] => {
   }
 
   if (process.env.MODE === ModeType.Server) {
-    const { DB_CONNECT, AUTH_MECHANISM } = process.env
+    const { DB_CONNECT, AUTH_PROVIDERS } = process.env
 
     if (process.env.NODE_ENV !== 'test') {
       if (!DB_CONNECT)
@@ -119,14 +118,12 @@ const verifyMODE = (): string[] => {
           `- DB_CONNECT is required for PROTOCOL '${ModeType.Server}'`
         )
 
-      if (AUTH_MECHANISM) {
-        const authMechanismTypes = Object.values(AuthProviderType)
-        if (!authMechanismTypes.includes(AUTH_MECHANISM as AuthProviderType))
+      if (AUTH_PROVIDERS) {
+        const authProvidersType = Object.values(AuthProviderType)
+        if (!authProvidersType.includes(AUTH_PROVIDERS as AuthProviderType))
           errors.push(
-            `- AUTH_MECHANISM '${AUTH_MECHANISM}'\n - valid options ${authMechanismTypes}`
+            `- AUTH_PROVIDERS '${AUTH_PROVIDERS}'\n - valid options ${authProvidersType}`
           )
-      } else {
-        process.env.AUTH_MECHANISM = DEFAULTS.AUTH_MECHANISM
       }
     }
   }
@@ -307,37 +304,37 @@ const verifyLDAPVariables = () => {
     LDAP_USERS_BASE_DN,
     LDAP_GROUPS_BASE_DN,
     MODE,
-    AUTH_MECHANISM
+    AUTH_PROVIDERS
   } = process.env
 
-  if (MODE === ModeType.Server && AUTH_MECHANISM === AuthProviderType.LDAP) {
+  if (MODE === ModeType.Server && AUTH_PROVIDERS === AuthProviderType.LDAP) {
     if (!LDAP_URL) {
       errors.push(
-        `- LDAP_URL is required for AUTH_MECHANISM '${AuthProviderType.LDAP}'`
+        `- LDAP_URL is required for AUTH_PROVIDER '${AuthProviderType.LDAP}'`
       )
     }
 
     if (!LDAP_BIND_DN) {
       errors.push(
-        `- LDAP_BIND_DN is required for AUTH_MECHANISM '${AuthProviderType.LDAP}'`
+        `- LDAP_BIND_DN is required for AUTH_PROVIDER '${AuthProviderType.LDAP}'`
       )
     }
 
     if (!LDAP_BIND_PASSWORD) {
       errors.push(
-        `- LDAP_BIND_PASSWORD is required for AUTH_MECHANISM '${AuthProviderType.LDAP}'`
+        `- LDAP_BIND_PASSWORD is required for AUTH_PROVIDER '${AuthProviderType.LDAP}'`
       )
     }
 
     if (!LDAP_USERS_BASE_DN) {
       errors.push(
-        `- LDAP_USERS_BASE_DN is required for AUTH_MECHANISM '${AuthProviderType.LDAP}'`
+        `- LDAP_USERS_BASE_DN is required for AUTH_PROVIDER '${AuthProviderType.LDAP}'`
       )
     }
 
     if (!LDAP_GROUPS_BASE_DN) {
       errors.push(
-        `- LDAP_GROUPS_BASE_DN is required for AUTH_MECHANISM '${AuthProviderType.LDAP}'`
+        `- LDAP_GROUPS_BASE_DN is required for AUTH_PROVIDER '${AuthProviderType.LDAP}'`
       )
     }
   }
@@ -347,7 +344,6 @@ const verifyLDAPVariables = () => {
 
 const DEFAULTS = {
   MODE: ModeType.Desktop,
-  AUTH_MECHANISM: AuthProviderType.Internal,
   PROTOCOL: ProtocolType.HTTP,
   PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,

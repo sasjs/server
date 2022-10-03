@@ -251,7 +251,7 @@ const updateUsersListInGroup = async (
       message: `Can't add/remove user to '${PUBLIC_GROUP_NAME}' group.`
     }
 
-  if (group.authProvider !== AuthProviderType.Internal)
+  if (group.authProvider)
     throw {
       code: 405,
       status: 'Method Not Allowed',
@@ -266,7 +266,7 @@ const updateUsersListInGroup = async (
       message: 'User not found.'
     }
 
-  if (user.authProvider !== AuthProviderType.Internal)
+  if (user.authProvider)
     throw {
       code: 405,
       status: 'Method Not Allowed',

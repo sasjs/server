@@ -50,8 +50,7 @@ const groupSchema = new Schema<IGroupDocument>({
   },
   authProvider: {
     type: String,
-    enum: AuthProviderType,
-    default: 'internal'
+    enum: AuthProviderType
   },
   isActive: {
     type: Boolean,
