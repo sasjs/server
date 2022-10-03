@@ -3,6 +3,7 @@ import { Session } from '../../types'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import {
+  getPackagesFolder,
   getSessionsFolder,
   generateUniqueFileName,
   sysInitCompiledPath,
@@ -104,7 +105,8 @@ export class SASSessionController extends SessionController {
 
     // the autoexec file is executed on SAS startup
     const autoExecPath = path.join(sessionFolder, 'autoexec.sas')
-    const contentForAutoExec = `/* compiled systemInit */
+    const contentForAutoExec = `filename packages "${getPackagesFolder()}";
+/* compiled systemInit */
 ${compiledSystemInitContent}
 /* autoexec */
 ${autoExecContent}`
