@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/sasjs/server/compare/v0.22.1...v0.23.0) (2022-10-03)
+
+
+### Features
+
+* Enable SAS_PACKAGES in SASjs Server ([424f0fc](https://github.com/sasjs/server/commit/424f0fc1faec765eb7a14619584e649454105b70))
+
 ## [0.22.1](https://github.com/sasjs/server/compare/v0.22.0...v0.22.1) (2022-10-03)
 
 
