@@ -1,3 +1,10 @@
+## [0.22.1](https://github.com/sasjs/server/compare/v0.22.0...v0.22.1) (2022-10-03)
+
+
+### Bug Fixes
+
+* spelling issues ([3bb0597](https://github.com/sasjs/server/commit/3bb05974d216d69368f4498eb9f309bce7d97fd8))
+
 # [0.22.0](https://github.com/sasjs/server/compare/v0.21.7...v0.22.0) (2022-10-03)
 
 
