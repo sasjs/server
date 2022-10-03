@@ -128,7 +128,7 @@ CA_ROOT=fullchain.pem (optional)
 ## ENV variables required for MODE: `server`
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 
-# AUTH_PROVIDERS options: [ldap|internal] default: `internal`
+# AUTH_PROVIDERS options: [ldap] default: ``
 AUTH_PROVIDERS=
 
 ## ENV variables required for AUTH_MECHANISM: `ldap`

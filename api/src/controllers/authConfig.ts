@@ -30,20 +30,20 @@ export class AuthConfigController {
   }
 
   /**
-   * @summary Synchronizes LDAP users and groups with internal DB and returns the count of imported users and groups.
+   * @summary Synchronises LDAP users and groups with internal DB and returns the count of imported users and groups.
    *
    */
   @Example({
     users: 5,
     groups: 3
   })
-  @Post('/synchronizeWithLDAP')
-  public async synchronizeWithLDAP() {
-    return synchronizeWithLDAP()
+  @Post('/synchroniseWithLDAP')
+  public async synchroniseWithLDAP() {
+    return synchroniseWithLDAP()
   }
 }
 
-const synchronizeWithLDAP = async () => {
+const synchroniseWithLDAP = async () => {
   process.logger.info('Syncing LDAP with internal DB')
 
   const permissions = await Permission.get({})
