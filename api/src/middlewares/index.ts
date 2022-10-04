@@ -1,5 +1,6 @@
 export * from './authenticateToken'
 export * from './authorize'
+export * from './checkDomain'
 export * from './csrfProtection'
 export * from './desktop'
 export * from './verifyAdmin'

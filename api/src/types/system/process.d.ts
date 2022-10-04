@@ -12,5 +12,6 @@ declare namespace NodeJS {
     logger: import('@sasjs/utils/logger').Logger
     runTimes: import('../../utils').RunTimeType[]
     secrets: import('../../model/Configuration').ConfigurationType
+    allowedDomains: string[]
   }
 }

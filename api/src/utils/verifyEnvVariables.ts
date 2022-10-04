@@ -252,7 +252,7 @@ const verifyRUN_TIMES = (): string[] => {
   return errors
 }
 
-const verifyExecutablePaths = () => {
+const verifyExecutablePaths = (): string[] => {
   const errors: string[] = []
   const { RUN_TIMES, SAS_PATH, NODE_PATH, PYTHON_PATH, R_PATH, MODE } =
     process.env

@@ -16,6 +16,7 @@ import {
 } from './utils'
 import {
   configureCors,
+  configureDomains,
   configureExpressSession,
   configureLogger,
   configureSecurity
@@ -57,6 +58,11 @@ export default setProcessVariables().then(async () => {
    *         Enabling CORS           *
    ***********************************/
   configureCors(app)
+
+  /***********************************
+   *         Allowed Domains         *
+   ***********************************/
+  configureDomains(app)
 
   /***********************************
    *         DB Connection &          *
