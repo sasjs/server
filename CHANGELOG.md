@@ -1,3 +1,10 @@
+## [0.23.1](https://github.com/sasjs/server/compare/v0.23.0...v0.23.1) (2022-10-04)
+
+
+### Bug Fixes
+
+* ldap issues ([4d64420](https://github.com/sasjs/server/commit/4d64420c45424134b4d2014a2d5dd6e846ed03b3))
+
 # [0.23.0](https://github.com/sasjs/server/compare/v0.22.1...v0.23.0) (2022-10-03)
 
 
