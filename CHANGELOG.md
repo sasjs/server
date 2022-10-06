@@ -1,3 +1,12 @@
+## [0.23.2](https://github.com/sasjs/server/compare/v0.23.1...v0.23.2) (2022-10-06)
+
+
+### Bug Fixes
+
+* bump in correct place ([14731e8](https://github.com/sasjs/server/commit/14731e8824fa9f3d1daf89fd62f9916d5e3fcae4))
+* bumping sasjs/score ([258cc35](https://github.com/sasjs/server/commit/258cc35f14cf50f2160f607000c60de27593fd79))
+* reverting commit ([fda0e0b](https://github.com/sasjs/server/commit/fda0e0b57d56e3b5231e626a8d933343ac0c5cdc))
+
 ## [0.23.1](https://github.com/sasjs/server/compare/v0.23.0...v0.23.1) (2022-10-04)
 
 
