@@ -1,3 +1,10 @@
+## [0.23.3](https://github.com/sasjs/server/compare/v0.23.2...v0.23.3) (2022-10-09)
+
+
+### Bug Fixes
+
+* added domain for session cookies ([94072c3](https://github.com/sasjs/server/commit/94072c3d24a4d0d4c97900dc31bfbf1c9d2559b7))
+
 ## [0.23.2](https://github.com/sasjs/server/compare/v0.23.1...v0.23.2) (2022-10-06)
 
 
