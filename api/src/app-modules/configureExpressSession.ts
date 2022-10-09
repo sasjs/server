@@ -1,10 +1,9 @@
-import { Express } from 'express'
+import { Express, CookieOptions } from 'express'
 import mongoose from 'mongoose'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 
-import { ModeType } from '../utils'
-import { cookieOptions } from '../app'
+import { ModeType, ProtocolType } from '../utils'
 
 export const configureExpressSession = (app: Express) => {
   const { MODE } = process.env
@@ -17,6 +16,15 @@ export const configureExpressSession = (app: Express) => {
         client: mongoose.connection!.getClient() as any,
         collectionName: 'sessions'
       })
+    }
+
+    const { PROTOCOL } = process.env
+    const cookieOptions: CookieOptions = {
+      secure: PROTOCOL === ProtocolType.HTTPS,
+      httpOnly: true,
+      sameSite: PROTOCOL === ProtocolType.HTTPS ? 'none' : undefined,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      domain: 'sas.4gl.io'
     }
 
     app.use(

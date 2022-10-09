@@ -1,5 +1,5 @@
 import path from 'path'
-import express, { ErrorRequestHandler, CookieOptions } from 'express'
+import express, { ErrorRequestHandler } from 'express'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 
@@ -8,7 +8,6 @@ import {
   getWebBuildFolder,
   instantiateLogger,
   loadAppStreamConfig,
-  ProtocolType,
   ReturnCode,
   setProcessVariables,
   setupFolders,
@@ -29,15 +28,6 @@ instantiateLogger()
 if (verifyEnvVariables()) process.exit(ReturnCode.InvalidEnv)
 
 const app = express()
-
-const { PROTOCOL } = process.env
-
-export const cookieOptions: CookieOptions = {
-  secure: PROTOCOL === ProtocolType.HTTPS,
-  httpOnly: true,
-  sameSite: PROTOCOL === ProtocolType.HTTPS ? 'none' : undefined,
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}
 
 const onError: ErrorRequestHandler = (err, req, res, next) => {
   console.error(err.stack)
