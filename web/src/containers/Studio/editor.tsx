@@ -48,7 +48,6 @@ const SASjsEditor = ({
   setTab
 }: SASjsEditorProps) => {
   const {
-    ctrlPressed,
     fileContent,
     isLoading,
     log,
@@ -64,8 +63,6 @@ const SASjsEditor = ({
     handleDiffEditorDidMount,
     handleEditorDidMount,
     handleFilePathInput,
-    handleKeyDown,
-    handleKeyUp,
     handleRunBtnClick,
     handleTabChange,
     saveFile,
@@ -99,7 +96,6 @@ const SASjsEditor = ({
       original={prevFileContent}
       value={fileContent}
       editorDidMount={handleDiffEditorDidMount}
-      options={{ readOnly: ctrlPressed }}
       onChange={(val) => setFileContent(val)}
     />
   ) : (
@@ -108,7 +104,6 @@ const SASjsEditor = ({
       language={getLanguageFromExtension(selectedFileExtension)}
       value={fileContent}
       editorDidMount={handleEditorDidMount}
-      options={{ readOnly: ctrlPressed }}
       onChange={(val) => setFileContent(val)}
     />
   )
@@ -176,8 +171,6 @@ const SASjsEditor = ({
               {fileMenu}
             </Box>
             <Paper
-              onKeyUp={handleKeyUp}
-              onKeyDown={handleKeyDown}
               sx={{
                 height: 'calc(100vh - 170px)',
                 padding: '10px',
