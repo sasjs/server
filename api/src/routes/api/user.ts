@@ -23,7 +23,7 @@ userRouter.post('/', authenticateAccessToken, verifyAdmin, async (req, res) => {
     const response = await controller.createUser(body)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -33,7 +33,7 @@ userRouter.get('/', authenticateAccessToken, async (req, res) => {
     const response = await controller.getAllUsers()
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -51,7 +51,7 @@ userRouter.get(
       const response = await controller.getUserByUsername(req, username)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -64,7 +64,7 @@ userRouter.get('/:userId', authenticateAccessToken, async (req, res) => {
     const response = await controller.getUser(req, parseInt(userId))
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    res.status(err.code).send(err.message)
   }
 })
 
@@ -91,7 +91,7 @@ userRouter.patch(
       const response = await controller.updateUserByUsername(username, body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -113,7 +113,7 @@ userRouter.patch(
       const response = await controller.updateUser(parseInt(userId), body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -141,7 +141,7 @@ userRouter.delete(
       await controller.deleteUserByUsername(username, data, user!.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )
@@ -163,7 +163,7 @@ userRouter.delete(
       await controller.deleteUser(parseInt(userId), data, user!.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      res.status(err.code).send(err.message)
     }
   }
 )

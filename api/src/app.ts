@@ -1,6 +1,5 @@
 import path from 'path'
 import express, { ErrorRequestHandler } from 'express'
-import csrf, { CookieOptions } from 'csurf'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 
@@ -9,7 +8,6 @@ import {
   getWebBuildFolder,
   instantiateLogger,
   loadAppStreamConfig,
-  ProtocolType,
   ReturnCode,
   setProcessVariables,
   setupFolders,
@@ -30,24 +28,7 @@ if (verifyEnvVariables()) process.exit(ReturnCode.InvalidEnv)
 
 const app = express()
 
-const { PROTOCOL } = process.env
-
-export const cookieOptions: CookieOptions = {
-  secure: PROTOCOL === ProtocolType.HTTPS,
-  httpOnly: true,
-  sameSite: PROTOCOL === ProtocolType.HTTPS ? 'none' : undefined,
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}
-
-/***********************************
- *         CSRF Protection         *
- ***********************************/
-export const csrfProtection = csrf({ cookie: cookieOptions })
-
 const onError: ErrorRequestHandler = (err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN')
-    return res.status(400).send('Invalid CSRF token!')
-
   console.error(err.stack)
   res.status(500).send('Something broke!')
 }
@@ -76,6 +57,10 @@ export default setProcessVariables().then(async () => {
 
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
+  app.use(express.urlencoded({ extended: true }))
+
+  // Body parser is used for decoding the formdata on POST request.
+  // Currently only place we use it is SAS9 Mock - POST /SASLogon/login
   app.use(express.urlencoded({ extended: true }))
 
   await setupFolders()

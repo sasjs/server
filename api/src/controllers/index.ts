@@ -1,4 +1,5 @@
 export * from './auth'
+export * from './authConfig'
 export * from './client'
 export * from './code'
 export * from './drive'

@@ -1,4 +1,5 @@
 import express from 'express'
+import { generateCSRFToken } from '../../middlewares'
 import { WebController } from '../../controllers/web'
 import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
 import { authorizeValidation, loginWebValidation } from '../../utils'
@@ -13,7 +14,10 @@ webRouter.get('/', async (req, res) => {
   } catch (_) {
     response = '<html><head></head><body>Web Build is not present</body></html>'
   } finally {
-    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${req.csrfToken()}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
+    const { ALLOWED_DOMAIN } = process.env
+    const allowedDomain = ALLOWED_DOMAIN?.trim()
+    const domain = allowedDomain ? ` Domain=${allowedDomain};` : ''
+    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken()};${domain} Max-Age=86400; SameSite=Strict; Path=/;'</script>`
     const injectedContent = response?.replace(
       '</head>',
       `${codeToInject}</head>`

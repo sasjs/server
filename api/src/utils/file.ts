@@ -10,7 +10,7 @@ export const sysInitCompiledPath = path.join(
   'systemInitCompiled.sas'
 )
 
-export const sasJSCoreMacros = path.join(apiRoot, 'sasjscore')
+export const sasJSCoreMacros = path.join(apiRoot, 'sas', 'sasautos')
 export const sasJSCoreMacrosInfo = path.join(sasJSCoreMacros, '.macrolist')
 
 export const getWebBuildFolder = () => path.join(codebaseRoot, 'web', 'build')
@@ -28,7 +28,10 @@ export const getAppStreamConfigPath = () =>
   path.join(getSasjsRootFolder(), 'appStreamConfig.json')
 
 export const getMacrosFolder = () =>
-  path.join(getSasjsRootFolder(), 'sasjscore')
+  path.join(getSasjsRootFolder(), 'sas', 'sasautos')
+
+export const getPackagesFolder = () =>
+  path.join(getSasjsRootFolder(), 'sas', 'sas_packages')
 
 export const getUploadsFolder = () => path.join(getSasjsRootFolder(), 'uploads')
 

@@ -1,6 +1,7 @@
 import mongoose, { Schema, model, Document, Model } from 'mongoose'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 import bcrypt from 'bcryptjs'
+import { AuthProviderType } from '../utils'
 
 export interface UserPayload {
   /**
@@ -42,6 +43,7 @@ interface IUserDocument extends UserPayload, Document {
   autoExec: string
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
+  authProvider?: AuthProviderType
 }
 
 export interface IUser extends IUserDocument {
@@ -66,6 +68,10 @@ const userSchema = new Schema<IUserDocument>({
   password: {
     type: String,
     required: true
+  },
+  authProvider: {
+    type: String,
+    enum: AuthProviderType
   },
   isAdmin: {
     type: Boolean,

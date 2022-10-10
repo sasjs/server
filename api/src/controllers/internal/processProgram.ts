@@ -32,6 +32,7 @@ export const processProgram = async (
       vars,
       session,
       weboutPath,
+      headersPath,
       tokenFile,
       otherArgs
     )

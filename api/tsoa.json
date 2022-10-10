@@ -16,11 +16,15 @@
         "description": "Operations about auth"
       },
       {
+        "name": "Auth_Config",
+        "description": "Operations about external auth providers"
+      },
+      {
         "name": "Client",
         "description": "Operations about clients"
       },
       {
-        "name": "CODE",
+        "name": "Code",
         "description": "Execution of code (various runtimes are supported)"
       },
       {

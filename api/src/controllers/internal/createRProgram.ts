@@ -1,4 +1,4 @@
-import { isWindows } from '@sasjs/utils'
+import { escapeWinSlashes } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadRCode } from '../../utils'
 import { ExecutionVars } from '.'
@@ -19,14 +19,10 @@ export const createRProgram = async (
   )
 
   const preProgramVarStatments = `
-._SASJS_SESSION_PATH <- '${
-    isWindows() ? session.path.replace(/\\/g, '\\\\') : session.path
-  }';
-._WEBOUT <- '${isWindows() ? weboutPath.replace(/\\/g, '\\\\') : weboutPath}'; 
-._SASJS_WEBOUT_HEADERS <- '${headersPath}';
-._SASJS_TOKENFILE <- '${
-    isWindows() ? tokenFile.replace(/\\/g, '\\\\') : tokenFile
-  }';
+._SASJS_SESSION_PATH <- '${escapeWinSlashes(session.path)}';
+._WEBOUT <- '${escapeWinSlashes(weboutPath)}'; 
+._SASJS_WEBOUT_HEADERS <- '${escapeWinSlashes(headersPath)}';
+._SASJS_TOKENFILE <- '${escapeWinSlashes(tokenFile)}';
 ._SASJS_USERNAME <- '${preProgramVariables?.username}';
 ._SASJS_USERID <- '${preProgramVariables?.userId}';
 ._SASJS_DISPLAYNAME <- '${preProgramVariables?.displayName}';

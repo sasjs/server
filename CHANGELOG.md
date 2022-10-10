@@ -1,3 +1,111 @@
+## [0.23.3](https://github.com/sasjs/server/compare/v0.23.2...v0.23.3) (2022-10-09)
+
+
+### Bug Fixes
+
+* added domain for session cookies ([94072c3](https://github.com/sasjs/server/commit/94072c3d24a4d0d4c97900dc31bfbf1c9d2559b7))
+
+## [0.23.2](https://github.com/sasjs/server/compare/v0.23.1...v0.23.2) (2022-10-06)
+
+
+### Bug Fixes
+
+* bump in correct place ([14731e8](https://github.com/sasjs/server/commit/14731e8824fa9f3d1daf89fd62f9916d5e3fcae4))
+* bumping sasjs/score ([258cc35](https://github.com/sasjs/server/commit/258cc35f14cf50f2160f607000c60de27593fd79))
+* reverting commit ([fda0e0b](https://github.com/sasjs/server/commit/fda0e0b57d56e3b5231e626a8d933343ac0c5cdc))
+
+## [0.23.1](https://github.com/sasjs/server/compare/v0.23.0...v0.23.1) (2022-10-04)
+
+
+### Bug Fixes
+
+* ldap issues ([4d64420](https://github.com/sasjs/server/commit/4d64420c45424134b4d2014a2d5dd6e846ed03b3))
+
+# [0.23.0](https://github.com/sasjs/server/compare/v0.22.1...v0.23.0) (2022-10-03)
+
+
+### Features
+
+* Enable SAS_PACKAGES in SASjs Server ([424f0fc](https://github.com/sasjs/server/commit/424f0fc1faec765eb7a14619584e649454105b70))
+
+## [0.22.1](https://github.com/sasjs/server/compare/v0.22.0...v0.22.1) (2022-10-03)
+
+
+### Bug Fixes
+
+* spelling issues ([3bb0597](https://github.com/sasjs/server/commit/3bb05974d216d69368f4498eb9f309bce7d97fd8))
+
+# [0.22.0](https://github.com/sasjs/server/compare/v0.21.7...v0.22.0) (2022-10-03)
+
+
+### Bug Fixes
+
+* do not throw error on deleting group when it is created by an external auth provider ([68f0c5c](https://github.com/sasjs/server/commit/68f0c5c5884431e7e8f586dccf98132abebb193e))
+* no need to restrict api endpoints when ldap auth is applied ([a142660](https://github.com/sasjs/server/commit/a14266077d3541c7a33b7635efa4208335e73519))
+* remove authProvider attribute from user and group payload interface ([bbd7786](https://github.com/sasjs/server/commit/bbd7786c6ce13b374d896a45c23255b8fa3e8bd2))
+
+
+### Features
+
+* implemented LDAP authentication ([f915c51](https://github.com/sasjs/server/commit/f915c51b077a2b8c4099727355ed914ecd6364bd))
+
+## [0.21.7](https://github.com/sasjs/server/compare/v0.21.6...v0.21.7) (2022-09-30)
+
+
+### Bug Fixes
+
+* csrf package is changed to pillarjs-csrf ([fe3e508](https://github.com/sasjs/server/commit/fe3e5088f8dfff50042ec8e8aac9ba5ba1394deb))
+
+## [0.21.6](https://github.com/sasjs/server/compare/v0.21.5...v0.21.6) (2022-09-23)
+
+
+### Bug Fixes
+
+* in getTokensFromDB handle the scenario when tokens are expired ([40f95f9](https://github.com/sasjs/server/commit/40f95f9072c8685910138d88fd2410f8704fc975))
+
+## [0.21.5](https://github.com/sasjs/server/compare/v0.21.4...v0.21.5) (2022-09-22)
+
+
+### Bug Fixes
+
+* made files extensions case insensitive ([2496043](https://github.com/sasjs/server/commit/249604384e42be4c12c88c70a7dff90fc1917a8f))
+
+## [0.21.4](https://github.com/sasjs/server/compare/v0.21.3...v0.21.4) (2022-09-21)
+
+
+### Bug Fixes
+
+* removing single quotes from _program value ([a0e7875](https://github.com/sasjs/server/commit/a0e7875ae61cbb6e7d3995d2e36e7300b0daec86))
+
+## [0.21.3](https://github.com/sasjs/server/compare/v0.21.2...v0.21.3) (2022-09-21)
+
+
+### Bug Fixes
+
+* return same tokens if not expired ([330c020](https://github.com/sasjs/server/commit/330c020933f1080261b38f07d6b627f6d7c62446))
+
+## [0.21.2](https://github.com/sasjs/server/compare/v0.21.1...v0.21.2) (2022-09-20)
+
+
+### Bug Fixes
+
+* default content-type for sas programs should be text/plain ([9977c9d](https://github.com/sasjs/server/commit/9977c9d161947b11d45ab2513f99a5320a3f5a06))
+* **studio:** inject program path to code before sending for execution ([edc2e2a](https://github.com/sasjs/server/commit/edc2e2a302ccea4985f3d6b83ef8c23620ab82b6))
+
+## [0.21.1](https://github.com/sasjs/server/compare/v0.21.0...v0.21.1) (2022-09-19)
+
+
+### Bug Fixes
+
+* SASJS_WEBOUT_HEADERS path for windows ([0749d65](https://github.com/sasjs/server/commit/0749d65173e8cfe9a93464711b7be1e123c289ff))
+
+# [0.21.0](https://github.com/sasjs/server/compare/v0.20.0...v0.21.0) (2022-09-19)
+
+
+### Features
+
+* sas9 mocker improved - public access denied scenario ([06d3b17](https://github.com/sasjs/server/commit/06d3b1715432ea245ee755ae1dfd0579d3eb30e9))
+
 # [0.20.0](https://github.com/sasjs/server/compare/v0.19.0...v0.20.0) (2022-09-16)
 
 

@@ -7,7 +7,6 @@ export const getPreProgramVariables = (req: Request): PreProgramVars => {
   const { user, accessToken } = req
   const csrfToken = req.headers['x-xsrf-token'] || req.cookies['XSRF-TOKEN']
   const sessionId = req.cookies['connect.sid']
-  const { _csrf } = req.cookies
 
   const httpHeaders: string[] = []
 
@@ -16,7 +15,6 @@ export const getPreProgramVariables = (req: Request): PreProgramVars => {
 
   const cookies: string[] = []
   if (sessionId) cookies.push(`connect.sid=${sessionId}`)
-  if (_csrf) cookies.push(`_csrf=${_csrf}`)
 
   if (cookies.length) httpHeaders.push(`cookie: ${cookies.join('; ')}`)
 

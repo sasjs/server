@@ -1,6 +1,6 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { csrfProtection } from '../app'
+import { csrfProtection } from './'
 import {
   fetchLatestAutoExec,
   ModeType,

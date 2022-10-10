@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { DiffEditorDidMount, EditorDidMount, monaco } from 'react-monaco-editor'
 import { SelectChangeEvent } from '@mui/material'
-import { getSelection } from '../helper'
+import { getSelection, programPathInjection } from '../helper'
 import { AppContext, RunTimeType } from '../../../../context/appContext'
 import { AlertSeverityType } from '../../../../components/snackbar'
 import {
@@ -151,7 +151,14 @@ const useEditor = ({
   const runCode = (code: string) => {
     setIsLoading(true)
     axios
-      .post(`/SASjsApi/code/execute`, { code, runTime: selectedRunTime })
+      .post(`/SASjsApi/code/execute`, {
+        code: programPathInjection(
+          code,
+          selectedFilePath,
+          selectedRunTime as RunTimeType
+        ),
+        runTime: selectedRunTime
+      })
       .then((res: any) => {
         setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
         setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
@@ -229,7 +236,9 @@ const useEditor = ({
   useEffect(() => {
     if (selectedFilePath) {
       setIsLoading(true)
-      setSelectedFileExtension(selectedFilePath.split('.').pop() ?? '')
+      setSelectedFileExtension(
+        selectedFilePath.split('.').pop()?.toLowerCase() ?? ''
+      )
       axios
         .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`)
         .then((res: any) => {
@@ -263,8 +272,8 @@ const useEditor = ({
   }, [fileContent, selectedFilePath])
 
   useEffect(() => {
-    if (runTimes.includes(selectedFileExtension))
-      setSelectedRunTime(selectedFileExtension)
+    const fileExtension = selectedFileExtension.toLowerCase()
+    if (runTimes.includes(fileExtension)) setSelectedRunTime(fileExtension)
   }, [selectedFileExtension, runTimes])
 
   return {

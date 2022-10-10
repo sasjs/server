@@ -4,7 +4,7 @@ import webRouter from './web'
 import apiRouter from './api'
 import appStreamRouter from './appStream'
 
-import { csrfProtection } from '../app'
+import { csrfProtection } from '../middlewares'
 
 export const setupRoutes = (app: Express) => {
   app.use('/SASjsApi', apiRouter)

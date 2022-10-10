@@ -1,4 +1,5 @@
 import express from 'express'
+import { generateCSRFToken } from '../../middlewares'
 import { WebController } from '../../controllers'
 import { MockSas9Controller } from '../../controllers/mock-sas9'
 
@@ -20,7 +21,7 @@ sas9WebRouter.get('/', async (req, res) => {
   } catch (_) {
     response = '<html><head></head><body>Web Build is not present</body></html>'
   } finally {
-    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${req.csrfToken()}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
+    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken()}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
     const injectedContent = response?.replace(
       '</head>',
       `${codeToInject}</head>`
@@ -78,6 +79,11 @@ sas9WebRouter.post('/SASStoredProcess/do/', upload.any(), async (req, res) => {
 sas9WebRouter.get('/SASLogon/login', async (req, res) => {
   const response = await controller.loginGet()
 
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
   try {
     res.send(response.content)
   } catch (err: any) {
@@ -88,6 +94,11 @@ sas9WebRouter.get('/SASLogon/login', async (req, res) => {
 sas9WebRouter.post('/SASLogon/login', async (req, res) => {
   const response = await controller.loginPost(req)
 
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
   try {
     res.send(response.content)
   } catch (err: any) {
@@ -96,7 +107,27 @@ sas9WebRouter.post('/SASLogon/login', async (req, res) => {
 })
 
 sas9WebRouter.get('/SASLogon/logout', async (req, res) => {
-  const response = await controller.logout()
+  const response = await controller.logout(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
+  try {
+    res.send(response.content)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
+sas9WebRouter.get('/SASStoredProcess/Logoff', async (req, res) => {
+  const response = await controller.logoff(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
 
   try {
     res.send(response.content)

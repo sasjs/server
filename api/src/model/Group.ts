@@ -1,6 +1,7 @@
 import mongoose, { Schema, model, Document, Model } from 'mongoose'
 import { GroupDetailsResponse } from '../controllers'
 import User, { IUser } from './User'
+import { AuthProviderType } from '../utils'
 const AutoIncrement = require('mongoose-sequence')(mongoose)
 
 export const PUBLIC_GROUP_NAME = 'Public'
@@ -27,6 +28,7 @@ interface IGroupDocument extends GroupPayload, Document {
   groupId: number
   isActive: boolean
   users: Schema.Types.ObjectId[]
+  authProvider?: AuthProviderType
 }
 
 interface IGroup extends IGroupDocument {
@@ -45,6 +47,10 @@ const groupSchema = new Schema<IGroupDocument>({
   description: {
     type: String,
     default: 'Group description.'
+  },
+  authProvider: {
+    type: String,
+    enum: AuthProviderType
   },
   isActive: {
     type: Boolean,

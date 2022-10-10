@@ -17,7 +17,12 @@ import {
 import { desktopUser } from '../middlewares'
 
 import User, { UserPayload } from '../model/User'
-import { getUserAutoExec, updateUserAutoExec, ModeType } from '../utils'
+import {
+  getUserAutoExec,
+  updateUserAutoExec,
+  ModeType,
+  AuthProviderType
+} from '../utils'
 import { GroupResponse } from './group'
 
 export interface UserResponse {
@@ -211,7 +216,11 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
 
   // Checking if user is already in the database
   const usernameExist = await User.findOne({ username })
-  if (usernameExist) throw new Error('Username already exists.')
+  if (usernameExist)
+    throw {
+      code: 409,
+      message: 'Username already exists.'
+    }
 
   // Hash passwords
   const hashPassword = User.hashPassword(password)
@@ -255,7 +264,11 @@ const getUser = async (
     'groupId name description -_id'
   )) as unknown as UserDetailsResponse
 
-  if (!user) throw new Error('User is not found.')
+  if (!user)
+    throw {
+      code: 404,
+      message: 'User is not found.'
+    }
 
   return {
     id: user.id,
@@ -284,6 +297,24 @@ const updateUser = async (
 
   const params: any = { displayName, isAdmin, isActive, autoExec }
 
+  const user = await User.findOne(findBy)
+
+  if (username && username !== user?.username && user?.authProvider) {
+    throw {
+      code: 405,
+      message:
+        'Can not update username of user that is created by an external auth provider.'
+    }
+  }
+
+  if (displayName && displayName !== user?.displayName && user?.authProvider) {
+    throw {
+      code: 405,
+      message:
+        'Can not update display name of user that is created by an external auth provider.'
+    }
+  }
+
   if (username) {
     // Checking if user is already in the database
     const usernameExist = await User.findOne({ username })
@@ -292,7 +323,10 @@ const updateUser = async (
         (findBy.id && usernameExist.id != findBy.id) ||
         (findBy.username && usernameExist.username != findBy.username)
       )
-        throw new Error('Username already exists.')
+        throw {
+          code: 409,
+          message: 'Username already exists.'
+        }
     }
     params.username = username
   }
@@ -305,7 +339,10 @@ const updateUser = async (
   const updatedUser = await User.findOneAndUpdate(findBy, params, { new: true })
 
   if (!updatedUser)
-    throw new Error(`Unable to find user with ${findBy.id || findBy.username}`)
+    throw {
+      code: 404,
+      message: `Unable to find user with ${findBy.id || findBy.username}`
+    }
 
   return {
     id: updatedUser.id,
@@ -332,11 +369,19 @@ const deleteUser = async (
   { password }: { password?: string }
 ) => {
   const user = await User.findOne(findBy)
-  if (!user) throw new Error('User is not found.')
+  if (!user)
+    throw {
+      code: 404,
+      message: 'User is not found.'
+    }
 
   if (!isAdmin) {
     const validPass = user.comparePassword(password!)
-    if (!validPass) throw new Error('Invalid password.')
+    if (!validPass)
+      throw {
+        code: 401,
+        message: 'Invalid password.'
+      }
   }
 
   await User.deleteOne(findBy)
