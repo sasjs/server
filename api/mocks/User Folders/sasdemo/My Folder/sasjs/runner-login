@@ -2,12 +2,12 @@
 <!-- Copyright(C) 2002-2011, SAS Institute Inc., Cary, NC, USA. All Rights Reserved -->
 <html><head>
 <title>Stored Process Error</title>
-<link type="text/css" href="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/styles/sasComponents_FF_5.css" rel="stylesheet" />
-<link type="text/css" href="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/styles/sasStyle.css" rel="stylesheet" />
-<link type="text/css" href="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/styles/custom.css" rel="stylesheet" />
+<link type="text/css" href="http://sasdemo.demo.sas.com/SASTheme_default/themes/default/styles/sasComponents_FF_5.css" rel="stylesheet" />
+<link type="text/css" href="http://sasdemo.demo.sas.com/SASTheme_default/themes/default/styles/sasStyle.css" rel="stylesheet" />
+<link type="text/css" href="http://sasdemo.demo.sas.com/SASTheme_default/themes/default/styles/custom.css" rel="stylesheet" />
 
 <style type="text/css">
-BODY { background-image:      url(http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/LogonArtTile.gif);
+BODY { background-image:      url(http://sasdemo.demo.sas.com/SASTheme_default/themes/default/images/LogonArtTile.gif);
        background-repeat:     repeat-y;
        background-attachment: scroll;
        background-position:   left top;
@@ -21,13 +21,13 @@ BODY { background-image:      url(http://sas-aap.demo.sas.com/SASTheme_default/t
 </style>
 </head>
 <body>
-<img class="coloredbar" src="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/SASColoredBarsTransparent.gif" alt="" title="" />
+<img class="coloredbar" src="http://sasdemo.demo.sas.com/SASTheme_default/themes/default/images/SASColoredBarsTransparent.gif" alt="" title="" />
 <div class="solutionsErrorTitle">
-<img src="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/MessageError24.gif" border="0" height="24" width="24" alt="Error" title="Error" align="absmiddle" />
+<img src="http://sasdemo.demo.sas.com/SASTheme_default/themes/default/images/MessageError24.gif" border="0" height="24" width="24" alt="Error" title="Error" align="absmiddle" />
 Stored Process Error
 </div>
 <div class="solutionsSmallItem">
-<img src="http://sas-aap.demo.sas.com/SASTheme_default/themes/default/images/spacer.gif" height="10" alt="" title="" /><br />
+<img src="http://sasdemo.demo.sas.com/SASTheme_default/themes/default/images/spacer.gif" height="10" alt="" title="" /><br />
 <h3>The SAS program did not produce any output.</h3>
 </div>
 <script type="text/javascript">/*<![CDATA[*/
@@ -55,7 +55,7 @@ function SAS_toggleLog() {
 
 <font color=blue>NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA. 
 NOTE: SAS (r) Proprietary Software 9.4 (TS1M7) 
-      Licensed to VAVS7.5 Prod - EBIDIEGAnalytics - 21w47 18 Nov 21, Site 70068130.
+      Licensed to VAVS7.5 Prod - EBIDIEGAnalytics - 21w47 18 Nov 21, Site 123.
 NOTE: This session is executing on the X64_DSRV16  platform.
 </font>
 
@@ -88,7 +88,7 @@ NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer
  _HTUA=axios/0.26.0
  _METAFOLDER=/User Folders/sasdemo/My Folder/sasjs/
  _METAPERSON=sasdemo
- _METAUSER=sasdemo@SAS-AAP
+ _METAUSER=sasdemo@sasdemo
  _PASSWORD=XXXXXX
  _PROGRAM=/User Folders/sasdemo/My Folder/sasjs/runner
  _REPLAY="&amp;_URL?_sessionid=5A1B81EB-2300-4879-98FA-093E8836FCB6&amp;_program=replay&amp;_entry=&amp;_TMPCAT.."
@@ -98,7 +98,7 @@ NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer
  _RMTADDR=10.96.11.230
  _RMTHOST=10.96.11.230
  _SECUREUSERNAME=sasdemo
- _SRVNAME=sas-aap.demo.sas.com
+ _SRVNAME=sasdemo.demo.sas.com
  _SRVPORT=80
  _TMPCAT=APSWORK.TCAT0041
  _URL=/SASStoredProcess/do

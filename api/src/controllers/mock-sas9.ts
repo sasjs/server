@@ -2,6 +2,8 @@ import { readFile } from '@sasjs/utils'
 import express from 'express'
 import path from 'path'
 import { Request, Post, Get } from 'tsoa'
+import fs from 'fs'
+import fse from 'fs-extra'
 
 export interface Sas9Response {
   content: string
@@ -23,9 +25,9 @@ export class MockSas9Controller {
   ): Promise<Sas9Response> {
     let username = req.query._username?.toString() || undefined
     let password = req.query._password?.toString() || undefined
-    
+
     if (username && password) this.loggedIn = true
-    
+
     if (!this.loggedIn) {
       return {
         content: '',
@@ -34,21 +36,13 @@ export class MockSas9Controller {
     }
 
     let program = req.query._program?.toString() || undefined
-    let filePath: string[] = [
-      'generic',
-      'sas9',
-      'sas-stored-process'
-    ]
+    let filePath: string[] = ['generic', 'sas9', 'sas-stored-process']
 
     if (program) {
       filePath = program.replace('/', '').split('/')
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
-      ...filePath
-    ])
+    return await getMockResponseFromFile([process.cwd(), 'mocks', ...filePath])
   }
 
   @Get('/SASStoredProcess/do')
@@ -57,9 +51,9 @@ export class MockSas9Controller {
   ): Promise<Sas9Response> {
     let username = req.query._username?.toString() || undefined
     let password = req.query._password?.toString() || undefined
-    
+
     if (username && password) this.loggedIn = true
-    
+
     if (!this.loggedIn) {
       return {
         content: '',
@@ -68,21 +62,13 @@ export class MockSas9Controller {
     }
 
     let program = req.query._program?.toString() || undefined
-    let filePath: string[] = [
-      'generic',
-      'sas9',
-      'sas-stored-process'
-    ]
+    let filePath: string[] = ['generic', 'sas9', 'sas-stored-process']
 
     if (program) {
       filePath = `${program}-login`.replace('/', '').split('/')
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
-      ...filePath
-    ])
+    return await getMockResponseFromFile([process.cwd(), 'mocks', ...filePath])
   }
 
   @Post('/SASStoredProcess/do/')
@@ -100,8 +86,44 @@ export class MockSas9Controller {
     program = program.replace('/', '')
     let debug = req.query._debug?.toString()
 
+    let fileContents = ''
+
     if (program.includes('runner') && debug === 'log') {
       program += '-log' //runner-log
+
+      if (req.files && req.files.length > 0) {
+        const regexRequest = /cli-tests-request-sas9-.*?\d*/g
+        const uploadFilePath = (req.files as any)[0].path
+
+        fileContents = fs.readFileSync(uploadFilePath, 'utf8')
+        fs.unlinkSync(uploadFilePath)
+
+        let matched = fileContents.match(regexRequest)?.[0]
+
+        if (matched) {
+          const testsFolderPath = path.join(
+            process.cwd(),
+            'mocks',
+            'User Folders',
+            'cli-tests',
+            'sasdemo',
+            matched
+          )
+
+          if (!fs.existsSync(testsFolderPath)) fs.mkdirSync(testsFolderPath)
+
+          fse.copySync(
+            path.join(
+              process.cwd(),
+              'mocks',
+              'User Folders',
+              'sasdemo',
+              'services'
+            ),
+            path.join(testsFolderPath, 'services')
+          )
+        }
+      }
     }
 
     const content = await getMockResponseFromFile([
@@ -109,6 +131,8 @@ export class MockSas9Controller {
       'mocks',
       ...program.split('/')
     ])
+
+    content.content += fileContents
 
     if (content.error) {
       return content
@@ -134,10 +158,11 @@ export class MockSas9Controller {
 
   @Post('/SASLogon/login')
   public async loginPost(req: express.Request): Promise<Sas9Response> {
-    if (req.body.lt && req.body.lt !== 'validtoken') return {
-      content: '',
-      redirect: '/SASLogon/login',
-    }
+    if (req.body.lt && req.body.lt !== 'validtoken')
+      return {
+        content: '',
+        redirect: '/SASLogon/login'
+      }
 
     this.loggedIn = true
 

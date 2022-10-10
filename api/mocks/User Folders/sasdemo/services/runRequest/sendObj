@@ -1,0 +1,1937 @@
+<html>
+<title>SASStoredProcess</title>
+<body bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#800080" alink="#FF0000">
+<div STYLE="text-align:left" />
+<br />&gt;&gt;&gt; 0.003 Stored Process Input Parameters:<br />
+<pre>_debug = 131
+         131
+_grafloc = /sasweb/graph
+_htcook = fd9557d8179c8e8e8267cce937e89b58_Cluster1=4102D18A446C5FFB30A40CD5D53F9E52.fd9557d8179c8e8e8267cce937e89b58_SASServer1_1
+_htua = axios/0.26.0
+_password = XXXXXX
+_program = /User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220916145819/services/runRequest/sendObj
+_reqencoding = UTF-8
+_reqmeth = POST
+_rmtaddr = 10.96.11.230
+_rmthost = 10.96.11.230
+_srvname = sasdemo.demo.sas.com
+_srvport = 80
+_url = /SASStoredProcess/do
+_userlocale = en_US
+_username = sasdemo
+_version = Version 9.4 (Build 526)
+_webin_content_length = 99
+                        30
+_webin_content_type = application/csv
+                      application/csv
+_webin_file_count = 2
+_webin_filename = table1.csv
+                  table2.csv
+_webin_name = table1
+              table2
+</pre>
+>>weboutBEGIN<<
+{"SYSDATE" : "16SEP22"
+,"SYSTIME" : "10:58"
+, "table1":
+[
+  {
+    "COL1": "first col value1",
+    "COL2": "second col value1"
+  },
+  {
+    "COL1": "first col value2",
+    "COL2": "second col value2"
+  }
+]
+, "table2":
+[
+  {
+    "COL1": "first col value"
+  }
+]
+,"_DEBUG" : "131" 
+,"_METAUSER": "sasdemo@sasdemo"
+,"_METAPERSON": "sasdemo"
+,"_PROGRAM" : "/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220916145819/services/runRequest/sendObj"
+,"AUTOEXEC" : "D%3A%5Copt%5Csasinside%5CConfig%5CLev1%5CSASApp%5CStoredProcessServer%5Cautoexec.sas"
+,"MF_GETUSER" : "sasdemo" 
+,"SYSCC" : "0" 
+,"SYSENCODING" : "wlatin1" 
+,"SYSERRORTEXT" : ""
+,"SYSHOSTNAME" : "sasdemo" 
+,"SYSPROCESSID" : "41DD7D13971A7EFA40BBC80000000000" 
+,"SYSPROCESSMODE" : "SAS Stored Process Server" 
+,"SYSPROCESSNAME" : ""
+,"SYSJOBID" : "25576" 
+,"SYSSCPL" : "X64_DSRV16" 
+,"SYSSITE" : "123" 
+,"SYSUSERID" : "sassrv" 
+,"SYSVLONG" : "9.04.01M7P080520"
+,"SYSWARNINGTEXT" : "ENCODING option ignored for files opened with RECFM=N."
+,"END_DTTM" : "2022-09-16T10:58:36.721000" 
+,"MEMSIZE" : "47GB"
+}>>weboutEND<<
+</u><div style="text-align:left">
+<hr /><h2>SAS Log</h2>
+<pre>1                                                                                                                        The SAS System                                                                                         10:58 Friday, September 16, 2022
+
+<font color=blue>NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M7) 
+      Licensed to VAVS7.5 Prod - EBIDIEGAnalytics - 21w47 18 Nov 21, Site 123.
+NOTE: This session is executing on the X64_DSRV16  platform.
+</font>
+
+
+<font color=blue>NOTE: Analytical products:
+      
+      SAS/STAT 15.2
+      SAS/ETS 15.2
+      SAS/OR 15.2
+      SAS/IML 15.2
+      SAS/QC 15.2
+
+NOTE: Additional host information:
+
+ X64_DSRV16 WIN 10.0.14393  Server
+
+NOTE: SAS Initialization used (Total process time):
+      real time           0.02 seconds
+      cpu time            0.00 seconds
+      
+NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer\autoexec.sas, was executed at server initialization.
+</font>
+&gt;&gt;&gt; SAS Macro Variables:
+
+ _APSLIST=_webin_content_type,_webin_content_type0,_webin_content_type1,_webin_content_type2,_webin_content_type_count,_srvport,_webin_filename,_webin_filename0,_webin_filename1,_webin_filename2,
+     _webin_filename_count,_reqencoding,_userlocale,_htcook,_rmthost,_rmtaddr,_grafloc,_reqmeth,_password,_srvname,_webin_content_length,_webin_content_length0,_webin_content_length1,_webin_conte
+     nt_length2,_webin_content_length_count,_webin_name,_webin_name0,_webin_name1,_webin_name2,_webin_name_count,_debug,_debug0,_debug1,_debug2,_debug_count,_program,_username,_htua,_url,_webin_f
+     ile_count,_version,_webin_stream,_webin_stream0,_webin_stream1,_webin_stream2,_webin_stream_count,_result,_metaperson,_metauser,_metafolder,_client,_SECUREUSERNAME
+ _APSLIST=_webin_content_type,_webin_content_type0,_webin_content_type1,_webin_content_type2,_webin_content_type_count,_srvport,_webin_filename,_webin_filename0,_webin_filename1,_webin_filename2,
+     _webin_filename_count,_reqencoding,_userlocale,_htcook,_rmthost,_rmtaddr,_grafloc,_reqmeth,_password,_srvname,_webin_content_length,_webin_content_length0,_webin_content_length1,_webin_conte
+     nt_length2,_webin_content_length_count,_webin_name,_webin_name0,_webin_name1,_webin_name2,_webin_name_count,_debug,_debug0,_debug1,_debug2,_debug_count,_program,_username,_htua,_url,_webin_f
+     ile_count,_version,_webin_stream,_webin_stream0,_webin_stream1,_webin_stream2,_webin_stream_count,_result,_metaperson,_metauser,_metafolder,_client,_SECUREUSERNAME
+ _CLIENT=StoredProcessService 9.4; JVM 1.8.0_252; Windows Server 2016 (amd64) 10.0
+ _DEBUG=131
+ _DEBUG0=2
+ _DEBUG1=131
+ _DEBUG2=131
+ _DEBUG_COUNT=2
+ _GRAFLOC=/sasweb/graph
+ _HTCOOK=fd9557d8179c8e8e8267cce937e89b58_Cluster1=4102D18A446C5FFB30A40CD5D53F9E52.fd9557d8179c8e8e8267cce937e89b58_SASServer1_1
+ _HTUA=axios/0.26.0
+ _METAFOLDER=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220916145819/services/runRequest/
+ _METAPERSON=sasdemo
+ _METAUSER=sasdemo@sasdemo
+ _PASSWORD=XXXXXX
+ _PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220916145819/services/runRequest/sendObj
+ _REPLAY="&amp;_URL?_sessionid=C8245738-A5D4-49D5-AF71-E61998BE3FDA&amp;_program=replay&amp;_entry=&amp;_TMPCAT.."
+ _REQENCODING=UTF-8
+ _REQMETH=POST
+ _RESULT=STREAM
+ _RMTADDR=10.96.11.230
+ _RMTHOST=10.96.11.230
+ _SECUREUSERNAME=sasdemo
+ _SRVNAME=sasdemo.demo.sas.com
+ _SRVPORT=80
+ _TMPCAT=APSWORK.TCAT0048
+ _URL=/SASStoredProcess/do
+ _USERLOCALE=en_US
+ _USERNAME=sasdemo
+ _VERSION=Version 9.4 (Build 526)
+ _WEBIN_CONTENT_LENGTH=99
+ _WEBIN_CONTENT_LENGTH0=2
+ _WEBIN_CONTENT_LENGTH1=99
+ _WEBIN_CONTENT_LENGTH2=30
+ _WEBIN_CONTENT_LENGTH_COUNT=2
+ _WEBIN_CONTENT_TYPE=application/csv
+ _WEBIN_CONTENT_TYPE0=2
+ _WEBIN_CONTENT_TYPE1=application/csv
+ _WEBIN_CONTENT_TYPE2=application/csv
+ _WEBIN_CONTENT_TYPE_COUNT=2
+ _WEBIN_FILEEXT=csv
+ _WEBIN_FILEEXT0=2
+ _WEBIN_FILEEXT1=csv
+ _WEBIN_FILEEXT2=csv
+ _WEBIN_FILENAME=table1.csv
+ _WEBIN_FILENAME0=2
+ _WEBIN_FILENAME1=table1.csv
+ _WEBIN_FILENAME2=table2.csv
+ _WEBIN_FILENAME_COUNT=2
+ _WEBIN_FILEREF=#LN03609
+ _WEBIN_FILEREF0=2
+ _WEBIN_FILEREF1=#LN03609
+ _WEBIN_FILEREF2=#LN03611
+ _WEBIN_FILE_COUNT=2
+ _WEBIN_NAME=table1
+ _WEBIN_NAME0=2
+ _WEBIN_NAME1=table1
+ _WEBIN_NAME2=table2
+ _WEBIN_NAME_COUNT=2
+ _WEBIN_STREAM=_in1
+ _WEBIN_STREAM0=2
+ _WEBIN_STREAM1=_in1
+ _WEBIN_STREAM2=_in2
+ _WEBIN_STREAM_COUNT=2
+
+2          /* Created on  16SEP2022:10:58:34 by sasdemo */
+3          %macro mp_jsonout(action,ds,jref=_webout,dslabel=,fmt=Y
+4          ,engine=DATASTEP
+5          ,missing=NULL
+6          ,showmeta=N
+7          ,maxobs=MAX
+8          )/*/STORE SOURCE*/;
+9          %local tempds colinfo fmtds i numcols numobs stmt_obs lastobs optval
+10         tmpds1 tmpds2 tmpds3 tmpds4;
+11         %let numcols=0;
+12         %if &amp;maxobs ne MAX %then %let stmt_obs=%str(if _n_&gt;&amp;maxobs then stop;);
+13         %if &amp;action=OPEN %then %do;
+14         options nobomfile;
+15         data _null_;file &amp;jref encoding='utf-8' lrecl=200;
+16         put '{"PROCESSED_DTTM" : "' "%sysfunc(datetime(),E8601DT26.6)" '"';
+17         run;
+18         %end;
+19         %else %if (&amp;action=ARR or &amp;action=OBJ) %then %do;
+20         /* force variable names to always be uppercase in the JSON */
+                                                                                          The SAS System
+
+21         options validvarname=upcase;
+22         /* To avoid issues with _webout on EBI - such as encoding diffs and truncation
+23         (https://support.sas.com/kb/49/325.html) we use temporary files */
+24         filename _sjs1 temp lrecl=200 ;
+25         data _null_; file _sjs1 encoding='utf-8';
+26         put ", ""%lowcase(%sysfunc(coalescec(&amp;dslabel,&amp;ds)))"":";
+27         run;
+28         /* now write to _webout 1 char at a time */
+29         data _null_;
+30         infile _sjs1 lrecl=1 recfm=n;
+31         file &amp;jref mod lrecl=1 recfm=n;
+32         input sourcechar $char1. @@;
+33         format sourcechar hex2.;
+34         put sourcechar char1. @@;
+35         run;
+36         filename _sjs1 clear;
+37         /* grab col defs */
+38         proc contents noprint data=&amp;ds
+39         out=_data_(keep=name type length format formatl formatd varnum label);
+40         run;
+41         %let colinfo=%scan(&amp;syslast,2,.);
+42         proc sort data=&amp;colinfo;
+43         by varnum;
+44         run;
+45         /* move meta to mac vars */
+46         data &amp;colinfo;
+47         if _n_=1 then call symputx('numcols',nobs,'l');
+48         set &amp;colinfo end=last nobs=nobs;
+49         name=upcase(name);
+50         /* fix formats */
+51         if type=2 or type=6 then do;
+52         typelong='char';
+53         length fmt $49.;
+54         if format='' then fmt=cats('$',length,'.');
+55         else if formatl=0 then fmt=cats(format,'.');
+56         else fmt=cats(format,formatl,'.');
+57         end;
+58         else do;
+                                                                                          The SAS System
+
+59         typelong='num';
+60         if format='' then fmt='best.';
+61         else if formatl=0 then fmt=cats(format,'.');
+62         else if formatd=0 then fmt=cats(format,formatl,'.');
+63         else fmt=cats(format,formatl,'.',formatd);
+64         end;
+65         /* 32 char unique name */
+66         newname='sasjs'!!substr(cats(put(md5(name),$hex32.)),1,27);
+67         call symputx(cats('name',_n_),name,'l');
+68         call symputx(cats('newname',_n_),newname,'l');
+69         call symputx(cats('length',_n_),length,'l');
+70         call symputx(cats('fmt',_n_),fmt,'l');
+71         call symputx(cats('type',_n_),type,'l');
+72         call symputx(cats('typelong',_n_),typelong,'l');
+73         call symputx(cats('label',_n_),coalescec(label,name),'l');
+74         /* overwritten when fmt=Y and a custom format exists in catalog */
+75         if typelong='num' then call symputx(cats('fmtlen',_n_),200,'l');
+76         else call symputx(cats('fmtlen',_n_),min(32767,ceil((length+3)*1.5)),'l');
+77         run;
+78         %let tempds=%substr(_%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+79         proc sql;
+80         select count(*) into: lastobs from &amp;ds;
+81         %if &amp;maxobs ne MAX %then %let lastobs=%sysfunc(min(&amp;lastobs,&amp;maxobs));
+82         %if &amp;engine=PROCJSON %then %do;
+83         %if &amp;missing=STRING %then %do;
+84         %put &amp;sysmacroname: Special Missings not supported in proc json.;
+85         %put &amp;sysmacroname: Switching to DATASTEP engine;
+86         %goto datastep;
+87         %end;
+88         data &amp;tempds;
+89         set &amp;ds;
+90         &amp;stmt_obs;
+91         %if &amp;fmt=N %then format _numeric_ best32.;;
+92         /* PRETTY is necessary to avoid line truncation in large files */
+93         filename _sjs2 temp lrecl=131068 encoding='utf-8';
+94         proc json out=_sjs2 pretty
+95         %if &amp;action=ARR %then nokeys ;
+96         ;export &amp;tempds / nosastags fmtnumeric;
+                                                                                          The SAS System
+
+97         run;
+98         /* send back to webout */
+99         data _null_;
+100        infile _sjs2 lrecl=1 recfm=n;
+101        file &amp;jref mod lrecl=1 recfm=n;
+102        input sourcechar $char1. @@;
+103        format sourcechar hex2.;
+104        put sourcechar char1. @@;
+105        run;
+106        filename _sjs2 clear;
+107        %end;
+108        %else %if &amp;engine=DATASTEP %then %do;
+109        %datastep:
+110        %if %sysfunc(exist(&amp;ds)) ne 1 &amp; %sysfunc(exist(&amp;ds,VIEW)) ne 1
+111        %then %do;
+112        %put &amp;sysmacroname:  &amp;ds NOT FOUND!!!;
+113        %return;
+114        %end;
+115        %if &amp;fmt=Y %then %do;
+116        /**
+117        * Extract format definitions
+118        * First, by getting library locations from dictionary.formats
+119        * Then, by exporting the width using proc format
+120        * Cannot use maxw from sashelp.vformat as not always populated
+121        * Cannot use fmtinfo() as not supported in all flavours
+122        */
+123        %let tmpds1=%substr(fmtsum%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+124        %let tmpds2=%substr(cntl%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+125        %let tmpds3=%substr(cntl%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+126        %let tmpds4=%substr(col%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+127        proc sql noprint;
+128        create table &amp;tmpds1 as
+129        select cats(libname,'.',memname) as fmtcat,
+130        fmtname
+131        from dictionary.formats
+132        where fmttype='F' and libname is not null
+133        and fmtname in (select format from &amp;colinfo where format is not null)
+134        order by 1;
+                                                                                          The SAS System
+
+135        create table &amp;tmpds2(
+136        FMTNAME char(32),
+137        MAX num length=3
+138        );
+139        %local catlist cat fmtlist i;
+140        select distinct fmtcat into: catlist separated by ' ' from &amp;tmpds1;
+141        %do i=1 %to %sysfunc(countw(&amp;catlist,%str( )));
+142        %let cat=%scan(&amp;catlist,&amp;i,%str( ));
+143        proc sql;
+144        select distinct fmtname into: fmtlist separated by ' '
+145        from &amp;tmpds1 where fmtcat="&amp;cat";
+146        proc format lib=&amp;cat cntlout=&amp;tmpds3(keep=fmtname max);
+147        select &amp;fmtlist;
+148        run;
+149        proc sql;
+150        insert into &amp;tmpds2 select distinct fmtname,max from &amp;tmpds3;
+151        %end;
+152        proc sql;
+153        create table &amp;tmpds4 as
+154        select a.*, b.max as maxw
+155        from &amp;colinfo a
+156        left join &amp;tmpds2 b
+157        on cats(a.format)=cats(upcase(b.fmtname))
+158        order by a.varnum;
+159        data _null_;
+160        set &amp;tmpds4;
+161        if not missing(maxw);
+162        call symputx(
+163        cats('fmtlen',_n_),
+164        /* vars need extra padding due to JSON escaping of special chars */
+165        min(32767,ceil((max(length,maxw)+3)*1.5))
+166        ,'l'
+167        );
+168        run;
+169        /* configure varlenchk - as we are explicitly shortening the variables */
+170        %let optval=%sysfunc(getoption(varlenchk));
+171        options varlenchk=NOWARN;
+172        data _data_(compress=char);
+                                                                                          The SAS System
+
+173        /* shorten the new vars */
+174        length
+175        %do i=1 %to &amp;numcols;
+176        &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i
+177        %end;
+178        ;
+179        /* rename on entry */
+180        set &amp;ds(rename=(
+181        %do i=1 %to &amp;numcols;
+182        &amp;&amp;name&amp;i=&amp;&amp;newname&amp;i
+183        %end;
+184        ));
+185        &amp;stmt_obs;
+186        drop
+187        %do i=1 %to &amp;numcols;
+188        &amp;&amp;newname&amp;i
+189        %end;
+190        ;
+191        %do i=1 %to &amp;numcols;
+192        %if &amp;&amp;typelong&amp;i=num %then %do;
+193        &amp;&amp;name&amp;i=cats(put(&amp;&amp;newname&amp;i,&amp;&amp;fmt&amp;i));
+194        %end;
+195        %else %do;
+196        &amp;&amp;name&amp;i=put(&amp;&amp;newname&amp;i,&amp;&amp;fmt&amp;i);
+197        %end;
+198        %end;
+199        if _error_ then do;
+200        call symputx('syscc',1012);
+201        stop;
+202        end;
+203        run;
+204        %let fmtds=&amp;syslast;
+205        options varlenchk=&amp;optval;
+206        %end;
+207        proc format; /* credit yabwon for special null removal */
+208        value bart (default=40)
+209        %if &amp;missing=NULL %then %do;
+210        ._ - .z = null
+                                                                                          The SAS System
+
+211        %end;
+212        %else %do;
+213        ._ = [quote()]
+214        . = null
+215        .a - .z = [quote()]
+216        %end;
+217        other = [best.];
+218        data &amp;tempds;
+219        attrib _all_ label='';
+220        %do i=1 %to &amp;numcols;
+221        %if &amp;&amp;typelong&amp;i=char or &amp;fmt=Y %then %do;
+222        length &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i...;
+223        format &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i...;
+224        %end;
+225        %end;
+226        %if &amp;fmt=Y %then %do;
+227        set &amp;fmtds;
+228        %end;
+229        %else %do;
+230        set &amp;ds;
+231        %end;
+232        &amp;stmt_obs;
+233        format _numeric_ bart.;
+234        %do i=1 %to &amp;numcols;
+235        %if &amp;&amp;typelong&amp;i=char or &amp;fmt=Y %then %do;
+236        if findc(&amp;&amp;name&amp;i,'"\'!!'0A0D09000E0F01021011'x) then do;
+237        &amp;&amp;name&amp;i='"'!!trim(
+238        prxchange('s/"/\\"/',-1,        /* double quote */
+239        prxchange('s/\x0A/\n/',-1,      /* new line */
+240        prxchange('s/\x0D/\r/',-1,      /* carriage return */
+241        prxchange('s/\x09/\\t/',-1,     /* tab */
+242        prxchange('s/\x00/\\u0000/',-1, /* NUL */
+243        prxchange('s/\x0E/\\u000E/',-1, /* SS  */
+244        prxchange('s/\x0F/\\u000F/',-1, /* SF  */
+245        prxchange('s/\x01/\\u0001/',-1, /* SOH */
+246        prxchange('s/\x02/\\u0002/',-1, /* STX */
+247        prxchange('s/\x10/\\u0010/',-1, /* DLE */
+248        prxchange('s/\x11/\\u0011/',-1, /* DC1 */
+                                                                                          The SAS System
+
+249        prxchange('s/\\/\\\\/',-1,&amp;&amp;name&amp;i)
+250        ))))))))))))!!'"';
+251        end;
+252        else &amp;&amp;name&amp;i=quote(cats(&amp;&amp;name&amp;i));
+253        %end;
+254        %end;
+255        run;
+256        filename _sjs3 temp lrecl=131068 ;
+257        data _null_;
+258        file _sjs3 encoding='utf-8';
+259        if _n_=1 then put "[";
+260        set &amp;tempds;
+261        if _n_&gt;1 then put "," @; put
+262        %if &amp;action=ARR %then "[" ; %else "{" ;
+263        %do i=1 %to &amp;numcols;
+264        %if &amp;i&gt;1 %then  "," ;
+265        %if &amp;action=OBJ %then """&amp;&amp;name&amp;i"":" ;
+266        "&amp;&amp;name&amp;i"n /* name literal for reserved variable names */
+267        %end;
+268        %if &amp;action=ARR %then "]" ; %else "}" ; ;
+269        /* close out the table */
+270        data _null_;
+271        file _sjs3 mod encoding='utf-8';
+272        put ']';
+273        run;
+274        data _null_;
+275        infile _sjs3 lrecl=1 recfm=n;
+276        file &amp;jref mod lrecl=1 recfm=n;
+277        input sourcechar $char1. @@;
+278        format sourcechar hex2.;
+279        put sourcechar char1. @@;
+280        run;
+281        filename _sjs3 clear;
+282        %end;
+283        proc sql;
+284        drop table &amp;colinfo, &amp;tempds;
+285        %if %substr(&amp;showmeta,1,1)=Y %then %do;
+286        filename _sjs4 temp lrecl=131068 encoding='utf-8';
+                                                                                          The SAS System
+
+287        data _null_;
+288        file _sjs4;
+289        length label $350;
+290        put ", ""$%lowcase(%sysfunc(coalescec(&amp;dslabel,&amp;ds)))"":{""vars"":{";
+291        do i=1 to &amp;numcols;
+292        name=quote(trim(symget(cats('name',i))));
+293        format=quote(trim(symget(cats('fmt',i))));
+294        label=quote(prxchange('s/\\/\\\\/',-1,trim(symget(cats('label',i)))));
+295        length=quote(trim(symget(cats('length',i))));
+296        type=quote(trim(symget(cats('typelong',i))));
+297        if i&gt;1 then put "," @@;
+298        put name ':{"format":' format ',"label":' label
+299        ',"length":' length ',"type":' type '}';
+300        end;
+301        put '}}';
+302        run;
+303        /* send back to webout */
+304        data _null_;
+305        infile _sjs4 lrecl=1 recfm=n;
+306        file &amp;jref mod lrecl=1 recfm=n;
+307        input sourcechar $char1. @@;
+308        format sourcechar hex2.;
+309        put sourcechar char1. @@;
+310        run;
+311        filename _sjs4 clear;
+312        %end;
+313        %end;
+314        %else %if &amp;action=CLOSE %then %do;
+315        data _null_; file &amp;jref encoding='utf-8' mod ;
+316        put "}";
+317        run;
+318        %end;
+319        %mend mp_jsonout;
+320        %macro mf_getuser(
+321        )/*/STORE SOURCE*/;
+322        %local user;
+323        %if %symexist(_sasjs_username) %then %let user=&amp;_sasjs_username;
+324        %else %if %symexist(SYS_COMPUTE_SESSION_OWNER) %then %do;
+                                                                                          The SAS System
+
+325        %let user=&amp;SYS_COMPUTE_SESSION_OWNER;
+326        %end;
+327        %else %if %symexist(_metaperson) %then %do;
+328        %if %length(&amp;_metaperson)=0 %then %let user=&amp;sysuserid;
+329        /* sometimes SAS will add @domain extension - remove for consistency */
+330        /* but be sure to quote in case of usernames with commas */
+331        %else %let user=%unquote(%scan(%quote(&amp;_metaperson),1,@));
+332        %end;
+333        %else %let user=&amp;sysuserid;
+334        %quote(&amp;user)
+335        %mend mf_getuser;
+336        %macro mm_webout(action,ds,dslabel=,fref=_webout,fmt=N,missing=NULL
+337        ,showmeta=N,maxobs=MAX,workobs=0
+338        );
+339        %global _webin_file_count _webin_fileref1 _webin_name1 _program _debug
+340        sasjs_tables;
+341        %local i tempds jsonengine;
+342        /* see https://github.com/sasjs/core/issues/41 */
+343        %if "%upcase(&amp;SYSENCODING)" ne "UTF-8" %then %let jsonengine=PROCJSON;
+344        %else %let jsonengine=DATASTEP;
+345        %if &amp;action=FETCH %then %do;
+346        %if %str(&amp;_debug) ge 131 %then %do;
+347        options mprint notes mprintnest;
+348        %end;
+349        %let _webin_file_count=%eval(&amp;_webin_file_count+0);
+350        /* now read in the data */
+351        %do i=1 %to &amp;_webin_file_count;
+352        %if &amp;_webin_file_count=1 %then %do;
+353        %let _webin_fileref1=&amp;_webin_fileref;
+354        %let _webin_name1=&amp;_webin_name;
+355        %end;
+356        data _null_;
+357        infile &amp;&amp;_webin_fileref&amp;i termstr=crlf;
+358        input;
+359        call symputx('input_statement',_infile_);
+360        putlog "&amp;&amp;_webin_name&amp;i input statement: "  _infile_;
+361        stop;
+362        data &amp;&amp;_webin_name&amp;i;
+                                                                                          The SAS System
+
+363        infile &amp;&amp;_webin_fileref&amp;i firstobs=2 dsd termstr=crlf encoding='utf-8';
+364        input &amp;input_statement;
+365        %if %str(&amp;_debug) ge 131 %then %do;
+366        if _n_&lt;20 then putlog _infile_;
+367        %end;
+368        run;
+369        %let sasjs_tables=&amp;sasjs_tables &amp;&amp;_webin_name&amp;i;
+370        %end;
+371        %end;
+372        %else %if &amp;action=OPEN %then %do;
+373        /* fix encoding */
+374        OPTIONS NOBOMFILE;
+375        /**
+376        * check xengine type to avoid the below err message:
+377        * &gt; Function is only valid for filerefs using the CACHE access method.
+378        */
+379        data _null_;
+380        set sashelp.vextfl(where=(fileref="_WEBOUT"));
+381        if xengine='STREAM' then do;
+382        rc=stpsrv_header('Content-type',"text/html; encoding=utf-8");
+383        end;
+384        run;
+385        /* setup json */
+386        data _null_;file &amp;fref encoding='utf-8';
+387        %if %str(&amp;_debug) ge 131 %then %do;
+388        put '&gt;&gt;weboutBEGIN&lt;&lt;';
+389        %end;
+390        put '{"SYSDATE" : "' "&amp;SYSDATE" '"';
+391        put ',"SYSTIME" : "' "&amp;SYSTIME" '"';
+392        run;
+393        %end;
+394        %else %if &amp;action=ARR or &amp;action=OBJ %then %do;
+395        %mp_jsonout(&amp;action,&amp;ds,dslabel=&amp;dslabel,fmt=&amp;fmt,jref=&amp;fref
+396        ,engine=&amp;jsonengine,missing=&amp;missing,showmeta=&amp;showmeta,maxobs=&amp;maxobs
+397        )
+398        %end;
+399        %else %if &amp;action=CLOSE %then %do;
+400        /* To avoid issues with _webout on EBI we use a temporary file */
+                                                                                          The SAS System
+
+401        filename _sjsref temp lrecl=131068;
+402        %if %str(&amp;workobs) &gt; 0 %then %do;
+403        /* if debug mode, send back first XX records of each work table also */
+404        data;run;%let tempds=%scan(&amp;syslast,2,.);
+405        ods output Members=&amp;tempds;
+406        proc datasets library=WORK memtype=data;
+407        %local wtcnt;%let wtcnt=0;
+408        data _null_;
+409        set &amp;tempds;
+410        if not (upcase(name) =:"DATA"); /* ignore temp datasets */
+411        i+1;
+412        call symputx(cats('wt',i),name,'l');
+413        call symputx('wtcnt',i,'l');
+414        data _null_; file _sjsref mod encoding='utf-8';
+415        put ",""WORK"":{";
+416        %do i=1 %to &amp;wtcnt;
+417        %let wt=&amp;&amp;wt&amp;i;
+418        data _null_; file _sjsref mod encoding='utf-8';
+419        dsid=open("WORK.&amp;wt",'is');
+420        nlobs=attrn(dsid,'NLOBS');
+421        nvars=attrn(dsid,'NVARS');
+422        rc=close(dsid);
+423        if &amp;i&gt;1 then put ','@;
+424        put " ""&amp;wt"" : {";
+425        put '"nlobs":' nlobs;
+426        put ',"nvars":' nvars;
+427        %mp_jsonout(OBJ,&amp;wt,jref=_sjsref,dslabel=first10rows,showmeta=Y,maxobs=10
+428        ,maxobs=&amp;workobs
+429        )
+430        data _null_; file _sjsref mod encoding='utf-8';
+431        put "}";
+432        %end;
+433        data _null_; file _sjsref mod encoding='utf-8';
+434        put "}";
+435        run;
+436        %end;
+437        /* close off json */
+438        data _null_;file _sjsref mod encoding='utf-8';
+                                                                                          The SAS System
+
+439        length SYSPROCESSNAME syserrortext syswarningtext autoexec $512;
+440        put ",""_DEBUG"" : ""&amp;_debug"" ";
+441        _METAUSER=quote(trim(symget('_METAUSER')));
+442        put ",""_METAUSER"": " _METAUSER;
+443        _METAPERSON=quote(trim(symget('_METAPERSON')));
+444        put ',"_METAPERSON": ' _METAPERSON;
+445        _PROGRAM=quote(trim(resolve(symget('_PROGRAM'))));
+446        put ',"_PROGRAM" : ' _PROGRAM ;
+447        autoexec=quote(urlencode(trim(getoption('autoexec'))));
+448        put ',"AUTOEXEC" : ' autoexec;
+449        put ",""MF_GETUSER"" : ""%mf_getuser()"" ";
+450        put ",""SYSCC"" : ""&amp;syscc"" ";
+451        put ",""SYSENCODING"" : ""&amp;sysencoding"" ";
+452        syserrortext=cats('"',tranwrd(symget('syserrortext'),'"','\"'),'"');
+453        put ',"SYSERRORTEXT" : ' syserrortext;
+454        put ",""SYSHOSTNAME"" : ""&amp;syshostname"" ";
+455        put ",""SYSPROCESSID"" : ""&amp;SYSPROCESSID"" ";
+456        put ",""SYSPROCESSMODE"" : ""&amp;SYSPROCESSMODE"" ";
+457        SYSPROCESSNAME=quote(urlencode(cats(SYSPROCESSNAME)));
+458        put ",""SYSPROCESSNAME"" : " SYSPROCESSNAME;
+459        put ",""SYSJOBID"" : ""&amp;sysjobid"" ";
+460        put ",""SYSSCPL"" : ""&amp;sysscpl"" ";
+461        put ",""SYSSITE"" : ""&amp;syssite"" ";
+462        put ",""SYSUSERID"" : ""&amp;sysuserid"" ";
+463        sysvlong=quote(trim(symget('sysvlong')));
+464        put ',"SYSVLONG" : ' sysvlong;
+465        syswarningtext=cats('"',tranwrd(symget('syswarningtext'),'"','\"'),'"');
+466        put ',"SYSWARNINGTEXT" : ' syswarningtext;
+467        put ',"END_DTTM" : "' "%sysfunc(datetime(),E8601DT26.6)" '" ';
+468        length memsize $32;
+469        memsize="%sysfunc(INPUTN(%sysfunc(getoption(memsize)), best.),sizekmg.)";
+470        memsize=quote(cats(memsize));
+471        put ',"MEMSIZE" : ' memsize;
+472        put "}" @;
+473        %if %str(&amp;_debug) ge 131 %then %do;
+474        put '&gt;&gt;weboutEND&lt;&lt;';
+475        %end;
+476        run;
+                                                                                          The SAS System
+
+477        /* now write to _webout 1 char at a time */
+478        data _null_;
+479        infile _sjsref lrecl=1 recfm=n;
+480        file &amp;fref mod lrecl=1 recfm=n;
+481        input sourcechar $char1. @@;
+482        format sourcechar hex2.;
+483        put sourcechar char1. @@;
+484        run;
+485        filename _sjsref clear;
+486        %end;
+487        %mend mm_webout;
+488        %macro webout(action,ds,dslabel=,fmt=,missing=NULL,showmeta=NO);
+489        %mm_webout(&amp;action,ds=&amp;ds,dslabel=&amp;dslabel,fmt=&amp;fmt,missing=&amp;missing
+490        ,showmeta=&amp;showmeta
+491        )
+492        %mend;
+493        %macro mf_getuser(
+494        )/*/STORE SOURCE*/;
+495        %local user;
+496        %if %symexist(_sasjs_username) %then %let user=&amp;_sasjs_username;
+497        %else %if %symexist(SYS_COMPUTE_SESSION_OWNER) %then %do;
+498        %let user=&amp;SYS_COMPUTE_SESSION_OWNER;
+499        %end;
+500        %else %if %symexist(_metaperson) %then %do;
+501        %if %length(&amp;_metaperson)=0 %then %let user=&amp;sysuserid;
+502        /* sometimes SAS will add @domain extension - remove for consistency */
+503        /* but be sure to quote in case of usernames with commas */
+504        %else %let user=%unquote(%scan(%quote(&amp;_metaperson),1,@));
+505        %end;
+506        %else %let user=&amp;sysuserid;
+507        %quote(&amp;user)
+508        %mend mf_getuser;
+509        /**
+510        @file mp_jsonout.sas
+511        @brief Writes JSON in SASjs format to a fileref
+512        @details This macro can be used to OPEN a JSON stream and send one or more
+513        tables as arrays of rows, where each row can be an object or a nested array.
+514        There are two engines available - DATASTEP or PROCJSON.
+                                                                                          The SAS System
+
+515        PROC JSON is fast but will produce errs like the ones below if
+516        special chars are encountered.
+517        &gt; (ERR)OR: Some code points did not transcode.
+518        &gt; An object or array close is not valid at this point in the JSON text.
+519        &gt; Date value out of range
+520        If this happens, try running with ENGINE=DATASTEP.
+521        The DATASTEP engine is used to handle special SAS missing numerics, and
+522        can also convert entire datasets to formatted values.  Output JSON is always
+523        in UTF-8.
+524        Usage:
+525        filename tmp temp;
+526        data class; set sashelp.class;run;
+527        %mp_jsonout(OPEN,jref=tmp)
+528        %mp_jsonout(OBJ,class,jref=tmp)
+529        %mp_jsonout(OBJ,class,dslabel=class2,jref=tmp,showmeta=Y)
+530        %mp_jsonout(CLOSE,jref=tmp)
+531        data _null_;
+532        infile tmp;
+533        input;putlog _infile_;
+534        run;
+535        If you are building web apps with SAS then you are strongly encouraged to use
+536        the mX_createwebservice macros in combination with the
+537        [sasjs adapter](https://github.com/sasjs/adapter).
+538        For more information see https://sasjs.io
+539        @param [in] action Valid values:
+540        @li OPEN - opens the JSON
+541        @li OBJ - sends a table with each row as an object
+542        @li ARR - sends a table with each row in an array
+543        @li CLOSE - closes the JSON
+544        @param [in] ds The dataset to send.  Must be a work table.
+545        @param [out] jref= (_webout) The fileref to which to send the JSON
+546        @param [out] dslabel= The name to give the table in the exported JSON
+547        @param [in] fmt= (Y) Whether to keep (Y) or strip (N) formats from the table
+548        @param [in] engine= (DATASTEP) Which engine to use to send the JSON. Options:
+549        @li PROCJSON (default)
+550        @li DATASTEP (more reliable when data has non standard characters)
+551        @param [in] missing= (NULL) Special numeric missing values can be sent as NULL
+552        (eg `null`) or as STRING values (eg `".a"` or `".b"`)
+                                                                                          The SAS System
+
+553        @param [in] showmeta= (N) Set to Y to output metadata alongside each table,
+554        such as the column formats and types.  The metadata is contained inside an
+555        object with the same name as the table but prefixed with a dollar sign - ie,
+556        `,"$tablename":{"formats":{"col1":"$CHAR1"},"types":{"COL1":"C"}}`
+557        @param [in] maxobs= (MAX) Provide an integer to limit the number of input rows
+558        that should be converted to JSON
+559        &lt;h4&gt; Related Macros &lt;/h4&gt;
+560        @li mp_ds2fmtds.sas
+561        @version 9.2
+562        @author Allan Bowe
+563        @source https://github.com/sasjs/core
+564        **/
+565        %macro mp_jsonout(action,ds,jref=_webout,dslabel=,fmt=Y
+566        ,engine=DATASTEP
+567        ,missing=NULL
+568        ,showmeta=N
+569        ,maxobs=MAX
+570        )/*/STORE SOURCE*/;
+571        %local tempds colinfo fmtds i numcols numobs stmt_obs lastobs optval
+572        tmpds1 tmpds2 tmpds3 tmpds4;
+573        %let numcols=0;
+574        %if &amp;maxobs ne MAX %then %let stmt_obs=%str(if _n_&gt;&amp;maxobs then stop;);
+575        %if &amp;action=OPEN %then %do;
+576        options nobomfile;
+577        data _null_;file &amp;jref encoding='utf-8' lrecl=200;
+578        put '{"PROCESSED_DTTM" : "' "%sysfunc(datetime(),E8601DT26.6)" '"';
+579        run;
+580        %end;
+581        %else %if (&amp;action=ARR or &amp;action=OBJ) %then %do;
+582        /* force variable names to always be uppercase in the JSON */
+583        options validvarname=upcase;
+584        /* To avoid issues with _webout on EBI - such as encoding diffs and truncation
+585        (https://support.sas.com/kb/49/325.html) we use temporary files */
+586        filename _sjs1 temp lrecl=200 ;
+587        data _null_; file _sjs1 encoding='utf-8';
+588        put ", ""%lowcase(%sysfunc(coalescec(&amp;dslabel,&amp;ds)))"":";
+589        run;
+590        /* now write to _webout 1 char at a time */
+                                                                                          The SAS System
+
+591        data _null_;
+592        infile _sjs1 lrecl=1 recfm=n;
+593        file &amp;jref mod lrecl=1 recfm=n;
+594        input sourcechar $char1. @@;
+595        format sourcechar hex2.;
+596        put sourcechar char1. @@;
+597        run;
+598        filename _sjs1 clear;
+599        /* grab col defs */
+600        proc contents noprint data=&amp;ds
+601        out=_data_(keep=name type length format formatl formatd varnum label);
+602        run;
+603        %let colinfo=%scan(&amp;syslast,2,.);
+604        proc sort data=&amp;colinfo;
+605        by varnum;
+606        run;
+607        /* move meta to mac vars */
+608        data &amp;colinfo;
+609        if _n_=1 then call symputx('numcols',nobs,'l');
+610        set &amp;colinfo end=last nobs=nobs;
+611        name=upcase(name);
+612        /* fix formats */
+613        if type=2 or type=6 then do;
+614        typelong='char';
+615        length fmt $49.;
+616        if format='' then fmt=cats('$',length,'.');
+617        else if formatl=0 then fmt=cats(format,'.');
+618        else fmt=cats(format,formatl,'.');
+619        end;
+620        else do;
+621        typelong='num';
+622        if format='' then fmt='best.';
+623        else if formatl=0 then fmt=cats(format,'.');
+624        else if formatd=0 then fmt=cats(format,formatl,'.');
+625        else fmt=cats(format,formatl,'.',formatd);
+626        end;
+627        /* 32 char unique name */
+628        newname='sasjs'!!substr(cats(put(md5(name),$hex32.)),1,27);
+                                                                                          The SAS System
+
+629        call symputx(cats('name',_n_),name,'l');
+630        call symputx(cats('newname',_n_),newname,'l');
+631        call symputx(cats('length',_n_),length,'l');
+632        call symputx(cats('fmt',_n_),fmt,'l');
+633        call symputx(cats('type',_n_),type,'l');
+634        call symputx(cats('typelong',_n_),typelong,'l');
+635        call symputx(cats('label',_n_),coalescec(label,name),'l');
+636        /* overwritten when fmt=Y and a custom format exists in catalog */
+637        if typelong='num' then call symputx(cats('fmtlen',_n_),200,'l');
+638        else call symputx(cats('fmtlen',_n_),min(32767,ceil((length+3)*1.5)),'l');
+639        run;
+640        %let tempds=%substr(_%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+641        proc sql;
+642        select count(*) into: lastobs from &amp;ds;
+643        %if &amp;maxobs ne MAX %then %let lastobs=%sysfunc(min(&amp;lastobs,&amp;maxobs));
+644        %if &amp;engine=PROCJSON %then %do;
+645        %if &amp;missing=STRING %then %do;
+646        %put &amp;sysmacroname: Special Missings not supported in proc json.;
+647        %put &amp;sysmacroname: Switching to DATASTEP engine;
+648        %goto datastep;
+649        %end;
+650        data &amp;tempds;
+651        set &amp;ds;
+652        &amp;stmt_obs;
+653        %if &amp;fmt=N %then format _numeric_ best32.;;
+654        /* PRETTY is necessary to avoid line truncation in large files */
+655        filename _sjs2 temp lrecl=131068 encoding='utf-8';
+656        proc json out=_sjs2 pretty
+657        %if &amp;action=ARR %then nokeys ;
+658        ;export &amp;tempds / nosastags fmtnumeric;
+659        run;
+660        /* send back to webout */
+661        data _null_;
+662        infile _sjs2 lrecl=1 recfm=n;
+663        file &amp;jref mod lrecl=1 recfm=n;
+664        input sourcechar $char1. @@;
+665        format sourcechar hex2.;
+666        put sourcechar char1. @@;
+                                                                                          The SAS System
+
+667        run;
+668        filename _sjs2 clear;
+669        %end;
+670        %else %if &amp;engine=DATASTEP %then %do;
+671        %datastep:
+672        %if %sysfunc(exist(&amp;ds)) ne 1 &amp; %sysfunc(exist(&amp;ds,VIEW)) ne 1
+673        %then %do;
+674        %put &amp;sysmacroname:  &amp;ds NOT FOUND!!!;
+675        %return;
+676        %end;
+677        %if &amp;fmt=Y %then %do;
+678        /**
+679        * Extract format definitions
+680        * First, by getting library locations from dictionary.formats
+681        * Then, by exporting the width using proc format
+682        * Cannot use maxw from sashelp.vformat as not always populated
+683        * Cannot use fmtinfo() as not supported in all flavours
+684        */
+685        %let tmpds1=%substr(fmtsum%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+686        %let tmpds2=%substr(cntl%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+687        %let tmpds3=%substr(cntl%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+688        %let tmpds4=%substr(col%sysfunc(compress(%sysfunc(uuidgen()),-)),1,32);
+689        proc sql noprint;
+690        create table &amp;tmpds1 as
+691        select cats(libname,'.',memname) as fmtcat,
+692        fmtname
+693        from dictionary.formats
+694        where fmttype='F' and libname is not null
+695        and fmtname in (select format from &amp;colinfo where format is not null)
+696        order by 1;
+697        create table &amp;tmpds2(
+698        FMTNAME char(32),
+699        MAX num length=3
+700        );
+701        %local catlist cat fmtlist i;
+702        select distinct fmtcat into: catlist separated by ' ' from &amp;tmpds1;
+703        %do i=1 %to %sysfunc(countw(&amp;catlist,%str( )));
+704        %let cat=%scan(&amp;catlist,&amp;i,%str( ));
+                                                                                          The SAS System
+
+705        proc sql;
+706        select distinct fmtname into: fmtlist separated by ' '
+707        from &amp;tmpds1 where fmtcat="&amp;cat";
+708        proc format lib=&amp;cat cntlout=&amp;tmpds3(keep=fmtname max);
+709        select &amp;fmtlist;
+710        run;
+711        proc sql;
+712        insert into &amp;tmpds2 select distinct fmtname,max from &amp;tmpds3;
+713        %end;
+714        proc sql;
+715        create table &amp;tmpds4 as
+716        select a.*, b.max as maxw
+717        from &amp;colinfo a
+718        left join &amp;tmpds2 b
+719        on cats(a.format)=cats(upcase(b.fmtname))
+720        order by a.varnum;
+721        data _null_;
+722        set &amp;tmpds4;
+723        if not missing(maxw);
+724        call symputx(
+725        cats('fmtlen',_n_),
+726        /* vars need extra padding due to JSON escaping of special chars */
+727        min(32767,ceil((max(length,maxw)+3)*1.5))
+728        ,'l'
+729        );
+730        run;
+731        /* configure varlenchk - as we are explicitly shortening the variables */
+732        %let optval=%sysfunc(getoption(varlenchk));
+733        options varlenchk=NOWARN;
+734        data _data_(compress=char);
+735        /* shorten the new vars */
+736        length
+737        %do i=1 %to &amp;numcols;
+738        &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i
+739        %end;
+740        ;
+741        /* rename on entry */
+742        set &amp;ds(rename=(
+                                                                                          The SAS System
+
+743        %do i=1 %to &amp;numcols;
+744        &amp;&amp;name&amp;i=&amp;&amp;newname&amp;i
+745        %end;
+746        ));
+747        &amp;stmt_obs;
+748        drop
+749        %do i=1 %to &amp;numcols;
+750        &amp;&amp;newname&amp;i
+751        %end;
+752        ;
+753        %do i=1 %to &amp;numcols;
+754        %if &amp;&amp;typelong&amp;i=num %then %do;
+755        &amp;&amp;name&amp;i=cats(put(&amp;&amp;newname&amp;i,&amp;&amp;fmt&amp;i));
+756        %end;
+757        %else %do;
+758        &amp;&amp;name&amp;i=put(&amp;&amp;newname&amp;i,&amp;&amp;fmt&amp;i);
+759        %end;
+760        %end;
+761        if _error_ then do;
+762        call symputx('syscc',1012);
+763        stop;
+764        end;
+765        run;
+766        %let fmtds=&amp;syslast;
+767        options varlenchk=&amp;optval;
+768        %end;
+769        proc format; /* credit yabwon for special null removal */
+770        value bart (default=40)
+771        %if &amp;missing=NULL %then %do;
+772        ._ - .z = null
+773        %end;
+774        %else %do;
+775        ._ = [quote()]
+776        . = null
+777        .a - .z = [quote()]
+778        %end;
+779        other = [best.];
+780        data &amp;tempds;
+                                                                                          The SAS System
+
+781        attrib _all_ label='';
+782        %do i=1 %to &amp;numcols;
+783        %if &amp;&amp;typelong&amp;i=char or &amp;fmt=Y %then %do;
+784        length &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i...;
+785        format &amp;&amp;name&amp;i $&amp;&amp;fmtlen&amp;i...;
+786        %end;
+787        %end;
+788        %if &amp;fmt=Y %then %do;
+789        set &amp;fmtds;
+790        %end;
+791        %else %do;
+792        set &amp;ds;
+793        %end;
+794        &amp;stmt_obs;
+795        format _numeric_ bart.;
+796        %do i=1 %to &amp;numcols;
+797        %if &amp;&amp;typelong&amp;i=char or &amp;fmt=Y %then %do;
+798        if findc(&amp;&amp;name&amp;i,'"\'!!'0A0D09000E0F01021011'x) then do;
+799        &amp;&amp;name&amp;i='"'!!trim(
+800        prxchange('s/"/\\"/',-1,        /* double quote */
+801        prxchange('s/\x0A/\n/',-1,      /* new line */
+802        prxchange('s/\x0D/\r/',-1,      /* carriage return */
+803        prxchange('s/\x09/\\t/',-1,     /* tab */
+804        prxchange('s/\x00/\\u0000/',-1, /* NUL */
+805        prxchange('s/\x0E/\\u000E/',-1, /* SS  */
+806        prxchange('s/\x0F/\\u000F/',-1, /* SF  */
+807        prxchange('s/\x01/\\u0001/',-1, /* SOH */
+808        prxchange('s/\x02/\\u0002/',-1, /* STX */
+809        prxchange('s/\x10/\\u0010/',-1, /* DLE */
+810        prxchange('s/\x11/\\u0011/',-1, /* DC1 */
+811        prxchange('s/\\/\\\\/',-1,&amp;&amp;name&amp;i)
+812        ))))))))))))!!'"';
+813        end;
+814        else &amp;&amp;name&amp;i=quote(cats(&amp;&amp;name&amp;i));
+815        %end;
+816        %end;
+817        run;
+818        filename _sjs3 temp lrecl=131068 ;
+                                                                                          The SAS System
+
+819        data _null_;
+820        file _sjs3 encoding='utf-8';
+821        if _n_=1 then put "[";
+822        set &amp;tempds;
+823        if _n_&gt;1 then put "," @; put
+824        %if &amp;action=ARR %then "[" ; %else "{" ;
+825        %do i=1 %to &amp;numcols;
+826        %if &amp;i&gt;1 %then  "," ;
+827        %if &amp;action=OBJ %then """&amp;&amp;name&amp;i"":" ;
+828        "&amp;&amp;name&amp;i"n /* name literal for reserved variable names */
+829        %end;
+830        %if &amp;action=ARR %then "]" ; %else "}" ; ;
+831        /* close out the table */
+832        data _null_;
+833        file _sjs3 mod encoding='utf-8';
+834        put ']';
+835        run;
+836        data _null_;
+837        infile _sjs3 lrecl=1 recfm=n;
+838        file &amp;jref mod lrecl=1 recfm=n;
+839        input sourcechar $char1. @@;
+840        format sourcechar hex2.;
+841        put sourcechar char1. @@;
+842        run;
+843        filename _sjs3 clear;
+844        %end;
+845        proc sql;
+846        drop table &amp;colinfo, &amp;tempds;
+847        %if %substr(&amp;showmeta,1,1)=Y %then %do;
+848        filename _sjs4 temp lrecl=131068 encoding='utf-8';
+849        data _null_;
+850        file _sjs4;
+851        length label $350;
+852        put ", ""$%lowcase(%sysfunc(coalescec(&amp;dslabel,&amp;ds)))"":{""vars"":{";
+853        do i=1 to &amp;numcols;
+854        name=quote(trim(symget(cats('name',i))));
+855        format=quote(trim(symget(cats('fmt',i))));
+856        label=quote(prxchange('s/\\/\\\\/',-1,trim(symget(cats('label',i)))));
+                                                                                          The SAS System
+
+857        length=quote(trim(symget(cats('length',i))));
+858        type=quote(trim(symget(cats('typelong',i))));
+859        if i&gt;1 then put "," @@;
+860        put name ':{"format":' format ',"label":' label
+861        ',"length":' length ',"type":' type '}';
+862        end;
+863        put '}}';
+864        run;
+865        /* send back to webout */
+866        data _null_;
+867        infile _sjs4 lrecl=1 recfm=n;
+868        file &amp;jref mod lrecl=1 recfm=n;
+869        input sourcechar $char1. @@;
+870        format sourcechar hex2.;
+871        put sourcechar char1. @@;
+872        run;
+873        filename _sjs4 clear;
+874        %end;
+875        %end;
+876        %else %if &amp;action=CLOSE %then %do;
+877        data _null_; file &amp;jref encoding='utf-8' mod ;
+878        put "}";
+879        run;
+880        %end;
+881        %mend mp_jsonout;
+882        /**
+883        @file mm_webout.sas
+884        @brief Send data to/from SAS Stored Processes
+885        @details This macro should be added to the start of each Stored Process,
+886        **immediately** followed by a call to:
+887        %mm_webout(FETCH)
+888        This will read all the input data and create same-named SAS datasets in the
+889        WORK library.  You can then insert your code, and send data back using the
+890        following syntax:
+891        data some datasets; * make some data ;
+892        retain some columns;
+893        run;
+894        %mm_webout(OPEN)
+                                                                                          The SAS System
+
+895        %mm_webout(ARR,some)  * Array format, fast, suitable for large tables ;
+896        %mm_webout(OBJ,datasets) * Object format, easier to work with ;
+897        Finally, wrap everything up send some helpful system variables too
+898        %mm_webout(CLOSE)
+899        @param [in] action Either FETCH, OPEN, ARR, OBJ or CLOSE
+900        @param [in] ds The dataset to send back to the frontend
+901        @param [out] dslabel= Value to use instead of table name for sending to JSON
+902        @param [in] fmt= (N) Setting Y converts all vars to their formatted values
+903        @param [out] fref= (_webout) The fileref to which to write the JSON
+904        @param [in] missing= (NULL) Special numeric missing values can be sent as NULL
+905        (eg `null`) or as STRING values (eg `".a"` or `".b"`)
+906        @param [in] showmeta= (N) Set to Y to output metadata alongside each table,
+907        such as the column formats and types.  The metadata is contained inside an
+908        object with the same name as the table but prefixed with a dollar sign - ie,
+909        `,"$tablename":{"formats":{"col1":"$CHAR1"},"types":{"COL1":"C"}}`
+910        @param [in] workobs= (0) When set to a positive integer, will create a new
+911        output object (WORK) which contains this number of observations from all
+912        tables in the WORK library.
+913        @param [in] maxobs= (MAX) Provide an integer to limit the number of input rows
+914        that should be converted to output JSON
+915        &lt;h4&gt; SAS Macros &lt;/h4&gt;
+916        @li mp_jsonout.sas
+917        &lt;h4&gt; Related Macros &lt;/h4&gt;
+918        @li ms_webout.sas
+919        @li mv_webout.sas
+920        @version 9.3
+921        @author Allan Bowe
+922        **/
+923        %macro mm_webout(action,ds,dslabel=,fref=_webout,fmt=N,missing=NULL
+924        ,showmeta=N,maxobs=MAX,workobs=0
+925        );
+926        %global _webin_file_count _webin_fileref1 _webin_name1 _program _debug
+927        sasjs_tables;
+928        %local i tempds jsonengine;
+929        /* see https://github.com/sasjs/core/issues/41 */
+930        %if "%upcase(&amp;SYSENCODING)" ne "UTF-8" %then %let jsonengine=PROCJSON;
+931        %else %let jsonengine=DATASTEP;
+932        %if &amp;action=FETCH %then %do;
+                                                                                          The SAS System
+
+933        %if %str(&amp;_debug) ge 131 %then %do;
+934        options mprint notes mprintnest;
+935        %end;
+936        %let _webin_file_count=%eval(&amp;_webin_file_count+0);
+937        /* now read in the data */
+938        %do i=1 %to &amp;_webin_file_count;
+939        %if &amp;_webin_file_count=1 %then %do;
+940        %let _webin_fileref1=&amp;_webin_fileref;
+941        %let _webin_name1=&amp;_webin_name;
+942        %end;
+943        data _null_;
+944        infile &amp;&amp;_webin_fileref&amp;i termstr=crlf;
+945        input;
+946        call symputx('input_statement',_infile_);
+947        putlog "&amp;&amp;_webin_name&amp;i input statement: "  _infile_;
+948        stop;
+949        data &amp;&amp;_webin_name&amp;i;
+950        infile &amp;&amp;_webin_fileref&amp;i firstobs=2 dsd termstr=crlf encoding='utf-8';
+951        input &amp;input_statement;
+952        %if %str(&amp;_debug) ge 131 %then %do;
+953        if _n_&lt;20 then putlog _infile_;
+954        %end;
+955        run;
+956        %let sasjs_tables=&amp;sasjs_tables &amp;&amp;_webin_name&amp;i;
+957        %end;
+958        %end;
+959        %else %if &amp;action=OPEN %then %do;
+960        /* fix encoding */
+961        OPTIONS NOBOMFILE;
+962        /**
+963        * check xengine type to avoid the below err message:
+964        * &gt; Function is only valid for filerefs using the CACHE access method.
+965        */
+966        data _null_;
+967        set sashelp.vextfl(where=(fileref="_WEBOUT"));
+968        if xengine='STREAM' then do;
+969        rc=stpsrv_header('Content-type',"text/html; encoding=utf-8");
+970        end;
+                                                                                          The SAS System
+
+971        run;
+972        /* setup json */
+973        data _null_;file &amp;fref encoding='utf-8';
+974        %if %str(&amp;_debug) ge 131 %then %do;
+975        put '&gt;&gt;weboutBEGIN&lt;&lt;';
+976        %end;
+977        put '{"SYSDATE" : "' "&amp;SYSDATE" '"';
+978        put ',"SYSTIME" : "' "&amp;SYSTIME" '"';
+979        run;
+980        %end;
+981        %else %if &amp;action=ARR or &amp;action=OBJ %then %do;
+982        %mp_jsonout(&amp;action,&amp;ds,dslabel=&amp;dslabel,fmt=&amp;fmt,jref=&amp;fref
+983        ,engine=&amp;jsonengine,missing=&amp;missing,showmeta=&amp;showmeta,maxobs=&amp;maxobs
+984        )
+985        %end;
+986        %else %if &amp;action=CLOSE %then %do;
+987        /* To avoid issues with _webout on EBI we use a temporary file */
+988        filename _sjsref temp lrecl=131068;
+989        %if %str(&amp;workobs) &gt; 0 %then %do;
+990        /* if debug mode, send back first XX records of each work table also */
+991        data;run;%let tempds=%scan(&amp;syslast,2,.);
+992        ods output Members=&amp;tempds;
+993        proc datasets library=WORK memtype=data;
+994        %local wtcnt;%let wtcnt=0;
+995        data _null_;
+996        set &amp;tempds;
+997        if not (upcase(name) =:"DATA"); /* ignore temp datasets */
+998        i+1;
+999        call symputx(cats('wt',i),name,'l');
+1000       call symputx('wtcnt',i,'l');
+1001       data _null_; file _sjsref mod encoding='utf-8';
+1002       put ",""WORK"":{";
+1003       %do i=1 %to &amp;wtcnt;
+1004       %let wt=&amp;&amp;wt&amp;i;
+1005       data _null_; file _sjsref mod encoding='utf-8';
+1006       dsid=open("WORK.&amp;wt",'is');
+1007       nlobs=attrn(dsid,'NLOBS');
+1008       nvars=attrn(dsid,'NVARS');
+                                                                                          The SAS System
+
+1009       rc=close(dsid);
+1010       if &amp;i&gt;1 then put ','@;
+1011       put " ""&amp;wt"" : {";
+1012       put '"nlobs":' nlobs;
+1013       put ',"nvars":' nvars;
+1014       %mp_jsonout(OBJ,&amp;wt,jref=_sjsref,dslabel=first10rows,showmeta=Y,maxobs=10
+1015       ,maxobs=&amp;workobs
+1016       )
+1017       data _null_; file _sjsref mod encoding='utf-8';
+1018       put "}";
+1019       %end;
+1020       data _null_; file _sjsref mod encoding='utf-8';
+1021       put "}";
+1022       run;
+1023       %end;
+1024       /* close off json */
+1025       data _null_;file _sjsref mod encoding='utf-8';
+1026       length SYSPROCESSNAME syserrortext syswarningtext autoexec $512;
+1027       put ",""_DEBUG"" : ""&amp;_debug"" ";
+1028       _METAUSER=quote(trim(symget('_METAUSER')));
+1029       put ",""_METAUSER"": " _METAUSER;
+1030       _METAPERSON=quote(trim(symget('_METAPERSON')));
+1031       put ',"_METAPERSON": ' _METAPERSON;
+1032       _PROGRAM=quote(trim(resolve(symget('_PROGRAM'))));
+1033       put ',"_PROGRAM" : ' _PROGRAM ;
+1034       autoexec=quote(urlencode(trim(getoption('autoexec'))));
+1035       put ',"AUTOEXEC" : ' autoexec;
+1036       put ",""MF_GETUSER"" : ""%mf_getuser()"" ";
+1037       put ",""SYSCC"" : ""&amp;syscc"" ";
+1038       put ",""SYSENCODING"" : ""&amp;sysencoding"" ";
+1039       syserrortext=cats('"',tranwrd(symget('syserrortext'),'"','\"'),'"');
+1040       put ',"SYSERRORTEXT" : ' syserrortext;
+1041       put ",""SYSHOSTNAME"" : ""&amp;syshostname"" ";
+1042       put ",""SYSPROCESSID"" : ""&amp;SYSPROCESSID"" ";
+1043       put ",""SYSPROCESSMODE"" : ""&amp;SYSPROCESSMODE"" ";
+1044       SYSPROCESSNAME=quote(urlencode(cats(SYSPROCESSNAME)));
+1045       put ",""SYSPROCESSNAME"" : " SYSPROCESSNAME;
+1046       put ",""SYSJOBID"" : ""&amp;sysjobid"" ";
+                                                                                          The SAS System
+
+1047       put ",""SYSSCPL"" : ""&amp;sysscpl"" ";
+1048       put ",""SYSSITE"" : ""&amp;syssite"" ";
+1049       put ",""SYSUSERID"" : ""&amp;sysuserid"" ";
+1050       sysvlong=quote(trim(symget('sysvlong')));
+1051       put ',"SYSVLONG" : ' sysvlong;
+1052       syswarningtext=cats('"',tranwrd(symget('syswarningtext'),'"','\"'),'"');
+1053       put ',"SYSWARNINGTEXT" : ' syswarningtext;
+1054       put ',"END_DTTM" : "' "%sysfunc(datetime(),E8601DT26.6)" '" ';
+1055       length memsize $32;
+1056       memsize="%sysfunc(INPUTN(%sysfunc(getoption(memsize)), best.),sizekmg.)";
+1057       memsize=quote(cats(memsize));
+1058       put ',"MEMSIZE" : ' memsize;
+1059       put "}" @;
+1060       %if %str(&amp;_debug) ge 131 %then %do;
+1061       put '&gt;&gt;weboutEND&lt;&lt;';
+1062       %end;
+1063       run;
+1064       /* now write to _webout 1 char at a time */
+1065       data _null_;
+1066       infile _sjsref lrecl=1 recfm=n;
+1067       file &amp;fref mod lrecl=1 recfm=n;
+1068       input sourcechar $char1. @@;
+1069       format sourcechar hex2.;
+1070       put sourcechar char1. @@;
+1071       run;
+1072       filename _sjsref clear;
+1073       %end;
+1074       %mend mm_webout;
+1075       %macro webout(action,ds,dslabel=,fmt=,missing=NULL,showmeta=NO,maxobs=MAX);
+1076       %mm_webout(&amp;action,ds=&amp;ds,dslabel=&amp;dslabel,fmt=&amp;fmt
+1077       ,missing=&amp;missing
+1078       ,showmeta=&amp;showmeta
+1079       ,maxobs=&amp;maxobs
+1080       )  %mend;
+1081       /* provide additional debug info */
+1082       %global _program;
+1083       %put &amp;=syscc;
+SYSCC=0
+                                                                                          The SAS System
+
+1084       %put user=%mf_getuser();
+user=sasdemo
+1085       %put pgm=&amp;_program;
+pgm=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220916145819/services/runRequest/sendObj
+1086       %put timestamp=%sysfunc(datetime(),datetime19.);
+timestamp= 16SEP2022:10:58:36
+1087       * Service Variables start;
+1088       %let name=value;
+1089       %let numvar=42;
+1090       * Service Variables end;
+1091       * SAS Macros start;
+1092       %macro mf_abort(mac=mf_abort.sas, msg=, iftrue=%str(1=1)
+1093       )/*/STORE SOURCE*/;
+1094       %if not(%eval(%unquote(&amp;iftrue))) %then %return;
+1095       %put NOTE: ///  mf_abort macro executing //;
+1096       %if %length(&amp;mac)&gt;0 %then %put NOTE- called by &amp;mac;
+1097       %put NOTE - &amp;msg;
+1098       %abort;
+1099       %mend mf_abort;
+1100       /** @endcond */
+1101       %macro mf_existds(libds
+1102       )/*/STORE SOURCE*/;
+1103       %if %sysfunc(exist(&amp;libds)) ne 1 &amp; %sysfunc(exist(&amp;libds,VIEW)) ne 1 %then 0;
+1104       %else 1;
+1105       %mend mf_existds;
+1106       * SAS Macros end;
+1107       * SAS Includes start;
+1108       * SAS Includes end;
+1109       * Binary Files start;
+1110       * Binary Files end;
+1111       * ServiceInit start;
+1112       options
+1113       DATASTMTCHK=ALLKEYWORDS /* some sites have this enabled */
+1114       PS=MAX /* reduce log size slightly */
+1115       ;
+1116       %put service is starting!!;
+service is starting!!
+1117       * ServiceInit end;
+1118       * Service start;
+1119       %webout(FETCH)
+MPRINT(MM_WEBOUT):   mprintnest;
+MPRINT(WEBOUT.MM_WEBOUT):   data _null_;
+MPRINT(WEBOUT.MM_WEBOUT):   infile #LN03609 termstr=crlf;
+MPRINT(WEBOUT.MM_WEBOUT):   input;
+MPRINT(WEBOUT.MM_WEBOUT):   call symputx('input_statement',_infile_);
+MPRINT(WEBOUT.MM_WEBOUT):   putlog "table1 input statement: " _infile_;
+MPRINT(WEBOUT.MM_WEBOUT):   stop;
+<font color=blue>
+NOTE: The infile #LN03609 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\_59EBAC7FA76471D9440E5880B8DAB42.csv,
+      RECFM=V,LRECL=32767,File Size (bytes)=99,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+</font>table1 input statement: col1:$char16. col2:$char17.
+<font color=blue>NOTE: 1 record was read from the infile #LN03609.
+      The minimum record length was 27.
+      The maximum record length was 27.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   data table1;
+MPRINT(WEBOUT.MM_WEBOUT):   infile #LN03609 firstobs=2 dsd termstr=crlf encoding='utf-8';
+MPRINT(WEBOUT.MM_WEBOUT):   input col1:$char16. col2:$char17.;
+MPRINT(WEBOUT.MM_WEBOUT):   if _n_&lt;20 then putlog _infile_;
+MPRINT(WEBOUT.MM_WEBOUT):   run;
+<font color=blue>
+NOTE: The infile #LN03609 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\_59EBAC7FA76471D9440E5880B8DAB42.csv,
+      RECFM=V,LRECL=131068,File Size (bytes)=99,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+</font>first col value1,second col value1
+first col value2,second col value2
+<font color=blue>NOTE: 2 records were read from the infile #LN03609.
+      The minimum record length was 34.
+      The maximum record length was 34.
+NOTE: The data set WORK.TABLE1 has 2 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   data _null_;
+MPRINT(WEBOUT.MM_WEBOUT):   infile #LN03611 termstr=crlf;
+MPRINT(WEBOUT.MM_WEBOUT):   input;
+MPRINT(WEBOUT.MM_WEBOUT):   call symputx('input_statement',_infile_);
+MPRINT(WEBOUT.MM_WEBOUT):   putlog "table2 input statement: " _infile_;
+MPRINT(WEBOUT.MM_WEBOUT):   stop;
+<font color=blue>
+NOTE: The infile #LN03611 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\_053C5769F46444C82F1B6922AFEF735.csv,
+      RECFM=V,LRECL=32767,File Size (bytes)=30,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+</font>table2 input statement: col1:$char15.
+<font color=blue>NOTE: 1 record was read from the infile #LN03611.
+      The minimum record length was 13.
+      The maximum record length was 13.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   data table2;
+MPRINT(WEBOUT.MM_WEBOUT):   infile #LN03611 firstobs=2 dsd termstr=crlf encoding='utf-8';
+MPRINT(WEBOUT.MM_WEBOUT):   input col1:$char15.;
+MPRINT(WEBOUT.MM_WEBOUT):   if _n_&lt;20 then putlog _infile_;
+MPRINT(WEBOUT.MM_WEBOUT):   run;
+<font color=blue>
+NOTE: The infile #LN03611 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\_053C5769F46444C82F1B6922AFEF735.csv,
+      RECFM=V,LRECL=131068,File Size (bytes)=30,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+</font>first col value
+<font color=blue>NOTE: 1 record was read from the infile #LN03611.
+      The minimum record length was 15.
+      The maximum record length was 15.
+NOTE: The data set WORK.TABLE2 has 1 observations and 1 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>1120       %webout(OPEN)
+MPRINT(WEBOUT.MM_WEBOUT):   OPTIONS NOBOMFILE;
+MPRINT(WEBOUT.MM_WEBOUT):   data _null_;
+MPRINT(WEBOUT.MM_WEBOUT):   set sashelp.vextfl(where=(fileref="_WEBOUT"));
+MPRINT(WEBOUT.MM_WEBOUT):   if xengine='STREAM' then do;
+MPRINT(WEBOUT.MM_WEBOUT):   rc=stpsrv_header('Content-type',"text/html; encoding=utf-8");
+MPRINT(WEBOUT.MM_WEBOUT):   end;
+MPRINT(WEBOUT.MM_WEBOUT):   run;
+<font color=blue>
+NOTE: There were 1 observations read from the data set SASHELP.VEXTFL.
+      WHERE fileref='_WEBOUT';
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   data _null_;
+MPRINT(WEBOUT.MM_WEBOUT):  file _webout encoding='utf-8';
+MPRINT(WEBOUT.MM_WEBOUT):   put '&gt;&gt;weboutBEGIN&lt;&lt;';
+MPRINT(WEBOUT.MM_WEBOUT):   put '{"SYSDATE" : "' "16SEP22" '"';
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"SYSTIME" : "' "10:58" '"';
+MPRINT(WEBOUT.MM_WEBOUT):   run;
+<font color=blue>
+NOTE: The file _WEBOUT is:
+      UUID=26A7B514-BA7A-4D38-9255-9E920531927D,
+      HTTP:Content-type=text/html; encoding=utf-8
+
+NOTE: 3 records were written to the file _WEBOUT.
+      The minimum record length was 15.
+      The maximum record length was 22.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>1121       %macro x();
+1122       %do i=1 %to %sysfunc(countw(&amp;sasjs_tables));
+1123       %let table=%scan(&amp;sasjs_tables,&amp;i);
+1124       %webout(OBJ,&amp;table)
+1125       %end;
+1126       %mend;
+1127       %x()
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   options validvarname=upcase;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs1 temp lrecl=200 ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _null_;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   file _sjs1 encoding='utf-8';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   put
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   ", ""table1"":";
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: The file _SJS1 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03613,
+      RECFM=V,LRECL=800,File Size (bytes)=0,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: 1 record was written to the file _SJS1.
+      The minimum record length was 11.
+      The maximum record length was 11.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _null_;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   infile _sjs1 lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   file _webout mod lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   input sourcechar $char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   format sourcechar hex2.;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   put sourcechar char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: UNBUFFERED is the default with RECFM=N.
+NOTE: The infile _SJS1 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03613,
+      RECFM=N,LRECL=256,File Size (bytes)=13,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: The file _WEBOUT is:
+      UUID=26A7B514-BA7A-4D38-9255-9E920531927D,
+      HTTP:Content-type=text/html; encoding=utf-8
+
+NOTE: 13 records were written to the file _WEBOUT.
+      The minimum record length was 1.
+      The maximum record length was 1.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs1 clear;
+<font color=blue>NOTE: Fileref _SJS1 has been deassigned.
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc contents noprint data=table1 out=_data_(keep=name type length format formatl formatd varnum label);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: The data set WORK.DATA31 has 2 observations and 8 variables.
+NOTE: PROCEDURE CONTENTS used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.03 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc sort data=DATA31;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   by varnum;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: There were 2 observations read from the data set WORK.DATA31.
+NOTE: The data set WORK.DATA31 has 2 observations and 8 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data DATA31;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if _n_=1 then call symputx('numcols',nobs,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   set DATA31 end=last nobs=nobs;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   name=upcase(name);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if type=2 or type=6 then do;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   typelong='char';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   length fmt $49.;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if format='' then fmt=cats('$',length,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else if formatl=0 then fmt=cats(format,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else fmt=cats(format,formatl,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   end;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else do;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   typelong='num';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if format='' then fmt='best.';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else if formatl=0 then fmt=cats(format,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else if formatd=0 then fmt=cats(format,formatl,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else fmt=cats(format,formatl,'.',formatd);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   end;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   newname='sasjs'!!substr(cats(put(md5(name),$hex32.)),1,27);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('name',_n_),name,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('newname',_n_),newname,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('length',_n_),length,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('fmt',_n_),fmt,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('type',_n_),type,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('typelong',_n_),typelong,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('label',_n_),coalescec(label,name),'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if typelong='num' then call symputx(cats('fmtlen',_n_),200,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else call symputx(cats('fmtlen',_n_),min(32767,ceil((length+3)*1.5)),'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: There were 2 observations read from the data set WORK.DATA31.
+NOTE: The data set WORK.DATA31 has 2 observations and 11 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc sql;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   select count(*) into: lastobs from table1;
+<font color=blue>NOTE: The PROCEDURE SQL printed page 1.
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _5640080794c848f6bfcad1684d1a0ec;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   set table1;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):  ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs2 temp lrecl=131068 encoding='utf-8';
+<font color=blue>NOTE: There were 2 observations read from the data set WORK.TABLE1.
+NOTE: The data set WORK._5640080794C848F6BFCAD1684D1A0EC has 2 observations and 2 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc json out=_sjs2 pretty ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):  export _5640080794c848f6bfcad1684d1a0ec / nosastags fmtnumeric;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: PROCEDURE JSON used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _null_;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   infile _sjs2 lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   file _webout mod lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   input sourcechar $char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   format sourcechar hex2.;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   put sourcechar char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+</font><em><font color=green>WARNING: ENCODING option ignored for files opened with RECFM=N.
+</font></em><font color=blue>NOTE: UNBUFFERED is the default with RECFM=N.
+NOTE: The infile _SJS2 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03683,
+      RECFM=N,LRECL=256,File Size (bytes)=149,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: The file _WEBOUT is:
+      UUID=26A7B514-BA7A-4D38-9255-9E920531927D,
+      HTTP:Content-type=text/html; encoding=utf-8
+
+NOTE: 149 records were written to the file _WEBOUT.
+      The minimum record length was 1.
+      The maximum record length was 1.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs2 clear;
+<font color=blue>NOTE: Fileref _SJS2 has been deassigned.
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc sql;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   drop table DATA31, _5640080794c848f6bfcad1684d1a0ec;
+<font color=blue>NOTE: Table WORK.DATA31 has been dropped.
+NOTE: Table WORK._5640080794C848F6BFCAD1684D1A0EC has been dropped.
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   options validvarname=upcase;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs1 temp lrecl=200 ;
+<font color=blue>NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _null_;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   file _sjs1 encoding='utf-8';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   put
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   ", ""table2"":";
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: The file _SJS1 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03684,
+      RECFM=V,LRECL=800,File Size (bytes)=0,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: 1 record was written to the file _SJS1.
+      The minimum record length was 11.
+      The maximum record length was 11.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _null_;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   infile _sjs1 lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   file _webout mod lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   input sourcechar $char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   format sourcechar hex2.;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   put sourcechar char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: UNBUFFERED is the default with RECFM=N.
+NOTE: The infile _SJS1 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03684,
+      RECFM=N,LRECL=256,File Size (bytes)=13,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: The file _WEBOUT is:
+      UUID=26A7B514-BA7A-4D38-9255-9E920531927D,
+      HTTP:Content-type=text/html; encoding=utf-8
+
+NOTE: 13 records were written to the file _WEBOUT.
+      The minimum record length was 1.
+      The maximum record length was 1.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs1 clear;
+<font color=blue>NOTE: Fileref _SJS1 has been deassigned.
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc contents noprint data=table2 out=_data_(keep=name type length format formatl formatd varnum label);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: The data set WORK.DATA32 has 1 observations and 8 variables.
+NOTE: PROCEDURE CONTENTS used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc sort data=DATA32;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   by varnum;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: There were 1 observations read from the data set WORK.DATA32.
+NOTE: The data set WORK.DATA32 has 1 observations and 8 variables.
+NOTE: PROCEDURE SORT used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data DATA32;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if _n_=1 then call symputx('numcols',nobs,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   set DATA32 end=last nobs=nobs;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   name=upcase(name);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if type=2 or type=6 then do;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   typelong='char';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   length fmt $49.;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if format='' then fmt=cats('$',length,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else if formatl=0 then fmt=cats(format,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else fmt=cats(format,formatl,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   end;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else do;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   typelong='num';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if format='' then fmt='best.';
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else if formatl=0 then fmt=cats(format,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else if formatd=0 then fmt=cats(format,formatl,'.');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else fmt=cats(format,formatl,'.',formatd);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   end;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   newname='sasjs'!!substr(cats(put(md5(name),$hex32.)),1,27);
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('name',_n_),name,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('newname',_n_),newname,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('length',_n_),length,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('fmt',_n_),fmt,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('type',_n_),type,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('typelong',_n_),typelong,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   call symputx(cats('label',_n_),coalescec(label,name),'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   if typelong='num' then call symputx(cats('fmtlen',_n_),200,'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   else call symputx(cats('fmtlen',_n_),min(32767,ceil((length+3)*1.5)),'l');
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: There were 1 observations read from the data set WORK.DATA32.
+NOTE: The data set WORK.DATA32 has 1 observations and 11 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.01 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc sql;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   select count(*) into: lastobs from table2;
+<font color=blue>NOTE: The PROCEDURE SQL printed page 2.
+NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _fec25cb2fdf14ab0a08086bd57c12be;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   set table2;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):  ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs2 temp lrecl=131068 encoding='utf-8';
+<font color=blue>NOTE: There were 1 observations read from the data set WORK.TABLE2.
+NOTE: The data set WORK._FEC25CB2FDF14AB0A08086BD57C12BE has 1 observations and 1 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc json out=_sjs2 pretty ;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):  export _fec25cb2fdf14ab0a08086bd57c12be / nosastags fmtnumeric;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+NOTE: PROCEDURE JSON used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   data _null_;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   infile _sjs2 lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   file _webout mod lrecl=1 recfm=n;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   input sourcechar $char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   format sourcechar hex2.;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   put sourcechar char1. @@;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   run;
+<font color=blue>
+</font><em><font color=green>WARNING: ENCODING option ignored for files opened with RECFM=N.
+</font></em><font color=blue>NOTE: UNBUFFERED is the default with RECFM=N.
+NOTE: The infile _SJS2 is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03685,
+      RECFM=N,LRECL=256,File Size (bytes)=42,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: The file _WEBOUT is:
+      UUID=26A7B514-BA7A-4D38-9255-9E920531927D,
+      HTTP:Content-type=text/html; encoding=utf-8
+
+NOTE: 42 records were written to the file _WEBOUT.
+      The minimum record length was 1.
+      The maximum record length was 1.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   filename _sjs2 clear;
+<font color=blue>NOTE: Fileref _SJS2 has been deassigned.
+</font>MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   proc sql;
+MPRINT(X.WEBOUT.MM_WEBOUT.MP_JSONOUT):   drop table DATA32, _fec25cb2fdf14ab0a08086bd57c12be;
+<font color=blue>NOTE: Table WORK.DATA32 has been dropped.
+NOTE: Table WORK._FEC25CB2FDF14AB0A08086BD57C12BE has been dropped.
+</font>1128       %webout(CLOSE)
+MPRINT(WEBOUT.MM_WEBOUT):   filename _sjsref temp lrecl=131068;
+<font color=blue>NOTE: PROCEDURE SQL used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   data _null_;
+MPRINT(WEBOUT.MM_WEBOUT):  file _sjsref mod encoding='utf-8';
+MPRINT(WEBOUT.MM_WEBOUT):   length SYSPROCESSNAME syserrortext syswarningtext autoexec $512;
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""_DEBUG"" : ""131"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   _METAUSER=quote(trim(symget('_METAUSER')));
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""_METAUSER"": " _METAUSER;
+MPRINT(WEBOUT.MM_WEBOUT):   _METAPERSON=quote(trim(symget('_METAPERSON')));
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"_METAPERSON": ' _METAPERSON;
+MPRINT(WEBOUT.MM_WEBOUT):   _PROGRAM=quote(trim(resolve(symget('_PROGRAM'))));
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"_PROGRAM" : ' _PROGRAM ;
+MPRINT(WEBOUT.MM_WEBOUT):   autoexec=quote(urlencode(trim(getoption('autoexec'))));
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"AUTOEXEC" : ' autoexec;
+MPRINT(WEBOUT.MM_WEBOUT):   put
+MPRINT(WEBOUT.MM_WEBOUT):   ",""MF_GETUSER"" : ""sasdemo"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSCC"" : ""0"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSENCODING"" : ""wlatin1"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   syserrortext=cats('"',tranwrd(symget('syserrortext'),'"','\"'),'"');
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"SYSERRORTEXT" : ' syserrortext;
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSHOSTNAME"" : ""sasdemo"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSPROCESSID"" : ""41DD7D13971A7EFA40BBC80000000000"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSPROCESSMODE"" : ""SAS Stored Process Server"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   SYSPROCESSNAME=quote(urlencode(cats(SYSPROCESSNAME)));
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSPROCESSNAME"" : " SYSPROCESSNAME;
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSJOBID"" : ""25576"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSSCPL"" : ""X64_DSRV16"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSSITE"" : ""123"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   put ",""SYSUSERID"" : ""sassrv"" ";
+MPRINT(WEBOUT.MM_WEBOUT):   sysvlong=quote(trim(symget('sysvlong')));
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"SYSVLONG" : ' sysvlong;
+MPRINT(WEBOUT.MM_WEBOUT):   syswarningtext=cats('"',tranwrd(symget('syswarningtext'),'"','\"'),'"');
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"SYSWARNINGTEXT" : ' syswarningtext;
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"END_DTTM" : "' "2022-09-16T10:58:36.721000" '" ';
+MPRINT(WEBOUT.MM_WEBOUT):   length memsize $32;
+MPRINT(WEBOUT.MM_WEBOUT):   memsize="  47GB";
+MPRINT(WEBOUT.MM_WEBOUT):   memsize=quote(cats(memsize));
+MPRINT(WEBOUT.MM_WEBOUT):   put ',"MEMSIZE" : ' memsize;
+MPRINT(WEBOUT.MM_WEBOUT):   put "}" @;
+MPRINT(WEBOUT.MM_WEBOUT):   put '&gt;&gt;weboutEND&lt;&lt;';
+MPRINT(WEBOUT.MM_WEBOUT):   run;
+<font color=blue>
+NOTE: The file _SJSREF is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03686,
+      RECFM=V,LRECL=524272,File Size (bytes)=0,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: 22 records were written to the file _SJSREF.
+      The minimum record length was 14.
+      The maximum record length was 123.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.01 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   data _null_;
+MPRINT(WEBOUT.MM_WEBOUT):   infile _sjsref lrecl=1 recfm=n;
+MPRINT(WEBOUT.MM_WEBOUT):   file _webout mod lrecl=1 recfm=n;
+MPRINT(WEBOUT.MM_WEBOUT):   input sourcechar $char1. @@;
+MPRINT(WEBOUT.MM_WEBOUT):   format sourcechar hex2.;
+MPRINT(WEBOUT.MM_WEBOUT):   put sourcechar char1. @@;
+MPRINT(WEBOUT.MM_WEBOUT):   run;
+<font color=blue>
+NOTE: UNBUFFERED is the default with RECFM=N.
+NOTE: The infile _SJSREF is:
+      Filename=D:\opt\sasinside\SASWORK\_TD25576_sasdemo_\#LN03686,
+      RECFM=N,LRECL=256,File Size (bytes)=859,
+      Last Modified=16Sep2022:10:58:36,
+      Create Time=16Sep2022:10:58:36
+
+NOTE: The file _WEBOUT is:
+      UUID=26A7B514-BA7A-4D38-9255-9E920531927D,
+      HTTP:Content-type=text/html; encoding=utf-8
+
+NOTE: 859 records were written to the file _WEBOUT.
+      The minimum record length was 1.
+      The maximum record length was 1.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+</font>MPRINT(WEBOUT.MM_WEBOUT):   filename _sjsref clear;
+<font color=blue>NOTE: Fileref _SJSREF has been deassigned.
+</font>1129       * Service end;
+1130       * ServiceTerm start;
+1131       %put service is finishing.  Thanks, SASjs!;
+service is finishing.  Thanks, SASjs!
+</pre>
+
+</div>
+</u><div style="text-align:left"><p /><hr />
+This request took 0.54 seconds of real time.
+</div>
+</body></html>

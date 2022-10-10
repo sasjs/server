@@ -6,7 +6,7 @@ Executed sasjs run
 
 <font color=blue>NOTE: Copyright (c) 2016 by SAS Institute Inc., Cary, NC, USA. 
 NOTE: SAS (r) Proprietary Software 9.4 (TS1M7) 
-      Licensed to VAVS7.5 Prod - EBIDIEGAnalytics - 21w47 18 Nov 21, Site 70068130.
+      Licensed to VAVS7.5 Prod - EBIDIEGAnalytics - 21w47 18 Nov 21, Site 123.
 NOTE: This session is executing on the X64_DSRV16  platform.
 </font>
 
@@ -42,7 +42,7 @@ NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer
  _HTUA=axios/0.26.0
  _METAFOLDER=/User Folders/sasdemo/My Folder/sasjs/
  _METAPERSON=sasdemo
- _METAUSER=sasdemo@SAS-AAP
+ _METAUSER=sasdemo@sasdemo
  _PROGRAM=/User Folders/sasdemo/My Folder/sasjs/runner
  _REPLAY="&amp;_URL?_sessionid=EAC520C4-73FD-4DA9-BBBB-A5B21E8DDD83&amp;_program=replay&amp;_entry=&amp;_TMPCAT.."
  _REQENCODING=UTF-8
@@ -51,7 +51,7 @@ NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer
  _RMTADDR=10.96.4.0
  _RMTHOST=10.96.4.0
  _SECUREUSERNAME=sasdemo
- _SRVNAME=sas-aap.demo.sas.com
+ _SRVNAME=sasdemo.demo.sas.com
  _SRVPORT=80
  _TMPCAT=APSWORK.TCAT002A
  _URL=/SASStoredProcess/do/
@@ -592,7 +592,7 @@ NOTE: The autoexec file, D:\opt\sasinside\Config\Lev1\SASApp\StoredProcessServer
 497        %end;
 498        %mend sasjs_runner;
 499        %sasjs_runner()
-<font color=blue>NOTE: %INCLUDE (level 1) file #LN01263 is file D:\opt\sasinside\SASWORK\_TD23116_SAS-AAP_\_E88EEB534DB41FABE43F09BD4A753BF.sas.
+<font color=blue>NOTE: %INCLUDE (level 1) file #LN01263 is file D:\opt\sasinside\SASWORK\_TD23116_sasdemo_\_E88EEB534DB41FABE43F09BD4A753BF.sas.
 </font>500       +
 501       +
 502       +%global appLoc serverName;
@@ -647,7 +647,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/admin/dostuff
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/admin/dostuff
 
 
 
@@ -665,7 +665,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/common/appinit
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/common/appinit
 
 
 
@@ -675,7 +675,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/common/example
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/common/example
 
 
 
@@ -685,7 +685,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/common/getdata
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/common/getdata
 
 
 
@@ -703,7 +703,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/runRequest/err
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/runRequest/err
 
 
 
@@ -713,7 +713,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/runRequest/sendArr
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/runRequest/sendArr
 
 
 
@@ -723,7 +723,7 @@ Check it out here:
 
 
 
-http://sas-aap.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/runRequest/sendObj
+http://sasdemo.demo.sas.com:80/SASStoredProcess?_PROGRAM=/User Folders/sasdemo/My Folder/cli-tests/cli-tests-request-sas9-20220915122153/services/runRequest/sendObj
 
 
 

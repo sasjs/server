@@ -8,6 +8,11 @@ const webController = new WebController()
 // for example `isLoggedIn` and potentially more in future mocks
 const controller = new MockSas9Controller()
 
+import multer from 'multer'
+import path from 'path'
+
+const upload = multer({ dest: path.join(process.cwd(), 'mocks', 'uploads') })
+
 sas9WebRouter.get('/', async (req, res) => {
   let response
   try {
@@ -55,7 +60,7 @@ sas9WebRouter.get('/SASStoredProcess/do/', async (req, res) => {
   }
 })
 
-sas9WebRouter.post('/SASStoredProcess/do/', async (req, res) => {
+sas9WebRouter.post('/SASStoredProcess/do/', upload.any(), async (req, res) => {
   const response = await controller.sasStoredProcessDoPost(req)
 
   if (response.redirect) {
