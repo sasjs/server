@@ -26,7 +26,7 @@ export class MockSas9Controller {
     let username = req.query._username?.toString() || undefined
     let password = req.query._password?.toString() || undefined
 
-    if (username && password) this.loggedIn = true
+    if (username && password) this.loggedIn = req.body.username
 
     if (!this.loggedIn) {
       return {
@@ -52,7 +52,7 @@ export class MockSas9Controller {
     let username = req.query._username?.toString() || undefined
     let password = req.query._password?.toString() || undefined
 
-    if (username && password) this.loggedIn = true
+    if (username && password) this.loggedIn = req.body.username
 
     if (!this.loggedIn) {
       return {
