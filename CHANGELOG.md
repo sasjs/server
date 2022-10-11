@@ -1,3 +1,10 @@
+## [0.23.4](https://github.com/sasjs/server/compare/v0.23.3...v0.23.4) (2022-10-11)
+
+
+### Bug Fixes
+
+* add action to editor ref for running code ([2412622](https://github.com/sasjs/server/commit/2412622367eb46c40f388e988ae4606a7ec239b2))
+
 ## [0.23.3](https://github.com/sasjs/server/compare/v0.23.2...v0.23.3) (2022-10-09)
 
 
