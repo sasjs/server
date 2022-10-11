@@ -2,12 +2,24 @@ import express from 'express'
 import { generateCSRFToken } from '../../middlewares'
 import { WebController } from '../../controllers'
 import { MockSas9Controller } from '../../controllers/mock-sas9'
+import fs from 'fs'
+import multer from 'multer'
+import path from 'path'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const sas9WebRouter = express.Router()
 const webController = new WebController()
 // Mock controller must be singleton because it keeps the states
 // for example `isLoggedIn` and potentially more in future mocks
 const controller = new MockSas9Controller()
+
+const mockPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
+
+const upload = multer({
+  dest: path.join(process.cwd(), mockPath, 'sas9', 'files-recieved')
+})
 
 sas9WebRouter.get('/', async (req, res) => {
   let response
@@ -27,7 +39,7 @@ sas9WebRouter.get('/', async (req, res) => {
 })
 
 sas9WebRouter.get('/SASStoredProcess', async (req, res) => {
-  const response = await controller.sasStoredProcess()
+  const response = await controller.sasStoredProcess(req)
 
   if (response.redirect) {
     res.redirect(response.redirect)
@@ -41,8 +53,29 @@ sas9WebRouter.get('/SASStoredProcess', async (req, res) => {
   }
 })
 
-sas9WebRouter.post('/SASStoredProcess/do/', async (req, res) => {
-  const response = await controller.sasStoredProcessDo(req)
+sas9WebRouter.get('/SASStoredProcess/do/', async (req, res) => {
+  const response = await controller.sasStoredProcessDoGet(req)
+
+  if (response.redirect) {
+    res.redirect(response.redirect)
+    return
+  }
+
+  try {
+    res.send(response.content)
+  } catch (err: any) {
+    res.status(403).send(err.toString())
+  }
+})
+
+sas9WebRouter.post('/SASStoredProcess/do/', upload.any(), async (req, res) => {
+  const response = await controller.sasStoredProcessDoPost(req)
+
+  if (req.files) {
+    ;(req.files as any).forEach((file: any) => {
+      fs.renameSync(file.path, file.destination + '/' + file.fieldname)
+    })
+  }
 
   if (response.redirect) {
     res.redirect(response.redirect)

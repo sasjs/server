@@ -57,6 +57,7 @@ export default setProcessVariables().then(async () => {
 
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
+  app.use(express.urlencoded({ extended: true }))
 
   // Body parser is used for decoding the formdata on POST request.
   // Currently only place we use it is SAS9 Mock - POST /SASLogon/login

@@ -2,6 +2,11 @@ import { readFile } from '@sasjs/utils'
 import express from 'express'
 import path from 'path'
 import { Request, Post, Get } from 'tsoa'
+import fs from 'fs'
+import fse from 'fs-extra'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 export interface Sas9Response {
   content: string
@@ -16,9 +21,17 @@ export interface MockFileRead {
 
 export class MockSas9Controller {
   private loggedIn: string | undefined
+  private mocksPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
 
   @Get('/SASStoredProcess')
-  public async sasStoredProcess(): Promise<Sas9Response> {
+  public async sasStoredProcess(
+    @Request() req: express.Request
+  ): Promise<Sas9Response> {
+    let username = req.query._username?.toString() || undefined
+    let password = req.query._password?.toString() || undefined
+
+    if (username && password) this.loggedIn = req.body.username
+
     if (!this.loggedIn) {
       return {
         content: '',
@@ -26,17 +39,66 @@ export class MockSas9Controller {
       }
     }
 
+    let program = req.query._program?.toString() || undefined
+    let filePath: string[] = ['generic', 'sas-stored-process']
+
+    if (program) {
+      filePath = program.replace('/', '').split('/')
+      return await getMockResponseFromFile([
+        process.cwd(),
+        this.mocksPath,
+        'sas9',
+        ...filePath
+      ])
+    }
+
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
-      'generic',
       'sas9',
-      'sas-stored-process'
+      ...filePath
+    ])
+  }
+
+  @Get('/SASStoredProcess/do')
+  public async sasStoredProcessDoGet(
+    @Request() req: express.Request
+  ): Promise<Sas9Response> {
+    let username = req.query._username?.toString() || undefined
+    let password = req.query._password?.toString() || undefined
+
+    if (username && password) this.loggedIn = username
+
+    if (!this.loggedIn) {
+      return {
+        content: '',
+        redirect: '/SASLogon/login'
+      }
+    }
+
+    let program = req.query._program?.toString() || undefined
+    let filePath: string[] = ['generic', 'sas-stored-process']
+
+    if (program) {
+      filePath = `${program}`.replace('/', '').split('/')
+      return await getMockResponseFromFile([
+        process.cwd(),
+        this.mocksPath,
+        'sas9',
+        ...filePath
+      ])
+    }
+
+    return await getMockResponseFromFile([
+      process.cwd(),
+      'mocks',
+      'sas9',
+      ...filePath
     ])
   }
 
   @Post('/SASStoredProcess/do/')
-  public async sasStoredProcessDo(
+  public async sasStoredProcessDoPost(
     @Request() req: express.Request
   ): Promise<Sas9Response> {
     if (!this.loggedIn) {
@@ -55,12 +117,55 @@ export class MockSas9Controller {
 
     let program = req.query._program?.toString() || ''
     program = program.replace('/', '')
+    let debug = req.query._debug?.toString()
+
+    let fileContents = ''
+
+    if (program.includes('runner') && debug === 'log') {
+      if (req.files && req.files.length > 0) {
+        const regexRequest = /cli-tests-request-sas9-.*?\d*/g
+        const uploadFilePath = (req.files as any)[0].path
+
+        fileContents = fs.readFileSync(uploadFilePath, 'utf8')
+
+        let matched = fileContents.match(regexRequest)?.[0]
+
+        if (matched) {
+          const testsFolderPath = path.join(
+            process.cwd(),
+            this.mocksPath,
+            'sas9',
+            'User Folders',
+            'cli-tests',
+            'sasdemo',
+            matched
+          )
+
+          if (!fs.existsSync(testsFolderPath)) fs.mkdirSync(testsFolderPath)
+
+          fse.copySync(
+            path.join(
+              process.cwd(),
+              this.mocksPath,
+              'sas9',
+              'User Folders',
+              'sasdemo',
+              'services'
+            ),
+            path.join(testsFolderPath, 'services')
+          )
+        }
+      }
+    }
 
     const content = await getMockResponseFromFile([
       process.cwd(),
-      'mocks',
+      this.mocksPath,
+      'sas9',
       ...program.split('/')
     ])
+
+    content.content += fileContents
 
     if (content.error) {
       return content
@@ -85,8 +190,8 @@ export class MockSas9Controller {
         return await getMockResponseFromFile([
           process.cwd(),
           'mocks',
-          'generic',
           'sas9',
+          'generic',
           'logged-in'
         ])
       }
@@ -95,21 +200,27 @@ export class MockSas9Controller {
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
-      'generic',
       'sas9',
+      'generic',
       'login'
     ])
   }
 
   @Post('/SASLogon/login')
   public async loginPost(req: express.Request): Promise<Sas9Response> {
+    if (req.body.lt && req.body.lt !== 'validtoken')
+      return {
+        content: '',
+        redirect: '/SASLogon/login'
+      }
+
     this.loggedIn = req.body.username
 
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
-      'generic',
       'sas9',
+      'generic',
       'logged-in'
     ])
   }
@@ -122,8 +233,8 @@ export class MockSas9Controller {
       return await getMockResponseFromFile([
         process.cwd(),
         'mocks',
-        'generic',
         'sas9',
+        'generic',
         'public-access-denied'
       ])
     }
@@ -131,8 +242,8 @@ export class MockSas9Controller {
     return await getMockResponseFromFile([
       process.cwd(),
       'mocks',
-      'generic',
       'sas9',
+      'generic',
       'logged-out'
     ])
   }

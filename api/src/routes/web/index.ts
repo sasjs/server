@@ -3,6 +3,7 @@ import sas9WebRouter from './sas9-web'
 import sasViyaWebRouter from './sasviya-web'
 import webRouter from './web'
 import { MOCK_SERVERTYPEType } from '../../utils'
+import { csrfProtection } from '../../middlewares'
 
 const router = express.Router()
 
@@ -18,7 +19,7 @@ switch (MOCK_SERVERTYPE) {
     break
   }
   default: {
-    router.use('/', webRouter)
+    router.use('/', csrfProtection, webRouter)
   }
 }
 

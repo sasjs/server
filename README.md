@@ -103,6 +103,10 @@ PORT=
 # If not present, mocking function is disabled
 MOCK_SERVERTYPE=
 
+# Path to mocking folder, it's sub directories should be: sas9, viya, sasjs
+# Server will automatically use sub directory accordingly
+STATIC_MOCK_LOCATION=
+
 #
 ## Additional SAS Options
 #
