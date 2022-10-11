@@ -42,7 +42,6 @@ const useEditor = ({
   const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState('')
-  const [ctrlPressed, setCtrlPressed] = useState(false)
   const [webout, setWebout] = useState('')
   const [runTimes, setRunTimes] = useState<string[]>([])
   const [selectedRunTime, setSelectedRunTime] = useState('')
@@ -148,53 +147,47 @@ const useEditor = ({
   const handleRunBtnClick = () =>
     runCode(getSelection(editorRef.current as any) || fileContent)
 
-  const runCode = (code: string) => {
-    setIsLoading(true)
-    axios
-      .post(`/SASjsApi/code/execute`, {
-        code: programPathInjection(
-          code,
-          selectedFilePath,
-          selectedRunTime as RunTimeType
-        ),
-        runTime: selectedRunTime
-      })
-      .then((res: any) => {
-        setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
-        setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
-        setTab('log')
+  const runCode = useCallback(
+    (code: string) => {
+      setIsLoading(true)
+      axios
+        .post(`/SASjsApi/code/execute`, {
+          code: programPathInjection(
+            code,
+            selectedFilePath,
+            selectedRunTime as RunTimeType
+          ),
+          runTime: selectedRunTime
+        })
+        .then((res: any) => {
+          setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
+          setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
+          setTab('log')
 
-        // Scroll to bottom of log
-        const logElement = document.getElementById('log')
-        if (logElement) logElement.scrollTop = logElement.scrollHeight
-      })
-      .catch((err) => {
-        setModalTitle('Abort')
-        setModalPayload(
-          typeof err.response.data === 'object'
-            ? JSON.stringify(err.response.data)
-            : err.response.data
-        )
-        setOpenModal(true)
-      })
-      .finally(() => setIsLoading(false))
-  }
-
-  const handleKeyDown = (event: any) => {
-    if (event.ctrlKey) {
-      if (event.key === 'v') {
-        setCtrlPressed(false)
-      }
-
-      if (event.key === 'Enter')
-        runCode(getSelection(editorRef.current as any) || fileContent)
-      if (!ctrlPressed) setCtrlPressed(true)
-    }
-  }
-
-  const handleKeyUp = (event: any) => {
-    if (!event.ctrlKey && ctrlPressed) setCtrlPressed(false)
-  }
+          // Scroll to bottom of log
+          const logElement = document.getElementById('log')
+          if (logElement) logElement.scrollTop = logElement.scrollHeight
+        })
+        .catch((err) => {
+          setModalTitle('Abort')
+          setModalPayload(
+            typeof err.response.data === 'object'
+              ? JSON.stringify(err.response.data)
+              : err.response.data
+          )
+          setOpenModal(true)
+        })
+        .finally(() => setIsLoading(false))
+    },
+    [
+      selectedFilePath,
+      selectedRunTime,
+      setModalPayload,
+      setModalTitle,
+      setOpenModal,
+      setTab
+    ]
+  )
 
   const handleChangeRunTime = (event: SelectChangeEvent) => {
     setSelectedRunTime(event.target.value as RunTimeType)
@@ -223,7 +216,28 @@ const useEditor = ({
         if (prevFileContent !== fileContent) return saveFile()
       }
     })
-  }, [fileContent, prevFileContent, selectedFilePath, saveFile])
+
+    editorRef.current.addAction({
+      // An unique identifier of the contributed action.
+      id: 'run-code',
+
+      // A label of the action that will be presented to the user.
+      label: 'Run Code',
+
+      // An optional array of keybindings for the action.
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+
+      contextMenuGroupId: 'navigation',
+
+      contextMenuOrder: 1,
+
+      // Method that will be executed when the action is triggered.
+      // @param editor The editor instance is passed in as a convenience
+      run: function () {
+        runCode(getSelection(editorRef.current as any) || fileContent)
+      }
+    })
+  }, [fileContent, prevFileContent, selectedFilePath, saveFile, runCode])
 
   useEffect(() => {
     setRunTimes(Object.values(appContext.runTimes))
@@ -277,7 +291,6 @@ const useEditor = ({
   }, [selectedFileExtension, runTimes])
 
   return {
-    ctrlPressed,
     fileContent,
     isLoading,
     log,
@@ -293,8 +306,6 @@ const useEditor = ({
     handleDiffEditorDidMount,
     handleEditorDidMount,
     handleFilePathInput,
-    handleKeyDown,
-    handleKeyUp,
     handleRunBtnClick,
     handleTabChange,
     saveFile,
