@@ -2,10 +2,10 @@ import express from 'express'
 import { generateCSRFToken } from '../../middlewares'
 import { WebController } from '../../controllers'
 import { MockSas9Controller } from '../../controllers/mock-sas9'
-import fs from 'fs'
 import multer from 'multer'
 import path from 'path'
 import dotenv from 'dotenv'
+import { FileUploadController } from '../../controllers/internal'
 
 dotenv.config()
 
@@ -14,6 +14,7 @@ const webController = new WebController()
 // Mock controller must be singleton because it keeps the states
 // for example `isLoggedIn` and potentially more in future mocks
 const controller = new MockSas9Controller()
+const fileUploadController = new FileUploadController()
 
 const mockPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
 
@@ -68,26 +69,25 @@ sas9WebRouter.get('/SASStoredProcess/do/', async (req, res) => {
   }
 })
 
-sas9WebRouter.post('/SASStoredProcess/do/', upload.any(), async (req, res) => {
-  const response = await controller.sasStoredProcessDoPost(req)
+sas9WebRouter.post(
+  '/SASStoredProcess/do/',
+  fileUploadController.preUploadMiddleware,
+  fileUploadController.getMulterUploadObject().any(),
+  async (req, res) => {
+    const response = await controller.sasStoredProcessDoPost(req)
 
-  if (req.files) {
-    ;(req.files as any).forEach((file: any) => {
-      fs.renameSync(file.path, file.destination + '/' + file.fieldname)
-    })
-  }
+    if (response.redirect) {
+      res.redirect(response.redirect)
+      return
+    }
 
-  if (response.redirect) {
-    res.redirect(response.redirect)
-    return
+    try {
+      res.send(response.content)
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
   }
-
-  try {
-    res.send(response.content)
-  } catch (err: any) {
-    res.status(403).send(err.toString())
-  }
-})
+)
 
 sas9WebRouter.get('/SASLogon/login', async (req, res) => {
   const response = await controller.loginGet()

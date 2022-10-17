@@ -2,9 +2,14 @@ import { readFile } from '@sasjs/utils'
 import express from 'express'
 import path from 'path'
 import { Request, Post, Get } from 'tsoa'
-import fs from 'fs'
-import fse from 'fs-extra'
 import dotenv from 'dotenv'
+import { ExecutionController } from './internal'
+import {
+  getPreProgramVariables,
+  getRunTimeAndFilePath,
+  makeFilesNamesMap
+} from '../utils'
+import { MulterFile } from '../types/Upload'
 
 dotenv.config()
 
@@ -76,17 +81,37 @@ export class MockSas9Controller {
       }
     }
 
-    let program = req.query._program?.toString() || undefined
+    const program = req.query._program ?? req.body?._program
     let filePath: string[] = ['generic', 'sas-stored-process']
 
     if (program) {
-      filePath = `${program}`.replace('/', '').split('/')
-      return await getMockResponseFromFile([
-        process.cwd(),
-        this.mocksPath,
-        'sas9',
-        ...filePath
-      ])
+      const vars = { ...req.query, ...req.body, _requestMethod: req.method }
+      const otherArgs = {}
+
+      try {
+        const { codePath, runTime } = await getRunTimeAndFilePath(
+          program + '.js'
+        )
+
+        const result = await new ExecutionController().executeFile({
+          programPath: codePath,
+          preProgramVariables: getPreProgramVariables(req),
+          vars: vars,
+          otherArgs: otherArgs,
+          runTime,
+          forceStringResult: true
+        })
+
+        return {
+          content: result.result as string
+        }
+      } catch (err) {
+        console.log('err', err)
+      }
+
+      return {
+        content: 'No webout returned.'
+      }
     }
 
     return await getMockResponseFromFile([
@@ -115,66 +140,38 @@ export class MockSas9Controller {
       }
     }
 
-    let program = req.query._program?.toString() || ''
-    program = program.replace('/', '')
-    let debug = req.query._debug?.toString()
+    const program = req.query._program ?? req.body?._program
+    const vars = {
+      ...req.query,
+      ...req.body,
+      _requestMethod: req.method,
+      _driveLoc: process.driveLoc
+    }
+    const filesNamesMap = req.files?.length
+      ? makeFilesNamesMap(req.files as MulterFile[])
+      : null
+    const otherArgs = { filesNamesMap: filesNamesMap }
+    const { codePath, runTime } = await getRunTimeAndFilePath(program + '.js')
+    try {
+      const result = await new ExecutionController().executeFile({
+        programPath: codePath,
+        preProgramVariables: getPreProgramVariables(req),
+        vars: vars,
+        otherArgs: otherArgs,
+        runTime,
+        session: req.sasjsSession,
+        forceStringResult: true
+      })
 
-    let fileContents = ''
-
-    if (program.includes('runner') && debug === 'log') {
-      if (req.files && req.files.length > 0) {
-        const regexRequest = /cli-tests-request-sas9-.*?\d*/g
-        const uploadFilePath = (req.files as any)[0].path
-
-        fileContents = fs.readFileSync(uploadFilePath, 'utf8')
-
-        let matched = fileContents.match(regexRequest)?.[0]
-
-        if (matched) {
-          const testsFolderPath = path.join(
-            process.cwd(),
-            this.mocksPath,
-            'sas9',
-            'User Folders',
-            'cli-tests',
-            'sasdemo',
-            matched
-          )
-
-          if (!fs.existsSync(testsFolderPath)) fs.mkdirSync(testsFolderPath)
-
-          fse.copySync(
-            path.join(
-              process.cwd(),
-              this.mocksPath,
-              'sas9',
-              'User Folders',
-              'sasdemo',
-              'services'
-            ),
-            path.join(testsFolderPath, 'services')
-          )
-        }
+      return {
+        content: result.result as string
       }
+    } catch (err) {
+      console.log('err', err)
     }
-
-    const content = await getMockResponseFromFile([
-      process.cwd(),
-      this.mocksPath,
-      'sas9',
-      ...program.split('/')
-    ])
-
-    content.content += fileContents
-
-    if (content.error) {
-      return content
-    }
-
-    const parsedContent = parseJsonIfValid(content.content)
 
     return {
-      content: parsedContent
+      content: 'No webout returned.'
     }
   }
 
@@ -261,23 +258,6 @@ export class MockSas9Controller {
   }
 
   private isPublicAccount = () => this.loggedIn?.toLowerCase() === 'public'
-}
-
-/**
- * If JSON is valid it will be parsed otherwise will return text unaltered
- * @param content string to be parsed
- * @returns JSON or string
- */
-const parseJsonIfValid = (content: string) => {
-  let fileContent = ''
-
-  try {
-    fileContent = JSON.parse(content)
-  } catch (err: any) {
-    fileContent = content
-  }
-
-  return fileContent
 }
 
 const getMockResponseFromFile = async (

@@ -32,7 +32,6 @@ export const setProcessVariables = async () => {
     process.rLoc = process.env.R_PATH
   } else {
     const { sasLoc, nodeLoc, pythonLoc, rLoc } = await getDesktopFields()
-
     process.sasLoc = sasLoc
     process.nodeLoc = nodeLoc
     process.pythonLoc = pythonLoc
