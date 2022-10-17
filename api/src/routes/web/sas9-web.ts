@@ -19,7 +19,7 @@ const fileUploadController = new FileUploadController()
 const mockPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
 
 const upload = multer({
-  dest: path.join(process.cwd(), mockPath, 'sas9', 'files-recieved')
+  dest: path.join(process.cwd(), mockPath, 'sas9', 'files-received')
 })
 
 sas9WebRouter.get('/', async (req, res) => {
