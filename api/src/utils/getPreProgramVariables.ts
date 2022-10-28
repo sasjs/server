@@ -18,10 +18,12 @@ export const getPreProgramVariables = (req: Request): PreProgramVars => {
 
   if (cookies.length) httpHeaders.push(`cookie: ${cookies.join('; ')}`)
 
+  //In desktop mode when mocking mode is enabled, user was undefined.
+  //So this is workaround.
   return {
-    username: user!.username,
-    userId: user!.userId,
-    displayName: user!.displayName,
+    username: user ? user.username : 'demo',
+    userId: user ? user.userId : 0,
+    displayName: user ? user.displayName : 'demo',
     serverUrl: protocol + host,
     httpHeaders
   }

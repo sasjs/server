@@ -103,6 +103,11 @@ PORT=
 # If not present, mocking function is disabled
 MOCK_SERVERTYPE=
 
+# default: /api/mocks
+# Path to mocking folder, for generic responses, it's sub directories should be: sas9, viya, sasjs
+# Server will automatically use subdirectory accordingly
+STATIC_MOCK_LOCATION=
+
 #
 ## Additional SAS Options
 #

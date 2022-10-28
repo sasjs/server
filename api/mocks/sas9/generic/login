@@ -9,7 +9,7 @@
 <div class="content">
   <form id="credentials" class="minimal" action="/SASLogon/login?service=http%3A%2F%2Flocalhost:5004%2FSASStoredProcess%2Fj_spring_cas_security_check" method="post">
     <!--form container-->
-    <input type="hidden" name="lt" value="LT-8-WGkt9EXwICBihaVbxGc92opjufTK1D" aria-hidden="true" />
+    <input type="hidden" name="lt" value="validtoken" aria-hidden="true" />
     <input type="hidden" name="execution" value="e2s1" aria-hidden="true" />
     <input type="hidden" name="_eventId" value="submit" aria-hidden="true" />
 

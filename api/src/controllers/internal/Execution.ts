@@ -28,6 +28,7 @@ interface ExecuteFileParams {
   returnJson?: boolean
   session?: Session
   runTime: RunTimeType
+  forceStringResult?: boolean
 }
 
 interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
@@ -42,7 +43,8 @@ export class ExecutionController {
     otherArgs,
     returnJson,
     session,
-    runTime
+    runTime,
+    forceStringResult
   }: ExecuteFileParams) {
     const program = await readFile(programPath)
 
@@ -53,7 +55,8 @@ export class ExecutionController {
       otherArgs,
       returnJson,
       session,
-      runTime
+      runTime,
+      forceStringResult
     })
   }
 
@@ -63,7 +66,8 @@ export class ExecutionController {
     vars,
     otherArgs,
     session: sessionByFileUpload,
-    runTime
+    runTime,
+    forceStringResult
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
@@ -104,7 +108,7 @@ export class ExecutionController {
     const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
 
     const webout = (await fileExists(weboutPath))
-      ? fileResponse
+      ? fileResponse && !forceStringResult
         ? await readFileBinary(weboutPath)
         : await readFile(weboutPath)
       : ''

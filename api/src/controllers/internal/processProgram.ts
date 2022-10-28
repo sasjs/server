@@ -110,17 +110,13 @@ export const processProgram = async (
 
       // create a stream that will write to console outputs to log file
       const writeStream = fs.createWriteStream(logPath)
-
       // waiting for the open event so that we can have underlying file descriptor
       await once(writeStream, 'open')
-
       execFileSync(executablePath, [codePath], {
         stdio: ['ignore', writeStream, writeStream]
       })
-
       // copy the code file to log and end write stream
       writeStream.end(program)
-
       session.completed = true
       console.log('session completed', session)
     } catch (err: any) {
