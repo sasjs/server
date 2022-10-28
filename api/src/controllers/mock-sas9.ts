@@ -45,7 +45,9 @@ export class MockSas9Controller {
     }
 
     let program = req.query._program?.toString() || undefined
-    const filePath: string[] = program ? program.replace('/', '').split('/') : ['generic', 'sas-stored-process']
+    const filePath: string[] = program
+      ? program.replace('/', '').split('/')
+      : ['generic', 'sas-stored-process']
 
     if (program) {
       return await getMockResponseFromFile([
