@@ -32,8 +32,8 @@ export class MockSas9Controller {
   public async sasStoredProcess(
     @Request() req: express.Request
   ): Promise<Sas9Response> {
-    let username = req.query._username?.toString() || undefined
-    let password = req.query._password?.toString() || undefined
+    const username = req.query._username?.toString() || undefined
+    const password = req.query._password?.toString() || undefined
 
     if (username && password) this.loggedIn = req.body.username
 
@@ -45,10 +45,9 @@ export class MockSas9Controller {
     }
 
     let program = req.query._program?.toString() || undefined
-    let filePath: string[] = ['generic', 'sas-stored-process']
+    const filePath: string[] = program ? program.replace('/', '').split('/') : ['generic', 'sas-stored-process']
 
     if (program) {
-      filePath = program.replace('/', '').split('/')
       return await getMockResponseFromFile([
         process.cwd(),
         this.mocksPath,
@@ -69,8 +68,8 @@ export class MockSas9Controller {
   public async sasStoredProcessDoGet(
     @Request() req: express.Request
   ): Promise<Sas9Response> {
-    let username = req.query._username?.toString() || undefined
-    let password = req.query._password?.toString() || undefined
+    const username = req.query._username?.toString() || undefined
+    const password = req.query._password?.toString() || undefined
 
     if (username && password) this.loggedIn = username
 
@@ -82,7 +81,7 @@ export class MockSas9Controller {
     }
 
     const program = req.query._program ?? req.body?._program
-    let filePath: string[] = ['generic', 'sas-stored-process']
+    const filePath: string[] = ['generic', 'sas-stored-process']
 
     if (program) {
       const vars = { ...req.query, ...req.body, _requestMethod: req.method }
