@@ -1,3 +1,11 @@
+# [0.24.0](https://github.com/sasjs/server/compare/v0.23.4...v0.24.0) (2022-10-28)
+
+
+### Features
+
+* cli mock testing ([6434123](https://github.com/sasjs/server/commit/643412340162e854f31fba2f162d83b7ab1751d8))
+* mocking sas9 responses with JS STP ([36be3a7](https://github.com/sasjs/server/commit/36be3a7d5e7df79f9a1f3f00c3661b925f462383))
+
 ## [0.23.4](https://github.com/sasjs/server/compare/v0.23.3...v0.23.4) (2022-10-11)
 
 
