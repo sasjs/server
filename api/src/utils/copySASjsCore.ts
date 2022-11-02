@@ -12,7 +12,7 @@ import { getMacrosFolder, sasJSCoreMacros, sasJSCoreMacrosInfo } from '.'
 export const copySASjsCore = async () => {
   if (process.env.NODE_ENV === 'test') return
 
-  console.log('Copying Macros from container to drive(tmp).')
+  console.log('Copying Macros from container to drive.')
 
   const macrosDrivePath = getMacrosFolder()
 

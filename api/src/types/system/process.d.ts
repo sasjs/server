@@ -5,6 +5,7 @@ declare namespace NodeJS {
     pythonLoc?: string
     rLoc?: string
     driveLoc: string
+    sasjsRoot: string
     logsLoc: string
     logsUUID: string
     sessionController?: import('../../controllers/internal').SessionController

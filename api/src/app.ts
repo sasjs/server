@@ -11,6 +11,7 @@ import {
   ReturnCode,
   setProcessVariables,
   setupFolders,
+  setupUserAutoExec,
   verifyEnvVariables
 } from './utils'
 import {
@@ -62,8 +63,12 @@ export default setProcessVariables().then(async () => {
   // Currently only place we use it is SAS9 Mock - POST /SASLogon/login
   app.use(express.urlencoded({ extended: true }))
 
-  await setupFolders()
-  await copySASjsCore()
+  await setupUserAutoExec()
+
+  if (process.driveLoc === path.join(process.sasjsRoot, 'drive')) {
+    await setupFolders()
+    await copySASjsCore()
+  }
 
   // loading these modules after setting up variables due to
   // multer's usage of process var process.driveLoc

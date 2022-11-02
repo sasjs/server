@@ -20,22 +20,24 @@ export const getSasjsHomeFolder = () => path.join(homedir(), '.sasjs-server')
 export const getDesktopUserAutoExecPath = () =>
   path.join(getSasjsHomeFolder(), 'user-autoexec.sas')
 
-export const getSasjsRootFolder = () => process.driveLoc
+export const getSasjsRootFolder = () => process.sasjsRoot
+
+export const getSasjsDriveFolder = () => process.driveLoc
 
 export const getLogFolder = () => process.logsLoc
 
 export const getAppStreamConfigPath = () =>
-  path.join(getSasjsRootFolder(), 'appStreamConfig.json')
+  path.join(getSasjsDriveFolder(), 'appStreamConfig.json')
 
 export const getMacrosFolder = () =>
-  path.join(getSasjsRootFolder(), 'sas', 'sasautos')
+  path.join(getSasjsDriveFolder(), 'sas', 'sasautos')
 
 export const getPackagesFolder = () =>
-  path.join(getSasjsRootFolder(), 'sas', 'sas_packages')
+  path.join(getSasjsDriveFolder(), 'sas', 'sas_packages')
 
 export const getUploadsFolder = () => path.join(getSasjsRootFolder(), 'uploads')
 
-export const getFilesFolder = () => path.join(getSasjsRootFolder(), 'files')
+export const getFilesFolder = () => path.join(getSasjsDriveFolder(), 'files')
 
 export const getWeboutFolder = () => path.join(getSasjsRootFolder(), 'webouts')
 
