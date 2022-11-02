@@ -19,7 +19,8 @@ export const setProcessVariables = async () => {
   }
 
   if (process.env.NODE_ENV === 'test') {
-    process.driveLoc = path.join(process.cwd(), 'sasjs_root')
+    process.sasjsRoot = path.join(process.cwd(), 'sasjs_root')
+    process.driveLoc = path.join(process.cwd(), 'sasjs_root', 'drive')
     return
   }
 
@@ -41,11 +42,19 @@ export const setProcessVariables = async () => {
   const { SASJS_ROOT } = process.env
   const absPath = getAbsolutePath(SASJS_ROOT ?? 'sasjs_root', process.cwd())
   await createFolder(absPath)
-  process.driveLoc = getRealPath(absPath)
+  process.sasjsRoot = getRealPath(absPath)
+
+  const { DRIVE_LOCATION } = process.env
+  const absDrivePath = getAbsolutePath(
+    DRIVE_LOCATION ?? path.join(process.sasjsRoot, 'drive'),
+    process.cwd()
+  )
+  await createFolder(absDrivePath)
+  process.driveLoc = getRealPath(absDrivePath)
 
   const { LOG_LOCATION } = process.env
   const absLogsPath = getAbsolutePath(
-    LOG_LOCATION ?? `sasjs_root${path.sep}logs`,
+    LOG_LOCATION ?? path.join(process.sasjsRoot, 'logs'),
     process.cwd()
   )
   await createFolder(absLogsPath)

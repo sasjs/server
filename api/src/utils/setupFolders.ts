@@ -1,19 +1,7 @@
-import { createFile, createFolder, fileExists } from '@sasjs/utils'
-import {
-  getDesktopUserAutoExecPath,
-  getFilesFolder,
-  getPackagesFolder
-} from './file'
-import { ModeType } from './verifyEnvVariables'
+import { createFolder } from '@sasjs/utils'
+import { getFilesFolder, getPackagesFolder } from './file'
 
 export const setupFolders = async () => {
-  const drivePath = getFilesFolder()
-  await createFolder(drivePath)
+  await createFolder(getFilesFolder())
   await createFolder(getPackagesFolder())
-
-  if (process.env.MODE === ModeType.Desktop) {
-    if (!(await fileExists(getDesktopUserAutoExecPath()))) {
-      await createFile(getDesktopUserAutoExecPath(), '')
-    }
-  }
 }
