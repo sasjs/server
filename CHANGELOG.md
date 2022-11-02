@@ -1,3 +1,10 @@
+# [0.25.0](https://github.com/sasjs/server/compare/v0.24.0...v0.25.0) (2022-11-02)
+
+
+### Features
+
+* Enable DRIVE_LOCATION setting for deploying multiple instances of SASjs Server ([1c9d167](https://github.com/sasjs/server/commit/1c9d167f86bbbb108b96e9bc30efaf8de65d82ff))
+
 # [0.24.0](https://github.com/sasjs/server/compare/v0.23.4...v0.24.0) (2022-10-28)
 
 
