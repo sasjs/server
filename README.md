@@ -93,6 +93,10 @@ R_PATH=/usr/bin/Rscript
 SASJS_ROOT=./sasjs_root
 
 
+# This location is for files, sasjs packages and appStreamConfig.json
+DRIVE_LOCATION=./sasjs_root/drive
+
+
 # options: [http|https] default: http
 PROTOCOL=
 
