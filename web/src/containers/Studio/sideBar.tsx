@@ -180,7 +180,6 @@ const SideBar = ({
         {directoryData && (
           <TreeView
             node={directoryData}
-            selectedFilePath={selectedFilePath}
             handleSelect={handleFileSelect}
             deleteNode={deleteNode}
             addFile={addFile}
