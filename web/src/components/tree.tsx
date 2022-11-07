@@ -1,67 +1,79 @@
-import React, { useEffect, useState } from 'react'
-import { Menu, MenuItem } from '@mui/material'
+import React, { useState } from 'react'
+import { Menu, MenuItem, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import MuiTreeView from '@mui/lab/TreeView'
+import MuiTreeItem from '@mui/lab/TreeItem'
 
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
 import { TreeNode } from '../utils/types'
 
-type Props = {
+interface Props {
   node: TreeNode
-  selectedFilePath: string
   handleSelect: (filePath: string) => void
   deleteNode: (path: string, isFolder: boolean) => void
   addFile: (path: string) => void
   addFolder: (path: string) => void
   rename: (oldPath: string, newPath: string) => void
+}
+
+interface TreeViewProps extends Props {
   defaultExpanded?: string[]
 }
 
 const TreeView = ({
   node,
-  selectedFilePath,
   handleSelect,
   deleteNode,
   addFile,
   addFolder,
   rename,
   defaultExpanded
-}: Props) => {
-  return (
-    <ul
-      style={{
-        listStyle: 'none',
-        padding: '0.25rem 0.85rem',
-        width: 'max-content'
-      }}
+}: TreeViewProps) => {
+  const renderTree = (nodes: TreeNode) => (
+    <MuiTreeItem
+      key={nodes.relativePath}
+      nodeId={nodes.relativePath}
+      label={
+        <TreeItemWithContextMenu
+          node={nodes}
+          handleSelect={handleSelect}
+          deleteNode={deleteNode}
+          addFile={addFile}
+          addFolder={addFolder}
+          rename={rename}
+        />
+      }
     >
-      <TreeViewNode
-        node={node}
-        selectedFilePath={selectedFilePath}
-        handleSelect={handleSelect}
-        deleteNode={deleteNode}
-        addFile={addFile}
-        addFolder={addFolder}
-        rename={rename}
-        defaultExpanded={defaultExpanded}
-      />
-    </ul>
+      {Array.isArray(nodes.children)
+        ? nodes.children.map((node) => renderTree(node))
+        : null}
+    </MuiTreeItem>
+  )
+
+  return (
+    <MuiTreeView
+      defaultCollapseIcon={<ExpandMoreIcon />}
+      defaultExpandIcon={<ChevronRightIcon />}
+      defaultExpanded={defaultExpanded}
+      sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
+    >
+      {renderTree(node)}
+    </MuiTreeView>
   )
 }
 
 export default TreeView
 
-const TreeViewNode = ({
+const TreeItemWithContextMenu = ({
   node,
-  selectedFilePath,
   handleSelect,
   deleteNode,
   addFile,
   addFolder,
-  rename,
-  defaultExpanded
+  rename
 }: Props) => {
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false)
@@ -72,18 +84,19 @@ const TreeViewNode = ({
   const [nameInputModalTitle, setNameInputModalTitle] = useState('')
   const [nameInputModalActionLabel, setNameInputModalActionLabel] = useState('')
   const [nameInputModalForFolder, setNameInputModalForFolder] = useState(false)
-  const [childVisible, setChildVisibility] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number
     mouseY: number
   } | null>(null)
 
-  const launchProgram = () => {
+  const launchProgram = (event: React.MouseEvent) => {
+    event.stopPropagation()
     const baseUrl = window.location.origin
     window.open(`${baseUrl}/SASjsApi/stp/execute?_program=${node.relativePath}`)
   }
 
-  const launchProgramWithDebug = () => {
+  const launchProgramWithDebug = (event: React.MouseEvent) => {
+    event.stopPropagation()
     const baseUrl = window.location.origin
     window.open(
       `${baseUrl}/SASjsApi/stp/execute?_program=${node.relativePath}&_debug=131`
@@ -103,25 +116,18 @@ const TreeViewNode = ({
     )
   }
 
-  const hasChild = node.children.length ? true : false
+  const handleClose = (event: any) => {
+    event.stopPropagation()
+    setContextMenu(null)
+  }
 
-  const handleItemClick = () => {
-    if (node.children.length) {
-      setChildVisibility((v) => !v)
-      return
-    }
-
+  const handleItemClick = (event: React.MouseEvent) => {
+    if (node.children.length) return
     handleSelect(node.relativePath)
   }
 
-  useEffect(() => {
-    if (defaultExpanded && defaultExpanded[0] === node.relativePath) {
-      setChildVisibility(true)
-      defaultExpanded.shift()
-    }
-  }, [defaultExpanded, node.relativePath])
-
-  const handleDeleteItemClick = () => {
+  const handleDeleteItemClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
     setContextMenu(null)
     setDeleteConfirmationModalOpen(true)
     setDeleteConfirmationModalMessage(
@@ -136,7 +142,8 @@ const TreeViewNode = ({
     deleteNode(node.relativePath, node.isFolder)
   }
 
-  const handleNewFolderItemClick = () => {
+  const handleNewFolderItemClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
     setContextMenu(null)
     setNameInputModalOpen(true)
     setNameInputModalTitle('Add Folder')
@@ -145,7 +152,8 @@ const TreeViewNode = ({
     setDefaultInputModalName('')
   }
 
-  const handleNewFileItemClick = () => {
+  const handleNewFileItemClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
     setContextMenu(null)
     setNameInputModalOpen(true)
     setNameInputModalTitle('Add File')
@@ -161,7 +169,8 @@ const TreeViewNode = ({
     else addFile(path)
   }
 
-  const handleRenameItemClick = () => {
+  const handleRenameItemClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
     setContextMenu(null)
     setNameInputModalOpen(true)
     setNameInputModalTitle('Rename')
@@ -181,34 +190,7 @@ const TreeViewNode = ({
 
   return (
     <div onContextMenu={handleContextMenu} style={{ cursor: 'context-menu' }}>
-      <li style={{ display: 'list-item' }}>
-        <div
-          className={`tree-item-label ${
-            selectedFilePath === node.relativePath ? 'selected' : ''
-          }`}
-          onClick={() => handleItemClick()}
-        >
-          {hasChild &&
-            (childVisible ? <ExpandMoreIcon /> : <ChevronRightIcon />)}
-          <div>{node.name}</div>
-        </div>
-
-        {hasChild &&
-          childVisible &&
-          node.children.map((child, index) => (
-            <TreeView
-              key={node.relativePath + '-' + index}
-              node={child}
-              selectedFilePath={selectedFilePath}
-              handleSelect={handleSelect}
-              deleteNode={deleteNode}
-              addFile={addFile}
-              addFolder={addFolder}
-              rename={rename}
-              defaultExpanded={defaultExpanded}
-            />
-          ))}
-      </li>
+      <Typography onClick={handleItemClick}>{node.name}</Typography>
       <DeleteConfirmationModal
         open={deleteConfirmationModalOpen}
         setOpen={setDeleteConfirmationModalOpen}
@@ -228,7 +210,7 @@ const TreeViewNode = ({
       />
       <Menu
         open={contextMenu !== null}
-        onClose={() => setContextMenu(null)}
+        onClose={handleClose}
         anchorReference="anchorPosition"
         anchorPosition={
           contextMenu !== null

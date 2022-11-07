@@ -31,14 +31,24 @@ const DeleteConfirmationModal = ({
   message,
   _delete
 }: DeleteConfirmationModalProps) => {
+  const handleDeleteClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    _delete()
+  }
+
+  const handleClose = (event: any) => {
+    event.stopPropagation()
+    setOpen(false)
+  }
+
   return (
-    <BootstrapDialog onClose={() => setOpen(false)} open={open}>
+    <BootstrapDialog onClose={handleClose} open={open}>
       <DialogContent dividers>
         <Typography gutterBottom>{message}</Typography>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => setOpen(false)}>Cancel</Button>
-        <Button color="error" onClick={() => _delete()}>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button color="error" onClick={handleDeleteClick}>
           Delete
         </Button>
       </DialogActions>

@@ -69,8 +69,18 @@ const NameInputModal = ({
     action(name)
   }
 
+  const handleActionClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    action(name)
+  }
+
+  const handleClose = (event: any) => {
+    event.stopPropagation()
+    setOpen(false)
+  }
+
   return (
-    <BootstrapDialog fullWidth onClose={() => setOpen(false)} open={open}>
+    <BootstrapDialog fullWidth onClose={handleClose} open={open}>
       <BootstrapDialogTitle id="abort-modal" handleOpen={setOpen}>
         {title}
       </BootstrapDialogTitle>
@@ -91,12 +101,12 @@ const NameInputModal = ({
         </form>
       </DialogContent>
       <DialogActions>
-        <Button variant="contained" onClick={() => setOpen(false)}>
+        <Button variant="contained" onClick={handleClose}>
           Cancel
         </Button>
         <Button
           variant="contained"
-          onClick={() => action(name)}
+          onClick={handleActionClick}
           disabled={hasError || !name}
         >
           {actionLabel}
