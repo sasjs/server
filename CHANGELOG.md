@@ -1,3 +1,10 @@
+## [0.25.1](https://github.com/sasjs/server/compare/v0.25.0...v0.25.1) (2022-11-07)
+
+
+### Bug Fixes
+
+* **web:** use mui treeView instead of custom implementation ([c51b504](https://github.com/sasjs/server/commit/c51b50428f32608bc46438e9d7964429b2d595da))
+
 # [0.25.0](https://github.com/sasjs/server/compare/v0.24.0...v0.25.0) (2022-11-02)
 
 
