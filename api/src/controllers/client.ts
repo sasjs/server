@@ -7,12 +7,13 @@ import Client, { ClientPayload } from '../model/Client'
 @Tags('Client')
 export class ClientController {
   /**
-   * @summary Create client with the following attributes: ClientId, ClientSecret. Admin only task.
+   * @summary Create client with the following attributes: ClientId, ClientSecret, accessTokenExpires (optional) . Admin only task.
    *
    */
   @Example<ClientPayload>({
     clientId: 'someFormattedClientID1234',
-    clientSecret: 'someRandomCryptoString'
+    clientSecret: 'someRandomCryptoString',
+    accessTokenExpiryDays: 1
   })
   @Post('/')
   public async createClient(
@@ -22,8 +23,8 @@ export class ClientController {
   }
 }
 
-const createClient = async (data: any): Promise<ClientPayload> => {
-  const { clientId, clientSecret } = data
+const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
+  const { clientId, clientSecret, accessTokenExpiryDays } = data
 
   // Checking if client is already in the database
   const clientExist = await Client.findOne({ clientId })
@@ -32,13 +33,15 @@ const createClient = async (data: any): Promise<ClientPayload> => {
   // Create a new client
   const client = new Client({
     clientId,
-    clientSecret
+    clientSecret,
+    accessTokenExpiryDays
   })
 
   const savedClient = await client.save()
 
   return {
     clientId: savedClient.clientId,
-    clientSecret: savedClient.clientSecret
+    clientSecret: savedClient.clientSecret,
+    accessTokenExpiryDays: savedClient.accessTokenExpiryDays
   }
 }

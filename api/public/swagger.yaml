@@ -57,6 +57,11 @@ components:
                     type: string
                     description: 'Client Secret'
                     example: someRandomCryptoString
+                accessTokenExpiryDays:
+                    type: number
+                    format: double
+                    description: 'Number of days in which access token will expire'
+                    example: 1
             required:
                 - clientId
                 - clientSecret
@@ -679,8 +684,8 @@ paths:
                                 $ref: '#/components/schemas/ClientPayload'
                             examples:
                                 'Example 1':
-                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString}
-            summary: 'Create client with the following attributes: ClientId, ClientSecret. Admin only task.'
+                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiryDays: 1}
+            summary: 'Create client with the following attributes: ClientId, ClientSecret, accessTokenExpires (optional) . Admin only task.'
             tags:
                 - Client
             security:
