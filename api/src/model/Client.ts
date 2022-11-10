@@ -16,6 +16,11 @@ export interface ClientPayload {
    * @example 1
    */
   accessTokenExpiryDays?: number
+  /**
+   * Number of days in which access token will expire
+   * @example 30
+   */
+  refreshTokenExpiryDays?: number
 }
 
 const ClientSchema = new Schema<ClientPayload>({
@@ -30,6 +35,10 @@ const ClientSchema = new Schema<ClientPayload>({
   accessTokenExpiryDays: {
     type: Number,
     default: 1
+  },
+  refreshTokenExpiryDays: {
+    type: Number,
+    default: 30
   }
 })
 

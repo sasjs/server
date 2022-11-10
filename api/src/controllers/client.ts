@@ -13,7 +13,8 @@ export class ClientController {
   @Example<ClientPayload>({
     clientId: 'someFormattedClientID1234',
     clientSecret: 'someRandomCryptoString',
-    accessTokenExpiryDays: 1
+    accessTokenExpiryDays: 1,
+    refreshTokenExpiryDays: 30
   })
   @Post('/')
   public async createClient(
@@ -24,7 +25,12 @@ export class ClientController {
 }
 
 const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
-  const { clientId, clientSecret, accessTokenExpiryDays } = data
+  const {
+    clientId,
+    clientSecret,
+    accessTokenExpiryDays,
+    refreshTokenExpiryDays
+  } = data
 
   // Checking if client is already in the database
   const clientExist = await Client.findOne({ clientId })
@@ -42,6 +48,7 @@ const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
   return {
     clientId: savedClient.clientId,
     clientSecret: savedClient.clientSecret,
-    accessTokenExpiryDays: savedClient.accessTokenExpiryDays
+    accessTokenExpiryDays: savedClient.accessTokenExpiryDays,
+    refreshTokenExpiryDays: savedClient.refreshTokenExpiryDays
   }
 }
