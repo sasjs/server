@@ -49,7 +49,7 @@ const useEditor = ({
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)
   const [showDiff, setShowDiff] = useState(false)
 
-  const editorRef = useRef(null as any)
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
 
   const handleEditorDidMount: EditorDidMount = (editor) => {
     editorRef.current = editor
@@ -199,7 +199,7 @@ const useEditor = ({
   }
 
   useEffect(() => {
-    editorRef.current.addAction({
+    const saveFileAction = editorRef.current?.addAction({
       // An unique identifier of the contributed action.
       id: 'save-file',
 
@@ -209,6 +209,8 @@ const useEditor = ({
       // An optional array of keybindings for the action.
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
 
+      contextMenuGroupId: '9_cutcopypaste',
+
       // Method that will be executed when the action is triggered.
       // @param editor The editor instance is passed in as a convenience
       run: () => {
@@ -217,7 +219,7 @@ const useEditor = ({
       }
     })
 
-    editorRef.current.addAction({
+    const runCodeAction = editorRef.current?.addAction({
       // An unique identifier of the contributed action.
       id: 'run-code',
 
@@ -229,14 +231,17 @@ const useEditor = ({
 
       contextMenuGroupId: 'navigation',
 
-      contextMenuOrder: 1,
-
       // Method that will be executed when the action is triggered.
       // @param editor The editor instance is passed in as a convenience
       run: function () {
         runCode(getSelection(editorRef.current as any) || fileContent)
       }
     })
+
+    return () => {
+      saveFileAction?.dispose()
+      runCodeAction?.dispose()
+    }
   }, [fileContent, prevFileContent, selectedFilePath, saveFile, runCode])
 
   useEffect(() => {
