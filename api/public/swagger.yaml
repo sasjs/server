@@ -690,7 +690,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiryDays: 1, refreshTokenExpiryDays: 30}
-            summary: 'Create client with the following attributes: ClientId, ClientSecret, accessTokenExpires (optional) . Admin only task.'
+            summary: "Admin only task. Create client with the following attributes:\nClientId,\nClientSecret,\naccessTokenExpiryDays (optional),\nrefreshTokenExpiryDays (optional)"
             tags:
                 - Client
             security:
