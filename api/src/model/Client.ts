@@ -11,6 +11,16 @@ export interface ClientPayload {
    * @example "someRandomCryptoString"
    */
   clientSecret: string
+  /**
+   * Number of days in which access token will expire
+   * @example 1
+   */
+  accessTokenExpiryDays?: number
+  /**
+   * Number of days in which access token will expire
+   * @example 30
+   */
+  refreshTokenExpiryDays?: number
 }
 
 const ClientSchema = new Schema<ClientPayload>({
@@ -21,6 +31,14 @@ const ClientSchema = new Schema<ClientPayload>({
   clientSecret: {
     type: String,
     required: true
+  },
+  accessTokenExpiryDays: {
+    type: Number,
+    default: 1
+  },
+  refreshTokenExpiryDays: {
+    type: Number,
+    default: 30
   }
 })
 

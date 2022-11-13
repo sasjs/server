@@ -8,6 +8,7 @@ import {
   removeTokensInDB,
   saveTokensInDB
 } from '../utils'
+import Client from '../model/Client'
 
 @Route('SASjsApi/auth')
 @Tags('Auth')
@@ -83,8 +84,17 @@ const token = async (data: any): Promise<TokenResponse> => {
     }
   }
 
-  const accessToken = generateAccessToken(userInfo)
-  const refreshToken = generateRefreshToken(userInfo)
+  const client = await Client.findOne({ clientId })
+  if (!client) throw new Error('Invalid clientId.')
+
+  const accessToken = generateAccessToken(
+    userInfo,
+    client.accessTokenExpiryDays
+  )
+  const refreshToken = generateRefreshToken(
+    userInfo,
+    client.refreshTokenExpiryDays
+  )
 
   await saveTokensInDB(userInfo.userId, clientId, accessToken, refreshToken)
 
@@ -92,8 +102,17 @@ const token = async (data: any): Promise<TokenResponse> => {
 }
 
 const refresh = async (userInfo: InfoJWT): Promise<TokenResponse> => {
-  const accessToken = generateAccessToken(userInfo)
-  const refreshToken = generateRefreshToken(userInfo)
+  const client = await Client.findOne({ clientId: userInfo.clientId })
+  if (!client) throw new Error('Invalid clientId.')
+
+  const accessToken = generateAccessToken(
+    userInfo,
+    client.accessTokenExpiryDays
+  )
+  const refreshToken = generateRefreshToken(
+    userInfo,
+    client.refreshTokenExpiryDays
+  )
 
   await saveTokensInDB(
     userInfo.userId,
