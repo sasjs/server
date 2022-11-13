@@ -1,3 +1,16 @@
+# [0.26.0](https://github.com/sasjs/server/compare/v0.25.1...v0.26.0) (2022-11-13)
+
+
+### Bug Fixes
+
+* **web:** dispose monaco editor actions in return of useEffect ([acc25cb](https://github.com/sasjs/server/commit/acc25cbd686952d3f1c65e57aefcebe1cb859cc7))
+
+
+### Features
+
+* make access token duration configurable when creating client/secret ([2413c05](https://github.com/sasjs/server/commit/2413c05fea3960f7e5c3c8b7b2f85d61314f08db))
+* make refresh token duration configurable ([abd5c64](https://github.com/sasjs/server/commit/abd5c64b4a726e3f17594a98111b6aa269b71fee))
+
 ## [0.25.1](https://github.com/sasjs/server/compare/v0.25.0...v0.25.1) (2022-11-07)
 
 
