@@ -1,3 +1,10 @@
+## [0.26.2](https://github.com/sasjs/server/compare/v0.26.1...v0.26.2) (2022-11-15)
+
+
+### Bug Fixes
+
+* comments ([7ae862c](https://github.com/sasjs/server/commit/7ae862c5ce720e9483d4728f4295dede4f849436))
+
 ## [0.26.1](https://github.com/sasjs/server/compare/v0.26.0...v0.26.1) (2022-11-15)
 
 
