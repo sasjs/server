@@ -57,16 +57,16 @@ components:
                     type: string
                     description: 'Client Secret'
                     example: someRandomCryptoString
-                accessTokenExpiryDays:
+                accessTokenExpiration:
                     type: number
                     format: double
-                    description: 'Number of days in which access token will expire'
-                    example: 1
-                refreshTokenExpiryDays:
+                    description: 'Number of seconds after which access token will expire. Default is 86400 (1 day)'
+                    example: 86400
+                refreshTokenExpiration:
                     type: number
                     format: double
-                    description: 'Number of days in which access token will expire'
-                    example: 30
+                    description: 'Number of seconds after which access token will expire. Default is 2592000 (30 days)'
+                    example: 2592000
             required:
                 - clientId
                 - clientSecret
@@ -689,7 +689,11 @@ paths:
                                 $ref: '#/components/schemas/ClientPayload'
                             examples:
                                 'Example 1':
-                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiryDays: 1, refreshTokenExpiryDays: 30}
+                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString}
+                                'Example 2':
+                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
+                                'Example 3':
+                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
             summary: "Admin only task. Create client with the following attributes:\nClientId,\nClientSecret,\naccessTokenExpiryDays (optional),\nrefreshTokenExpiryDays (optional)"
             tags:
                 - Client

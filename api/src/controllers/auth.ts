@@ -89,11 +89,11 @@ const token = async (data: any): Promise<TokenResponse> => {
 
   const accessToken = generateAccessToken(
     userInfo,
-    client.accessTokenExpiryDays
+    client.accessTokenExpiration
   )
   const refreshToken = generateRefreshToken(
     userInfo,
-    client.refreshTokenExpiryDays
+    client.refreshTokenExpiration
   )
 
   await saveTokensInDB(userInfo.userId, clientId, accessToken, refreshToken)
@@ -107,11 +107,11 @@ const refresh = async (userInfo: InfoJWT): Promise<TokenResponse> => {
 
   const accessToken = generateAccessToken(
     userInfo,
-    client.accessTokenExpiryDays
+    client.accessTokenExpiration
   )
   const refreshToken = generateRefreshToken(
     userInfo,
-    client.refreshTokenExpiryDays
+    client.refreshTokenExpiration
   )
 
   await saveTokensInDB(
