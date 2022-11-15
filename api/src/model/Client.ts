@@ -13,12 +13,12 @@ export interface ClientPayload {
    */
   clientSecret: string
   /**
-   * Number of seconds after which access token will expire
+   * Number of seconds after which access token will expire. Default is 86400 (1 day)
    * @example 86400
    */
   accessTokenExpiration?: number
   /**
-   * Number of days after which access token will expire
+   * Number of seconds after which access token will expire. Default is 2592000 (30 days)
    * @example 2592000
    */
   refreshTokenExpiration?: number
