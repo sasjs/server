@@ -60,12 +60,12 @@ components:
                 accessTokenExpiration:
                     type: number
                     format: double
-                    description: 'Number of seconds after which access token will expire'
+                    description: 'Number of seconds after which access token will expire. Default is 86400 (1 day)'
                     example: 86400
                 refreshTokenExpiration:
                     type: number
                     format: double
-                    description: 'Number of days after which access token will expire'
+                    description: 'Number of seconds after which access token will expire. Default is 2592000 (30 days)'
                     example: 2592000
             required:
                 - clientId
