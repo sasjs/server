@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose'
 
+export const NUMBER_OF_SECONDS_IN_A_DAY = 86400
 export interface ClientPayload {
   /**
    * Client ID
@@ -12,15 +13,15 @@ export interface ClientPayload {
    */
   clientSecret: string
   /**
-   * Number of days in which access token will expire
-   * @example 1
+   * Number of seconds after which access token will expire
+   * @example 86400
    */
-  accessTokenExpiryDays?: number
+  accessTokenExpiration?: number
   /**
-   * Number of days in which access token will expire
-   * @example 30
+   * Number of days after which access token will expire
+   * @example 2592000
    */
-  refreshTokenExpiryDays?: number
+  refreshTokenExpiration?: number
 }
 
 const ClientSchema = new Schema<ClientPayload>({
@@ -32,13 +33,13 @@ const ClientSchema = new Schema<ClientPayload>({
     type: String,
     required: true
   },
-  accessTokenExpiryDays: {
+  accessTokenExpiration: {
     type: Number,
-    default: 1
+    default: NUMBER_OF_SECONDS_IN_A_DAY
   },
-  refreshTokenExpiryDays: {
+  refreshTokenExpiration: {
     type: Number,
-    default: 30
+    default: NUMBER_OF_SECONDS_IN_A_DAY * 30
   }
 })
 

@@ -89,8 +89,8 @@ export const registerClientValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     clientId: Joi.string().required(),
     clientSecret: Joi.string().required(),
-    accessTokenExpiryDays: Joi.number(),
-    refreshTokenExpiryDays: Joi.number()
+    accessTokenExpiration: Joi.number(),
+    refreshTokenExpiration: Joi.number()
   }).validate(data)
 
 export const registerPermissionValidation = (data: any): Joi.ValidationResult =>

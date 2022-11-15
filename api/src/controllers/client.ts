@@ -1,6 +1,9 @@
 import { Security, Route, Tags, Example, Post, Body } from 'tsoa'
 
-import Client, { ClientPayload } from '../model/Client'
+import Client, {
+  ClientPayload,
+  NUMBER_OF_SECONDS_IN_A_DAY
+} from '../model/Client'
 
 @Security('bearerAuth')
 @Route('SASjsApi/client')
@@ -17,8 +20,8 @@ export class ClientController {
   @Example<ClientPayload>({
     clientId: 'someFormattedClientID1234',
     clientSecret: 'someRandomCryptoString',
-    accessTokenExpiryDays: 1,
-    refreshTokenExpiryDays: 30
+    accessTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY,
+    refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
   })
   @Post('/')
   public async createClient(
@@ -32,8 +35,8 @@ const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
   const {
     clientId,
     clientSecret,
-    accessTokenExpiryDays,
-    refreshTokenExpiryDays
+    accessTokenExpiration,
+    refreshTokenExpiration
   } = data
 
   // Checking if client is already in the database
@@ -44,7 +47,8 @@ const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
   const client = new Client({
     clientId,
     clientSecret,
-    accessTokenExpiryDays
+    accessTokenExpiration,
+    refreshTokenExpiration
   })
 
   const savedClient = await client.save()
@@ -52,7 +56,7 @@ const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
   return {
     clientId: savedClient.clientId,
     clientSecret: savedClient.clientSecret,
-    accessTokenExpiryDays: savedClient.accessTokenExpiryDays,
-    refreshTokenExpiryDays: savedClient.refreshTokenExpiryDays
+    accessTokenExpiration: savedClient.accessTokenExpiration,
+    refreshTokenExpiration: savedClient.refreshTokenExpiration
   }
 }
