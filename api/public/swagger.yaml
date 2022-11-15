@@ -694,7 +694,7 @@ paths:
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
                                 'Example 3':
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
-            summary: "Admin only task. Create client with the following attributes:\nClientId,\nClientSecret,\naccessTokenExpiryDays (optional),\nrefreshTokenExpiryDays (optional)"
+            summary: "Admin only task. Create client with the following attributes:\nClientId,\nClientSecret,\naccessTokenExpiration (optional),\nrefreshTokenExpiration (optional)"
             tags:
                 - Client
             security:
