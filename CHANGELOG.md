@@ -1,3 +1,10 @@
+## [0.26.1](https://github.com/sasjs/server/compare/v0.26.0...v0.26.1) (2022-11-15)
+
+
+### Bug Fixes
+
+* change the expiration of access/refresh tokens from days to seconds ([bb05493](https://github.com/sasjs/server/commit/bb054938c5bd0535ae6b9da93ba0b14f9b80ddcd))
+
 # [0.26.0](https://github.com/sasjs/server/compare/v0.25.1...v0.26.0) (2022-11-13)
 
 
