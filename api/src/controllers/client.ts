@@ -13,8 +13,8 @@ export class ClientController {
    * @summary Admin only task. Create client with the following attributes:
    * ClientId,
    * ClientSecret,
-   * accessTokenExpiryDays (optional),
-   * refreshTokenExpiryDays (optional)
+   * accessTokenExpiration (optional),
+   * refreshTokenExpiration (optional)
    *
    */
   @Example<ClientPayload>({
