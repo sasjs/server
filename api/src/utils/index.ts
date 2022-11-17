@@ -1,6 +1,7 @@
 export * from './appStreamConfig'
 export * from './connectDB'
 export * from './copySASjsCore'
+export * from './createWeboutSasFile'
 export * from './desktopAutoExec'
 export * from './extractHeaders'
 export * from './extractName'

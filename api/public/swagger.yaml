@@ -689,10 +689,6 @@ paths:
                                 $ref: '#/components/schemas/ClientPayload'
                             examples:
                                 'Example 1':
-                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString}
-                                'Example 2':
-                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
-                                'Example 3':
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
             summary: "Admin only task. Create client with the following attributes:\nClientId,\nClientSecret,\naccessTokenExpiration (optional),\nrefreshTokenExpiration (optional)"
             tags:

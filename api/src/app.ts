@@ -5,12 +5,16 @@ import dotenv from 'dotenv'
 
 import {
   copySASjsCore,
+  createWeboutSasFile,
+  getFilesFolder,
+  getPackagesFolder,
   getWebBuildFolder,
   instantiateLogger,
   loadAppStreamConfig,
   ReturnCode,
   setProcessVariables,
-  setupFolders,
+  setupFilesFolder,
+  setupPackagesFolder,
   setupUserAutoExec,
   verifyEnvVariables
 } from './utils'
@@ -20,6 +24,7 @@ import {
   configureLogger,
   configureSecurity
 } from './app-modules'
+import {folderExists} from '@sasjs/utils'
 
 dotenv.config()
 
@@ -65,9 +70,16 @@ export default setProcessVariables().then(async () => {
 
   await setupUserAutoExec()
 
-  if (process.driveLoc === path.join(process.sasjsRoot, 'drive')) {
-    await setupFolders()
+  if (!(await folderExists(getFilesFolder()))) await setupFilesFolder()
+
+  if (!(await folderExists(getPackagesFolder()))) await setupPackagesFolder()
+  
+  const sasautosPath = path.join(process.driveLoc, 'sas', 'sasautos')
+  if (await folderExists(sasautosPath)) {
+    console.log(`SASAUTOS was not refreshed. To force a refresh, delete the ${sasautosPath} folder`)
+  } else {
     await copySASjsCore()
+    await createWeboutSasFile()
   }
 
   // loading these modules after setting up variables due to
