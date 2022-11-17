@@ -1,3 +1,10 @@
+# [0.27.0](https://github.com/sasjs/server/compare/v0.26.2...v0.27.0) (2022-11-17)
+
+
+### Features
+
+* on startup add webout.sas file in sasautos folder ([200f6c5](https://github.com/sasjs/server/commit/200f6c596a6e732d799ed408f1f0fd92f216ba58))
+
 ## [0.26.2](https://github.com/sasjs/server/compare/v0.26.1...v0.26.2) (2022-11-15)
 
 
