@@ -24,7 +24,7 @@ import {
   configureLogger,
   configureSecurity
 } from './app-modules'
-import {folderExists} from '@sasjs/utils'
+import { folderExists } from '@sasjs/utils'
 
 dotenv.config()
 
@@ -73,10 +73,12 @@ export default setProcessVariables().then(async () => {
   if (!(await folderExists(getFilesFolder()))) await setupFilesFolder()
 
   if (!(await folderExists(getPackagesFolder()))) await setupPackagesFolder()
-  
+
   const sasautosPath = path.join(process.driveLoc, 'sas', 'sasautos')
   if (await folderExists(sasautosPath)) {
-    console.log(`SASAUTOS was not refreshed. To force a refresh, delete the ${sasautosPath} folder`)
+    console.log(
+      `SASAUTOS was not refreshed. To force a refresh, delete the ${sasautosPath} folder`
+    )
   } else {
     await copySASjsCore()
     await createWeboutSasFile()
