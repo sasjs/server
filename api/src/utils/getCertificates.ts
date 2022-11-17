@@ -10,9 +10,9 @@ export const getCertificates = async () => {
   const certPath = CERT_CHAIN ?? (await getFileInput('Certificate Chain (PEM)'))
   const caPath = CA_ROOT
 
-  console.log('keyPath: ', keyPath)
-  console.log('certPath: ', certPath)
-  if (caPath) console.log('caPath: ', caPath)
+  process.logger.info('keyPath: ', keyPath)
+  process.logger.info('certPath: ', certPath)
+  if (caPath) process.logger.info('caPath: ', caPath)
 
   const key = await readFile(keyPath)
   const cert = await readFile(certPath)

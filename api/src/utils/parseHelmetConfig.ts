@@ -22,12 +22,12 @@ export const getEnvCSPDirectives = (
       try {
         cspConfigJson = JSON.parse(file)
       } catch (e) {
-        console.error(
+        process.logger.error(
           'Parsing Content Security Policy JSON config failed. Make sure it is valid json'
         )
       }
     } catch (e) {
-      console.error('Error reading HELMET CSP config file', e)
+      process.logger.error('Error reading HELMET CSP config file', e)
     }
   }
 

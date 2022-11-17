@@ -145,12 +145,12 @@ ${autoExecContent}`
     ])
       .then(() => {
         session.completed = true
-        console.log('session completed', session)
+        process.logger.info('session completed', session)
       })
       .catch((err) => {
         session.completed = true
         session.crashed = err.toString()
-        console.log('session crashed', session.id, session.crashed)
+        process.logger.error('session crashed', session.id, session.crashed)
       })
 
     // we have a triggered session - add to array
@@ -170,7 +170,10 @@ ${autoExecContent}`
     while ((await fileExists(codeFilePath)) && !session.crashed) {}
 
     if (session.crashed)
-      console.log('session crashed! while waiting to be ready', session.crashed)
+      process.logger.error(
+        'session crashed! while waiting to be ready',
+        session.crashed
+      )
 
     session.ready = true
   }

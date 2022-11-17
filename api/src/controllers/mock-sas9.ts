@@ -107,7 +107,7 @@ export class MockSas9Controller {
           content: result.result as string
         }
       } catch (err) {
-        console.log('err', err)
+        process.logger.error('err', err)
       }
 
       return {
@@ -168,7 +168,7 @@ export class MockSas9Controller {
         content: result.result as string
       }
     } catch (err) {
-      console.log('err', err)
+      process.logger.error('err', err)
     }
 
     return {
@@ -269,7 +269,7 @@ const getMockResponseFromFile = async (
 
   let file = await readFile(filePathParsed).catch((err: any) => {
     const errMsg = `Error reading mocked file on path: ${filePathParsed}\nError: ${err}`
-    console.error(errMsg)
+    process.logger.error(errMsg)
 
     error = true
 

@@ -8,6 +8,6 @@ export const connectDB = async () => {
     throw new Error('Unable to connect to DB!')
   }
 
-  console.log('Connected to DB!')
+  process.logger.success('Connected to DB!')
   return seedDB()
 }
