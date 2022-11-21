@@ -25,15 +25,3 @@ code {
   padding: '5px 10px';
   margin-top: '10px';
 }
-
-.tree-item-label {
-  display: flex;
-}
-
-.tree-item-label.selected {
-  background: lightgoldenrodyellow;
-}
-
-.tree-item-label:hover {
-  background: lightgray;
-}
