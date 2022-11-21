@@ -47,6 +47,21 @@ components:
                 - userId
             type: object
             additionalProperties: false
+        UpdatePasswordPayload:
+            properties:
+                currentPassword:
+                    type: string
+                    description: 'Current Password'
+                    example: currentPasswordString
+                newPassword:
+                    type: string
+                    description: 'New Password'
+                    example: newPassword
+            required:
+                - currentPassword
+                - newPassword
+            type: object
+            additionalProperties: false
         ClientPayload:
             properties:
                 clientId:
@@ -632,6 +647,25 @@ paths:
                 -
                     bearerAuth: []
             parameters: []
+    /SASjsApi/auth/updatePassword:
+        patch:
+            operationId: UpdatePassword
+            responses:
+                '204':
+                    description: 'No content'
+            summary: 'Update user''s password.'
+            tags:
+                - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePasswordPayload'
     /SASjsApi/authConfig:
         get:
             operationId: GetDetail

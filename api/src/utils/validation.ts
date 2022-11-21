@@ -85,6 +85,12 @@ export const updateUserValidation = (
   return Joi.object(validationChecks).validate(data)
 }
 
+export const updatePasswordValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    currentPassword: Joi.string().required(),
+    newPassword: passwordSchema.required()
+  }).validate(data)
+
 export const registerClientValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     clientId: Joi.string().required(),
