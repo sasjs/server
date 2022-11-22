@@ -77,7 +77,8 @@ describe('web', () => {
         id: expect.any(Number),
         username: user.username,
         displayName: user.displayName,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        needsToUpdatePassword: true
       })
     })
 
