@@ -33,19 +33,23 @@ const UpdatePasswordModal = (props: Props) => {
   const [errorText, setErrorText] = useState('')
 
   useEffect(() => {
-    if (newPassword.length >= 6) {
+    if (
+      currentPassword.length > 0 &&
+      newPassword.length > 0 &&
+      newPassword === currentPassword
+    ) {
+      setErrorText('New password should be different to current password.')
+      setHasError(true)
+    } else if (newPassword.length >= 6) {
       setErrorText('')
       setHasError(false)
     }
-  }, [newPassword])
+  }, [currentPassword, newPassword])
 
   const handleBlur = () => {
     if (newPassword.length < 6) {
       setErrorText('Password length should be at least 6 characters.')
       setHasError(true)
-    } else {
-      setErrorText('')
-      setHasError(false)
     }
   }
 
