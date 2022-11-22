@@ -81,7 +81,8 @@ const authenticateToken = async (
       username: 'desktopModeUsername',
       displayName: 'desktopModeDisplayName',
       isAdmin: true,
-      isActive: true
+      isActive: true,
+      needsToUpdatePassword: false
     }
     req.accessToken = 'desktopModeAccessToken'
     return next()

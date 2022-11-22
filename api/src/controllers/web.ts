@@ -104,7 +104,8 @@ const login = async (
     displayName: user.displayName,
     isAdmin: user.isAdmin,
     isActive: user.isActive,
-    autoExec: user.autoExec
+    autoExec: user.autoExec,
+    needsToUpdatePassword: user.needsToUpdatePassword
   }
 
   return {
@@ -113,7 +114,8 @@ const login = async (
       id: user.id,
       username: user.username,
       displayName: user.displayName,
-      isAdmin: user.isAdmin
+      isAdmin: user.isAdmin,
+      needsToUpdatePassword: user.needsToUpdatePassword
     }
   }
 }

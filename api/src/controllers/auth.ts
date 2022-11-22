@@ -183,6 +183,7 @@ const updatePassword = async (
     }
 
   dbUser.password = User.hashPassword(newPassword)
+  dbUser.needsToUpdatePassword = false
   await dbUser.save()
 }
 

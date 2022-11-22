@@ -108,7 +108,7 @@ type PasswordInputProps = {
   handleBlur?: () => void
 }
 
-const PasswordInput = ({
+export const PasswordInput = ({
   label,
   password,
   setPassword,

@@ -15,6 +15,7 @@ export const fetchLatestAutoExec = async (
     displayName: dbUser.displayName,
     isAdmin: dbUser.isAdmin,
     isActive: dbUser.isActive,
+    needsToUpdatePassword: dbUser.needsToUpdatePassword,
     autoExec: dbUser.autoExec
   }
 }
@@ -41,6 +42,7 @@ export const verifyTokenInDB = async (
         displayName: dbUser.displayName,
         isAdmin: dbUser.isAdmin,
         isActive: dbUser.isActive,
+        needsToUpdatePassword: dbUser.needsToUpdatePassword,
         autoExec: dbUser.autoExec
       }
     : undefined

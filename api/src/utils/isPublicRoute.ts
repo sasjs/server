@@ -27,5 +27,6 @@ export const publicUser: RequestUser = {
   username: 'publicUser',
   displayName: 'Public User',
   isAdmin: false,
-  isActive: true
+  isActive: true,
+  needsToUpdatePassword: false
 }

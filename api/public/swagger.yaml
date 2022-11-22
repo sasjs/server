@@ -534,6 +534,27 @@ components:
                 - setting
             type: object
             additionalProperties: false
+        SessionResponse:
+            properties:
+                id:
+                    type: number
+                    format: double
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+                needsToUpdatePassword:
+                    type: boolean
+            required:
+                - id
+                - username
+                - displayName
+                - isAdmin
+                - needsToUpdatePassword
+            type: object
+            additionalProperties: false
         ExecutePostRequestPayload:
             properties:
                 _program:
@@ -1724,7 +1745,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserResponse'
+                                $ref: '#/components/schemas/SessionResponse'
                             examples:
                                 'Example 1':
                                     value: {id: 123, username: johnusername, displayName: John, isAdmin: false}
@@ -1821,7 +1842,7 @@ paths:
                         application/json:
                             schema:
                                 properties:
-                                    user: {properties: {isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [isAdmin, displayName, username, id], type: object}
+                                    user: {properties: {needsToUpdatePassword: {type: boolean}, isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [needsToUpdatePassword, isAdmin, displayName, username, id], type: object}
                                     loggedIn: {type: boolean}
                                 required:
                                     - user

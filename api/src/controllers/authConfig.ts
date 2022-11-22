@@ -74,7 +74,8 @@ const synchroniseWithLDAP = async () => {
       displayName: user.displayName,
       username: user.username,
       password: hashPassword,
-      authProvider: AuthProviderType.LDAP
+      authProvider: AuthProviderType.LDAP,
+      needsToUpdatePassword: false
     })
 
     importedUsers.push(user)
