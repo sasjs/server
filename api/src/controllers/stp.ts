@@ -91,6 +91,8 @@ const execute = async (
       }
     )
 
+    req.res?.header(httpHeaders)
+
     if (result instanceof Buffer) {
       ;(req as any).sasHeaders = httpHeaders
     }

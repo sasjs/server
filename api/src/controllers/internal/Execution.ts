@@ -78,6 +78,11 @@ export class ExecutionController {
 
     const logPath = path.join(session.path, 'log.log')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
+
+    if (isDebugOn(vars)) {
+      await createFile(headersPath, 'content-type: text/plain')
+    }
+
     const weboutPath = path.join(session.path, 'webout.txt')
     const tokenFile = path.join(session.path, 'reqHeaders.txt')
 
