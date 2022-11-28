@@ -1,3 +1,10 @@
+## [0.28.1](https://github.com/sasjs/server/compare/v0.28.0...v0.28.1) (2022-11-28)
+
+
+### Bug Fixes
+
+* update the content type header after the program has been executed ([4dcee4b](https://github.com/sasjs/server/commit/4dcee4b3c3950d402220b8f451c50ad98a317d83))
+
 # [0.28.0](https://github.com/sasjs/server/compare/v0.27.0...v0.28.0) (2022-11-28)
 
 
