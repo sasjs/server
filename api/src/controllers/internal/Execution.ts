@@ -79,10 +79,6 @@ export class ExecutionController {
     const logPath = path.join(session.path, 'log.log')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
 
-    if (isDebugOn(vars)) {
-      await createFile(headersPath, 'content-type: text/plain')
-    }
-
     const weboutPath = path.join(session.path, 'webout.txt')
     const tokenFile = path.join(session.path, 'reqHeaders.txt')
 
@@ -110,6 +106,11 @@ export class ExecutionController {
       ? await readFile(headersPath)
       : ''
     const httpHeaders: HTTPHeaders = extractHeaders(headersContent)
+
+    if (isDebugOn(vars)) {
+      httpHeaders['content-type'] = 'text/plain'
+    }
+
     const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
 
     const webout = (await fileExists(weboutPath))

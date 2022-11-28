@@ -94,7 +94,7 @@ export class SASSessionController extends SessionController {
     }
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
-    await createFile(headersPath, 'content-type: text/html; charset=utf-8')
+    await createFile(headersPath, 'content-type: text/html; charset=utf-8\n')
 
     // we do not want to leave sessions running forever
     // we clean them up after a predefined period, if unused
