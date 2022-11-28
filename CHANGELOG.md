@@ -1,3 +1,17 @@
+# [0.28.0](https://github.com/sasjs/server/compare/v0.27.0...v0.28.0) (2022-11-28)
+
+
+### Bug Fixes
+
+* update the response header of request to stp/execute routes ([112431a](https://github.com/sasjs/server/commit/112431a1b7461989c04100418d67d975a2a8f354))
+
+
+### Features
+
+* **api:** add the api endpoint for updating user password ([4581f32](https://github.com/sasjs/server/commit/4581f325344eb68c5df5a28492f132312f15bb5c))
+* ask for updated password on first login ([1d48f88](https://github.com/sasjs/server/commit/1d48f8856b1fbbf3ef868914558333190e04981f))
+* **web:** add the UI for updating user password ([8b8c43c](https://github.com/sasjs/server/commit/8b8c43c21bde5379825c5ec44ecd81a92425f605))
+
 # [0.27.0](https://github.com/sasjs/server/compare/v0.26.2...v0.27.0) (2022-11-17)
 
 
