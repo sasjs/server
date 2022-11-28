@@ -1,4 +1,16 @@
-import { Security, Route, Tags, Example, Post, Body, Query, Hidden } from 'tsoa'
+import express from 'express'
+import {
+  Security,
+  Route,
+  Tags,
+  Example,
+  Post,
+  Patch,
+  Request,
+  Body,
+  Query,
+  Hidden
+} from 'tsoa'
 import jwt from 'jsonwebtoken'
 import { InfoJWT } from '../types'
 import {
@@ -9,6 +21,7 @@ import {
   saveTokensInDB
 } from '../utils'
 import Client from '../model/Client'
+import User from '../model/User'
 
 @Route('SASjsApi/auth')
 @Tags('Auth')
@@ -61,6 +74,18 @@ export class AuthController {
   @Post('/logout')
   public async logout(@Query() @Hidden() data?: InfoJWT) {
     return logout(data!)
+  }
+
+  /**
+   * @summary Update user's password.
+   */
+  @Security('bearerAuth')
+  @Patch('updatePassword')
+  public async updatePassword(
+    @Request() req: express.Request,
+    @Body() body: UpdatePasswordPayload
+  ) {
+    return updatePassword(req, body)
   }
 }
 
@@ -128,6 +153,40 @@ const logout = async (userInfo: InfoJWT) => {
   await removeTokensInDB(userInfo.userId, userInfo.clientId)
 }
 
+const updatePassword = async (
+  req: express.Request,
+  data: UpdatePasswordPayload
+) => {
+  const { currentPassword, newPassword } = data
+  const userId = req.user?.userId
+  const dbUser = await User.findOne({ userId })
+
+  if (!dbUser)
+    throw {
+      code: 404,
+      message: `User not found!`
+    }
+
+  if (dbUser?.authProvider) {
+    throw {
+      code: 405,
+      message:
+        'Can not update password of user that is created by an external auth provider.'
+    }
+  }
+
+  const validPass = dbUser.comparePassword(currentPassword)
+  if (!validPass)
+    throw {
+      code: 403,
+      message: `Invalid current password!`
+    }
+
+  dbUser.password = User.hashPassword(newPassword)
+  dbUser.needsToUpdatePassword = false
+  await dbUser.save()
+}
+
 interface TokenPayload {
   /**
    * Client ID
@@ -152,6 +211,19 @@ interface TokenResponse {
    * @example "someRandomCryptoString"
    */
   refreshToken: string
+}
+
+interface UpdatePasswordPayload {
+  /**
+   * Current Password
+   * @example "currentPasswordString"
+   */
+  currentPassword: string
+  /**
+   * New Password
+   * @example "newPassword"
+   */
+  newPassword: string
 }
 
 const verifyAuthCode = async (

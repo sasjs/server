@@ -36,7 +36,7 @@ export const loadAppStreamConfig = async () => {
     )
   }
 
-  console.log('App Stream Config loaded!')
+  process.logger.info('App Stream Config loaded!')
 }
 
 export const addEntryToAppStreamConfig = (

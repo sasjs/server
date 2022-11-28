@@ -32,6 +32,7 @@ const Login = () => {
       appContext.setDisplayName?.(user.displayName)
       appContext.setIsAdmin?.(user.isAdmin)
       appContext.setLoggedIn?.(loggedIn)
+      appContext.setNeedsToUpdatePassword?.(user.needsToUpdatePassword)
     }
   }
 

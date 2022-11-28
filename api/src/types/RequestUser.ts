@@ -5,5 +5,6 @@ export interface RequestUser {
   displayName: string
   isAdmin: boolean
   isActive: boolean
+  needsToUpdatePassword: boolean
   autoExec?: string
 }

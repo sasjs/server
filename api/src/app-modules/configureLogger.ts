@@ -23,7 +23,7 @@ export const configureLogger = (app: Express) => {
       path: logsFolder
     })
 
-    console.log('Writing Logs to :', path.join(logsFolder, filename))
+    process.logger.info('Writing Logs to :', path.join(logsFolder, filename))
 
     options = { stream: accessLogStream }
   }

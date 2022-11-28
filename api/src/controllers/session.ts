@@ -2,6 +2,10 @@ import express from 'express'
 import { Request, Security, Route, Tags, Example, Get } from 'tsoa'
 import { UserResponse } from './user'
 
+interface SessionResponse extends UserResponse {
+  needsToUpdatePassword: boolean
+}
+
 @Security('bearerAuth')
 @Route('SASjsApi/session')
 @Tags('Session')
@@ -19,7 +23,7 @@ export class SessionController {
   @Get('/')
   public async session(
     @Request() request: express.Request
-  ): Promise<UserResponse> {
+  ): Promise<SessionResponse> {
     return session(request)
   }
 }
@@ -28,5 +32,6 @@ const session = (req: express.Request) => ({
   id: req.user!.userId,
   username: req.user!.username,
   displayName: req.user!.displayName,
-  isAdmin: req.user!.isAdmin
+  isAdmin: req.user!.isAdmin,
+  needsToUpdatePassword: req.user!.needsToUpdatePassword
 })

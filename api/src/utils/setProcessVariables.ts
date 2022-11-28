@@ -62,8 +62,8 @@ export const setProcessVariables = async () => {
 
   process.logsUUID = 'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
 
-  console.log('sasLoc: ', process.sasLoc)
-  console.log('sasDrive: ', process.driveLoc)
-  console.log('sasLogs: ', process.logsLoc)
-  console.log('runTimes: ', process.runTimes)
+  process.logger.info('sasLoc: ', process.sasLoc)
+  process.logger.info('sasDrive: ', process.driveLoc)
+  process.logger.info('sasLogs: ', process.logsLoc)
+  process.logger.info('runTimes: ', process.runTimes)
 }

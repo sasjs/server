@@ -12,7 +12,7 @@ const fileContent = `%macro webout(action,ds,dslabel=,fmt=,missing=NULL,showmeta
 
 export const createWeboutSasFile = async () => {
   const macrosDrivePath = getMacrosFolder()
-  console.log(`Creating webout.sas at ${macrosDrivePath}`)
+  process.logger.log(`Creating webout.sas at ${macrosDrivePath}`)
   const filePath = path.join(macrosDrivePath, 'webout.sas')
   await createFile(filePath, fileContent)
 }

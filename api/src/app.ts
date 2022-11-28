@@ -35,7 +35,7 @@ if (verifyEnvVariables()) process.exit(ReturnCode.InvalidEnv)
 const app = express()
 
 const onError: ErrorRequestHandler = (err, req, res, next) => {
-  console.error(err.stack)
+  process.logger.error(err.stack)
   res.status(500).send('Something broke!')
 }
 
@@ -76,7 +76,7 @@ export default setProcessVariables().then(async () => {
 
   const sasautosPath = path.join(process.driveLoc, 'sas', 'sasautos')
   if (await folderExists(sasautosPath)) {
-    console.log(
+    process.logger.warn(
       `SASAUTOS was not refreshed. To force a refresh, delete the ${sasautosPath} folder`
     )
   } else {

@@ -8,6 +8,7 @@ import Header from './components/header'
 import Home from './components/home'
 import Studio from './containers/Studio'
 import Settings from './containers/Settings'
+import UpdatePassword from './components/updatePassword'
 
 import { AppContext } from './context/appContext'
 import AuthCode from './containers/AuthCode'
@@ -24,6 +25,20 @@ function App() {
           <Routes>
             <Route path="*" element={<Login />} />
           </Routes>
+        </HashRouter>
+      </ThemeProvider>
+    )
+  }
+
+  if (appContext.needsToUpdatePassword) {
+    return (
+      <ThemeProvider theme={theme}>
+        <HashRouter>
+          <Header />
+          <Routes>
+            <Route path="*" element={<UpdatePassword />} />
+          </Routes>
+          <ToastContainer />
         </HashRouter>
       </ThemeProvider>
     )

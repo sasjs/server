@@ -25,6 +25,8 @@ interface AppContextProps {
   checkingSession: boolean
   loggedIn: boolean
   setLoggedIn: Dispatch<SetStateAction<boolean>> | null
+  needsToUpdatePassword: boolean
+  setNeedsToUpdatePassword: Dispatch<SetStateAction<boolean>> | null
   userId: number
   setUserId: Dispatch<SetStateAction<number>> | null
   username: string
@@ -42,6 +44,8 @@ export const AppContext = createContext<AppContextProps>({
   checkingSession: false,
   loggedIn: false,
   setLoggedIn: null,
+  needsToUpdatePassword: false,
+  setNeedsToUpdatePassword: null,
   userId: 0,
   setUserId: null,
   username: '',
@@ -59,6 +63,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const { children } = props
   const [checkingSession, setCheckingSession] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
+  const [needsToUpdatePassword, setNeedsToUpdatePassword] = useState(false)
   const [userId, setUserId] = useState(0)
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -79,6 +84,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setDisplayName(data.displayName)
         setIsAdmin(data.isAdmin)
         setLoggedIn(true)
+        setNeedsToUpdatePassword(data.needsToUpdatePassword)
       })
       .catch(() => {
         setLoggedIn(false)
@@ -120,6 +126,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         checkingSession,
         loggedIn,
         setLoggedIn,
+        needsToUpdatePassword,
+        setNeedsToUpdatePassword,
         userId,
         setUserId,
         username,

@@ -33,5 +33,6 @@ export const desktopUser: RequestUser = {
   username: userInfo().username,
   displayName: userInfo().username,
   isAdmin: true,
-  isActive: true
+  isActive: true,
+  needsToUpdatePassword: false
 }

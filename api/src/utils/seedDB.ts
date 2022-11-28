@@ -19,7 +19,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     const client = new Client(CLIENT)
     await client.save()
 
-    console.log(`DB Seed - client created: ${CLIENT.clientId}`)
+    process.logger.success(`DB Seed - client created: ${CLIENT.clientId}`)
   }
 
   // Checking if 'AllUsers' Group is already in the database
@@ -28,7 +28,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     const group = new Group(GROUP)
     groupExist = await group.save()
 
-    console.log(`DB Seed - Group created: ${GROUP.name}`)
+    process.logger.success(`DB Seed - Group created: ${GROUP.name}`)
   }
 
   // Checking if 'Public' Group is already in the database
@@ -37,7 +37,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     const group = new Group(PUBLIC_GROUP)
     await group.save()
 
-    console.log(`DB Seed - Group created: ${PUBLIC_GROUP.name}`)
+    process.logger.success(`DB Seed - Group created: ${PUBLIC_GROUP.name}`)
   }
 
   // Checking if user is already in the database
@@ -46,12 +46,14 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     const user = new User(ADMIN_USER)
     usernameExist = await user.save()
 
-    console.log(`DB Seed - admin account created: ${ADMIN_USER.username}`)
+    process.logger.success(
+      `DB Seed - admin account created: ${ADMIN_USER.username}`
+    )
   }
 
   if (!groupExist.hasUser(usernameExist)) {
     groupExist.addUser(usernameExist)
-    console.log(
+    process.logger.success(
       `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${GROUP.name}'`
     )
   }
@@ -62,7 +64,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     const configuration = new Configuration(SECRETS)
     configExist = await configuration.save()
 
-    console.log('DB Seed - configuration added')
+    process.logger.success('DB Seed - configuration added')
   }
 
   return {

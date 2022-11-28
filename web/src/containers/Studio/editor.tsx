@@ -197,7 +197,10 @@ const SASjsEditor = ({
           <StyledTabPanel value="log">
             <div>
               <h2>Log</h2>
-              <pre id="log" style={{ overflow: 'auto', height: '75vh' }}>
+              <pre
+                id="log"
+                style={{ overflow: 'auto', height: 'calc(100vh - 220px)' }}
+              >
                 {log}
               </pre>
             </div>

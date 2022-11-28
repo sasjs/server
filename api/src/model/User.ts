@@ -40,6 +40,7 @@ interface IUserDocument extends UserPayload, Document {
   id: number
   isAdmin: boolean
   isActive: boolean
+  needsToUpdatePassword: boolean
   autoExec: string
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
@@ -78,6 +79,10 @@ const userSchema = new Schema<IUserDocument>({
     default: false
   },
   isActive: {
+    type: Boolean,
+    default: true
+  },
+  needsToUpdatePassword: {
     type: Boolean,
     default: true
   },

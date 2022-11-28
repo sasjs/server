@@ -15,7 +15,7 @@ export const configureCors = (app: Express) => {
           whiteList.push(url.replace(/\/$/, ''))
       })
 
-    console.log('All CORS Requests are enabled for:', whiteList)
+    process.logger.info('All CORS Requests are enabled for:', whiteList)
     app.use(cors({ credentials: true, origin: whiteList }))
   }
 }

@@ -118,11 +118,11 @@ export const processProgram = async (
       // copy the code file to log and end write stream
       writeStream.end(program)
       session.completed = true
-      console.log('session completed', session)
+      process.logger.info('session completed', session)
     } catch (err: any) {
       session.completed = true
       session.crashed = err.toString()
-      console.log('session crashed', session.id, session.crashed)
+      process.logger.error('session crashed', session.id, session.crashed)
     }
   }
 }
