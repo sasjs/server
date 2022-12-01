@@ -206,12 +206,15 @@ ${autoExecContent}`
 export const getSessionController = (
   runTime: RunTimeType
 ): SessionController => {
-  if (process.sessionController) return process.sessionController
+  if (runTime === RunTimeType.SAS) {
+    process.sasSessionController =
+      process.sasSessionController || new SASSessionController()
+
+    return process.sasSessionController
+  }
 
   process.sessionController =
-    runTime === RunTimeType.SAS
-      ? new SASSessionController()
-      : new SessionController()
+    process.sessionController || new SessionController()
 
   return process.sessionController
 }
