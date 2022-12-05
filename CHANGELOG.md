@@ -1,3 +1,11 @@
+## [0.28.2](https://github.com/sasjs/server/compare/v0.28.1...v0.28.2) (2022-12-05)
+
+
+### Bug Fixes
+
+* execute child process asyncronously ([23c997b](https://github.com/sasjs/server/commit/23c997b3beabeb6b733ae893031d2f1a48f28ad2))
+* JS / Python / R session folders should be NEW folders, not existing SAS folders ([39ba995](https://github.com/sasjs/server/commit/39ba995355daa24bb7ab22720f8fc57d2dc85f40))
+
 ## [0.28.1](https://github.com/sasjs/server/compare/v0.28.0...v0.28.1) (2022-11-28)
 
 
