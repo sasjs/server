@@ -1,6 +1,6 @@
 import path from 'path'
-import fs from 'fs'
-import { execFileSync } from 'child_process'
+import { WriteStream, createWriteStream } from 'fs'
+import { execFile } from 'child_process'
 import { once } from 'stream'
 import { createFile, moveFile } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
@@ -105,26 +105,58 @@ export const processProgram = async (
         throw new Error('Invalid runtime!')
     }
 
-    try {
-      await createFile(codePath, program)
+    await createFile(codePath, program)
 
-      // create a stream that will write to console outputs to log file
-      const writeStream = fs.createWriteStream(logPath)
-      // waiting for the open event so that we can have underlying file descriptor
-      await once(writeStream, 'open')
-      execFileSync(executablePath, [codePath], {
-        stdio: ['ignore', writeStream, writeStream]
+    // create a stream that will write to console outputs to log file
+    const writeStream = createWriteStream(logPath)
+    // waiting for the open event so that we can have underlying file descriptor
+    await once(writeStream, 'open')
+
+    await execFilePromise(executablePath, [codePath], writeStream)
+      .then(() => {
+        session.completed = true
+        process.logger.info('session completed', session)
       })
-      // copy the code file to log and end write stream
-      writeStream.end(program)
-      session.completed = true
-      process.logger.info('session completed', session)
-    } catch (err: any) {
-      session.completed = true
-      session.crashed = err.toString()
-      process.logger.error('session crashed', session.id, session.crashed)
-    }
+      .catch((err) => {
+        session.completed = true
+        session.crashed = err.toString()
+        process.logger.error('session crashed', session.id, session.crashed)
+      })
+
+    // copy the code file to log and end write stream
+    writeStream.end(program)
   }
+}
+
+/**
+ * Promisified child_process.execFile
+ *
+ * @param file - The name or path of the executable file to run.
+ * @param args - List of string arguments.
+ * @param writeStream - Child process stdout and stderr will be piped to it.
+ *
+ * @returns {Promise<{ stdout: string, stderr: string }>}
+ */
+const execFilePromise = (
+  file: string,
+  args: string[],
+  writeStream: WriteStream
+): Promise<{ stdout: string; stderr: string }> => {
+  return new Promise((resolve, reject) => {
+    const child = execFile(file, args, (err, stdout, stderr) => {
+      if (err) reject(err)
+
+      resolve({ stdout, stderr })
+    })
+
+    child.stdout?.on('data', (data) => {
+      writeStream.write(data)
+    })
+
+    child.stderr?.on('data', (data) => {
+      writeStream.write(data)
+    })
+  })
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
