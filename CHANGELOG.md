@@ -1,3 +1,10 @@
+## [0.28.3](https://github.com/sasjs/server/compare/v0.28.2...v0.28.3) (2022-12-06)
+
+
+### Bug Fixes
+
+* stringify json file ([1192583](https://github.com/sasjs/server/commit/1192583843d7efd1a6ab6943207f394c3ae966be))
+
 ## [0.28.2](https://github.com/sasjs/server/compare/v0.28.1...v0.28.2) (2022-12-05)
 
 
