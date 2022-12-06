@@ -261,8 +261,10 @@ const useEditor = ({
       axios
         .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`)
         .then((res: any) => {
-          setPrevFileContent(res.data)
-          setFileContent(res.data)
+          const content =
+            typeof res.data === 'object' ? JSON.stringify(res.data) : res.data
+          setPrevFileContent(content)
+          setFileContent(content)
         })
         .catch((err) => {
           setModalTitle('Abort')
