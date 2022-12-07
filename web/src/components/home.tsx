@@ -5,7 +5,7 @@ import Box from '@mui/material/Box'
 
 const Home = () => {
   return (
-    <Box className="main">
+    <Box className="container">
       <CssBaseline />
       <h2>Welcome to SASjs Server!</h2>
       <p>
