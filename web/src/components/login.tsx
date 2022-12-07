@@ -38,7 +38,7 @@ const Login = () => {
 
   return (
     <Box
-      className="main"
+      className="container"
       component="form"
       onSubmit={handleSubmit}
       sx={{

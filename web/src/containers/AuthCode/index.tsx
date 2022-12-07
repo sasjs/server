@@ -47,7 +47,7 @@ const AuthCode = () => {
   }
 
   return (
-    <Box className="main">
+    <Box className="container">
       <CssBaseline />
       <br />
       <h2>Authorization Code</h2>

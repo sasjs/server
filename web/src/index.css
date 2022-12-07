@@ -12,7 +12,7 @@ code {
     monospace;
 }
 
-.main {
+.container {
   margin: 50px 10px 0 10px;
   display: flex;
   flex-direction: column;
