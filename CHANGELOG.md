@@ -1,3 +1,10 @@
+## [0.28.4](https://github.com/sasjs/server/compare/v0.28.3...v0.28.4) (2022-12-07)
+
+
+### Bug Fixes
+
+* replace main class with container class ([71c429b](https://github.com/sasjs/server/commit/71c429b093b91e2444ae75d946579dccc2e48636))
+
 ## [0.28.3](https://github.com/sasjs/server/compare/v0.28.2...v0.28.3) (2022-12-06)
 
 
