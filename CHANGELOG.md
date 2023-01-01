@@ -1,3 +1,10 @@
+## [0.28.5](https://github.com/sasjs/server/compare/v0.28.4...v0.28.5) (2023-01-01)
+
+
+### Bug Fixes
+
+* adding NOPRNGETLIST system option for faster startup ([96eca3a](https://github.com/sasjs/server/commit/96eca3a35dce4521150257ee019beb4488c8a08f))
+
 ## [0.28.4](https://github.com/sasjs/server/compare/v0.28.3...v0.28.4) (2022-12-07)
 
 
