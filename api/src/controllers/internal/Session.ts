@@ -140,6 +140,7 @@ ${autoExecContent}`
       process.sasLoc!.endsWith('sas.exe') ? '-nodms' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-noterminal' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-nostatuswin' : '',
+      process.sasLoc!.endsWith('sas.exe') ? '-NOPRNGETLIST' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-SASINITIALFOLDER' : '',
       process.sasLoc!.endsWith('sas.exe') ? session.path : ''
     ])
