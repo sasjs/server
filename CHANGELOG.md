@@ -1,3 +1,10 @@
+## [0.28.6](https://github.com/sasjs/server/compare/v0.28.5...v0.28.6) (2023-01-26)
+
+
+### Bug Fixes
+
+* show loading spinner on login screen while request is in process ([69f2576](https://github.com/sasjs/server/commit/69f2576ee6d3d7b7f3325922a88656d511e3ac88))
+
 ## [0.28.5](https://github.com/sasjs/server/compare/v0.28.4...v0.28.5) (2023-01-01)
 
 
