@@ -238,11 +238,13 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   const savedUser = await user.save()
 
   const groupController = new GroupController()
-  const allUsersGroup = await groupController.getGroupByGroupName(
-    ALL_USERS_GROUP.name
-  )
+  const allUsersGroup = await groupController
+    .getGroupByGroupName(ALL_USERS_GROUP.name)
+    .catch(() => {})
 
-  await groupController.addUserToGroup(allUsersGroup.groupId, savedUser.id)
+  if (allUsersGroup) {
+    await groupController.addUserToGroup(allUsersGroup.groupId, savedUser.id)
+  }
 
   return {
     id: savedUser.id,
