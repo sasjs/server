@@ -21,9 +21,9 @@ import {
   getUserAutoExec,
   updateUserAutoExec,
   ModeType,
-  AuthProviderType
+  ALL_USERS_GROUP
 } from '../utils'
-import { GroupResponse } from './group'
+import { GroupController, GroupResponse } from './group'
 
 export interface UserResponse {
   id: number
@@ -236,6 +236,13 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   })
 
   const savedUser = await user.save()
+
+  const groupController = new GroupController()
+  const allUsersGroup = await groupController.getGroupByGroupName(
+    ALL_USERS_GROUP.name
+  )
+
+  await groupController.addUserToGroup(allUsersGroup.groupId, savedUser.id)
 
   return {
     id: savedUser.id,

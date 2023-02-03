@@ -23,12 +23,12 @@ export const seedDB = async (): Promise<ConfigurationType> => {
   }
 
   // Checking if 'AllUsers' Group is already in the database
-  let groupExist = await Group.findOne({ name: GROUP.name })
+  let groupExist = await Group.findOne({ name: ALL_USERS_GROUP.name })
   if (!groupExist) {
-    const group = new Group(GROUP)
+    const group = new Group(ALL_USERS_GROUP)
     groupExist = await group.save()
 
-    process.logger.success(`DB Seed - Group created: ${GROUP.name}`)
+    process.logger.success(`DB Seed - Group created: ${ALL_USERS_GROUP.name}`)
   }
 
   // Checking if 'Public' Group is already in the database
@@ -54,7 +54,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
   if (!groupExist.hasUser(usernameExist)) {
     groupExist.addUser(usernameExist)
     process.logger.success(
-      `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${GROUP.name}'`
+      `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${ALL_USERS_GROUP.name}'`
     )
   }
 
@@ -75,7 +75,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
   }
 }
 
-const GROUP = {
+export const ALL_USERS_GROUP = {
   name: 'AllUsers',
   description: 'Group contains all users'
 }
