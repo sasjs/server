@@ -159,7 +159,7 @@ const updatePassword = async (
 ) => {
   const { currentPassword, newPassword } = data
   const userId = req.user?.userId
-  const dbUser = await User.findOne({ userId })
+  const dbUser = await User.findOne({ id: userId })
 
   if (!dbUser)
     throw {
