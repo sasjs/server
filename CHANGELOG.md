@@ -1,3 +1,10 @@
+## [0.28.7](https://github.com/sasjs/server/compare/v0.28.6...v0.28.7) (2023-02-03)
+
+
+### Bug Fixes
+
+* add user to all users group on user creation ([2bae52e](https://github.com/sasjs/server/commit/2bae52e307327d7ee4a94b19d843abdc0ccec9d1))
+
 ## [0.28.6](https://github.com/sasjs/server/compare/v0.28.5...v0.28.6) (2023-01-26)
 
 
