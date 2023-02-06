@@ -1,7 +1,8 @@
 import { Request } from 'express'
 
+export const TopLevelRoutes = ['/AppStream', '/SASjsApi']
+
 const StaticAuthorizedRoutes = [
-  '/AppStream',
   '/SASjsApi/code/execute',
   '/SASjsApi/stp/execute',
   '/SASjsApi/drive/deploy',
@@ -15,7 +16,7 @@ const StaticAuthorizedRoutes = [
 export const getAuthorizedRoutes = () => {
   const streamingApps = Object.keys(process.appStreamConfig)
   const streamingAppsRoutes = streamingApps.map((app) => `/AppStream/${app}`)
-  return [...StaticAuthorizedRoutes, ...streamingAppsRoutes]
+  return [...TopLevelRoutes, ...StaticAuthorizedRoutes, ...streamingAppsRoutes]
 }
 
 export const getPath = (req: Request) => {
