@@ -1,3 +1,10 @@
+# [0.29.0](https://github.com/sasjs/server/compare/v0.28.7...v0.29.0) (2023-02-06)
+
+
+### Features
+
+* Add /SASjsApi endpoint in permissions ([b3402ea](https://github.com/sasjs/server/commit/b3402ea80afb8802eee8b8b6cbbbcc29903424bc))
+
 ## [0.28.7](https://github.com/sasjs/server/compare/v0.28.6...v0.28.7) (2023-02-03)
 
 
