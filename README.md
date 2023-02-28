@@ -137,6 +137,9 @@ CA_ROOT=fullchain.pem (optional)
 ## ENV variables required for MODE: `server`
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 
+# options: [mongodb|cosmos_mongodb] default: mongodb
+DB_TYPE=
+
 # AUTH_PROVIDERS options: [ldap] default: ``
 AUTH_PROVIDERS=
 
