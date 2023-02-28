@@ -3,19 +3,27 @@ import mongoose from 'mongoose'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 
-import { ModeType, ProtocolType } from '../utils'
+import { DatabaseType, ModeType, ProtocolType } from '../utils'
 
 export const configureExpressSession = (app: Express) => {
-  const { MODE } = process.env
+  const { MODE, DB_TYPE } = process.env
 
   if (MODE === ModeType.Server) {
     let store: MongoStore | undefined
 
     if (process.env.NODE_ENV !== 'test') {
-      store = MongoStore.create({
-        client: mongoose.connection!.getClient() as any,
-        collectionName: 'sessions'
-      })
+      if (DB_TYPE === DatabaseType.COSMOS_MONGODB) {
+        store = MongoStore.create({
+          client: mongoose.connection!.getClient() as any,
+          collectionName: 'sessions',
+          autoRemove: 'interval'
+        })
+      } else {
+        store = MongoStore.create({
+          client: mongoose.connection!.getClient() as any,
+          collectionName: 'sessions'
+        })
+      }
     }
 
     const { PROTOCOL, ALLOWED_DOMAIN } = process.env

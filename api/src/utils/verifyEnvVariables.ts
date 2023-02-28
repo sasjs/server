@@ -47,6 +47,11 @@ export enum ReturnCode {
   InvalidEnv
 }
 
+export enum DatabaseType {
+  MONGO = 'mongodb',
+  COSMOS_MONGODB = 'cosmos_mongodb'
+}
+
 export const verifyEnvVariables = (): ReturnCode => {
   const errors: string[] = []
 
@@ -69,6 +74,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyExecutablePaths())
 
   errors.push(...verifyLDAPVariables())
+
+  errors.push(...verifyDbType())
 
   if (errors.length) {
     process.logger?.error(
@@ -342,11 +349,30 @@ const verifyLDAPVariables = () => {
   return errors
 }
 
+const verifyDbType = () => {
+  const errors: string[] = []
+
+  const { MODE, DB_TYPE } = process.env
+
+  if (MODE === ModeType.Server) {
+    if (DB_TYPE) {
+      const dbTypes = Object.values(DatabaseType)
+      if (!dbTypes.includes(DB_TYPE as DatabaseType))
+        errors.push(`- DB_TYPE '${DB_TYPE}'\n - valid options ${dbTypes}`)
+    } else {
+      process.env.DB_TYPE = DEFAULTS.DB_TYPE
+    }
+  }
+
+  return errors
+}
+
 const DEFAULTS = {
   MODE: ModeType.Desktop,
   PROTOCOL: ProtocolType.HTTP,
   PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
-  RUN_TIMES: RunTimeType.SAS
+  RUN_TIMES: RunTimeType.SAS,
+  DB_TYPE: DatabaseType.MONGO
 }
