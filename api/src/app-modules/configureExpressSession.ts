@@ -13,6 +13,8 @@ export const configureExpressSession = (app: Express) => {
 
     if (process.env.NODE_ENV !== 'test') {
       if (DB_TYPE === DatabaseType.COSMOS_MONGODB) {
+        // COSMOS DB requires specific connection options (compatibility mode) 
+        // See: https://www.npmjs.com/package/connect-mongo#set-the-compatibility-mode
         store = MongoStore.create({
           client: mongoose.connection!.getClient() as any,
           collectionName: 'sessions',
