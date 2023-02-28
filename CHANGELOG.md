@@ -1,3 +1,15 @@
+# [0.30.0](https://github.com/sasjs/server/compare/v0.29.0...v0.30.0) (2023-02-28)
+
+
+### Bug Fixes
+
+* lint + remove default settings ([3de59ac](https://github.com/sasjs/server/commit/3de59ac4f8e3d95cad31f09e6963bd04c4811f26))
+
+
+### Features
+
+* add new env config DB_TYPE ([158f044](https://github.com/sasjs/server/commit/158f044363abf2576c8248f0ca9da4bc9cb7e9d8))
+
 # [0.29.0](https://github.com/sasjs/server/compare/v0.28.7...v0.29.0) (2023-02-06)
 
 
