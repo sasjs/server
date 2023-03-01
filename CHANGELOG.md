@@ -1,3 +1,10 @@
+## [0.30.1](https://github.com/sasjs/server/compare/v0.30.0...v0.30.1) (2023-03-01)
+
+
+### Bug Fixes
+
+* **web:** add proper base url in axios.defaults ([5e3ce8a](https://github.com/sasjs/server/commit/5e3ce8a98f1825e14c1d26d8da0c9821beeff7b3))
+
 # [0.30.0](https://github.com/sasjs/server/compare/v0.29.0...v0.30.0) (2023-02-28)
 
 
