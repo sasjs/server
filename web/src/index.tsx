@@ -9,7 +9,9 @@ import axios from 'axios'
 const NODE_ENV = process.env.NODE_ENV
 const PORT_API = process.env.PORT_API
 const baseUrl =
-  NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
+  NODE_ENV === 'development'
+    ? `http://localhost:${PORT_API ?? 5000}`
+    : window.location.origin + window.location.pathname
 
 axios.defaults = Object.assign(axios.defaults, {
   withCredentials: true,
