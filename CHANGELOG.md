@@ -1,3 +1,10 @@
+## [0.30.3](https://github.com/sasjs/server/compare/v0.30.2...v0.30.3) (2023-03-07)
+
+
+### Bug Fixes
+
+* add location.pathname to location.origin conditionally ([edab51c](https://github.com/sasjs/server/commit/edab51c51997f17553e037dc7c2b5e5fa6ea8ffe))
+
 ## [0.30.2](https://github.com/sasjs/server/compare/v0.30.1...v0.30.2) (2023-03-07)
 
 
