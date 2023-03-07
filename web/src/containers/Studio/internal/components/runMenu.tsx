@@ -31,7 +31,10 @@ const RunMenu = ({
   handleRunBtnClick
 }: RunMenuProps) => {
   const launchProgram = () => {
-    const baseUrl = window.location.origin + window.location.pathname
+    const pathName =
+      window.location.pathname === '/' ? '' : window.location.pathname
+    const baseUrl = window.location.origin + pathName
+
     window.open(`${baseUrl}/SASjsApi/stp/execute?_program=${selectedFilePath}`)
   }
 
