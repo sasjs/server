@@ -1,3 +1,10 @@
+## [0.30.2](https://github.com/sasjs/server/compare/v0.30.1...v0.30.2) (2023-03-07)
+
+
+### Bug Fixes
+
+* **web:** add path to base in launch program url ([2c31922](https://github.com/sasjs/server/commit/2c31922f58a8aa20d7fa6bfc95b53a350f90c798))
+
 ## [0.30.1](https://github.com/sasjs/server/compare/v0.30.0...v0.30.1) (2023-03-01)
 
 
