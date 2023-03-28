@@ -47,7 +47,7 @@ describe('web', () => {
     })
   })
 
-  describe('SASLogon/login', () => {
+  describe.only('SASLogon/login', () => {
     let csrfToken: string
 
     beforeAll(async () => {
@@ -63,6 +63,7 @@ describe('web', () => {
     it('should respond with successful login', async () => {
       await userController.createUser(user)
 
+      process.dbInstance = con
       const res = await request(app)
         .post('/SASLogon/login')
         .set('x-xsrf-token', csrfToken)
@@ -80,6 +81,72 @@ describe('web', () => {
         isAdmin: user.isAdmin,
         needsToUpdatePassword: true
       })
+    })
+
+    it('should respond with too many requests when attempting with invalid password for a same user 10 times', async () => {
+      await userController.createUser(user)
+
+      process.dbInstance = con
+
+      const promises: request.Test[] = []
+
+      Array(10)
+        .fill(0)
+        .map((_, i) => {
+          promises.push(
+            request(app)
+              .post('/SASLogon/login')
+              .set('x-xsrf-token', csrfToken)
+              .send({
+                username: user.username,
+                password: 'invalid-password'
+              })
+          )
+        })
+
+      await Promise.all(promises)
+
+      const res = await request(app)
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrfToken)
+        .send({
+          username: user.username,
+          password: user.password
+        })
+        .expect(429)
+    })
+
+    it.only('should respond with too many requests when attempting with invalid credentials for different users but with same ip 100 times', async () => {
+      await userController.createUser(user)
+
+      process.dbInstance = con
+
+      const promises: request.Test[] = []
+
+      Array(100)
+        .fill(0)
+        .map((_, i) => {
+          promises.push(
+            request(app)
+              .post('/SASLogon/login')
+              .set('x-xsrf-token', csrfToken)
+              .send({
+                username: `user${i}`,
+                password: 'invalid-password'
+              })
+          )
+        })
+
+      await Promise.all(promises)
+
+      const res = await request(app)
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrfToken)
+        .send({
+          username: user.username,
+          password: user.password
+        })
+        .expect(429)
     })
 
     it('should respond with Bad Request if CSRF Token is not present', async () => {

@@ -8,8 +8,10 @@ import Client from '../model/Client'
 import {
   getWebBuildFolder,
   generateAuthCode,
+  getRateLimiters,
   AuthProviderType,
-  LDAPClient
+  LDAPClient,
+  secondsToHms
 } from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
@@ -81,19 +83,98 @@ const login = async (
   req: express.Request,
   { username, password }: LoginPayload
 ) => {
+  // code for preventing brute force attack
+
+  const {
+    MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY,
+    MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
+  } = process.env
+
+  const { limiterSlowBruteByIP, limiterConsecutiveFailsByUsernameAndIP } =
+    getRateLimiters()
+
+  const ipAddr = req.ip
+  const usernameIPkey = getUsernameIPkey(username, ipAddr)
+
+  const [resSlowByIP, resUsernameAndIP] = await Promise.all([
+    limiterSlowBruteByIP.get(ipAddr),
+    limiterConsecutiveFailsByUsernameAndIP.get(usernameIPkey)
+  ])
+
+  let retrySecs = 0
+
+  // Check if IP or Username + IP is already blocked
+  if (
+    resSlowByIP !== null &&
+    resSlowByIP.consumedPoints >= Number(MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY)
+  ) {
+    retrySecs = Math.round(resSlowByIP.msBeforeNext / 1000) || 1
+  } else if (
+    resUsernameAndIP !== null &&
+    resUsernameAndIP.consumedPoints >=
+      Number(MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP)
+  ) {
+    retrySecs = Math.round(resUsernameAndIP.msBeforeNext / 1000) || 1
+  }
+
+  if (retrySecs > 0) {
+    throw {
+      code: 429,
+      message: `Too Many Requests! Retry after ${secondsToHms(retrySecs)}`
+    }
+  }
+
   // Authenticate User
   const user = await User.findOne({ username })
-  if (!user) throw new Error('Username is not found.')
 
-  if (
-    process.env.AUTH_PROVIDERS === AuthProviderType.LDAP &&
-    user.authProvider === AuthProviderType.LDAP
-  ) {
-    const ldapClient = await LDAPClient.init()
-    await ldapClient.verifyUser(username, password)
-  } else {
-    const validPass = user.comparePassword(password)
-    if (!validPass) throw new Error('Invalid password.')
+  let validPass = false
+
+  if (user) {
+    if (
+      process.env.AUTH_PROVIDERS === AuthProviderType.LDAP &&
+      user.authProvider === AuthProviderType.LDAP
+    ) {
+      const ldapClient = await LDAPClient.init()
+      validPass = await ldapClient
+        .verifyUser(username, password)
+        .catch(() => false)
+    } else {
+      validPass = user.comparePassword(password)
+    }
+  }
+
+  // Consume 1 point from limiters on wrong attempt and block if limits reached
+  if (!validPass) {
+    try {
+      const promises = [limiterSlowBruteByIP.consume(ipAddr)]
+      if (user) {
+        // Count failed attempts by Username + IP only for registered users
+        promises.push(
+          limiterConsecutiveFailsByUsernameAndIP.consume(usernameIPkey)
+        )
+      }
+
+      await Promise.all(promises)
+    } catch (rlRejected: any) {
+      if (rlRejected instanceof Error) {
+        throw rlRejected
+      } else {
+        retrySecs = Math.round(rlRejected.msBeforeNext / 1000) || 1
+
+        throw {
+          code: 429,
+          message: `Too Many Requests! Retry after ${secondsToHms(retrySecs)}`
+        }
+      }
+    }
+  }
+
+  if (!user) throw { code: 401, message: 'Username is not found.' }
+  if (!validPass) throw { code: 401, message: 'Invalid Password.' }
+
+  if (resUsernameAndIP !== null && resUsernameAndIP.consumedPoints > 0) {
+    // Reset on successful authorization
+    await limiterConsecutiveFailsByUsernameAndIP.delete(usernameIPkey)
   }
 
   req.session.loggedIn = true
@@ -143,6 +224,8 @@ const authorize = async (
 
   return { code }
 }
+
+const getUsernameIPkey = (username: string, ip: string) => `${username}_${ip}`
 
 interface LoginPayload {
   /**

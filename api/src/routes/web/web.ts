@@ -35,7 +35,11 @@ webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
     const response = await controller.login(req, body)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    if (err instanceof Error) {
+      res.status(500).send(err.toString())
+    } else {
+      res.status(err.code).send(err.message)
+    }
   }
 })
 

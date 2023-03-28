@@ -77,6 +77,8 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyDbType())
 
+  errors.push(...verifyRateLimiter())
+
   if (errors.length) {
     process.logger?.error(
       `Invalid environment variable(s) provided: \n${errors.join('\n')}`
@@ -367,6 +369,50 @@ const verifyDbType = () => {
   return errors
 }
 
+const verifyRateLimiter = () => {
+  const errors: string[] = []
+  const {
+    MODE,
+    MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY,
+    MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
+  } = process.env
+  if (MODE === ModeType.Server) {
+    if (MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY) {
+      if (
+        !isNumeric(MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY) ||
+        Number(MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY) < 1
+      ) {
+        errors.push(
+          `- Invalid value for 'MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY' - Only positive number is acceptable`
+        )
+      }
+    } else {
+      process.env.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY =
+        DEFAULTS.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY
+    }
+
+    if (MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP) {
+      if (
+        !isNumeric(MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP) ||
+        Number(MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP) < 1
+      ) {
+        errors.push(
+          `- Invalid value for 'MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP' - Only positive number is acceptable`
+        )
+      }
+    } else {
+      process.env.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP =
+        DEFAULTS.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
+    }
+  }
+
+  return errors
+}
+
+const isNumeric = (val: string): boolean => {
+  return !isNaN(Number(val))
+}
+
 const DEFAULTS = {
   MODE: ModeType.Desktop,
   PROTOCOL: ProtocolType.HTTP,
@@ -374,5 +420,7 @@ const DEFAULTS = {
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
   RUN_TIMES: RunTimeType.SAS,
-  DB_TYPE: DatabaseType.MONGO
+  DB_TYPE: DatabaseType.MONGO,
+  MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY: '100',
+  MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP: '10'
 }
