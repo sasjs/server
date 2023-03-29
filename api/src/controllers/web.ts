@@ -171,8 +171,6 @@ const authorize = async (
   return { code }
 }
 
-const getUsernameIPkey = (username: string, ip: string) => `${username}_${ip}`
-
 interface LoginPayload {
   /**
    * Username for user
