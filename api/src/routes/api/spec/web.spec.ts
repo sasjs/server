@@ -47,7 +47,7 @@ describe('web', () => {
     })
   })
 
-  describe.only('SASLogon/login', () => {
+  describe('SASLogon/login', () => {
     let csrfToken: string
 
     beforeAll(async () => {
@@ -63,7 +63,6 @@ describe('web', () => {
     it('should respond with successful login', async () => {
       await userController.createUser(user)
 
-      process.dbInstance = con
       const res = await request(app)
         .post('/SASLogon/login')
         .set('x-xsrf-token', csrfToken)
@@ -86,11 +85,13 @@ describe('web', () => {
     it('should respond with too many requests when attempting with invalid password for a same user 10 times', async () => {
       await userController.createUser(user)
 
-      process.dbInstance = con
-
       const promises: request.Test[] = []
 
-      Array(10)
+      const maxConsecutiveFailsByUsernameAndIp = Number(
+        process.env.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
+      )
+
+      Array(maxConsecutiveFailsByUsernameAndIp)
         .fill(0)
         .map((_, i) => {
           promises.push(
@@ -116,14 +117,16 @@ describe('web', () => {
         .expect(429)
     })
 
-    it.only('should respond with too many requests when attempting with invalid credentials for different users but with same ip 100 times', async () => {
+    it('should respond with too many requests when attempting with invalid credentials for different users but with same ip 100 times', async () => {
       await userController.createUser(user)
-
-      process.dbInstance = con
 
       const promises: request.Test[] = []
 
-      Array(100)
+      const maxWrongAttemptsByIpPerDay = Number(
+        process.env.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY
+      )
+
+      Array(maxWrongAttemptsByIpPerDay)
         .fill(0)
         .map((_, i) => {
           promises.push(

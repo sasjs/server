@@ -3,9 +3,7 @@ import { seedDB } from './seedDB'
 
 export const connectDB = async () => {
   try {
-    process.dbInstance = await mongoose.connect(
-      process.env.DB_CONNECT as string
-    )
+    await mongoose.connect(process.env.DB_CONNECT as string)
   } catch (err) {
     throw new Error('Unable to connect to DB!')
   }

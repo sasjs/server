@@ -1,7 +1,11 @@
 import express from 'express'
 import { generateCSRFToken } from '../../middlewares'
 import { WebController } from '../../controllers/web'
-import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
+import {
+  authenticateAccessToken,
+  bruteForceProtection,
+  desktopRestrict
+} from '../../middlewares'
 import { authorizeValidation, loginWebValidation } from '../../utils'
 
 const webRouter = express.Router()
@@ -27,21 +31,26 @@ webRouter.get('/', async (req, res) => {
   }
 })
 
-webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
-  const { error, value: body } = loginWebValidation(req.body)
-  if (error) return res.status(400).send(error.details[0].message)
+webRouter.post(
+  '/SASLogon/login',
+  desktopRestrict,
+  bruteForceProtection,
+  async (req, res) => {
+    const { error, value: body } = loginWebValidation(req.body)
+    if (error) return res.status(400).send(error.details[0].message)
 
-  try {
-    const response = await controller.login(req, body)
-    res.send(response)
-  } catch (err: any) {
-    if (err instanceof Error) {
-      res.status(500).send(err.toString())
-    } else {
-      res.status(err.code).send(err.message)
+    try {
+      const response = await controller.login(req, body)
+      res.send(response)
+    } catch (err: any) {
+      if (err instanceof Error) {
+        res.status(500).send(err.toString())
+      } else {
+        res.status(err.code).send(err.message)
+      }
     }
   }
-})
+)
 
 webRouter.post(
   '/SASLogon/authorize',
