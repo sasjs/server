@@ -60,6 +60,11 @@ export class RateLimiter {
       this.limiterConsecutiveFailsByUsernameAndIP.get(usernameIPkey)
     ])
 
+    // NOTE: To make use of blockDuration option from RateLimiterMongo
+    //       comparison in both following if statements should have greater than symbol
+    //       otherwise, blockDuration option will not work
+    // For more info see: https://github.com/animir/node-rate-limiter-flexible/wiki/Options#blockduration
+
     // Check if IP or Username + IP is already blocked
     if (
       resSlowByIP !== null &&

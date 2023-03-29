@@ -82,7 +82,7 @@ describe('web', () => {
       })
     })
 
-    it('should respond with too many requests when attempting with invalid password for a same user 10 times', async () => {
+    it('should respond with too many requests when attempting with invalid password for a same user too many times', async () => {
       await userController.createUser(user)
 
       const promises: request.Test[] = []
@@ -91,7 +91,7 @@ describe('web', () => {
         process.env.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
       )
 
-      Array(maxConsecutiveFailsByUsernameAndIp)
+      Array(maxConsecutiveFailsByUsernameAndIp + 1)
         .fill(0)
         .map((_, i) => {
           promises.push(
@@ -117,7 +117,7 @@ describe('web', () => {
         .expect(429)
     })
 
-    it('should respond with too many requests when attempting with invalid credentials for different users but with same ip 100 times', async () => {
+    it('should respond with too many requests when attempting with invalid credentials for different users but with same ip too many times', async () => {
       await userController.createUser(user)
 
       const promises: request.Test[] = []
@@ -126,7 +126,7 @@ describe('web', () => {
         process.env.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY
       )
 
-      Array(maxWrongAttemptsByIpPerDay)
+      Array(maxWrongAttemptsByIpPerDay + 1)
         .fill(0)
         .map((_, i) => {
           promises.push(
