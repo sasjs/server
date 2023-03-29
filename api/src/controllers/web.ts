@@ -1,7 +1,7 @@
 import path from 'path'
 import express from 'express'
 import { Request, Route, Tags, Post, Body, Get, Example } from 'tsoa'
-import { readFile } from '@sasjs/utils'
+import { readFile, convertSecondsToHms } from '@sasjs/utils'
 
 import User from '../model/User'
 import Client from '../model/Client'
@@ -10,8 +10,7 @@ import {
   generateAuthCode,
   RateLimiter,
   AuthProviderType,
-  LDAPClient,
-  secondsToHms
+  LDAPClient
 } from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
@@ -111,7 +110,9 @@ const login = async (
     if (retrySecs > 0) {
       throw {
         code: 429,
-        message: `Too Many Requests! Retry after ${secondsToHms(retrySecs)}`
+        message: `Too Many Requests! Retry after ${convertSecondsToHms(
+          retrySecs
+        )}`
       }
     }
   }
