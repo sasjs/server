@@ -13,7 +13,7 @@
     "postbuild": "npm run copy:files",
     "swagger": "tsoa spec",
     "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
-    "test": "mkdir -p tmp && mkdir -p ../web/build && jest --coverage",
+    "test": "mkdir -p tmp && mkdir -p ../web/build && jest --silent --coverage",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "exe": "npm run build && pkg .",
