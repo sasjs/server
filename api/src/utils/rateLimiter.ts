@@ -63,12 +63,12 @@ export class RateLimiter {
     // Check if IP or Username + IP is already blocked
     if (
       resSlowByIP !== null &&
-      resSlowByIP.consumedPoints >= this.maxWrongAttemptsByIpPerDay
+      resSlowByIP.consumedPoints > this.maxWrongAttemptsByIpPerDay
     ) {
       return Math.ceil(resSlowByIP.msBeforeNext / 1000)
     } else if (
       resUsernameAndIP !== null &&
-      resUsernameAndIP.consumedPoints >= this.maxConsecutiveFailsByUsernameAndIp
+      resUsernameAndIP.consumedPoints > this.maxConsecutiveFailsByUsernameAndIp
     ) {
       return Math.ceil(resUsernameAndIP.msBeforeNext / 1000)
     }
@@ -98,6 +98,10 @@ export class RateLimiter {
       if (rlRejected instanceof Error) {
         throw rlRejected
       } else {
+        // based upon the implementation of consume method of RateLimiterMongo
+        // we are sure that rlRejected will contain msBeforeNext
+        // for further reference,
+        // see https://github.com/animir/node-rate-limiter-flexible/wiki/Overall-example#login-endpoint-protection
         return Math.ceil(rlRejected.msBeforeNext / 1000)
       }
     }
