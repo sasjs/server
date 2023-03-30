@@ -107,18 +107,11 @@ const login = async (
 
   if (!validPass) {
     const retrySecs = await rateLimiter.consume(req.ip, user?.username)
-    if (retrySecs > 0) {
-      throw {
-        code: 429,
-        message: `Too Many Requests! Retry after ${convertSecondsToHms(
-          retrySecs
-        )}`
-      }
-    }
+    if (retrySecs > 0) throw errors.tooManyRequests(retrySecs)
   }
 
-  if (!user) throw { code: 401, message: 'Username is not found.' }
-  if (!validPass) throw { code: 401, message: 'Invalid Password.' }
+  if (!user) throw errors.userNotFound
+  if (!validPass) throw errors.invalidPassword
 
   // Reset on successful authorization
   rateLimiter.resetOnSuccess(req.ip, user.username)
@@ -198,4 +191,19 @@ interface AuthorizeResponse {
    * @example "someRandomCryptoString"
    */
   code: string
+}
+
+const errors = {
+  invalidPassword: {
+    code: 401,
+    message: 'Invalid Password.'
+  },
+  userNotFound: {
+    code: 401,
+    message: 'Username is not found.'
+  },
+  tooManyRequests: (seconds: number) => ({
+    code: 429,
+    message: `Too Many Requests! Retry after ${convertSecondsToHms(seconds)}`
+  })
 }
