@@ -179,13 +179,14 @@ HELMET_CSP_CONFIG_PATH=./csp.config.json
 # Only valid for MODE: server
 # Following are configurable env variable rate limiter
 
-MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY = <number> default: 100;
 # After this, access is blocked for 1 day
+MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY = <number> default: 100;
 
-MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP = <number> default: 10;
+
 # After this, access is blocked for an hour
 # Store number for 90 days since first fail
 # Once a successful login is attempted, it resets
+MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP = <number> default: 10;
 
 # LOG_FORMAT_MORGAN options: [combined|common|dev|short|tiny] default: `common`
 # Docs: https://www.npmjs.com/package/morgan#predefined-formats
