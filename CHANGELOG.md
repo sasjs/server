@@ -1,3 +1,10 @@
+# [0.31.0](https://github.com/sasjs/server/compare/v0.30.3...v0.31.0) (2023-03-30)
+
+
+### Features
+
+* prevent brute force attack by rate limiting login endpoint ([a82cabb](https://github.com/sasjs/server/commit/a82cabb00134c79c5ee77afd1b1628a1f768e050))
+
 ## [0.30.3](https://github.com/sasjs/server/compare/v0.30.2...v0.30.3) (2023-03-07)
 
 
