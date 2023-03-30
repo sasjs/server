@@ -82,6 +82,80 @@ describe('web', () => {
       })
     })
 
+    it('should respond with too many requests when attempting with invalid password for a same user too many times', async () => {
+      await userController.createUser(user)
+
+      const promises: request.Test[] = []
+
+      const maxConsecutiveFailsByUsernameAndIp = Number(
+        process.env.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
+      )
+
+      Array(maxConsecutiveFailsByUsernameAndIp + 1)
+        .fill(0)
+        .map((_, i) => {
+          promises.push(
+            request(app)
+              .post('/SASLogon/login')
+              .set('x-xsrf-token', csrfToken)
+              .send({
+                username: user.username,
+                password: 'invalid-password'
+              })
+          )
+        })
+
+      await Promise.all(promises)
+
+      const res = await request(app)
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrfToken)
+        .send({
+          username: user.username,
+          password: user.password
+        })
+        .expect(429)
+
+      expect(res.text).toContain('Too Many Requests!')
+    })
+
+    it('should respond with too many requests when attempting with invalid credentials for different users but with same ip too many times', async () => {
+      await userController.createUser(user)
+
+      const promises: request.Test[] = []
+
+      const maxWrongAttemptsByIpPerDay = Number(
+        process.env.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY
+      )
+
+      Array(maxWrongAttemptsByIpPerDay + 1)
+        .fill(0)
+        .map((_, i) => {
+          promises.push(
+            request(app)
+              .post('/SASLogon/login')
+              .set('x-xsrf-token', csrfToken)
+              .send({
+                username: `user${i}`,
+                password: 'invalid-password'
+              })
+          )
+        })
+
+      await Promise.all(promises)
+
+      const res = await request(app)
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrfToken)
+        .send({
+          username: user.username,
+          password: user.password
+        })
+        .expect(429)
+
+      expect(res.text).toContain('Too Many Requests!')
+    })
+
     it('should respond with Bad Request if CSRF Token is not present', async () => {
       await userController.createUser(user)
 
@@ -119,6 +193,7 @@ describe('web', () => {
     let authCookies: string
 
     beforeAll(async () => {
+      await deleteDocumentsFromLimitersCollections()
       ;({ csrfToken } = await getCSRF(app))
 
       await userController.createUser(user)
@@ -210,3 +285,12 @@ const extractCSRF = (text: string) =>
   /<script>document.cookie = 'XSRF-TOKEN=(.*); Max-Age=86400; SameSite=Strict; Path=\/;'<\/script>/.exec(
     text
   )![1]
+
+const deleteDocumentsFromLimitersCollections = async () => {
+  const { collections } = mongoose.connection
+  const login_fail_ip_per_day_collection = collections['login_fail_ip_per_day']
+  await login_fail_ip_per_day_collection.deleteMany({})
+  const login_fail_consecutive_username_and_ip_collection =
+    collections['login_fail_consecutive_username_and_ip']
+  await login_fail_consecutive_username_and_ip_collection.deleteMany({})
+}

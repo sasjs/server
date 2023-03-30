@@ -49,7 +49,7 @@
   "author": "4GL Ltd",
   "dependencies": {
     "@sasjs/core": "^4.40.1",
-    "@sasjs/utils": "2.48.1",
+    "@sasjs/utils": "3.2.0",
     "bcryptjs": "^2.4.3",
     "connect-mongo": "^4.6.0",
     "cookie-parser": "^1.4.6",
@@ -64,6 +64,7 @@
     "mongoose-sequence": "^5.3.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "rate-limiter-flexible": "2.4.1",
     "rotating-file-stream": "^3.0.4",
     "swagger-ui-express": "4.3.0",
     "unzipper": "^0.10.11",

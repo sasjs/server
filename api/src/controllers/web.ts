@@ -1,13 +1,14 @@
 import path from 'path'
 import express from 'express'
 import { Request, Route, Tags, Post, Body, Get, Example } from 'tsoa'
-import { readFile } from '@sasjs/utils'
+import { readFile, convertSecondsToHms } from '@sasjs/utils'
 
 import User from '../model/User'
 import Client from '../model/Client'
 import {
   getWebBuildFolder,
   generateAuthCode,
+  RateLimiter,
   AuthProviderType,
   LDAPClient
 } from '../utils'
@@ -83,18 +84,37 @@ const login = async (
 ) => {
   // Authenticate User
   const user = await User.findOne({ username })
-  if (!user) throw new Error('Username is not found.')
 
-  if (
-    process.env.AUTH_PROVIDERS === AuthProviderType.LDAP &&
-    user.authProvider === AuthProviderType.LDAP
-  ) {
-    const ldapClient = await LDAPClient.init()
-    await ldapClient.verifyUser(username, password)
-  } else {
-    const validPass = user.comparePassword(password)
-    if (!validPass) throw new Error('Invalid password.')
+  let validPass = false
+
+  if (user) {
+    if (
+      process.env.AUTH_PROVIDERS === AuthProviderType.LDAP &&
+      user.authProvider === AuthProviderType.LDAP
+    ) {
+      const ldapClient = await LDAPClient.init()
+      validPass = await ldapClient
+        .verifyUser(username, password)
+        .catch(() => false)
+    } else {
+      validPass = user.comparePassword(password)
+    }
   }
+
+  // code to prevent brute force attack
+
+  const rateLimiter = RateLimiter.getInstance()
+
+  if (!validPass) {
+    const retrySecs = await rateLimiter.consume(req.ip, user?.username)
+    if (retrySecs > 0) throw errors.tooManyRequests(retrySecs)
+  }
+
+  if (!user) throw errors.userNotFound
+  if (!validPass) throw errors.invalidPassword
+
+  // Reset on successful authorization
+  rateLimiter.resetOnSuccess(req.ip, user.username)
 
   req.session.loggedIn = true
   req.session.user = {
@@ -171,4 +191,19 @@ interface AuthorizeResponse {
    * @example "someRandomCryptoString"
    */
   code: string
+}
+
+const errors = {
+  invalidPassword: {
+    code: 401,
+    message: 'Invalid Password.'
+  },
+  userNotFound: {
+    code: 401,
+    message: 'Username is not found.'
+  },
+  tooManyRequests: (seconds: number) => ({
+    code: 429,
+    message: `Too Many Requests! Retry after ${convertSecondsToHms(seconds)}`
+  })
 }
