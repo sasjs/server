@@ -5,6 +5,7 @@ import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController, ClientController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import { NUMBER_OF_SECONDS_IN_A_DAY } from '../../../model/Client'
 
 const client = {
   clientId: 'someclientID',
@@ -26,6 +27,7 @@ describe('client', () => {
   let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
+  let adminAccessToken: string
   const userController = new UserController()
   const clientController = new ClientController()
 
@@ -34,6 +36,18 @@ describe('client', () => {
 
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
+
+    const dbUser = await userController.createUser(adminUser)
+    adminAccessToken = generateAccessToken({
+      clientId: client.clientId,
+      userId: dbUser.id
+    })
+    await saveTokensInDB(
+      dbUser.id,
+      client.clientId,
+      adminAccessToken,
+      'refreshToken'
+    )
   })
 
   afterAll(async () => {
@@ -43,22 +57,6 @@ describe('client', () => {
   })
 
   describe('create', () => {
-    let adminAccessToken: string
-
-    beforeAll(async () => {
-      const dbUser = await userController.createUser(adminUser)
-      adminAccessToken = generateAccessToken({
-        clientId: client.clientId,
-        userId: dbUser.id
-      })
-      await saveTokensInDB(
-        dbUser.id,
-        client.clientId,
-        adminAccessToken,
-        'refreshToken'
-      )
-    })
-
     afterEach(async () => {
       const collections = mongoose.connection.collections
       const collection = collections['clients']
@@ -154,6 +152,82 @@ describe('client', () => {
         .expect(400)
 
       expect(res.text).toEqual(`"clientSecret" is required`)
+      expect(res.body).toEqual({})
+    })
+  })
+
+  describe('get', () => {
+    afterEach(async () => {
+      const collections = mongoose.connection.collections
+      const collection = collections['clients']
+      await collection.deleteMany({})
+    })
+
+    it('should respond with an array of all clients', async () => {
+      await clientController.createClient(newClient)
+      await clientController.createClient({
+        clientId: 'clientID',
+        clientSecret: 'clientSecret'
+      })
+
+      const res = await request(app)
+        .get('/SASjsApi/client')
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      const expected = [
+        {
+          clientId: 'newClientID',
+          clientSecret: 'newClientSecret',
+          accessTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY,
+          refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
+        },
+        {
+          clientId: 'clientID',
+          clientSecret: 'clientSecret',
+          accessTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY,
+          refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
+        }
+      ]
+
+      expect(res.body).toEqual(expected)
+    })
+
+    it('should respond with Unauthorized if access token is not present', async () => {
+      const res = await request(app).get('/SASjsApi/client').send().expect(401)
+
+      expect(res.text).toEqual('Unauthorized')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Forbideen if access token is not of an admin account', async () => {
+      const user = {
+        displayName: 'User 2',
+        username: 'username2',
+        password: '12345678',
+        isAdmin: false,
+        isActive: true
+      }
+      const dbUser = await userController.createUser(user)
+      const accessToken = generateAccessToken({
+        clientId: client.clientId,
+        userId: dbUser.id
+      })
+      await saveTokensInDB(
+        dbUser.id,
+        client.clientId,
+        accessToken,
+        'refreshToken'
+      )
+
+      const res = await request(app)
+        .get('/SASjsApi/client')
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(401)
+
+      expect(res.text).toEqual('Admin account required')
       expect(res.body).toEqual({})
     })
   })

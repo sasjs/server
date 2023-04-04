@@ -1,6 +1,7 @@
 import express from 'express'
 import { ClientController } from '../../controllers'
 import { registerClientValidation } from '../../utils'
+import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
 
 const clientRouter = express.Router()
 
@@ -16,5 +17,20 @@ clientRouter.post('/', async (req, res) => {
     res.status(403).send(err.toString())
   }
 })
+
+clientRouter.get(
+  '/',
+  authenticateAccessToken,
+  verifyAdmin,
+  async (req, res) => {
+    const controller = new ClientController()
+    try {
+      const response = await controller.getAllClients()
+      res.send(response)
+    } catch (err: any) {
+      res.status(403).send(err.toString())
+    }
+  }
+)
 
 export default clientRouter
