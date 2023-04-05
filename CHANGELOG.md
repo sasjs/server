@@ -1,3 +1,10 @@
+# [0.32.0](https://github.com/sasjs/server/compare/v0.31.0...v0.32.0) (2023-04-05)
+
+
+### Features
+
+* add an api endpoint for admin to get list of client ids ([6ffaa7e](https://github.com/sasjs/server/commit/6ffaa7e9e2a62c083bb9fcc3398dcbed10cebdb1))
+
 # [0.31.0](https://github.com/sasjs/server/compare/v0.30.3...v0.31.0) (2023-03-30)
 
 
