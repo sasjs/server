@@ -52,6 +52,11 @@ export enum DatabaseType {
   COSMOS_MONGODB = 'cosmos_mongodb'
 }
 
+export enum ResetAdminPasswordType {
+  YES = 'YES',
+  NO = 'NO'
+}
+
 export const verifyEnvVariables = (): ReturnCode => {
   const errors: string[] = []
 
@@ -78,6 +83,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyDbType())
 
   errors.push(...verifyRateLimiter())
+
+  errors.push(...verifyAdminUserConfig())
 
   if (errors.length) {
     process.logger?.error(
@@ -409,6 +416,38 @@ const verifyRateLimiter = () => {
   return errors
 }
 
+const verifyAdminUserConfig = () => {
+  const errors: string[] = []
+  const { MODE, ADMIN_USERNAME, ADMIN_PASSWORD_INITIAL, ADMIN_PASSWORD_RESET } =
+    process.env
+  if (MODE === ModeType.Server) {
+    if (ADMIN_USERNAME) {
+      process.env.ADMIN_USERNAME = ADMIN_USERNAME.toLowerCase()
+    } else {
+      process.env.ADMIN_USERNAME = DEFAULTS.ADMIN_USERNAME
+    }
+
+    if (!ADMIN_PASSWORD_INITIAL)
+      process.env.ADMIN_PASSWORD_INITIAL = DEFAULTS.ADMIN_PASSWORD_INITIAL
+
+    if (ADMIN_PASSWORD_RESET) {
+      const resetPasswordTypes = Object.values(ResetAdminPasswordType)
+      if (
+        !resetPasswordTypes.includes(
+          ADMIN_PASSWORD_RESET as ResetAdminPasswordType
+        )
+      )
+        errors.push(
+          `- ADMIN_PASSWORD_RESET '${ADMIN_PASSWORD_RESET}'\n - valid options ${resetPasswordTypes}`
+        )
+    } else {
+      process.env.ADMIN_PASSWORD_RESET = DEFAULTS.ADMIN_PASSWORD_RESET
+    }
+  }
+
+  return errors
+}
+
 const isNumeric = (val: string): boolean => {
   return !isNaN(Number(val))
 }
@@ -422,5 +461,8 @@ const DEFAULTS = {
   RUN_TIMES: RunTimeType.SAS,
   DB_TYPE: DatabaseType.MONGO,
   MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY: '100',
-  MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP: '10'
+  MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP: '10',
+  ADMIN_USERNAME: 'secretuser',
+  ADMIN_PASSWORD_INITIAL: 'secretpassword',
+  ADMIN_PASSWORD_RESET: ResetAdminPasswordType.NO
 }

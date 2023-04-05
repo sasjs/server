@@ -1,7 +1,9 @@
+import bcrypt from 'bcryptjs'
 import Client from '../model/Client'
 import Group, { PUBLIC_GROUP_NAME } from '../model/Group'
-import User from '../model/User'
+import User, { IUser } from '../model/User'
 import Configuration, { ConfigurationType } from '../model/Configuration'
+import { ResetAdminPasswordType } from './verifyEnvVariables'
 
 import { randomBytes } from 'crypto'
 
@@ -40,9 +42,13 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     process.logger.success(`DB Seed - Group created: ${PUBLIC_GROUP.name}`)
   }
 
+  const ADMIN_USER = getAdminUser()
+
   // Checking if user is already in the database
   let usernameExist = await User.findOne({ username: ADMIN_USER.username })
-  if (!usernameExist) {
+  if (usernameExist) {
+    usernameExist = await resetAdminPassword(usernameExist, ADMIN_USER.password)
+  } else {
     const user = new User(ADMIN_USER)
     usernameExist = await user.save()
 
@@ -51,7 +57,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     )
   }
 
-  if (!groupExist.hasUser(usernameExist)) {
+  if (usernameExist.isAdmin && !groupExist.hasUser(usernameExist)) {
     groupExist.addUser(usernameExist)
     process.logger.success(
       `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${ALL_USERS_GROUP.name}'`
@@ -90,11 +96,52 @@ const CLIENT = {
   clientId: 'clientID1',
   clientSecret: 'clientSecret'
 }
-const ADMIN_USER = {
-  id: 1,
-  displayName: 'Super Admin',
-  username: 'secretuser',
-  password: '$2a$10$hKvcVEZdhEQZCcxt6npazO6mY4jJkrzWvfQ5stdBZi8VTTwVMCVXO',
-  isAdmin: true,
-  isActive: true
+
+const getAdminUser = () => {
+  const { ADMIN_USERNAME, ADMIN_PASSWORD_INITIAL } = process.env
+
+  const salt = bcrypt.genSaltSync(10)
+  const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD_INITIAL as string, salt)
+
+  return {
+    displayName: 'Super Admin',
+    username: ADMIN_USERNAME,
+    password: hashedPassword,
+    isAdmin: true,
+    isActive: true
+  }
+}
+
+const resetAdminPassword = async (user: IUser, password: string) => {
+  const { ADMIN_PASSWORD_RESET } = process.env
+
+  if (ADMIN_PASSWORD_RESET === ResetAdminPasswordType.YES) {
+    if (!user.isAdmin) {
+      process.logger.error(
+        `Can not reset the password of non-admin user (${user.username}) on startup.`
+      )
+
+      return user
+    }
+
+    if (user.authProvider) {
+      process.logger.error(
+        `Can not reset the password of admin (${user.username}) with ${user.authProvider} as authentication mechanism.`
+      )
+
+      return user
+    }
+
+    process.logger.info(
+      `DB Seed - resetting password for admin user: ${user.username}`
+    )
+
+    user.password = password
+    user.needsToUpdatePassword = true
+    user = await user.save()
+
+    process.logger.success(`DB Seed - successfully reset the password`)
+  }
+
+  return user
 }

@@ -188,6 +188,19 @@ MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY = <number> default: 100;
 # Once a successful login is attempted, it resets
 MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP = <number> default: 10;
 
+# Name of the admin user that will be created on startup if not exists already
+# Default is `secretuser`
+ADMIN_USERNAME=secretuser
+
+# Temporary password for the ADMIN_USERNAME, which is in place until the first login
+# Default is `secretpassword`
+ADMIN_PASSWORD_INITIAL=secretpassword
+
+# Specify whether app has to reset the ADMIN_USERNAME's password or not
+# Default is NO. Possible options are YES and NO
+# If ADMIN_PASSWORD_RESET is YES then the ADMIN_USERNAME will be prompted to change the password from ADMIN_PASSWORD_INITIAL on their next login. This will repeat on every server restart, unless the option is removed / set to NO.
+ADMIN_PASSWORD_RESET=NO
+
 # LOG_FORMAT_MORGAN options: [combined|common|dev|short|tiny] default: `common`
 # Docs: https://www.npmjs.com/package/morgan#predefined-formats
 LOG_FORMAT_MORGAN=
