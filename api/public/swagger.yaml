@@ -758,6 +758,27 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ClientPayload'
+        get:
+            operationId: GetAllClients
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/ClientPayload'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{clientId: someClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}, {clientId: someOtherClientID, clientSecret: someOtherRandomCryptoString, accessTokenExpiration: 86400}]
+            summary: 'Admin only task. Returns the list of all the clients   *'
+            tags:
+                - Client
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
     /SASjsApi/code/execute:
         post:
             operationId: ExecuteCode

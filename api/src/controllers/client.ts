@@ -1,4 +1,4 @@
-import { Security, Route, Tags, Example, Post, Body } from 'tsoa'
+import { Security, Route, Tags, Example, Post, Body, Get } from 'tsoa'
 
 import Client, {
   ClientPayload,
@@ -28,6 +28,28 @@ export class ClientController {
     @Body() body: ClientPayload
   ): Promise<ClientPayload> {
     return createClient(body)
+  }
+
+  /**
+   * @summary Admin only task. Returns the list of all the clients
+   */
+  @Example<ClientPayload[]>([
+    {
+      clientId: 'someClientID1234',
+      clientSecret: 'someRandomCryptoString',
+      accessTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY,
+      refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
+    },
+    {
+      clientId: 'someOtherClientID',
+      clientSecret: 'someOtherRandomCryptoString',
+      accessTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY,
+      refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
+    }
+  ])
+  @Get('/')
+  public async getAllClients(): Promise<ClientPayload[]> {
+    return getAllClients()
   }
 }
 
@@ -59,4 +81,14 @@ const createClient = async (data: ClientPayload): Promise<ClientPayload> => {
     accessTokenExpiration: savedClient.accessTokenExpiration,
     refreshTokenExpiration: savedClient.refreshTokenExpiration
   }
+}
+
+const getAllClients = async (): Promise<ClientPayload[]> => {
+  return Client.find({}).select({
+    _id: 0,
+    clientId: 1,
+    clientSecret: 1,
+    accessTokenExpiration: 1,
+    refreshTokenExpiration: 1
+  })
 }
