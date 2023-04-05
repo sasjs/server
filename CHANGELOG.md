@@ -1,3 +1,10 @@
+# [0.33.0](https://github.com/sasjs/server/compare/v0.32.0...v0.33.0) (2023-04-05)
+
+
+### Features
+
+* option to reset admin password on startup ([eda8e56](https://github.com/sasjs/server/commit/eda8e56bb0ea20fdaacabbbe7dcf1e3ea7bd215a))
+
 # [0.32.0](https://github.com/sasjs/server/compare/v0.31.0...v0.32.0) (2023-04-05)
 
 
