@@ -25,6 +25,7 @@
     "react": "^17.0.2",
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^17.0.2",
+    "react-highlight": "^0.15.0",
     "react-monaco-editor": "^0.48.0",
     "react-router-dom": "^6.3.0",
     "react-toastify": "^9.0.1"
@@ -41,6 +42,7 @@
     "@types/react": "^17.0.37",
     "@types/react-copy-to-clipboard": "^5.0.2",
     "@types/react-dom": "^17.0.11",
+    "@types/react-highlight": "^0.12.5",
     "@types/react-router-dom": "^5.3.1",
     "babel-loader": "^8.2.3",
     "babel-plugin-prismjs": "^2.1.0",
