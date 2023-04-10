@@ -39,3 +39,9 @@ export interface TreeNode {
   isFolder: boolean
   children: Array<TreeNode>
 }
+
+export interface LogObject {
+  body: string
+  errors: string[]
+  warnings: string[]
+}
