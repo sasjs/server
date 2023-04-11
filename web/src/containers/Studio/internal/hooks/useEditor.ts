@@ -42,7 +42,7 @@ const useEditor = ({
 
   const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
   const [fileContent, setFileContent] = useState('')
-  const [log, setLog] = useState<LogObject>()
+  const [log, setLog] = useState<LogObject | string>()
   const [webout, setWebout] = useState('')
   const [runTimes, setRunTimes] = useState<string[]>([])
   const [selectedRunTime, setSelectedRunTime] = useState<RunTimeType>(

@@ -30,12 +30,13 @@ const useStyles: any = makeStyles((theme: any) => ({
 }))
 
 interface LogComponentProps {
-  log: LogObject
+  log: LogObject | string
   selectedRunTime: RunTimeType
 }
 
 const LogComponent = (props: LogComponentProps) => {
   const { log, selectedRunTime } = props
+  const logObject = log as LogObject
 
   const classes = useStyles()
 
@@ -86,17 +87,17 @@ const LogComponent = (props: LogComponentProps) => {
                 defaultCollapseIcon={<ExpandMore />}
                 defaultExpandIcon={<ChevronRight />}
               >
-                {log.errors && log.errors.length !== 0 && (
+                {logObject.errors && logObject.errors.length !== 0 && (
                   <TreeItem
                     nodeId="errors"
                     label={
                       <Typography color="error">
-                        {`Errors (${log.errors.length})`}
+                        {`Errors (${logObject.errors.length})`}
                       </Typography>
                     }
                   >
-                    {log.errors &&
-                      log.errors.map((error, ind) => (
+                    {logObject.errors &&
+                      logObject.errors.map((error, ind) => (
                         <TreeItem
                           nodeId={`error_${ind}`}
                           label={<ListItemText primary={error} />}
@@ -106,15 +107,15 @@ const LogComponent = (props: LogComponentProps) => {
                       ))}
                   </TreeItem>
                 )}
-                {log.warnings && log.warnings.length !== 0 && (
+                {logObject.warnings && logObject.warnings.length !== 0 && (
                   <TreeItem
                     nodeId="warnings"
                     label={
-                      <Typography>{`Warnings (${log.warnings.length})`}</Typography>
+                      <Typography>{`Warnings (${logObject.warnings.length})`}</Typography>
                     }
                   >
-                    {log.warnings &&
-                      log.warnings.map((warning, ind) => (
+                    {logObject.warnings &&
+                      logObject.warnings.map((warning, ind) => (
                         <TreeItem
                           nodeId={`warning_${ind}`}
                           label={<ListItemText primary={warning} />}
@@ -134,7 +135,7 @@ const LogComponent = (props: LogComponentProps) => {
             className={classes.expansionDescription}
           >
             <Highlight className={'html'} innerHTML={true}>
-              {decodeHtml(log?.body || '')}
+              {decodeHtml(logObject?.body || '')}
             </Highlight>
           </Typography>
         </div>
@@ -145,7 +146,7 @@ const LogComponent = (props: LogComponentProps) => {
             id="log"
             style={{ overflow: 'auto', height: 'calc(100vh - 220px)' }}
           >
-            {log}
+            {typeof log === 'string' ? log : log.body}
           </pre>
         </div>
       )}

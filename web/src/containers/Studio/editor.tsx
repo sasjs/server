@@ -24,6 +24,7 @@ import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
 import useEditor from './internal/hooks/useEditor'
 import { RunTimeType } from '../../context/appContext'
+import { LogObject } from '../../utils'
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
@@ -115,7 +116,8 @@ const SASjsEditor = ({
   const logWithErrorsOrWarnings =
     selectedRunTime === RunTimeType.SAS &&
     log &&
-    (log.errors?.length !== 0 || log.warnings?.length !== 0)
+    ((log as LogObject).errors?.length !== 0 ||
+      (log as LogObject).warnings?.length !== 0)
 
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
@@ -158,7 +160,11 @@ const SASjsEditor = ({
                 label={logWithErrorsOrWarnings ? '' : 'log'}
                 value="log"
                 icon={
-                  logWithErrorsOrWarnings ? <LogTabWithIcons log={log} /> : ''
+                  logWithErrorsOrWarnings ? (
+                    <LogTabWithIcons log={log as LogObject} />
+                  ) : (
+                    ''
+                  )
                 }
                 onClick={() => {
                   const logWrapper = document.querySelector(`#logWrapper`)
