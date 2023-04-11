@@ -170,18 +170,23 @@ const useEditor = ({
           runTime: selectedRunTime
         })
         .then((res: any) => {
-          const { errors, warnings, logLines } = parseErrorsAndWarnings(
-            res.data.split(SASJS_LOGS_SEPARATOR)[1]
-          )
+          if (selectedRunTime === RunTimeType.SAS) {
+            const { errors, warnings, logLines } = parseErrorsAndWarnings(
+              res.data.split(SASJS_LOGS_SEPARATOR)[1]
+            )
 
-          const log: LogObject = {
-            body: logLines.join(`\n`),
-            errors,
-            warnings
+            const log: LogObject = {
+              body: logLines.join(`\n`),
+              errors,
+              warnings
+            }
+
+            setLog(log)
+          } else {
+            setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
           }
 
           setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
-          setLog(log)
           setTab('log')
 
           // Scroll to bottom of log
