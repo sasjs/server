@@ -86,7 +86,7 @@ const LogComponent = (props: LogComponentProps) => {
                 defaultCollapseIcon={<ExpandMore />}
                 defaultExpandIcon={<ChevronRight />}
               >
-                {log?.errors.length !== 0 && (
+                {log.errors && log.errors.length !== 0 && (
                   <TreeItem
                     nodeId="errors"
                     label={
@@ -106,7 +106,7 @@ const LogComponent = (props: LogComponentProps) => {
                       ))}
                   </TreeItem>
                 )}
-                {log?.warnings.length !== 0 && (
+                {log.warnings && log.warnings.length !== 0 && (
                   <TreeItem
                     nodeId="warnings"
                     label={

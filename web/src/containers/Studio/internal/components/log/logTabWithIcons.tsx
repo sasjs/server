@@ -18,10 +18,10 @@ const LogTabWithIcons = (props: LogTabProps) => {
       }}
     >
       <span>log</span>
-      {errors.length !== 0 && (
+      {errors && errors.length !== 0 && (
         <ErrorOutline color="error" style={{ fontSize: 20 }} />
       )}
-      {warnings.length !== 0 && (
+      {warnings && warnings.length !== 0 && (
         <Warning style={{ fontSize: 20, color: 'green' }} />
       )}{' '}
     </div>

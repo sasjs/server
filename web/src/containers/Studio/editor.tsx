@@ -115,7 +115,7 @@ const SASjsEditor = ({
   const logWithErrorsOrWarnings =
     selectedRunTime === RunTimeType.SAS &&
     log &&
-    (log?.errors.length !== 0 || log?.warnings.length !== 0)
+    (log.errors?.length !== 0 || log.warnings?.length !== 0)
 
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
