@@ -67,7 +67,7 @@ const LogComponent = (props: LogComponentProps) => {
 
   return (
     <>
-      {selectedRunTime === RunTimeType.SAS ? (
+      {selectedRunTime === RunTimeType.SAS && logObject.body ? (
         <div
           id="logWrapper"
           style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 130px)' }}
