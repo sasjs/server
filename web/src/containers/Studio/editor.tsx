@@ -23,6 +23,7 @@ import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
 import useEditor from './internal/hooks/useEditor'
+import { RunTimeType } from '../../context/appContext'
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
@@ -110,7 +111,11 @@ const SASjsEditor = ({
     />
   )
 
-  const logWithErrorsOrWarnings = log?.errors.length || log?.warnings.length
+  // INFO: variable indicating if selected run type is SAS if there are any errors or warnings in the log
+  const logWithErrorsOrWarnings =
+    selectedRunTime === RunTimeType.SAS &&
+    log &&
+    (log?.errors.length !== 0 || log?.warnings.length !== 0)
 
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
@@ -155,6 +160,11 @@ const SASjsEditor = ({
                 icon={
                   logWithErrorsOrWarnings ? <LogTabWithIcons log={log} /> : ''
                 }
+                onClick={() => {
+                  const logWrapper = document.querySelector(`#logWrapper`)
+
+                  if (logWrapper) logWrapper.scrollTop = 0
+                }}
               />
               <StyledTab
                 label={
@@ -205,7 +215,9 @@ const SASjsEditor = ({
             </Paper>
           </StyledTabPanel>
           <StyledTabPanel value="log">
-            {log && <LogComponent log={log} />}
+            {log && (
+              <LogComponent log={log} selectedRunTime={selectedRunTime} />
+            )}
           </StyledTabPanel>
           <StyledTabPanel value="webout">
             <div>

@@ -16,15 +16,14 @@ const LogTabWithIcons = (props: LogTabProps) => {
         gap: 6,
         alignItems: 'center'
       }}
-      onClick={() => {
-        const logWrapper = document.querySelector(`#logWrapper`)
-
-        if (logWrapper) logWrapper.scrollTop = 0
-      }}
     >
       <span>log</span>
-      {errors.length && <ErrorOutline color="error" style={{ fontSize: 20 }} />}
-      {warnings.length && <Warning style={{ fontSize: 20 }} />}{' '}
+      {errors.length !== 0 && (
+        <ErrorOutline color="error" style={{ fontSize: 20 }} />
+      )}
+      {warnings.length !== 0 && (
+        <Warning style={{ fontSize: 20, color: 'green' }} />
+      )}{' '}
     </div>
   )
 }

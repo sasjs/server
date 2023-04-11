@@ -15,7 +15,7 @@ export const parseErrorsAndWarnings = (log: string) => {
       errorLines.push(line)
 
       logLines[index] =
-        `<font id="error_${errorLines.length - 1}">` +
+        `<font id="error_${errorLines.length - 1}" style="color: red;">` +
         logLines[index] +
         '</font>'
     }
@@ -31,7 +31,7 @@ export const parseErrorsAndWarnings = (log: string) => {
       warningLines.push(line)
 
       logLines[index] =
-        `<font id="warning_${warningLines.length - 1}">` +
+        `<font id="warning_${warningLines.length - 1}" style="color: green;">` +
         logLines[index] +
         '</font>'
     }
