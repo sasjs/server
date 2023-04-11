@@ -31,7 +31,7 @@ const useStyles: any = makeStyles((theme: any) => ({
 
 interface LogComponentProps {
   log: LogObject | string
-  selectedRunTime: RunTimeType
+  selectedRunTime: RunTimeType | string
 }
 
 const LogComponent = (props: LogComponentProps) => {

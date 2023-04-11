@@ -45,8 +45,8 @@ const useEditor = ({
   const [log, setLog] = useState<LogObject | string>()
   const [webout, setWebout] = useState('')
   const [runTimes, setRunTimes] = useState<string[]>([])
-  const [selectedRunTime, setSelectedRunTime] = useState<RunTimeType>(
-    RunTimeType.SAS
+  const [selectedRunTime, setSelectedRunTime] = useState<RunTimeType | string>(
+    ''
   )
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)

@@ -42,6 +42,6 @@ export interface TreeNode {
 
 export interface LogObject {
   body: string
-  errors: string[]
-  warnings: string[]
+  errors?: string[]
+  warnings?: string[]
 }
