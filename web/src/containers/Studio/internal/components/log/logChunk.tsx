@@ -4,6 +4,7 @@ import Highlight from 'react-highlight'
 import { ErrorOutline, Warning } from '@mui/icons-material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import CheckIcon from '@mui/icons-material/Check'
 import { makeStyles } from '@mui/styles'
 import {
   defaultChunkSize,
@@ -44,9 +45,9 @@ interface LogChunkProps {
 
 const LogChunk = (props: LogChunkProps) => {
   const { id, text, logLineCount, scrollToLogInstance } = props
-
   const classes = useStyles()
   const [expanded, setExpanded] = useState(props.expanded)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setExpanded(props.expanded)
@@ -107,16 +108,26 @@ const LogChunk = (props: LogChunkProps) => {
                 ? (id + 1) * defaultChunkSize
                 : logLineCount
             }`}</span>
-            <ContentCopyIcon
-              style={{ fontSize: 20 }}
-              onClick={(evt: SyntheticEvent) => {
-                evt.stopPropagation()
+            {copied ? (
+              <CheckIcon style={{ fontSize: 20, color: 'green' }} />
+            ) : (
+              <ContentCopyIcon
+                style={{ fontSize: 20 }}
+                onClick={(evt: SyntheticEvent) => {
+                  evt.stopPropagation()
 
-                navigator.clipboard.writeText(
-                  clearErrorsAndWarningsHtmlWrapping(text)
-                )
-              }}
-            />
+                  navigator.clipboard.writeText(
+                    clearErrorsAndWarningsHtmlWrapping(text)
+                  )
+
+                  setCopied(true)
+
+                  setTimeout(() => {
+                    setCopied(false)
+                  }, 1000)
+                }}
+              />
+            )}
             {errors && errors.length !== 0 && (
               <ErrorOutline color="error" style={{ fontSize: 20 }} />
             )}

@@ -81,11 +81,11 @@ export const isTheLastChunk = (
 }
 
 export const splitIntoChunks = (log: string, chunkSize = defaultChunkSize) => {
-  if (!log.length) return []
+  if (!log) return []
 
   const logLines: string[] = log.split(`\n`)
 
-  if (logLines.length <= chunkSize) return log
+  if (logLines.length <= chunkSize) return [log]
 
   const chunks: string[] = []
 

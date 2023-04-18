@@ -47,7 +47,6 @@ const LogComponent = (props: LogComponentProps) => {
   const [logChunksState, setLogChunksState] = useState<boolean[]>(
     new Array(logChunks.length).fill(false)
   )
-
   const [scrollToLogInstance, setScrollToLogInstance] = useState<LogInstance>()
   const [oldestExpandedChunk, setOldestExpandedChunk] = useState<number>(
     logChunksState.length - 1
