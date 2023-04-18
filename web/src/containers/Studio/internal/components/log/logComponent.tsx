@@ -5,8 +5,14 @@ import { Typography } from '@mui/material'
 import { ListItemText } from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import Highlight from 'react-highlight'
-import { LogObject } from '../../../../../utils'
+import { LogObject, defaultChunkSize } from '../../../../../utils'
 import { RunTimeType } from '../../../../../context/appContext'
+import { splitIntoChunks, LogInstance } from '../../../../../utils'
+import LogChunk from './logChunk'
+import { useEffect, useState } from 'react'
+
+// TODO:
+// link to download log.log
 
 const useStyles: any = makeStyles((theme: any) => ({
   expansionDescription: {
@@ -37,32 +43,96 @@ interface LogComponentProps {
 const LogComponent = (props: LogComponentProps) => {
   const { log, selectedRunTime } = props
   const logObject = log as LogObject
+  const logChunks = splitIntoChunks(logObject?.body || '')
+  const [logChunksState, setLogChunksState] = useState<boolean[]>(
+    new Array(logChunks.length).fill(false)
+  )
+
+  const [scrollToLogInstance, setScrollToLogInstance] = useState<LogInstance>()
+  const [oldestExpandedChunk, setOldestExpandedChunk] = useState<number>(
+    logChunksState.length - 1
+  )
+  const maxOpenedChunks = 2
 
   const classes = useStyles()
 
-  const goToLogLine = (type: 'error' | 'warning', ind: number) => {
-    const line = document.getElementById(`${type}_${ind}`)
+  const goToLogLine = (logInstance: LogInstance, ind: number) => {
+    let chunkNumber = 0
+
+    for (
+      let i = 0;
+      i <= Math.ceil(logObject.linesCount / defaultChunkSize);
+      i++
+    ) {
+      if (logInstance.line < (i + 1) * defaultChunkSize) {
+        chunkNumber = i
+
+        break
+      }
+    }
+
+    setLogChunksState((prevState) => {
+      const newState = [...prevState]
+      newState[chunkNumber] = true
+
+      const chunkToCollapse = getChunkToAutoCollapse()
+
+      if (chunkToCollapse !== undefined) {
+        newState[chunkToCollapse] = false
+      }
+
+      return newState
+    })
+
+    setScrollToLogInstance(logInstance)
+  }
+
+  useEffect(() => {
+    // INFO: expand the last chunk by default
+    setLogChunksState((prevState) => {
+      const lastChunk = prevState.length - 1
+
+      const newState = [...prevState]
+      newState[lastChunk] = true
+
+      return newState
+    })
+
+    setTimeout(() => {
+      scrollToTheBottom()
+    }, 100)
+  }, [])
+
+  // INFO: scroll to the bottom of the log
+  const scrollToTheBottom = () => {
     const logWrapper: HTMLDivElement | null =
       document.querySelector(`#logWrapper`)
-    const logContainer: HTMLHeadElement | null =
-      document.querySelector(`#log_container`)
 
-    if (line && logWrapper && logContainer) {
-      line.style.backgroundColor = '#f6e30599'
-      logWrapper.scrollTop =
-        line.offsetTop - logWrapper.offsetTop + logContainer.offsetTop
-
-      setTimeout(() => {
-        line.setAttribute('style', '')
-      }, 3000)
+    if (logWrapper) {
+      logWrapper.scrollTop = logWrapper.scrollHeight
     }
   }
 
-  const decodeHtml = (encodedString: string) => {
-    const tempElement = document.createElement('textarea')
-    tempElement.innerHTML = encodedString
+  const getChunkToAutoCollapse = () => {
+    const openedChunks = logChunksState
+      .map((chunkState: boolean, id: number) => (chunkState ? id : undefined))
+      .filter((chunk) => chunk !== undefined)
 
-    return tempElement.value
+    if (openedChunks.length < maxOpenedChunks) return undefined
+    else {
+      const chunkToCollapse = oldestExpandedChunk
+      const newOldestChunk = openedChunks.filter(
+        (chunk) => chunk !== chunkToCollapse
+      )[0]
+
+      if (newOldestChunk !== undefined) {
+        setOldestExpandedChunk(newOldestChunk)
+
+        return chunkToCollapse
+      }
+
+      return undefined
+    }
   }
 
   return (
@@ -100,9 +170,19 @@ const LogComponent = (props: LogComponentProps) => {
                       logObject.errors.map((error, ind) => (
                         <TreeItem
                           nodeId={`error_${ind}`}
-                          label={<ListItemText primary={error} />}
+                          label={<ListItemText primary={error.body} />}
                           key={`error_${ind}`}
-                          onClick={() => goToLogLine('error', ind)}
+                          onClick={() => {
+                            setLogChunksState((prevState) => {
+                              const newState = [...prevState]
+
+                              newState[ind] = true
+
+                              return newState
+                            })
+
+                            goToLogLine(error, ind)
+                          }}
                         />
                       ))}
                   </TreeItem>
@@ -118,9 +198,19 @@ const LogComponent = (props: LogComponentProps) => {
                       logObject.warnings.map((warning, ind) => (
                         <TreeItem
                           nodeId={`warning_${ind}`}
-                          label={<ListItemText primary={warning} />}
+                          label={<ListItemText primary={warning.body} />}
                           key={`warning_${ind}`}
-                          onClick={() => goToLogLine('warning', ind)}
+                          onClick={() => {
+                            setLogChunksState((prevState) => {
+                              const newState = [...prevState]
+
+                              newState[ind] = true
+
+                              return newState
+                            })
+
+                            goToLogLine(warning, ind)
+                          }}
                         />
                       ))}
                   </TreeItem>
@@ -129,15 +219,48 @@ const LogComponent = (props: LogComponentProps) => {
             </div>
           </div>
 
-          <Typography
-            id={`log_container`}
-            variant="h5"
-            className={classes.expansionDescription}
-          >
-            <Highlight className={'html'} innerHTML={true}>
-              {decodeHtml(logObject?.body || '')}
-            </Highlight>
-          </Typography>
+          {Array.isArray(logChunks) ? (
+            logChunks.map((chunk: string, id: number) => (
+              <LogChunk
+                id={id}
+                text={chunk}
+                expanded={logChunksState[id]}
+                key={`log-chunk-${id}`}
+                logLineCount={logObject.linesCount}
+                scrollToLogInstance={scrollToLogInstance}
+                onClick={(evt, chunkNumber) => {
+                  setLogChunksState((prevState) => {
+                    const newState = [...prevState]
+                    const expand = !newState[chunkNumber]
+
+                    newState[chunkNumber] = expand
+
+                    if (expand) {
+                      const chunkToCollapse = getChunkToAutoCollapse()
+
+                      if (chunkToCollapse !== undefined) {
+                        newState[chunkToCollapse] = false
+                      }
+                    }
+
+                    return newState
+                  })
+
+                  setScrollToLogInstance(undefined)
+                }}
+              />
+            ))
+          ) : (
+            <Typography
+              id={`log_container`}
+              variant="h5"
+              className={classes.expansionDescription}
+            >
+              <Highlight className={'html'} innerHTML={true}>
+                {logChunks}
+              </Highlight>
+            </Typography>
+          )}
         </div>
       ) : (
         <div>

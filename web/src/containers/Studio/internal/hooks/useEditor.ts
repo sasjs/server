@@ -178,7 +178,8 @@ const useEditor = ({
             const log: LogObject = {
               body: logLines.join(`\n`),
               errors,
-              warnings
+              warnings,
+              linesCount: logLines.length
             }
 
             setLog(log)

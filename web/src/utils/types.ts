@@ -40,8 +40,17 @@ export interface TreeNode {
   children: Array<TreeNode>
 }
 
+export interface LogInstance {
+  body: string
+  line: number
+  type: 'error' | 'warning'
+  id: number
+  ref?: any
+}
+
 export interface LogObject {
   body: string
-  errors?: string[]
-  warnings?: string[]
+  errors?: LogInstance[]
+  warnings?: LogInstance[]
+  linesCount: number
 }
