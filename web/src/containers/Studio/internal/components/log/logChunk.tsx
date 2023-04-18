@@ -145,7 +145,6 @@ const LogChunk = (props: LogChunkProps) => {
       </button>
       <div
         style={{
-          padding: '0 18px',
           backgroundColor: 'white',
           display: expanded ? 'block' : 'none',
           overflow: 'hidden'

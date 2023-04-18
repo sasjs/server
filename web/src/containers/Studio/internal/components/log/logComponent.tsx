@@ -134,6 +134,9 @@ const LogComponent = (props: LogComponentProps) => {
     }
   }
 
+  const hasErrorsOrWarnings =
+    logObject.errors?.length !== 0 || logObject.warnings?.length !== 0
+
   return (
     <>
       {selectedRunTime === RunTimeType.SAS && logObject.body ? (
@@ -151,71 +154,54 @@ const LogComponent = (props: LogComponentProps) => {
                 gap: 10
               }}
             ></div>
-            <div style={{ paddingBottom: 10 }}>
-              <TreeView
-                defaultCollapseIcon={<ExpandMore />}
-                defaultExpandIcon={<ChevronRight />}
-              >
-                {logObject.errors && logObject.errors.length !== 0 && (
-                  <TreeItem
-                    nodeId="errors"
-                    label={
-                      <Typography color="error">
-                        {`Errors (${logObject.errors.length})`}
-                      </Typography>
-                    }
-                  >
-                    {logObject.errors &&
-                      logObject.errors.map((error, ind) => (
-                        <TreeItem
-                          nodeId={`error_${ind}`}
-                          label={<ListItemText primary={error.body} />}
-                          key={`error_${ind}`}
-                          onClick={() => {
-                            setLogChunksState((prevState) => {
-                              const newState = [...prevState]
-
-                              newState[ind] = true
-
-                              return newState
-                            })
-
-                            goToLogLine(error, ind)
-                          }}
-                        />
-                      ))}
-                  </TreeItem>
-                )}
-                {logObject.warnings && logObject.warnings.length !== 0 && (
-                  <TreeItem
-                    nodeId="warnings"
-                    label={
-                      <Typography>{`Warnings (${logObject.warnings.length})`}</Typography>
-                    }
-                  >
-                    {logObject.warnings &&
-                      logObject.warnings.map((warning, ind) => (
-                        <TreeItem
-                          nodeId={`warning_${ind}`}
-                          label={<ListItemText primary={warning.body} />}
-                          key={`warning_${ind}`}
-                          onClick={() => {
-                            setLogChunksState((prevState) => {
-                              const newState = [...prevState]
-
-                              newState[ind] = true
-
-                              return newState
-                            })
-
-                            goToLogLine(warning, ind)
-                          }}
-                        />
-                      ))}
-                  </TreeItem>
-                )}
-              </TreeView>
-            </div>
+            {hasErrorsOrWarnings && (
+              <div>
+                <TreeView
+                  defaultCollapseIcon={<ExpandMore />}
+                  defaultExpandIcon={<ChevronRight />}
+                  style={{ paddingBottom: 10 }}
+                >
+                  {logObject.errors && logObject.errors.length !== 0 && (
+                    <TreeItem
+                      nodeId="errors"
+                      label={
+                        <Typography color="error">
+                          {`Errors (${logObject.errors.length})`}
+                        </Typography>
+                      }
+                    >
+                      {logObject.errors &&
+                        logObject.errors.map((error, ind) => (
+                          <TreeItem
+                            nodeId={`error_${ind}`}
+                            label={<ListItemText primary={error.body} />}
+                            key={`error_${ind}`}
+                            onClick={() => goToLogLine(error, ind)}
+                          />
+                        ))}
+                    </TreeItem>
+                  )}
+                  {logObject.warnings && logObject.warnings.length !== 0 && (
+                    <TreeItem
+                      nodeId="warnings"
+                      label={
+                        <Typography>{`Warnings (${logObject.warnings.length})`}</Typography>
+                      }
+                    >
+                      {logObject.warnings &&
+                        logObject.warnings.map((warning, ind) => (
+                          <TreeItem
+                            nodeId={`warning_${ind}`}
+                            label={<ListItemText primary={warning.body} />}
+                            key={`warning_${ind}`}
+                            onClick={() => goToLogLine(warning, ind)}
+                          />
+                        ))}
+                    </TreeItem>
+                  )}
+                </TreeView>
+              </div>
+            )}
           </div>
 
           {Array.isArray(logChunks) ? (
@@ -227,7 +213,7 @@ const LogComponent = (props: LogComponentProps) => {
                 key={`log-chunk-${id}`}
                 logLineCount={logObject.linesCount}
                 scrollToLogInstance={scrollToLogInstance}
-                onClick={(evt, chunkNumber) => {
+                onClick={(_, chunkNumber) => {
                   setLogChunksState((prevState) => {
                     const newState = [...prevState]
                     const expand = !newState[chunkNumber]
