@@ -1,3 +1,10 @@
+## [0.33.1](https://github.com/sasjs/server/compare/v0.33.0...v0.33.1) (2023-04-20)
+
+
+### Bug Fixes
+
+* applying nologo only for sas.exe ([b4436ba](https://github.com/sasjs/server/commit/b4436bad0d24d5b5a402272632db1739b1018c90)), closes [#352](https://github.com/sasjs/server/issues/352)
+
 # [0.33.0](https://github.com/sasjs/server/compare/v0.32.0...v0.33.0) (2023-04-05)
 
 
