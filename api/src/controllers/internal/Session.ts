@@ -134,7 +134,7 @@ ${autoExecContent}`
       session.path,
       '-AUTOEXEC',
       autoExecPath,
-      isWindows() ? '-nologo' : '',
+      process.sasLoc!.endsWith('sas.exe') ? '-nologo' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-nosplash' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-icon' : '',
       process.sasLoc!.endsWith('sas.exe') ? '-nodms' : '',
