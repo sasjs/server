@@ -1,3 +1,4 @@
+import { SyntheticEvent } from 'react'
 import { LogInstance } from './'
 
 export const parseErrorsAndWarnings = (log: string) => {
@@ -100,3 +101,25 @@ export const splitIntoChunks = (log: string, chunkSize = defaultChunkSize) => {
 
 export const clearErrorsAndWarningsHtmlWrapping = (log: string) =>
   log.replace(/^<font[^>]*>/gm, '').replace(/<\/font>/gm, '')
+
+export const download = (
+  evt: SyntheticEvent,
+  log: string,
+  fileName = 'log'
+) => {
+  evt.stopPropagation()
+
+  const file = new Blob([log])
+  const url = URL.createObjectURL(file)
+
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${fileName}.log`
+  document.body.appendChild(a)
+  a.click()
+
+  setTimeout(() => {
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }, 0)
+}

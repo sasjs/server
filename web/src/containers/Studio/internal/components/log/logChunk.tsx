@@ -5,12 +5,14 @@ import { ErrorOutline, Warning } from '@mui/icons-material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import CheckIcon from '@mui/icons-material/Check'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import { makeStyles } from '@mui/styles'
 import {
   defaultChunkSize,
   parseErrorsAndWarnings,
   LogInstance,
-  clearErrorsAndWarningsHtmlWrapping
+  clearErrorsAndWarningsHtmlWrapping,
+  download
 } from '../../../../../utils'
 
 const useStyles: any = makeStyles((theme: any) => ({
@@ -44,7 +46,11 @@ interface LogChunkProps {
 }
 
 const LogChunk = (props: LogChunkProps) => {
-  const { id, text, logLineCount, scrollToLogInstance } = props
+  const { id, text, logLineCount } = props
+  const [scrollToLogInstance, setScrollToLogInstance] = useState(
+    props.scrollToLogInstance
+  )
+  const rowText = clearErrorsAndWarningsHtmlWrapping(text)
   const classes = useStyles()
   const [expanded, setExpanded] = useState(props.expanded)
   const [copied, setCopied] = useState(false)
@@ -78,6 +84,13 @@ const LogChunk = (props: LogChunkProps) => {
 
   const { errors, warnings } = parseErrorsAndWarnings(text)
 
+  const getLineRange = (separator = ' ... ') =>
+    `${id * defaultChunkSize}${separator}${
+      (id + 1) * defaultChunkSize < logLineCount
+        ? (id + 1) * defaultChunkSize
+        : logLineCount
+    }`
+
   return (
     <div onClick={(evt) => props.onClick(evt, id)}>
       <button
@@ -103,11 +116,7 @@ const LogChunk = (props: LogChunkProps) => {
               alignItems: 'center'
             }}
           >
-            <span>{`Lines: ${id * defaultChunkSize} ... ${
-              (id + 1) * defaultChunkSize < logLineCount
-                ? (id + 1) * defaultChunkSize
-                : logLineCount
-            }`}</span>
+            <span>{`Lines: ${getLineRange()}`}</span>
             {copied ? (
               <CheckIcon style={{ fontSize: 20, color: 'green' }} />
             ) : (
@@ -116,9 +125,7 @@ const LogChunk = (props: LogChunkProps) => {
                 onClick={(evt: SyntheticEvent) => {
                   evt.stopPropagation()
 
-                  navigator.clipboard.writeText(
-                    clearErrorsAndWarningsHtmlWrapping(text)
-                  )
+                  navigator.clipboard.writeText(rowText)
 
                   setCopied(true)
 
@@ -128,11 +135,27 @@ const LogChunk = (props: LogChunkProps) => {
                 }}
               />
             )}
+            <FileDownloadIcon
+              onClick={(evt: SyntheticEvent) => {
+                download(evt, rowText, `log.${getLineRange('-')}`)
+              }}
+            />
             {errors && errors.length !== 0 && (
-              <ErrorOutline color="error" style={{ fontSize: 20 }} />
+              <ErrorOutline
+                color="error"
+                style={{ fontSize: 20 }}
+                onClick={() => {
+                  setScrollToLogInstance(errors[0])
+                }}
+              />
             )}
             {warnings && warnings.length !== 0 && (
-              <Warning style={{ fontSize: 20, color: 'green' }} />
+              <Warning
+                style={{ fontSize: 20, color: 'green' }}
+                onClick={() => {
+                  setScrollToLogInstance(warnings[0])
+                }}
+              />
             )}{' '}
             <ExpandMoreIcon
               style={{

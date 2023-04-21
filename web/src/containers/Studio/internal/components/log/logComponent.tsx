@@ -1,3 +1,4 @@
+import { useEffect, useState, SyntheticEvent } from 'react'
 import TreeView from '@mui/lab/TreeView'
 import TreeItem from '@mui/lab/TreeItem'
 import { ChevronRight, ExpandMore } from '@mui/icons-material'
@@ -7,12 +8,15 @@ import { makeStyles } from '@mui/styles'
 import Highlight from 'react-highlight'
 import { LogObject, defaultChunkSize } from '../../../../../utils'
 import { RunTimeType } from '../../../../../context/appContext'
-import { splitIntoChunks, LogInstance } from '../../../../../utils'
+import {
+  splitIntoChunks,
+  LogInstance,
+  clearErrorsAndWarningsHtmlWrapping,
+  download
+} from '../../../../../utils'
 import LogChunk from './logChunk'
-import { useEffect, useState } from 'react'
-
-// TODO:
-// link to download log.log
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import { Button } from '@mui/material'
 
 const useStyles: any = makeStyles((theme: any) => ({
   expansionDescription: {
@@ -136,6 +140,7 @@ const LogComponent = (props: LogComponentProps) => {
 
   const hasErrorsOrWarnings =
     logObject.errors?.length !== 0 || logObject.warnings?.length !== 0
+  const logBody = typeof log === 'string' ? log : log.body
 
   return (
     <>
@@ -204,48 +209,50 @@ const LogComponent = (props: LogComponentProps) => {
             )}
           </div>
 
-          {Array.isArray(logChunks) ? (
-            logChunks.map((chunk: string, id: number) => (
-              <LogChunk
-                id={id}
-                text={chunk}
-                expanded={logChunksState[id]}
-                key={`log-chunk-${id}`}
-                logLineCount={logObject.linesCount}
-                scrollToLogInstance={scrollToLogInstance}
-                onClick={(_, chunkNumber) => {
-                  setLogChunksState((prevState) => {
-                    const newState = [...prevState]
-                    const expand = !newState[chunkNumber]
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {Array.isArray(logChunks) ? (
+              logChunks.map((chunk: string, id: number) => (
+                <LogChunk
+                  id={id}
+                  text={chunk}
+                  expanded={logChunksState[id]}
+                  key={`log-chunk-${id}`}
+                  logLineCount={logObject.linesCount}
+                  scrollToLogInstance={scrollToLogInstance}
+                  onClick={(_, chunkNumber) => {
+                    setLogChunksState((prevState) => {
+                      const newState = [...prevState]
+                      const expand = !newState[chunkNumber]
 
-                    newState[chunkNumber] = expand
+                      newState[chunkNumber] = expand
 
-                    if (expand) {
-                      const chunkToCollapse = getChunkToAutoCollapse()
+                      if (expand) {
+                        const chunkToCollapse = getChunkToAutoCollapse()
 
-                      if (chunkToCollapse !== undefined) {
-                        newState[chunkToCollapse] = false
+                        if (chunkToCollapse !== undefined) {
+                          newState[chunkToCollapse] = false
+                        }
                       }
-                    }
 
-                    return newState
-                  })
+                      return newState
+                    })
 
-                  setScrollToLogInstance(undefined)
-                }}
-              />
-            ))
-          ) : (
-            <Typography
-              id={`log_container`}
-              variant="h5"
-              className={classes.expansionDescription}
-            >
-              <Highlight className={'html'} innerHTML={true}>
-                {logChunks}
-              </Highlight>
-            </Typography>
-          )}
+                    setScrollToLogInstance(undefined)
+                  }}
+                />
+              ))
+            ) : (
+              <Typography
+                id={`log_container`}
+                variant="h5"
+                className={classes.expansionDescription}
+              >
+                <Highlight className={'html'} innerHTML={true}>
+                  {logChunks}
+                </Highlight>
+              </Typography>
+            )}
+          </div>
         </div>
       ) : (
         <div>
@@ -254,10 +261,29 @@ const LogComponent = (props: LogComponentProps) => {
             id="log"
             style={{ overflow: 'auto', height: 'calc(100vh - 220px)' }}
           >
-            {typeof log === 'string' ? log : log.body}
+            {logBody}
           </pre>
         </div>
       )}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+
+          marginTop: 10
+        }}
+      >
+        <Button
+          onClick={(evt: SyntheticEvent) => {
+            download(evt, clearErrorsAndWarningsHtmlWrapping(logBody))
+          }}
+          variant="contained"
+          color="primary"
+          startIcon={<FileDownloadIcon />}
+        >
+          download entire log
+        </Button>
+      </div>
     </>
   )
 }
