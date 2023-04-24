@@ -1,3 +1,10 @@
+## [0.33.2](https://github.com/sasjs/server/compare/v0.33.1...v0.33.2) (2023-04-24)
+
+
+### Bug Fixes
+
+* removing print redirection pending full [#274](https://github.com/sasjs/server/issues/274) fix ([d49ea47](https://github.com/sasjs/server/commit/d49ea47bd7a2add42bdb9a717082201f29e16597))
+
 ## [0.33.1](https://github.com/sasjs/server/compare/v0.33.0...v0.33.1) (2023-04-20)
 
 
