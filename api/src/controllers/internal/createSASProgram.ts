@@ -40,8 +40,6 @@ export const createSASProgram = async (
 %mend;
 %_sasjs_server_init()
 
-proc printto print="%sysfunc(getoption(log))";
-run;
 `
 
   program = `
