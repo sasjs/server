@@ -265,25 +265,6 @@ const LogComponent = (props: LogComponentProps) => {
           </pre>
         </div>
       )}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-
-          marginTop: 10
-        }}
-      >
-        <Button
-          onClick={(evt: SyntheticEvent) => {
-            download(evt, clearErrorsAndWarningsHtmlWrapping(logBody))
-          }}
-          variant="contained"
-          color="primary"
-          startIcon={<FileDownloadIcon />}
-        >
-          download entire log
-        </Button>
-      </div>
     </>
   )
 }
