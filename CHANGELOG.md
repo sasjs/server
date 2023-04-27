@@ -1,3 +1,10 @@
+## [0.33.3](https://github.com/sasjs/server/compare/v0.33.2...v0.33.3) (2023-04-27)
+
+
+### Bug Fixes
+
+* use RateLimiterMemory instead of RateLimiterMongo ([6a520f5](https://github.com/sasjs/server/commit/6a520f5b26a3e2ed6345721b30ff4e3d9bfa903d))
+
 ## [0.33.2](https://github.com/sasjs/server/compare/v0.33.1...v0.33.2) (2023-04-24)
 
 
