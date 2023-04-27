@@ -1,4 +1,4 @@
-import { useEffect, useState, SyntheticEvent } from 'react'
+import { useEffect, useState } from 'react'
 import TreeView from '@mui/lab/TreeView'
 import TreeItem from '@mui/lab/TreeItem'
 import { ChevronRight, ExpandMore } from '@mui/icons-material'
@@ -8,28 +8,12 @@ import { makeStyles } from '@mui/styles'
 import Highlight from 'react-highlight'
 import { LogObject, defaultChunkSize } from '../../../../../utils'
 import { RunTimeType } from '../../../../../context/appContext'
-import {
-  splitIntoChunks,
-  LogInstance,
-  clearErrorsAndWarningsHtmlWrapping,
-  download
-} from '../../../../../utils'
+import { splitIntoChunks, LogInstance } from '../../../../../utils'
 import LogChunk from './logChunk'
-import FileDownloadIcon from '@mui/icons-material/FileDownload'
-import { Button } from '@mui/material'
+import classes from './log.module.css'
 
-const useStyles: any = makeStyles((theme: any) => ({
+export const logStyles: any = makeStyles((theme: any) => ({
   expansionDescription: {
-    backgroundColor: '#fbfbfb',
-    border: '1px solid #e2e2e2',
-    borderRadius: '3px',
-    minHeight: '50px',
-    padding: '10px',
-    boxSizing: 'border-box',
-    whiteSpace: 'pre-wrap',
-    fontFamily: 'Monaco, Courier, monospace',
-    position: 'relative',
-    width: '100%',
     [theme.breakpoints.down('sm')]: {
       fontSize: theme.typography.pxToRem(12)
     },
@@ -57,7 +41,7 @@ const LogComponent = (props: LogComponentProps) => {
   )
   const maxOpenedChunks = 2
 
-  const classes = useStyles()
+  const styles = logStyles()
 
   const goToLogLine = (logInstance: LogInstance, ind: number) => {
     let chunkNumber = 0
@@ -145,26 +129,13 @@ const LogComponent = (props: LogComponentProps) => {
   return (
     <>
       {selectedRunTime === RunTimeType.SAS && logObject.body ? (
-        <div
-          id="logWrapper"
-          style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 130px)' }}
-        >
-          <div style={{ backgroundColor: 'white' }}>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 10
-              }}
-            ></div>
+        <div id="logWrapper" className={classes.LogWrapper}>
+          <div>
             {hasErrorsOrWarnings && (
-              <div>
+              <div className={classes.TreeContainer}>
                 <TreeView
                   defaultCollapseIcon={<ExpandMore />}
                   defaultExpandIcon={<ChevronRight />}
-                  style={{ paddingBottom: 10 }}
                 >
                   {logObject.errors && logObject.errors.length !== 0 && (
                     <TreeItem
@@ -208,8 +179,7 @@ const LogComponent = (props: LogComponentProps) => {
               </div>
             )}
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className={classes.ChunksContainer}>
             {Array.isArray(logChunks) ? (
               logChunks.map((chunk: string, id: number) => (
                 <LogChunk
@@ -245,7 +215,10 @@ const LogComponent = (props: LogComponentProps) => {
               <Typography
                 id={`log_container`}
                 variant="h5"
-                className={classes.expansionDescription}
+                className={[
+                  styles.expansionDescription,
+                  classes.LogContainer
+                ].join(' ')}
               >
                 <Highlight className={'html'} innerHTML={true}>
                   {logChunks}
@@ -257,10 +230,7 @@ const LogComponent = (props: LogComponentProps) => {
       ) : (
         <div>
           <h2>Log</h2>
-          <pre
-            id="log"
-            style={{ overflow: 'auto', height: 'calc(100vh - 220px)' }}
-          >
+          <pre id="log" className={classes.LogBody}>
             {logBody}
           </pre>
         </div>

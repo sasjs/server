@@ -1,0 +1,86 @@
+.ChunkHeader {
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  outline: none;
+  transition: 0.4s;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 1px -1px,
+    rgba(0, 0, 0, 0.14) 0px 1px 1px 0px, rgba(0, 0, 0, 0.12) 0px 1px 3px 0px;
+}
+
+.ChunkDetails {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+}
+
+.ChunkExpandIcon {
+  margin-left: auto;
+}
+
+.ChunkBody {
+  background-color: white;
+  overflow: hidden;
+}
+
+.ChunksContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.LogContainer {
+  background-color: #fbfbfb;
+  border: 1px solid #e2e2e2;
+  border-radius: 3px;
+  min-height: 50px;
+  padding: 10px;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  font-family: Monaco, Courier, monospace;
+  position: relative;
+  width: 100%;
+}
+
+.LogWrapper {
+  overflow-y: auto;
+  max-height: calc(100vh - 130px);
+}
+
+.LogBody {
+  overflow: auto;
+  height: calc(100vh - 220px);
+}
+
+.TreeContainer {
+  background-color: white;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.TabContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+}
+
+.TabDownloadIcon {
+  margin-left: 20px;
+}
+
+.HighlightedLine {
+  background-color: #f6e30599;
+}
+
+.Icon {
+  font-size: 20px !important;
+}
+
+.GreenIcon {
+  color: green;
+}

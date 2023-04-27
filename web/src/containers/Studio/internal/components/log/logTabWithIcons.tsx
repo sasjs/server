@@ -6,6 +6,7 @@ import {
   clearErrorsAndWarningsHtmlWrapping
 } from '../../../../../utils'
 import Tooltip from '@mui/material/Tooltip'
+import classes from './log.module.css'
 
 interface LogTabProps {
   log: LogObject
@@ -15,28 +16,23 @@ const LogTabWithIcons = (props: LogTabProps) => {
   const { errors, warnings, body } = props.log
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: 6,
-        alignItems: 'center'
-      }}
-    >
+    <div className={classes.TabContainer}>
       <span>log</span>
       {errors && errors.length !== 0 && (
-        <ErrorOutline color="error" style={{ fontSize: 20 }} />
+        <ErrorOutline color="error" className={classes.Icon} />
       )}
       {warnings && warnings.length !== 0 && (
-        <Warning style={{ fontSize: 20, color: 'green' }} />
-      )}{' '}
+        <Warning className={[classes.Icon, classes.GreenIcon].join(' ')} />
+      )}
       <Tooltip
         title="Download entire log"
         onClick={(evt) => {
           download(evt, clearErrorsAndWarningsHtmlWrapping(body))
         }}
       >
-        <FileDownloadIcon style={{ fontSize: 20, marginLeft: 20 }} />
+        <FileDownloadIcon
+          className={[classes.Icon, classes.TabDownloadIcon].join(' ')}
+        />
       </Tooltip>
     </div>
   )

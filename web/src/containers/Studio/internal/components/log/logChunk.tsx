@@ -6,7 +6,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import CheckIcon from '@mui/icons-material/Check'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
-import { makeStyles } from '@mui/styles'
 import {
   defaultChunkSize,
   parseErrorsAndWarnings,
@@ -14,27 +13,8 @@ import {
   clearErrorsAndWarningsHtmlWrapping,
   download
 } from '../../../../../utils'
-
-const useStyles: any = makeStyles((theme: any) => ({
-  expansionDescription: {
-    backgroundColor: '#fbfbfb',
-    border: '1px solid #e2e2e2',
-    borderRadius: '3px',
-    minHeight: '50px',
-    padding: '10px',
-    boxSizing: 'border-box',
-    whiteSpace: 'pre-wrap',
-    fontFamily: 'Monaco, Courier, monospace',
-    position: 'relative',
-    width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      fontSize: theme.typography.pxToRem(12)
-    },
-    [theme.breakpoints.up('md')]: {
-      fontSize: theme.typography.pxToRem(16)
-    }
-  }
-}))
+import { logStyles } from './logComponent'
+import classes from './log.module.css'
 
 interface LogChunkProps {
   id: number
@@ -51,7 +31,7 @@ const LogChunk = (props: LogChunkProps) => {
     props.scrollToLogInstance
   )
   const rowText = clearErrorsAndWarningsHtmlWrapping(text)
-  const classes = useStyles()
+  const styles = logStyles()
   const [expanded, setExpanded] = useState(props.expanded)
   const [copied, setCopied] = useState(false)
 
@@ -93,35 +73,17 @@ const LogChunk = (props: LogChunkProps) => {
 
   return (
     <div onClick={(evt) => props.onClick(evt, id)}>
-      <button
-        style={{
-          color: '#444',
-          cursor: 'pointer',
-          padding: '18px',
-          width: '100%',
-          textAlign: 'left',
-          border: 'none',
-          outline: 'none',
-          transition: '0.4s',
-          boxShadow:
-            'rgba(0, 0, 0, 0.2) 0px 2px 1px -1px, rgba(0, 0, 0, 0.14) 0px 1px 1px 0px, rgba(0, 0, 0, 0.12) 0px 1px 3px 0px'
-        }}
-      >
+      <button className={classes.ChunkHeader}>
         <Typography variant="subtitle1">
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              gap: 6,
-              alignItems: 'center'
-            }}
-          >
+          <div className={classes.ChunkDetails}>
             <span>{`Lines: ${getLineRange()}`}</span>
             {copied ? (
-              <CheckIcon style={{ fontSize: 20, color: 'green' }} />
+              <CheckIcon
+                className={[classes.Icon, classes.GreenIcon].join(' ')}
+              />
             ) : (
               <ContentCopyIcon
-                style={{ fontSize: 20 }}
+                className={classes.Icon}
                 onClick={(evt: SyntheticEvent) => {
                   evt.stopPropagation()
 
@@ -143,7 +105,7 @@ const LogChunk = (props: LogChunkProps) => {
             {errors && errors.length !== 0 && (
               <ErrorOutline
                 color="error"
-                style={{ fontSize: 20 }}
+                className={classes.Icon}
                 onClick={() => {
                   setScrollToLogInstance(errors[0])
                 }}
@@ -151,15 +113,17 @@ const LogChunk = (props: LogChunkProps) => {
             )}
             {warnings && warnings.length !== 0 && (
               <Warning
-                style={{ fontSize: 20, color: 'green' }}
-                onClick={() => {
+                className={[classes.Icon, classes.GreenIcon].join(' ')}
+                onClick={(evt) => {
+                  if (expanded) evt.stopPropagation()
+
                   setScrollToLogInstance(warnings[0])
                 }}
               />
             )}{' '}
             <ExpandMoreIcon
+              className={classes.ChunkExpandIcon}
               style={{
-                marginLeft: 'auto',
                 transform: expanded ? 'rotate(180deg)' : 'unset'
               }}
             />
@@ -167,13 +131,17 @@ const LogChunk = (props: LogChunkProps) => {
         </Typography>
       </button>
       <div
+        className={classes.ChunkBody}
         style={{
-          backgroundColor: 'white',
-          display: expanded ? 'block' : 'none',
-          overflow: 'hidden'
+          display: expanded ? 'block' : 'none'
         }}
       >
-        <div id={`log_container`} className={classes.expansionDescription}>
+        <div
+          id={`log_container`}
+          className={[styles.expansionDescription, classes.LogContainer].join(
+            ' '
+          )}
+        >
           <Highlight className={'html'} innerHTML={true}>
             {expanded ? text : ''}
           </Highlight>
