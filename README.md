@@ -184,7 +184,7 @@ MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY = <number> default: 100;
 
 
 # After this, access is blocked for an hour
-# Store number for 90 days since first fail
+# Store number for 24 days since first fail
 # Once a successful login is attempted, it resets
 MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP = <number> default: 10;
 

@@ -1,10 +1,9 @@
-import mongoose from 'mongoose'
-import { RateLimiterMongo } from 'rate-limiter-flexible'
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 
 export class RateLimiter {
   private static instance: RateLimiter
-  private limiterSlowBruteByIP: RateLimiterMongo
-  private limiterConsecutiveFailsByUsernameAndIP: RateLimiterMongo
+  private limiterSlowBruteByIP: RateLimiterMemory
+  private limiterConsecutiveFailsByUsernameAndIP: RateLimiterMemory
   private maxWrongAttemptsByIpPerDay: number
   private maxConsecutiveFailsByUsernameAndIp: number
 
@@ -19,19 +18,17 @@ export class RateLimiter {
       MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
     )
 
-    this.limiterSlowBruteByIP = new RateLimiterMongo({
-      storeClient: mongoose.connection,
+    this.limiterSlowBruteByIP = new RateLimiterMemory({
       keyPrefix: 'login_fail_ip_per_day',
       points: this.maxWrongAttemptsByIpPerDay,
       duration: 60 * 60 * 24,
       blockDuration: 60 * 60 * 24 // Block for 1 day
     })
 
-    this.limiterConsecutiveFailsByUsernameAndIP = new RateLimiterMongo({
-      storeClient: mongoose.connection,
+    this.limiterConsecutiveFailsByUsernameAndIP = new RateLimiterMemory({
       keyPrefix: 'login_fail_consecutive_username_and_ip',
       points: this.maxConsecutiveFailsByUsernameAndIp,
-      duration: 60 * 60 * 24 * 90, // Store number for 90 days since first fail
+      duration: 60 * 60 * 24 * 24, // Store number for 24 days since first fail
       blockDuration: 60 * 60 // Block for 1 hour
     })
   }
@@ -60,8 +57,7 @@ export class RateLimiter {
       this.limiterConsecutiveFailsByUsernameAndIP.get(usernameIPkey)
     ])
 
-    // NOTE: To make use of blockDuration option from RateLimiterMongo
-    //       comparison in both following if statements should have greater than symbol
+    // NOTE: To make use of blockDuration option, comparison in both following if statements should have greater than symbol
     //       otherwise, blockDuration option will not work
     // For more info see: https://github.com/animir/node-rate-limiter-flexible/wiki/Options#blockduration
 
@@ -103,10 +99,11 @@ export class RateLimiter {
       if (rlRejected instanceof Error) {
         throw rlRejected
       } else {
-        // based upon the implementation of consume method of RateLimiterMongo
+        // based upon the implementation of consume method of RateLimiterMemory
         // we are sure that rlRejected will contain msBeforeNext
         // for further reference,
         // see https://github.com/animir/node-rate-limiter-flexible/wiki/Overall-example#login-endpoint-protection
+        // or see https://github.com/animir/node-rate-limiter-flexible#ratelimiterres-object
         return Math.ceil(rlRejected.msBeforeNext / 1000)
       }
     }
