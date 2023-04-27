@@ -47,6 +47,77 @@ describe('web', () => {
     })
   })
 
+  describe('SASLogon/authorize', () => {
+    let csrfToken: string
+    let authCookies: string
+
+    beforeAll(async () => {
+      ;({ csrfToken } = await getCSRF(app))
+
+      await userController.createUser(user)
+
+      const credentials = {
+        username: user.username,
+        password: user.password
+      }
+
+      ;({ authCookies } = await performLogin(app, credentials, csrfToken))
+    })
+
+    afterAll(async () => {
+      const collections = mongoose.connection.collections
+      const collection = collections['users']
+      await collection.deleteMany({})
+    })
+
+    it('should respond with authorization code', async () => {
+      const res = await request(app)
+        .post('/SASLogon/authorize')
+        .set('Cookie', [authCookies].join('; '))
+        .set('x-xsrf-token', csrfToken)
+        .send({ clientId })
+
+      expect(res.body).toHaveProperty('code')
+    })
+
+    it('should respond with Bad Request if CSRF Token is missing', async () => {
+      const res = await request(app)
+        .post('/SASLogon/authorize')
+        .set('Cookie', [authCookies].join('; '))
+        .send({ clientId })
+        .expect(400)
+
+      expect(res.text).toEqual('Invalid CSRF token!')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if clientId is missing', async () => {
+      const res = await request(app)
+        .post('/SASLogon/authorize')
+        .set('Cookie', [authCookies].join('; '))
+        .set('x-xsrf-token', csrfToken)
+        .send({})
+        .expect(400)
+
+      expect(res.text).toEqual(`"clientId" is required`)
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Forbidden if clientId is incorrect', async () => {
+      const res = await request(app)
+        .post('/SASLogon/authorize')
+        .set('Cookie', [authCookies].join('; '))
+        .set('x-xsrf-token', csrfToken)
+        .send({
+          clientId: 'WrongClientID'
+        })
+        .expect(403)
+
+      expect(res.text).toEqual('Error: Invalid clientId.')
+      expect(res.body).toEqual({})
+    })
+  })
+
   describe('SASLogon/login', () => {
     let csrfToken: string
 
@@ -187,78 +258,6 @@ describe('web', () => {
       expect(res.body).toEqual({})
     })
   })
-
-  describe('SASLogon/authorize', () => {
-    let csrfToken: string
-    let authCookies: string
-
-    beforeAll(async () => {
-      await deleteDocumentsFromLimitersCollections()
-      ;({ csrfToken } = await getCSRF(app))
-
-      await userController.createUser(user)
-
-      const credentials = {
-        username: user.username,
-        password: user.password
-      }
-
-      ;({ authCookies } = await performLogin(app, credentials, csrfToken))
-    })
-
-    afterAll(async () => {
-      const collections = mongoose.connection.collections
-      const collection = collections['users']
-      await collection.deleteMany({})
-    })
-
-    it('should respond with authorization code', async () => {
-      const res = await request(app)
-        .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
-        .set('x-xsrf-token', csrfToken)
-        .send({ clientId })
-
-      expect(res.body).toHaveProperty('code')
-    })
-
-    it('should respond with Bad Request if CSRF Token is missing', async () => {
-      const res = await request(app)
-        .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
-        .send({ clientId })
-        .expect(400)
-
-      expect(res.text).toEqual('Invalid CSRF token!')
-      expect(res.body).toEqual({})
-    })
-
-    it('should respond with Bad Request if clientId is missing', async () => {
-      const res = await request(app)
-        .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
-        .set('x-xsrf-token', csrfToken)
-        .send({})
-        .expect(400)
-
-      expect(res.text).toEqual(`"clientId" is required`)
-      expect(res.body).toEqual({})
-    })
-
-    it('should respond with Forbidden if clientId is incorrect', async () => {
-      const res = await request(app)
-        .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
-        .set('x-xsrf-token', csrfToken)
-        .send({
-          clientId: 'WrongClientID'
-        })
-        .expect(403)
-
-      expect(res.text).toEqual('Error: Invalid clientId.')
-      expect(res.body).toEqual({})
-    })
-  })
 })
 
 const getCSRF = async (app: Express) => {
@@ -285,12 +284,3 @@ const extractCSRF = (text: string) =>
   /<script>document.cookie = 'XSRF-TOKEN=(.*); Max-Age=86400; SameSite=Strict; Path=\/;'<\/script>/.exec(
     text
   )![1]
-
-const deleteDocumentsFromLimitersCollections = async () => {
-  const { collections } = mongoose.connection
-  const login_fail_ip_per_day_collection = collections['login_fail_ip_per_day']
-  await login_fail_ip_per_day_collection.deleteMany({})
-  const login_fail_consecutive_username_and_ip_collection =
-    collections['login_fail_consecutive_username_and_ip']
-  await login_fail_consecutive_username_and_ip_collection.deleteMany({})
-}
