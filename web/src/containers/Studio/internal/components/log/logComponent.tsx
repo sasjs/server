@@ -189,6 +189,7 @@ const LogComponent = (props: LogComponentProps) => {
                   key={`log-chunk-${id}`}
                   logLineCount={logObject.linesCount}
                   scrollToLogInstance={scrollToLogInstance}
+                  updated={Date.now()}
                   onClick={(_, chunkNumber) => {
                     setLogChunksState((prevState) => {
                       const newState = [...prevState]

@@ -114,10 +114,7 @@ const SASjsEditor = ({
 
   // INFO: variable indicating if selected run type is SAS if there are any errors or warnings in the log
   const logWithErrorsOrWarnings =
-    selectedRunTime === RunTimeType.SAS &&
-    log &&
-    ((log as LogObject).errors?.length !== 0 ||
-      (log as LogObject).warnings?.length !== 0)
+    selectedRunTime === RunTimeType.SAS && log && typeof log === 'object'
 
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>

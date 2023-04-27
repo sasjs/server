@@ -23,6 +23,7 @@ interface LogChunkProps {
   logLineCount: number
   onClick: (evt: any, id: number) => void
   scrollToLogInstance?: LogInstance
+  updated: number
 }
 
 const LogChunk = (props: LogChunkProps) => {
@@ -40,6 +41,19 @@ const LogChunk = (props: LogChunkProps) => {
   }, [props.expanded])
 
   useEffect(() => {
+    if (props.expanded !== expanded) {
+      setExpanded(props.expanded)
+    }
+
+    if (
+      props.scrollToLogInstance &&
+      props.scrollToLogInstance !== scrollToLogInstance
+    ) {
+      setScrollToLogInstance(props.scrollToLogInstance)
+    }
+  }, [props])
+
+  useEffect(() => {
     if (expanded && scrollToLogInstance) {
       const { type, id } = scrollToLogInstance
       const line = document.getElementById(`${type}_${id}`)
@@ -49,18 +63,18 @@ const LogChunk = (props: LogChunkProps) => {
         document.querySelector(`#log_container`)
 
       if (line && logWrapper && logContainer) {
-        const initialColor = line.style.color
-
-        line.style.backgroundColor = '#f6e30599'
+        line.className = classes.HighlightedLine
 
         line.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
         setTimeout(() => {
-          line.setAttribute('style', `color: ${initialColor};`)
+          line.classList.remove(classes.HighlightedLine)
+
+          setScrollToLogInstance(undefined)
         }, 3000)
       }
     }
-  }, [expanded, scrollToLogInstance])
+  }, [expanded, scrollToLogInstance, props])
 
   const { errors, warnings } = parseErrorsAndWarnings(text)
 
