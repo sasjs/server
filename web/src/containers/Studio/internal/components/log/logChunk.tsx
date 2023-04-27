@@ -113,7 +113,7 @@ const LogChunk = (props: LogChunkProps) => {
             )}
             <FileDownloadIcon
               onClick={(evt: SyntheticEvent) => {
-                download(evt, rowText, `log.${getLineRange('-')}`)
+                download(evt, rowText, `.${getLineRange('-')}`)
               }}
             />
             {errors && errors.length !== 0 && (

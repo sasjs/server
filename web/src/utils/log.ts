@@ -102,19 +102,27 @@ export const splitIntoChunks = (log: string, chunkSize = defaultChunkSize) => {
 export const clearErrorsAndWarningsHtmlWrapping = (log: string) =>
   log.replace(/^<font[^>]*>/gm, '').replace(/<\/font>/gm, '')
 
-export const download = (
-  evt: SyntheticEvent,
-  log: string,
-  fileName = 'log'
-) => {
+export const download = (evt: SyntheticEvent, log: string, fileName = '') => {
   evt.stopPropagation()
+
+  const padWithZero = (num: number) => (num < 9 ? `0${num}` : `${num}`)
+
+  const date = new Date()
+  const datePrefix = [
+    date.getFullYear(),
+    padWithZero(date.getMonth() + 1),
+    padWithZero(date.getDate()),
+    padWithZero(date.getHours()),
+    padWithZero(date.getMinutes()),
+    padWithZero(date.getSeconds())
+  ].join('')
 
   const file = new Blob([log])
   const url = URL.createObjectURL(file)
 
   const a = document.createElement('a')
   a.href = url
-  a.download = `${fileName}.log`
+  a.download = `${datePrefix}${fileName}.log`
   document.body.appendChild(a)
   a.click()
 
