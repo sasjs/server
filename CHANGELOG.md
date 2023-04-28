@@ -1,3 +1,11 @@
+## [0.34.1](https://github.com/sasjs/server/compare/v0.34.0...v0.34.1) (2023-04-28)
+
+
+### Bug Fixes
+
+* **css:** fixed css loading ([9c5acd6](https://github.com/sasjs/server/commit/9c5acd6de32afdbc186f79ae5b35375dda2e49b0))
+* **log:** fixed chunk collapsing ([64b156f](https://github.com/sasjs/server/commit/64b156f7627969b7f13022726f984fbbfe1a33ef))
+
 # [0.34.0](https://github.com/sasjs/server/compare/v0.33.3...v0.34.0) (2023-04-28)
 
 
