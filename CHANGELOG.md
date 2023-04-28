@@ -1,3 +1,28 @@
+# [0.34.0](https://github.com/sasjs/server/compare/v0.33.3...v0.34.0) (2023-04-28)
+
+
+### Bug Fixes
+
+* **log:** fixed checks for errors and warnings ([02e2b06](https://github.com/sasjs/server/commit/02e2b060f9bedf4806f45f5205fd87bfa2ecae90))
+* **log:** fixed default runtime ([e04300a](https://github.com/sasjs/server/commit/e04300ad2ac237be7b28a6332fa87a3bcf761c7b))
+* **log:** fixed parsing log for different runtime ([3b1e4a1](https://github.com/sasjs/server/commit/3b1e4a128b1f22ff6f3069f5aaada6bfb1b40d12))
+* **log:** fixed scrolling issue ([56a522c](https://github.com/sasjs/server/commit/56a522c07c6f6d4c26c6d3b7cd6e9ef7007067a9))
+* **log:** fixed single chunk display ([8254b78](https://github.com/sasjs/server/commit/8254b789555cb8bbb169f52b754b4ce24e876dd2))
+* **log:** fixed single chunk scrolling ([57b7f95](https://github.com/sasjs/server/commit/57b7f954a17936f39aa9b757998b5b25e9442601))
+* **log:** fixed switching runtime ([c7a7399](https://github.com/sasjs/server/commit/c7a73991a7aa25d0c75d0c00e712bdc78769300b))
+* **log:** fixing switching from SAS to other runtime ([c72ecc7](https://github.com/sasjs/server/commit/c72ecc7e5943af9536ee31cfa85398e016d5354f))
+
+
+### Features
+
+* **log:** added download chunk and entire log ([a38a9f9](https://github.com/sasjs/server/commit/a38a9f9c3dfe36bd55d32024c166147318216995))
+* **log:** added logComponent and LogTabWithIcons ([3a887de](https://github.com/sasjs/server/commit/3a887dec55371b6a00b92291bb681e4cccb770c0))
+* **log:** added parseErrorsAndWarnings utility ([7c1c1e2](https://github.com/sasjs/server/commit/7c1c1e241002313c10f94dd61702584b9f148010))
+* **log:** added time to downloaded log name ([3848bb0](https://github.com/sasjs/server/commit/3848bb0added69ca81a5c9419ea414bdd1c294bb))
+* **log:** put download log icon into log tab ([777b3a5](https://github.com/sasjs/server/commit/777b3a55be1ecf5b05bf755ce8b14735496509e1))
+* **log:** split large log into chunks ([75f5a3c](https://github.com/sasjs/server/commit/75f5a3c0b39665bef8b83dc7e1e8b3e5f23fc303))
+* **log:** use improved log for SAS run time only ([7b12591](https://github.com/sasjs/server/commit/7b12591595cdd5144d9311ffa06a80c5dab79364))
+
 ## [0.33.3](https://github.com/sasjs/server/compare/v0.33.2...v0.33.3) (2023-04-27)
 
 
