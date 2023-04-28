@@ -18,6 +18,7 @@ import {
   useSnackbar,
   useStateWithCallback
 } from '../../../../utils/hooks'
+import { parseErrorsAndWarnings, LogObject } from '../../../../utils'
 
 const SASJS_LOGS_SEPARATOR =
   'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
@@ -41,10 +42,12 @@ const useEditor = ({
 
   const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
   const [fileContent, setFileContent] = useState('')
-  const [log, setLog] = useState('')
+  const [log, setLog] = useState<LogObject | string>()
   const [webout, setWebout] = useState('')
   const [runTimes, setRunTimes] = useState<string[]>([])
-  const [selectedRunTime, setSelectedRunTime] = useState('')
+  const [selectedRunTime, setSelectedRunTime] = useState<RunTimeType | string>(
+    ''
+  )
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)
   const [showDiff, setShowDiff] = useState(false)
@@ -150,6 +153,13 @@ const useEditor = ({
   const runCode = useCallback(
     (code: string) => {
       setIsLoading(true)
+
+      // Scroll to bottom of log
+      const logElement = document.getElementById('log')
+      if (logElement) logElement.scrollTop = logElement.scrollHeight
+
+      setIsLoading(false)
+
       axios
         .post(`/SASjsApi/code/execute`, {
           code: programPathInjection(
@@ -160,8 +170,24 @@ const useEditor = ({
           runTime: selectedRunTime
         })
         .then((res: any) => {
+          if (selectedRunTime === RunTimeType.SAS) {
+            const { errors, warnings, logLines } = parseErrorsAndWarnings(
+              res.data.split(SASJS_LOGS_SEPARATOR)[1]
+            )
+
+            const log: LogObject = {
+              body: logLines.join(`\n`),
+              errors,
+              warnings,
+              linesCount: logLines.length
+            }
+
+            setLog(log)
+          } else {
+            setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
+          }
+
           setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
-          setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
           setTab('log')
 
           // Scroll to bottom of log
@@ -249,7 +275,7 @@ const useEditor = ({
   }, [appContext.runTimes])
 
   useEffect(() => {
-    if (runTimes.length) setSelectedRunTime(runTimes[0])
+    if (runTimes.length) setSelectedRunTime(runTimes[0] as RunTimeType)
   }, [runTimes])
 
   useEffect(() => {
@@ -280,7 +306,6 @@ const useEditor = ({
       const content = localStorage.getItem('fileContent') ?? ''
       setFileContent(content)
     }
-    setLog('')
     setWebout('')
     setTab('code')
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,7 +319,9 @@ const useEditor = ({
 
   useEffect(() => {
     const fileExtension = selectedFileExtension.toLowerCase()
-    if (runTimes.includes(fileExtension)) setSelectedRunTime(fileExtension)
+
+    if (runTimes.includes(fileExtension))
+      setSelectedRunTime(fileExtension as RunTimeType)
   }, [selectedFileExtension, runTimes])
 
   return {

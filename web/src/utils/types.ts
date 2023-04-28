@@ -39,3 +39,18 @@ export interface TreeNode {
   isFolder: boolean
   children: Array<TreeNode>
 }
+
+export interface LogInstance {
+  body: string
+  line: number
+  type: 'error' | 'warning'
+  id: number
+  ref?: any
+}
+
+export interface LogObject {
+  body: string
+  errors?: LogInstance[]
+  warnings?: LogInstance[]
+  linesCount: number
+}

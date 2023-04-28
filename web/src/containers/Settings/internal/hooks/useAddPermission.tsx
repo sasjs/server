@@ -9,7 +9,7 @@ import { PermissionsContext } from '../../../../context/permissionsContext'
 import {
   findExistingPermission,
   findUpdatingPermission
-} from '../../../../utils/helper'
+} from '../../../../utils'
 
 const useAddPermission = () => {
   const {

@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 
 import {
   Backdrop,
@@ -17,10 +17,14 @@ import { TabContext, TabList, TabPanel } from '@mui/lab'
 import FilePathInputModal from '../../components/filePathInputModal'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
+import LogComponent from './internal/components/log/logComponent'
+import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 
 import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
 import useEditor from './internal/hooks/useEditor'
+import { RunTimeType } from '../../context/appContext'
+import { LogObject } from '../../utils'
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
@@ -108,6 +112,10 @@ const SASjsEditor = ({
     />
   )
 
+  // INFO: variable indicating if selected run type is SAS if there are any errors or warnings in the log
+  const logWithErrorsOrWarnings =
+    selectedRunTime === RunTimeType.SAS && log && typeof log === 'object'
+
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
@@ -145,7 +153,22 @@ const SASjsEditor = ({
           >
             <TabList onChange={handleTabChange} centered>
               <StyledTab label="Code" value="code" />
-              <StyledTab label="Log" value="log" />
+              <StyledTab
+                label={logWithErrorsOrWarnings ? '' : 'log'}
+                value="log"
+                icon={
+                  logWithErrorsOrWarnings ? (
+                    <LogTabWithIcons log={log as LogObject} />
+                  ) : (
+                    ''
+                  )
+                }
+                onClick={() => {
+                  const logWrapper = document.querySelector(`#logWrapper`)
+
+                  if (logWrapper) logWrapper.scrollTop = 0
+                }}
+              />
               <StyledTab
                 label={
                   <Tooltip title="Displays content from the _webout fileref">
@@ -195,15 +218,9 @@ const SASjsEditor = ({
             </Paper>
           </StyledTabPanel>
           <StyledTabPanel value="log">
-            <div>
-              <h2>Log</h2>
-              <pre
-                id="log"
-                style={{ overflow: 'auto', height: 'calc(100vh - 220px)' }}
-              >
-                {log}
-              </pre>
-            </div>
+            {log && (
+              <LogComponent log={log} selectedRunTime={selectedRunTime} />
+            )}
           </StyledTabPanel>
           <StyledTabPanel value="webout">
             <div>
