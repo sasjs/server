@@ -32,7 +32,12 @@ const config: Configuration = {
         ]
       },
       {
-        test: /\.css$/i,
+        test: /\.css$/,
+        exclude: ['/node_modules/', /\.module\.css$/],
+        use: ['style-loader', 'css-loader']
+      },
+      {
+        test: /\.module\.css$/i,
         use: [
           'style-loader',
           {
