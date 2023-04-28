@@ -77,6 +77,8 @@ export class ExecutionController {
     session.consumed = true
 
     const logPath = path.join(session.path, 'log.log')
+    const printOutputPath = path.join(session.path, 'output.lst')
+    console.log(`🤖[printOutputPath]🤖`, printOutputPath)
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
 
     const weboutPath = path.join(session.path, 'webout.txt')
@@ -102,6 +104,10 @@ export class ExecutionController {
     )
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
+    const printOutput = (await fileExists(printOutputPath))
+      ? await readFile(printOutputPath)
+      : ''
+    console.log(`🤖[printOutput]🤖`, printOutput)
     const headersContent = (await fileExists(headersPath))
       ? await readFile(headersPath)
       : ''
@@ -122,12 +128,19 @@ export class ExecutionController {
     // it should be deleted by scheduleSessionDestroy
     session.inUse = false
 
+    const resultParts = [webout, process.logsUUID, log]
+
+    if (printOutput) {
+      resultParts.push(process.logsUUID)
+      resultParts.push(printOutput)
+    }
+
+    console.log(`🤖[resultParts]🤖`, resultParts)
+
     return {
       httpHeaders,
       result:
-        isDebugOn(vars) || session.crashed
-          ? `${webout}\n${process.logsUUID}\n${log}`
-          : webout
+        isDebugOn(vars) || session.crashed ? resultParts.join(`\n`) : webout
     }
   }
 
