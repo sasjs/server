@@ -149,6 +149,9 @@ const LogChunk = (props: LogChunkProps) => {
         style={{
           display: expanded ? 'block' : 'none'
         }}
+        onClick={(evt) => {
+          evt.stopPropagation()
+        }}
       >
         <div
           id={`log_container`}
