@@ -772,7 +772,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{clientId: someClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}, {clientId: someOtherClientID, clientSecret: someOtherRandomCryptoString, accessTokenExpiration: 86400}]
-            summary: 'Admin only task. Returns the list of all the clients   *'
+            summary: 'Admin only task. Returns the list of all the clients'
             tags:
                 - Client
             security:
