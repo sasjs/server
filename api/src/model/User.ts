@@ -110,7 +110,6 @@ const userSchema = new Schema<IUserDocument>({
     }
   ]
 })
-// userSchema.plugin(AutoIncrement, { inc_field: 'id' })
 
 // Hooks
 userSchema.pre('save', async function (next) {
