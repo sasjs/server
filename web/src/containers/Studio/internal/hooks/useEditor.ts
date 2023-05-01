@@ -39,14 +39,14 @@ const useEditor = ({
   const { Snackbar, setOpenSnackbar, setSnackbarMessage, setSnackbarSeverity } =
     useSnackbar()
   const [isLoading, setIsLoading] = useState(false)
-
   const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState<LogObject | string>()
-  const [webout, setWebout] = useState('')
+  const [webout, setWebout] = useState<string>()
+  const [printOutput, setPrintOutput] = useState<string>()
   const [runTimes, setRunTimes] = useState<string[]>([])
-  const [selectedRunTime, setSelectedRunTime] = useState<RunTimeType | string>(
-    ''
+  const [selectedRunTime, setSelectedRunTime] = useState<RunTimeType>(
+    RunTimeType.SAS
   )
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)
@@ -169,25 +169,29 @@ const useEditor = ({
           ),
           runTime: selectedRunTime
         })
-        .then((res: any) => {
-          if (selectedRunTime === RunTimeType.SAS) {
-            const { errors, warnings, logLines } = parseErrorsAndWarnings(
-              res.data.split(SASJS_LOGS_SEPARATOR)[1]
-            )
+        .then((res: { data: string }) => {
+          const resDataSplitted = res.data.split(SASJS_LOGS_SEPARATOR)
+          const webout = resDataSplitted[0]
+          const log = resDataSplitted[1]
+          const printOutput = resDataSplitted[2]
 
-            const log: LogObject = {
+          if (selectedRunTime === RunTimeType.SAS) {
+            const { errors, warnings, logLines } = parseErrorsAndWarnings(log)
+
+            const logObject: LogObject = {
               body: logLines.join(`\n`),
               errors,
               warnings,
               linesCount: logLines.length
             }
 
-            setLog(log)
+            setLog(logObject)
           } else {
-            setLog(res.data.split(SASJS_LOGS_SEPARATOR)[1] ?? '')
+            setLog(log)
           }
 
-          setWebout(res.data.split(SASJS_LOGS_SEPARATOR)[0] ?? '')
+          setWebout(webout)
+          setPrintOutput(printOutput)
           setTab('log')
 
           // Scroll to bottom of log
@@ -335,6 +339,7 @@ const useEditor = ({
     selectedRunTime,
     showDiff,
     webout,
+    printOutput,
     Dialog,
     handleChangeRunTime,
     handleDiffEditorDidMount,
