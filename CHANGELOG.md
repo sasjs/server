@@ -1,3 +1,10 @@
+## [0.34.2](https://github.com/sasjs/server/compare/v0.34.1...v0.34.2) (2023-05-01)
+
+
+### Bug Fixes
+
+* use custom logic for handling sequence ids ([dba53de](https://github.com/sasjs/server/commit/dba53de64664c9d8a40fe69de6281c53d1c73641))
+
 ## [0.34.1](https://github.com/sasjs/server/compare/v0.34.0...v0.34.1) (2023-04-28)
 
 
