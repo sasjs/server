@@ -1,7 +1,6 @@
-import mongoose, { Schema, model, Document, Model } from 'mongoose'
-const AutoIncrement = require('mongoose-sequence')(mongoose)
+import { Schema, model, Document, Model } from 'mongoose'
 import bcrypt from 'bcryptjs'
-import { AuthProviderType } from '../utils'
+import { AuthProviderType, getSequenceNextValue } from '../utils'
 
 export interface UserPayload {
   /**
@@ -66,6 +65,10 @@ const userSchema = new Schema<IUserDocument>({
     required: true,
     unique: true
   },
+  id: {
+    type: Number,
+    unique: true
+  },
   password: {
     type: String,
     required: true
@@ -107,7 +110,15 @@ const userSchema = new Schema<IUserDocument>({
     }
   ]
 })
-userSchema.plugin(AutoIncrement, { inc_field: 'id' })
+
+// Hooks
+userSchema.pre('save', async function (next) {
+  if (this.isNew) {
+    this.id = await getSequenceNextValue('id')
+  }
+
+  next()
+})
 
 // Static Methods
 userSchema.static('hashPassword', (password: string): string => {
