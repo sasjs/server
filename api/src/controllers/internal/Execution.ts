@@ -128,7 +128,7 @@ export class ExecutionController {
 
     const resultParts = []
 
-    if (webout) resultParts.push(webout)
+    if (webout && webout.length !== 0) resultParts.push(webout)
 
     resultParts.push(process.logsUUID)
     resultParts.push(log)
