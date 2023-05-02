@@ -170,6 +170,7 @@ const useEditor = ({
           runTime: selectedRunTime
         })
         .then((res: { data: string }) => {
+          // INFO: the order of payload parts is set in @sasjs/server/api/src/controllers/internal/Execution.ts
           const resDataSplitted = res.data.split(SASJS_LOGS_SEPARATOR)
           const webout = resDataSplitted[0]
           const log = resDataSplitted[1]

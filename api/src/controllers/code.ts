@@ -28,7 +28,14 @@ interface ExecuteCodePayload {
 export class CodeController {
   /**
    * Execute Code on the Specified Runtime
-   * @summary Run Code and Return Webout Content and Log
+   * @summary Run Code and Return Webout Content, Log and Print output
+   * The order of returned parts of the payload is:
+   * 1. Webout (if present)
+   * 2. Logs UUID (used as separator)
+   * 3. Log
+   * 4. Logs UUID (used as separator)
+   * 5. Print (if present)
+   * Please see @sasjs/server/api/src/controllers/internal/Execution.ts for more information
    */
   @Post('/execute')
   public async executeCode(
