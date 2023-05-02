@@ -38,7 +38,7 @@ export class STPController {
   ): Promise<string | Buffer> {
     const vars = request.query as ExecutionVars
 
-    return execute(request, _program, vars, undefined, true)
+    return execute(request, _program, vars, undefined)
   }
 
   /**
@@ -66,7 +66,7 @@ export class STPController {
       : null
     const otherArgs = { filesNamesMap: filesNamesMap }
 
-    return execute(request, program!, vars, otherArgs, true)
+    return execute(request, program!, vars, otherArgs)
   }
 }
 
