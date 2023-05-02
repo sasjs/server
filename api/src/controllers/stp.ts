@@ -3,8 +3,6 @@ import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
 import { ExecutionController, ExecutionVars } from './internal'
 import {
   getPreProgramVariables,
-  HTTPHeaders,
-  LogLine,
   makeFilesNamesMap,
   getRunTimeAndFilePath
 } from '../utils'
@@ -39,7 +37,8 @@ export class STPController {
     @Query() _program: string
   ): Promise<string | Buffer> {
     const vars = request.query as ExecutionVars
-    return execute(request, _program, vars)
+
+    return execute(request, _program, vars, undefined, true)
   }
 
   /**
@@ -67,7 +66,7 @@ export class STPController {
       : null
     const otherArgs = { filesNamesMap: filesNamesMap }
 
-    return execute(request, program!, vars, otherArgs)
+    return execute(request, program!, vars, otherArgs, true)
   }
 }
 
@@ -75,7 +74,8 @@ const execute = async (
   req: express.Request,
   _program: string,
   vars: ExecutionVars,
-  otherArgs?: any
+  otherArgs?: any,
+  isStp?: boolean
 ): Promise<string | Buffer> => {
   try {
     const { codePath, runTime } = await getRunTimeAndFilePath(_program)
@@ -87,7 +87,8 @@ const execute = async (
         preProgramVariables: getPreProgramVariables(req),
         vars,
         otherArgs,
-        session: req.sasjsSession
+        session: req.sasjsSession,
+        isStp
       }
     )
 

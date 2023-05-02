@@ -29,6 +29,7 @@ interface ExecuteFileParams {
   session?: Session
   runTime: RunTimeType
   forceStringResult?: boolean
+  isStp?: boolean
 }
 
 interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
@@ -44,7 +45,8 @@ export class ExecutionController {
     returnJson,
     session,
     runTime,
-    forceStringResult
+    forceStringResult,
+    isStp
   }: ExecuteFileParams) {
     const program = await readFile(programPath)
 
@@ -56,7 +58,8 @@ export class ExecutionController {
       returnJson,
       session,
       runTime,
-      forceStringResult
+      forceStringResult,
+      isStp
     })
   }
 
@@ -67,7 +70,8 @@ export class ExecutionController {
     otherArgs,
     session: sessionByFileUpload,
     runTime,
-    forceStringResult
+    forceStringResult,
+    isStp
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
@@ -77,9 +81,7 @@ export class ExecutionController {
     session.consumed = true
 
     const logPath = path.join(session.path, 'log.log')
-    const printOutputPath = path.join(session.path, 'output.lst')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
-
     const weboutPath = path.join(session.path, 'webout.txt')
     const tokenFile = path.join(session.path, 'reqHeaders.txt')
 
@@ -103,9 +105,6 @@ export class ExecutionController {
     )
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
-    const printOutput = (await fileExists(printOutputPath))
-      ? await readFile(printOutputPath)
-      : ''
     const headersContent = (await fileExists(headersPath))
       ? await readFile(headersPath)
       : ''
@@ -134,9 +133,16 @@ export class ExecutionController {
     resultParts.push(process.logsUUID)
     resultParts.push(log)
 
-    if (printOutput) {
-      resultParts.push(process.logsUUID)
-      resultParts.push(printOutput)
+    if (!isStp) {
+      const printOutputPath = path.join(session.path, 'output.lst')
+      const printOutput = (await fileExists(printOutputPath))
+        ? await readFile(printOutputPath)
+        : ''
+
+      if (printOutput) {
+        resultParts.push(process.logsUUID)
+        resultParts.push(printOutput)
+      }
     }
 
     return {

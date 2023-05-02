@@ -158,7 +158,7 @@ CORS=
 WHITELIST=
 
 # HELMET Cross Origin Embedder Policy
-# Sets the Cross-Origin-Embedder-Policy header to require-corp when `true`
+# Sets the Cross-Origin-Embedder-Policy header to require-corp when `true`
 # options: [true|false] default: true
 # Docs: https://helmetjs.github.io/#reference (`crossOriginEmbedderPolicy`)
 HELMET_COEP=
