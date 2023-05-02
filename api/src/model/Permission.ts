@@ -1,6 +1,6 @@
-import mongoose, { Schema, model, Document, Model } from 'mongoose'
-const AutoIncrement = require('mongoose-sequence')(mongoose)
+import { Schema, model, Document, Model } from 'mongoose'
 import { PermissionDetailsResponse } from '../controllers'
+import { getSequenceNextValue } from '../utils'
 
 interface GetPermissionBy {
   user?: Schema.Types.ObjectId
@@ -23,6 +23,10 @@ interface IPermissionModel extends Model<IPermission> {
 }
 
 const permissionSchema = new Schema<IPermissionDocument>({
+  permissionId: {
+    type: Number,
+    unique: true
+  },
   path: {
     type: String,
     required: true
@@ -39,7 +43,12 @@ const permissionSchema = new Schema<IPermissionDocument>({
   group: { type: Schema.Types.ObjectId, ref: 'Group' }
 })
 
-permissionSchema.plugin(AutoIncrement, { inc_field: 'permissionId' })
+// Hooks
+permissionSchema.pre('save', async function () {
+  if (this.isNew) {
+    this.permissionId = await getSequenceNextValue('permissionId')
+  }
+})
 
 // Static Methods
 permissionSchema.static('get', async function (getBy: GetPermissionBy): Promise<

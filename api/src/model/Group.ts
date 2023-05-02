@@ -1,8 +1,7 @@
-import mongoose, { Schema, model, Document, Model } from 'mongoose'
+import { Schema, model, Document, Model } from 'mongoose'
 import { GroupDetailsResponse } from '../controllers'
 import User, { IUser } from './User'
-import { AuthProviderType } from '../utils'
-const AutoIncrement = require('mongoose-sequence')(mongoose)
+import { AuthProviderType, getSequenceNextValue } from '../utils'
 
 export const PUBLIC_GROUP_NAME = 'Public'
 
@@ -44,6 +43,10 @@ const groupSchema = new Schema<IGroupDocument>({
     required: true,
     unique: true
   },
+  groupId: {
+    type: Number,
+    unique: true
+  },
   description: {
     type: String,
     default: 'Group description.'
@@ -59,9 +62,13 @@ const groupSchema = new Schema<IGroupDocument>({
   users: [{ type: Schema.Types.ObjectId, ref: 'User' }]
 })
 
-groupSchema.plugin(AutoIncrement, { inc_field: 'groupId' })
-
 // Hooks
+groupSchema.pre('save', async function () {
+  if (this.isNew) {
+    this.groupId = await getSequenceNextValue('groupId')
+  }
+})
+
 groupSchema.post('save', function (group: IGroup, next: Function) {
   group.populate('users', 'id username displayName -_id').then(function () {
     next()
