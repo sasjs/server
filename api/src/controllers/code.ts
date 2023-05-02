@@ -34,7 +34,7 @@ export class CodeController {
    * 2. Logs UUID (used as separator)
    * 3. Log
    * 4. Logs UUID (used as separator)
-   * 5. Print (if present)
+   * 5. Print (if present and if the runtime is SAS)
    * Please see @sasjs/server/api/src/controllers/internal/Execution.ts for more information
    */
   @Post('/execute')
