@@ -128,6 +128,7 @@ export class ExecutionController {
 
     const resultParts = []
 
+    // INFO: webout can be a Buffer, that is why it's length should be checked to determine if it is empty
     if (webout && webout.length !== 0) resultParts.push(webout)
 
     resultParts.push(process.logsUUID)
