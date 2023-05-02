@@ -29,7 +29,7 @@ interface ExecuteFileParams {
   session?: Session
   runTime: RunTimeType
   forceStringResult?: boolean
-  isStp?: boolean
+  addPrintOutput?: boolean
 }
 
 interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
@@ -45,8 +45,7 @@ export class ExecutionController {
     returnJson,
     session,
     runTime,
-    forceStringResult,
-    isStp
+    forceStringResult
   }: ExecuteFileParams) {
     const program = await readFile(programPath)
 
@@ -58,8 +57,7 @@ export class ExecutionController {
       returnJson,
       session,
       runTime,
-      forceStringResult,
-      isStp
+      forceStringResult
     })
   }
 
@@ -71,7 +69,7 @@ export class ExecutionController {
     session: sessionByFileUpload,
     runTime,
     forceStringResult,
-    isStp
+    addPrintOutput
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
@@ -133,7 +131,7 @@ export class ExecutionController {
     resultParts.push(process.logsUUID)
     resultParts.push(log)
 
-    if (!isStp) {
+    if (addPrintOutput && runTime === RunTimeType.SAS) {
       const printOutputPath = path.join(session.path, 'output.lst')
       const printOutput = (await fileExists(printOutputPath))
         ? await readFile(printOutputPath)

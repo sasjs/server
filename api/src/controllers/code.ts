@@ -62,7 +62,8 @@ const executeCode = async (
       preProgramVariables: getPreProgramVariables(req),
       vars: { ...req.query, _debug: 131 },
       otherArgs: { userAutoExec },
-      runTime: runTime
+      runTime: runTime,
+      addPrintOutput: true
     })
 
     return result

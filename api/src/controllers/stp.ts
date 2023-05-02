@@ -74,8 +74,7 @@ const execute = async (
   req: express.Request,
   _program: string,
   vars: ExecutionVars,
-  otherArgs?: any,
-  isStp?: boolean
+  otherArgs?: any
 ): Promise<string | Buffer> => {
   try {
     const { codePath, runTime } = await getRunTimeAndFilePath(_program)
@@ -87,8 +86,7 @@ const execute = async (
         preProgramVariables: getPreProgramVariables(req),
         vars,
         otherArgs,
-        session: req.sasjsSession,
-        isStp
+        session: req.sasjsSession
       }
     )
 
