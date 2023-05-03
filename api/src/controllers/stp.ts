@@ -38,7 +38,7 @@ export class STPController {
   ): Promise<string | Buffer> {
     const vars = request.query as ExecutionVars
 
-    return execute(request, _program, vars, undefined)
+    return execute(request, _program, vars)
   }
 
   /**
