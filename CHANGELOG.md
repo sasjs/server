@@ -1,3 +1,19 @@
+# [0.35.0](https://github.com/sasjs/server/compare/v0.34.2...v0.35.0) (2023-05-03)
+
+
+### Bug Fixes
+
+* **editor:** fixed log/webout/print tabs ([d2de9dc](https://github.com/sasjs/server/commit/d2de9dc13ef2e980286dd03cca5e22cea443ed0c))
+* **execute:** added atribute indicating stp api ([e78f87f](https://github.com/sasjs/server/commit/e78f87f5c00038ea11261dffb525ac8f1024e40b))
+* **execute:** fixed adding print output ([9aaffce](https://github.com/sasjs/server/commit/9aaffce82051d81bf39adb69942bb321e9795141))
+* **execution:** removed empty webout from response ([6dd2f4f](https://github.com/sasjs/server/commit/6dd2f4f87673336135bc7a6de0d2e143e192c025))
+* **webout:** fixed adding empty webout to response payload ([31df72a](https://github.com/sasjs/server/commit/31df72ad88fe2c771d0ef8445d6db9dd147c40c9))
+
+
+### Features
+
+* **editor:** parse print output in response payload ([eb42683](https://github.com/sasjs/server/commit/eb42683fff701bd5b4d2b68760fe0c3ecad573dd))
+
 ## [0.34.2](https://github.com/sasjs/server/compare/v0.34.1...v0.34.2) (2023-05-01)
 
 
