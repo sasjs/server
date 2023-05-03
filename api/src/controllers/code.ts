@@ -63,7 +63,7 @@ const executeCode = async (
       vars: { ...req.query, _debug: 131 },
       otherArgs: { userAutoExec },
       runTime: runTime,
-      addPrintOutput: true
+      includePrintOutput: true
     })
 
     return result
