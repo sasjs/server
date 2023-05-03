@@ -33,6 +33,7 @@ interface ExecuteFileParams {
 
 interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
   program: string
+  includePrintOutput?: boolean
 }
 
 export class ExecutionController {
@@ -67,7 +68,8 @@ export class ExecutionController {
     otherArgs,
     session: sessionByFileUpload,
     runTime,
-    forceStringResult
+    forceStringResult,
+    includePrintOutput
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
@@ -78,7 +80,6 @@ export class ExecutionController {
 
     const logPath = path.join(session.path, 'log.log')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
-
     const weboutPath = path.join(session.path, 'webout.txt')
     const tokenFile = path.join(session.path, 'reqHeaders.txt')
 
@@ -122,12 +123,30 @@ export class ExecutionController {
     // it should be deleted by scheduleSessionDestroy
     session.inUse = false
 
+    const resultParts = []
+
+    // INFO: webout can be a Buffer, that is why it's length should be checked to determine if it is empty
+    if (webout && webout.length !== 0) resultParts.push(webout)
+
+    resultParts.push(process.logsUUID)
+    resultParts.push(log)
+
+    if (includePrintOutput && runTime === RunTimeType.SAS) {
+      const printOutputPath = path.join(session.path, 'output.lst')
+      const printOutput = (await fileExists(printOutputPath))
+        ? await readFile(printOutputPath)
+        : ''
+
+      if (printOutput) {
+        resultParts.push(process.logsUUID)
+        resultParts.push(printOutput)
+      }
+    }
+
     return {
       httpHeaders,
       result:
-        isDebugOn(vars) || session.crashed
-          ? `${webout}\n${process.logsUUID}\n${log}`
-          : webout
+        isDebugOn(vars) || session.crashed ? resultParts.join(`\n`) : webout
     }
   }
 
