@@ -40,10 +40,10 @@ describe('client', () => {
     const dbUser = await userController.createUser(adminUser)
     adminAccessToken = generateAccessToken({
       clientId: client.clientId,
-      userId: dbUser.id
+      userId: dbUser.uid
     })
     await saveTokensInDB(
-      dbUser.id,
+      dbUser.uid,
       client.clientId,
       adminAccessToken,
       'refreshToken'
@@ -95,10 +95,10 @@ describe('client', () => {
       const dbUser = await userController.createUser(user)
       const accessToken = generateAccessToken({
         clientId: client.clientId,
-        userId: dbUser.id
+        userId: dbUser.uid
       })
       await saveTokensInDB(
-        dbUser.id,
+        dbUser.uid,
         client.clientId,
         accessToken,
         'refreshToken'
@@ -212,10 +212,10 @@ describe('client', () => {
       const dbUser = await userController.createUser(user)
       const accessToken = generateAccessToken({
         clientId: client.clientId,
-        userId: dbUser.id
+        userId: dbUser.uid
       })
       await saveTokensInDB(
-        dbUser.id,
+        dbUser.uid,
         client.clientId,
         accessToken,
         'refreshToken'

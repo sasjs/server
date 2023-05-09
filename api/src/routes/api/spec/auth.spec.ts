@@ -20,7 +20,7 @@ import {
 const clientId = 'someclientID'
 const clientSecret = 'someclientSecret'
 const user = {
-  id: 1234,
+  id: '1234',
   displayName: 'Test User',
   username: 'testUsername',
   password: '87654321',

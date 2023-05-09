@@ -101,9 +101,9 @@ describe('user', () => {
       const dbUser = await controller.createUser(user)
       const accessToken = generateAccessToken({
         clientId,
-        userId: dbUser.id
+        userId: dbUser.uid
       })
-      await saveTokensInDB(dbUser.id, clientId, accessToken, 'refreshToken')
+      await saveTokensInDB(dbUser.uid, clientId, accessToken, 'refreshToken')
 
       const res = await request(app)
         .post('/SASjsApi/user')
@@ -187,7 +187,7 @@ describe('user', () => {
       const newDisplayName = 'My new display Name'
 
       const res = await request(app)
-        .patch(`/SASjsApi/user/${dbUser.id}`)
+        .patch(`/SASjsApi/user/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send({ ...user, displayName: newDisplayName })
         .expect(200)
@@ -200,11 +200,11 @@ describe('user', () => {
 
     it('should respond with updated user when user himself requests', async () => {
       const dbUser = await controller.createUser(user)
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(dbUser.uid)
       const newDisplayName = 'My new display Name'
 
       const res = await request(app)
-        .patch(`/SASjsApi/user/${dbUser.id}`)
+        .patch(`/SASjsApi/user/${dbUser.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send({
           displayName: newDisplayName,
@@ -221,11 +221,11 @@ describe('user', () => {
 
     it('should respond with Bad Request, only admin can update isAdmin/isActive', async () => {
       const dbUser = await controller.createUser(user)
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(dbUser.uid)
       const newDisplayName = 'My new display Name'
 
       await request(app)
-        .patch(`/SASjsApi/user/${dbUser.id}`)
+        .patch(`/SASjsApi/user/${dbUser.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send({ ...user, displayName: newDisplayName })
         .expect(400)
@@ -277,10 +277,10 @@ describe('user', () => {
         ...user,
         username: 'randomUser'
       })
-      const accessToken = await generateAndSaveToken(dbUser2.id)
+      const accessToken = await generateAndSaveToken(dbUser2.uid)
 
       const res = await request(app)
-        .patch(`/SASjsApi/user/${dbUser1.id}`)
+        .patch(`/SASjsApi/user/${dbUser1.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send(user)
         .expect(401)
@@ -297,7 +297,7 @@ describe('user', () => {
       })
 
       const res = await request(app)
-        .patch(`/SASjsApi/user/${dbUser1.id}`)
+        .patch(`/SASjsApi/user/${dbUser1.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send({ username: dbUser2.username })
         .expect(409)
@@ -325,7 +325,7 @@ describe('user', () => {
 
       it('should respond with updated user when user himself requests', async () => {
         const dbUser = await controller.createUser(user)
-        const accessToken = await generateAndSaveToken(dbUser.id)
+        const accessToken = await generateAndSaveToken(dbUser.uid)
         const newDisplayName = 'My new display Name'
 
         const res = await request(app)
@@ -346,7 +346,7 @@ describe('user', () => {
 
       it('should respond with Bad Request, only admin can update isAdmin/isActive', async () => {
         const dbUser = await controller.createUser(user)
-        const accessToken = await generateAndSaveToken(dbUser.id)
+        const accessToken = await generateAndSaveToken(dbUser.uid)
         const newDisplayName = 'My new display Name'
 
         await request(app)
@@ -372,10 +372,10 @@ describe('user', () => {
           ...user,
           username: 'randomUser'
         })
-        const accessToken = await generateAndSaveToken(dbUser2.id)
+        const accessToken = await generateAndSaveToken(dbUser2.uid)
 
         const res = await request(app)
-          .patch(`/SASjsApi/user/${dbUser1.id}`)
+          .patch(`/SASjsApi/user/${dbUser1.uid}`)
           .auth(accessToken, { type: 'bearer' })
           .send(user)
           .expect(401)
@@ -418,7 +418,7 @@ describe('user', () => {
       const dbUser = await controller.createUser(user)
 
       const res = await request(app)
-        .delete(`/SASjsApi/user/${dbUser.id}`)
+        .delete(`/SASjsApi/user/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
@@ -428,10 +428,10 @@ describe('user', () => {
 
     it('should respond with OK when user himself requests', async () => {
       const dbUser = await controller.createUser(user)
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(dbUser.uid)
 
       const res = await request(app)
-        .delete(`/SASjsApi/user/${dbUser.id}`)
+        .delete(`/SASjsApi/user/${dbUser.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send({ password: user.password })
         .expect(200)
@@ -441,10 +441,10 @@ describe('user', () => {
 
     it('should respond with Bad Request when user himself requests and password is missing', async () => {
       const dbUser = await controller.createUser(user)
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(dbUser.uid)
 
       const res = await request(app)
-        .delete(`/SASjsApi/user/${dbUser.id}`)
+        .delete(`/SASjsApi/user/${dbUser.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send()
         .expect(400)
@@ -469,10 +469,10 @@ describe('user', () => {
         ...user,
         username: 'randomUser'
       })
-      const accessToken = await generateAndSaveToken(dbUser2.id)
+      const accessToken = await generateAndSaveToken(dbUser2.uid)
 
       const res = await request(app)
-        .delete(`/SASjsApi/user/${dbUser1.id}`)
+        .delete(`/SASjsApi/user/${dbUser1.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send(user)
         .expect(401)
@@ -483,10 +483,10 @@ describe('user', () => {
 
     it('should respond with Unauthorized when user himself requests and password is incorrect', async () => {
       const dbUser = await controller.createUser(user)
-      const accessToken = await generateAndSaveToken(dbUser.id)
+      const accessToken = await generateAndSaveToken(dbUser.uid)
 
       const res = await request(app)
-        .delete(`/SASjsApi/user/${dbUser.id}`)
+        .delete(`/SASjsApi/user/${dbUser.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send({ password: 'incorrectpassword' })
         .expect(401)
@@ -510,7 +510,7 @@ describe('user', () => {
 
       it('should respond with OK when user himself requests', async () => {
         const dbUser = await controller.createUser(user)
-        const accessToken = await generateAndSaveToken(dbUser.id)
+        const accessToken = await generateAndSaveToken(dbUser.uid)
 
         const res = await request(app)
           .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
@@ -523,7 +523,7 @@ describe('user', () => {
 
       it('should respond with Bad Request when user himself requests and password is missing', async () => {
         const dbUser = await controller.createUser(user)
-        const accessToken = await generateAndSaveToken(dbUser.id)
+        const accessToken = await generateAndSaveToken(dbUser.uid)
 
         const res = await request(app)
           .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
@@ -551,7 +551,7 @@ describe('user', () => {
           ...user,
           username: 'randomUser'
         })
-        const accessToken = await generateAndSaveToken(dbUser2.id)
+        const accessToken = await generateAndSaveToken(dbUser2.uid)
 
         const res = await request(app)
           .delete(`/SASjsApi/user/by/username/${dbUser1.username}`)
@@ -565,7 +565,7 @@ describe('user', () => {
 
       it('should respond with Unauthorized when user himself requests and password is incorrect', async () => {
         const dbUser = await controller.createUser(user)
-        const accessToken = await generateAndSaveToken(dbUser.id)
+        const accessToken = await generateAndSaveToken(dbUser.uid)
 
         const res = await request(app)
           .delete(`/SASjsApi/user/by/username/${dbUser.username}`)
@@ -592,7 +592,7 @@ describe('user', () => {
 
     it('should respond with user autoExec when same user requests', async () => {
       const dbUser = await controller.createUser(user)
-      const userId = dbUser.id
+      const userId = dbUser.uid
       const accessToken = await generateAndSaveToken(userId)
 
       const res = await request(app)
@@ -611,7 +611,7 @@ describe('user', () => {
 
     it('should respond with user autoExec when admin user requests', async () => {
       const dbUser = await controller.createUser(user)
-      const userId = dbUser.id
+      const userId = dbUser.uid
 
       const res = await request(app)
         .get(`/SASjsApi/user/${userId}`)
@@ -634,7 +634,7 @@ describe('user', () => {
       })
 
       const dbUser = await controller.createUser(user)
-      const userId = dbUser.id
+      const userId = dbUser.uid
 
       const res = await request(app)
         .get(`/SASjsApi/user/${userId}`)
@@ -652,7 +652,7 @@ describe('user', () => {
 
     it('should respond with user along with associated groups', async () => {
       const dbUser = await controller.createUser(user)
-      const userId = dbUser.id
+      const userId = dbUser.uid
       const accessToken = await generateAndSaveToken(userId)
 
       const group = {
@@ -661,7 +661,7 @@ describe('user', () => {
       }
       const groupController = new GroupController()
       const dbGroup = await groupController.createGroup(group)
-      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+      await groupController.addUserToGroup(dbGroup.uid, dbUser.uid)
 
       const res = await request(app)
         .get(`/SASjsApi/user/${userId}`)
@@ -703,7 +703,7 @@ describe('user', () => {
     describe('by username', () => {
       it('should respond with user autoExec when same user requests', async () => {
         const dbUser = await controller.createUser(user)
-        const userId = dbUser.id
+        const userId = dbUser.uid
         const accessToken = await generateAndSaveToken(userId)
 
         const res = await request(app)
@@ -859,10 +859,10 @@ const generateSaveTokenAndCreateUser = async (
 ): Promise<string> => {
   const dbUser = await controller.createUser(someUser ?? adminUser)
 
-  return generateAndSaveToken(dbUser.id)
+  return generateAndSaveToken(dbUser.uid)
 }
 
-const generateAndSaveToken = async (userId: number) => {
+const generateAndSaveToken = async (userId: string) => {
   const adminAccessToken = generateAccessToken({
     clientId,
     userId
