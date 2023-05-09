@@ -24,7 +24,7 @@ const useDeletePermissionModal = () => {
     setDeleteConfirmationModalOpen(false)
     setIsLoading(true)
     axios
-      .delete(`/SASjsApi/permission/${selectedPermission?.permissionId}`)
+      .delete(`/SASjsApi/permission/${selectedPermission?.uid}`)
       .then((res: any) => {
         fetchPermissions()
         setSnackbarMessage('Permission deleted!')

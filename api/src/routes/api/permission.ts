@@ -34,14 +34,14 @@ permissionRouter.post('/', verifyAdmin, async (req, res) => {
   }
 })
 
-permissionRouter.patch('/:permissionId', verifyAdmin, async (req: any, res) => {
-  const { permissionId } = req.params
+permissionRouter.patch('/:uid', verifyAdmin, async (req: any, res) => {
+  const { uid } = req.params
 
   const { error, value: body } = updatePermissionValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.updatePermission(permissionId, body)
+    const response = await controller.updatePermission(uid, body)
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code
@@ -50,20 +50,16 @@ permissionRouter.patch('/:permissionId', verifyAdmin, async (req: any, res) => {
   }
 })
 
-permissionRouter.delete(
-  '/:permissionId',
-  verifyAdmin,
-  async (req: any, res) => {
-    const { permissionId } = req.params
+permissionRouter.delete('/:uid', verifyAdmin, async (req: any, res) => {
+  const { uid } = req.params
 
-    try {
-      await controller.deletePermission(permissionId)
-      res.status(200).send('Permission Deleted!')
-    } catch (err: any) {
-      const statusCode = err.code
-      delete err.code
-      res.status(statusCode).send(err.message)
-    }
+  try {
+    await controller.deletePermission(uid)
+    res.status(200).send('Permission Deleted!')
+  } catch (err: any) {
+    const statusCode = err.code
+    delete err.code
+    res.status(statusCode).send(err.message)
   }
-)
+})
 export default permissionRouter

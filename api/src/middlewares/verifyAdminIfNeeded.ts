@@ -9,7 +9,7 @@ export const verifyAdminIfNeeded: RequestHandler = (req, res, next) => {
     let adminAccountRequired: boolean = true
 
     if (req.params.userId) {
-      adminAccountRequired = user?.userId !== parseInt(req.params.userId)
+      adminAccountRequired = user?.userId !== req.params.userId
     } else if (req.params.username) {
       adminAccountRequired = user?.username !== req.params.username
     }

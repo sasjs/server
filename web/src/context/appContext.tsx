@@ -27,8 +27,8 @@ interface AppContextProps {
   setLoggedIn: Dispatch<SetStateAction<boolean>> | null
   needsToUpdatePassword: boolean
   setNeedsToUpdatePassword: Dispatch<SetStateAction<boolean>> | null
-  userId: number
-  setUserId: Dispatch<SetStateAction<number>> | null
+  userId: string
+  setUserId: Dispatch<SetStateAction<string>> | null
   username: string
   setUsername: Dispatch<SetStateAction<string>> | null
   displayName: string
@@ -46,7 +46,7 @@ export const AppContext = createContext<AppContextProps>({
   setLoggedIn: null,
   needsToUpdatePassword: false,
   setNeedsToUpdatePassword: null,
-  userId: 0,
+  userId: '',
   setUserId: null,
   username: '',
   setUsername: null,
@@ -64,7 +64,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [checkingSession, setCheckingSession] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
   const [needsToUpdatePassword, setNeedsToUpdatePassword] = useState(false)
-  const [userId, setUserId] = useState(0)
+  const [userId, setUserId] = useState('')
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)

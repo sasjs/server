@@ -1,4 +1,4 @@
-import { Schema, model, Document, Model } from 'mongoose'
+import { Schema, model, Document, Model, ObjectId } from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { AuthProviderType, getSequenceNextValue } from '../utils'
 
@@ -36,7 +36,6 @@ export interface UserPayload {
 
 interface IUserDocument extends UserPayload, Document {
   _id: Schema.Types.ObjectId
-  id: number
   isAdmin: boolean
   isActive: boolean
   needsToUpdatePassword: boolean
@@ -44,6 +43,9 @@ interface IUserDocument extends UserPayload, Document {
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
   authProvider?: AuthProviderType
+
+  // Declare virtual properties as read-only properties
+  readonly uid: string
 }
 
 export interface IUser extends IUserDocument {
@@ -54,70 +56,74 @@ export interface IUser extends IUserDocument {
 interface IUserModel extends Model<IUser> {
   hashPassword(password: string): string
 }
-
-const userSchema = new Schema<IUserDocument>({
-  displayName: {
-    type: String,
-    required: true
-  },
-  username: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  id: {
-    type: Number,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  authProvider: {
-    type: String,
-    enum: AuthProviderType
-  },
-  isAdmin: {
-    type: Boolean,
-    default: false
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  needsToUpdatePassword: {
-    type: Boolean,
-    default: true
-  },
-  autoExec: {
-    type: String
-  },
-  groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
-  tokens: [
-    {
-      clientId: {
-        type: String,
-        required: true
-      },
-      accessToken: {
-        type: String,
-        required: true
-      },
-      refreshToken: {
-        type: String,
-        required: true
-      }
+const opts = {
+  toJSON: {
+    virtuals: true,
+    transform: function (doc: any, ret: any, options: any) {
+      delete ret._id
+      delete ret.id
+      return ret
     }
-  ]
-})
-
-// Hooks
-userSchema.pre('save', async function (next) {
-  if (this.isNew) {
-    this.id = await getSequenceNextValue('id')
   }
+}
 
-  next()
+const userSchema = new Schema<IUserDocument>(
+  {
+    displayName: {
+      type: String,
+      required: true
+    },
+    username: {
+      type: String,
+      required: true,
+      unique: true
+    },
+    password: {
+      type: String,
+      required: true
+    },
+    authProvider: {
+      type: String,
+      enum: AuthProviderType
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    needsToUpdatePassword: {
+      type: Boolean,
+      default: true
+    },
+    autoExec: {
+      type: String
+    },
+    groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
+    tokens: [
+      {
+        clientId: {
+          type: String,
+          required: true
+        },
+        accessToken: {
+          type: String,
+          required: true
+        },
+        refreshToken: {
+          type: String,
+          required: true
+        }
+      }
+    ]
+  },
+  opts
+)
+
+userSchema.virtual('uid').get(function () {
+  return this._id.toString()
 })
 
 // Static Methods

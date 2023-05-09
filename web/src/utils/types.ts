@@ -1,12 +1,12 @@
 export interface UserResponse {
-  id: number
+  uid: number
   username: string
   displayName: string
   isAdmin: boolean
 }
 
 export interface GroupResponse {
-  groupId: number
+  uid: number
   name: string
   description: string
 }
@@ -17,7 +17,7 @@ export interface GroupDetailsResponse extends GroupResponse {
 }
 
 export interface PermissionResponse {
-  permissionId: number
+  uid: number
   path: string
   type: string
   setting: string

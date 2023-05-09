@@ -28,7 +28,7 @@ export const desktopRestrict: RequestHandler = (req, res, next) => {
 }
 
 export const desktopUser: RequestUser = {
-  userId: 12345,
+  userId: '12345',
   clientId: 'desktop_app',
   username: userInfo().username,
   displayName: userInfo().username,

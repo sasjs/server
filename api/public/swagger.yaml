@@ -40,8 +40,7 @@ components:
                 clientId:
                     type: string
                 userId:
-                    type: number
-                    format: double
+                    type: string
             required:
                 - clientId
                 - userId
@@ -285,9 +284,8 @@ components:
             additionalProperties: false
         UserResponse:
             properties:
-                id:
-                    type: number
-                    format: double
+                uid:
+                    type: string
                 username:
                     type: string
                 displayName:
@@ -295,7 +293,7 @@ components:
                 isAdmin:
                     type: boolean
             required:
-                - id
+                - uid
                 - username
                 - displayName
                 - isAdmin
@@ -303,31 +301,29 @@ components:
             additionalProperties: false
         GroupResponse:
             properties:
-                groupId:
-                    type: number
-                    format: double
+                uid:
+                    type: string
                 name:
                     type: string
                 description:
                     type: string
             required:
-                - groupId
+                - uid
                 - name
                 - description
             type: object
             additionalProperties: false
         UserDetailsResponse:
             properties:
-                id:
-                    type: number
-                    format: double
-                displayName:
+                uid:
                     type: string
                 username:
                     type: string
-                isActive:
-                    type: boolean
+                displayName:
+                    type: string
                 isAdmin:
+                    type: boolean
+                isActive:
                     type: boolean
                 autoExec:
                     type: string
@@ -336,11 +332,11 @@ components:
                         $ref: '#/components/schemas/GroupResponse'
                     type: array
             required:
-                - id
-                - displayName
+                - uid
                 - username
-                - isActive
+                - displayName
                 - isAdmin
+                - isActive
             type: object
             additionalProperties: false
         UserPayload:
@@ -376,9 +372,8 @@ components:
             additionalProperties: false
         GroupDetailsResponse:
             properties:
-                groupId:
-                    type: number
-                    format: double
+                uid:
+                    type: string
                 name:
                     type: string
                 description:
@@ -390,7 +385,7 @@ components:
                         $ref: '#/components/schemas/UserResponse'
                     type: array
             required:
-                - groupId
+                - uid
                 - name
                 - description
                 - isActive
@@ -459,9 +454,8 @@ components:
             additionalProperties: false
         PermissionDetailsResponse:
             properties:
-                permissionId:
-                    type: number
-                    format: double
+                uid:
+                    type: string
                 path:
                     type: string
                 type:
@@ -473,7 +467,7 @@ components:
                 group:
                     $ref: '#/components/schemas/GroupDetailsResponse'
             required:
-                - permissionId
+                - uid
                 - path
                 - type
                 - setting
@@ -512,10 +506,8 @@ components:
                     description: 'Indicates the type of principal'
                     example: user
                 principalId:
-                    type: number
-                    format: double
+                    type: string
                     description: 'The id of user or group to which a rule is assigned.'
-                    example: 123
             required:
                 - path
                 - type
@@ -534,25 +526,37 @@ components:
                 - setting
             type: object
             additionalProperties: false
-        SessionResponse:
+        Pick_UserResponse.Exclude_keyofUserResponse.uid__:
             properties:
-                id:
-                    type: number
-                    format: double
                 username:
                     type: string
                 displayName:
                     type: string
                 isAdmin:
                     type: boolean
-                needsToUpdatePassword:
-                    type: boolean
             required:
-                - id
                 - username
                 - displayName
                 - isAdmin
-                - needsToUpdatePassword
+            type: object
+            description: 'From T, pick a set of properties whose keys are in the union K'
+        SessionResponse:
+            properties:
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+                id:
+                    type: string
+                needsToUpdatePassword:
+                    type: boolean
+            required:
+                - username
+                - displayName
+                - isAdmin
+                - id
             type: object
             additionalProperties: false
         ExecutePostRequestPayload:
@@ -1206,7 +1210,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{id: 123, username: johnusername, displayName: John, isAdmin: false}, {id: 456, username: starkusername, displayName: Stark, isAdmin: true}]
+                                    value: [{uid: userIdString, username: johnusername, displayName: John, isAdmin: false}, {uid: anotherUserIdString, username: starkusername, displayName: Stark, isAdmin: true}]
             summary: 'Get list of all users (username, displayname). All users can request this.'
             tags:
                 - User
@@ -1225,7 +1229,7 @@ paths:
                                 $ref: '#/components/schemas/UserDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                                    value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
             summary: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
             tags:
                 - User
@@ -1276,7 +1280,7 @@ paths:
                                 $ref: '#/components/schemas/UserDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                                    value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
             summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
             tags:
                 - User
@@ -1327,7 +1331,7 @@ paths:
                                 password:
                                     type: string
                             type: object
-    '/SASjsApi/user/{userId}':
+    '/SASjsApi/user/{uid}':
         get:
             operationId: GetUser
             responses:
@@ -1346,14 +1350,12 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'The user''s identifier'
                     in: path
-                    name: userId
+                    name: uid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: 1234
+                        type: string
+    '/SASjsApi/user/{userId}':
         patch:
             operationId: UpdateUser
             responses:
@@ -1365,7 +1367,7 @@ paths:
                                 $ref: '#/components/schemas/UserDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: 1234, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                                    value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
             summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
             tags:
                 - User
@@ -1379,8 +1381,7 @@ paths:
                     name: userId
                     required: true
                     schema:
-                        format: double
-                        type: number
+                        type: string
                     example: '1234'
             requestBody:
                 required: true
@@ -1406,8 +1407,7 @@ paths:
                     name: userId
                     required: true
                     schema:
-                        format: double
-                        type: number
+                        type: string
                     example: 1234
             requestBody:
                 required: true
@@ -1432,7 +1432,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users'}]
+                                    value: [{uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users'}]
             summary: 'Get list of all groups (groupName and groupDescription). All users can request this.'
             tags:
                 - Group
@@ -1451,7 +1451,7 @@ paths:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                                    value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
             summary: 'Create a new group. Admin only.'
             tags:
                 - Group
@@ -1467,7 +1467,7 @@ paths:
                             $ref: '#/components/schemas/GroupPayload'
     '/SASjsApi/group/by/groupname/{name}':
         get:
-            operationId: GetGroupByGroupName
+            operationId: GetGroupByName
             responses:
                 '200':
                     description: Ok
@@ -1489,7 +1489,7 @@ paths:
                     required: true
                     schema:
                         type: string
-    '/SASjsApi/group/{groupId}':
+    '/SASjsApi/group/{uid}':
         get:
             operationId: GetGroup
             responses:
@@ -1509,12 +1509,11 @@ paths:
                 -
                     description: 'The group''s identifier'
                     in: path
-                    name: groupId
+                    name: uid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: 1234
+                        type: string
+                    example: 12ByteString
         delete:
             operationId: DeleteGroup
             responses:
@@ -1536,13 +1535,12 @@ paths:
                 -
                     description: 'The group''s identifier'
                     in: path
-                    name: groupId
+                    name: uid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: 1234
-    '/SASjsApi/group/{groupId}/{userId}':
+                        type: string
+                    example: 12ByteString
+    '/SASjsApi/group/{groupUid}/{userUid}':
         post:
             operationId: AddUserToGroup
             responses:
@@ -1554,7 +1552,7 @@ paths:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                                    value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
             summary: 'Add a user to a group. Admin task only.'
             tags:
                 - Group
@@ -1565,21 +1563,18 @@ paths:
                 -
                     description: 'The group''s identifier'
                     in: path
-                    name: groupId
+                    name: groupUid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: '1234'
+                        type: string
+                    example: 12ByteString
                 -
                     description: 'The user''s identifier'
                     in: path
-                    name: userId
+                    name: userUid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: '6789'
+                        type: string
         delete:
             operationId: RemoveUserFromGroup
             responses:
@@ -1591,8 +1586,8 @@ paths:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {groupId: 123, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Remove a user to a group. Admin task only.'
+                                    value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+            summary: 'Remove a user from a group. Admin task only.'
             tags:
                 - Group
             security:
@@ -1602,21 +1597,19 @@ paths:
                 -
                     description: 'The group''s identifier'
                     in: path
-                    name: groupId
+                    name: groupUid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: '1234'
+                        type: string
+                    example: 12ByteString
                 -
                     description: 'The user''s identifier'
                     in: path
-                    name: userId
+                    name: userUid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: '6789'
+                        type: string
+                    example: 12ByteString
     /SASjsApi/info:
         get:
             operationId: Info
@@ -1667,7 +1660,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{permissionId: 123, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {permissionId: 124, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: {groupId: 1, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
+                                    value: [{uid: permissionId1String, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: user1-id, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {uid: permissionId2String, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: {uid: group1-id, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
             description: "Get the list of permission rules applicable the authenticated user.\nIf the user is an admin, all rules are returned."
             summary: 'Get the list of permission rules. If the user is admin, all rules are returned.'
             tags:
@@ -1687,7 +1680,7 @@ paths:
                                 $ref: '#/components/schemas/PermissionDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {permissionId: 123, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
             summary: 'Create a new permission. Admin only.'
             tags:
                 - Permission
@@ -1701,7 +1694,7 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/RegisterPermissionPayload'
-    '/SASjsApi/permission/{permissionId}':
+    '/SASjsApi/permission/{uid}':
         patch:
             operationId: UpdatePermission
             responses:
@@ -1713,7 +1706,7 @@ paths:
                                 $ref: '#/components/schemas/PermissionDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {permissionId: 123, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {id: 1, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
             summary: 'Update permission setting. Admin only'
             tags:
                 - Permission
@@ -1722,14 +1715,11 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'The permission''s identifier'
                     in: path
-                    name: permissionId
+                    name: uid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: 1234
+                        type: string
             requestBody:
                 required: true
                 content:
@@ -1749,14 +1739,11 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'The user''s identifier'
                     in: path
-                    name: permissionId
+                    name: uid
                     required: true
                     schema:
-                        format: double
-                        type: number
-                    example: 1234
+                        type: string
     /SASjsApi/session:
         get:
             operationId: Session
@@ -1769,7 +1756,7 @@ paths:
                                 $ref: '#/components/schemas/SessionResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: 123, username: johnusername, displayName: John, isAdmin: false}
+                                    value: {id: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}
             summary: 'Get session info (username).'
             tags:
                 - Session
@@ -1863,7 +1850,7 @@ paths:
                         application/json:
                             schema:
                                 properties:
-                                    user: {properties: {needsToUpdatePassword: {type: boolean}, isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {type: number, format: double}}, required: [needsToUpdatePassword, isAdmin, displayName, username, id], type: object}
+                                    user: {properties: {needsToUpdatePassword: {type: boolean}, isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {}}, required: [needsToUpdatePassword, isAdmin, displayName, username, id], type: object}
                                     loggedIn: {type: boolean}
                                 required:
                                     - user

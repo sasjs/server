@@ -113,7 +113,7 @@ export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
     principalType: Joi.string()
       .required()
       .valid(...Object.values(PrincipalType)),
-    principalId: Joi.number().required()
+    principalId: Joi.string().required()
   }).validate(data)
 
 export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
