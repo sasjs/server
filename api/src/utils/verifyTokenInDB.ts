@@ -21,7 +21,7 @@ export const fetchLatestAutoExec = async (
 }
 
 export const verifyTokenInDB = async (
-  userId: number,
+  userId: string,
   clientId: string,
   token: string,
   tokenType: 'accessToken' | 'refreshToken'
