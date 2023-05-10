@@ -9,6 +9,7 @@ import {
   deleteUserValidation,
   getUserValidation,
   registerUserValidation,
+  uidValidation,
   updateUserValidation
 } from '../../utils'
 
@@ -57,7 +58,10 @@ userRouter.get(
 )
 
 userRouter.get('/:uid', authenticateAccessToken, async (req, res) => {
-  const { uid } = req.params
+  const { error, value: params } = uidValidation(req.params)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  const { uid } = params
 
   const controller = new UserController()
   try {
@@ -102,7 +106,11 @@ userRouter.patch(
   verifyAdminIfNeeded,
   async (req, res) => {
     const { user } = req
-    const { uid } = req.params
+
+    const { error: uidError, value: params } = uidValidation(req.params)
+    if (uidError) return res.status(400).send(uidError.details[0].message)
+
+    const { uid } = params
 
     // only an admin can update `isActive` and `isAdmin` fields
     const { error, value: body } = updateUserValidation(req.body, user!.isAdmin)
@@ -152,7 +160,11 @@ userRouter.delete(
   verifyAdminIfNeeded,
   async (req, res) => {
     const { user } = req
-    const { uid } = req.params
+
+    const { error: uidError, value: params } = uidValidation(req.params)
+    if (uidError) return res.status(400).send(uidError.details[0].message)
+
+    const { uid } = params
 
     // only an admin can delete user without providing password
     const { error, value: data } = deleteUserValidation(req.body, user!.isAdmin)

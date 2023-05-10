@@ -3,6 +3,7 @@ import { PermissionController } from '../../controllers/'
 import { verifyAdmin } from '../../middlewares'
 import {
   registerPermissionValidation,
+  uidValidation,
   updatePermissionValidation
 } from '../../utils'
 
@@ -35,7 +36,10 @@ permissionRouter.post('/', verifyAdmin, async (req, res) => {
 })
 
 permissionRouter.patch('/:uid', verifyAdmin, async (req: any, res) => {
-  const { uid } = req.params
+  const { error: uidError, value: params } = uidValidation(req.params)
+  if (uidError) return res.status(400).send(uidError.details[0].message)
+
+  const { uid } = params
 
   const { error, value: body } = updatePermissionValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
@@ -51,8 +55,10 @@ permissionRouter.patch('/:uid', verifyAdmin, async (req: any, res) => {
 })
 
 permissionRouter.delete('/:uid', verifyAdmin, async (req: any, res) => {
-  const { uid } = req.params
+  const { error: uidError, value: params } = uidValidation(req.params)
+  if (uidError) return res.status(400).send(uidError.details[0].message)
 
+  const { uid } = params
   try {
     await controller.deletePermission(uid)
     res.status(200).send('Permission Deleted!')

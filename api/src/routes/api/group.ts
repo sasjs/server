@@ -1,7 +1,11 @@
 import express from 'express'
 import { GroupController } from '../../controllers/'
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
-import { getGroupValidation, registerGroupValidation } from '../../utils'
+import {
+  getGroupValidation,
+  registerGroupValidation,
+  uidValidation
+} from '../../utils'
 
 const groupRouter = express.Router()
 
@@ -34,7 +38,10 @@ groupRouter.get('/', authenticateAccessToken, async (req, res) => {
 })
 
 groupRouter.get('/:uid', authenticateAccessToken, async (req, res) => {
-  const { uid } = req.params
+  const { error: uidError, value: params } = uidValidation(req.params)
+  if (uidError) return res.status(400).send(uidError.details[0].message)
+
+  const { uid } = params
 
   const controller = new GroupController()
   try {
@@ -76,7 +83,6 @@ groupRouter.post(
       const response = await controller.addUserToGroup(groupUid, userUid)
       res.send(response)
     } catch (err: any) {
-      console.log('err :>> ', err)
       res.status(err.code).send(err.message)
     }
   }
@@ -104,7 +110,10 @@ groupRouter.delete(
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
-    const { uid } = req.params
+    const { error: uidError, value: params } = uidValidation(req.params)
+    if (uidError) return res.status(400).send(uidError.details[0].message)
+
+    const { uid } = params
 
     const controller = new GroupController()
     try {

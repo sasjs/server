@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -690,8 +691,10 @@ describe('user', () => {
     it('should respond with Not Found if userId is incorrect', async () => {
       await controller.createUser(user)
 
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .get('/SASjsApi/user/1234')
+        .get(`/SASjsApi/user/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -803,13 +806,13 @@ describe('user', () => {
 
       expect(res.body).toEqual([
         {
-          id: expect.anything(),
+          uid: expect.anything(),
           username: adminUser.username,
           displayName: adminUser.displayName,
           isAdmin: adminUser.isAdmin
         },
         {
-          id: expect.anything(),
+          uid: expect.anything(),
           username: user.username,
           displayName: user.displayName,
           isAdmin: user.isAdmin
@@ -831,13 +834,13 @@ describe('user', () => {
 
       expect(res.body).toEqual([
         {
-          id: expect.anything(),
+          uid: expect.anything(),
           username: adminUser.username,
           displayName: adminUser.displayName,
           isAdmin: adminUser.isAdmin
         },
         {
-          id: expect.anything(),
+          uid: expect.anything(),
           username: 'randomUser',
           displayName: user.displayName,
           isAdmin: user.isAdmin

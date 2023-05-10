@@ -12,6 +12,11 @@ const groupnameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i
 
+export const uidValidation = (data: any) =>
+  Joi.object({
+    uid: Joi.string().length(24).hex().required()
+  }).validate(data)
+
 export const getUserValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     username: usernameSchema.required()
@@ -113,7 +118,7 @@ export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
     principalType: Joi.string()
       .required()
       .valid(...Object.values(PrincipalType)),
-    principalId: Joi.string().required()
+    principalId: Joi.string().length(24).hex().required()
   }).validate(data)
 
 export const updatePermissionValidation = (data: any): Joi.ValidationResult =>

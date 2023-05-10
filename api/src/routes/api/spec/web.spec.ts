@@ -145,7 +145,7 @@ describe('web', () => {
 
       expect(res.body.loggedIn).toBeTruthy()
       expect(res.body.user).toEqual({
-        id: expect.any(Number),
+        id: expect.anything(),
         username: user.username,
         displayName: user.displayName,
         isAdmin: user.isAdmin,

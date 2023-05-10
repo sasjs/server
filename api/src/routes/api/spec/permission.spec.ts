@@ -17,6 +17,7 @@ import {
   PermissionDetailsResponse
 } from '../../../controllers'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import { randomBytes } from 'crypto'
 
 const deployPayload = {
   appLoc: 'string',
@@ -281,17 +282,19 @@ describe('permission', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Bad Request if principalId is not a number', async () => {
+    it('should respond with Bad Request if principalId is not a string of 24 hex characters', async () => {
       const res = await request(app)
         .post('/SASjsApi/permission')
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          principalId: 'someCharacters'
+          principalId: randomBytes(10).toString('hex')
         })
         .expect(400)
 
-      expect(res.text).toEqual('"principalId" must be a number')
+      expect(res.text).toEqual(
+        '"principalId" length must be 24 characters long'
+      )
       expect(res.body).toEqual({})
     })
 
@@ -321,7 +324,7 @@ describe('permission', () => {
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          principalId: 123
+          principalId: randomBytes(12).toString('hex')
         })
         .expect(404)
 
@@ -336,7 +339,7 @@ describe('permission', () => {
         .send({
           ...permission,
           principalType: 'group',
-          principalId: 123
+          principalId: randomBytes(12).toString('hex')
         })
         .expect(404)
 
@@ -437,8 +440,9 @@ describe('permission', () => {
     })
 
     it('should respond with not found (404) if permission with provided id does not exist', async () => {
+      const hexValue = randomBytes(12).toString('hex')
       const res = await request(app)
-        .patch('/SASjsApi/permission/123')
+        .patch(`/SASjsApi/permission/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           setting: PermissionSettingForRoute.deny
@@ -466,8 +470,10 @@ describe('permission', () => {
     })
 
     it('should respond with not found (404) if permission with provided id does not exists', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .delete('/SASjsApi/permission/123')
+        .delete(`/SASjsApi/permission/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
