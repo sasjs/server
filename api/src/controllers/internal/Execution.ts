@@ -128,6 +128,7 @@ export class ExecutionController {
     // INFO: webout can be a Buffer, that is why it's length should be checked to determine if it is empty
     if (webout && webout.length !== 0) resultParts.push(webout)
 
+    // INFO: log separator wraps the log from the beginning and the end
     resultParts.push(process.logsUUID)
     resultParts.push(log)
     resultParts.push(process.logsUUID)
