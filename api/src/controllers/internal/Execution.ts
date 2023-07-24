@@ -130,6 +130,7 @@ export class ExecutionController {
 
     resultParts.push(process.logsUUID)
     resultParts.push(log)
+    resultParts.push(process.logsUUID)
 
     if (includePrintOutput && runTime === RunTimeType.SAS) {
       const printOutputPath = path.join(session.path, 'output.lst')
@@ -137,10 +138,7 @@ export class ExecutionController {
         ? await readFile(printOutputPath)
         : ''
 
-      if (printOutput) {
-        resultParts.push(process.logsUUID)
-        resultParts.push(printOutput)
-      }
+      if (printOutput) resultParts.push(printOutput)
     }
 
     return {
