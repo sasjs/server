@@ -1,3 +1,10 @@
+## [0.35.1](https://github.com/sasjs/server/compare/v0.35.0...v0.35.1) (2023-07-25)
+
+
+### Bug Fixes
+
+* **log-separator:** log separator should always wrap log ([8940f4d](https://github.com/sasjs/server/commit/8940f4dc47abae2036b4fcdeb772c31a0ca07cca))
+
 # [0.35.0](https://github.com/sasjs/server/compare/v0.34.2...v0.35.0) (2023-05-03)
 
 
