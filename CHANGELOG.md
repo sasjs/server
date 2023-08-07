@@ -1,3 +1,10 @@
+## [0.35.2](https://github.com/sasjs/server/compare/v0.35.1...v0.35.2) (2023-08-07)
+
+
+### Bug Fixes
+
+* add _debug as optional query param in swagger apis for GET stp/execute ([9586dbb](https://github.com/sasjs/server/commit/9586dbb2d0d6611061c9efdfb84030144f62c2ee))
+
 ## [0.35.1](https://github.com/sasjs/server/compare/v0.35.0...v0.35.1) (2023-07-25)
 
 
