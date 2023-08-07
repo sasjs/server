@@ -24,7 +24,7 @@ export class STPController {
   /**
    * Trigger a Stored Program using the _program URL parameter.
    *
-   * Accepts additional URL parameters (converted to session variables) 
+   * Accepts additional URL parameters (converted to session variables)
    * and file uploads.  For more details, see docs:
    *
    * https://server.sasjs.io/storedprograms
