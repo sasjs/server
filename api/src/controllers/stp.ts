@@ -24,13 +24,14 @@ export class STPController {
   /**
    * Trigger a Stored Program using the _program URL parameter.
    *
-   * Accepts URL parameters and file uploads.  For more details, see docs:
+   * Accepts additional URL parameters (converted to session variables) 
+   * and file uploads.  For more details, see docs:
    *
    * https://server.sasjs.io/storedprograms
    *
    * @summary Execute a Stored Program, returns _webout and (optionally) log.
    * @param _program Location of code in SASjs Drive
-   * @param _debug Optional query param for setting debug mode
+   * @param _debug Optional query param for setting debug mode, which will return the session log.
    * @example _program "/Projects/myApp/some/program"
    * @example _debug 131
    */
