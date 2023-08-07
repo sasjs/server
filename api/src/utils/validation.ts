@@ -180,7 +180,8 @@ export const runCodeValidation = (data: any): Joi.ValidationResult =>
 
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    _program: Joi.string().required()
+    _program: Joi.string().required(),
+    _debug: Joi.number()
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)

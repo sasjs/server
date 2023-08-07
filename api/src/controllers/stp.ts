@@ -7,6 +7,7 @@ import {
   getRunTimeAndFilePath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
+import { debug } from 'console'
 
 interface ExecutePostRequestPayload {
   /**
@@ -23,20 +24,30 @@ export class STPController {
   /**
    * Trigger a Stored Program using the _program URL parameter.
    *
-   * Accepts URL parameters and file uploads.  For more details, see docs:
+   * Accepts additional URL parameters (converted to session variables)
+   * and file uploads.  For more details, see docs:
    *
    * https://server.sasjs.io/storedprograms
    *
    * @summary Execute a Stored Program, returns _webout and (optionally) log.
    * @param _program Location of code in SASjs Drive
+   * @param _debug Optional query param for setting debug mode, which will return the session log.
    * @example _program "/Projects/myApp/some/program"
+   * @example _debug 131
    */
   @Get('/execute')
   public async executeGetRequest(
     @Request() request: express.Request,
-    @Query() _program: string
+    @Query() _program: string,
+    @Query() _debug?: number
   ): Promise<string | Buffer> {
-    const vars = request.query as ExecutionVars
+    let vars = request.query as ExecutionVars
+    if (_debug) {
+      vars = {
+        ...vars,
+        _debug
+      }
+    }
 
     return execute(request, _program, vars)
   }
