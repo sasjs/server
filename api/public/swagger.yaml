@@ -792,7 +792,7 @@ paths:
                                     - {type: string}
                                     - {type: string, format: byte}
             description: 'Execute Code on the Specified Runtime'
-            summary: 'Run Code and Return Webout Content and Log'
+            summary: "Run Code and Return Webout Content, Log and Print output\nThe order of returned parts of the payload is:\n1. Webout (if present)\n2. Logs UUID (used as separator)\n3. Log\n4. Logs UUID (used as separator)\n5. Print (if present and if the runtime is SAS)\nPlease see"
             tags:
                 - Code
             security:
@@ -1805,6 +1805,15 @@ paths:
                     schema:
                         type: string
                     example: /Projects/myApp/some/program
+                -
+                    description: 'Optional query param for setting debug mode'
+                    in: query
+                    name: _debug
+                    required: false
+                    schema:
+                        format: double
+                        type: number
+                    example: 131
         post:
             operationId: ExecutePostRequest
             responses:

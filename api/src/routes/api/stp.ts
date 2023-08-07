@@ -13,7 +13,11 @@ stpRouter.get('/execute', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.executeGetRequest(req, query._program)
+    const response = await controller.executeGetRequest(
+      req,
+      query._program,
+      query._debug
+    )
 
     if (response instanceof Buffer) {
       res.writeHead(200, (req as any).sasHeaders)
