@@ -26,18 +26,20 @@ const Profile = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
-    axios
-      .get(`/SASjsApi/user/${appContext.userId}`)
-      .then((res: any) => {
-        setUser(res.data)
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+    if (appContext.userId) {
+      setIsLoading(true)
+      axios
+        .get(`/SASjsApi/user/${appContext.userId}`)
+        .then((res: any) => {
+          setUser(res.data)
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
   }, [appContext.userId])
 
   const handleChange = (event: any) => {

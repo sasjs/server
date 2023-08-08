@@ -1,12 +1,12 @@
 export interface UserResponse {
-  uid: number
+  uid: string
   username: string
   displayName: string
   isAdmin: boolean
 }
 
 export interface GroupResponse {
-  uid: number
+  uid: string
   name: string
   description: string
 }
@@ -17,7 +17,7 @@ export interface GroupDetailsResponse extends GroupResponse {
 }
 
 export interface PermissionResponse {
-  uid: number
+  uid: string
   path: string
   type: string
   setting: string
@@ -30,7 +30,7 @@ export interface RegisterPermissionPayload {
   type: string
   setting: string
   principalType: string
-  principalId: number
+  principalId: string
 }
 
 export interface TreeNode {

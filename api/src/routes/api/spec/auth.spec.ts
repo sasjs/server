@@ -1,4 +1,3 @@
-import { randomBytes } from 'crypto'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -14,6 +13,7 @@ import {
   generateAccessToken,
   generateAuthCode,
   generateRefreshToken,
+  randomBytesHexString,
   saveTokensInDB,
   verifyTokenInDB
 } from '../../../utils'
@@ -52,7 +52,7 @@ describe('auth', () => {
   describe('token', () => {
     const userInfo: InfoJWT = {
       clientId,
-      userId: randomBytes(12).toString('hex')
+      userId: randomBytesHexString(12)
     }
     beforeAll(async () => {
       await userController.createUser(user)
