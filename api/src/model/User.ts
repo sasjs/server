@@ -1,6 +1,6 @@
 import { Schema, model, Document, Model, ObjectId } from 'mongoose'
 import bcrypt from 'bcryptjs'
-import { AuthProviderType, getSequenceNextValue } from '../utils'
+import { AuthProviderType } from '../utils'
 
 export interface UserPayload {
   /**
