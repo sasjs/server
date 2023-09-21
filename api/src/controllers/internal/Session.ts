@@ -190,20 +190,17 @@ ${autoExecContent}`
   }
 
   private scheduleSessionDestroy(session: Session) {
-    setTimeout(
-      async () => {
-        if (session.inUse) {
-          // adding 10 more minutes
-          const newDeathTimeStamp = parseInt(session.deathTimeStamp) + 10 * 1000
-          session.deathTimeStamp = newDeathTimeStamp.toString()
+    setTimeout(async () => {
+      if (session.inUse) {
+        // adding 10 more minutes
+        const newDeathTimeStamp = parseInt(session.deathTimeStamp) + 10 * 1000
+        session.deathTimeStamp = newDeathTimeStamp.toString()
 
-          this.scheduleSessionDestroy(session)
-        } else {
-          await this.deleteSession(session)
-        }
-      },
-      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
-    )
+        this.scheduleSessionDestroy(session)
+      } else {
+        await this.deleteSession(session)
+      }
+    }, parseInt(session.deathTimeStamp) - new Date().getTime() - 100)
   }
 }
 
