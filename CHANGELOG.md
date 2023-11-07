@@ -1,3 +1,10 @@
+## [0.35.3](https://github.com/sasjs/server/compare/v0.35.2...v0.35.3) (2023-11-07)
+
+
+### Bug Fixes
+
+* enable embedded LFs in JS STP vars ([7e8cbbf](https://github.com/sasjs/server/commit/7e8cbbf377b27a7f5dd9af0bc6605c01f302f5d9))
+
 ## [0.35.2](https://github.com/sasjs/server/compare/v0.35.1...v0.35.2) (2023-08-07)
 
 
