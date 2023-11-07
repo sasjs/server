@@ -15,7 +15,7 @@ export const createJSProgram = async (
 ) => {
   const varStatments = Object.keys(vars).reduce(
     (computed: string, key: string) =>
-      `${computed}const ${key} = '${vars[key]}';\n`,
+      `${computed}const ${key} = \`${vars[key]}\`;\n`,
     ''
   )
 
