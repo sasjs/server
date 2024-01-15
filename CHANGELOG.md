@@ -1,3 +1,10 @@
+## [0.35.4](https://github.com/sasjs/server/compare/v0.35.3...v0.35.4) (2024-01-15)
+
+
+### Bug Fixes
+
+* **api:** fixed env issue in MacOS executable ([73d965d](https://github.com/sasjs/server/commit/73d965daf54b16c0921e4b18d11a1e6f8650884d))
+
 ## [0.35.3](https://github.com/sasjs/server/compare/v0.35.2...v0.35.3) (2023-11-07)
 
 
