@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
-    "build": "webpack --config webpack.prod.ts"
+    "build": "webpack --config webpack.prod.ts",
+    "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
+    "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
   },
   "dependencies": {
     "@emotion/react": "^11.4.1",
@@ -55,7 +57,7 @@
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "5.5.0",
     "path": "0.12.7",
-    "prettier": "^2.4.1",
+    "prettier": "^3.0.3",
     "sass": "^1.44.0",
     "sass-loader": "^12.3.0",
     "style-loader": "^3.3.1",
