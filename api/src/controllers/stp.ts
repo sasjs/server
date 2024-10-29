@@ -30,8 +30,8 @@ export class STPController {
    * https://server.sasjs.io/storedprograms
    *
    * @summary Execute a Stored Program, returns _webout and (optionally) log.
-   * @param _program Location of code in SASjs Drive
-   * @param _debug Optional query param for setting debug mode, which will return the session log.
+   * @param _program Location of Stored Program in SASjs Drive.
+   * @param _debug Optional query param for setting debug mode (returns the session log in the response body).
    * @example _program "/Projects/myApp/some/program"
    * @example _debug 131
    */

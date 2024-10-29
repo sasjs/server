@@ -98,11 +98,11 @@ components:
             properties:
                 code:
                     type: string
-                    description: 'Code of program'
-                    example: '* Code HERE;'
+                    description: 'The code to be executed'
+                    example: '* Your Code HERE;'
                 runTime:
                     $ref: '#/components/schemas/RunTimeType'
-                    description: 'runtime for program'
+                    description: 'The runtime for the code - eg SAS, JS, PY or R'
                     example: js
             required:
                 - code
@@ -113,7 +113,7 @@ components:
             properties:
                 sessionId:
                     type: string
-                    description: "Session ID (SAS WORK folder) used to execute code.\nThis session ID should be used to poll job status."
+                    description: "The SessionId is the name of the temporary folder used to store the outputs.\nFor SAS, this would be the SASWORK folder. Can be used to poll job status.\nThis session ID should be used to poll job status."
                     example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
             required:
                 - sessionId
@@ -123,11 +123,11 @@ components:
             properties:
                 code:
                     type: string
-                    description: 'Code of program'
-                    example: '* Code HERE;'
+                    description: 'The code to be executed'
+                    example: '* Your Code HERE;'
                 runTime:
                     $ref: '#/components/schemas/RunTimeType'
-                    description: 'runtime for program'
+                    description: 'The runtime for the code - eg SAS, JS, PY or R'
                     example: sas
                 expiresAfterMins:
                     type: number
@@ -846,7 +846,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/TriggerCodeResponse'
             description: 'Trigger Code on the Specified Runtime'
-            summary: 'Trigger Code and Return Session Id not awaiting for the job completion'
+            summary: 'Triggers code and returns SessionId immediately - does not wait for job completion'
             tags:
                 - Code
             security:
@@ -1852,7 +1852,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of code in SASjs Drive'
+                    description: 'Location of Stored Program in SASjs Drive.'
                     in: query
                     name: _program
                     required: true
@@ -1860,7 +1860,7 @@ paths:
                         type: string
                     example: /Projects/myApp/some/program
                 -
-                    description: 'Optional query param for setting debug mode, which will return the session log.'
+                    description: 'Optional query param for setting debug mode (returns the session log in the response body).'
                     in: query
                     name: _debug
                     required: false

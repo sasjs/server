@@ -10,12 +10,12 @@ import {
 
 interface ExecuteCodePayload {
   /**
-   * Code of program
-   * @example "* Code HERE;"
+   * The code to be executed
+   * @example "* Your Code HERE;"
    */
   code: string
   /**
-   * runtime for program
+   * The runtime for the code - eg SAS, JS, PY or R
    * @example "js"
    */
   runTime: RunTimeType
@@ -23,12 +23,12 @@ interface ExecuteCodePayload {
 
 interface TriggerCodePayload {
   /**
-   * Code of program
-   * @example "* Code HERE;"
+   * The code to be executed
+   * @example "* Your Code HERE;"
    */
   code: string
   /**
-   * runtime for program
+   * The runtime for the code - eg SAS, JS, PY or R
    * @example "sas"
    */
   runTime: RunTimeType
@@ -42,7 +42,8 @@ interface TriggerCodePayload {
 
 interface TriggerCodeResponse {
   /**
-   * Session ID (SAS WORK folder) used to execute code.
+   * The SessionId is the name of the temporary folder used to store the outputs.
+   * For SAS, this would be the SASWORK folder. Can be used to poll job status.
    * This session ID should be used to poll job status.
    * @example "{ sessionId: '20241028074744-54132-1730101664824' }"
    */
@@ -74,7 +75,7 @@ export class CodeController {
 
   /**
    * Trigger Code on the Specified Runtime
-   * @summary Trigger Code and Return Session Id not awaiting for the job completion
+   * @summary Triggers code and returns SessionId immediately - does not wait for job completion
    */
   @Post('/trigger')
   public async triggerCode(
