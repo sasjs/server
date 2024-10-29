@@ -1,3 +1,10 @@
+# [0.36.0](https://github.com/sasjs/server/compare/v0.35.4...v0.36.0) (2024-10-29)
+
+
+### Features
+
+* **code:** added code/trigger API endpoint ([ffcf193](https://github.com/sasjs/server/commit/ffcf193b87d811b166d79af74013776a253b50b0))
+
 ## [0.35.4](https://github.com/sasjs/server/compare/v0.35.3...v0.35.4) (2024-01-15)
 
 
