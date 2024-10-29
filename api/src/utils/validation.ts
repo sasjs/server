@@ -192,3 +192,12 @@ export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)
+
+export const triggerProgramValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    _program: Joi.string().required(),
+    _debug: Joi.number(),
+    expiresAfterMins: Joi.number().greater(0)
+  })
+    .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
+    .validate(data)

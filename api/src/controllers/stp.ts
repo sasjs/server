@@ -1,13 +1,16 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
-import { ExecutionController, ExecutionVars } from './internal'
+import {
+  ExecutionController,
+  ExecutionVars,
+  getSessionController
+} from './internal'
 import {
   getPreProgramVariables,
   makeFilesNamesMap,
   getRunTimeAndFilePath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
-import { debug } from 'console'
 
 interface ExecutePostRequestPayload {
   /**
@@ -15,6 +18,30 @@ interface ExecutePostRequestPayload {
    * @example "/Public/somefolder/some.file"
    */
   _program?: string
+}
+
+interface TriggerProgramPayload {
+  /**
+   * Location of SAS program
+   * @example "/Public/somefolder/some.file"
+   */
+  _program: string
+  /**
+   * Amount of minutes after the completion of the program when the session must be
+   * destroyed.
+   * @example 15
+   */
+  expiresAfterMins?: number
+}
+
+interface TriggerProgramResponse {
+  /**
+   * The SessionId is the name of the temporary folder used to store the outputs.
+   * For SAS, this would be the SASWORK folder. Can be used to poll program status.
+   * This session ID should be used to poll program status.
+   * @example "{ sessionId: '20241028074744-54132-1730101664824' }"
+   */
+  sessionId: string
 }
 
 @Security('bearerAuth')
@@ -79,6 +106,31 @@ export class STPController {
 
     return execute(request, program!, vars, otherArgs)
   }
+
+  /**
+   * Trigger Program on the Specified Runtime
+   * @summary Triggers program and returns SessionId immediately - does not wait for program completion
+   * @param _program Location of code in SASjs Drive
+   * @example _program "/Projects/myApp/some/program"
+   * @param expiresAfterMins Amount of minutes after the completion of the program when the session must be destroyed
+   * @example expiresAfterMins 15
+   */
+  @Post('/trigger')
+  public async triggerProgram(
+    @Request() request: express.Request,
+    @Body() body: TriggerProgramPayload,
+    @Query() _program?: string
+  ): Promise<TriggerProgramResponse> {
+    const program = _program ?? body?._program
+    const vars = { ...request.query, ...request.body }
+    const filesNamesMap = request.files?.length
+      ? makeFilesNamesMap(request.files as MulterFile[])
+      : null
+    const otherArgs = { filesNamesMap: filesNamesMap }
+    const { expiresAfterMins } = body
+
+    return triggerProgram(request, program!, vars, otherArgs, expiresAfterMins)
+  }
 }
 
 const execute = async (
@@ -108,6 +160,50 @@ const execute = async (
     }
 
     return result
+  } catch (err: any) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'Job execution failed.',
+      error: typeof err === 'object' ? err.toString() : err
+    }
+  }
+}
+
+const triggerProgram = async (
+  req: express.Request,
+  _program: string,
+  vars: ExecutionVars,
+  otherArgs?: any,
+  expiresAfterMins?: number
+): Promise<TriggerProgramResponse> => {
+  try {
+    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
+    // get session controller based on runTime
+    const sessionController = getSessionController(runTime)
+
+    // get session
+    const session = await sessionController.getSession()
+
+    // add expiresAfterMins to session if provided
+    if (expiresAfterMins) {
+      // expiresAfterMins.used is set initially to false
+      session.expiresAfterMins = { mins: expiresAfterMins, used: false }
+    }
+
+    // call executeFile method of ExecutionController without awaiting
+    new ExecutionController().executeFile({
+      programPath: codePath,
+      runTime,
+      preProgramVariables: getPreProgramVariables(req),
+      vars,
+      otherArgs,
+      session
+    })
+
+    // return session id
+    return { sessionId: session.id }
   } catch (err: any) {
     throw {
       code: 400,

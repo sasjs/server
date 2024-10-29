@@ -593,6 +593,31 @@ components:
                     example: /Public/somefolder/some.file
             type: object
             additionalProperties: false
+        TriggerProgramResponse:
+            properties:
+                sessionId:
+                    type: string
+                    description: "The SessionId is the name of the temporary folder used to store the outputs.\nFor SAS, this would be the SASWORK folder. Can be used to poll program status.\nThis session ID should be used to poll program status."
+                    example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
+            required:
+                - sessionId
+            type: object
+            additionalProperties: false
+        TriggerProgramPayload:
+            properties:
+                _program:
+                    type: string
+                    description: 'Location of SAS program'
+                    example: /Public/somefolder/some.file
+                expiresAfterMins:
+                    type: number
+                    format: double
+                    description: "Amount of minutes after the completion of the program when the session must be\ndestroyed."
+                    example: 15
+            required:
+                - _program
+            type: object
+            additionalProperties: false
         LoginPayload:
             properties:
                 username:
@@ -1901,6 +1926,38 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecutePostRequestPayload'
+    /SASjsApi/stp/trigger:
+        post:
+            operationId: TriggerProgram
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TriggerProgramResponse'
+            description: 'Trigger Program on the Specified Runtime'
+            summary: 'Triggers program and returns SessionId immediately - does not wait for program completion'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of code in SASjs Drive'
+                    in: query
+                    name: _program
+                    required: false
+                    schema:
+                        type: string
+                    example: /Projects/myApp/some/program
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TriggerProgramPayload'
     /:
         get:
             operationId: Home
