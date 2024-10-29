@@ -13,6 +13,7 @@ import {
   generateAccessToken,
   generateAuthCode,
   generateRefreshToken,
+  randomBytesHexString,
   saveTokensInDB,
   verifyTokenInDB
 } from '../../../utils'
@@ -20,7 +21,6 @@ import {
 const clientId = 'someclientID'
 const clientSecret = 'someclientSecret'
 const user = {
-  id: 1234,
   displayName: 'Test User',
   username: 'testUsername',
   password: '87654321',
@@ -52,7 +52,7 @@ describe('auth', () => {
   describe('token', () => {
     const userInfo: InfoJWT = {
       clientId,
-      userId: user.id
+      userId: randomBytesHexString(12)
     }
     beforeAll(async () => {
       await userController.createUser(user)
@@ -151,10 +151,10 @@ describe('auth', () => {
       currentUser = await userController.createUser(user)
       refreshToken = generateRefreshToken({
         clientId,
-        userId: currentUser.id
+        userId: currentUser.uid
       })
       await saveTokensInDB(
-        currentUser.id,
+        currentUser.uid,
         clientId,
         'accessToken',
         refreshToken
@@ -202,11 +202,11 @@ describe('auth', () => {
       currentUser = await userController.createUser(user)
       accessToken = generateAccessToken({
         clientId,
-        userId: currentUser.id
+        userId: currentUser.uid
       })
 
       await saveTokensInDB(
-        currentUser.id,
+        currentUser.uid,
         clientId,
         accessToken,
         'refreshToken'

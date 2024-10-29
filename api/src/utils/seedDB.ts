@@ -82,7 +82,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
 }
 
 export const ALL_USERS_GROUP = {
-  name: 'AllUsers',
+  name: 'all-users',
   description: 'Group contains all users'
 }
 
