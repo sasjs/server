@@ -120,7 +120,7 @@ const executeCode = async (
 const triggerCode = async (
   req: express.Request,
   { code, runTime, expiresAfterMins }: TriggerCodePayload
-): Promise<{ sessionId: string }> => {
+): Promise<TriggerCodeResponse> => {
   const { user } = req
   const userAutoExec =
     process.env.MODE === ModeType.Server
