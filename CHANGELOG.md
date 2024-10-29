@@ -1,3 +1,10 @@
+# [0.37.0](https://github.com/sasjs/server/compare/v0.36.0...v0.37.0) (2024-10-29)
+
+
+### Features
+
+* **stp:** added trigger endpoint ([b0723f1](https://github.com/sasjs/server/commit/b0723f14448d60ffce4f2175cf8a73fc4d4dd0ee))
+
 # [0.36.0](https://github.com/sasjs/server/compare/v0.35.4...v0.36.0) (2024-10-29)
 
 
