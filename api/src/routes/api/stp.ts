@@ -78,11 +78,7 @@ stpRouter.post('/trigger', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.triggerProgram(
-      req,
-      body,
-      req.query?._program as string
-    )
+    const response = await controller.triggerProgram(req, body)
 
     res.status(200)
     res.send(response)

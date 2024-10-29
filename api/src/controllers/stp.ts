@@ -118,18 +118,9 @@ export class STPController {
   @Post('/trigger')
   public async triggerProgram(
     @Request() request: express.Request,
-    @Body() body: TriggerProgramPayload,
-    @Query() _program?: string
+    @Body() body: TriggerProgramPayload
   ): Promise<TriggerProgramResponse> {
-    const program = _program ?? body?._program
-    const vars = { ...request.query, ...request.body }
-    const filesNamesMap = request.files?.length
-      ? makeFilesNamesMap(request.files as MulterFile[])
-      : null
-    const otherArgs = { filesNamesMap: filesNamesMap }
-    const { expiresAfterMins } = body
-
-    return triggerProgram(request, program!, vars, otherArgs, expiresAfterMins)
+    return triggerProgram(request, body)
   }
 }
 
@@ -172,12 +163,14 @@ const execute = async (
 
 const triggerProgram = async (
   req: express.Request,
-  _program: string,
-  vars: ExecutionVars,
-  otherArgs?: any,
-  expiresAfterMins?: number
+  { _program, expiresAfterMins }: TriggerProgramPayload
 ): Promise<TriggerProgramResponse> => {
   try {
+    const vars = { ...req.body }
+    const filesNamesMap = req.files?.length
+      ? makeFilesNamesMap(req.files as MulterFile[])
+      : null
+    const otherArgs = { filesNamesMap: filesNamesMap }
     const { codePath, runTime } = await getRunTimeAndFilePath(_program)
 
     // get session controller based on runTime
