@@ -178,6 +178,13 @@ export const runCodeValidation = (data: any): Joi.ValidationResult =>
     runTime: Joi.string().valid(...process.runTimes)
   }).validate(data)
 
+export const triggerCodeValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    code: Joi.string().required(),
+    runTime: Joi.string().valid(...process.runTimes),
+    expiresAfterMins: Joi.number().greater(0)
+  }).validate(data)
+
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required(),

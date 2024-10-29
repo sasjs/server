@@ -8,4 +8,5 @@ export interface Session {
   consumed: boolean
   completed: boolean
   crashed?: string
+  expiresAfterMins?: { mins: number; used: boolean }
 }
