@@ -14,8 +14,7 @@ import {
   createFile,
   fileExists,
   generateTimestamp,
-  readFile,
-  isWindows
+  readFile
 } from '@sasjs/utils'
 
 const execFilePromise = promisify(execFile)
@@ -190,20 +189,33 @@ ${autoExecContent}`
   }
 
   private scheduleSessionDestroy(session: Session) {
-    setTimeout(
-      async () => {
-        if (session.inUse) {
-          // adding 10 more minutes
-          const newDeathTimeStamp = parseInt(session.deathTimeStamp) + 10 * 1000
+    setTimeout(async () => {
+      if (session.inUse) {
+        // adding 10 more minutes
+        const newDeathTimeStamp =
+          parseInt(session.deathTimeStamp) + 10 * 60 * 1000
+        session.deathTimeStamp = newDeathTimeStamp.toString()
+
+        this.scheduleSessionDestroy(session)
+      } else {
+        const { expiresAfterMins } = session
+
+        // delay session destroy if expiresAfterMins present
+        if (expiresAfterMins && !expiresAfterMins.used) {
+          // calculate session death time using expiresAfterMins
+          const newDeathTimeStamp =
+            parseInt(session.deathTimeStamp) + expiresAfterMins.mins * 60 * 1000
           session.deathTimeStamp = newDeathTimeStamp.toString()
+
+          // set expiresAfterMins to true to avoid using it again
+          session.expiresAfterMins!.used = true
 
           this.scheduleSessionDestroy(session)
         } else {
           await this.deleteSession(session)
         }
-      },
-      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
-    )
+      }
+    }, parseInt(session.deathTimeStamp) - new Date().getTime() - 100)
   }
 }
 

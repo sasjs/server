@@ -1,11 +1,10 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
-import { ExecutionController } from './internal'
+import { ExecutionController, getSessionController } from './internal'
 import {
   getPreProgramVariables,
   getUserAutoExec,
   ModeType,
-  parseLogToArray,
   RunTimeType
 } from '../utils'
 
@@ -20,6 +19,34 @@ interface ExecuteCodePayload {
    * @example "js"
    */
   runTime: RunTimeType
+}
+
+interface TriggerCodePayload {
+  /**
+   * Code of program
+   * @example "* Code HERE;"
+   */
+  code: string
+  /**
+   * runtime for program
+   * @example "sas"
+   */
+  runTime: RunTimeType
+  /**
+   * Amount of minutes after the completion of the job when the session must be
+   * destroyed.
+   * @example 15
+   */
+  expiresAfterMins?: number
+}
+
+interface TriggerCodeResponse {
+  /**
+   * Session ID (SAS WORK folder) used to execute code.
+   * This session ID should be used to poll job status.
+   * @example "{ sessionId: '20241028074744-54132-1730101664824' }"
+   */
+  sessionId: string
 }
 
 @Security('bearerAuth')
@@ -44,6 +71,18 @@ export class CodeController {
   ): Promise<string | Buffer> {
     return executeCode(request, body)
   }
+
+  /**
+   * Trigger Code on the Specified Runtime
+   * @summary Trigger Code and Return Session Id not awaiting for the job completion
+   */
+  @Post('/trigger')
+  public async triggerCode(
+    @Request() request: express.Request,
+    @Body() body: TriggerCodePayload
+  ): Promise<TriggerCodeResponse> {
+    return triggerCode(request, body)
+  }
 }
 
 const executeCode = async (
@@ -67,6 +106,52 @@ const executeCode = async (
     })
 
     return result
+  } catch (err: any) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'Job execution failed.',
+      error: typeof err === 'object' ? err.toString() : err
+    }
+  }
+}
+
+const triggerCode = async (
+  req: express.Request,
+  { code, runTime, expiresAfterMins }: TriggerCodePayload
+): Promise<{ sessionId: string }> => {
+  const { user } = req
+  const userAutoExec =
+    process.env.MODE === ModeType.Server
+      ? user?.autoExec
+      : await getUserAutoExec()
+
+  // get session controller based on runTime
+  const sessionController = getSessionController(runTime)
+
+  // get session
+  const session = await sessionController.getSession()
+
+  // add expiresAfterMins to session if provided
+  if (expiresAfterMins) {
+    // expiresAfterMins.used is set initially to false
+    session.expiresAfterMins = { mins: expiresAfterMins, used: false }
+  }
+
+  try {
+    // call executeProgram method of ExecutionController without awaiting
+    new ExecutionController().executeProgram({
+      program: code,
+      preProgramVariables: getPreProgramVariables(req),
+      vars: { ...req.query, _debug: 131 },
+      otherArgs: { userAutoExec },
+      runTime: runTime,
+      includePrintOutput: true,
+      session // session is provided
+    })
+
+    // return session id
+    return { sessionId: session.id }
   } catch (err: any) {
     throw {
       code: 400,

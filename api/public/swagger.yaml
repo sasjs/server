@@ -109,6 +109,36 @@ components:
                 - runTime
             type: object
             additionalProperties: false
+        TriggerCodeResponse:
+            properties:
+                sessionId:
+                    type: string
+                    description: "Session ID (SAS WORK folder) used to execute code.\nThis session ID should be used to poll job status."
+                    example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
+            required:
+                - sessionId
+            type: object
+            additionalProperties: false
+        TriggerCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'Code of program'
+                    example: '* Code HERE;'
+                runTime:
+                    $ref: '#/components/schemas/RunTimeType'
+                    description: 'runtime for program'
+                    example: sas
+                expiresAfterMins:
+                    type: number
+                    format: double
+                    description: "Amount of minutes after the completion of the job when the session must be\ndestroyed."
+                    example: 15
+            required:
+                - code
+                - runTime
+            type: object
+            additionalProperties: false
         MemberType.folder:
             enum:
                 - folder
@@ -805,6 +835,30 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/ExecuteCodePayload'
+    /SASjsApi/code/trigger:
+        post:
+            operationId: TriggerCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TriggerCodeResponse'
+            description: 'Trigger Code on the Specified Runtime'
+            summary: 'Trigger Code and Return Session Id not awaiting for the job completion'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TriggerCodePayload'
     /SASjsApi/drive/deploy:
         post:
             operationId: Deploy
@@ -1789,7 +1843,7 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
+            description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts additional URL parameters (converted to session variables)\nand file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
             summary: 'Execute a Stored Program, returns _webout and (optionally) log.'
             tags:
                 - STP
@@ -1798,7 +1852,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of the Stored Program in SASjs Drive'
+                    description: 'Location of code in SASjs Drive'
                     in: query
                     name: _program
                     required: true
@@ -1806,7 +1860,7 @@ paths:
                         type: string
                     example: /Projects/myApp/some/program
                 -
-                    description: 'Optional query param for setting debug mode (returns the session log in the response body)'
+                    description: 'Optional query param for setting debug mode, which will return the session log.'
                     in: query
                     name: _debug
                     required: false
