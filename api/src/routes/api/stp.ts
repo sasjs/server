@@ -73,12 +73,17 @@ stpRouter.post(
 )
 
 stpRouter.post('/trigger', async (req, res) => {
-  const { error, value: body } = triggerProgramValidation(req.body)
+  const { error, value: query } = triggerProgramValidation(req.query)
 
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.triggerProgram(req, body)
+    const response = await controller.triggerProgram(
+      req,
+      query._program,
+      query._debug,
+      query.expiresAfterMins
+    )
 
     res.status(200)
     res.send(response)

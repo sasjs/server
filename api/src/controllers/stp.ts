@@ -22,7 +22,7 @@ interface ExecutePostRequestPayload {
 
 interface TriggerProgramPayload {
   /**
-   * Location of SAS program
+   * Location of SAS program.
    * @example "/Public/somefolder/some.file"
    */
   _program: string
@@ -32,6 +32,10 @@ interface TriggerProgramPayload {
    * @example 15
    */
   expiresAfterMins?: number
+  /**
+   * Query param for setting debug mode.
+   */
+  _debug?: number
 }
 
 interface TriggerProgramResponse {
@@ -108,19 +112,23 @@ export class STPController {
   }
 
   /**
-   * Trigger Program on the Specified Runtime
-   * @summary Triggers program and returns SessionId immediately - does not wait for program completion
-   * @param _program Location of code in SASjs Drive
+   * Trigger Program on the Specified Runtime.
+   * @summary Triggers program and returns SessionId immediately - does not wait for program completion.
+   * @param _program Location of code in SASjs Drive.
+   * @param expiresAfterMins Optional query param for setting amount of minutes after the completion of the program when the session must be destroyed.
+   * @param _debug Optional query param for setting debug mode.
    * @example _program "/Projects/myApp/some/program"
-   * @param expiresAfterMins Amount of minutes after the completion of the program when the session must be destroyed
+   * @example _debug 131
    * @example expiresAfterMins 15
    */
   @Post('/trigger')
   public async triggerProgram(
     @Request() request: express.Request,
-    @Body() body: TriggerProgramPayload
+    @Query() _program: string,
+    @Query() _debug?: number,
+    @Query() expiresAfterMins?: number
   ): Promise<TriggerProgramResponse> {
-    return triggerProgram(request, body)
+    return triggerProgram(request, { _program, _debug, expiresAfterMins })
   }
 }
 
@@ -163,14 +171,18 @@ const execute = async (
 
 const triggerProgram = async (
   req: express.Request,
-  { _program, expiresAfterMins }: TriggerProgramPayload
+  { _program, _debug, expiresAfterMins }: TriggerProgramPayload
 ): Promise<TriggerProgramResponse> => {
   try {
-    const vars = { ...req.body }
-    const filesNamesMap = req.files?.length
-      ? makeFilesNamesMap(req.files as MulterFile[])
-      : null
-    const otherArgs = { filesNamesMap: filesNamesMap }
+    // put _program query param into vars object
+    const vars: { [key: string]: string | number } = { _program }
+
+    // if present add _debug query param to vars object
+    if (_debug) {
+      vars._debug = _debug
+    }
+
+    // get code path and runTime
     const { codePath, runTime } = await getRunTimeAndFilePath(_program)
 
     // get session controller based on runTime
@@ -191,7 +203,6 @@ const triggerProgram = async (
       runTime,
       preProgramVariables: getPreProgramVariables(req),
       vars,
-      otherArgs,
       session
     })
 
