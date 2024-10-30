@@ -45,7 +45,7 @@ interface TriggerCodeResponse {
    * The SessionId is the name of the temporary folder used to store the outputs.
    * For SAS, this would be the SASWORK folder. Can be used to poll job status.
    * This session ID should be used to poll job status.
-   * @example "{ sessionId: '20241028074744-54132-1730101664824' }"
+   * @example "20241028074744-54132-1730101664824"
    */
   sessionId: string
 }
