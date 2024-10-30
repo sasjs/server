@@ -1,5 +1,5 @@
 import path from 'path'
-import { Session } from '../../types'
+import { Session, SessionState } from '../../types'
 import { promisify } from 'util'
 import { execFile } from 'child_process'
 import {
@@ -23,7 +23,9 @@ export class SessionController {
   protected sessions: Session[] = []
 
   protected getReadySessions = (): Session[] =>
-    this.sessions.filter((sess: Session) => sess.ready && !sess.consumed)
+    this.sessions.filter(
+      (session: Session) => session.state === SessionState.pending
+    )
 
   protected async createSession(): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
@@ -39,19 +41,18 @@ export class SessionController {
 
     const session: Session = {
       id: sessionId,
-      ready: true,
-      inUse: true,
-      consumed: false,
-      completed: false,
+      state: SessionState.pending,
       creationTimeStamp,
       deathTimeStamp,
       path: sessionFolder
     }
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
+
     await createFile(headersPath, 'content-type: text/html; charset=utf-8')
 
     this.sessions.push(session)
+
     return session
   }
 
@@ -83,10 +84,7 @@ export class SASSessionController extends SessionController {
 
     const session: Session = {
       id: sessionId,
-      ready: false,
-      inUse: false,
-      consumed: false,
-      completed: false,
+      state: SessionState.initialising,
       creationTimeStamp,
       deathTimeStamp,
       path: sessionFolder
@@ -144,13 +142,20 @@ ${autoExecContent}`
       process.sasLoc!.endsWith('sas.exe') ? session.path : ''
     ])
       .then(() => {
-        session.completed = true
+        session.state = SessionState.completed
+
         process.logger.info('session completed', session)
       })
       .catch((err) => {
-        session.completed = true
-        session.crashed = err.toString()
-        process.logger.error('session crashed', session.id, session.crashed)
+        session.state = SessionState.failed
+
+        session.failureReason = err.toString()
+
+        process.logger.error(
+          'session crashed',
+          session.id,
+          session.failureReason
+        )
       })
 
     // we have a triggered session - add to array
@@ -167,15 +172,19 @@ ${autoExecContent}`
     const codeFilePath = path.join(session.path, 'code.sas')
 
     // TODO: don't wait forever
-    while ((await fileExists(codeFilePath)) && !session.crashed) {}
+    while (
+      (await fileExists(codeFilePath)) &&
+      session.state !== SessionState.failed
+    ) {}
 
-    if (session.crashed)
+    if (session.state === SessionState.failed) {
       process.logger.error(
         'session crashed! while waiting to be ready',
-        session.crashed
+        session.failureReason
       )
-
-    session.ready = true
+    } else {
+      session.state = SessionState.pending
+    }
   }
 
   private async deleteSession(session: Session) {
@@ -189,37 +198,33 @@ ${autoExecContent}`
   }
 
   private scheduleSessionDestroy(session: Session) {
-    setTimeout(
-      async () => {
-        if (session.inUse) {
-          // adding 10 more minutes
+    setTimeout(async () => {
+      if (session.state === SessionState.running) {
+        // adding 10 more minutes
+        const newDeathTimeStamp =
+          parseInt(session.deathTimeStamp) + 10 * 60 * 1000
+        session.deathTimeStamp = newDeathTimeStamp.toString()
+
+        this.scheduleSessionDestroy(session)
+      } else {
+        const { expiresAfterMins } = session
+
+        // delay session destroy if expiresAfterMins present
+        if (expiresAfterMins && session.state !== SessionState.completed) {
+          // calculate session death time using expiresAfterMins
           const newDeathTimeStamp =
-            parseInt(session.deathTimeStamp) + 10 * 60 * 1000
+            parseInt(session.deathTimeStamp) + expiresAfterMins.mins * 60 * 1000
           session.deathTimeStamp = newDeathTimeStamp.toString()
+
+          // set expiresAfterMins to true to avoid using it again
+          session.expiresAfterMins!.used = true
 
           this.scheduleSessionDestroy(session)
         } else {
-          const { expiresAfterMins } = session
-
-          // delay session destroy if expiresAfterMins present
-          if (expiresAfterMins && !expiresAfterMins.used) {
-            // calculate session death time using expiresAfterMins
-            const newDeathTimeStamp =
-              parseInt(session.deathTimeStamp) +
-              expiresAfterMins.mins * 60 * 1000
-            session.deathTimeStamp = newDeathTimeStamp.toString()
-
-            // set expiresAfterMins to true to avoid using it again
-            session.expiresAfterMins!.used = true
-
-            this.scheduleSessionDestroy(session)
-          } else {
-            await this.deleteSession(session)
-          }
+          await this.deleteSession(session)
         }
-      },
-      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
-    )
+      }
+    }, parseInt(session.deathTimeStamp) - new Date().getTime() - 100)
   }
 }
 

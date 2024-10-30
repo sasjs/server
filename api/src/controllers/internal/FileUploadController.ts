@@ -2,11 +2,8 @@ import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
 import { getSessionController } from '.'
-import {
-  executeProgramRawValidation,
-  getRunTimeAndFilePath,
-  RunTimeType
-} from '../../utils'
+import { executeProgramRawValidation, getRunTimeAndFilePath } from '../../utils'
+import { SessionState } from '../../types'
 
 export class FileUploadController {
   private storage = multer.diskStorage({
@@ -56,9 +53,8 @@ export class FileUploadController {
     }
 
     const session = await sessionController.getSession()
-    // marking consumed true, so that it's not available
-    // as readySession for any other request
-    session.consumed = true
+    // change session state to 'running', so that it's not available for any other request
+    session.state = SessionState.running
 
     req.sasjsSession = session
 
