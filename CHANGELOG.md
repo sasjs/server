@@ -1,3 +1,10 @@
+# [0.38.0](https://github.com/sasjs/server/compare/v0.37.0...v0.38.0) (2024-10-30)
+
+
+### Features
+
+* **api:** enabled query params in stp/trigger endpoint ([5cda9cd](https://github.com/sasjs/server/commit/5cda9cd5d8623b7ea2ecd989d7808f47ec866672))
+
 # [0.37.0](https://github.com/sasjs/server/compare/v0.36.0...v0.37.0) (2024-10-29)
 
 
