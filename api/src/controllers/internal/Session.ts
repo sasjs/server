@@ -67,6 +67,10 @@ export class SessionController {
 
     return session
   }
+
+  public getSessionById(id: string) {
+    return this.sessions.find((session) => session.id === id)
+  }
 }
 
 export class SASSessionController extends SessionController {

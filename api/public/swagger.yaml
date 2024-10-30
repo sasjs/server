@@ -114,7 +114,7 @@ components:
                 sessionId:
                     type: string
                     description: "The SessionId is the name of the temporary folder used to store the outputs.\nFor SAS, this would be the SASWORK folder. Can be used to poll job status.\nThis session ID should be used to poll job status."
-                    example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
+                    example: 20241028074744-54132-1730101664824
             required:
                 - sessionId
             type: object
@@ -585,6 +585,14 @@ components:
                 - needsToUpdatePassword
             type: object
             additionalProperties: false
+        SessionState:
+            enum:
+                - initialising
+                - pending
+                - running
+                - completed
+                - failed
+            type: string
         ExecutePostRequestPayload:
             properties:
                 _program:
@@ -598,7 +606,7 @@ components:
                 sessionId:
                     type: string
                     description: "The SessionId is the name of the temporary folder used to store the outputs.\nFor SAS, this would be the SASWORK folder. Can be used to poll program status.\nThis session ID should be used to poll program status."
-                    example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
+                    example: 20241028074744-54132-1730101664824
             required:
                 - sessionId
             type: object
@@ -1841,6 +1849,29 @@ paths:
                 -
                     bearerAuth: []
             parameters: []
+    '/SASjsApi/session/{sessionId}/state':
+        get:
+            operationId: SessionState
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SessionState'
+            summary: 'Get session state (initialising, pending, running, completed, failed).'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
     /SASjsApi/stp/execute:
         get:
             operationId: ExecuteGetRequest
