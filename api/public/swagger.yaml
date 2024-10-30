@@ -603,21 +603,6 @@ components:
                 - sessionId
             type: object
             additionalProperties: false
-        TriggerProgramPayload:
-            properties:
-                _program:
-                    type: string
-                    description: 'Location of SAS program'
-                    example: /Public/somefolder/some.file
-                expiresAfterMins:
-                    type: number
-                    format: double
-                    description: "Amount of minutes after the completion of the program when the session must be\ndestroyed."
-                    example: 15
-            required:
-                - _program
-            type: object
-            additionalProperties: false
         LoginPayload:
             properties:
                 username:
@@ -1936,8 +1921,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TriggerProgramResponse'
-            description: 'Trigger Program on the Specified Runtime'
-            summary: 'Triggers program and returns SessionId immediately - does not wait for program completion'
+            description: 'Trigger Program on the Specified Runtime.'
+            summary: 'Triggers program and returns SessionId immediately - does not wait for program completion.'
             tags:
                 - STP
             security:
@@ -1945,19 +1930,31 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of code in SASjs Drive'
+                    description: 'Location of code in SASjs Drive.'
                     in: query
                     name: _program
-                    required: false
+                    required: true
                     schema:
                         type: string
                     example: /Projects/myApp/some/program
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/TriggerProgramPayload'
+                -
+                    description: 'Optional query param for setting debug mode.'
+                    in: query
+                    name: _debug
+                    required: false
+                    schema:
+                        format: double
+                        type: number
+                    example: 131
+                -
+                    description: 'Optional query param for setting amount of minutes after the completion of the program when the session must be destroyed.'
+                    in: query
+                    name: expiresAfterMins
+                    required: false
+                    schema:
+                        format: double
+                        type: number
+                    example: 15
     /:
         get:
             operationId: Home
