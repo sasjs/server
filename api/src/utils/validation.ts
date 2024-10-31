@@ -201,3 +201,8 @@ export const triggerProgramValidation = (data: any): Joi.ValidationResult =>
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)
+
+export const sessionIdValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    sessionId: Joi.string().required()
+  }).validate(data)

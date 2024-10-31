@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import { getSessionController, processProgram } from './'
 import { readFile, fileExists, createFile, readFileBinary } from '@sasjs/utils'
-import { PreProgramVars, Session, TreeNode } from '../../types'
+import { PreProgramVars, Session, TreeNode, SessionState } from '../../types'
 import {
   extractHeaders,
   getFilesFolder,
@@ -75,8 +75,7 @@ export class ExecutionController {
 
     const session =
       sessionByFileUpload ?? (await sessionController.getSession())
-    session.inUse = true
-    session.consumed = true
+    session.state = SessionState.running
 
     const logPath = path.join(session.path, 'log.log')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
@@ -121,7 +120,7 @@ export class ExecutionController {
       : ''
 
     // it should be deleted by scheduleSessionDestroy
-    session.inUse = false
+    session.state = SessionState.completed
 
     const resultParts = []
 
@@ -145,7 +144,9 @@ export class ExecutionController {
     return {
       httpHeaders,
       result:
-        isDebugOn(vars) || session.crashed ? resultParts.join(`\n`) : webout
+        isDebugOn(vars) || session.failureReason
+          ? resultParts.join(`\n`)
+          : webout
     }
   }
 

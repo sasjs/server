@@ -3,7 +3,7 @@ import { WriteStream, createWriteStream } from 'fs'
 import { execFile } from 'child_process'
 import { once } from 'stream'
 import { createFile, moveFile } from '@sasjs/utils'
-import { PreProgramVars, Session } from '../../types'
+import { PreProgramVars, Session, SessionState } from '../../types'
 import { RunTimeType } from '../../utils'
 import {
   ExecutionVars,
@@ -49,7 +49,7 @@ export const processProgram = async (
     await moveFile(codePath + '.bkp', codePath)
 
     // we now need to poll the session status
-    while (!session.completed) {
+    while (session.state !== SessionState.completed) {
       await delay(50)
     }
   } else {
@@ -114,13 +114,20 @@ export const processProgram = async (
 
     await execFilePromise(executablePath, [codePath], writeStream)
       .then(() => {
-        session.completed = true
+        session.state = SessionState.completed
+
         process.logger.info('session completed', session)
       })
       .catch((err) => {
-        session.completed = true
-        session.crashed = err.toString()
-        process.logger.error('session crashed', session.id, session.crashed)
+        session.state = SessionState.failed
+
+        session.failureReason = err.toString()
+
+        process.logger.error(
+          'session crashed',
+          session.id,
+          session.failureReason
+        )
       })
 
     // copy the code file to log and end write stream

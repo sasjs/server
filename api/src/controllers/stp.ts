@@ -40,10 +40,12 @@ interface TriggerProgramPayload {
 
 interface TriggerProgramResponse {
   /**
-   * The SessionId is the name of the temporary folder used to store the outputs.
-   * For SAS, this would be the SASWORK folder. Can be used to poll program status.
-   * This session ID should be used to poll program status.
-   * @example "{ sessionId: '20241028074744-54132-1730101664824' }"
+   * `sessionId` is the ID of the session and the name of the temporary folder
+   * used to store program outputs.<br><br>
+   * For SAS, this would be the location of the SASWORK folder.<br><br>
+   * `sessionId` can be used to poll session state using the
+   * GET /SASjsApi/session/{sessionId}/state endpoint.
+   * @example "20241028074744-54132-1730101664824"
    */
   sessionId: string
 }

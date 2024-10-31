@@ -113,8 +113,8 @@ components:
             properties:
                 sessionId:
                     type: string
-                    description: "The SessionId is the name of the temporary folder used to store the outputs.\nFor SAS, this would be the SASWORK folder. Can be used to poll job status.\nThis session ID should be used to poll job status."
-                    example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
+                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store code outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
+                    example: 20241028074744-54132-1730101664824
             required:
                 - sessionId
             type: object
@@ -585,6 +585,14 @@ components:
                 - needsToUpdatePassword
             type: object
             additionalProperties: false
+        SessionState:
+            enum:
+                - initialising
+                - pending
+                - running
+                - completed
+                - failed
+            type: string
         ExecutePostRequestPayload:
             properties:
                 _program:
@@ -597,8 +605,8 @@ components:
             properties:
                 sessionId:
                     type: string
-                    description: "The SessionId is the name of the temporary folder used to store the outputs.\nFor SAS, this would be the SASWORK folder. Can be used to poll program status.\nThis session ID should be used to poll program status."
-                    example: '{ sessionId: ''20241028074744-54132-1730101664824'' }'
+                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store program outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
+                    example: 20241028074744-54132-1730101664824
             required:
                 - sessionId
             type: object
@@ -1841,6 +1849,30 @@ paths:
                 -
                     bearerAuth: []
             parameters: []
+    '/SASjsApi/session/{sessionId}/state':
+        get:
+            operationId: SessionState
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SessionState'
+            description: "The polling endpoint is currently implemented for single-server deployments only.<br>\nLoad balanced / grid topologies will be supported in a future release.<br>\nIf your site requires this, please reach out to SASjs Support."
+            summary: 'Get session state (initialising, pending, running, completed, failed).'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
     /SASjsApi/stp/execute:
         get:
             operationId: ExecuteGetRequest

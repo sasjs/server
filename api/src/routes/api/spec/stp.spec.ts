@@ -25,7 +25,7 @@ import {
   SASSessionController
 } from '../../../controllers/internal'
 import * as ProcessProgramModule from '../../../controllers/internal/processProgram'
-import { Session } from '../../../types'
+import { Session, SessionState } from '../../../types'
 
 const clientId = 'someclientID'
 
@@ -493,10 +493,7 @@ const mockedGetSession = async () => {
 
   const session: Session = {
     id: sessionId,
-    ready: true,
-    inUse: true,
-    consumed: false,
-    completed: false,
+    state: SessionState.pending,
     creationTimeStamp,
     deathTimeStamp,
     path: sessionFolder
