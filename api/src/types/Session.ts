@@ -1,5 +1,5 @@
 export enum SessionState {
-  initialising = 'initialising', // session is initialising and nor ready to be used yet
+  initialising = 'initialising', // session is initialising and not ready to be used yet
   pending = 'pending', // session is ready to be used
   running = 'running', // session is in use
   completed = 'completed', // session is completed and can be destroyed

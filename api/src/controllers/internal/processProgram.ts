@@ -49,7 +49,7 @@ export const processProgram = async (
     await moveFile(codePath + '.bkp', codePath)
 
     // we now need to poll the session status
-    while (session.state === SessionState.completed) {
+    while (session.state !== SessionState.completed) {
       await delay(50)
     }
   } else {
