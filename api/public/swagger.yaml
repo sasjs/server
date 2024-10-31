@@ -1859,7 +1859,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/SessionState'
-            summary: 'Get session state (initialising, pending, running, completed, failed).'
+            summary: "Get session state (initialising, pending, running, completed, failed).\nPolling session state won't work in a load-balanced situation."
             tags:
                 - Session
             security:

@@ -31,6 +31,7 @@ export class SessionController {
 
   /**
    * @summary Get session state (initialising, pending, running, completed, failed).
+   * Polling session state won't work in a load-balanced situation.
    * @example completed
    */
   @Get('/:sessionId/state')
