@@ -202,33 +202,37 @@ ${autoExecContent}`
   }
 
   private scheduleSessionDestroy(session: Session) {
-    setTimeout(async () => {
-      if (session.state === SessionState.running) {
-        // adding 10 more minutes
-        const newDeathTimeStamp =
-          parseInt(session.deathTimeStamp) + 10 * 60 * 1000
-        session.deathTimeStamp = newDeathTimeStamp.toString()
-
-        this.scheduleSessionDestroy(session)
-      } else {
-        const { expiresAfterMins } = session
-
-        // delay session destroy if expiresAfterMins present
-        if (expiresAfterMins && session.state !== SessionState.completed) {
-          // calculate session death time using expiresAfterMins
+    setTimeout(
+      async () => {
+        if (session.state === SessionState.running) {
+          // adding 10 more minutes
           const newDeathTimeStamp =
-            parseInt(session.deathTimeStamp) + expiresAfterMins.mins * 60 * 1000
+            parseInt(session.deathTimeStamp) + 10 * 60 * 1000
           session.deathTimeStamp = newDeathTimeStamp.toString()
-
-          // set expiresAfterMins to true to avoid using it again
-          session.expiresAfterMins!.used = true
 
           this.scheduleSessionDestroy(session)
         } else {
-          await this.deleteSession(session)
+          const { expiresAfterMins } = session
+
+          // delay session destroy if expiresAfterMins present
+          if (expiresAfterMins && session.state !== SessionState.completed) {
+            // calculate session death time using expiresAfterMins
+            const newDeathTimeStamp =
+              parseInt(session.deathTimeStamp) +
+              expiresAfterMins.mins * 60 * 1000
+            session.deathTimeStamp = newDeathTimeStamp.toString()
+
+            // set expiresAfterMins to true to avoid using it again
+            session.expiresAfterMins!.used = true
+
+            this.scheduleSessionDestroy(session)
+          } else {
+            await this.deleteSession(session)
+          }
         }
-      }
-    }, parseInt(session.deathTimeStamp) - new Date().getTime() - 100)
+      },
+      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
+    )
   }
 }
 
