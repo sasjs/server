@@ -1,3 +1,15 @@
+# [0.39.0](https://github.com/sasjs/server/compare/v0.38.0...v0.39.0) (2024-10-31)
+
+
+### Bug Fixes
+
+* **api:** fixed condition in processProgram ([48a9a4d](https://github.com/sasjs/server/commit/48a9a4dd0e31f84209635382be4ec4bb2c3a9c0c))
+
+
+### Features
+
+* **api:** added session state endpoint ([6b6546c](https://github.com/sasjs/server/commit/6b6546c7ad0833347f8dc4cdba6ad19132f7aaef))
+
 # [0.38.0](https://github.com/sasjs/server/compare/v0.37.0...v0.38.0) (2024-10-30)
 
 
