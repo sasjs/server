@@ -1859,7 +1859,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/SessionState'
-            summary: "Get session state (initialising, pending, running, completed, failed).\nPolling session state won't work in a load-balanced situation."
+            description: "The polling endpoint is currently implemented for single-server deployments only.<br>\nLoad balanced / grid topologies will be supported in a future release.<br>\nIf your site requires this, please reach out to SASjs Support."
+            summary: 'Get session state (initialising, pending, running, completed, failed).'
             tags:
                 - Session
             security:

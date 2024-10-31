@@ -30,8 +30,10 @@ export class SessionController {
   }
 
   /**
+   * The polling endpoint is currently implemented for single-server deployments only.<br>
+   * Load balanced / grid topologies will be supported in a future release.<br>
+   * If your site requires this, please reach out to SASjs Support.
    * @summary Get session state (initialising, pending, running, completed, failed).
-   * Polling session state won't work in a load-balanced situation.
    * @example completed
    */
   @Get('/:sessionId/state')
