@@ -1,7 +1,11 @@
 import express from 'express'
 import { GroupController } from '../../controllers/'
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
-import { getGroupValidation, registerGroupValidation } from '../../utils'
+import {
+  getGroupValidation,
+  registerGroupValidation,
+  uidValidation
+} from '../../utils'
 
 const groupRouter = express.Router()
 
@@ -33,12 +37,15 @@ groupRouter.get('/', authenticateAccessToken, async (req, res) => {
   }
 })
 
-groupRouter.get('/:groupId', authenticateAccessToken, async (req, res) => {
-  const { groupId } = req.params
+groupRouter.get('/:uid', authenticateAccessToken, async (req, res) => {
+  const { error: uidError, value: params } = uidValidation(req.params)
+  if (uidError) return res.status(400).send(uidError.details[0].message)
+
+  const { uid } = params
 
   const controller = new GroupController()
   try {
-    const response = await controller.getGroup(parseInt(groupId))
+    const response = await controller.getGroup(uid)
     res.send(response)
   } catch (err: any) {
     res.status(err.code).send(err.message)
@@ -56,7 +63,7 @@ groupRouter.get(
 
     const controller = new GroupController()
     try {
-      const response = await controller.getGroupByGroupName(name)
+      const response = await controller.getGroupByName(name)
       res.send(response)
     } catch (err: any) {
       res.status(err.code).send(err.message)
@@ -65,18 +72,15 @@ groupRouter.get(
 )
 
 groupRouter.post(
-  '/:groupId/:userId',
+  '/:groupUid/:userUid',
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
-    const { groupId, userId } = req.params
+    const { groupUid, userUid } = req.params
 
     const controller = new GroupController()
     try {
-      const response = await controller.addUserToGroup(
-        parseInt(groupId),
-        parseInt(userId)
-      )
+      const response = await controller.addUserToGroup(groupUid, userUid)
       res.send(response)
     } catch (err: any) {
       res.status(err.code).send(err.message)
@@ -85,18 +89,15 @@ groupRouter.post(
 )
 
 groupRouter.delete(
-  '/:groupId/:userId',
+  '/:groupUid/:userUid',
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
-    const { groupId, userId } = req.params
+    const { groupUid, userUid } = req.params
 
     const controller = new GroupController()
     try {
-      const response = await controller.removeUserFromGroup(
-        parseInt(groupId),
-        parseInt(userId)
-      )
+      const response = await controller.removeUserFromGroup(groupUid, userUid)
       res.send(response)
     } catch (err: any) {
       res.status(err.code).send(err.message)
@@ -105,15 +106,18 @@ groupRouter.delete(
 )
 
 groupRouter.delete(
-  '/:groupId',
+  '/:uid',
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
-    const { groupId } = req.params
+    const { error: uidError, value: params } = uidValidation(req.params)
+    if (uidError) return res.status(400).send(uidError.details[0].message)
+
+    const { uid } = params
 
     const controller = new GroupController()
     try {
-      await controller.deleteGroup(parseInt(groupId))
+      await controller.deleteGroup(uid)
       res.status(200).send('Group Deleted!')
     } catch (err: any) {
       res.status(err.code).send(err.message)

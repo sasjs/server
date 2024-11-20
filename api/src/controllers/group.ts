@@ -12,26 +12,27 @@ import {
 
 import Group, { GroupPayload, PUBLIC_GROUP_NAME } from '../model/Group'
 import User from '../model/User'
-import { AuthProviderType } from '../utils'
-import { UserResponse } from './user'
+import { GetUserBy, UserResponse } from './user'
 
 export interface GroupResponse {
-  groupId: number
+  uid: string
   name: string
   description: string
 }
 
-export interface GroupDetailsResponse {
-  groupId: number
-  name: string
-  description: string
+export interface GroupDetailsResponse extends GroupResponse {
   isActive: boolean
   users: UserResponse[]
 }
 
 interface GetGroupBy {
-  groupId?: number
+  _id?: string
   name?: string
+}
+
+enum GroupAction {
+  AddUser = 'addUser',
+  RemoveUser = 'removeUser'
 }
 
 @Security('bearerAuth')
@@ -44,7 +45,7 @@ export class GroupController {
    */
   @Example<GroupResponse[]>([
     {
-      groupId: 123,
+      uid: 'groupIdString',
       name: 'DCGroup',
       description: 'This group represents Data Controller Users'
     }
@@ -59,7 +60,7 @@ export class GroupController {
    *
    */
   @Example<GroupDetailsResponse>({
-    groupId: 123,
+    uid: 'groupIdString',
     name: 'DCGroup',
     description: 'This group represents Data Controller Users',
     isActive: true,
@@ -78,7 +79,7 @@ export class GroupController {
    * @example dcgroup
    */
   @Get('by/groupname/{name}')
-  public async getGroupByGroupName(
+  public async getGroupByName(
     @Path() name: string
   ): Promise<GroupDetailsResponse> {
     return getGroup({ name })
@@ -86,68 +87,66 @@ export class GroupController {
 
   /**
    * @summary Get list of members of a group (userName). All users can request this.
-   * @param groupId The group's identifier
-   * @example groupId 1234
+   * @param uid The group's identifier
+   * @example uid "12ByteString"
    */
-  @Get('{groupId}')
-  public async getGroup(
-    @Path() groupId: number
-  ): Promise<GroupDetailsResponse> {
-    return getGroup({ groupId })
+  @Get('{uid}')
+  public async getGroup(@Path() uid: string): Promise<GroupDetailsResponse> {
+    return getGroup({ _id: uid })
   }
 
   /**
    * @summary Add a user to a group. Admin task only.
-   * @param groupId The group's identifier
-   * @example groupId "1234"
-   * @param userId The user's identifier
-   * @example userId "6789"
+   * @param groupUid The group's identifier
+   * @example groupUid "12ByteString"
+   * @param userUid The user's identifier
+   * @example userId "12ByteString"
    */
   @Example<GroupDetailsResponse>({
-    groupId: 123,
+    uid: 'groupIdString',
     name: 'DCGroup',
     description: 'This group represents Data Controller Users',
     isActive: true,
     users: []
   })
-  @Post('{groupId}/{userId}')
+  @Post('{groupUid}/{userUid}')
   public async addUserToGroup(
-    @Path() groupId: number,
-    @Path() userId: number
+    @Path() groupUid: string,
+    @Path() userUid: string
   ): Promise<GroupDetailsResponse> {
-    return addUserToGroup(groupId, userId)
+    return addUserToGroup(groupUid, userUid)
   }
 
   /**
-   * @summary Remove a user to a group. Admin task only.
-   * @param groupId The group's identifier
-   * @example groupId "1234"
-   * @param userId The user's identifier
-   * @example userId "6789"
+   * @summary Remove a user from a group. Admin task only.
+   * @param groupUid The group's identifier
+   * @example groupUid "12ByteString"
+   * @param userUid The user's identifier
+   * @example userUid "12ByteString"
    */
   @Example<GroupDetailsResponse>({
-    groupId: 123,
+    uid: 'groupIdString',
     name: 'DCGroup',
     description: 'This group represents Data Controller Users',
     isActive: true,
     users: []
   })
-  @Delete('{groupId}/{userId}')
+  @Delete('{groupUid}/{userUid}')
   public async removeUserFromGroup(
-    @Path() groupId: number,
-    @Path() userId: number
+    @Path() groupUid: string,
+    @Path() userUid: string
   ): Promise<GroupDetailsResponse> {
-    return removeUserFromGroup(groupId, userId)
+    return removeUserFromGroup(groupUid, userUid)
   }
 
   /**
    * @summary Delete a group. Admin task only.
-   * @param groupId The group's identifier
-   * @example groupId 1234
+   * @param uid The group's identifier
+   * @example uid "12ByteString"
    */
-  @Delete('{groupId}')
-  public async deleteGroup(@Path() groupId: number) {
-    const group = await Group.findOne({ groupId })
+  @Delete('{uid}')
+  public async deleteGroup(@Path() uid: string) {
+    const group = await Group.findOne({ _id: uid })
     if (!group)
       throw {
         code: 404,
@@ -160,9 +159,7 @@ export class GroupController {
 }
 
 const getAllGroups = async (): Promise<GroupResponse[]> =>
-  await Group.find({})
-    .select({ _id: 0, groupId: 1, name: 1, description: 1 })
-    .exec()
+  await Group.find({}).select('uid name description').exec()
 
 const createGroup = async ({
   name,
@@ -187,7 +184,7 @@ const createGroup = async ({
   const savedGroup = await group.save()
 
   return {
-    groupId: savedGroup.groupId,
+    uid: savedGroup.uid,
     name: savedGroup.name,
     description: savedGroup.description,
     isActive: savedGroup.isActive,
@@ -198,11 +195,12 @@ const createGroup = async ({
 const getGroup = async (findBy: GetGroupBy): Promise<GroupDetailsResponse> => {
   const group = (await Group.findOne(
     findBy,
-    'groupId name description isActive users -_id'
+    'uid name description isActive users'
   ).populate(
     'users',
-    'id username displayName isAdmin -_id'
+    'uid username displayName isAdmin'
   )) as unknown as GroupDetailsResponse
+
   if (!group)
     throw {
       code: 404,
@@ -211,7 +209,7 @@ const getGroup = async (findBy: GetGroupBy): Promise<GroupDetailsResponse> => {
     }
 
   return {
-    groupId: group.groupId,
+    uid: group.uid,
     name: group.name,
     description: group.description,
     isActive: group.isActive,
@@ -220,23 +218,23 @@ const getGroup = async (findBy: GetGroupBy): Promise<GroupDetailsResponse> => {
 }
 
 const addUserToGroup = async (
-  groupId: number,
-  userId: number
+  groupUid: string,
+  userUid: string
 ): Promise<GroupDetailsResponse> =>
-  updateUsersListInGroup(groupId, userId, 'addUser')
+  updateUsersListInGroup(groupUid, userUid, GroupAction.AddUser)
 
 const removeUserFromGroup = async (
-  groupId: number,
-  userId: number
+  groupUid: string,
+  userUid: string
 ): Promise<GroupDetailsResponse> =>
-  updateUsersListInGroup(groupId, userId, 'removeUser')
+  updateUsersListInGroup(groupUid, userUid, GroupAction.RemoveUser)
 
 const updateUsersListInGroup = async (
-  groupId: number,
-  userId: number,
-  action: 'addUser' | 'removeUser'
+  groupUid: string,
+  userUid: string,
+  action: GroupAction
 ): Promise<GroupDetailsResponse> => {
-  const group = await Group.findOne({ groupId })
+  const group = await Group.findOne({ _id: groupUid })
   if (!group)
     throw {
       code: 404,
@@ -258,7 +256,7 @@ const updateUsersListInGroup = async (
       message: `Can't add/remove user to group created by external auth provider.`
     }
 
-  const user = await User.findOne({ id: userId })
+  const user = await User.findOne({ _id: userUid })
   if (!user)
     throw {
       code: 404,
@@ -274,7 +272,7 @@ const updateUsersListInGroup = async (
     }
 
   const updatedGroup =
-    action === 'addUser'
+    action === GroupAction.AddUser
       ? await group.addUser(user)
       : await group.removeUser(user)
 
@@ -286,7 +284,7 @@ const updateUsersListInGroup = async (
     }
 
   return {
-    groupId: updatedGroup.groupId,
+    uid: updatedGroup.uid,
     name: updatedGroup.name,
     description: updatedGroup.description,
     isActive: updatedGroup.isActive,

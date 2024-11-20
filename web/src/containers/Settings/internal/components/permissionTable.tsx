@@ -61,7 +61,7 @@ const PermissionTable = ({
         </TableHead>
         <TableBody>
           {permissions.map((permission) => (
-            <TableRow key={permission.permissionId}>
+            <TableRow key={permission.uid}>
               <BootstrapTableCell>{permission.path}</BootstrapTableCell>
               <BootstrapTableCell>{permission.type}</BootstrapTableCell>
               <BootstrapTableCell>
