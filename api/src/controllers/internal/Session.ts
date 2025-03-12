@@ -262,8 +262,8 @@ data _null_;
   rc=filename(fname);
   /* now wait for the real SYSIN (location of code.sas) */
   slept=0;fname='';
-  do until (slept>(60*15) );
-    rc=filename(fname,getoption('SYSIN') );
+  do until (slept>(60*15));
+    rc=filename(fname,getoption('SYSIN'));
     if rc = 0 and fexist(fname) then do;
       putlog fname=;
       rc=filename(fname);
