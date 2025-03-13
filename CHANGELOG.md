@@ -1,3 +1,10 @@
+## [0.39.1](https://github.com/sasjs/server/compare/v0.39.0...v0.39.1) (2025-03-13)
+
+
+### Bug Fixes
+
+* extra bit of sleep for file recognition ([f4768bf](https://github.com/sasjs/server/commit/f4768bffd3dbb2fe243966572ba74002024d96e1)), closes [#381](https://github.com/sasjs/server/issues/381)
+
 # [0.39.0](https://github.com/sasjs/server/compare/v0.38.0...v0.39.0) (2024-10-31)
 
 
