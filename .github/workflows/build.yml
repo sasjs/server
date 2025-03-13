@@ -45,6 +45,13 @@ jobs:
         working-directory: ./api
         run: npm ci
 
+      # Ubuntu 22.04+ have moved to OpenSSL 3, so the older version isn't installed by default.
+      # this is required for unit tests
+      - name: Install OpenSSL 1.1
+        run: |
+          sudo apt update
+          sudo apt install -y libssl1.1 || sudo apt install -y libssl3
+
       - name: Run Unit Tests
         working-directory: ./api
         run: npm test
