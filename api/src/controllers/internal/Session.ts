@@ -260,9 +260,16 @@ data _null_;
   rc=filename(fname,getoption('SYSIN') );
   if rc = 0 and fexist(fname) then rc=fdelete(fname);
   rc=filename(fname);
-  /* now wait for the real SYSIN */
-  slept=0;
-  do until ( fileexist(getoption('SYSIN')) or slept>(60*15) );
+  /* now wait for the real SYSIN (location of code.sas) */
+  slept=0;fname='';
+  do until (slept>(60*15));
+    rc=filename(fname,getoption('SYSIN'));
+    if rc = 0 and fexist(fname) then do;
+      putlog fname=;
+      rc=filename(fname);
+      rc=sleep(0.01,1); /* wait just a little more */
+      stop;
+    end;
     slept=slept+sleep(0.01,1);
   end;
   stop;
