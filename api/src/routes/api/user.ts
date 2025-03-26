@@ -9,6 +9,7 @@ import {
   deleteUserValidation,
   getUserValidation,
   registerUserValidation,
+  uidValidation,
   updateUserValidation
 } from '../../utils'
 
@@ -56,12 +57,15 @@ userRouter.get(
   }
 )
 
-userRouter.get('/:userId', authenticateAccessToken, async (req, res) => {
-  const { userId } = req.params
+userRouter.get('/:uid', authenticateAccessToken, async (req, res) => {
+  const { error, value: params } = uidValidation(req.params)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  const { uid } = params
 
   const controller = new UserController()
   try {
-    const response = await controller.getUser(req, parseInt(userId))
+    const response = await controller.getUser(req, uid)
     res.send(response)
   } catch (err: any) {
     res.status(err.code).send(err.message)
@@ -97,12 +101,16 @@ userRouter.patch(
 )
 
 userRouter.patch(
-  '/:userId',
+  '/:uid',
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
     const { user } = req
-    const { userId } = req.params
+
+    const { error: uidError, value: params } = uidValidation(req.params)
+    if (uidError) return res.status(400).send(uidError.details[0].message)
+
+    const { uid } = params
 
     // only an admin can update `isActive` and `isAdmin` fields
     const { error, value: body } = updateUserValidation(req.body, user!.isAdmin)
@@ -110,7 +118,7 @@ userRouter.patch(
 
     const controller = new UserController()
     try {
-      const response = await controller.updateUser(parseInt(userId), body)
+      const response = await controller.updateUser(uid, body)
       res.send(response)
     } catch (err: any) {
       res.status(err.code).send(err.message)
@@ -147,12 +155,16 @@ userRouter.delete(
 )
 
 userRouter.delete(
-  '/:userId',
+  '/:uid',
   authenticateAccessToken,
   verifyAdminIfNeeded,
   async (req, res) => {
     const { user } = req
-    const { userId } = req.params
+
+    const { error: uidError, value: params } = uidValidation(req.params)
+    if (uidError) return res.status(400).send(uidError.details[0].message)
+
+    const { uid } = params
 
     // only an admin can delete user without providing password
     const { error, value: data } = deleteUserValidation(req.body, user!.isAdmin)
@@ -160,7 +172,7 @@ userRouter.delete(
 
     const controller = new UserController()
     try {
-      await controller.deleteUser(parseInt(userId), data, user!.isAdmin)
+      await controller.deleteUser(uid, data, user!.isAdmin)
       res.status(200).send('Account Deleted!')
     } catch (err: any) {
       res.status(err.code).send(err.message)

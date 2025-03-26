@@ -69,7 +69,7 @@ const useAddPermission = () => {
 
     for (const permission of updatingPermissions) {
       await axios
-        .patch(`/SASjsApi/permission/${permission.permissionId}`, {
+        .patch(`/SASjsApi/permission/${permission.uid}`, {
           setting: permission.setting === 'Grant' ? 'Deny' : 'Grant'
         })
         .then((res) => {
