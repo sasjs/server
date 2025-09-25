@@ -106,7 +106,10 @@ const login = async (
   const rateLimiter = RateLimiter.getInstance()
 
   if (!validPass) {
-    const retrySecs = await rateLimiter.consume(req.ip || 'unknown', user?.username)
+    const retrySecs = await rateLimiter.consume(
+      req.ip || 'unknown',
+      user?.username
+    )
     if (retrySecs > 0) throw errors.tooManyRequests(retrySecs)
   }
 
