@@ -1,3 +1,14 @@
+## [0.39.2](https://github.com/sasjs/server/compare/v0.39.1...v0.39.2) (2025-09-25)
+
+
+### Bug Fixes
+
+* addressing test fail ([e51b204](https://github.com/sasjs/server/commit/e51b20421adc1598ea267c79b1fb4dbc085f97b9))
+* packages missmatch ([379ea60](https://github.com/sasjs/server/commit/379ea604bcb5686b5299fae6a32f759c45b275ea))
+* type libs ([6d123c3](https://github.com/sasjs/server/commit/6d123c3e23628c1d703eaa13142c77f0da970a55))
+* typescript errors ([631e956](https://github.com/sasjs/server/commit/631e95604b64b1a96f2abade659348618f3b00b2))
+* typescript errors ([198cd79](https://github.com/sasjs/server/commit/198cd79354254511c21ac1acfbf7b6bcfdab2af7))
+
 ## [0.39.1](https://github.com/sasjs/server/compare/v0.39.0...v0.39.1) (2025-03-13)
 
 
