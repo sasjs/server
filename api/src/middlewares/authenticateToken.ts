@@ -37,10 +37,10 @@ export const authenticateAccessToken: RequestHandler = async (
         if (user.isActive) {
           req.user = user
           return csrfProtection(req, res, nextFunction)
-        } else return res.sendStatus(401)
+        } else return res.status(401).send('Unauthorized')
       }
     }
-    return res.sendStatus(401)
+    return res.status(401).send('Unauthorized')
   }
 
   await authenticateToken(
@@ -118,6 +118,6 @@ const authenticateToken = async (
       return next()
     }
 
-    res.sendStatus(401)
+    res.status(401).send('Unauthorized')
   }
 }
