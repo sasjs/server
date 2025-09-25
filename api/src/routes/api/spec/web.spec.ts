@@ -277,7 +277,7 @@ const performLogin = async (
     .set('x-xsrf-token', csrfToken)
     .send(credentials)
 
-  return { authCookies: header['set-cookie'].join() }
+  return { authCookies: header['set-cookie']?.join() || '' }
 }
 
 const extractCSRF = (text: string) =>

@@ -3,7 +3,7 @@ import { convertSecondsToHms } from '@sasjs/utils'
 import { RateLimiter } from '../utils'
 
 export const bruteForceProtection: RequestHandler = async (req, res, next) => {
-  const ip = req.ip
+  const ip = req.ip || 'unknown'
   const username = req.body.username
 
   const rateLimiter = RateLimiter.getInstance()

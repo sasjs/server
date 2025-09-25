@@ -234,9 +234,10 @@ const verifyAuthCode = async (
     jwt.verify(code, process.secrets.AUTH_CODE_SECRET, (err, data) => {
       if (err) return resolve(undefined)
 
+      const payload = data as InfoJWT
       const clientInfo: InfoJWT = {
-        clientId: data?.clientId,
-        userId: data?.userId
+        clientId: payload?.clientId,
+        userId: payload?.userId
       }
       if (clientInfo.clientId === clientId) {
         return resolve(clientInfo)

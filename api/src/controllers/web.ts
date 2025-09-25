@@ -106,7 +106,7 @@ const login = async (
   const rateLimiter = RateLimiter.getInstance()
 
   if (!validPass) {
-    const retrySecs = await rateLimiter.consume(req.ip, user?.username)
+    const retrySecs = await rateLimiter.consume(req.ip || 'unknown', user?.username)
     if (retrySecs > 0) throw errors.tooManyRequests(retrySecs)
   }
 
@@ -114,7 +114,7 @@ const login = async (
   if (!validPass) throw errors.invalidPassword
 
   // Reset on successful authorization
-  rateLimiter.resetOnSuccess(req.ip, user.username)
+  rateLimiter.resetOnSuccess(req.ip || 'unknown', user.username)
 
   req.session.loggedIn = true
   req.session.user = {
