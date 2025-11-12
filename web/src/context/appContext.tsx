@@ -24,39 +24,32 @@ export enum RunTimeType {
 interface AppContextProps {
   checkingSession: boolean
   loggedIn: boolean
-  setLoggedIn: Dispatch<SetStateAction<boolean>> | null
+  setLoggedIn?: Dispatch<SetStateAction<boolean>>
   needsToUpdatePassword: boolean
-  setNeedsToUpdatePassword: Dispatch<SetStateAction<boolean>> | null
-  userId: number
-  setUserId: Dispatch<SetStateAction<number>> | null
+  setNeedsToUpdatePassword?: Dispatch<SetStateAction<boolean>>
+  userId?: string
+  setUserId?: Dispatch<SetStateAction<string | undefined>>
   username: string
-  setUsername: Dispatch<SetStateAction<string>> | null
+  setUsername?: Dispatch<SetStateAction<string>>
   displayName: string
-  setDisplayName: Dispatch<SetStateAction<string>> | null
+  setDisplayName?: Dispatch<SetStateAction<string>>
   isAdmin: boolean
-  setIsAdmin: Dispatch<SetStateAction<boolean>> | null
+  setIsAdmin?: Dispatch<SetStateAction<boolean>>
   mode: ModeType
   runTimes: RunTimeType[]
-  logout: (() => void) | null
+  logout?: () => void
 }
 
 export const AppContext = createContext<AppContextProps>({
   checkingSession: false,
   loggedIn: false,
-  setLoggedIn: null,
   needsToUpdatePassword: false,
-  setNeedsToUpdatePassword: null,
-  userId: 0,
-  setUserId: null,
+  userId: '',
   username: '',
-  setUsername: null,
   displayName: '',
-  setDisplayName: null,
   isAdmin: false,
-  setIsAdmin: null,
   mode: ModeType.Server,
-  runTimes: [],
-  logout: null
+  runTimes: []
 })
 
 const AppContextProvider = (props: { children: ReactNode }) => {
@@ -64,7 +57,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [checkingSession, setCheckingSession] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
   const [needsToUpdatePassword, setNeedsToUpdatePassword] = useState(false)
-  const [userId, setUserId] = useState(0)
+  const [userId, setUserId] = useState<string>()
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)

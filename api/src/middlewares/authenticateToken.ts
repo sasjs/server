@@ -76,7 +76,7 @@ const authenticateToken = async (
   const { MODE } = process.env
   if (MODE === ModeType.Desktop) {
     req.user = {
-      userId: 1234,
+      userId: '1234',
       clientId: 'desktopModeClientId',
       username: 'desktopModeUsername',
       displayName: 'desktopModeDisplayName',

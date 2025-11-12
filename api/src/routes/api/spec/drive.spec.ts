@@ -71,31 +71,31 @@ describe('drive', () => {
     con = await mongoose.connect(mongoServer.getUri())
 
     const dbUser = await controller.createUser(user)
-    accessToken = await generateAndSaveToken(dbUser.id)
+    accessToken = await generateAndSaveToken(dbUser.uid)
     await permissionController.createPermission({
       ...permission,
       path: '/SASjsApi/drive/deploy',
-      principalId: dbUser.id
+      principalId: dbUser.uid
     })
     await permissionController.createPermission({
       ...permission,
       path: '/SASjsApi/drive/deploy/upload',
-      principalId: dbUser.id
+      principalId: dbUser.uid
     })
     await permissionController.createPermission({
       ...permission,
       path: '/SASjsApi/drive/file',
-      principalId: dbUser.id
+      principalId: dbUser.uid
     })
     await permissionController.createPermission({
       ...permission,
       path: '/SASjsApi/drive/folder',
-      principalId: dbUser.id
+      principalId: dbUser.uid
     })
     await permissionController.createPermission({
       ...permission,
       path: '/SASjsApi/drive/rename',
-      principalId: dbUser.id
+      principalId: dbUser.uid
     })
   })
 
@@ -1197,7 +1197,7 @@ const getExampleService = (): ServiceMember =>
   ((getTreeExample().members[0] as FolderMember).members[0] as FolderMember)
     .members[0] as ServiceMember
 
-const generateAndSaveToken = async (userId: number) => {
+const generateAndSaveToken = async (userId: string) => {
   const adminAccessToken = generateAccessToken({
     clientId,
     userId

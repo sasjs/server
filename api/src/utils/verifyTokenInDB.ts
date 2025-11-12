@@ -4,7 +4,7 @@ import { RequestUser } from '../types'
 export const fetchLatestAutoExec = async (
   reqUser: RequestUser
 ): Promise<RequestUser | undefined> => {
-  const dbUser = await User.findOne({ id: reqUser.userId })
+  const dbUser = await User.findOne({ _id: reqUser.userId })
 
   if (!dbUser) return undefined
 
@@ -21,12 +21,12 @@ export const fetchLatestAutoExec = async (
 }
 
 export const verifyTokenInDB = async (
-  userId: number,
+  userId: string,
   clientId: string,
   token: string,
   tokenType: 'accessToken' | 'refreshToken'
 ): Promise<RequestUser | undefined> => {
-  const dbUser = await User.findOne({ id: userId })
+  const dbUser = await User.findOne({ _id: userId })
 
   if (!dbUser) return undefined
 

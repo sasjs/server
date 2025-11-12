@@ -4,8 +4,9 @@ import { UserResponse } from './user'
 import { getSessionController } from './internal'
 import { SessionState } from '../types'
 
-interface SessionResponse extends UserResponse {
-  needsToUpdatePassword: boolean
+interface SessionResponse extends Omit<UserResponse, 'uid'> {
+  id: string
+  needsToUpdatePassword?: boolean
 }
 
 @Security('bearerAuth')
@@ -16,11 +17,12 @@ export class SessionController {
    * @summary Get session info (username).
    *
    */
-  @Example<UserResponse>({
-    id: 123,
+  @Example<SessionResponse>({
+    id: 'userIdString',
     username: 'johnusername',
     displayName: 'John',
-    isAdmin: false
+    isAdmin: false,
+    needsToUpdatePassword: false
   })
   @Get('/')
   public async session(
