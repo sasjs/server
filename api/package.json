@@ -48,7 +48,7 @@
   },
   "author": "4GL Ltd",
   "dependencies": {
-    "@sasjs/core": "^4.40.1",
+    "@sasjs/core": "^4.59.7",
     "@sasjs/utils": "^3.5.2",
     "bcryptjs": "^2.4.3",
     "connect-mongo": "^5.1.0",
