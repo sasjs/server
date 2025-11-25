@@ -1,3 +1,11 @@
+## [0.39.3](https://github.com/sasjs/server/compare/v0.39.2...v0.39.3) (2025-11-25)
+
+
+### Bug Fixes
+
+* (deps) bump @sasjs/core to 4.59.7 ([ab96653](https://github.com/sasjs/server/commit/ab966535642d08d4e8e984007b98c8fdffbe30f7))
+* (deps) rerun npm i to sync ([225f381](https://github.com/sasjs/server/commit/225f381bdf8ad5aa2af8d75648df1dd5175e12e0))
+
 ## [0.39.2](https://github.com/sasjs/server/compare/v0.39.1...v0.39.2) (2025-09-25)
 
 
