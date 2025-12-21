@@ -1,3 +1,10 @@
+## [0.39.4](https://github.com/sasjs/server/compare/v0.39.3...v0.39.4) (2025-12-21)
+
+
+### Bug Fixes
+
+* **deps:** bump dependencies and resolve audit issues ([4f78202](https://github.com/sasjs/server/commit/4f782025dbcdfcbae6ca1fabb42ce1bc385e0162))
+
 ## [0.39.3](https://github.com/sasjs/server/compare/v0.39.2...v0.39.3) (2025-11-25)
 
 
