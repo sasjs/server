@@ -1,3 +1,12 @@
+## [0.39.5](https://github.com/sasjs/server/compare/v0.39.4...v0.39.5) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** harden mock SAS executable and timeouts for CI ([67fce47](https://github.com/sasjs/server/commit/67fce475a3c53b3c20919902edb45dce809dffb9))
+* **api:** return prompt error response instead of hanging when a SAS session fails ([f84af4a](https://github.com/sasjs/server/commit/f84af4ac0639625fee4508e764f0eed07d7b4e8a))
+* fix code.spec.ts failing on a fresh checkout (CI) ([0af6b63](https://github.com/sasjs/server/commit/0af6b63ffa770bfa2b77505d74778be517f8d631))
+
 ## [0.39.4](https://github.com/sasjs/server/compare/v0.39.3...v0.39.4) (2025-12-21)
 
 
