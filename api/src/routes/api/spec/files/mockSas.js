@@ -26,11 +26,15 @@ const arg = (flag) => {
 const sysin = arg('-SYSIN')
 const logPath = arg('-LOG')
 
-// give up waiting for the real program after this long, so an unused
+// Give up waiting for the real program after this long, so an unused
 // pre-warmed session (sasjs pools up to 3 ready sessions) doesn't linger
-// forever and keep a test process alive. Short, since in tests the real
-// signal (if this session is the one actually used) arrives near-instantly.
-const GIVE_UP_AFTER_MS = 1500
+// forever and keep a test process alive. Generous rather than tight: CI
+// runners are frequently slower/more contended than a local dev machine
+// (shared CPU, coverage instrumentation on the Node side slowing down the
+// round trip this process is waiting on), and this cost is only ever paid
+// by sessions nothing is actually waiting on - the session actually used
+// by a request gets its real code written far sooner than this in practice.
+const GIVE_UP_AFTER_MS = 8000
 
 const sleepSync = (ms) => {
   const until = Date.now() + ms
@@ -40,8 +44,30 @@ const sleepSync = (ms) => {
   }
 }
 
+// Any of the filesystem calls below can legitimately race against
+// processProgram's own write-then-rename (e.g. existsSync sees the file,
+// then a rename mid-flight makes the following read miss). Treat that as
+// "not ready yet" and retry a few times, rather than letting an uncaught
+// exception crash this process with a non-zero exit - which would be
+// indistinguishable, to the Node side, from a genuine SAS failure.
+const retry = (fn, attempts = 5, delayMs = 20) => {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return { ok: true, value: fn() }
+    } catch (err) {
+      if (i === attempts - 1) return { ok: false, error: err }
+
+      sleepSync(delayMs)
+    }
+  }
+}
+
 // 1. remove the dummy SYSIN, signalling "session ready" to waitForSession()
-if (sysin && fs.existsSync(sysin)) fs.unlinkSync(sysin)
+if (sysin) {
+  retry(() => {
+    if (fs.existsSync(sysin)) fs.unlinkSync(sysin)
+  })
+}
 
 // 2. wait for the real program to be written back to the same path
 const deadline = Date.now() + GIVE_UP_AFTER_MS
@@ -54,12 +80,21 @@ while (!sysin || !fs.existsSync(sysin)) {
 
 // small settle delay, mirroring the real autoexec's sleep(0.01,1) after
 // detecting the file, so a fast-moving rename isn't read mid-write
-sleepSync(20)
+sleepSync(50)
 
-const code = fs.readFileSync(sysin, 'utf-8')
+const readResult = retry(() => fs.readFileSync(sysin, 'utf-8'))
+
+if (!readResult.ok) {
+  process.stderr.write(
+    `mockSas.js: failed to read ${sysin}: ${readResult.error}\n`
+  )
+  process.exit(1)
+}
+
+const code = readResult.value
 
 if (logPath) {
-  fs.writeFileSync(logPath, `NOTE: mock SAS execution\n${code}\n`)
+  retry(() => fs.writeFileSync(logPath, `NOTE: mock SAS execution\n${code}\n`))
 }
 
 if (code.includes('%abort;')) {

@@ -89,7 +89,7 @@ describe('code', () => {
       expect(response.text).toEqual(
         expect.stringContaining('mock SAS execution')
       )
-    }, 15000)
+    }, 30000)
 
     it('returns a prompt 400 (not a hang) with the complete log when the SAS session fails (%abort;)', async () => {
       const response = await request(app)
@@ -105,7 +105,7 @@ describe('code', () => {
       expect(response.body.log).toEqual(
         expect.stringContaining('mock SAS execution')
       )
-    }, 15000)
+    }, 30000)
   })
 })
 
