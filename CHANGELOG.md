@@ -1,3 +1,10 @@
+## [0.39.7](https://github.com/sasjs/server/compare/v0.39.6...v0.39.7) (2026-07-14)
+
+
+### Bug Fixes
+
+* **jsonwebtoken:** bumped version to avoid vulnerability ([1473925](https://github.com/sasjs/server/commit/1473925896db0e4472c9ef5ba64955527a1be2de))
+
 ## [0.39.6](https://github.com/sasjs/server/compare/v0.39.5...v0.39.6) (2026-07-14)
 
 
