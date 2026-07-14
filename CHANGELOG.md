@@ -1,3 +1,11 @@
+## [0.39.6](https://github.com/sasjs/server/compare/v0.39.5...v0.39.6) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** isolate drive.spec.ts's files folder from the real drive ([dec5191](https://github.com/sasjs/server/commit/dec51914911c10b66b43ebe95f77b0af63e2d03e))
+* **api:** stop overwriting a failed JS/PY/R session back to completed ([4858245](https://github.com/sasjs/server/commit/4858245372fa19929b6e59c28148f5d004239c9d))
+
 ## [0.39.5](https://github.com/sasjs/server/compare/v0.39.4...v0.39.5) (2026-07-14)
 
 
