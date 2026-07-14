@@ -1,4 +1,5 @@
 import path from 'path'
+import { createFile, fileExists } from '@sasjs/utils'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -13,7 +14,8 @@ import {
 import {
   generateAccessToken,
   saveTokensInDB,
-  RunTimeType
+  RunTimeType,
+  sysInitCompiledPath
 } from '../../../utils'
 
 // Real, unmocked end-to-end test of the SAS execution pipeline (session
@@ -43,6 +45,17 @@ describe('code', () => {
   let permissionController: PermissionController
 
   beforeAll(async () => {
+    // SASSessionController.createSession() unconditionally reads this file
+    // (Session.ts:105) before it ever spawns the SAS process. It's normally
+    // produced by `npm run compileSysInit` (part of the `initial`/`build`
+    // scripts), which `npm test` does not run - so on a fresh checkout
+    // (e.g. CI, where "Run Unit Tests" happens before "Build Package") it
+    // doesn't exist yet. Content is irrelevant here since mockSas.js never
+    // interprets it; it just needs to exist and be readable.
+    if (!(await fileExists(sysInitCompiledPath))) {
+      await createFile(sysInitCompiledPath, '')
+    }
+
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()
     process.env.MODE = 'server'

@@ -16,6 +16,8 @@ sequenceDiagram
 
     Note over Pool,SAS: SESSION CREATION - happens ahead of any request,<br/>pool pre-warms up to 3 sessions (Session.ts:59-69)
     Pool->>FS: createFile(code.sas, "") - empty dummy SYSIN (Session.ts:117-118)
+    Pool->>FS: readFile(sysInitCompiledPath) - compiled system-init<br/>macros, produced by `npm run compileSysInit` (Session.ts:105)
+    Note over Pool: throws if this file doesn't exist yet -<br/>session creation never reaches execFile below
     Pool->>FS: createFile(autoexec.sas, autoExecContent) (Session.ts:108-114)
     Pool->>SAS: execFile(sasLoc, -SYSIN code.sas -AUTOEXEC autoexec.sas -LOG log.log ...) (Session.ts:127-147)
     activate SAS
