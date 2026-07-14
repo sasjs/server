@@ -15,6 +15,24 @@ export interface ExecutionVars {
   [key: string]: string | number | undefined
 }
 
+// Thrown when the session itself fails (e.g. SAS exits abnormally via
+// %abort;). Carries the complete log - by the time this is thrown, the
+// session's process has already exited, so the log file it wrote is final,
+// not a partial/truncated snapshot.
+export class SessionExecutionError extends Error {
+  constructor(
+    message: string,
+    public log?: string
+  ) {
+    super(message)
+
+    // required for `instanceof` to work when compiling to ES5, since the
+    // default __extends helper does not preserve the prototype chain for
+    // classes extending built-ins like Error
+    Object.setPrototypeOf(this, SessionExecutionError.prototype)
+  }
+}
+
 export interface ExecuteReturnRaw {
   httpHeaders: HTTPHeaders
   result: string | Buffer
@@ -88,18 +106,24 @@ export class ExecutionController {
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
 
-    await processProgram(
-      program,
-      preProgramVariables,
-      vars,
-      session,
-      weboutPath,
-      headersPath,
-      tokenFile,
-      runTime,
-      logPath,
-      otherArgs
-    )
+    try {
+      await processProgram(
+        program,
+        preProgramVariables,
+        vars,
+        session,
+        weboutPath,
+        headersPath,
+        tokenFile,
+        runTime,
+        logPath,
+        otherArgs
+      )
+    } catch (err: any) {
+      const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
+
+      throw new SessionExecutionError(err.message, log)
+    }
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
     const headersContent = (await fileExists(headersPath))
@@ -120,7 +144,16 @@ export class ExecutionController {
       : ''
 
     // it should be deleted by scheduleSessionDestroy
-    session.state = SessionState.completed
+    //
+    // Guarded: for JS/PY/R, processProgram sets state to `failed` itself
+    // (without throwing) when the interpreter process exits non-zero - if
+    // we unconditionally set `completed` here we'd silently overwrite that,
+    // and anything downstream inspecting session.state (e.g.
+    // scheduleSessionDestroy's expiresAfterMins branch in Session.ts) would
+    // see a crashed session mis-reported as successful.
+    if ((session.state as SessionState) !== SessionState.failed) {
+      session.state = SessionState.completed
+    }
 
     const resultParts = []
 
