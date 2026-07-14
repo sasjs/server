@@ -1,13 +1,16 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
-import { ExecutionController, ExecutionVars } from './internal'
+import {
+  ExecutionController,
+  ExecutionVars,
+  getSessionController
+} from './internal'
 import {
   getPreProgramVariables,
   makeFilesNamesMap,
   getRunTimeAndFilePath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
-import { debug } from 'console'
 
 interface ExecutePostRequestPayload {
   /**
@@ -15,6 +18,36 @@ interface ExecutePostRequestPayload {
    * @example "/Public/somefolder/some.file"
    */
   _program?: string
+}
+
+interface TriggerProgramPayload {
+  /**
+   * Location of SAS program.
+   * @example "/Public/somefolder/some.file"
+   */
+  _program: string
+  /**
+   * Amount of minutes after the completion of the program when the session must be
+   * destroyed.
+   * @example 15
+   */
+  expiresAfterMins?: number
+  /**
+   * Query param for setting debug mode.
+   */
+  _debug?: number
+}
+
+interface TriggerProgramResponse {
+  /**
+   * `sessionId` is the ID of the session and the name of the temporary folder
+   * used to store program outputs.<br><br>
+   * For SAS, this would be the location of the SASWORK folder.<br><br>
+   * `sessionId` can be used to poll session state using the
+   * GET /SASjsApi/session/{sessionId}/state endpoint.
+   * @example "20241028074744-54132-1730101664824"
+   */
+  sessionId: string
 }
 
 @Security('bearerAuth')
@@ -30,8 +63,8 @@ export class STPController {
    * https://server.sasjs.io/storedprograms
    *
    * @summary Execute a Stored Program, returns _webout and (optionally) log.
-   * @param _program Location of code in SASjs Drive
-   * @param _debug Optional query param for setting debug mode, which will return the session log.
+   * @param _program Location of Stored Program in SASjs Drive.
+   * @param _debug Optional query param for setting debug mode (returns the session log in the response body).
    * @example _program "/Projects/myApp/some/program"
    * @example _debug 131
    */
@@ -79,6 +112,26 @@ export class STPController {
 
     return execute(request, program!, vars, otherArgs)
   }
+
+  /**
+   * Trigger Program on the Specified Runtime.
+   * @summary Triggers program and returns SessionId immediately - does not wait for program completion.
+   * @param _program Location of code in SASjs Drive.
+   * @param expiresAfterMins Optional query param for setting amount of minutes after the completion of the program when the session must be destroyed.
+   * @param _debug Optional query param for setting debug mode.
+   * @example _program "/Projects/myApp/some/program"
+   * @example _debug 131
+   * @example expiresAfterMins 15
+   */
+  @Post('/trigger')
+  public async triggerProgram(
+    @Request() request: express.Request,
+    @Query() _program: string,
+    @Query() _debug?: number,
+    @Query() expiresAfterMins?: number
+  ): Promise<TriggerProgramResponse> {
+    return triggerProgram(request, { _program, _debug, expiresAfterMins })
+  }
 }
 
 const execute = async (
@@ -108,6 +161,56 @@ const execute = async (
     }
 
     return result
+  } catch (err: any) {
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'Job execution failed.',
+      error: typeof err === 'object' ? err.toString() : err,
+      log: err?.log
+    }
+  }
+}
+
+const triggerProgram = async (
+  req: express.Request,
+  { _program, _debug, expiresAfterMins }: TriggerProgramPayload
+): Promise<TriggerProgramResponse> => {
+  try {
+    // put _program query param into vars object
+    const vars: { [key: string]: string | number } = { _program }
+
+    // if present add _debug query param to vars object
+    if (_debug) {
+      vars._debug = _debug
+    }
+
+    // get code path and runTime
+    const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+
+    // get session controller based on runTime
+    const sessionController = getSessionController(runTime)
+
+    // get session
+    const session = await sessionController.getSession()
+
+    // add expiresAfterMins to session if provided
+    if (expiresAfterMins) {
+      // expiresAfterMins.used is set initially to false
+      session.expiresAfterMins = { mins: expiresAfterMins, used: false }
+    }
+
+    // call executeFile method of ExecutionController without awaiting
+    new ExecutionController().executeFile({
+      programPath: codePath,
+      runTime,
+      preProgramVariables: getPreProgramVariables(req),
+      vars,
+      session
+    })
+
+    // return session id
+    return { sessionId: session.id }
   } catch (err: any) {
     throw {
       code: 400,

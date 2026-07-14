@@ -1,3 +1,100 @@
+## [0.39.6](https://github.com/sasjs/server/compare/v0.39.5...v0.39.6) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** isolate drive.spec.ts's files folder from the real drive ([dec5191](https://github.com/sasjs/server/commit/dec51914911c10b66b43ebe95f77b0af63e2d03e))
+* **api:** stop overwriting a failed JS/PY/R session back to completed ([4858245](https://github.com/sasjs/server/commit/4858245372fa19929b6e59c28148f5d004239c9d))
+
+## [0.39.5](https://github.com/sasjs/server/compare/v0.39.4...v0.39.5) (2026-07-14)
+
+
+### Bug Fixes
+
+* **api:** harden mock SAS executable and timeouts for CI ([67fce47](https://github.com/sasjs/server/commit/67fce475a3c53b3c20919902edb45dce809dffb9))
+* **api:** return prompt error response instead of hanging when a SAS session fails ([f84af4a](https://github.com/sasjs/server/commit/f84af4ac0639625fee4508e764f0eed07d7b4e8a))
+* fix code.spec.ts failing on a fresh checkout (CI) ([0af6b63](https://github.com/sasjs/server/commit/0af6b63ffa770bfa2b77505d74778be517f8d631))
+
+## [0.39.4](https://github.com/sasjs/server/compare/v0.39.3...v0.39.4) (2025-12-21)
+
+
+### Bug Fixes
+
+* **deps:** bump dependencies and resolve audit issues ([4f78202](https://github.com/sasjs/server/commit/4f782025dbcdfcbae6ca1fabb42ce1bc385e0162))
+
+## [0.39.3](https://github.com/sasjs/server/compare/v0.39.2...v0.39.3) (2025-11-25)
+
+
+### Bug Fixes
+
+* (deps) bump @sasjs/core to 4.59.7 ([ab96653](https://github.com/sasjs/server/commit/ab966535642d08d4e8e984007b98c8fdffbe30f7))
+* (deps) rerun npm i to sync ([225f381](https://github.com/sasjs/server/commit/225f381bdf8ad5aa2af8d75648df1dd5175e12e0))
+
+## [0.39.2](https://github.com/sasjs/server/compare/v0.39.1...v0.39.2) (2025-09-25)
+
+
+### Bug Fixes
+
+* addressing test fail ([e51b204](https://github.com/sasjs/server/commit/e51b20421adc1598ea267c79b1fb4dbc085f97b9))
+* packages missmatch ([379ea60](https://github.com/sasjs/server/commit/379ea604bcb5686b5299fae6a32f759c45b275ea))
+* type libs ([6d123c3](https://github.com/sasjs/server/commit/6d123c3e23628c1d703eaa13142c77f0da970a55))
+* typescript errors ([631e956](https://github.com/sasjs/server/commit/631e95604b64b1a96f2abade659348618f3b00b2))
+* typescript errors ([198cd79](https://github.com/sasjs/server/commit/198cd79354254511c21ac1acfbf7b6bcfdab2af7))
+
+## [0.39.1](https://github.com/sasjs/server/compare/v0.39.0...v0.39.1) (2025-03-13)
+
+
+### Bug Fixes
+
+* extra bit of sleep for file recognition ([f4768bf](https://github.com/sasjs/server/commit/f4768bffd3dbb2fe243966572ba74002024d96e1)), closes [#381](https://github.com/sasjs/server/issues/381)
+
+# [0.39.0](https://github.com/sasjs/server/compare/v0.38.0...v0.39.0) (2024-10-31)
+
+
+### Bug Fixes
+
+* **api:** fixed condition in processProgram ([48a9a4d](https://github.com/sasjs/server/commit/48a9a4dd0e31f84209635382be4ec4bb2c3a9c0c))
+
+
+### Features
+
+* **api:** added session state endpoint ([6b6546c](https://github.com/sasjs/server/commit/6b6546c7ad0833347f8dc4cdba6ad19132f7aaef))
+
+# [0.38.0](https://github.com/sasjs/server/compare/v0.37.0...v0.38.0) (2024-10-30)
+
+
+### Features
+
+* **api:** enabled query params in stp/trigger endpoint ([5cda9cd](https://github.com/sasjs/server/commit/5cda9cd5d8623b7ea2ecd989d7808f47ec866672))
+
+# [0.37.0](https://github.com/sasjs/server/compare/v0.36.0...v0.37.0) (2024-10-29)
+
+
+### Features
+
+* **stp:** added trigger endpoint ([b0723f1](https://github.com/sasjs/server/commit/b0723f14448d60ffce4f2175cf8a73fc4d4dd0ee))
+
+# [0.36.0](https://github.com/sasjs/server/compare/v0.35.4...v0.36.0) (2024-10-29)
+
+
+### Features
+
+* **code:** added code/trigger API endpoint ([ffcf193](https://github.com/sasjs/server/commit/ffcf193b87d811b166d79af74013776a253b50b0))
+
+## [0.35.4](https://github.com/sasjs/server/compare/v0.35.3...v0.35.4) (2024-01-15)
+
+
+### Bug Fixes
+
+* **api:** fixed env issue in MacOS executable ([73d965d](https://github.com/sasjs/server/commit/73d965daf54b16c0921e4b18d11a1e6f8650884d))
+
+## [0.35.3](https://github.com/sasjs/server/compare/v0.35.2...v0.35.3) (2023-11-07)
+
+
+### Bug Fixes
+
+* enable embedded LFs in JS STP vars ([7e8cbbf](https://github.com/sasjs/server/commit/7e8cbbf377b27a7f5dd9af0bc6605c01f302f5d9))
+
 ## [0.35.2](https://github.com/sasjs/server/compare/v0.35.1...v0.35.2) (2023-08-07)
 
 

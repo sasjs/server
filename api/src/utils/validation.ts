@@ -178,6 +178,13 @@ export const runCodeValidation = (data: any): Joi.ValidationResult =>
     runTime: Joi.string().valid(...process.runTimes)
   }).validate(data)
 
+export const triggerCodeValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    code: Joi.string().required(),
+    runTime: Joi.string().valid(...process.runTimes),
+    expiresAfterMins: Joi.number().greater(0)
+  }).validate(data)
+
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required(),
@@ -185,3 +192,17 @@ export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)
+
+export const triggerProgramValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    _program: Joi.string().required(),
+    _debug: Joi.number(),
+    expiresAfterMins: Joi.number().greater(0)
+  })
+    .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
+    .validate(data)
+
+export const sessionIdValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    sessionId: Joi.string().required()
+  }).validate(data)

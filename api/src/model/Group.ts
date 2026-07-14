@@ -76,7 +76,7 @@ groupSchema.post('save', function (group: IGroup, next: Function) {
 })
 
 // pre remove hook to remove all references of group from users
-groupSchema.pre('remove', async function () {
+groupSchema.pre('remove', async function (this: IGroupDocument) {
   const userIds = this.users
   await Promise.all(
     userIds.map(async (userId) => {
