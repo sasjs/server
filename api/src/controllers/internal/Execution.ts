@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import { getSessionController, processProgram } from './'
 import { readFile, fileExists, createFile, readFileBinary } from '@sasjs/utils'
-import { PreProgramVars, Session, TreeNode } from '../../types'
+import { PreProgramVars, Session, TreeNode, SessionState } from '../../types'
 import {
   extractHeaders,
   getFilesFolder,
@@ -13,6 +13,24 @@ import {
 
 export interface ExecutionVars {
   [key: string]: string | number | undefined
+}
+
+// Thrown when the session itself fails (e.g. SAS exits abnormally via
+// %abort;). Carries the complete log - by the time this is thrown, the
+// session's process has already exited, so the log file it wrote is final,
+// not a partial/truncated snapshot.
+export class SessionExecutionError extends Error {
+  constructor(
+    message: string,
+    public log?: string
+  ) {
+    super(message)
+
+    // required for `instanceof` to work when compiling to ES5, since the
+    // default __extends helper does not preserve the prototype chain for
+    // classes extending built-ins like Error
+    Object.setPrototypeOf(this, SessionExecutionError.prototype)
+  }
 }
 
 export interface ExecuteReturnRaw {
@@ -33,6 +51,7 @@ interface ExecuteFileParams {
 
 interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
   program: string
+  includePrintOutput?: boolean
 }
 
 export class ExecutionController {
@@ -67,18 +86,17 @@ export class ExecutionController {
     otherArgs,
     session: sessionByFileUpload,
     runTime,
-    forceStringResult
+    forceStringResult,
+    includePrintOutput
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
     const session =
       sessionByFileUpload ?? (await sessionController.getSession())
-    session.inUse = true
-    session.consumed = true
+    session.state = SessionState.running
 
     const logPath = path.join(session.path, 'log.log')
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
-
     const weboutPath = path.join(session.path, 'webout.txt')
     const tokenFile = path.join(session.path, 'reqHeaders.txt')
 
@@ -88,18 +106,24 @@ export class ExecutionController {
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
 
-    await processProgram(
-      program,
-      preProgramVariables,
-      vars,
-      session,
-      weboutPath,
-      headersPath,
-      tokenFile,
-      runTime,
-      logPath,
-      otherArgs
-    )
+    try {
+      await processProgram(
+        program,
+        preProgramVariables,
+        vars,
+        session,
+        weboutPath,
+        headersPath,
+        tokenFile,
+        runTime,
+        logPath,
+        otherArgs
+      )
+    } catch (err: any) {
+      const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
+
+      throw new SessionExecutionError(err.message, log)
+    }
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
     const headersContent = (await fileExists(headersPath))
@@ -120,13 +144,41 @@ export class ExecutionController {
       : ''
 
     // it should be deleted by scheduleSessionDestroy
-    session.inUse = false
+    //
+    // Guarded: for JS/PY/R, processProgram sets state to `failed` itself
+    // (without throwing) when the interpreter process exits non-zero - if
+    // we unconditionally set `completed` here we'd silently overwrite that,
+    // and anything downstream inspecting session.state (e.g.
+    // scheduleSessionDestroy's expiresAfterMins branch in Session.ts) would
+    // see a crashed session mis-reported as successful.
+    if ((session.state as SessionState) !== SessionState.failed) {
+      session.state = SessionState.completed
+    }
+
+    const resultParts = []
+
+    // INFO: webout can be a Buffer, that is why it's length should be checked to determine if it is empty
+    if (webout && webout.length !== 0) resultParts.push(webout)
+
+    // INFO: log separator wraps the log from the beginning and the end
+    resultParts.push(process.logsUUID)
+    resultParts.push(log)
+    resultParts.push(process.logsUUID)
+
+    if (includePrintOutput && runTime === RunTimeType.SAS) {
+      const printOutputPath = path.join(session.path, 'output.lst')
+      const printOutput = (await fileExists(printOutputPath))
+        ? await readFile(printOutputPath)
+        : ''
+
+      if (printOutput) resultParts.push(printOutput)
+    }
 
     return {
       httpHeaders,
       result:
-        isDebugOn(vars) || session.crashed
-          ? `${webout}\n${process.logsUUID}\n${log}`
+        isDebugOn(vars) || session.failureReason
+          ? resultParts.join(`\n`)
           : webout
     }
   }

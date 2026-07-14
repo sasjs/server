@@ -62,6 +62,7 @@ const SASjsEditor = ({
     selectedRunTime,
     showDiff,
     webout,
+    printOutput,
     Dialog,
     handleChangeRunTime,
     handleDiffEditorDidMount,
@@ -153,30 +154,35 @@ const SASjsEditor = ({
           >
             <TabList onChange={handleTabChange} centered>
               <StyledTab label="Code" value="code" />
-              <StyledTab
-                label={logWithErrorsOrWarnings ? '' : 'log'}
-                value="log"
-                icon={
-                  logWithErrorsOrWarnings ? (
-                    <LogTabWithIcons log={log as LogObject} />
-                  ) : (
-                    ''
-                  )
-                }
-                onClick={() => {
-                  const logWrapper = document.querySelector(`#logWrapper`)
+              {log && (
+                <StyledTab
+                  label={logWithErrorsOrWarnings ? '' : 'log'}
+                  value="log"
+                  icon={
+                    logWithErrorsOrWarnings ? (
+                      <LogTabWithIcons log={log as LogObject} />
+                    ) : (
+                      ''
+                    )
+                  }
+                  onClick={() => {
+                    const logWrapper = document.querySelector(`#logWrapper`)
 
-                  if (logWrapper) logWrapper.scrollTop = 0
-                }}
-              />
-              <StyledTab
-                label={
-                  <Tooltip title="Displays content from the _webout fileref">
-                    <Typography>Webout</Typography>
-                  </Tooltip>
-                }
-                value="webout"
-              />
+                    if (logWrapper) logWrapper.scrollTop = 0
+                  }}
+                />
+              )}
+              {webout && (
+                <StyledTab
+                  label={
+                    <Tooltip title="Displays content from the _webout fileref">
+                      <Typography>Webout</Typography>
+                    </Tooltip>
+                  }
+                  value="webout"
+                />
+              )}
+              {printOutput && <StyledTab label="print" value="printOutput" />}
             </TabList>
           </Box>
 
@@ -222,11 +228,20 @@ const SASjsEditor = ({
               <LogComponent log={log} selectedRunTime={selectedRunTime} />
             )}
           </StyledTabPanel>
-          <StyledTabPanel value="webout">
-            <div>
-              <pre>{webout}</pre>
-            </div>
-          </StyledTabPanel>
+          {webout && (
+            <StyledTabPanel value="webout">
+              <div>
+                <pre>{webout}</pre>
+              </div>
+            </StyledTabPanel>
+          )}
+          {printOutput && (
+            <StyledTabPanel value="printOutput">
+              <div>
+                <pre>{printOutput}</pre>
+              </div>
+            </StyledTabPanel>
+          )}
         </TabContext>
       )}
       <Dialog />

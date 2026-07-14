@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import User from '../model/User'
+import { InfoJWT } from '../types/InfoJWT'
 
 const isValidToken = async (
   token: string,
@@ -11,7 +12,8 @@ const isValidToken = async (
     jwt.verify(token, key, (err, decoded) => {
       if (err) return reject(false)
 
-      if (decoded?.userId === userId && decoded?.clientId === clientId) {
+      const payload = decoded as InfoJWT
+      if (payload?.userId === userId && payload?.clientId === clientId) {
         return resolve(true)
       }
 

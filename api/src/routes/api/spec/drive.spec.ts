@@ -28,6 +28,15 @@ jest
   .spyOn(fileUtilModules, 'getUploadsFolder')
   .mockImplementation(() => path.join(tmpFolder, 'uploads'))
 
+// getFilesFolder() resolves via getSasjsDriveFolder()/process.driveLoc, a
+// separate root from getSasjsRootFolder()/process.sasjsRoot above - without
+// this, every test in this file that creates content under the drive (e.g.
+// 'level1', 'my/path/...') writes into the real, shared sasjs_root/drive
+// instead of this run's isolated tmpFolder, leaking state into later runs.
+jest
+  .spyOn(fileUtilModules, 'getFilesFolder')
+  .mockImplementation(() => path.join(tmpFolder, 'drive', 'files'))
+
 import appPromise from '../../../app'
 import {
   UserController,

@@ -1,5 +1,8 @@
 import express from 'express'
-import { executeProgramRawValidation } from '../../utils'
+import {
+  executeProgramRawValidation,
+  triggerProgramValidation
+} from '../../utils'
 import { STPController } from '../../controllers/'
 import { FileUploadController } from '../../controllers/internal'
 
@@ -13,7 +16,11 @@ stpRouter.get('/execute', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.executeGetRequest(req, query._program)
+    const response = await controller.executeGetRequest(
+      req,
+      query._program,
+      query._debug
+    )
 
     if (response instanceof Buffer) {
       res.writeHead(200, (req as any).sasHeaders)
@@ -64,5 +71,29 @@ stpRouter.post(
     }
   }
 )
+
+stpRouter.post('/trigger', async (req, res) => {
+  const { error, value: query } = triggerProgramValidation(req.query)
+
+  if (error) return res.status(400).send(error.details[0].message)
+
+  try {
+    const response = await controller.triggerProgram(
+      req,
+      query._program,
+      query._debug,
+      query.expiresAfterMins
+    )
+
+    res.status(200)
+    res.send(response)
+  } catch (err: any) {
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err)
+  }
+})
 
 export default stpRouter

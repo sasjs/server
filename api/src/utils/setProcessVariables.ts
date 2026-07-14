@@ -1,9 +1,31 @@
 import path from 'path'
-import { createFolder, getAbsolutePath, getRealPath } from '@sasjs/utils'
-
+import {
+  createFolder,
+  getAbsolutePath,
+  getRealPath,
+  fileExists
+} from '@sasjs/utils'
+import dotenv from 'dotenv'
 import { connectDB, getDesktopFields, ModeType, RunTimeType, SECRETS } from '.'
 
 export const setProcessVariables = async () => {
+  const { execPath } = process
+
+  // Check if execPath ends with 'api-macos' to determine executable for MacOS.
+  // This is needed to fix picking .env file issue in MacOS executable.
+  if (execPath) {
+    const envPathSplitted = execPath.split(path.sep)
+
+    if (envPathSplitted.pop() === 'api-macos') {
+      const envPath = path.join(envPathSplitted.join(path.sep), '.env')
+
+      // Override environment variables from envPath if file exists
+      if (await fileExists(envPath)) {
+        dotenv.config({ path: envPath, override: true })
+      }
+    }
+  }
+
   const { MODE, RUN_TIMES } = process.env
 
   if (MODE === ModeType.Server) {
@@ -21,6 +43,7 @@ export const setProcessVariables = async () => {
   if (process.env.NODE_ENV === 'test') {
     process.sasjsRoot = path.join(process.cwd(), 'sasjs_root')
     process.driveLoc = path.join(process.cwd(), 'sasjs_root', 'drive')
+
     return
   }
 
@@ -41,7 +64,9 @@ export const setProcessVariables = async () => {
 
   const { SASJS_ROOT } = process.env
   const absPath = getAbsolutePath(SASJS_ROOT ?? 'sasjs_root', process.cwd())
+
   await createFolder(absPath)
+
   process.sasjsRoot = getRealPath(absPath)
 
   const { DRIVE_LOCATION } = process.env
@@ -49,6 +74,7 @@ export const setProcessVariables = async () => {
     DRIVE_LOCATION ?? path.join(process.sasjsRoot, 'drive'),
     process.cwd()
   )
+
   await createFolder(absDrivePath)
   process.driveLoc = getRealPath(absDrivePath)
 
@@ -57,7 +83,9 @@ export const setProcessVariables = async () => {
     LOG_LOCATION ?? path.join(process.sasjsRoot, 'logs'),
     process.cwd()
   )
+
   await createFolder(absLogsPath)
+
   process.logsLoc = getRealPath(absLogsPath)
 
   process.logsUUID = 'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'

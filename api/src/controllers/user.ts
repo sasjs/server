@@ -279,7 +279,7 @@ const getUser = async (
     username: user.username,
     isActive: user.isActive,
     isAdmin: user.isAdmin,
-    autoExec: getAutoExec ? user.autoExec ?? '' : undefined,
+    autoExec: getAutoExec ? (user.autoExec ?? '') : undefined,
     groups: user.groups
   }
 }
