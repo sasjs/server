@@ -114,7 +114,8 @@ const executeCode = async (
       code: 400,
       status: 'failure',
       message: 'Job execution failed.',
-      error: typeof err === 'object' ? err.toString() : err
+      error: typeof err === 'object' ? err.toString() : err,
+      log: err?.log
     }
   }
 }

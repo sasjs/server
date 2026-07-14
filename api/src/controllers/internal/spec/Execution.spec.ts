@@ -1,16 +1,10 @@
 import path from 'path'
 import os from 'os'
-import { deleteFolder, generateTimestamp } from '@sasjs/utils'
+import { createFile, deleteFolder, generateTimestamp } from '@sasjs/utils'
 import * as ProcessProgramModule from '../processProgram'
-import { ExecutionController } from '../Execution'
+import { ExecutionController, SessionExecutionError } from '../Execution'
 import { Session, SessionState, PreProgramVars } from '../../../types'
 import { RunTimeType } from '../../../utils'
-
-// Regression coverage: for JS/PY/R, processProgram sets session.state to
-// `failed` itself (without throwing) on a non-zero interpreter exit.
-// ExecutionController.executeProgram used to unconditionally overwrite
-// that back to `completed` right after processProgram returned, silently
-// losing the failure for anything downstream that inspects session.state.
 
 const preProgramVariables: PreProgramVars = {
   username: 'testUser',
@@ -20,7 +14,7 @@ const preProgramVariables: PreProgramVars = {
   httpHeaders: []
 }
 
-describe('ExecutionController.executeProgram (JS/PY/R failure path)', () => {
+describe('ExecutionController.executeProgram', () => {
   let session: Session
 
   beforeEach(() => {
@@ -39,46 +33,85 @@ describe('ExecutionController.executeProgram (JS/PY/R failure path)', () => {
     await deleteFolder(session.path)
   })
 
-  it('does not overwrite a failed session state back to completed', async () => {
-    // mirrors processProgram's real JS/PY/R branch on a non-zero exit:
-    // it sets state/failureReason itself and resolves - it does not throw
-    jest
-      .spyOn(ProcessProgramModule, 'processProgram')
-      .mockImplementation(async () => {
-        session.state = SessionState.failed
-        session.failureReason = 'Error: process exited with code 1'
+  // Regression coverage: for JS/PY/R, processProgram sets session.state to
+  // `failed` itself (without throwing) on a non-zero interpreter exit.
+  // ExecutionController.executeProgram used to unconditionally overwrite
+  // that back to `completed` right after processProgram returned, silently
+  // losing the failure for anything downstream that inspects session.state.
+  describe('JS/PY/R failure path', () => {
+    it('does not overwrite a failed session state back to completed', async () => {
+      // mirrors processProgram's real JS/PY/R branch on a non-zero exit:
+      // it sets state/failureReason itself and resolves - it does not throw
+      jest
+        .spyOn(ProcessProgramModule, 'processProgram')
+        .mockImplementation(async () => {
+          session.state = SessionState.failed
+          session.failureReason = 'Error: process exited with code 1'
+        })
+
+      const controller = new ExecutionController()
+
+      await controller.executeProgram({
+        program: 'throw new Error("boom")',
+        preProgramVariables,
+        vars: {},
+        session,
+        runTime: RunTimeType.JS
       })
 
-    const controller = new ExecutionController()
-
-    await controller.executeProgram({
-      program: 'throw new Error("boom")',
-      preProgramVariables,
-      vars: {},
-      session,
-      runTime: RunTimeType.JS
+      expect(session.state).toBe(SessionState.failed)
     })
 
-    expect(session.state).toBe(SessionState.failed)
+    it('still marks a genuinely successful session as completed', async () => {
+      jest
+        .spyOn(ProcessProgramModule, 'processProgram')
+        .mockImplementation(async () => {
+          session.state = SessionState.completed
+        })
+
+      const controller = new ExecutionController()
+
+      await controller.executeProgram({
+        program: 'console.log("hello")',
+        preProgramVariables,
+        vars: {},
+        session,
+        runTime: RunTimeType.JS
+      })
+
+      expect(session.state).toBe(SessionState.completed)
+    })
   })
 
-  it('still marks a genuinely successful session as completed', async () => {
-    jest
-      .spyOn(ProcessProgramModule, 'processProgram')
-      .mockImplementation(async () => {
-        session.state = SessionState.completed
+  describe('SAS failure path', () => {
+    it('throws a SessionExecutionError carrying the complete log when the session fails', async () => {
+      const logPath = path.join(session.path, 'log.log')
+      const logContent =
+        'NOTE: SAS session\nERROR: SAS session terminated. See log for details.\n'
+
+      await createFile(logPath, logContent)
+
+      jest
+        .spyOn(ProcessProgramModule, 'processProgram')
+        .mockImplementation(async () => {
+          throw new Error('ERROR: SAS session terminated. See log for details.')
+        })
+
+      const controller = new ExecutionController()
+
+      const resultPromise = controller.executeProgram({
+        program: '%abort;',
+        preProgramVariables,
+        vars: {},
+        session,
+        runTime: RunTimeType.SAS
       })
 
-    const controller = new ExecutionController()
-
-    await controller.executeProgram({
-      program: 'console.log("hello")',
-      preProgramVariables,
-      vars: {},
-      session,
-      runTime: RunTimeType.JS
+      await expect(resultPromise).rejects.toBeInstanceOf(SessionExecutionError)
+      await expect(resultPromise).rejects.toMatchObject({
+        log: logContent,
+        message: expect.stringContaining('SAS session terminated')
+      })
     })
-
-    expect(session.state).toBe(SessionState.completed)
   })
 })

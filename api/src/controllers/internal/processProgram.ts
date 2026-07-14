@@ -50,6 +50,10 @@ export const processProgram = async (
 
     // we now need to poll the session status
     while (session.state !== SessionState.completed) {
+      if (session.state === SessionState.failed) {
+        throw new Error(session.failureReason || 'SAS session failed')
+      }
+
       await delay(50)
     }
   } else {
