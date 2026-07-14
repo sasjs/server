@@ -144,7 +144,16 @@ export class ExecutionController {
       : ''
 
     // it should be deleted by scheduleSessionDestroy
-    session.state = SessionState.completed
+    //
+    // Guarded: for JS/PY/R, processProgram sets state to `failed` itself
+    // (without throwing) when the interpreter process exits non-zero - if
+    // we unconditionally set `completed` here we'd silently overwrite that,
+    // and anything downstream inspecting session.state (e.g.
+    // scheduleSessionDestroy's expiresAfterMins branch in Session.ts) would
+    // see a crashed session mis-reported as successful.
+    if ((session.state as SessionState) !== SessionState.failed) {
+      session.state = SessionState.completed
+    }
 
     const resultParts = []
 
