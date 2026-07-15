@@ -1,3 +1,10 @@
+## [0.39.8](https://github.com/sasjs/server/compare/v0.39.7...v0.39.8) (2026-07-15)
+
+
+### Bug Fixes
+
+* **api:** return 200 with embedded log on SAS session failure instead of 400 ([8506950](https://github.com/sasjs/server/commit/850695024f4b7102982c197ec64b5bb45e7d5f90))
+
 ## [0.39.7](https://github.com/sasjs/server/compare/v0.39.6...v0.39.7) (2026-07-14)
 
 
