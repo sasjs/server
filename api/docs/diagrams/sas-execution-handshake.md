@@ -33,9 +33,9 @@ sequenceDiagram
     Client->>Ctrl: POST .../execute { code, runTime: sas }
     Ctrl->>Exec: executeProgram({ program, runTime: SAS, ... })
     Exec->>Pool: getSession() returns the pending session (Session.ts:59-69)
-    Exec->>Exec: session.state = running (Execution.ts:96)
-    Exec->>FS: createFile(webout.txt, "") and createFile(reqHeaders.txt, ...) (Execution.ts:103-107)
-    Exec->>Pool: processProgram(program, session, ...) (Execution.ts:110-121)
+    Exec->>Exec: session.state = running (Execution.ts:78)
+    Exec->>FS: createFile(webout.txt, "") and createFile(reqHeaders.txt, ...) (Execution.ts:85-89)
+    Exec->>Pool: processProgram(program, session, ...) (Execution.ts:96-107)
     Pool->>FS: createSASProgram() wraps user code with macro vars,<br/>_webout filename, autoexec injection (createSASProgram.ts)
     Pool->>FS: write code.sas.bkp, then rename to code.sas (processProgram.ts:48-49)
     Note over FS: write-then-rename, not a direct write,<br/>so SAS never reads a partial file
@@ -45,24 +45,24 @@ sequenceDiagram
     Note over SAS: -SYSIN has pointed at code.sas from the start,<br/>so SAS now executes ITS CONTENT as the main job
     SAS->>FS: writes log.log, output.lst, webout.txt while running
 
-    Pool->>Pool: processProgram poll loop:<br/>while session.state !== completed (processProgram.ts:52-58)
+    Pool->>Pool: processProgram poll loop:<br/>while state !== completed AND state !== failed (processProgram.ts:58-63)
 
     alt program reaches EOF normally
         SAS->>SAS: exits with code 0
         SAS-->>Pool: execFilePromise resolves - .then() (Session.ts:148-152)
         Pool->>Pool: session.state = completed
-        Pool-->>Exec: processProgram() resolves
-    else program aborts (fatal error, license failure, hard STOP)
+    else program aborts (e.g. %abort, fatal error, license failure, hard STOP)
         SAS->>SAS: exits with non-zero code
         SAS-->>Pool: execFilePromise rejects - .catch() (Session.ts:153-163)
         Pool->>Pool: session.state = failed<br/>session.failureReason = err.toString()
-        Pool-->>Exec: processProgram() throws (processProgram.ts:53-55)
     end
     deactivate SAS
+    Note over Pool,Exec: either way processProgram() just RESOLVES here -<br/>a failed session is a normal outcome of running user<br/>code, not a request-shape/server problem, so it never throws<br/>(processProgram.ts:58-63, same as the JS/PY/R branch below)
 
-    Exec->>FS: read log.log, webout.txt, stpsrv_header.txt (Execution.ts:123, 128-131)
-    Exec-->>Ctrl: { httpHeaders, result }<br/>or throws SessionExecutionError{ message, log } (Execution.ts:109-126)
-    Ctrl-->>Client: 200 + result<br/>or 400 { status, message, error, log }
+    Exec->>FS: read log.log, webout.txt, stpsrv_header.txt (Execution.ts:109-112, 121-125)
+    Note over Exec: if session.failureReason is set, the log is folded into<br/>result the same way isDebugOn(vars) already does for a<br/>successful run - no separate error shape (Execution.ts:158-164)
+    Exec-->>Ctrl: { httpHeaders, result }
+    Ctrl-->>Client: 200 + result<br/>(log embedded in result if the session failed)
 ```
 
 ## Why this design

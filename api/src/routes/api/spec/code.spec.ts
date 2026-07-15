@@ -104,19 +104,25 @@ describe('code', () => {
       )
     }, 30000)
 
-    it('returns a prompt 400 (not a hang) with the complete log when the SAS session fails (%abort;)', async () => {
+    // A failed SAS session (e.g. %abort;) is a normal outcome of running
+    // arbitrary user code, not a request-shape/server problem - the HTTP
+    // request itself was fine, so this must respond exactly like a
+    // successful run (200, same body shape, no hang), with the log simply
+    // reflecting what happened. Regression test for #388's follow-up: the
+    // original #388 fix stopped the hang but over-corrected into a 400
+    // with a bespoke error shape, which broke Studio's log-tab rendering.
+    it('returns 200 with the same shape as a successful run when the SAS session fails (%abort;), not a hang or an error shape', async () => {
       const response = await request(app)
         .post('/SASjsApi/code/execute')
         .auth(accessToken, { type: 'bearer' })
         .send({ code: '%abort;', runTime: 'sas' })
-        .expect(400)
+        .expect(200)
 
-      expect(response.body).toMatchObject({
-        status: 'failure',
-        message: 'Job execution failed.'
-      })
-      expect(response.body.log).toEqual(
+      expect(response.text).toEqual(
         expect.stringContaining('mock SAS execution')
+      )
+      expect(response.text).toEqual(
+        expect.stringContaining('SAS session terminated')
       )
     }, 30000)
   })

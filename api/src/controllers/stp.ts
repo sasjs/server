@@ -166,8 +166,7 @@ const execute = async (
       code: 400,
       status: 'failure',
       message: 'Job execution failed.',
-      error: typeof err === 'object' ? err.toString() : err,
-      log: err?.log
+      error: typeof err === 'object' ? err.toString() : err
     }
   }
 }

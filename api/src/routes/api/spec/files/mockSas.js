@@ -93,11 +93,19 @@ if (!readResult.ok) {
 
 const code = readResult.value
 
+// real SAS writes errors/aborts directly into the log file itself, not
+// just to stderr - mirror that so tests asserting on log content (what
+// the API actually returns to the caller) are meaningful
+const isAbort = code.includes('%abort;')
+const logContent = isAbort
+  ? `NOTE: mock SAS execution\n${code}\nERROR: SAS session terminated. See log for details.\n`
+  : `NOTE: mock SAS execution\n${code}\n`
+
 if (logPath) {
-  retry(() => fs.writeFileSync(logPath, `NOTE: mock SAS execution\n${code}\n`))
+  retry(() => fs.writeFileSync(logPath, logContent))
 }
 
-if (code.includes('%abort;')) {
+if (isAbort) {
   process.stderr.write('ERROR: SAS session terminated. See log for details.\n')
   process.exit(1)
 }

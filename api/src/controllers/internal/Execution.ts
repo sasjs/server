@@ -15,24 +15,6 @@ export interface ExecutionVars {
   [key: string]: string | number | undefined
 }
 
-// Thrown when the session itself fails (e.g. SAS exits abnormally via
-// %abort;). Carries the complete log - by the time this is thrown, the
-// session's process has already exited, so the log file it wrote is final,
-// not a partial/truncated snapshot.
-export class SessionExecutionError extends Error {
-  constructor(
-    message: string,
-    public log?: string
-  ) {
-    super(message)
-
-    // required for `instanceof` to work when compiling to ES5, since the
-    // default __extends helper does not preserve the prototype chain for
-    // classes extending built-ins like Error
-    Object.setPrototypeOf(this, SessionExecutionError.prototype)
-  }
-}
-
 export interface ExecuteReturnRaw {
   httpHeaders: HTTPHeaders
   result: string | Buffer
@@ -106,24 +88,23 @@ export class ExecutionController {
       preProgramVariables?.httpHeaders.join('\n') ?? ''
     )
 
-    try {
-      await processProgram(
-        program,
-        preProgramVariables,
-        vars,
-        session,
-        weboutPath,
-        headersPath,
-        tokenFile,
-        runTime,
-        logPath,
-        otherArgs
-      )
-    } catch (err: any) {
-      const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
-
-      throw new SessionExecutionError(err.message, log)
-    }
+    // A failed session (e.g. SAS via %abort;, or a non-zero JS/PY/R exit)
+    // is a normal outcome of running arbitrary user code, not a
+    // request-shape/server problem - processProgram resolves rather than
+    // throwing in that case, and the session.failureReason check below
+    // folds the log into the same result shape a successful run returns.
+    await processProgram(
+      program,
+      preProgramVariables,
+      vars,
+      session,
+      weboutPath,
+      headersPath,
+      tokenFile,
+      runTime,
+      logPath,
+      otherArgs
+    )
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
     const headersContent = (await fileExists(headersPath))
