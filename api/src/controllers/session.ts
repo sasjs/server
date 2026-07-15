@@ -5,7 +5,7 @@ import { getSessionController } from './internal'
 import { SessionState } from '../types'
 
 interface SessionResponse extends UserResponse {
-  needsToUpdatePassword: boolean
+  needsToUpdatePassword?: boolean
 }
 
 @Security('bearerAuth')
@@ -16,11 +16,12 @@ export class SessionController {
    * @summary Get session info (username).
    *
    */
-  @Example<UserResponse>({
-    id: 123,
+  @Example<SessionResponse>({
+    uid: 'userIdString',
     username: 'johnusername',
     displayName: 'John',
-    isAdmin: false
+    isAdmin: false,
+    needsToUpdatePassword: false
   })
   @Get('/')
   public async session(
@@ -43,7 +44,7 @@ export class SessionController {
 }
 
 const session = (req: express.Request) => ({
-  id: req.user!.userId,
+  uid: req.user!.userId,
   username: req.user!.username,
   displayName: req.user!.displayName,
   isAdmin: req.user!.isAdmin,

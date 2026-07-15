@@ -11,6 +11,7 @@ import {
 } from '../../../utils'
 import Group, { PUBLIC_GROUP_NAME } from '../../../model/Group'
 import User from '../../../model/User'
+import { randomBytes } from 'crypto'
 
 const clientId = 'someclientID'
 const adminUser = {
@@ -75,7 +76,7 @@ describe('group', () => {
         .send(group)
         .expect(200)
 
-      expect(res.body.groupId).toBeTruthy()
+      expect(res.body.uid).toBeTruthy()
       expect(res.body.name).toEqual(group.name)
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
@@ -155,7 +156,7 @@ describe('group', () => {
       const dbGroup = await groupController.createGroup(group)
 
       const res = await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
@@ -174,17 +175,17 @@ describe('group', () => {
         username: 'deletegroup2'
       })
 
-      await groupController.addUserToGroup(dbGroup.groupId, dbUser1.id)
-      await groupController.addUserToGroup(dbGroup.groupId, dbUser2.id)
+      await groupController.addUserToGroup(dbGroup.uid, dbUser1.uid)
+      await groupController.addUserToGroup(dbGroup.uid, dbUser2.uid)
 
       await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
       const res1 = await request(app)
-        .get(`/SASjsApi/user/${dbUser1.id}`)
+        .get(`/SASjsApi/user/${dbUser1.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
@@ -192,7 +193,7 @@ describe('group', () => {
       expect(res1.body.groups).toEqual([])
 
       const res2 = await request(app)
-        .get(`/SASjsApi/user/${dbUser2.id}`)
+        .get(`/SASjsApi/user/${dbUser2.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
@@ -201,8 +202,10 @@ describe('group', () => {
     })
 
     it('should respond with Not Found if groupId is incorrect', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .delete(`/SASjsApi/group/1234`)
+        .delete(`/SASjsApi/group/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -229,7 +232,7 @@ describe('group', () => {
       })
 
       const res = await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send()
         .expect(401)
@@ -245,15 +248,15 @@ describe('group', () => {
     })
 
     it('should respond with group', async () => {
-      const { groupId } = await groupController.createGroup(group)
+      const { uid } = await groupController.createGroup(group)
 
       const res = await request(app)
-        .get(`/SASjsApi/group/${groupId}`)
+        .get(`/SASjsApi/group/${uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body.groupId).toBeTruthy()
+      expect(res.body.uid).toBeTruthy()
       expect(res.body.name).toEqual(group.name)
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
@@ -266,15 +269,15 @@ describe('group', () => {
         username: 'get' + user.username
       })
 
-      const { groupId } = await groupController.createGroup(group)
+      const { uid } = await groupController.createGroup(group)
 
       const res = await request(app)
-        .get(`/SASjsApi/group/${groupId}`)
+        .get(`/SASjsApi/group/${uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body.groupId).toBeTruthy()
+      expect(res.body.uid).toBeTruthy()
       expect(res.body.name).toEqual(group.name)
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
@@ -292,8 +295,10 @@ describe('group', () => {
     })
 
     it('should respond with Not Found if groupId is incorrect', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .get('/SASjsApi/group/1234')
+        .get(`/SASjsApi/group/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -312,7 +317,7 @@ describe('group', () => {
           .send()
           .expect(200)
 
-        expect(res.body.groupId).toBeTruthy()
+        expect(res.body.uid).toBeTruthy()
         expect(res.body.name).toEqual(group.name)
         expect(res.body.description).toEqual(group.description)
         expect(res.body.isActive).toEqual(true)
@@ -333,7 +338,7 @@ describe('group', () => {
           .send()
           .expect(200)
 
-        expect(res.body.groupId).toBeTruthy()
+        expect(res.body.uid).toBeTruthy()
         expect(res.body.name).toEqual(group.name)
         expect(res.body.description).toEqual(group.description)
         expect(res.body.isActive).toEqual(true)
@@ -379,7 +384,7 @@ describe('group', () => {
 
       expect(res.body).toEqual([
         {
-          groupId: expect.anything(),
+          uid: expect.anything(),
           name: group.name,
           description: group.description
         }
@@ -401,7 +406,7 @@ describe('group', () => {
 
       expect(res.body).toEqual([
         {
-          groupId: expect.anything(),
+          uid: expect.anything(),
           name: group.name,
           description: group.description
         }
@@ -426,18 +431,18 @@ describe('group', () => {
       const dbUser = await userController.createUser(user)
 
       const res = await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body.groupId).toBeTruthy()
+      expect(res.body.uid).toBeTruthy()
       expect(res.body.name).toEqual(group.name)
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
       expect(res.body.users).toEqual([
         {
-          id: expect.anything(),
+          uid: expect.anything(),
           username: user.username,
           displayName: user.displayName
         }
@@ -452,20 +457,20 @@ describe('group', () => {
       })
 
       await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
       const res = await request(app)
-        .get(`/SASjsApi/user/${dbUser.id}`)
+        .get(`/SASjsApi/user/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
       expect(res.body.groups).toEqual([
         {
-          groupId: expect.anything(),
+          uid: expect.anything(),
           name: group.name,
           description: group.description
         }
@@ -478,21 +483,21 @@ describe('group', () => {
         ...user,
         username: 'addUserRandomUser'
       })
-      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+      await groupController.addUserToGroup(dbGroup.uid, dbUser.uid)
 
       const res = await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body.groupId).toBeTruthy()
+      expect(res.body.uid).toBeTruthy()
       expect(res.body.name).toEqual(group.name)
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
       expect(res.body.users).toEqual([
         {
-          id: expect.anything(),
+          uid: expect.anything(),
           username: 'addUserRandomUser',
           displayName: user.displayName
         }
@@ -526,8 +531,10 @@ describe('group', () => {
     })
 
     it('should respond with Not Found if groupId is incorrect', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .post('/SASjsApi/group/123/123')
+        .post(`/SASjsApi/group/${hexValue}/123`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -538,8 +545,10 @@ describe('group', () => {
 
     it('should respond with Not Found if userId is incorrect', async () => {
       const dbGroup = await groupController.createGroup(group)
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/123`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -556,7 +565,7 @@ describe('group', () => {
       })
 
       const res = await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(400)
@@ -577,7 +586,7 @@ describe('group', () => {
       })
 
       const res = await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(405)
@@ -596,7 +605,7 @@ describe('group', () => {
       })
 
       const res = await request(app)
-        .post(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .post(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(405)
@@ -618,15 +627,15 @@ describe('group', () => {
         ...user,
         username: 'removeUserRandomUser'
       })
-      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+      await groupController.addUserToGroup(dbGroup.uid, dbUser.uid)
 
       const res = await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
-      expect(res.body.groupId).toBeTruthy()
+      expect(res.body.uid).toBeTruthy()
       expect(res.body.name).toEqual(group.name)
       expect(res.body.description).toEqual(group.description)
       expect(res.body.isActive).toEqual(true)
@@ -639,16 +648,16 @@ describe('group', () => {
         ...user,
         username: 'removeGroupFromUser'
       })
-      await groupController.addUserToGroup(dbGroup.groupId, dbUser.id)
+      await groupController.addUserToGroup(dbGroup.uid, dbUser.uid)
 
       await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
 
       const res = await request(app)
-        .get(`/SASjsApi/user/${dbUser.id}`)
+        .get(`/SASjsApi/user/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(200)
@@ -667,7 +676,7 @@ describe('group', () => {
       })
 
       const res = await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(405)
@@ -686,7 +695,7 @@ describe('group', () => {
       })
 
       const res = await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}/${dbUser.id}`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}/${dbUser.uid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(405)
@@ -723,8 +732,10 @@ describe('group', () => {
     })
 
     it('should respond with Not Found if groupId is incorrect', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .delete('/SASjsApi/group/123/123')
+        .delete(`/SASjsApi/group/${hexValue}/123`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -735,8 +746,10 @@ describe('group', () => {
 
     it('should respond with Not Found if userId is incorrect', async () => {
       const dbGroup = await groupController.createGroup(group)
+      const hexValue = randomBytes(12).toString('hex')
+
       const res = await request(app)
-        .delete(`/SASjsApi/group/${dbGroup.groupId}/123`)
+        .delete(`/SASjsApi/group/${dbGroup.uid}/${hexValue}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
@@ -752,10 +765,10 @@ const generateSaveTokenAndCreateUser = async (
 ): Promise<string> => {
   const dbUser = await userController.createUser(someUser ?? adminUser)
 
-  return generateAndSaveToken(dbUser.id)
+  return generateAndSaveToken(dbUser.uid)
 }
 
-const generateAndSaveToken = async (userId: number) => {
+const generateAndSaveToken = async (userId: string) => {
   const adminAccessToken = generateAccessToken({
     clientId,
     userId

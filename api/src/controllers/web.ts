@@ -121,7 +121,7 @@ const login = async (
 
   req.session.loggedIn = true
   req.session.user = {
-    userId: user.id,
+    userId: user.uid,
     clientId: 'web_app',
     username: user.username,
     displayName: user.displayName,
@@ -134,7 +134,7 @@ const login = async (
   return {
     loggedIn: true,
     user: {
-      id: user.id,
+      uid: user.uid,
       username: user.username,
       displayName: user.displayName,
       isAdmin: user.isAdmin,

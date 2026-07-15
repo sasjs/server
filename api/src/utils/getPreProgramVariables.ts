@@ -22,7 +22,7 @@ export const getPreProgramVariables = (req: Request): PreProgramVars => {
   //So this is workaround.
   return {
     username: user ? user.username : 'demo',
-    userId: user ? user.userId : 0,
+    userId: user ? user.userId : 'demoId',
     displayName: user ? user.displayName : 'demo',
     serverUrl: protocol + host,
     httpHeaders

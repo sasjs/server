@@ -56,9 +56,9 @@ interface RegisterPermissionPayload {
   principalType: PrincipalType
   /**
    * The id of user or group to which a rule is assigned.
-   * @example 123
+   * @example 'groupIdString'
    */
-  principalId: number
+  principalId: string
 }
 
 interface UpdatePermissionPayload {
@@ -70,7 +70,7 @@ interface UpdatePermissionPayload {
 }
 
 export interface PermissionDetailsResponse {
-  permissionId: number
+  uid: string
   path: string
   type: string
   setting: string
@@ -91,24 +91,24 @@ export class PermissionController {
    */
   @Example<PermissionDetailsResponse[]>([
     {
-      permissionId: 123,
+      uid: 'permissionId1String',
       path: '/SASjsApi/code/execute',
       type: 'Route',
       setting: 'Grant',
       user: {
-        id: 1,
+        uid: 'user1-id',
         username: 'johnSnow01',
         displayName: 'John Snow',
         isAdmin: false
       }
     },
     {
-      permissionId: 124,
+      uid: 'permissionId2String',
       path: '/SASjsApi/code/execute',
       type: 'Route',
       setting: 'Grant',
       group: {
-        groupId: 1,
+        uid: 'group1-id',
         name: 'DCGroup',
         description: 'This group represents Data Controller Users',
         isActive: true,
@@ -128,12 +128,12 @@ export class PermissionController {
    *
    */
   @Example<PermissionDetailsResponse>({
-    permissionId: 123,
+    uid: 'permissionIdString',
     path: '/SASjsApi/code/execute',
     type: 'Route',
     setting: 'Grant',
     user: {
-      id: 1,
+      uid: 'userIdString',
       username: 'johnSnow01',
       displayName: 'John Snow',
       isAdmin: false
@@ -149,36 +149,36 @@ export class PermissionController {
   /**
    * @summary Update permission setting. Admin only
    * @param permissionId The permission's identifier
-   * @example permissionId 1234
+   * @example permissionId "permissionIdString"
    */
   @Example<PermissionDetailsResponse>({
-    permissionId: 123,
+    uid: 'permissionIdString',
     path: '/SASjsApi/code/execute',
     type: 'Route',
     setting: 'Grant',
     user: {
-      id: 1,
+      uid: 'userIdString',
       username: 'johnSnow01',
       displayName: 'John Snow',
       isAdmin: false
     }
   })
-  @Patch('{permissionId}')
+  @Patch('{uid}')
   public async updatePermission(
-    @Path() permissionId: number,
+    @Path() uid: string,
     @Body() body: UpdatePermissionPayload
   ): Promise<PermissionDetailsResponse> {
-    return updatePermission(permissionId, body)
+    return updatePermission(uid, body)
   }
 
   /**
    * @summary Delete a permission. Admin only.
    * @param permissionId The user's identifier
-   * @example permissionId 1234
+   * @example permissionId "permissionIdString"
    */
-  @Delete('{permissionId}')
-  public async deletePermission(@Path() permissionId: number) {
-    return deletePermission(permissionId)
+  @Delete('{uid}')
+  public async deletePermission(@Path() uid: string) {
+    return deletePermission(uid)
   }
 }
 
@@ -191,7 +191,7 @@ const getAllPermissions = async (
   else {
     const permissions: PermissionDetailsResponse[] = []
 
-    const dbUser = await User.findOne({ id: user?.userId })
+    const dbUser = await User.findOne({ _id: user?.userId })
     if (!dbUser)
       throw {
         code: 404,
@@ -227,7 +227,7 @@ const createPermission = async ({
 
   switch (principalType) {
     case PrincipalType.user: {
-      const userInDB = await User.findOne({ id: principalId })
+      const userInDB = await User.findOne({ _id: principalId })
       if (!userInDB)
         throw {
           code: 404,
@@ -259,7 +259,7 @@ const createPermission = async ({
       permission.user = userInDB._id
 
       user = {
-        id: userInDB.id,
+        uid: userInDB.uid,
         username: userInDB.username,
         displayName: userInDB.displayName,
         isAdmin: userInDB.isAdmin
@@ -267,7 +267,7 @@ const createPermission = async ({
       break
     }
     case PrincipalType.group: {
-      const groupInDB = await Group.findOne({ groupId: principalId })
+      const groupInDB = await Group.findOne({ _id: principalId })
       if (!groupInDB)
         throw {
           code: 404,
@@ -291,13 +291,13 @@ const createPermission = async ({
       permission.group = groupInDB._id
 
       group = {
-        groupId: groupInDB.groupId,
+        uid: groupInDB.uid,
         name: groupInDB.name,
         description: groupInDB.description,
         isActive: groupInDB.isActive,
         users: groupInDB.populate({
           path: 'users',
-          select: 'id username displayName isAdmin -_id',
+          select: 'uid username displayName isAdmin -_id',
           options: { limit: 15 }
         }) as unknown as UserResponse[]
       }
@@ -314,7 +314,7 @@ const createPermission = async ({
   const savedPermission = await permission.save()
 
   return {
-    permissionId: savedPermission.permissionId,
+    uid: savedPermission.uid,
     path: savedPermission.path,
     type: savedPermission.type,
     setting: savedPermission.setting,
@@ -324,27 +324,21 @@ const createPermission = async ({
 }
 
 const updatePermission = async (
-  id: number,
+  uid: string,
   data: UpdatePermissionPayload
 ): Promise<PermissionDetailsResponse> => {
   const { setting } = data
 
   const updatedPermission = (await Permission.findOneAndUpdate(
-    { permissionId: id },
+    { _id: uid },
     { setting },
     { new: true }
   )
-    .select({
-      _id: 0,
-      permissionId: 1,
-      path: 1,
-      type: 1,
-      setting: 1
-    })
-    .populate({ path: 'user', select: 'id username displayName isAdmin -_id' })
+    .select('uid path type setting')
+    .populate({ path: 'user', select: 'uid username displayName isAdmin' })
     .populate({
       path: 'group',
-      select: 'groupId name description -_id'
+      select: 'groupId name description'
     })) as unknown as PermissionDetailsResponse
   if (!updatedPermission)
     throw {
@@ -356,13 +350,13 @@ const updatePermission = async (
   return updatedPermission
 }
 
-const deletePermission = async (id: number) => {
-  const permission = await Permission.findOne({ permissionId: id })
+const deletePermission = async (uid: string) => {
+  const permission = await Permission.findOne({ _id: uid })
   if (!permission)
     throw {
       code: 404,
       status: 'Not Found',
       message: 'Permission not found.'
     }
-  await Permission.deleteOne({ permissionId: id })
+  await Permission.deleteOne({ _id: uid })
 }

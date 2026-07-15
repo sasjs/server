@@ -58,12 +58,12 @@ describe('stp', () => {
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
     const dbUser = await userController.createUser(user)
-    accessToken = await generateAndSaveToken(dbUser.id)
+    accessToken = await generateAndSaveToken(dbUser.uid)
     await permissionController.createPermission({
       path: '/SASjsApi/stp/execute',
       type: PermissionType.route,
       principalType: PrincipalType.user,
-      principalId: dbUser.id,
+      principalId: dbUser.uid,
       setting: PermissionSettingForRoute.grant
     })
   })
@@ -456,7 +456,7 @@ const makeRequestAndAssert = async (
     )
 }
 
-const generateAndSaveToken = async (userId: number) => {
+const generateAndSaveToken = async (userId: string) => {
   const accessToken = generateAccessToken({
     clientId,
     userId

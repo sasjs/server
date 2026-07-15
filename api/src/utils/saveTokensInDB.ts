@@ -1,12 +1,12 @@
 import User from '../model/User'
 
 export const saveTokensInDB = async (
-  userId: number,
+  userId: string,
   clientId: string,
   accessToken: string,
   refreshToken: string
 ) => {
-  const user = await User.findOne({ id: userId })
+  const user = await User.findOne({ _id: userId })
   if (!user) return
 
   const currentTokenObj = user.tokens.find(

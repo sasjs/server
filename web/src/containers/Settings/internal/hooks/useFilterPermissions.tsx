@@ -62,21 +62,17 @@ const useFilterPermissions = () => {
         : permissions
 
     let filteredArray = uriFilteredPermissions.filter((permission) =>
-      principalFilteredPermissions.some(
-        (item) => item.permissionId === permission.permissionId
-      )
+      principalFilteredPermissions.some((item) => item.uid === permission.uid)
     )
 
     filteredArray = filteredArray.filter((permission) =>
       principalTypeFilteredPermissions.some(
-        (item) => item.permissionId === permission.permissionId
+        (item) => item.uid === permission.uid
       )
     )
 
     filteredArray = filteredArray.filter((permission) =>
-      settingFilteredPermissions.some(
-        (item) => item.permissionId === permission.permissionId
-      )
+      settingFilteredPermissions.some((item) => item.uid === permission.uid)
     )
 
     setFilteredPermissions(filteredArray)

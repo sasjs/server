@@ -22,7 +22,7 @@ export const isPublicRoute = async (req: Request): Promise<boolean> => {
 }
 
 export const publicUser: RequestUser = {
-  userId: 0,
+  userId: 'public_user_id',
   clientId: 'public_app',
   username: 'publicUser',
   displayName: 'Public User',

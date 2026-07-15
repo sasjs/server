@@ -1,9 +1,9 @@
 import { Schema, model, Document, Model } from 'mongoose'
 import { GroupDetailsResponse } from '../controllers'
 import User, { IUser } from './User'
-import { AuthProviderType, getSequenceNextValue } from '../utils'
+import { AuthProviderType } from '../utils'
 
-export const PUBLIC_GROUP_NAME = 'Public'
+export const PUBLIC_GROUP_NAME = 'public'
 
 export interface GroupPayload {
   /**
@@ -24,10 +24,12 @@ export interface GroupPayload {
 }
 
 interface IGroupDocument extends GroupPayload, Document {
-  groupId: number
   isActive: boolean
   users: Schema.Types.ObjectId[]
   authProvider?: AuthProviderType
+
+  // Declare virtual properties as read-only properties
+  readonly uid: string
 }
 
 interface IGroup extends IGroupDocument {
@@ -37,40 +39,46 @@ interface IGroup extends IGroupDocument {
 }
 interface IGroupModel extends Model<IGroup> {}
 
-const groupSchema = new Schema<IGroupDocument>({
-  name: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  groupId: {
-    type: Number,
-    unique: true
-  },
-  description: {
-    type: String,
-    default: 'Group description.'
-  },
-  authProvider: {
-    type: String,
-    enum: AuthProviderType
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  users: [{ type: Schema.Types.ObjectId, ref: 'User' }]
-})
-
-// Hooks
-groupSchema.pre('save', async function () {
-  if (this.isNew) {
-    this.groupId = await getSequenceNextValue('groupId')
+const opts = {
+  toJSON: {
+    virtuals: true,
+    transform: function (doc: any, ret: any, options: any) {
+      delete ret._id
+      delete ret.id
+      return ret
+    }
   }
+}
+const groupSchema = new Schema<IGroupDocument>(
+  {
+    name: {
+      type: String,
+      required: true,
+      unique: true
+    },
+    description: {
+      type: String,
+      default: 'Group description.'
+    },
+    authProvider: {
+      type: String,
+      enum: AuthProviderType
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    users: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+  },
+  opts
+)
+
+groupSchema.virtual('uid').get(function () {
+  return this._id.toString()
 })
 
 groupSchema.post('save', function (group: IGroup, next: Function) {
-  group.populate('users', 'id username displayName -_id').then(function () {
+  group.populate('users', 'uid username displayName').then(function () {
     next()
   })
 })

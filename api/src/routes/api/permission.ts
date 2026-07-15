@@ -3,6 +3,7 @@ import { PermissionController } from '../../controllers/'
 import { verifyAdmin } from '../../middlewares'
 import {
   registerPermissionValidation,
+  uidValidation,
   updatePermissionValidation
 } from '../../utils'
 
@@ -34,14 +35,17 @@ permissionRouter.post('/', verifyAdmin, async (req, res) => {
   }
 })
 
-permissionRouter.patch('/:permissionId', verifyAdmin, async (req: any, res) => {
-  const { permissionId } = req.params
+permissionRouter.patch('/:uid', verifyAdmin, async (req: any, res) => {
+  const { error: uidError, value: params } = uidValidation(req.params)
+  if (uidError) return res.status(400).send(uidError.details[0].message)
+
+  const { uid } = params
 
   const { error, value: body } = updatePermissionValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.updatePermission(permissionId, body)
+    const response = await controller.updatePermission(uid, body)
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code
@@ -50,20 +54,18 @@ permissionRouter.patch('/:permissionId', verifyAdmin, async (req: any, res) => {
   }
 })
 
-permissionRouter.delete(
-  '/:permissionId',
-  verifyAdmin,
-  async (req: any, res) => {
-    const { permissionId } = req.params
+permissionRouter.delete('/:uid', verifyAdmin, async (req: any, res) => {
+  const { error: uidError, value: params } = uidValidation(req.params)
+  if (uidError) return res.status(400).send(uidError.details[0].message)
 
-    try {
-      await controller.deletePermission(permissionId)
-      res.status(200).send('Permission Deleted!')
-    } catch (err: any) {
-      const statusCode = err.code
-      delete err.code
-      res.status(statusCode).send(err.message)
-    }
+  const { uid } = params
+  try {
+    await controller.deletePermission(uid)
+    res.status(200).send('Permission Deleted!')
+  } catch (err: any) {
+    const statusCode = err.code
+    delete err.code
+    res.status(statusCode).send(err.message)
   }
-)
+})
 export default permissionRouter

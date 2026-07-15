@@ -71,13 +71,13 @@ describe('code', () => {
     permissionController = new PermissionController()
 
     const dbUser = await userController.createUser(user)
-    accessToken = await generateAndSaveToken(dbUser.id)
+    accessToken = await generateAndSaveToken(dbUser.uid)
 
     await permissionController.createPermission({
       path: '/SASjsApi/code/execute',
       type: PermissionType.route,
       principalType: PrincipalType.user,
-      principalId: dbUser.id,
+      principalId: dbUser.uid,
       setting: PermissionSettingForRoute.grant
     })
 
@@ -122,7 +122,7 @@ describe('code', () => {
   })
 })
 
-const generateAndSaveToken = async (userId: number) => {
+const generateAndSaveToken = async (userId: string) => {
   const accessToken = generateAccessToken({
     clientId,
     userId

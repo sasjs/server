@@ -27,14 +27,14 @@ import User from '../model/User'
 @Tags('Auth')
 export class AuthController {
   static authCodes: { [key: string]: { [key: string]: string } } = {}
-  static saveCode = (userId: number, clientId: string, code: string) => {
+  static saveCode = (userId: string, clientId: string, code: string) => {
     if (AuthController.authCodes[userId])
       return (AuthController.authCodes[userId][clientId] = code)
 
     AuthController.authCodes[userId] = { [clientId]: code }
     return AuthController.authCodes[userId][clientId]
   }
-  static deleteCode = (userId: number, clientId: string) =>
+  static deleteCode = (userId: string, clientId: string) =>
     delete AuthController.authCodes[userId][clientId]
 
   /**
@@ -159,7 +159,7 @@ const updatePassword = async (
 ) => {
   const { currentPassword, newPassword } = data
   const userId = req.user?.userId
-  const dbUser = await User.findOne({ id: userId })
+  const dbUser = await User.findOne({ _id: userId })
 
   if (!dbUser)
     throw {
