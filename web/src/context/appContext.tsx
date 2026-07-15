@@ -72,7 +72,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       .then((res) => res.data)
       .then((data: any) => {
         setCheckingSession(false)
-        setUserId(data.id)
+        setUserId(data.uid)
         setUsername(data.username)
         setDisplayName(data.displayName)
         setIsAdmin(data.isAdmin)

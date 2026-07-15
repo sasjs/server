@@ -36,7 +36,7 @@ export const verifyTokenInDB = async (
 
   return currentTokenObj?.[tokenType] === token
     ? {
-        userId: dbUser.id,
+        userId: dbUser.uid,
         clientId,
         username: dbUser.username,
         displayName: dbUser.displayName,

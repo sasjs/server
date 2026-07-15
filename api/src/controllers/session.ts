@@ -4,8 +4,7 @@ import { UserResponse } from './user'
 import { getSessionController } from './internal'
 import { SessionState } from '../types'
 
-interface SessionResponse extends Omit<UserResponse, 'uid'> {
-  id: string
+interface SessionResponse extends UserResponse {
   needsToUpdatePassword?: boolean
 }
 
@@ -18,7 +17,7 @@ export class SessionController {
    *
    */
   @Example<SessionResponse>({
-    id: 'userIdString',
+    uid: 'userIdString',
     username: 'johnusername',
     displayName: 'John',
     isAdmin: false,
@@ -45,7 +44,7 @@ export class SessionController {
 }
 
 const session = (req: express.Request) => ({
-  id: req.user!.userId,
+  uid: req.user!.userId,
   username: req.user!.username,
   displayName: req.user!.displayName,
   isAdmin: req.user!.isAdmin,
