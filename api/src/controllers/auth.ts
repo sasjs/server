@@ -100,8 +100,13 @@ const token = async (data: any): Promise<TokenResponse> => {
 
   AuthController.deleteCode(userInfo.userId, clientId)
 
-  // get tokens from DB
+  // Re-exchanging a code for the same user/client while a still-valid token
+  // pair already exists returns that pair instead of minting a new one -
+  // keeps other tabs/sessions using the old tokens alive instead of
+  // silently invalidating them (saveTokensInDB below overwrites, it doesn't
+  // append).
   const existingTokens = await getTokensFromDB(userInfo.userId, clientId)
+
   if (existingTokens) {
     return {
       accessToken: existingTokens.accessToken,
@@ -109,7 +114,12 @@ const token = async (data: any): Promise<TokenResponse> => {
     }
   }
 
+  // Only used to look up token expirations - clientSecret is intentionally
+  // not checked here. The credential for this exchange is the auth code
+  // itself (single-use, 30s-lived, only obtainable by a caller that already
+  // held a valid session - see verifyAuthCode below and web.ts's authorize()).
   const client = await Client.findOne({ clientId })
+
   if (!client) throw new Error('Invalid clientId.')
 
   const accessToken = generateAccessToken(

@@ -113,6 +113,9 @@ const authenticateToken = async (
 
     throw 'Unauthorized'
   } catch (error) {
+    // A missing/invalid/expired token doesn't necessarily mean 401 - if an
+    // admin has granted the built-in Public group access to this exact
+    // path, an unauthenticated caller still gets through as publicUser.
     if (await isPublicRoute(req)) {
       req.user = publicUser
       return next()

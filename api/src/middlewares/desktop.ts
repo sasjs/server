@@ -5,6 +5,11 @@ import { ModeType } from '../utils'
 
 const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/1
 
+// Desktop mode has no login/logout (see authenticateAccessToken's desktop
+// bypass) and every request runs as the single fixed desktopUser, but the
+// desktop UI still needs to read/update that user's own profile (e.g.
+// autoExec) - so these two routes stay reachable while every other
+// /SASLogon/* and user-management route is blocked below.
 const allowedInDesktopMode: { [key: string]: RegExp[] } = {
   GET: [regexUser],
   PATCH: [regexUser]

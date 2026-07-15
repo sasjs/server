@@ -20,6 +20,13 @@ export const fetchLatestAutoExec = async (
   }
 }
 
+// Access/refresh tokens are JWTs, so they're self-verifying - but that
+// alone would make them impossible to revoke before expiry. Requiring the
+// exact token string to still be the one stored on the user's tokens array
+// (written by saveTokensInDB, cleared by removeTokensInDB) turns them into
+// revocable credentials: logout, or issuing a fresh pair via /auth/refresh,
+// immediately invalidates the old token even though its signature is still
+// valid.
 export const verifyTokenInDB = async (
   userId: number,
   clientId: string,
