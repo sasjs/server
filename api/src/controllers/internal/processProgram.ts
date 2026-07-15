@@ -48,12 +48,17 @@ export const processProgram = async (
     await createFile(codePath + '.bkp', program)
     await moveFile(codePath + '.bkp', codePath)
 
-    // we now need to poll the session status
-    while (session.state !== SessionState.completed) {
-      if (session.state === SessionState.failed) {
-        throw new Error(session.failureReason || 'SAS session failed')
-      }
-
+    // we now need to poll the session status. A failed session (e.g. from
+    // %abort;) is not a request-shape/server problem - it's a normal
+    // outcome of running arbitrary user code, same as a SAS ERROR: in the
+    // log without %abort;. So we just stop polling rather than throwing;
+    // Execution.ts already knows how to turn session.failureReason into a
+    // 200 response with the log embedded, matching how JS/PY/R (the else
+    // branch below) has always handled a failed session.
+    while (
+      session.state !== SessionState.completed &&
+      session.state !== SessionState.failed
+    ) {
       await delay(50)
     }
   } else {

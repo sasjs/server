@@ -30,8 +30,9 @@ fresh per request inside `processProgram`.
   code into the session and drives it to completion/failure, per runtime.
 - `api/src/controllers/internal/Execution.ts` — `ExecutionController`,
   the entry point controllers call; acquires a session, calls
-  `processProgram`, reads back `log.log`/`webout.txt`/headers, builds the
-  HTTP response (or a `SessionExecutionError` on failure).
+  `processProgram`, reads back `log.log`/`webout.txt`/headers, and builds
+  the HTTP response. A failed session (any runtime) is embedded in that
+  same response, not thrown as a separate error.
 - `api/src/controllers/internal/create{SAS,JS,Python,R}Program.ts` —
   per-runtime code templating (wraps the user's submitted code with
   boilerplate: variable injection, `_webout` redirection, etc).

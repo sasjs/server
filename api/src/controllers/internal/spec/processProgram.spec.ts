@@ -65,7 +65,13 @@ describe('processProgram (SAS runtime)', () => {
     await deleteFolder(session.path)
   })
 
-  it('rejects instead of hanging when the session fails (e.g. %abort;)', async () => {
+  it('resolves instead of hanging when the session fails (e.g. %abort;)', async () => {
+    // mirrors the JS/PY/R branch below: a session failure is a normal
+    // outcome of running arbitrary user code (like a SAS ERROR: in the
+    // log without %abort;), not a server-side/request-shape problem - so
+    // processProgram must not throw here, just stop polling. Execution.ts
+    // is responsible for turning session.failureReason into a 200 response
+    // with the log embedded, the same way it already does for JS/PY/R.
     setTimeout(() => {
       session.state = SessionState.failed
       session.failureReason =
@@ -84,7 +90,7 @@ describe('processProgram (SAS runtime)', () => {
         RunTimeType.SAS,
         logPath
       )
-    ).rejects.toThrow(/SAS session terminated/)
+    ).resolves.toBeUndefined()
   }, 3000)
 
   it('resolves without throwing when the session completes normally', async () => {

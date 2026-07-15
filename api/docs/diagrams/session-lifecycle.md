@@ -14,10 +14,10 @@ stateDiagram-v2
     initialising --> pending: dummy SYSIN file deleted<br/>by SAS's autoexec<br/>waitForSession(), Session.ts:175-192
     initialising --> failed: spawned SAS process exits<br/>before handshake completes<br/>Session.ts:153-163, 184-188
 
-    pending --> running: session picked for a request<br/>executeProgram(), Execution.ts:94-96
+    pending --> running: session picked for a request<br/>executeProgram(), Execution.ts:76-78
 
-    running --> completed: process exits 0<br/>SAS: Session.ts:148-152 (original process)<br/>JS/PY/R: processProgram.ts:116-120 (fresh process)
-    running --> failed: process exits non-zero<br/>SAS: Session.ts:153-163<br/>JS/PY/R: processProgram.ts:121-131<br/>failureReason = err.toString()
+    running --> completed: process exits 0<br/>SAS: Session.ts:148-152 (original process)<br/>JS/PY/R: processProgram.ts:124-129 (fresh process)
+    running --> failed: process exits non-zero<br/>SAS: Session.ts:153-163<br/>JS/PY/R: processProgram.ts:130-135<br/>failureReason = err.toString()<br/>neither branch throws - see request-execution-flow.md
 
     completed --> [*]: deleteSession()<br/>scheduleSessionDestroy(), Session.ts:194-236
     failed --> [*]: deleteSession()<br/>scheduleSessionDestroy()
@@ -55,7 +55,7 @@ stateDiagram-v2
 | Reader | Location | Watches for |
 |---|---|---|
 | `waitForSession` | `Session.ts:175-192` | `failed` (breaks early) or the dummy SYSIN file disappearing (implies session survived init) |
-| `processProgram` (SAS branch poll loop) | `processProgram.ts:52-58` | `completed` (success exit) or `failed` (throws, carrying `session.failureReason`) |
+| `processProgram` (SAS branch poll loop) | `processProgram.ts:58-63` | `completed` or `failed` - either just stops the loop and returns normally; `failed` does **not** throw. `Execution.ts` reads `session.failureReason` afterward to fold the log into a normal (200) result, same as it already does for JS/PY/R. |
 | `scheduleSessionDestroy` | `Session.ts:204-236` | `running` (extends death timer instead of destroying) |
 
 ## Asymmetry between runtimes
@@ -65,6 +65,13 @@ stateDiagram-v2
   `running`/`completed`/`failed` are all driven by that *same* process's
   eventual exit.
 - **JS/PY/R**: a session is cheap (folder + id, no process). The interpreter
-  process is spawned fresh, per request, inside `processProgram.ts:115` and
+  process is spawned fresh, per request, inside `processProgram.ts:124` and
   its exit drives `completed`/`failed` directly in the same function - there
-  is no separate poll loop for these runtimes.
+  is no separate poll loop for these runtimes (SAS needs one because it's
+  polling a state change happening in a process spawned earlier, at session
+  creation; JS/PY/R just `await` the process they spawn right there).
+- **Both runtimes resolve `processProgram()` normally on `failed`, they
+  never throw for it** - a failed session (any runtime) is a normal outcome
+  of running arbitrary user code, not a request-shape/server problem. See
+  `request-execution-flow.md` for how `Execution.ts` turns that into a
+  response.
