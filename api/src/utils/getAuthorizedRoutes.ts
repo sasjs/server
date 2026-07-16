@@ -2,6 +2,10 @@ import { Request } from 'express'
 
 export const TopLevelRoutes = ['/AppStream', '/SASjsApi']
 
+// Being authenticated is enough for most routes. These specifically also
+// require a granted Permission (checked by the authorize middleware) because
+// they run arbitrary submitted code or manipulate arbitrary files on disk -
+// a narrower blast radius than everything else a logged-in user can do.
 const StaticAuthorizedRoutes = [
   '/SASjsApi/code/execute',
   '/SASjsApi/stp/execute',
