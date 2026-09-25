@@ -10,7 +10,7 @@
     "start:prod": "node ./build/src/server.js",
     "build": "npm run initial && rimraf build && tsc && npm run copy:files",
     "swagger": "tsoa spec",
-    "prepare": "[ -d .git ] && git config core.hooksPath ./.git-hooks || true",
+    "prepare": "git rev-parse --git-dir && git config core.hooksPath ./.git-hooks || true",
     "test": "mkdir -p tmp && mkdir -p ../web/build && jest --silent --coverage",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
