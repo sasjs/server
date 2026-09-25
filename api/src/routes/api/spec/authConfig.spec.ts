@@ -149,10 +149,10 @@ const generateSaveTokenAndCreateUser = async (
 ): Promise<string> => {
   const dbUser = await controller.createUser(someUser ?? adminUser)
 
-  return generateAndSaveToken(dbUser.id)
+  return generateAndSaveToken(dbUser.uid)
 }
 
-const generateAndSaveToken = async (userId: number) => {
+const generateAndSaveToken = async (userId: string) => {
   const accessToken = generateAccessToken({
     clientId,
     userId
