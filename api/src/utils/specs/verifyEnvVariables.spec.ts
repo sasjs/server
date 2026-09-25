@@ -63,7 +63,7 @@ const setValidOidcEnv = () => {
   process.env.OIDC_CLIENT_ID = 'sasjs-server'
   process.env.OIDC_CLIENT_SECRET = 'oidc-client-secret'
   process.env.OIDC_REDIRECT_URI =
-    'https://sas.example.com/SASLogon/openid/callback'
+    'https://sas.example.com/SASjsLogon/openid/callback'
 }
 
 describe('verifyEnvVariables', () => {
@@ -183,7 +183,7 @@ describe('verifyEnvVariables', () => {
     })
 
     it('should reject a relative redirect URI', () => {
-      process.env.OIDC_REDIRECT_URI = '/SASLogon/openid/callback'
+      process.env.OIDC_REDIRECT_URI = '/SASjsLogon/openid/callback'
 
       expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
     })

@@ -88,7 +88,7 @@ describe('OIDC web routes', () => {
    * would have received.
    */
   const beginFlow = async (agent: ReturnType<typeof request.agent>) => {
-    const res = await agent.get('/SASLogon/openid').expect(302)
+    const res = await agent.get('/SASjsLogon/openid').expect(302)
 
     const url = new URL(res.headers.location)
 
@@ -103,17 +103,17 @@ describe('OIDC web routes', () => {
     it('should 404 on the start route', async () => {
       process.env.AUTH_PROVIDERS = 'ldap'
 
-      await request(app).get('/SASLogon/openid').expect(404)
+      await request(app).get('/SASjsLogon/openid').expect(404)
     })
 
     it('should 404 on the callback', async () => {
       process.env.AUTH_PROVIDERS = 'ldap'
 
-      await request(app).get('/SASLogon/openid/callback?code=x').expect(404)
+      await request(app).get('/SASjsLogon/openid/callback?code=x').expect(404)
     })
   })
 
-  describe('GET /SASLogon/openid', () => {
+  describe('GET /SASjsLogon/openid', () => {
     it('should redirect to the provider with every required parameter', async () => {
       const { location } = await beginFlow(request.agent(app))
 
@@ -139,7 +139,7 @@ describe('OIDC web routes', () => {
     })
   })
 
-  describe('GET /SASLogon/openid/callback', () => {
+  describe('GET /SASjsLogon/openid/callback', () => {
     it('should sign the user in and establish a session', async () => {
       const agent = request.agent(app)
       const { state, nonce } = await beginFlow(agent)
@@ -152,7 +152,7 @@ describe('OIDC web routes', () => {
       })
 
       await agent
-        .get(`/SASLogon/openid/callback?code=code-1&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=code-1&state=${state}`)
         .expect(302)
         .expect('location', '/')
 
@@ -170,7 +170,7 @@ describe('OIDC web routes', () => {
       idp.setIdTokenClaims({ sub: 'first', preferred_username: 'first', nonce })
 
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(302)
 
       const user = await User.findOne({ username: 'first' })
@@ -200,7 +200,7 @@ describe('OIDC web routes', () => {
       })
 
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(302)
 
       const user = await User.findOne({ username: 'second' })
@@ -217,7 +217,7 @@ describe('OIDC web routes', () => {
         nonce: flow1.nonce
       })
       await first
-        .get(`/SASLogon/openid/callback?code=c&state=${flow1.state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${flow1.state}`)
         .expect(302)
 
       const second = request.agent(app)
@@ -228,7 +228,7 @@ describe('OIDC web routes', () => {
         nonce: flow2.nonce
       })
       await second
-        .get(`/SASLogon/openid/callback?code=c&state=${flow2.state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${flow2.state}`)
         .expect(302)
 
       expect(await User.countDocuments({ username: 'alice' })).toEqual(1)
@@ -243,7 +243,7 @@ describe('OIDC web routes', () => {
         nonce: flow1.nonce
       })
       await first
-        .get(`/SASLogon/openid/callback?code=c&state=${flow1.state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${flow1.state}`)
         .expect(302)
 
       // Same subject, different username claim.
@@ -255,7 +255,7 @@ describe('OIDC web routes', () => {
         nonce: flow2.nonce
       })
       await second
-        .get(`/SASLogon/openid/callback?code=c&state=${flow2.state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${flow2.state}`)
         .expect(302)
 
       // No second account, and the original name is retained.
@@ -275,7 +275,7 @@ describe('OIDC web routes', () => {
       })
 
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(302)
 
       const user = await User.findOne({ authProviderId: 'sub-1' })
@@ -290,7 +290,7 @@ describe('OIDC web routes', () => {
       idp.setIdTokenClaims({ sub: 'alice', nonce })
 
       const res = await agent
-        .get('/SASLogon/openid/callback?code=c&state=not-the-state')
+        .get('/SASjsLogon/openid/callback?code=c&state=not-the-state')
         .expect(401)
 
       expect(res.text).toMatch(/Invalid or expired/)
@@ -298,7 +298,7 @@ describe('OIDC web routes', () => {
     })
 
     it('should reject a callback with no state at all', async () => {
-      await request(app).get('/SASLogon/openid/callback?code=c').expect(401)
+      await request(app).get('/SASjsLogon/openid/callback?code=c').expect(401)
     })
 
     it('should reject a replayed callback, because state is single use', async () => {
@@ -307,11 +307,11 @@ describe('OIDC web routes', () => {
       idp.setIdTokenClaims({ sub: 'alice', preferred_username: 'alice', nonce })
 
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(302)
 
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(401)
     })
 
@@ -322,7 +322,7 @@ describe('OIDC web routes', () => {
       idp.setIdTokenClaims({ sub: 'alice', nonce: 'a-different-nonce' })
 
       const res = await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(401)
 
       // The verifier's own message describes token internals and must not be
@@ -339,7 +339,7 @@ describe('OIDC web routes', () => {
 
       const res = await agent
         .get(
-          '/SASLogon/openid/callback?error=access_denied&error_description=<script>alert(1)</script>'
+          '/SASjsLogon/openid/callback?error=access_denied&error_description=<script>alert(1)</script>'
         )
         .expect(401)
 
@@ -368,7 +368,7 @@ describe('OIDC web routes', () => {
       })
 
       const res = await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(403)
 
       expect(res.text).toMatch(/already exists and is not linked/)
@@ -393,7 +393,7 @@ describe('OIDC web routes', () => {
       })
 
       const res = await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(403)
 
       expect(res.text).toMatch(/provisioning is disabled/)
@@ -409,7 +409,7 @@ describe('OIDC web routes', () => {
         nonce: flow1.nonce
       })
       await first
-        .get(`/SASLogon/openid/callback?code=c&state=${flow1.state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${flow1.state}`)
         .expect(302)
 
       process.env.OIDC_JIT_PROVISION = 'false'
@@ -422,7 +422,7 @@ describe('OIDC web routes', () => {
         nonce: flow2.nonce
       })
       await second
-        .get(`/SASLogon/openid/callback?code=c&state=${flow2.state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${flow2.state}`)
         .expect(302)
     })
 
@@ -446,24 +446,24 @@ describe('OIDC web routes', () => {
       })
 
       const res = await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(403)
 
       expect(res.text).toMatch(/not active/)
     })
   })
 
-  describe('GET /SASLogon/openid/logout', () => {
+  describe('GET /SASjsLogon/openid/logout', () => {
     it('should clear the session and return to the app when the provider has no end-session endpoint', async () => {
       const agent = request.agent(app)
       const { state, nonce } = await beginFlow(agent)
       idp.setIdTokenClaims({ sub: 'alice', preferred_username: 'alice', nonce })
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(302)
 
       await agent
-        .get('/SASLogon/openid/logout')
+        .get('/SASjsLogon/openid/logout')
         .expect(302)
         .expect('location', '/')
 
@@ -478,10 +478,10 @@ describe('OIDC web routes', () => {
       const { state, nonce } = await beginFlow(agent)
       idp.setIdTokenClaims({ sub: 'alice', preferred_username: 'alice', nonce })
       await agent
-        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .get(`/SASjsLogon/openid/callback?code=c&state=${state}`)
         .expect(302)
 
-      const res = await agent.get('/SASLogon/openid/logout').expect(302)
+      const res = await agent.get('/SASjsLogon/openid/logout').expect(302)
       const url = new URL(res.headers.location)
 
       expect(`${url.origin}${url.pathname}`).toEqual(`${idp.issuer}/logout`)

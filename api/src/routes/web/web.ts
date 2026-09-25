@@ -86,6 +86,15 @@ webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
 /**
  * The OIDC endpoints are only meaningful when the provider is configured.
  * Without this they would fail deep inside OIDCClient.init() as a 500.
+ *
+ * Note the /SASjsLogon prefix, unlike the /SASLogon routes above. That is
+ * deliberate: /SASLogon is the SAS platform's own logon namespace (SAS Logon
+ * Manager, used by SAS 9 and Viya), which @sasjs/adapter hard-codes - see
+ * AuthManager's loginUrl and getAccessTokenForViya's '/SASLogon/oauth/token'.
+ * sasjs/server implements it so that the same client works against SASjs
+ * Server, SAS 9 and Viya unchanged, so those paths are not ours to rename.
+ * OpenID Connect is a SASjs Server feature with no SAS equivalent, so it gets
+ * a SASjs-specific prefix instead of squatting in the platform's.
  */
 const oidcOnly: express.RequestHandler = (req, res, next) => {
   if (!isAuthProviderEnabled(AuthProviderType.OIDC))
@@ -108,7 +117,7 @@ const sendOidcError = (res: express.Response, err: any) => {
 }
 
 webRouter.get(
-  '/SASLogon/openid',
+  '/SASjsLogon/openid',
   desktopRestrict,
   oidcOnly,
   async (req, res) => {
@@ -122,7 +131,7 @@ webRouter.get(
 )
 
 webRouter.get(
-  '/SASLogon/openid/callback',
+  '/SASjsLogon/openid/callback',
   desktopRestrict,
   oidcOnly,
   async (req, res) => {
@@ -136,7 +145,7 @@ webRouter.get(
 )
 
 webRouter.get(
-  '/SASLogon/openid/logout',
+  '/SASjsLogon/openid/logout',
   desktopRestrict,
   oidcOnly,
   async (req, res) => {

@@ -7,13 +7,13 @@ import { generateKeyPair, exportJWK, SignJWT, KeyLike } from 'jose'
  * endpoint that returns a signed id_token. Enough to exercise the relying
  * party without any external service.
  *
- * Shared between the OIDCClient unit spec and the /SASLogon/openid route spec.
+ * Shared between the OIDCClient unit spec and the /SASjsLogon/openid route spec.
  */
 export const ISSUER_PATH = '/openid'
 export const STUB_CLIENT_ID = 'sasjs-server'
 export const STUB_CLIENT_SECRET = 'oidc-client-secret'
 export const STUB_REDIRECT_URI =
-  'https://sas.example.com/SASLogon/openid/callback'
+  'https://sas.example.com/SASjsLogon/openid/callback'
 
 export interface StubSignOptions {
   /** Seconds since epoch, or an ms/vercel-style string. Default '5m'. */
