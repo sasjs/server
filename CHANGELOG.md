@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/sasjs/server/compare/v1.0.0...v1.1.0) (2026-09-25)
+
+
+### Features
+
+* **auth:** add the OIDC sign-in routes and just-in-time provisioning ([e54054b](https://github.com/sasjs/server/commit/e54054bfd9586d275d3dcfda16187591e19f5139)), closes [#397](https://github.com/sasjs/server/issues/397)
+
 # [1.0.0](https://github.com/sasjs/server/compare/v0.40.0...v1.0.0) (2026-09-25)
 
 
