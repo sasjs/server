@@ -3,7 +3,10 @@
 How a client (browser SPA or CLI/SDK) turns a username/password into an
 authenticated `SASjsApi` request, and how that request is subsequently
 authorized. The mechanism is a self-hosted session-then-authorization-code
-flow, optionally backed by LDAP for credential verification.
+flow. Credentials are verified internally, or delegated to LDAP or to an
+OpenID Connect provider - either way the session and token machinery
+downstream is identical, which is why the OIDC flow below only replaces
+STEP 1.
 
 ```mermaid
 sequenceDiagram
@@ -117,6 +120,59 @@ jar for steps 0-2, then switches to bearer-token auth for everything after -
 it does not need a session for any request beyond obtaining the initial
 token pair.
 
+## OpenID Connect sign-in
+
+When `AUTH_PROVIDERS` includes `oidc`, STEP 1 above is replaced by a redirect
+to the identity provider. Everything from STEP 2 onwards - the auth code
+exchange, the token pair, every `SASjsApi` request - is unchanged, because the
+callback establishes exactly the same session the password route does.
+
+```mermaid
+sequenceDiagram
+    participant Browser as Browser
+    participant Web as Web routes + controller<br/>(routes/web/web.ts,<br/>controllers/web.ts)
+    participant Sess as Session store<br/>(MongoDB via connect-mongo)
+    participant OIDC as OIDCClient<br/>(utils/oidcClient.ts)
+    participant IdP as Identity provider<br/>(AUTH_PROVIDERS=oidc)
+    participant DB as MongoDB<br/>(User)
+    participant API as Any SASjsApi route
+
+    Note over Browser,Web: STEP 1a - start the flow
+    Browser->>Web: GET /SASLogon/openid
+    Web->>Web: 32 random bytes for state and for nonce
+    Web->>Sess: req.session.oidc = { state, nonce }
+    Web-->>Browser: 302 to the provider's authorization_endpoint,<br/>carrying client_id, redirect_uri, response_type=code,<br/>scope, state and nonce
+    Browser->>IdP: the user authenticates with the provider
+
+    Note over Browser,Web: STEP 1b - the callback
+    IdP-->>Browser: 302 back to /SASLogon/openid/callback<br/>with code and state
+    Browser->>Web: GET /SASLogon/openid/callback
+    Web->>Web: if the provider sent an error parameter, log it<br/>and refuse - its description is never reflected
+    Web->>Sess: read req.session.oidc, then DELETE it -<br/>single use, cleared before anything else can fail
+    Web->>Web: constant-time comparison of state<br/>(controllers/web.ts, safeEqual)
+    Web->>OIDC: exchangeCodeForTokens(code)
+    OIDC->>IdP: POST token_endpoint, authenticated with HTTP Basic<br/>unless the provider advertises client_secret_post
+    IdP-->>OIDC: id_token (and access_token)
+    OIDC->>OIDC: verify signature against the provider's JWKS,<br/>then iss, aud, exp, then the nonce
+    Web->>DB: resolveOidcUser(identity)
+    Note right of DB: by authProviderId (the sub claim) first, so a changed<br/>username claim cannot orphan or hijack an account.<br/>Otherwise the username claim is normalised and, if a<br/>matching account already exists, the login is REFUSED<br/>rather than adopting it. A new account is admin only<br/>if no admin exists yet.
+    Web->>Sess: req.session.loggedIn / req.session.user<br/>(same shape as the password route sets)
+    Web-->>Browser: 302 to /
+
+    Note over Browser,API: from here the flow is identical to STEP 2 onwards
+    Browser->>Web: POST /SASLogon/authorize { clientId }
+```
+
+A failure anywhere in STEP 1b answers 401 as `text/plain`, with our own
+wording - never the provider's or the verifier's message, both of which can
+describe token internals. The reasons are logged instead.
+
+Logout has an SSO counterpart: `/SASLogon/openid/logout` destroys the local
+session and then redirects to the provider's end-session endpoint, when it
+advertises one, so the provider session is closed too. It is a separate route
+from `/SASLogon/logout` because the SPA calls that one with axios and must keep
+receiving a 200 - a cross-origin redirect would be followed as an XHR and fail.
+
 ## Branches and edge cases
 
 - **Desktop mode** (`MODE=desktop`): `authenticateAccessToken` short-circuits
@@ -138,6 +194,14 @@ token pair.
   documents from the LDAP directory. Users created directly in this app
   (`authProvider` unset) always use the local bcrypt path, even if LDAP is
   configured.
+- **OIDC**: the login routes (`/SASLogon/openid*`) return 404 unless `oidc` is
+  listed in `AUTH_PROVIDERS`, so they cannot fail as a 500 deep inside
+  `OIDCClient.init()`. Users whose `User.authProvider` is `oidc` are matched by
+  `authProviderId` (the `sub` claim) and never by password, and
+  `PATCH /SASjsApi/auth/updatePassword` refuses them
+  (`controllers/auth.ts`) since they have no usable local password. The
+  password route is deliberately left working for local and LDAP users: it is
+  the way in for an administrator if the provider is unavailable.
 - **`Client` registration** (`model/Client.ts`) is a separate, lightweight
   concept from end-user accounts: a `clientId`/`clientSecret` pair with
   configurable access/refresh token lifetimes, used only to look up token
@@ -165,7 +229,15 @@ token pair.
 
 - `api/src/routes/web/web.ts`, `api/src/controllers/web.ts` - `/SASLogon/login`,
   `/SASLogon/authorize`, `/SASLogon/logout`; the browser-facing,
-  session-based half of the flow.
+  session-based half of the flow. Also `/SASLogon/openid`,
+  `/SASLogon/openid/callback` and `/SASLogon/openid/logout` - the OpenID
+  Connect variant of the same step, which is why they are not tsoa-decorated
+  (they are browser redirects, not JSON APIs).
+- `api/src/utils/oidcClient.ts` - the relying-party client: discovery, JWKS
+  verification via jose, code exchange, id_token validation and the
+  end-session URL.
+- `api/src/utils/oidcUser.ts` - maps an asserted OIDC identity onto a local
+  user, including the fail-closed rules for a username clash.
 - `api/src/routes/api/auth.ts`, `api/src/controllers/auth.ts` - `/SASjsApi/auth/token`,
   `/refresh`, `/logout`, `/updatePassword`; the token-based half used by
   every API caller.
