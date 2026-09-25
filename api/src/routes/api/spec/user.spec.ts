@@ -237,11 +237,11 @@ describe('user', () => {
         ...user,
         authProvider: AuthProviderType.LDAP
       })
-      const accessToken = await generateAndSaveToken(dbUser!.id)
+      const accessToken = await generateAndSaveToken(dbUser!.uid)
       const newUsername = 'newUsername'
 
       await request(app)
-        .patch(`/SASjsApi/user/${dbUser!.id}`)
+        .patch(`/SASjsApi/user/${dbUser!.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send({ username: newUsername })
         .expect(405)
@@ -252,11 +252,11 @@ describe('user', () => {
         ...user,
         authProvider: AuthProviderType.LDAP
       })
-      const accessToken = await generateAndSaveToken(dbUser!.id)
+      const accessToken = await generateAndSaveToken(dbUser!.uid)
       const newDisplayName = 'My new display Name'
 
       await request(app)
-        .patch(`/SASjsApi/user/${dbUser!.id}`)
+        .patch(`/SASjsApi/user/${dbUser!.uid}`)
         .auth(accessToken, { type: 'bearer' })
         .send({ displayName: newDisplayName })
         .expect(405)

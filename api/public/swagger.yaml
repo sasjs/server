@@ -578,7 +578,7 @@ components:
                     type: string
                 isAdmin:
                     type: boolean
-                id:
+                uid:
                     type: string
                 needsToUpdatePassword:
                     type: boolean
@@ -586,7 +586,7 @@ components:
                 - username
                 - displayName
                 - isAdmin
-                - id
+                - uid
             type: object
             additionalProperties: false
         SessionState:
@@ -1427,7 +1427,6 @@ paths:
                     required: true
                     schema:
                         type: string
-    '/SASjsApi/user/{userId}':
         patch:
             operationId: UpdateUser
             responses:
@@ -1450,11 +1449,11 @@ paths:
                 -
                     description: 'The user''s identifier'
                     in: path
-                    name: userId
+                    name: uid
                     required: true
                     schema:
                         type: string
-                    example: '1234'
+                    example: '507f1f77bcf86cd799439011'
             requestBody:
                 required: true
                 content:
@@ -1476,11 +1475,11 @@ paths:
                 -
                     description: 'The user''s identifier'
                     in: path
-                    name: userId
+                    name: uid
                     required: true
                     schema:
                         type: string
-                    example: 1234
+                    example: '507f1f77bcf86cd799439011'
             requestBody:
                 required: true
                 content:
@@ -1490,6 +1489,7 @@ paths:
                                 password:
                                     type: string
                             type: object
+
     /SASjsApi/group:
         get:
             operationId: GetAllGroups
@@ -1828,7 +1828,7 @@ paths:
                                 $ref: '#/components/schemas/SessionResponse'
                             examples:
                                 'Example 1':
-                                    value: {id: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}
+                                    value: {uid: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}
             summary: 'Get session info (username).'
             tags:
                 - Session
@@ -1999,7 +1999,7 @@ paths:
                         application/json:
                             schema:
                                 properties:
-                                    user: {properties: {needsToUpdatePassword: {type: boolean}, isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, id: {}}, required: [needsToUpdatePassword, isAdmin, displayName, username, id], type: object}
+                                    user: {properties: {needsToUpdatePassword: {type: boolean}, isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, uid: {type: string}}, required: [needsToUpdatePassword, isAdmin, displayName, username, uid], type: object}
                                     loggedIn: {type: boolean}
                                 required:
                                     - user

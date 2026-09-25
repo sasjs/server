@@ -389,6 +389,27 @@ describe('permission', () => {
       expect(res.body.setting).toEqual('Deny')
     })
 
+    it('should respond with the group uid when principalType is group', async () => {
+      const dbGroup = await groupController.createGroup({
+        ...group,
+        name: 'DCGroupUpdate'
+      })
+      const dbGroupPermission = await permissionController.createPermission({
+        ...permission,
+        principalType: PrincipalType.group,
+        principalId: dbGroup.uid
+      })
+
+      const res = await request(app)
+        .patch(`/SASjsApi/permission/${dbGroupPermission.uid}`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send({ setting: PermissionSettingForRoute.deny })
+        .expect(200)
+
+      expect(res.body.setting).toEqual('Deny')
+      expect(res.body.group.uid).toEqual(dbGroup.uid)
+    })
+
     it('should respond with Unauthorized if access token is not present', async () => {
       const res = await request(app)
         .patch(`/SASjsApi/permission/${dbPermission?.uid}`)

@@ -236,7 +236,7 @@ describe('auth', () => {
 
       expect(
         await verifyTokenInDB(
-          currentUser.id,
+          currentUser.uid,
           clientId,
           accessToken,
           'accessToken'

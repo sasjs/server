@@ -148,8 +148,8 @@ export class PermissionController {
 
   /**
    * @summary Update permission setting. Admin only
-   * @param permissionId The permission's identifier
-   * @example permissionId "permissionIdString"
+   * @param uid The permission's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
   @Example<PermissionDetailsResponse>({
     uid: 'permissionIdString',
@@ -173,8 +173,8 @@ export class PermissionController {
 
   /**
    * @summary Delete a permission. Admin only.
-   * @param permissionId The user's identifier
-   * @example permissionId "permissionIdString"
+   * @param uid The permission's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
   @Delete('{uid}')
   public async deletePermission(@Path() uid: string) {
@@ -290,16 +290,18 @@ const createPermission = async ({
 
       permission.group = groupInDB._id
 
+      await groupInDB.populate({
+        path: 'users',
+        select: 'uid username displayName isAdmin',
+        options: { limit: 15 }
+      })
+
       group = {
         uid: groupInDB.uid,
         name: groupInDB.name,
         description: groupInDB.description,
         isActive: groupInDB.isActive,
-        users: groupInDB.populate({
-          path: 'users',
-          select: 'uid username displayName isAdmin -_id',
-          options: { limit: 15 }
-        }) as unknown as UserResponse[]
+        users: groupInDB.users as unknown as UserResponse[]
       }
       break
     }
@@ -338,7 +340,7 @@ const updatePermission = async (
     .populate({ path: 'user', select: 'uid username displayName isAdmin' })
     .populate({
       path: 'group',
-      select: 'groupId name description'
+      select: 'uid name description'
     })) as unknown as PermissionDetailsResponse
   if (!updatedPermission)
     throw {

@@ -3,6 +3,7 @@ import { GroupController } from '../../controllers/'
 import { authenticateAccessToken, verifyAdmin } from '../../middlewares'
 import {
   getGroupValidation,
+  groupUserUidValidation,
   registerGroupValidation,
   uidValidation
 } from '../../utils'
@@ -76,7 +77,10 @@ groupRouter.post(
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
-    const { groupUid, userUid } = req.params
+    const { error, value: params } = groupUserUidValidation(req.params)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    const { groupUid, userUid } = params
 
     const controller = new GroupController()
     try {
@@ -93,7 +97,10 @@ groupRouter.delete(
   authenticateAccessToken,
   verifyAdmin,
   async (req, res) => {
-    const { groupUid, userUid } = req.params
+    const { error, value: params } = groupUserUidValidation(req.params)
+    if (error) return res.status(400).send(error.details[0].message)
+
+    const { groupUid, userUid } = params
 
     const controller = new GroupController()
     try {

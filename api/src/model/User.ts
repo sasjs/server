@@ -1,4 +1,4 @@
-import { Schema, model, Document, Model, ObjectId } from 'mongoose'
+import { Schema, model, Document, Model } from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { AuthProviderType } from '../utils'
 

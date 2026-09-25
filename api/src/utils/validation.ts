@@ -17,6 +17,12 @@ export const uidValidation = (data: any) =>
     uid: Joi.string().length(24).hex().required()
   }).validate(data)
 
+export const groupUserUidValidation = (data: any) =>
+  Joi.object({
+    groupUid: Joi.string().length(24).hex().required(),
+    userUid: Joi.string().length(24).hex().required()
+  }).validate(data)
+
 export const getUserValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     username: usernameSchema.required()

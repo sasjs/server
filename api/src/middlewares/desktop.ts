@@ -3,7 +3,9 @@ import { userInfo } from 'os'
 import { RequestUser } from '../types'
 import { ModeType } from '../utils'
 
-const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/1
+// In desktop mode the user identifier is the fixed '12345' sentinel set on
+// desktopUser below - never a Mongo ObjectId - so a numeric segment is correct.
+const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/12345
 
 const allowedInDesktopMode: { [key: string]: RegExp[] } = {
   GET: [regexUser],

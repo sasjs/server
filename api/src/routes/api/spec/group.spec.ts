@@ -532,14 +532,27 @@ describe('group', () => {
 
     it('should respond with Not Found if groupId is incorrect', async () => {
       const hexValue = randomBytes(12).toString('hex')
+      const userUid = randomBytes(12).toString('hex')
 
       const res = await request(app)
-        .post(`/SASjsApi/group/${hexValue}/123`)
+        .post(`/SASjsApi/group/${hexValue}/${userUid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
 
       expect(res.text).toEqual('Group not found.')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if userId is not a valid uid', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
+      const res = await request(app)
+        .post(`/SASjsApi/group/${hexValue}/123`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(400)
+
       expect(res.body).toEqual({})
     })
 
@@ -733,14 +746,27 @@ describe('group', () => {
 
     it('should respond with Not Found if groupId is incorrect', async () => {
       const hexValue = randomBytes(12).toString('hex')
+      const userUid = randomBytes(12).toString('hex')
 
       const res = await request(app)
-        .delete(`/SASjsApi/group/${hexValue}/123`)
+        .delete(`/SASjsApi/group/${hexValue}/${userUid}`)
         .auth(adminAccessToken, { type: 'bearer' })
         .send()
         .expect(404)
 
       expect(res.text).toEqual('Group not found.')
+      expect(res.body).toEqual({})
+    })
+
+    it('should respond with Bad Request if userId is not a valid uid', async () => {
+      const hexValue = randomBytes(12).toString('hex')
+
+      const res = await request(app)
+        .delete(`/SASjsApi/group/${hexValue}/123`)
+        .auth(adminAccessToken, { type: 'bearer' })
+        .send()
+        .expect(400)
+
       expect(res.body).toEqual({})
     })
 

@@ -106,8 +106,8 @@ export class UserController {
   /**
    * Only Admin or user itself will get user autoExec code.
    * @summary Get user properties - such as group memberships, userName, displayName.
-   * @param userId The user's identifier
-   * @example userId "userIdString"
+   * @param uid The user's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
   @Get('{uid}')
   public async getUser(
@@ -150,8 +150,8 @@ export class UserController {
 
   /**
    * @summary Update user properties - such as displayName. Can be performed either by admins, or the user in question.
-   * @param userId The user's identifier
-   * @example userId "1234"
+   * @param uid The user's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
   @Example<UserDetailsResponse>({
     uid: 'userIdString',
@@ -160,9 +160,9 @@ export class UserController {
     isAdmin: false,
     isActive: true
   })
-  @Patch('{userId}')
+  @Patch('{uid}')
   public async updateUser(
-    @Path() userId: string,
+    @Path() uid: string,
     @Body() body: UserPayload
   ): Promise<UserDetailsResponse> {
     const { MODE } = process.env
@@ -170,7 +170,7 @@ export class UserController {
     if (MODE === ModeType.Desktop)
       return updateDesktopAutoExec(body.autoExec ?? '')
 
-    return updateUser({ _id: userId }, body)
+    return updateUser({ _id: uid }, body)
   }
 
   /**
@@ -189,16 +189,16 @@ export class UserController {
 
   /**
    * @summary Delete a user. Can be performed either by admins, or the user in question.
-   * @param userId The user's identifier
-   * @example userId 1234
+   * @param uid The user's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
-  @Delete('{userId}')
+  @Delete('{uid}')
   public async deleteUser(
-    @Path() userId: string,
+    @Path() uid: string,
     @Body() body: { password?: string },
     @Query() @Hidden() isAdmin: boolean = false
   ) {
-    return deleteUser({ _id: userId }, isAdmin, body)
+    return deleteUser({ _id: uid }, isAdmin, body)
   }
 }
 

@@ -100,7 +100,7 @@ export class GroupController {
    * @param groupUid The group's identifier
    * @example groupUid "12ByteString"
    * @param userUid The user's identifier
-   * @example userId "12ByteString"
+   * @example userUid "12ByteString"
    */
   @Example<GroupDetailsResponse>({
     uid: 'groupIdString',
