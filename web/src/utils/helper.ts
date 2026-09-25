@@ -6,13 +6,13 @@ export const findExistingPermission = (
 ) => {
   for (const permission of existingPermissions) {
     if (
-      permission.user?.id === newPermission.principalId &&
+      permission.user?.uid === newPermission.principalId &&
       hasSameCombination(permission, newPermission)
     )
       return permission
 
     if (
-      permission.group?.groupId === newPermission.principalId &&
+      permission.group?.uid === newPermission.principalId &&
       hasSameCombination(permission, newPermission)
     )
       return permission
@@ -27,13 +27,13 @@ export const findUpdatingPermission = (
 ) => {
   for (const permission of existingPermissions) {
     if (
-      permission.user?.id === newPermission.principalId &&
+      permission.user?.uid === newPermission.principalId &&
       hasDifferentSetting(permission, newPermission)
     )
       return permission
 
     if (
-      permission.group?.groupId === newPermission.principalId &&
+      permission.group?.uid === newPermission.principalId &&
       hasDifferentSetting(permission, newPermission)
     )
       return permission

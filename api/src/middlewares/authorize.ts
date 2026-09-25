@@ -18,7 +18,7 @@ export const authorize: RequestHandler = async (req, res, next) => {
   // no need to check for permissions when route is Public
   if (await isPublicRoute(req)) return next()
 
-  const dbUser = await User.findOne({ id: user.userId })
+  const dbUser = await User.findOne({ _id: user.userId })
   if (!dbUser) return res.sendStatus(401)
 
   const path = getPath(req)

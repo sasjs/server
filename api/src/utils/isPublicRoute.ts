@@ -22,7 +22,8 @@ export const isPublicRoute = async (req: Request): Promise<boolean> => {
 }
 
 export const publicUser: RequestUser = {
-  userId: 0,
+  // sentinel value, not a Mongo ObjectId - it is never used as a DB query key
+  userId: 'public_user_id',
   clientId: 'public_app',
   username: 'publicUser',
   displayName: 'Public User',

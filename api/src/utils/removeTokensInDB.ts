@@ -1,7 +1,7 @@
 import User from '../model/User'
 
-export const removeTokensInDB = async (userId: number, clientId: string) => {
-  const user = await User.findOne({ id: userId })
+export const removeTokensInDB = async (userId: string, clientId: string) => {
+  const user = await User.findOne({ _id: userId })
   if (!user) return
 
   const tokenObjIndex = user.tokens.findIndex(

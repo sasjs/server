@@ -1,4 +1,4 @@
 export interface InfoJWT {
   clientId: string
-  userId: number
+  userId: string
 }

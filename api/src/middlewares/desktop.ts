@@ -3,7 +3,9 @@ import { userInfo } from 'os'
 import { RequestUser } from '../types'
 import { ModeType } from '../utils'
 
-const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/1
+// In desktop mode the user identifier is the fixed '12345' sentinel set on
+// desktopUser below - never a Mongo ObjectId - so a numeric segment is correct.
+const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/12345
 
 // Desktop mode has no login/logout (see authenticateAccessToken's desktop
 // bypass) and every request runs as the single fixed desktopUser, but the
@@ -33,7 +35,7 @@ export const desktopRestrict: RequestHandler = (req, res, next) => {
 }
 
 export const desktopUser: RequestUser = {
-  userId: 12345,
+  userId: '12345',
   clientId: 'desktop_app',
   username: userInfo().username,
   displayName: userInfo().username,

@@ -26,18 +26,14 @@ import {
 import { GroupController, GroupResponse } from './group'
 
 export interface UserResponse {
-  id: number
+  uid: string
   username: string
   displayName: string
   isAdmin: boolean
 }
 
-export interface UserDetailsResponse {
-  id: number
-  displayName: string
-  username: string
+export interface UserDetailsResponse extends UserResponse {
   isActive: boolean
-  isAdmin: boolean
   autoExec?: string
   groups?: GroupResponse[]
 }
@@ -52,13 +48,13 @@ export class UserController {
    */
   @Example<UserResponse[]>([
     {
-      id: 123,
+      uid: 'userIdString',
       username: 'johnusername',
       displayName: 'John',
       isAdmin: false
     },
     {
-      id: 456,
+      uid: 'anotherUserIdString',
       username: 'starkusername',
       displayName: 'Stark',
       isAdmin: true
@@ -74,7 +70,7 @@ export class UserController {
    *
    */
   @Example<UserDetailsResponse>({
-    id: 1234,
+    uid: 'userIdString',
     displayName: 'John Snow',
     username: 'johnSnow01',
     isAdmin: false,
@@ -110,21 +106,21 @@ export class UserController {
   /**
    * Only Admin or user itself will get user autoExec code.
    * @summary Get user properties - such as group memberships, userName, displayName.
-   * @param userId The user's identifier
-   * @example userId 1234
+   * @param uid The user's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
-  @Get('{userId}')
+  @Get('{uid}')
   public async getUser(
     @Request() req: express.Request,
-    @Path() userId: number
+    @Path() uid: string
   ): Promise<UserDetailsResponse> {
     const { MODE } = process.env
 
     if (MODE === ModeType.Desktop) return getDesktopAutoExec()
 
     const { user } = req
-    const getAutoExec = user!.isAdmin || user!.userId == userId
-    return getUser({ id: userId }, getAutoExec)
+    const getAutoExec = user!.isAdmin || user!.userId === uid
+    return getUser({ _id: uid }, getAutoExec)
   }
 
   /**
@@ -133,7 +129,7 @@ export class UserController {
    * @example username "johnSnow01"
    */
   @Example<UserDetailsResponse>({
-    id: 1234,
+    uid: 'userIdString',
     displayName: 'John Snow',
     username: 'johnSnow01',
     isAdmin: false,
@@ -154,19 +150,19 @@ export class UserController {
 
   /**
    * @summary Update user properties - such as displayName. Can be performed either by admins, or the user in question.
-   * @param userId The user's identifier
-   * @example userId "1234"
+   * @param uid The user's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
   @Example<UserDetailsResponse>({
-    id: 1234,
+    uid: 'userIdString',
     displayName: 'John Snow',
     username: 'johnSnow01',
     isAdmin: false,
     isActive: true
   })
-  @Patch('{userId}')
+  @Patch('{uid}')
   public async updateUser(
-    @Path() userId: number,
+    @Path() uid: string,
     @Body() body: UserPayload
   ): Promise<UserDetailsResponse> {
     const { MODE } = process.env
@@ -174,7 +170,7 @@ export class UserController {
     if (MODE === ModeType.Desktop)
       return updateDesktopAutoExec(body.autoExec ?? '')
 
-    return updateUser({ id: userId }, body)
+    return updateUser({ _id: uid }, body)
   }
 
   /**
@@ -193,23 +189,21 @@ export class UserController {
 
   /**
    * @summary Delete a user. Can be performed either by admins, or the user in question.
-   * @param userId The user's identifier
-   * @example userId 1234
+   * @param uid The user's identifier
+   * @example uid "507f1f77bcf86cd799439011"
    */
-  @Delete('{userId}')
+  @Delete('{uid}')
   public async deleteUser(
-    @Path() userId: number,
+    @Path() uid: string,
     @Body() body: { password?: string },
     @Query() @Hidden() isAdmin: boolean = false
   ) {
-    return deleteUser({ id: userId }, isAdmin, body)
+    return deleteUser({ _id: uid }, isAdmin, body)
   }
 }
 
 const getAllUsers = async (): Promise<UserResponse[]> =>
-  await User.find({})
-    .select({ _id: 0, id: 1, username: 1, displayName: 1, isAdmin: 1 })
-    .exec()
+  await User.find({}).select('uid username displayName isAdmin').exec()
 
 const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive, autoExec } = data
@@ -239,15 +233,15 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
 
   const groupController = new GroupController()
   const allUsersGroup = await groupController
-    .getGroupByGroupName(ALL_USERS_GROUP.name)
+    .getGroupByName(ALL_USERS_GROUP.name)
     .catch(() => {})
 
   if (allUsersGroup) {
-    await groupController.addUserToGroup(allUsersGroup.groupId, savedUser.id)
+    await groupController.addUserToGroup(allUsersGroup.uid, savedUser.uid)
   }
 
   return {
-    id: savedUser.id,
+    uid: savedUser.uid,
     displayName: savedUser.displayName,
     username: savedUser.username,
     isActive: savedUser.isActive,
@@ -256,8 +250,8 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
   }
 }
 
-interface GetUserBy {
-  id?: number
+export interface GetUserBy {
+  _id?: string
   username?: string
 }
 
@@ -267,10 +261,10 @@ const getUser = async (
 ): Promise<UserDetailsResponse> => {
   const user = (await User.findOne(
     findBy,
-    `id displayName username isActive isAdmin autoExec -_id`
+    `uid displayName username isActive isAdmin autoExec`
   ).populate(
     'groups',
-    'groupId name description -_id'
+    'uid name description'
   )) as unknown as UserDetailsResponse
 
   if (!user)
@@ -280,7 +274,7 @@ const getUser = async (
     }
 
   return {
-    id: user.id,
+    uid: user.uid,
     displayName: user.displayName,
     username: user.username,
     isActive: user.isActive,
@@ -293,7 +287,7 @@ const getUser = async (
 const getDesktopAutoExec = async () => {
   return {
     ...desktopUser,
-    id: desktopUser.userId,
+    uid: desktopUser.userId,
     autoExec: await getUserAutoExec()
   }
 }
@@ -329,8 +323,8 @@ const updateUser = async (
     const usernameExist = await User.findOne({ username })
     if (usernameExist) {
       if (
-        (findBy.id && usernameExist.id != findBy.id) ||
-        (findBy.username && usernameExist.username != findBy.username)
+        (findBy._id && usernameExist.uid !== findBy._id) ||
+        (findBy.username && usernameExist.username !== findBy.username)
       )
         throw {
           code: 409,
@@ -350,11 +344,11 @@ const updateUser = async (
   if (!updatedUser)
     throw {
       code: 404,
-      message: `Unable to find user with ${findBy.id || findBy.username}`
+      message: `Unable to find user with ${findBy._id || findBy.username}`
     }
 
   return {
-    id: updatedUser.id,
+    uid: updatedUser.uid,
     username: updatedUser.username,
     displayName: updatedUser.displayName,
     isAdmin: updatedUser.isAdmin,
@@ -367,7 +361,7 @@ const updateDesktopAutoExec = async (autoExec: string) => {
   await updateUserAutoExec(autoExec)
   return {
     ...desktopUser,
-    id: desktopUser.userId,
+    uid: desktopUser.userId,
     autoExec
   }
 }

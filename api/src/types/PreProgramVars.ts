@@ -1,6 +1,6 @@
 export interface PreProgramVars {
   username: string
-  userId: number
+  userId: string
   displayName: string
   serverUrl: string
   httpHeaders: string[]

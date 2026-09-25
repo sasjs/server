@@ -24,7 +24,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     process.logger.success(`DB Seed - client created: ${CLIENT.clientId}`)
   }
 
-  // Checking if 'AllUsers' Group is already in the database
+  // Checking if 'all-users' Group is already in the database
   let groupExist = await Group.findOne({ name: ALL_USERS_GROUP.name })
   if (!groupExist) {
     const group = new Group(ALL_USERS_GROUP)
@@ -33,7 +33,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     process.logger.success(`DB Seed - Group created: ${ALL_USERS_GROUP.name}`)
   }
 
-  // Checking if 'Public' Group is already in the database
+  // Checking if 'public' Group is already in the database
   const publicGroupExist = await Group.findOne({ name: PUBLIC_GROUP.name })
   if (!publicGroupExist) {
     const group = new Group(PUBLIC_GROUP)
@@ -82,7 +82,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
 }
 
 export const ALL_USERS_GROUP = {
-  name: 'AllUsers',
+  name: 'all-users',
   description: 'Group contains all users'
 }
 

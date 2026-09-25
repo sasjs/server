@@ -24,7 +24,7 @@ const useUpdatePermissionModal = () => {
     setUpdatePermissionModalOpen(false)
     setIsLoading(true)
     axios
-      .patch(`/SASjsApi/permission/${selectedPermission?.permissionId}`, {
+      .patch(`/SASjsApi/permission/${selectedPermission?.uid}`, {
         setting
       })
       .then((res: any) => {

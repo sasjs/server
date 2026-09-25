@@ -99,8 +99,8 @@ const AddPermissionModal = ({
         principalType: principalType.toLowerCase(),
         principalId:
           principalType.toLowerCase() === 'user'
-            ? userPrincipal?.id
-            : groupPrincipal?.groupId
+            ? userPrincipal?.uid
+            : groupPrincipal?.uid
       }
 
       permissions.push(addPermissionPayload)

@@ -1,5 +1,5 @@
 export interface RequestUser {
-  userId: number
+  userId: string
   clientId: string
   username: string
   displayName: string

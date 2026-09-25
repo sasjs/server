@@ -5,7 +5,7 @@ import { InfoJWT } from '../types/InfoJWT'
 const isValidToken = async (
   token: string,
   key: string,
-  userId: number,
+  userId: string,
   clientId: string
 ) => {
   const promise = new Promise<boolean>((resolve, reject) =>
@@ -24,8 +24,8 @@ const isValidToken = async (
   return await promise.then(() => true).catch(() => false)
 }
 
-export const getTokensFromDB = async (userId: number, clientId: string) => {
-  const user = await User.findOne({ id: userId })
+export const getTokensFromDB = async (userId: string, clientId: string) => {
+  const user = await User.findOne({ _id: userId })
   if (!user) return
 
   const currentTokenObj = user.tokens.find(

@@ -8,7 +8,7 @@ import { RunTimeType } from '../../../utils'
 
 const preProgramVariables: PreProgramVars = {
   username: 'testUser',
-  userId: 1,
+  userId: '1',
   displayName: 'Test User',
   serverUrl: 'http://localhost:5000',
   httpHeaders: []
