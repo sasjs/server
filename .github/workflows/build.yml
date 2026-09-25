@@ -2,6 +2,21 @@ name: SASjs Server Build
 
 on:
   pull_request:
+  # Also run on main, because release.yml (the only other workflow triggered by
+  # a push to main) builds the executables but never runs the test suite. It
+  # type-checks via `npm run exe` -> tsc, so a type error on main is caught
+  # there, but a failing test would not be - it would sit on main unnoticed
+  # until the next pull request happened to run it.
+  push:
+    branches:
+      - main
+
+# A newer commit on the same branch supersedes an in-flight run, so a busy
+# merge period does not queue up stale runs. Safe here: these jobs only read
+# and test, they do not publish anything (that is release.yml).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
