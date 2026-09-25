@@ -1,155 +1,12 @@
-import http from 'http'
-import { AddressInfo } from 'net'
-import { generateKeyPair, exportJWK, SignJWT, KeyLike } from 'jose'
-
 import { OIDCClient } from '../oidcClient'
-
-const ISSUER_PATH = '/openid'
-const CLIENT_ID = 'sasjs-server'
-const CLIENT_SECRET = 'oidc-client-secret'
-const REDIRECT_URI = 'https://sas.example.com/SASLogon/openid/callback'
-
-interface StubIdP {
-  issuer: string
-  jwksUri: string
-  tokenEndpoint: string
-  signIdToken: (payload: { [key: string]: unknown }) => Promise<string>
-  signEdDsaIdToken: (payload: { [key: string]: unknown }) => Promise<string>
-  signWithUnknownKey: (payload: { [key: string]: unknown }) => Promise<string>
-  lastTokenRequest: () => { headers: any; body: string } | undefined
-  setAuthMethods: (methods: string[]) => void
-  setEndSessionEndpoint: (present: boolean) => void
-  close: () => Promise<void>
-}
-
-/**
- * A minimal OpenID provider: discovery document, JWKS, and a token endpoint
- * that returns a signed id_token. Enough to exercise the relying party without
- * any external service.
- */
-const startStubIdP = async (): Promise<StubIdP> => {
-  const rsa = await generateKeyPair('RS256')
-  const ed = await generateKeyPair('EdDSA')
-  const unknown = await generateKeyPair('RS256')
-
-  let authMethods: string[] = []
-  let endSessionEndpoint = false
-  let lastRequest: { headers: any; body: string } | undefined
-  let baseUrl = ''
-
-  const jwks = async () => ({
-    keys: [
-      {
-        ...(await exportJWK(rsa.publicKey)),
-        kid: 'rsa1',
-        alg: 'RS256',
-        use: 'sig'
-      },
-      {
-        ...(await exportJWK(ed.publicKey)),
-        kid: 'ed1',
-        alg: 'EdDSA',
-        use: 'sig'
-      }
-    ]
-  })
-
-  const sign = async (
-    key: KeyLike,
-    kid: string,
-    alg: string,
-    payload: { [key: string]: unknown }
-  ) =>
-    new SignJWT(payload)
-      .setProtectedHeader({ alg, kid })
-      .setIssuer(`${baseUrl}${ISSUER_PATH}`)
-      .setAudience(CLIENT_ID)
-      .setIssuedAt()
-      .setExpirationTime('5m')
-      .sign(key)
-
-  const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url as string, baseUrl)
-
-    res.setHeader('content-type', 'application/json')
-
-    if (url.pathname === `${ISSUER_PATH}/.well-known/openid-configuration`) {
-      res.end(
-        JSON.stringify({
-          issuer: `${baseUrl}${ISSUER_PATH}`,
-          authorization_endpoint: `${baseUrl}${ISSUER_PATH}/auth`,
-          token_endpoint: `${baseUrl}${ISSUER_PATH}/token`,
-          jwks_uri: `${baseUrl}${ISSUER_PATH}/jwks`,
-          ...(authMethods.length
-            ? { token_endpoint_auth_methods_supported: authMethods }
-            : {}),
-          ...(endSessionEndpoint
-            ? { end_session_endpoint: `${baseUrl}${ISSUER_PATH}/logout` }
-            : {})
-        })
-      )
-      return
-    }
-
-    if (url.pathname === `${ISSUER_PATH}/jwks`) {
-      res.end(JSON.stringify(await jwks()))
-      return
-    }
-
-    if (url.pathname === `${ISSUER_PATH}/token`) {
-      const chunks: Buffer[] = []
-      for await (const chunk of req) chunks.push(chunk as Buffer)
-      lastRequest = {
-        headers: req.headers,
-        body: Buffer.concat(chunks).toString()
-      }
-
-      const idToken = await sign(rsa.privateKey, 'rsa1', 'RS256', {
-        sub: 'alice',
-        preferred_username: 'alice',
-        name: 'Alice Example',
-        nonce: url.searchParams.get('nonce') ?? 'test-nonce'
-      })
-
-      res.end(JSON.stringify({ id_token: idToken, access_token: 'at-123' }))
-      return
-    }
-
-    res.statusCode = 404
-    res.end('{}')
-  })
-
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-
-  baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-
-  return {
-    get issuer() {
-      return `${baseUrl}${ISSUER_PATH}`
-    },
-    get jwksUri() {
-      return `${baseUrl}${ISSUER_PATH}/jwks`
-    },
-    get tokenEndpoint() {
-      return `${baseUrl}${ISSUER_PATH}/token`
-    },
-    signIdToken: (payload) => sign(rsa.privateKey, 'rsa1', 'RS256', payload),
-    signEdDsaIdToken: (payload) => sign(ed.privateKey, 'ed1', 'EdDSA', payload),
-    signWithUnknownKey: (payload) =>
-      sign(unknown.privateKey, 'unknown-kid', 'RS256', payload),
-    lastTokenRequest: () => lastRequest,
-    setAuthMethods: (methods) => {
-      authMethods = methods
-    },
-    setEndSessionEndpoint: (present) => {
-      endSessionEndpoint = present
-    },
-    close: () =>
-      new Promise<void>((resolve) => {
-        server.close(() => resolve())
-      })
-  }
-}
+import {
+  startStubIdP,
+  StubIdP,
+  ISSUER_PATH,
+  STUB_CLIENT_ID as CLIENT_ID,
+  STUB_CLIENT_SECRET as CLIENT_SECRET,
+  STUB_REDIRECT_URI as REDIRECT_URI
+} from './stubIdP'
 
 const managedEnvVars = [
   'AUTH_PROVIDERS',
@@ -386,38 +243,38 @@ describe('OIDCClient', () => {
     })
 
     it('should reject an expired id_token', async () => {
-      const { generateKeyPair, SignJWT } = await import('jose')
       const client = await OIDCClient.init()
 
-      // reuse the stub's own key id but back-date the token
-      const idToken = await idp.signIdToken({ sub: 'alice', nonce: 'n' })
-      expect(idToken).toBeDefined()
+      // Signed by the published key, so the only thing wrong with it is exp -
+      // otherwise this would fail on the signature and prove nothing.
+      const expired = await idp.signIdToken(
+        { sub: 'alice', nonce: 'n' },
+        { expiresIn: Math.floor(Date.now() / 1000) - 3600 }
+      )
 
-      const expired = await new SignJWT({ sub: 'alice', nonce: 'n' })
-        .setProtectedHeader({ alg: 'RS256', kid: 'rsa1' })
-        .setIssuer(idp.issuer)
-        .setAudience(CLIENT_ID)
-        .setIssuedAt(Math.floor(Date.now() / 1000) - 7200)
-        .setExpirationTime(Math.floor(Date.now() / 1000) - 3600)
-        .sign(await (await generateKeyPair('RS256')).privateKey)
-
-      await expect(client.verifyIdToken(expired, 'n')).rejects.toThrow()
+      await expect(client.verifyIdToken(expired, 'n')).rejects.toThrow(/exp/i)
     })
 
     it('should reject an id_token with the wrong audience', async () => {
-      const { generateKeyPair, SignJWT } = await import('jose')
       const client = await OIDCClient.init()
-      const other = await generateKeyPair('RS256')
 
-      const idToken = await new SignJWT({ sub: 'alice', nonce: 'n' })
-        .setProtectedHeader({ alg: 'RS256', kid: 'rsa1' })
-        .setIssuer(idp.issuer)
-        .setAudience('some-other-client')
-        .setIssuedAt()
-        .setExpirationTime('5m')
-        .sign(other.privateKey)
+      const idToken = await idp.signIdToken(
+        { sub: 'alice', nonce: 'n' },
+        { audience: 'some-other-client' }
+      )
 
-      await expect(client.verifyIdToken(idToken, 'n')).rejects.toThrow()
+      await expect(client.verifyIdToken(idToken, 'n')).rejects.toThrow(/aud/i)
+    })
+
+    it('should reject an id_token from the wrong issuer', async () => {
+      const client = await OIDCClient.init()
+
+      const idToken = await idp.signIdToken(
+        { sub: 'alice', nonce: 'n' },
+        { issuer: 'https://someone-else.example.com' }
+      )
+
+      await expect(client.verifyIdToken(idToken, 'n')).rejects.toThrow(/iss/i)
     })
 
     it('should fall back to sub when the username claim is absent', async () => {
