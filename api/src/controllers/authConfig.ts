@@ -19,9 +19,9 @@ export class AuthConfigController {
     ldap: {
       LDAP_URL: 'ldaps://my.ldap.server:636',
       LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron',
-      LDAP_BIND_PASSWORD: 'secret',
       LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron',
-      LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron'
+      LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron',
+      LDAP_BIND_PASSWORD_SET: true
     }
   })
   @Get('/')
@@ -174,12 +174,18 @@ const getAuthConfigDetail = () => {
       LDAP_GROUPS_BASE_DN
     } = process.env
 
+    // Secrets are write-only: LDAP_BIND_PASSWORD is read from the environment
+    // and used, but never echoed back. This endpoint is admin-only and served
+    // over GET, so returning it would leak the directory bind credential into
+    // the response body, the SPA's state, the browser cache and any proxy or
+    // access log in the path. LDAP_BIND_PASSWORD_SET reports only whether a
+    // value is configured, which is all the UI needs.
     returnObj.ldap = {
       LDAP_URL: LDAP_URL ?? '',
       LDAP_BIND_DN: LDAP_BIND_DN ?? '',
-      LDAP_BIND_PASSWORD: LDAP_BIND_PASSWORD ?? '',
       LDAP_USERS_BASE_DN: LDAP_USERS_BASE_DN ?? '',
-      LDAP_GROUPS_BASE_DN: LDAP_GROUPS_BASE_DN ?? ''
+      LDAP_GROUPS_BASE_DN: LDAP_GROUPS_BASE_DN ?? '',
+      LDAP_BIND_PASSWORD_SET: !!LDAP_BIND_PASSWORD
     }
   }
   return returnObj
