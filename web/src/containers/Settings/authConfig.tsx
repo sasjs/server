@@ -102,8 +102,11 @@ const AuthConfig = () => {
                   fullWidth
                   label="LDAP_BIND_PASSWORD"
                   name="LDAP_BIND_PASSWORD"
-                  type="password"
-                  value={authDetail.ldap.LDAP_BIND_PASSWORD}
+                  value={
+                    authDetail.ldap.LDAP_BIND_PASSWORD_SET
+                      ? 'Configured (not shown)'
+                      : 'Not configured'
+                  }
                   variant="outlined"
                   disabled
                 />
