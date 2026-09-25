@@ -37,6 +37,14 @@ interface AppContextProps {
   setIsAdmin?: Dispatch<SetStateAction<boolean>>
   mode: ModeType
   runTimes: RunTimeType[]
+  /**
+   * External auth providers configured on the server, and the display name of
+   * the OIDC provider when there is one. Both come from the public
+   * /SASjsApi/info response; oidcProviderName is undefined unless OIDC is
+   * configured, and drives the single sign-on button on the login screen.
+   */
+  authProviders: string[]
+  oidcProviderName?: string
   logout?: () => void
 }
 
@@ -49,7 +57,8 @@ export const AppContext = createContext<AppContextProps>({
   displayName: '',
   isAdmin: false,
   mode: ModeType.Server,
-  runTimes: []
+  runTimes: [],
+  authProviders: []
 })
 
 const AppContextProvider = (props: { children: ReactNode }) => {
@@ -63,6 +72,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [mode, setMode] = useState(ModeType.Server)
   const [runTimes, setRunTimes] = useState<RunTimeType[]>([])
+  const [authProviders, setAuthProviders] = useState<string[]>([])
+  const [oidcProviderName, setOidcProviderName] = useState<string>()
 
   useEffect(() => {
     setCheckingSession(true)
@@ -101,6 +112,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       .then((data: any) => {
         setMode(data.mode)
         setRunTimes(data.runTimes)
+        setAuthProviders(data.authProviders ?? [])
+        setOidcProviderName(data.oidcProviderName)
       })
       .catch(() => {})
   }, [])
@@ -131,6 +144,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setIsAdmin,
         mode,
         runTimes,
+        authProviders,
+        oidcProviderName,
         logout
       }}
     >
