@@ -1,3 +1,45 @@
+# [1.0.0](https://github.com/sasjs/server/compare/v0.40.0...v1.0.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* **api:** address review feedback on the ID -> UID migration ([708732d](https://github.com/sasjs/server/commit/708732da0beccca0244a0b7dddb715cc5ad9e5b6))
+* **api:** repair authConfig.spec for the ID -> UID migration ([47ae62e](https://github.com/sasjs/server/commit/47ae62e28374cf680d2472ab73554fe81e39210f)), closes [#363](https://github.com/sasjs/server/issues/363) [#395](https://github.com/sasjs/server/issues/395)
+* **api:** return uid consistently from login and session endpoints ([e1007e7](https://github.com/sasjs/server/commit/e1007e7e753a3b1e23b315bcff8f0800062ae702)), closes [#363](https://github.com/sasjs/server/issues/363)
+* **api:** use uid in authConfig.spec.ts after the ID -> UID merge ([2757b16](https://github.com/sasjs/server/commit/2757b160c8a38dc5b4b0601703964db5fecade12)), closes [#363](https://github.com/sasjs/server/issues/363) [#395](https://github.com/sasjs/server/issues/395)
+* update test fixtures for userId: string after ID->UID merge ([45bff7b](https://github.com/sasjs/server/commit/45bff7b0d108f199b50c8f64a3de4038d74b55eb))
+
+
+### Features
+
+* **auth:** add a generic OIDC relying party client ([7c2c684](https://github.com/sasjs/server/commit/7c2c6848ad57c32d88265ece78fed97ff79fa7ff))
+* publish SHA256 checksums with each release ([d01197e](https://github.com/sasjs/server/commit/d01197e7ee2635c46bd299eb799efdb1cf42b21a))
+* replace ID with UID ([093fe90](https://github.com/sasjs/server/commit/093fe90589100dce614b69196c7ea0e7dc770dfa))
+
+
+### BREAKING CHANGES
+
+* **api:** the API returns `uid` (the stringified Mongo `_id`) instead
+of the numeric `id` for users, groups and permissions, and the seeded groups
+are renamed from 'Public' to 'public' and 'AllUsers' to 'all-users'. There is
+no migration script - run the following against an existing database before
+starting the upgraded server:
+
+  db.users.dropIndex('id_1')
+  db.groups.dropIndex('groupId_1')
+  db.groups.updateOne({ name: 'Public' }, { $set: { name: 'public' } })
+  db.groups.updateOne({ name: 'AllUsers' }, { $set: { name: 'all-users' } })
+  db.counters.drop()
+
+The `users.id` / `groups.groupId` unique indexes are no longer maintained by
+the schemas but still exist in the database, and a missing value indexes as
+null - so the second new user (or group) created after the upgrade fails with
+`E11000 duplicate key error ... index: id_1 dup key: { id: null }`. Renaming
+the seeded groups in place keeps their `_id` (and therefore the permissions
+that reference them); without it seedDB creates new groups alongside the old
+ones and public-route permissions stop matching.
+* remove auto incremental ids from user, group and permissions and add a virtual uid property that returns string value of documents object id
+
 # [0.40.0](https://github.com/sasjs/server/compare/v0.39.8...v0.40.0) (2026-09-25)
 
 
