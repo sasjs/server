@@ -8,12 +8,21 @@ import {
   CssBaseline,
   Box,
   TextField,
-  Button
+  Button,
+  Divider,
+  Typography
 } from '@mui/material'
 import { AppContext } from '../context/appContext'
 
 const login = async (payload: { username: string; password: string }) =>
   axios.post('/SASLogon/login', payload).then((res) => res.data)
+
+/**
+ * Hands the browser to the server-side OIDC flow. A full navigation rather
+ * than an XHR: the server answers with a redirect to the provider, which the
+ * browser has to follow itself.
+ */
+const startSingleSignOn = () => window.location.assign('/SASLogon/openid')
 
 const Login = () => {
   const appContext = useContext(AppContext)
@@ -69,6 +78,27 @@ const Login = () => {
         <CssBaseline />
         <br />
         <h2 style={{ width: 'auto' }}>Welcome to SASjs Server!</h2>
+
+        {/*
+          Shown only when the server reports an OIDC provider. The password
+          form stays below it deliberately: internal and LDAP users still need
+          it, and it is the way in for a local admin if the provider is down.
+        */}
+        {appContext.oidcProviderName && (
+          <>
+            <Button
+              type="button"
+              variant="contained"
+              onClick={startSingleSignOn}
+            >
+              Sign in with {appContext.oidcProviderName}
+            </Button>
+            <Divider sx={{ width: '25ch', m: 1 }}>
+              <Typography variant="caption">or</Typography>
+            </Divider>
+          </>
+        )}
+
         <TextField
           id="username"
           label="Username"
