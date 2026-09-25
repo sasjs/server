@@ -6,7 +6,12 @@ import {
   bruteForceProtection,
   desktopRestrict
 } from '../../middlewares'
-import { authorizeValidation, loginWebValidation } from '../../utils'
+import {
+  authorizeValidation,
+  loginWebValidation,
+  isAuthProviderEnabled,
+  AuthProviderType
+} from '../../utils'
 
 const webRouter = express.Router()
 const controller = new WebController()
@@ -77,5 +82,71 @@ webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
     res.status(403).send(err.toString())
   }
 })
+
+/**
+ * The OIDC endpoints are only meaningful when the provider is configured.
+ * Without this they would fail deep inside OIDCClient.init() as a 500.
+ */
+const oidcOnly: express.RequestHandler = (req, res, next) => {
+  if (!isAuthProviderEnabled(AuthProviderType.OIDC))
+    return res.status(404).send('Not Found')
+
+  next()
+}
+
+/**
+ * These are browser redirect endpoints, and the refusal message can carry text
+ * derived from the provider, so the response is explicitly plain text rather
+ * than the text/html express picks for a string body.
+ */
+const sendOidcError = (res: express.Response, err: any) => {
+  res.type('text/plain')
+
+  if (err instanceof Error) return res.status(500).send(err.toString())
+
+  return res.status(err.code ?? 500).send(err.message ?? 'Sign-in failed.')
+}
+
+webRouter.get(
+  '/SASLogon/openid',
+  desktopRestrict,
+  oidcOnly,
+  async (req, res) => {
+    try {
+      const { url } = await controller.startOidc(req)
+      res.redirect(302, url)
+    } catch (err: any) {
+      sendOidcError(res, err)
+    }
+  }
+)
+
+webRouter.get(
+  '/SASLogon/openid/callback',
+  desktopRestrict,
+  oidcOnly,
+  async (req, res) => {
+    try {
+      const { url } = await controller.oidcCallback(req)
+      res.redirect(302, url)
+    } catch (err: any) {
+      sendOidcError(res, err)
+    }
+  }
+)
+
+webRouter.get(
+  '/SASLogon/openid/logout',
+  desktopRestrict,
+  oidcOnly,
+  async (req, res) => {
+    try {
+      const { url } = await controller.oidcLogout(req)
+      res.redirect(302, url)
+    } catch (err: any) {
+      sendOidcError(res, err)
+    }
+  }
+)
 
 export default webRouter

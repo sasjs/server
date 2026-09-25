@@ -43,6 +43,7 @@ interface IUserDocument extends UserPayload, Document {
   groups: Schema.Types.ObjectId[]
   tokens: [{ [key: string]: string }]
   authProvider?: AuthProviderType
+  authProviderId?: string
 
   // Declare virtual properties as read-only properties
   readonly uid: string
@@ -85,6 +86,15 @@ const userSchema = new Schema<IUserDocument>(
     authProvider: {
       type: String,
       enum: AuthProviderType
+    },
+    /**
+     * The provider's own durable identifier for this user - the OIDC `sub`
+     * claim. Usernames are a local, normalised projection of whatever the
+     * provider asserted and can in principle change; `sub` is what actually
+     * identifies the account, so lookups go through this first.
+     */
+    authProviderId: {
+      type: String
     },
     isAdmin: {
       type: Boolean,
