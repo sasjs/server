@@ -1,3 +1,15 @@
+# [0.40.0](https://github.com/sasjs/server/compare/v0.39.8...v0.40.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* **authconfig:** stop returning the LDAP bind password ([79c05f9](https://github.com/sasjs/server/commit/79c05f9fcbeaf7de64d0c77e3f50a33425c762a8))
+
+
+### Features
+
+* **auth:** treat AUTH_PROVIDERS as a list and add generic OIDC settings ([c283c03](https://github.com/sasjs/server/commit/c283c0331352ca75a4d6e917ecf08b80abdadf02))
+
 ## [0.39.8](https://github.com/sasjs/server/compare/v0.39.7...v0.39.8) (2026-07-15)
 
 
