@@ -10,6 +10,7 @@ import {
   generateAuthCode,
   RateLimiter,
   AuthProviderType,
+  isAuthProviderEnabled,
   LDAPClient
 } from '../utils'
 import { InfoJWT } from '../types'
@@ -89,7 +90,7 @@ const login = async (
 
   if (user) {
     if (
-      process.env.AUTH_PROVIDERS === AuthProviderType.LDAP &&
+      isAuthProviderEnabled(AuthProviderType.LDAP) &&
       user.authProvider === AuthProviderType.LDAP
     ) {
       const ldapClient = await LDAPClient.init()

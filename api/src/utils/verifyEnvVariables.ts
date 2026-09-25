@@ -9,7 +9,8 @@ export enum ModeType {
 }
 
 export enum AuthProviderType {
-  LDAP = 'ldap'
+  LDAP = 'ldap',
+  OIDC = 'oidc'
 }
 
 export enum ProtocolType {
@@ -57,6 +58,35 @@ export enum ResetAdminPasswordType {
   NO = 'NO'
 }
 
+export enum OidcSigningAlg {
+  RS256 = 'RS256',
+  RS384 = 'RS384',
+  RS512 = 'RS512',
+  ES256 = 'ES256',
+  ES384 = 'ES384',
+  ES512 = 'ES512',
+  EdDSA = 'EdDSA'
+}
+
+/**
+ * AUTH_PROVIDERS is a list, not a single value - it is documented as
+ * space-separated, and an install may legitimately run more than one provider
+ * at once (eg LDAP for directory users plus OIDC for single sign-on). Commas
+ * are accepted as well because they are the natural thing to type.
+ *
+ * Anything unrecognised is rejected by verifyMODE, so this can be permissive
+ * about the separator without silently ignoring a typo.
+ */
+export const getAuthProviders = (): string[] =>
+  (process.env.AUTH_PROVIDERS ?? '')
+    .trim()
+    .split(/[\s,]+/)
+    .filter((provider) => !!provider)
+    .map((provider) => provider.toLowerCase())
+
+export const isAuthProviderEnabled = (provider: AuthProviderType): boolean =>
+  getAuthProviders().includes(provider)
+
 export const verifyEnvVariables = (): ReturnCode => {
   const errors: string[] = []
 
@@ -79,6 +109,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyExecutablePaths())
 
   errors.push(...verifyLDAPVariables())
+
+  errors.push(...verifyOIDCVariables())
 
   errors.push(...verifyDbType())
 
@@ -107,7 +139,10 @@ const verifyMOCK_SERVERTYPE = (): string[] => {
         `- MOCK_SERVERTYPE '${MOCK_SERVERTYPE}'\n - valid options ${modeTypes}`
       )
   } else {
-    process.env.MOCK_SERVERTYPE = undefined
+    // delete, not `= undefined`: assigning undefined to process.env stores the
+    // STRING "undefined", so a second call to verifyEnvVariables in the same
+    // process would then reject the value it set itself.
+    delete process.env.MOCK_SERVERTYPE
   }
 
   return errors
@@ -136,10 +171,15 @@ const verifyMODE = (): string[] => {
 
       if (AUTH_PROVIDERS) {
         const authProvidersType = Object.values(AuthProviderType)
-        if (!authProvidersType.includes(AUTH_PROVIDERS as AuthProviderType))
-          errors.push(
-            `- AUTH_PROVIDERS '${AUTH_PROVIDERS}'\n - valid options ${authProvidersType}`
-          )
+        // Validate each entry of the list, not the raw string: a
+        // space-separated list would otherwise never match a single enum
+        // value and every multi-provider install would be rejected.
+        getAuthProviders().forEach((provider) => {
+          if (!authProvidersType.includes(provider as AuthProviderType))
+            errors.push(
+              `- AUTH_PROVIDERS '${provider}'\n - valid options ${authProvidersType}`
+            )
+        })
       }
     }
   }
@@ -319,11 +359,13 @@ const verifyLDAPVariables = () => {
     LDAP_BIND_PASSWORD,
     LDAP_USERS_BASE_DN,
     LDAP_GROUPS_BASE_DN,
-    MODE,
-    AUTH_PROVIDERS
+    MODE
   } = process.env
 
-  if (MODE === ModeType.Server && AUTH_PROVIDERS === AuthProviderType.LDAP) {
+  if (
+    MODE === ModeType.Server &&
+    isAuthProviderEnabled(AuthProviderType.LDAP)
+  ) {
     if (!LDAP_URL) {
       errors.push(
         `- LDAP_URL is required for AUTH_PROVIDER '${AuthProviderType.LDAP}'`
@@ -354,6 +396,107 @@ const verifyLDAPVariables = () => {
       )
     }
   }
+
+  return errors
+}
+
+/**
+ * Validates the generic OpenID Connect relying-party settings.
+ *
+ * The provider is deliberately vendor-neutral: everything here is standard
+ * OIDC plus a discovery document. A specific platform's variable names are a
+ * documented mapping onto these, not a branch in the code.
+ */
+const verifyOIDCVariables = () => {
+  const errors: string[] = []
+  const {
+    MODE,
+    OIDC_ISSUER_URL,
+    OIDC_DISCOVERY_URL,
+    OIDC_CLIENT_ID,
+    OIDC_CLIENT_SECRET,
+    OIDC_REDIRECT_URI,
+    OIDC_SIGNING_ALG,
+    OIDC_SCOPE,
+    OIDC_PROVIDER_NAME,
+    OIDC_USERNAME_CLAIM,
+    OIDC_JIT_PROVISION,
+    OIDC_POST_LOGOUT_REDIRECT_URI
+  } = process.env
+
+  if (MODE !== ModeType.Server || !isAuthProviderEnabled(AuthProviderType.OIDC))
+    return errors
+
+  // OIDC_ISSUER_URL is deliberately not in this map - it is validated below,
+  // where a discovery URL is accepted as an alternative to an issuer.
+  const required: { [key: string]: string | undefined } = {
+    OIDC_CLIENT_ID,
+    OIDC_CLIENT_SECRET,
+    OIDC_REDIRECT_URI
+  }
+
+  Object.entries(required).forEach(([name, value]) => {
+    if (!value) {
+      errors.push(
+        `- ${name} is required for AUTH_PROVIDER '${AuthProviderType.OIDC}'`
+      )
+    }
+  })
+
+  // A discovery URL may be supplied instead of an issuer, but not neither.
+  if (!OIDC_ISSUER_URL && !OIDC_DISCOVERY_URL) {
+    errors.push(
+      `- OIDC_ISSUER_URL (or OIDC_DISCOVERY_URL) is required for AUTH_PROVIDER '${AuthProviderType.OIDC}'`
+    )
+  }
+
+  ;[OIDC_ISSUER_URL, OIDC_DISCOVERY_URL, OIDC_REDIRECT_URI].forEach((url) => {
+    if (url && !isAbsoluteUrl(url)) {
+      errors.push(`- OIDC URL '${url}' should be a valid absolute http(s) URL`)
+    }
+  })
+
+  if (OIDC_SIGNING_ALG) {
+    const algTypes = Object.values(OidcSigningAlg)
+    if (!algTypes.includes(OIDC_SIGNING_ALG as OidcSigningAlg))
+      errors.push(
+        `- OIDC_SIGNING_ALG '${OIDC_SIGNING_ALG}'\n - valid options ${algTypes}`
+      )
+  } else {
+    process.env.OIDC_SIGNING_ALG = DEFAULTS.OIDC_SIGNING_ALG
+  }
+
+  if (OIDC_SCOPE) {
+    // Without the openid scope the response is not an OpenID Connect response
+    // and there will be no id_token to verify.
+    if (!OIDC_SCOPE.split(/[\s,]+/).includes('openid'))
+      errors.push(`- OIDC_SCOPE '${OIDC_SCOPE}' must include 'openid'`)
+  } else {
+    process.env.OIDC_SCOPE = DEFAULTS.OIDC_SCOPE
+  }
+
+  if (!OIDC_PROVIDER_NAME)
+    process.env.OIDC_PROVIDER_NAME = DEFAULTS.OIDC_PROVIDER_NAME
+
+  if (!OIDC_USERNAME_CLAIM)
+    process.env.OIDC_USERNAME_CLAIM = DEFAULTS.OIDC_USERNAME_CLAIM
+
+  if (OIDC_JIT_PROVISION) {
+    if (!isBoolean(OIDC_JIT_PROVISION))
+      errors.push(
+        `- OIDC_JIT_PROVISION '${OIDC_JIT_PROVISION}'\n - valid options true, false`
+      )
+  } else {
+    process.env.OIDC_JIT_PROVISION = DEFAULTS.OIDC_JIT_PROVISION
+  }
+
+  if (
+    OIDC_POST_LOGOUT_REDIRECT_URI &&
+    !isAbsoluteUrl(OIDC_POST_LOGOUT_REDIRECT_URI)
+  )
+    errors.push(
+      `- OIDC_POST_LOGOUT_REDIRECT_URI '${OIDC_POST_LOGOUT_REDIRECT_URI}' should be a valid absolute http(s) URL`
+    )
 
   return errors
 }
@@ -452,6 +595,17 @@ const isNumeric = (val: string): boolean => {
   return !isNaN(Number(val))
 }
 
+const isAbsoluteUrl = (val: string): boolean => {
+  try {
+    const url = new URL(val)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const isBoolean = (val: string): boolean => ['true', 'false'].includes(val)
+
 const DEFAULTS = {
   MODE: ModeType.Desktop,
   PROTOCOL: ProtocolType.HTTP,
@@ -464,5 +618,13 @@ const DEFAULTS = {
   MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP: '10',
   ADMIN_USERNAME: 'secretuser',
   ADMIN_PASSWORD_INITIAL: 'secretpassword',
-  ADMIN_PASSWORD_RESET: ResetAdminPasswordType.NO
+  ADMIN_PASSWORD_RESET: ResetAdminPasswordType.NO,
+  OIDC_SIGNING_ALG: OidcSigningAlg.RS256,
+  OIDC_SCOPE: 'openid profile email',
+  OIDC_PROVIDER_NAME: 'OpenID Connect',
+  // preferred_username is the standard claim for a human-readable login name;
+  // sub is the fallback because some providers only return that. On Cloudron
+  // the two are identical (sub IS the username).
+  OIDC_USERNAME_CLAIM: 'preferred_username',
+  OIDC_JIT_PROVISION: 'true'
 }
