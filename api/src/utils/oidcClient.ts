@@ -49,10 +49,24 @@ const DISCOVERY_MEMBERS = [
  * platform-specific variable name) appears in the code.
  *
  * Signature verification uses jose rather than the jsonwebtoken already in
- * this repo: jsonwebtoken cannot verify EdDSA at all (it fails with
- * `Unknown key type "ed25519"`), and jose's createRemoteJWKSet handles JWKS
- * caching and key rotation, which is fiddly to get right by hand. jose v5 is
- * pinned because v6 dropped its CommonJS build and this API is CJS.
+ * this repo. jsonwebtoken cannot verify EdDSA at all (it fails with
+ * `Unknown key type "ed25519"`); it covers RS256/384/512 and ES256/384/512
+ * fine. jose also brings createRemoteJWKSet, which handles JWKS caching and
+ * key rotation - fiddly to get right by hand.
+ *
+ * jose is pinned to v5, and that is a deliberate, load-bearing pin:
+ * - v6 dropped its CommonJS build (no `require` condition in its exports map)
+ *   and this API is CommonJS. It cannot simply become ESM: the server ships as
+ *   standalone executables built with `pkg` (api-linux/macos/win), and pkg
+ *   cannot package an ESM entry point - it exits 0 and then the binary fails
+ *   at startup with MODULE_NOT_FOUND. Verified, with a CJS control that works.
+ * - v5 is nonetheless not abandoned in a security sense: every published jose
+ *   advisory is JWE-related and patched below 5.0.0, and this client never
+ *   decrypts JWE - it only verifies JWS id_tokens.
+ *
+ * Revisit the pin if either of these changes: a JWS-relevant advisory lands
+ * against jose 5.x with no v5 patch, or the project stops shipping the pkg
+ * executables (at which point moving to v6 becomes straightforward).
  */
 export class OIDCClient {
   private static classInstance: OIDCClient | null = null
