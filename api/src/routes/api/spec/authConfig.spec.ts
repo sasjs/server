@@ -48,18 +48,27 @@ describe('authConfig', () => {
   describe('getDetail', () => {
     let adminAccessToken: string
     const originalEnv = { ...process.env }
+    const managedEnvVars = [
+      'AUTH_PROVIDERS',
+      'LDAP_URL',
+      'LDAP_BIND_DN',
+      'LDAP_BIND_PASSWORD',
+      'LDAP_USERS_BASE_DN',
+      'LDAP_GROUPS_BASE_DN'
+    ]
 
     beforeEach(async () => {
       adminAccessToken = await generateSaveTokenAndCreateUser()
     })
 
     afterEach(async () => {
-      process.env.AUTH_PROVIDERS = originalEnv.AUTH_PROVIDERS
-      process.env.LDAP_URL = originalEnv.LDAP_URL
-      process.env.LDAP_BIND_DN = originalEnv.LDAP_BIND_DN
-      process.env.LDAP_BIND_PASSWORD = originalEnv.LDAP_BIND_PASSWORD
-      process.env.LDAP_USERS_BASE_DN = originalEnv.LDAP_USERS_BASE_DN
-      process.env.LDAP_GROUPS_BASE_DN = originalEnv.LDAP_GROUPS_BASE_DN
+      // Restore by deletion where the variable was originally unset: assigning
+      // `process.env.X = undefined` stores the string "undefined", which would
+      // leak into sibling specs sharing this worker.
+      managedEnvVars.forEach((key) => {
+        if (originalEnv[key] === undefined) delete process.env[key]
+        else process.env[key] = originalEnv[key]
+      })
 
       await deleteAllUsers()
     })
