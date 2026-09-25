@@ -49,6 +49,12 @@ jobs:
           zip macos.zip api-macos
           zip windows.zip api-win.exe
 
+      - name: Generate SHA256 checksums
+        working-directory: ./executables
+        run: |
+          sha256sum linux.zip macos.zip windows.zip > SHA256SUMS
+          cat SHA256SUMS
+
       - name: Install Semantic Release and plugins
         run: |
           npm i
@@ -57,3 +63,17 @@ jobs:
       - name: Release
         run: |
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} semantic-release
+
+      - name: Document the checksums on the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # semantic-release creates the tag locally when it publishes a
+          # release, so an empty result means this push produced no release.
+          TAG=$(git tag --points-at HEAD | head -n1)
+          if [ -z "$TAG" ]; then
+            echo "No release was created for this commit - skipping."
+            exit 0
+          fi
+          bash .github/scripts/add-verify-section.sh "$TAG"

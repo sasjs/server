@@ -29,6 +29,10 @@
           {
             "path": "./executables/windows.zip",
             "label": "Windows Executable Binary"
+          },
+          {
+            "path": "./executables/SHA256SUMS",
+            "label": "SHA256 Checksums"
           }
         ]
       }
