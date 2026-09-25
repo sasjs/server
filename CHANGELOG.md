@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/sasjs/server/compare/v1.1.0...v1.2.0) (2026-09-25)
+
+
+### Features
+
+* **web:** add a single sign-on button to the login screen ([3cbaa97](https://github.com/sasjs/server/commit/3cbaa9753cca21aacf9ca5aeb59f9cf6ede3212e))
+
 # [1.1.0](https://github.com/sasjs/server/compare/v1.0.0...v1.1.0) (2026-09-25)
 
 
