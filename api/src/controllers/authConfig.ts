@@ -1,7 +1,13 @@
 import express from 'express'
 import { Security, Route, Tags, Get, Post, Example } from 'tsoa'
 
-import { LDAPClient, LDAPUser, LDAPGroup, AuthProviderType } from '../utils'
+import {
+  LDAPClient,
+  LDAPUser,
+  LDAPGroup,
+  AuthProviderType,
+  isAuthProviderEnabled
+} from '../utils'
 import { randomBytes } from 'crypto'
 import User from '../model/User'
 import Group from '../model/Group'
@@ -161,11 +167,9 @@ const synchroniseWithLDAP = async () => {
 }
 
 const getAuthConfigDetail = () => {
-  const { AUTH_PROVIDERS } = process.env
-
   const returnObj: any = {}
 
-  if (AUTH_PROVIDERS === AuthProviderType.LDAP) {
+  if (isAuthProviderEnabled(AuthProviderType.LDAP)) {
     const {
       LDAP_URL,
       LDAP_BIND_DN,
@@ -188,5 +192,34 @@ const getAuthConfigDetail = () => {
       LDAP_BIND_PASSWORD_SET: !!LDAP_BIND_PASSWORD
     }
   }
+
+  if (isAuthProviderEnabled(AuthProviderType.OIDC)) {
+    const {
+      OIDC_PROVIDER_NAME,
+      OIDC_ISSUER_URL,
+      OIDC_CLIENT_ID,
+      OIDC_CLIENT_SECRET,
+      OIDC_REDIRECT_URI,
+      OIDC_SCOPE,
+      OIDC_SIGNING_ALG,
+      OIDC_USERNAME_CLAIM,
+      OIDC_JIT_PROVISION
+    } = process.env
+
+    // Same write-only rule as the LDAP block above - OIDC_CLIENT_SECRET is
+    // read from the environment and used, but never echoed back.
+    returnObj.oidc = {
+      OIDC_PROVIDER_NAME: OIDC_PROVIDER_NAME ?? '',
+      OIDC_ISSUER_URL: OIDC_ISSUER_URL ?? '',
+      OIDC_CLIENT_ID: OIDC_CLIENT_ID ?? '',
+      OIDC_REDIRECT_URI: OIDC_REDIRECT_URI ?? '',
+      OIDC_SCOPE: OIDC_SCOPE ?? '',
+      OIDC_SIGNING_ALG: OIDC_SIGNING_ALG ?? '',
+      OIDC_USERNAME_CLAIM: OIDC_USERNAME_CLAIM ?? '',
+      OIDC_JIT_PROVISION: OIDC_JIT_PROVISION ?? '',
+      OIDC_CLIENT_SECRET_SET: !!OIDC_CLIENT_SECRET
+    }
+  }
+
   return returnObj
 }
