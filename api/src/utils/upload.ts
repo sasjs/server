@@ -1,6 +1,7 @@
 import path from 'path'
 import { MulterFile } from '../types/Upload'
 import { listFilesInFolder, readFileBinary, isWindows } from '@sasjs/utils'
+import { asLiteral, asSasMacroValue } from './programVariables'
 
 interface FilenameMapSingle {
   fieldName: string
@@ -77,7 +78,7 @@ export const generateFileUploadSasCode = async (
   uploadSasCode += `\n%let _WEBIN_FILE_COUNT=${fileCount};`
 
   for (const uploadedFile of uploadedFiles) {
-    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedFile.count}=${uploadedFile.originalName};`
+    uploadSasCode += `\n%let _WEBIN_FILENAME${uploadedFile.count}=${asSasMacroValue(uploadedFile.originalName)};`
   }
 
   for (const uploadedFile of uploadedFiles) {
@@ -85,7 +86,7 @@ export const generateFileUploadSasCode = async (
   }
 
   for (const uploadedFile of uploadedFiles) {
-    uploadSasCode += `\n%let _WEBIN_NAME${uploadedFile.count}=${uploadedFile.fieldName};`
+    uploadSasCode += `\n%let _WEBIN_NAME${uploadedFile.count}=${asSasMacroValue(uploadedFile.fieldName)};`
   }
 
   if (fileCount > 0) {
@@ -120,8 +121,12 @@ export const generateFileUploadJSCode = async (
       uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = fs.readFileSync('${
         isWindows() ? filePath.replace(/\\/g, '\\\\') : filePath
       }')`
-      uploadCode += `\nconst _WEBIN_FILENAME${fileCount} = '${filesNamesMap[fileName].originalName}'`
-      uploadCode += `\nconst _WEBIN_NAME${fileCount} = '${filesNamesMap[fileName].fieldName}'`
+      uploadCode += `\nconst _WEBIN_FILENAME${fileCount} = ${asLiteral(
+        filesNamesMap[fileName].originalName
+      )}`
+      uploadCode += `\nconst _WEBIN_NAME${fileCount} = ${asLiteral(
+        filesNamesMap[fileName].fieldName
+      )}`
     }
   })
 
@@ -147,8 +152,12 @@ export const generateFileUploadPythonCode = async (
   sessionFolderList.forEach(async (fileName) => {
     if (fileName.includes('req_file')) {
       fileCount++
-      uploadCode += `\n_WEBIN_FILENAME${fileCount} = '${filesNamesMap[fileName].originalName}'`
-      uploadCode += `\n_WEBIN_NAME${fileCount} = '${filesNamesMap[fileName].fieldName}'`
+      uploadCode += `\n_WEBIN_FILENAME${fileCount} = ${asLiteral(
+        filesNamesMap[fileName].originalName
+      )}`
+      uploadCode += `\n_WEBIN_NAME${fileCount} = ${asLiteral(
+        filesNamesMap[fileName].fieldName
+      )}`
     }
   })
 
@@ -174,8 +183,12 @@ export const generateFileUploadRCode = async (
   sessionFolderList.forEach(async (fileName) => {
     if (fileName.includes('req_file')) {
       fileCount++
-      uploadCode += `\n._WEBIN_FILENAME${fileCount} <- '${filesNamesMap[fileName].originalName}'`
-      uploadCode += `\n._WEBIN_NAME${fileCount} <- '${filesNamesMap[fileName].fieldName}'`
+      uploadCode += `\n._WEBIN_FILENAME${fileCount} <- ${asLiteral(
+        filesNamesMap[fileName].originalName
+      )}`
+      uploadCode += `\n._WEBIN_NAME${fileCount} <- ${asLiteral(
+        filesNamesMap[fileName].fieldName
+      )}`
     }
   })
 

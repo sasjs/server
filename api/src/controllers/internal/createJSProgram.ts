@@ -1,6 +1,10 @@
-import { escapeWinSlashes } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadJSCode } from '../../utils'
+import {
+  asLiteral,
+  partitionParameterNames,
+  reportDroppedParameterNames
+} from '../../utils/programVariables'
 import { ExecutionVars } from './'
 
 export const createJSProgram = async (
@@ -13,20 +17,23 @@ export const createJSProgram = async (
   tokenFile: string,
   otherArgs?: any
 ) => {
-  const varStatments = Object.keys(vars).reduce(
+  const { safe, dropped } = partitionParameterNames(vars)
+  reportDroppedParameterNames(dropped)
+
+  const varStatments = safe.reduce(
     (computed: string, key: string) =>
-      `${computed}const ${key} = \`${vars[key]}\`;\n`,
+      `${computed}const ${key} = ${asLiteral(vars[key])};\n`,
     ''
   )
 
   const preProgramVarStatments = `
 let _webout = '';
-const weboutPath = '${escapeWinSlashes(weboutPath)}'; 
-const _SASJS_TOKENFILE = '${escapeWinSlashes(tokenFile)}';
-const _SASJS_WEBOUT_HEADERS = '${escapeWinSlashes(headersPath)}';
-const _SASJS_USERNAME = '${preProgramVariables?.username}';
-const _SASJS_USERID = '${preProgramVariables?.userId}';
-const _SASJS_DISPLAYNAME = '${preProgramVariables?.displayName}';
+const weboutPath = ${asLiteral(weboutPath)}; 
+const _SASJS_TOKENFILE = ${asLiteral(tokenFile)};
+const _SASJS_WEBOUT_HEADERS = ${asLiteral(headersPath)};
+const _SASJS_USERNAME = ${asLiteral(preProgramVariables?.username)};
+const _SASJS_USERID = ${asLiteral(preProgramVariables?.userId)};
+const _SASJS_DISPLAYNAME = ${asLiteral(preProgramVariables?.displayName)};
 const _METAPERSON = _SASJS_DISPLAYNAME;
 const _METAUSER = _SASJS_USERNAME;
 const SASJSPROCESSMODE = 'Stored Program';

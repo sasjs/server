@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 import User, { IUser } from '../model/User'
 import { AuthProviderType } from './verifyEnvVariables'
 import { OIDCIdentity } from './oidcClient'
+import { sanitiseDisplayName } from './programVariables'
 
 /**
  * sasjs usernames are constrained to lowercase alphanumerics, 3-16 characters
@@ -106,7 +107,7 @@ export const resolveOidcUser = async (
   )
 
   const user = await User.create({
-    displayName: identity.displayName,
+    displayName: sanitiseDisplayName(identity.displayName),
     username,
     // No usable local password: the provider is the only way in. Password
     // login for a provider-backed user is refused by the login route, and
