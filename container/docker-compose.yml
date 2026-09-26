@@ -1,0 +1,38 @@
+# Minimal SASjs Server stack: the container image plus a MongoDB for
+# server mode. For development of the app itself, use the compose files at
+# the repository root instead.
+
+services:
+  server:
+    image: ghcr.io/sasjs/server
+    # To run the image built from this checkout instead:
+    # build:
+    #   context: ..
+    #   dockerfile: container/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      MODE: server
+      DB_CONNECT: mongodb://mongo:27017/sasjs
+      DB_TYPE: mongodb
+      # AUTH_PROVIDERS: ""      # local accounts only
+      # ADMIN_PASSWORD_INITIAL: change-me
+    volumes:
+      - sasjs_data:/usr/server/data
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:8.0
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ping:1})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  sasjs_data:
+  mongo_data:

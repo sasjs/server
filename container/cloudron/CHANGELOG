@@ -1,0 +1,137 @@
+## 1.2.1
+
+- **The Cloudron package has moved into the SASjs Server repository** as
+  `container/cloudron/`, and the standalone `sasjs/server-cloudron` repository
+  is deprecated. The app package now installs the same container image every
+  other user runs - `ghcr.io/sasjs/server`, built and published by the
+  repository's own release workflow - so the app version and the image tag
+  always refer to the same commit.
+- The image entrypoint is platform-neutral: outside Cloudron it is configured
+  by the application's own environment variables (with `DATA_DIR` for the
+  writable state). Inside Cloudron it detects the `CLOUDRON_*` addon variables
+  and wires them up as before; `container/tests/verify-start-sh.sh` keeps both
+  sides in sync with the manifest.
+- Upstream v1.2.1: the release executables are built with node24 pkg targets,
+  and the container image follows the source build on Node 24, which the OIDC
+  sign-in path requires.
+
+## 1.1.0
+
+- Upstream v1.1.0, which adds OIDC sign-in and just-in-time provisioning.
+- **Cloudron single sign-on replaces LDAP.** The `oidc` addon is declared with
+  `loginRedirectUri` `/SASLogon/openid/callback`, `logoutRedirectUri`
+  `/SASLogon/openid/logout` and `tokenSignatureAlgorithm` RS256; the `ldap`
+  addon is gone. `start.sh` maps `CLOUDRON_OIDC_*` onto the app's `OIDC_*`
+  names and builds the absolute `OIDC_REDIRECT_URI` the app requires from
+  `CLOUDRON_APP_ORIGIN`. `AUTH_PROVIDERS` still defaults to SSO and an empty
+  value falls back to local accounts. Note the single-dash default: `:-` would
+  treat an explicitly empty value as unset and re-enable OIDC.
+- **The image now builds from source instead of the `linux.zip` release
+  asset.** That asset is a `pkg` binary targeting node16, which has no global
+  `fetch` - and the OIDC sign-in path calls it. Against the v1.1.0 binary,
+  `GET /SASLogon/openid` returns 500 (`Failed to fetch the OIDC discovery
+  document ...: undefined is not a function`); the same source built on a
+  modern Node completes the sign-in redirect. The Dockerfile clones the pinned
+  tag, asserts the commit it resolves to, and builds the web bundle then the
+  API, as upstream's own `DockerfileApi` does. Side effect: the unfixable
+  findings from the pkg bundle's own Go stdlib and bundled `node_modules` are
+  gone.
+- `tests/verify-oidc.sh` boots the app with Cloudron-shaped OIDC configuration
+  against a stub identity provider and asserts the sign-in route redirects with
+  our client id, our exact redirect URI, the openid scope and a state value.
+  The CI smoke job runs the same assertion against the built image.
+- `tests/verify-start-sh.sh` now also asserts that `OIDC_SIGNING_ALG` matches
+  the manifest's `tokenSignatureAlgorithm` and that `loginRedirectUri` matches
+  the path `start.sh` builds - a mismatch fails only at sign-in, which is the
+  worst place to find it.
+- `tests/verify-runtimes.sh` is removed. It exercised the release asset this
+  package no longer uses, and its runtime coverage (both runtimes execute) is
+  in `verify-server-mode.sh` and the CI smoke job.
+- The app-level harnesses take `API_BIN`, skip when no server or MongoDB is
+  present, and refuse to run when something already holds their port - a stale
+  process makes every assertion describe the old binary.
+
+## 0.39.8
+
+- Initial Cloudron package for SASjs Server v0.39.8.
+- Server mode: MongoDB addon for storage, Cloudron LDAP addon for user login,
+  local storage for the SASjs Drive and logs.
+- Default runtimes are `js,py` (JavaScript and Python stored programs). Node
+  comes from the `cloudron/node-base` image, Python 3 is installed in the
+  Dockerfile, so the package needs no SAS binary.
+- SAS and R remain available by adding them to `RUN_TIMES` and supplying their
+  executable paths from outside the image.
+- `AUTH_PROVIDERS` can be set to an empty value to disable Cloudron LDAP and
+  authenticate against the local database only.
+- Initial local admin password generated on first boot into
+  `/app/data/.initial-admin-password`.
+- CI pipeline (`.github/workflows/ci.yml`): validate, build, Trivy reports
+  (full os+library table and SARIF artifact) with gates on OS packages and
+  Dockerfile misconfiguration, and a server-mode smoke test against MongoDB 8
+  that drives the real auth flow and executes both runtimes. The smoke job
+  depends only on validate, so a scan finding cannot hide a functional failure.
+- `linux-libc-dev` is pulled up to the archive's current version in the
+  Dockerfile, which clears the kernel-header CVEs the OS-layer scan gate would
+  otherwise flag on every build.
+- start.sh creates the `/app/data` tree before writing the initial admin
+  password. On Cloudron the localstorage addon always creates that directory,
+  so the ordering bug was invisible there; it broke a plain `docker run` and was
+  caught by the CI smoke test. The start.sh harness no longer pre-creates the
+  directory, so it covers this.
+- `ADMIN_PASSWORD_INITIAL` is now honoured when supplied. Previously start.sh
+  always overwrote it with a generated password, which is why the first CI
+  smoke run failed to authenticate. Unset, behaviour is unchanged: a password
+  is generated into `/app/data/.initial-admin-password`.
+- `.trivyignore.yaml` records one audited exception: `DS-0002` wants a non-root
+  `USER`, but Cloudron images must start as root to chown the platform-managed
+  `/app/data` before dropping to the `cloudron` user via gosu.
+- Manifest: `proxyAuth` puts the whole app behind Cloudron's authentication
+  wall, excluding only the health-check endpoint. This replaces the VPN
+  requirement: VPN gating has no manifest field (it is the per-app platform
+  setting `requiresVpn`), so Cloudron auth is enforced instead.
+  `supportsBearerAuth` is enabled so programmatic SASjs clients still reach the
+  API through the wall.
+- Manifest: `minBoxVersion` raised to 10.0.0 and `targetBoxVersion` set to
+  10.0.5, the box this estate runs. `mediaLinks` is populated - Cloudron
+  requires it to be non-empty to publish - with a 3:1 banner composed from the
+  app's own logo, since upstream ships no screenshots.
+- Manifest: `packageUrl`, needed by `cloudron versions init` when publishing.
+  This is also what forces `minBoxVersion` to 10.0.0: Cloudron's loader rejects
+  the manifest with "manifest.packageUrl requires minBoxVersion of atleast
+  10.0.0", a cross-field rule its JSON schema does not express and so does not
+  catch. `scripts/check-manifest.py` now enforces these rules - read from the
+  schema's own field descriptions - and `tests/verify-manifest.sh` proves it
+  reproduces that exact error, so the manifest cannot be published unloadable
+  again.
+- Release pipeline (`.github/workflows/release.yml`): a `v*` tag matching the
+  manifest version builds the image, smoke tests it before pushing anything,
+  pushes it to `ghcr.io/sasjs/server-cloudron`, records the digest in
+  `CloudronVersions.json`, commits the catalogue back and creates the release.
+- `scripts/update-versions.py` generates and validates `CloudronVersions.json`,
+  because Cloudron's `cloudron versions add` needs the CLI and a logged-in
+  workstation. It inlines `file://` text fields, keeps `icon` as a reference,
+  refuses to move semver backwards, and refuses a manifest missing any field
+  Cloudron requires for publishing.
+- A recorded catalogue entry is refreshed whenever anything about it changes,
+  not only when the image digest changes. The guard previously compared the
+  image alone, so a manifest-only fix - a corrected `minBoxVersion`, say -
+  would leave the catalogue serving the stale embedded manifest and installs
+  would keep failing on a manifest that no longer existed in the repository.
+- The smoke test moved to `.github/actions/smoke-test` so CI and the release
+  workflow share one implementation.
+- Manifest: `memoryLimit` set to 1 GiB. Cloudron's default is 256 MB, which
+  this app exceeds - it runs Node, serves the web UI from the same process and
+  spawns a `node` or `python3` child per stored program.
+- Manifest: `postInstallMessage` (`file://POSTINSTALL.md`) and a `checklist`
+  covering the initial admin password and the Drive-write trust boundary, plus
+  `iconUrl` and `documentationUrl` for the community app listing.
+- Dockerfile: `EXPOSE 5000`, matching the manifest's `httpPort`.
+- `scripts/verify-installable.py` checks, using only anonymous requests, that a
+  Cloudron box can actually install the package: it fetches the published
+  catalogue, confirms the registry serves the exact digest the catalogue names
+  (not merely an image with the right tag), and fetches every URL the dashboard
+  and store will. It fails loudly if any step needs a credential, which is the
+  difference between "the pipeline is green" and "a box can install this".
+- Verification harnesses in `tests/`: start.sh behaviour (33 assertions),
+  desktop-mode runtimes, server mode against MongoDB (9 assertions), manifest
+  rules, and the catalogue generator.

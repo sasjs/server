@@ -1,0 +1,220 @@
+name: Container CI
+
+# CI for the container image (container/) and the Cloudron app package that
+# installs it (container/cloudron/).
+#
+# Three independent jobs:
+#   validate      - harnesses that need no Docker at all
+#   build-and-scan - build the image, report vulnerabilities, gate on the
+#                    layers this repository owns
+#   smoke         - boot the image against a real MongoDB and drive the real
+#                    login flow, both runtimes, and the OIDC sign-in redirect
+#
+# validate gates nothing but itself; build-and-scan and smoke both depend on
+# validate alone (not on each other), so a security finding cannot hide a
+# functional regression and vice versa.
+
+on:
+  pull_request:
+    paths:
+      - 'container/**'
+      - 'api/**'
+      - 'web/**'
+      - '.github/workflows/container.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'container/**'
+      - 'api/**'
+      - 'web/**'
+      - '.github/workflows/container.yml'
+  # Weekly re-scan: new CVEs land against a pinned base image even when
+  # nothing in this repository changes.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Container validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: entrypoint.sh syntax
+        run: bash -n container/entrypoint.sh
+
+      - name: CloudronManifest.json is valid JSON
+        run: jq -e . container/cloudron/CloudronManifest.json > /dev/null
+
+      # Validate against Cloudron's own JSON schema AND the cross-field rules
+      # the schema does not express - the loader rejects a manifest whose
+      # minBoxVersion is below what a field like packageUrl requires, and the
+      # schema alone accepts it. container/cloudron/scripts/check-manifest.py
+      # reads those rules from the schema's own field descriptions.
+      #
+      # The schema URL is discovered from the docs page because its filename
+      # carries a content hash that changes when Cloudron edits it; if the docs
+      # are unreachable we warn rather than fail, so a documentation reshuffle
+      # cannot break this repository.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: CloudronManifest.json is loadable by Cloudron
+        run: |
+          set -eu
+          pip install --quiet jsonschema
+          SCHEMA_PATH=$(curl -fsSL https://docs.cloudron.io/packaging/manifest/ \
+            | grep -o '/assets/files/manifest-[a-z0-9]*\.json' | head -1 || true)
+          if [ -z "${SCHEMA_PATH:-}" ]; then
+            echo "::warning::could not locate the Cloudron manifest schema; checking built-in rules only"
+            python3 container/cloudron/scripts/check-manifest.py
+            exit 0
+          fi
+          curl -fsSL "https://docs.cloudron.io${SCHEMA_PATH}" -o /tmp/cloudron-manifest.schema.json
+          python3 container/cloudron/scripts/check-manifest.py --schema /tmp/cloudron-manifest.schema.json
+
+      - name: manifest rule tests
+        run: container/tests/verify-manifest.sh
+
+      - name: entrypoint behaviour tests
+        run: container/tests/verify-start-sh.sh
+
+      - name: CloudronVersions.json generator tests
+        run: container/tests/verify-versions.sh
+
+      - name: CloudronVersions.json is publishable and in sync
+        run: python3 container/cloudron/scripts/update-versions.py --check
+
+  build-and-scan:
+    name: Container build and scan
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      # The build context is the repository root (the image builds web/ and
+      # api/ from source); BuildKit uses container/Dockerfile.dockerignore
+      # instead of the root .dockerignore, which is written for the
+      # development compose files.
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: container/Dockerfile
+          load: true
+          tags: sasjs-server:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---------------------------------------------------------------------
+      # Reports. These run first and are never allowed to fail the build, so a
+      # gate further down cannot hide them.
+      # ---------------------------------------------------------------------
+
+      - name: Trivy - full vulnerability report (os + library)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: sasjs-server:ci
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: '0'
+
+      - name: Trivy - full vulnerability report (SARIF)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: sasjs-server:ci
+          format: sarif
+          output: trivy-image.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: '0'
+
+      - name: Upload scan reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-reports
+          path: trivy-image.sarif
+          if-no-files-found: warn
+
+      # ---------------------------------------------------------------------
+      # Gates. OS packages and config misconfiguration are the layers this
+      # repository owns, so they block a build. Library findings come from the
+      # app's own node_modules; they are reported above and are fixed like any
+      # other dependency bump in this repository.
+      # ---------------------------------------------------------------------
+
+      - name: Trivy - OS vulnerabilities (gate)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: sasjs-server:ci
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          vuln-type: os
+          exit-code: '1'
+
+      - name: Trivy - config misconfiguration (gate)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: container
+          format: table
+          severity: HIGH,CRITICAL
+          trivyignores: container/.trivyignore.yaml
+          exit-code: '1'
+
+  # Deliberately depends on `validate` only: whether the app works is a
+  # different question from whether the scan gate passed.
+  smoke:
+    name: Container smoke test
+    runs-on: ubuntu-latest
+    needs: validate
+    services:
+      # Cloudron's MongoDB addon is MongoDB 8, so test against that rather
+      # than whatever upstream's docker-compose happens to pin.
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: container/Dockerfile
+          load: true
+          tags: sasjs-server:ci
+          cache-from: type=gha
+
+      - name: Smoke test
+        uses: ./.github/actions/container-smoke-test
+        with:
+          image: sasjs-server:ci

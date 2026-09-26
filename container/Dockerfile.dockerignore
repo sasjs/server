@@ -1,0 +1,34 @@
+# BuildKit uses this file - instead of the repository root .dockerignore -
+# when building container/Dockerfile. The root one cannot be used here: it
+# excludes api/public, which the api build needs (npm run public:copy), and
+# it was written for the development compose files.
+#
+# The image build needs api/, web/ and the entrypoint; nothing else.
+#
+# The .env files are excluded so a developer's local configuration can never
+# be copied into an image.
+
+.git
+.git-hooks
+.github
+.vscode
+docs
+mongo-seed
+restClient
+executables
+api/node_modules
+api/build
+api/sasjsbuild
+api/coverage
+web/node_modules
+web/build
+container/cloudron
+container/scripts
+container/tests
+container/README.md
+container/docker-compose.yml
+container/.trivyignore.yaml
+.env
+api/.env
+web/.env
+*.log

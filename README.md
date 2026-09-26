@@ -42,6 +42,29 @@ You are presented with two prompts (if not set as ENV vars):
 - Location of your `sas.exe` / `sas.sh` executable
 - Path to a filesystem location for Stored Programs and temporary files
 
+### Container image
+
+A prebuilt container image is published as
+[`ghcr.io/sasjs/server`](https://github.com/orgs/sasjs/packages/container/package/server)
+with every release, usable anywhere Docker runs - including
+[Cloudron](https://cloudron.io), where the app package in
+[`container/cloudron/`](container/cloudron/) installs it with the platform's
+MongoDB, single sign-on and backups wired up. The image is built and
+published by the repository's own release workflow, so the image tag and the
+release always refer to the same commit. See
+[`container/README.md`](container/README.md) for the full container
+documentation, and
+[`container/docker-compose.yml`](container/docker-compose.yml) for a complete
+stack with MongoDB.
+
+```bash
+docker run -d --name sasjs \
+  -p 5000:5000 \
+  -v sasjs_data:/usr/server/data \
+  -e DB_CONNECT=mongodb://mongo:27017/sasjs \
+  ghcr.io/sasjs/server
+```
+
 ## ENV Var configuration
 
 When launching the app, it will make use of specific environment variables. These can be set in the following places:
