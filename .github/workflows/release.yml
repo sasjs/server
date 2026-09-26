@@ -13,6 +13,10 @@ jobs:
       matrix:
         node-version: [lts/*]
 
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -77,3 +81,165 @@ jobs:
             exit 0
           fi
           bash .github/scripts/add-verify-section.sh "$TAG"
+
+      # Exported for the container job below (and visible in the run summary).
+      - name: Export the release tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=$(git tag --points-at HEAD | head -n1)
+          if [ -z "$TAG" ]; then
+            echo "No release was created for this commit."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            echo "version=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------
+  # Container image. Runs in the same workflow run that created the release,
+  # because an event created by GITHUB_TOKEN (the release semantic-release
+  # publishes) never triggers another workflow run - GitHub's recursion
+  # guard. A separate on: release workflow can never fire in this
+  # repository for the same reason.
+  # ---------------------------------------------------------------------
+  container:
+    name: Publish the container image
+    needs: release
+    runs-on: ubuntu-latest
+    if: >
+      needs.release.outputs.tag != ''
+    services:
+      # Cloudron's MongoDB addon is MongoDB 8, so verify against that.
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # The tag semantic-release created on this commit.
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Sync the Cloudron manifest version with the release
+        run: |
+          set -eu
+          TAG="${{ needs.release.outputs.tag }}"
+          VERSION="${TAG#v}"
+          python3 - "$VERSION" <<'PY'
+          import json, sys
+          path = "container/cloudron/CloudronManifest.json"
+          m = json.load(open(path))
+          m["version"] = sys.argv[1]
+          m["upstreamVersion"] = sys.argv[1]
+          json.dump(m, open(path, "w"), indent=2)
+          PY
+          echo "manifest version -> ${VERSION}"
+
+      - name: entrypoint behaviour tests
+        run: container/tests/verify-start-sh.sh
+
+      - name: manifest rule tests
+        run: container/tests/verify-manifest.sh
+
+      - name: CloudronVersions.json is publishable and in sync
+        run: python3 container/cloudron/scripts/update-versions.py --check
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build the image (not pushed yet)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: container/Dockerfile
+          load: true
+          tags: sasjs-server:release
+          cache-from: type=gha
+
+      # Gate: never publish an image that has not been run.
+      - name: Smoke test the image before publishing it
+        uses: ./.github/actions/container-smoke-test
+        with:
+          image: sasjs-server:release
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the image
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: container/Dockerfile
+          push: true
+          # ghcr.io requires a lowercase repository path. Both tag forms are
+          # published: vX.Y.Z matches the git tag, X.Y.Z the plain semver.
+          tags: |
+            ${{ format('ghcr.io/{0}:{1}', github.repository, needs.release.outputs.tag) }}
+            ${{ format('ghcr.io/{0}:{1}', github.repository, needs.release.outputs.version) }}
+            ${{ format('ghcr.io/{0}:latest', github.repository) }}
+          cache-from: type=gha
+
+      - name: Record the image in CloudronVersions.json
+        run: |
+          set -eu
+          IMAGE="${{ format('ghcr.io/{0}@{1}', github.repository, steps.push.outputs.digest) }}"
+          IMAGE=$(echo "$IMAGE" | tr 'A-Z' 'a-z')
+          python3 container/cloudron/scripts/update-versions.py --image "$IMAGE"
+          python3 container/cloudron/scripts/update-versions.py --check
+
+      - name: Commit the catalogue back to the default branch
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -eu
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+          # The generated files must survive the switch from the release tag
+          # to the default branch, so they are stashed outside the tree
+          # first.
+          cp container/cloudron/CloudronVersions.json /tmp/CloudronVersions.json
+          cp container/cloudron/CloudronManifest.json /tmp/CloudronManifest.json
+
+          git fetch origin "$BRANCH"
+          git checkout -- .
+          git checkout "$BRANCH"
+
+          cp /tmp/CloudronVersions.json container/cloudron/CloudronVersions.json
+          cp /tmp/CloudronManifest.json container/cloudron/CloudronManifest.json
+          git add container/cloudron/CloudronVersions.json container/cloudron/CloudronManifest.json
+          # Check the INDEX, not the working tree. On a first release
+          # CloudronVersions.json is an untracked file, and `git diff` does
+          # not see untracked files.
+          if git diff --cached --quiet; then
+            echo "catalogue already records this image; nothing to commit"
+            exit 0
+          fi
+
+          git commit -m "chore(release): record ${{ needs.release.outputs.tag }} in the container catalogue"
+          git push origin "$BRANCH"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Container image released"
+            echo
+            echo "Image: \`ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}\`"
+            echo
+            echo "The Cloudron catalogue records this digest, so a dashboard"
+            echo "pointed at it will offer this version."
+          } >> "$GITHUB_STEP_SUMMARY"
