@@ -1,3 +1,11 @@
+## [1.3.1](https://github.com/sasjs/server/compare/v1.3.0...v1.3.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **ci:** keep the session cookie jar and change the admin password in the smoke test ([8783975](https://github.com/sasjs/server/commit/87839756deaf30c17eb2a17b0810c2321a112180)), closes [#409](https://github.com/sasjs/server/issues/409)
+* **ci:** publish the container image from inside the release workflow ([4191413](https://github.com/sasjs/server/commit/41914131a5cdafc8bd683b062ec1d9b20bc3cd66))
+
 # [1.3.0](https://github.com/sasjs/server/compare/v1.2.1...v1.3.0) (2026-09-26)
 
 
