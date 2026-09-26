@@ -17,6 +17,7 @@ import {
 import { desktopUser } from '../middlewares'
 
 import User, { UserPayload } from '../model/User'
+import { sanitiseDisplayName } from '../utils/programVariables'
 import {
   getUserAutoExec,
   updateUserAutoExec,
@@ -221,7 +222,7 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
 
   // Create a new user
   const user = new User({
-    displayName,
+    displayName: sanitiseDisplayName(displayName),
     username,
     password: hashPassword,
     isAdmin,
@@ -298,7 +299,18 @@ const updateUser = async (
 ): Promise<UserDetailsResponse> => {
   const { displayName, username, password, isAdmin, isActive, autoExec } = data
 
-  const params: any = { displayName, isAdmin, isActive, autoExec }
+  // A display name reaches generated stored-program source, the webout headers
+  // and the UI, so it is stored sanitised - control characters out, length
+  // bounded. Escaping at generation time is what makes it inert there; this
+  // keeps the stored value clean as well.
+  const sanitisedDisplayName = sanitiseDisplayName(displayName)
+
+  const params: any = {
+    displayName: sanitisedDisplayName,
+    isAdmin,
+    isActive,
+    autoExec
+  }
 
   const user = await User.findOne(findBy)
 
@@ -310,7 +322,11 @@ const updateUser = async (
     }
   }
 
-  if (displayName && displayName !== user?.displayName && user?.authProvider) {
+  if (
+    sanitisedDisplayName &&
+    sanitisedDisplayName !== user?.displayName &&
+    user?.authProvider
+  ) {
     throw {
       code: 405,
       message:

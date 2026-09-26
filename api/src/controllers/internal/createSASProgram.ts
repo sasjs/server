@@ -1,5 +1,10 @@
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadSasCode, getMacrosFolder } from '../../utils'
+import {
+  asSasMacroValue,
+  partitionParameterNames,
+  reportDroppedParameterNames
+} from '../../utils/programVariables'
 import { ExecutionVars } from './'
 
 export const createSASProgram = async (
@@ -12,19 +17,23 @@ export const createSASProgram = async (
   tokenFile: string,
   otherArgs?: any
 ) => {
-  const varStatments = Object.keys(vars).reduce(
-    (computed: string, key: string) => `${computed}%let ${key}=${vars[key]};\n`,
+  const { safe, dropped } = partitionParameterNames(vars)
+  reportDroppedParameterNames(dropped)
+
+  const varStatments = safe.reduce(
+    (computed: string, key: string) =>
+      `${computed}%let ${key}=${asSasMacroValue(vars[key])};\n`,
     ''
   )
 
   const preProgramVarStatments = `
-%let _sasjs_tokenfile=${tokenFile};
-%let _sasjs_username=${preProgramVariables?.username};
-%let _sasjs_userid=${preProgramVariables?.userId};
-%let _sasjs_displayname=${preProgramVariables?.displayName};
-%let _sasjs_apiserverurl=${preProgramVariables?.serverUrl};
+%let _sasjs_tokenfile=${asSasMacroValue(tokenFile)};
+%let _sasjs_username=${asSasMacroValue(preProgramVariables?.username)};
+%let _sasjs_userid=${asSasMacroValue(preProgramVariables?.userId)};
+%let _sasjs_displayname=${asSasMacroValue(preProgramVariables?.displayName)};
+%let _sasjs_apiserverurl=${asSasMacroValue(preProgramVariables?.serverUrl)};
 %let _sasjs_apipath=/SASjsApi/stp/execute;
-%let _sasjs_webout_headers=${headersPath};
+%let _sasjs_webout_headers=${asSasMacroValue(headersPath)};
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
 
