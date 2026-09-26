@@ -105,6 +105,15 @@ jobs:
         working-directory: ./api
         run: npm ci
 
+      - name: Warm mongod binary for tests
+        # ignore-scripts=true (api/.npmrc) suppresses mongodb-memory-server's
+        # postinstall pre-download; without this step the first spec's
+        # MongoMemoryServer.create() downloads ~120MB inside jest's 5s hook
+        # timeout. Doing it here both warms the cache and proves the suite no
+        # longer depends on any install script.
+        working-directory: ./api
+        run: node -e "require('mongodb-memory-server').MongoMemoryServer.create().then(s => s.stop()).then(() => console.log('mongod cached'))"
+
       - name: Run Unit Tests
         working-directory: ./api
         run: npm test
