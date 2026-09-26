@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/sasjs/server/compare/v1.2.0...v1.2.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **deps:** migrate to @yao-pkg/pkg node24 targets, express 5, mongoose 8 and clean npm audit ([edf3967](https://github.com/sasjs/server/commit/edf3967b80201b0a884bfdd3251c6d9c3632414c)), closes [#405](https://github.com/sasjs/server/issues/405) [#405](https://github.com/sasjs/server/issues/405) [#406](https://github.com/sasjs/server/issues/406) [pre-#395](https://github.com/pre-/issues/395)
+
 # [1.2.0](https://github.com/sasjs/server/compare/v1.1.0...v1.2.0) (2026-09-25)
 
 
