@@ -21,6 +21,9 @@ on:
       - 'api/**'
       - 'web/**'
       - '.github/workflows/container.yml'
+      - '.github/workflows/container-release.yml'
+      - '.github/workflows/release.yml'
+      - '.github/actions/container-smoke-test/**'
   push:
     branches: [ main ]
     paths:
@@ -28,6 +31,9 @@ on:
       - 'api/**'
       - 'web/**'
       - '.github/workflows/container.yml'
+      - '.github/workflows/container-release.yml'
+      - '.github/workflows/release.yml'
+      - '.github/actions/container-smoke-test/**'
   # Weekly re-scan: new CVEs land against a pinned base image even when
   # nothing in this repository changes.
   schedule:
