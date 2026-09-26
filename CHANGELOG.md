@@ -1,3 +1,16 @@
+# [1.3.0](https://github.com/sasjs/server/compare/v1.2.1...v1.3.0) (2026-09-26)
+
+
+### Bug Fixes
+
+* **container:** match the Trivy gate's reported path in the DS-0002 exception ([0116ca9](https://github.com/sasjs/server/commit/0116ca96e2a244bb5572e2f0fe052c17c73f2e9e))
+* **security:** close authorisation bypass, path traversal, CSRF and default-credential findings from the v1.2.0 review ([190fbf2](https://github.com/sasjs/server/commit/190fbf21add0351eaacc155e3f675d16e85ad547))
+
+
+### Features
+
+* **container:** publish ghcr.io/sasjs/server and fold in the Cloudron app package ([fa12516](https://github.com/sasjs/server/commit/fa125162c395d42c16366a7b12aecbfeec872479))
+
 ## [1.2.1](https://github.com/sasjs/server/compare/v1.2.0...v1.2.1) (2026-09-26)
 
 
