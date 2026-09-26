@@ -10,10 +10,9 @@ import { seedDB } from '../../utils/seedDB'
  * (utils/oidcUser.resolveOidcUser) - which is what makes a fresh install
  * usable without a credential nobody can read.
  *
- * The failure this guards against is the previous behaviour: an absent
- * password was hashed anyway, creating an account whose password was the
- * literal string 'undefined' - a known credential on every deployment that
- * forgot the variable.
+ * Without the guard these specs pin, an absent password is hashed anyway,
+ * creating an account whose password is the literal string 'undefined' - a
+ * publicly-known credential on every deployment that omits the variable.
  */
 describe('seedDB admin seeding', () => {
   let con: Mongoose
@@ -72,7 +71,7 @@ describe('seedDB admin seeding', () => {
     await seedDB()
 
     // No account at all - in particular none whose password is the string
-    // 'undefined', which is what hashing an absent value used to produce.
+    // 'undefined', which is what hashing an absent value produces.
     expect(await User.countDocuments({})).toEqual(0)
   })
 })

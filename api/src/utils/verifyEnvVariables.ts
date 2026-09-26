@@ -552,9 +552,9 @@ const verifyAdminUserConfig = () => {
       // break-glass admin instead - which then also suppresses the bootstrap,
       // because that account is an admin from the first start.
       //
-      // Deliberately NOT a default password here: defaulting used to ship
-      // 'secretpassword' as the deployment's admin in every configuration
-      // that forgot the variable.
+      // A default is deliberately NOT applied: a default would ship a
+      // publicly-known credential as the deployment's admin in every
+      // configuration that omits the variable.
       process.env.ADMIN_PASSWORD_INITIAL = ''
     } else {
       // Fail closed: with no external provider and no local admin there is no

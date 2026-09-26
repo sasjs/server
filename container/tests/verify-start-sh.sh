@@ -221,9 +221,9 @@ check "no ldap addon in the manifest"       "0" "$LDAP_IN_MANIFEST"
 
 echo
 echo "--- TEST 6: no admin password file, and DATA_DIR/.env is read"
-# The entrypoint no longer generates an admin password: an admin exists only
-# when ADMIN_PASSWORD_INITIAL is set, so that a fresh install is usable via
-# the first user to sign in rather than a credential nobody can read.
+# An admin exists only when ADMIN_PASSWORD_INITIAL is set, so a fresh install
+# is usable via the first user to sign in rather than a credential nobody can
+# read.
 if [[ -f "$T/app-data/.initial-admin-password" ]]; then
   echo "FAIL  no .initial-admin-password is written when ADMIN_PASSWORD_INITIAL is unset"
   FAIL=1
