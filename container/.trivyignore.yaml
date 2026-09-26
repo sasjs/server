@@ -6,6 +6,10 @@
 misconfigurations:
   - id: DS-0002
     paths:
+      # The gate scans container/ (scan-ref: container), so the finding is
+      # reported as "Dockerfile" relative to it. Both forms are listed so the
+      # exception matches regardless of how Trivy resolves the path.
+      - "Dockerfile"
       - "container/Dockerfile"
     statement: >-
       Platform app images (Cloudron among them) are expected to start as root
