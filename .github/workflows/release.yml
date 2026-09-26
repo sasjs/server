@@ -18,23 +18,13 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
 
     steps:
-      # Branch protection on main requires a pull request, and the GITHUB_TOKEN
-      # identity (github-actions[bot]) cannot be added to a bypass list - only a
-      # user, a team or a GitHub App can. The sasjs-dev App can, so the release
-      # commit (CHANGELOG.md) and the tag are pushed as that App. Same pattern
-      # as sasjs/utils and sasjs/lint.
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
+      # No App token in this job: with the changelog plugin gone, semantic-release
+      # creates the tag and the release through the API and never pushes to main.
+      # The one push to main left in this workflow is the container job's
+      # catalogue commit.
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token.outputs.token }}
-          persist-credentials: true
           # semantic-release needs the full history plus the existing tags.
           fetch-depth: 0
 
@@ -82,22 +72,19 @@ jobs:
           npm i -g semantic-release
 
       - name: Release
-        env:
-          # The App token, so the CHANGELOG.md commit and the tag are pushed as
-          # an actor branch protection can be configured to allow.
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          semantic-release
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} semantic-release
 
       - name: Document the checksums on the release
         env:
-          # Writes the release body, so it needs contents:write - the App token
-          # has it.
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # semantic-release creates the tag locally when it publishes a
-          # release, so an empty result means this push produced no release.
+          # The tag is created on the REMOTE by the github plugin (nothing makes
+          # one locally now that the changelog plugin is gone), so fetch it
+          # before asking which tag points at HEAD. An empty result still means
+          # this push produced no release.
+          git fetch --tags --force
           TAG=$(git tag --points-at HEAD | head -n1)
           if [ -z "$TAG" ]; then
             echo "No release was created for this commit - skipping."
@@ -112,6 +99,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          # Same remote-tag read as the checksums step above: the container job
+          # is skipped unless this produces a tag.
+          git fetch --tags --force
           TAG=$(git tag --points-at HEAD | head -n1)
           if [ -z "$TAG" ]; then
             echo "No release was created for this commit."
@@ -147,8 +137,11 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     steps:
-      # Same App token as the release job: this job commits the updated Cloudron
-      # catalogue back to main, and branch protection gates that push too.
+      # This job commits the updated Cloudron catalogue back to main - the one
+      # push to main left in this workflow, and the one branch protection gates.
+      # The GITHUB_TOKEN identity (github-actions[bot]) cannot be added to a
+      # bypass list; a GitHub App can, so push as the sasjs-dev App (same
+      # pattern as sasjs/utils and sasjs/lint).
       - name: Generate token
         id: app-token
         uses: actions/create-github-app-token@v2
