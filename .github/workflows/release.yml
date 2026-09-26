@@ -18,8 +18,25 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
 
     steps:
+      # Branch protection on main requires a pull request, and the GITHUB_TOKEN
+      # identity (github-actions[bot]) cannot be added to a bypass list - only a
+      # user, a team or a GitHub App can. The sasjs-dev App can, so the release
+      # commit (CHANGELOG.md) and the tag are pushed as that App. Same pattern
+      # as sasjs/utils and sasjs/lint.
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+          # semantic-release needs the full history plus the existing tags.
+          fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
@@ -65,12 +82,18 @@ jobs:
           npm i -g semantic-release
 
       - name: Release
+        env:
+          # The App token, so the CHANGELOG.md commit and the tag are pushed as
+          # an actor branch protection can be configured to allow.
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} semantic-release
+          semantic-release
 
       - name: Document the checksums on the release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Writes the release body, so it needs contents:write - the App token
+          # has it.
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           # semantic-release creates the tag locally when it publishes a
@@ -124,11 +147,22 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     steps:
-      - uses: actions/checkout@v2
+      # Same App token as the release job: this job commits the updated Cloudron
+      # catalogue back to main, and branch protection gates that push too.
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
         with:
           # The tag semantic-release created on this commit.
           ref: ${{ needs.release.outputs.tag }}
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
 
       - name: Sync the Cloudron manifest version with the release
         run: |
