@@ -42,15 +42,12 @@ You are presented with two prompts (if not set as ENV vars):
 - Location of your `sas.exe` / `sas.sh` executable
 - Path to a filesystem location for Stored Programs and temporary files
 
-### Container image
+## Container image
 
 A prebuilt container image is published as
 [`ghcr.io/sasjs/server`](https://github.com/orgs/sasjs/packages/container/package/server)
-with every release, usable anywhere Docker runs - including
-[Cloudron](https://cloudron.io), where the app package in
-[`container/cloudron/`](container/cloudron/) installs it with the platform's
-MongoDB, single sign-on and backups wired up. The image is built and
-published by the repository's own release workflow, so the image tag and the
+with every release, usable anywhere Docker runs. It is built from this
+repository's own source by the release workflow, so the image tag and the
 release always refer to the same commit. See
 [`container/README.md`](container/README.md) for the full container
 documentation, and
@@ -64,6 +61,22 @@ docker run -d --name sasjs \
   -e DB_CONNECT=mongodb://mongo:27017/sasjs \
   ghcr.io/sasjs/server
 ```
+
+Server mode (the default) is multi-user and needs a MongoDB reachable at
+`DB_CONNECT`; set `MODE=desktop` for a single-user instance with no database.
+The container is configured entirely by the environment variables documented
+below and speaks plain HTTP on port 5000, so terminate TLS in front of it. Its
+health check is `GET /SASjsApi/info`, which needs no authentication.
+
+The same image is packaged for [Cloudron](https://cloudron.io) as a community
+app - paste this URL into the dashboard's Community Apps field:
+
+    https://raw.githubusercontent.com/sasjs/server/main/container/cloudron/CloudronVersions.json
+
+Cloudron installs `ghcr.io/sasjs/server` from the app package in
+[`container/cloudron/`](container/cloudron/), wiring up its MongoDB, single
+sign-on (OIDC), access control and backups. The entrypoint detects the
+platform's addon variables by itself, so one image serves both.
 
 ## ENV Var configuration
 
