@@ -21,7 +21,7 @@ export const setProcessVariables = async () => {
 
       // Override environment variables from envPath if file exists
       if (await fileExists(envPath)) {
-        dotenv.config({ path: envPath, override: true })
+        dotenv.config({ path: envPath, override: true, quiet: true })
       }
     }
   }

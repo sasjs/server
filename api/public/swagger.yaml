@@ -441,13 +441,20 @@ components:
                 - description
             type: object
             additionalProperties: false
-        FlattenMaps_T_:
-            properties: {}
+        DeleteResult:
+            properties:
+                acknowledged:
+                    type: boolean
+                    description: 'Indicates whether this write result was acknowledged. If not, then all other members of this result will be undefined.'
+                deletedCount:
+                    type: number
+                    format: double
+                    description: 'The number of documents that were deleted'
+            required:
+                - acknowledged
+                - deletedCount
             type: object
-        IGroup:
-            $ref: '#/components/schemas/FlattenMaps_T_'
-        ObjectId:
-            type: string
+            additionalProperties: false
         InfoResponse:
             properties:
                 mode:
@@ -464,12 +471,21 @@ components:
                     items:
                         type: string
                     type: array
+                authProviders:
+                    items:
+                        type: string
+                    type: array
+                    description: "Which external authentication providers are configured. Public, because\nthe login screen needs it before anyone is authenticated: it decides\nwhether to offer a single sign-on button."
+                oidcProviderName:
+                    type: string
+                    description: "The label for that button, from OIDC_PROVIDER_NAME. Absent unless OIDC is\nconfigured. Not sensitive - it is a display name."
             required:
                 - mode
                 - cors
                 - whiteList
                 - protocol
                 - runTimes
+                - authProviders
             type: object
             additionalProperties: false
         AuthorizedRoutesResponse:
@@ -556,37 +572,23 @@ components:
                 - setting
             type: object
             additionalProperties: false
-        Pick_UserResponse.Exclude_keyofUserResponse.uid__:
-            properties:
-                username:
-                    type: string
-                displayName:
-                    type: string
-                isAdmin:
-                    type: boolean
-            required:
-                - username
-                - displayName
-                - isAdmin
-            type: object
-            description: 'From T, pick a set of properties whose keys are in the union K'
         SessionResponse:
             properties:
+                uid:
+                    type: string
                 username:
                     type: string
                 displayName:
                     type: string
                 isAdmin:
                     type: boolean
-                uid:
-                    type: string
                 needsToUpdatePassword:
                     type: boolean
             required:
+                - uid
                 - username
                 - displayName
                 - isAdmin
-                - uid
             type: object
             additionalProperties: false
         SessionState:
@@ -750,7 +752,7 @@ paths:
                             schema: {}
                             examples:
                                 'Example 1':
-                                    value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_BIND_PASSWORD: secret, LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron'}}
+                                    value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron', LDAP_BIND_PASSWORD_SET: true}}
             summary: 'Gives the detail of Auth Mechanism.'
             tags:
                 - Auth_Config
@@ -1087,7 +1089,7 @@ paths:
                                 'Example 1':
                                     value: {status: success}
                 '403':
-                    description: ""
+                    description: 'File doesn''t exist'
                     content:
                         application/json:
                             schema:
@@ -1422,11 +1424,13 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'The user''s identifier'
                     in: path
                     name: uid
                     required: true
                     schema:
                         type: string
+                    example: 507f1f77bcf86cd799439011
         patch:
             operationId: UpdateUser
             responses:
@@ -1453,7 +1457,7 @@ paths:
                     required: true
                     schema:
                         type: string
-                    example: '507f1f77bcf86cd799439011'
+                    example: 507f1f77bcf86cd799439011
             requestBody:
                 required: true
                 content:
@@ -1479,7 +1483,7 @@ paths:
                     required: true
                     schema:
                         type: string
-                    example: '507f1f77bcf86cd799439011'
+                    example: 507f1f77bcf86cd799439011
             requestBody:
                 required: true
                 content:
@@ -1489,7 +1493,6 @@ paths:
                                 password:
                                     type: string
                             type: object
-
     /SASjsApi/group:
         get:
             operationId: GetAllGroups
@@ -1594,9 +1597,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                allOf:
-                                    - {$ref: '#/components/schemas/IGroup'}
-                                    - {properties: {_id: {$ref: '#/components/schemas/ObjectId'}}, required: [_id], type: object}
+                                $ref: '#/components/schemas/DeleteResult'
             summary: 'Delete a group. Admin task only.'
             tags:
                 - Group
@@ -1647,6 +1648,7 @@ paths:
                     required: true
                     schema:
                         type: string
+                    example: 12ByteString
         delete:
             operationId: RemoveUserFromGroup
             responses:
@@ -1694,7 +1696,7 @@ paths:
                                 $ref: '#/components/schemas/InfoResponse'
                             examples:
                                 'Example 1':
-                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http, runTimes: [sas, js]}
+                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect'}
             summary: 'Get server info (mode, cors, whiteList, protocol).'
             tags:
                 - Info
@@ -1787,11 +1789,13 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'The permission''s identifier'
                     in: path
                     name: uid
                     required: true
                     schema:
                         type: string
+                    example: 507f1f77bcf86cd799439011
             requestBody:
                 required: true
                 content:
@@ -1811,11 +1815,13 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'The permission''s identifier'
                     in: path
                     name: uid
                     required: true
                     schema:
                         type: string
+                    example: 507f1f77bcf86cd799439011
     /SASjsApi/session:
         get:
             operationId: Session

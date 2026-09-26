@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import Client from '../model/Client'
 import Group, { PUBLIC_GROUP_NAME } from '../model/Group'
-import User, { IUser } from '../model/User'
+import User, { IUserDocument } from '../model/User'
 import Configuration, { ConfigurationType } from '../model/Configuration'
 import { ResetAdminPasswordType } from './verifyEnvVariables'
 
@@ -112,7 +112,10 @@ const getAdminUser = () => {
   }
 }
 
-const resetAdminPassword = async (user: IUser, password: string) => {
+const resetAdminPassword = async (
+  user: IUserDocument,
+  password: string
+): Promise<IUserDocument> => {
   const { ADMIN_PASSWORD_RESET } = process.env
 
   if (ADMIN_PASSWORD_RESET === ResetAdminPasswordType.YES) {

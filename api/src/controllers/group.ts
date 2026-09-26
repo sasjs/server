@@ -154,7 +154,7 @@ export class GroupController {
         message: 'Group not found.'
       }
 
-    return await group.remove()
+    return await group.deleteOne()
   }
 }
 
@@ -288,6 +288,6 @@ const updateUsersListInGroup = async (
     name: updatedGroup.name,
     description: updatedGroup.description,
     isActive: updatedGroup.isActive,
-    users: updatedGroup.users
+    users: updatedGroup.users as unknown as UserResponse[]
   }
 }

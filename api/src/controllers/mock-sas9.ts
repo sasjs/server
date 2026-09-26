@@ -11,7 +11,7 @@ import {
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 
-dotenv.config()
+dotenv.config({ quiet: true })
 
 export interface Sas9Response {
   content: string

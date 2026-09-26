@@ -67,26 +67,33 @@ export const publishAppStream = async (
   return {}
 }
 
-router.get(`/*`, authenticateAccessToken, function (req: Request, res, next) {
-  const reqPath = req.path.replace(/^\//, '')
+// Express 5 (path-to-regexp v8) requires wildcard segments to be named;
+// a bare `*` throws at router registration time. The name is unused here
+// because the handler reads `req.path` directly.
+router.get(
+  `/*splat`,
+  authenticateAccessToken,
+  function (req: Request, res, next) {
+    const reqPath = req.path.replace(/^\//, '')
 
-  // Redirecting to url with trailing slash for appStream base URL only
-  if (reqPath.split('/').length === 1 && !reqPath.endsWith('/'))
-    // navigating to same url with slash at start
-    return res.redirect(301, `${reqPath}/`)
+    // Redirecting to url with trailing slash for appStream base URL only
+    if (reqPath.split('/').length === 1 && !reqPath.endsWith('/'))
+      // navigating to same url with slash at start
+      return res.redirect(301, `${reqPath}/`)
 
-  const appStream = reqPath.split('/')[0]
-  const appStreamFilesPath = appStreams[appStream]
-  if (appStreamFilesPath) {
-    // resourcePath is without appStream base path
-    const resourcePath = reqPath.split('/').slice(1).join('/') || 'index.html'
+    const appStream = reqPath.split('/')[0]
+    const appStreamFilesPath = appStreams[appStream]
+    if (appStreamFilesPath) {
+      // resourcePath is without appStream base path
+      const resourcePath = reqPath.split('/').slice(1).join('/') || 'index.html'
 
-    req.url = resourcePath
+      req.url = resourcePath
 
-    return express.static(appStreamFilesPath)(req, res, next)
+      return express.static(appStreamFilesPath)(req, res, next)
+    }
+
+    return res.send("There's no App Stream available here.")
   }
-
-  return res.send("There's no App Stream available here.")
-})
+)
 
 export default router

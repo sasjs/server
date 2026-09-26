@@ -1,4 +1,4 @@
-import { Schema, model, Document, Model } from 'mongoose'
+import { Schema, model, Model, HydratedDocument, Types } from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { AuthProviderType } from '../utils'
 
@@ -34,29 +34,49 @@ export interface UserPayload {
   autoExec?: string
 }
 
-interface IUserDocument extends UserPayload, Document {
-  _id: Schema.Types.ObjectId
+interface IUserFields extends UserPayload {
   isAdmin: boolean
   isActive: boolean
   needsToUpdatePassword: boolean
   autoExec: string
-  groups: Schema.Types.ObjectId[]
-  tokens: [{ [key: string]: string }]
+  groups: Types.ObjectId[]
+  tokens: { clientId: string; accessToken: string; refreshToken: string }[]
   authProvider?: AuthProviderType
+  /**
+   * The provider's own durable identifier for this user - the OIDC `sub`
+   * claim. Usernames are a local, normalised projection of whatever the
+   * provider asserted and can in principle change; `sub` is what actually
+   * identifies the account, so lookups go through this first.
+   */
   authProviderId?: string
+}
 
-  // Declare virtual properties as read-only properties
+interface IUserVirtuals {
   readonly uid: string
 }
 
-export interface IUser extends IUserDocument {
+interface IUserMethods {
   comparePassword(password: string): boolean
-  addGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
-  removeGroup(groupObjectId: Schema.Types.ObjectId): Promise<IUser>
+  addGroup(groupObjectId: Types.ObjectId): Promise<IUserDocument>
+  removeGroup(groupObjectId: Types.ObjectId): Promise<IUserDocument>
 }
-interface IUserModel extends Model<IUser> {
+
+export type IUserDocument = HydratedDocument<
+  IUserFields,
+  IUserMethods & IUserVirtuals
+>
+
+export interface IUser extends IUserFields, IUserVirtuals, IUserMethods {}
+
+interface IUserModel extends Model<
+  IUserFields,
+  {},
+  IUserMethods,
+  IUserVirtuals
+> {
   hashPassword(password: string): string
 }
+
 const opts = {
   toJSON: {
     virtuals: true,
@@ -68,7 +88,13 @@ const opts = {
   }
 }
 
-const userSchema = new Schema<IUserDocument>(
+const userSchema = new Schema<
+  IUserFields,
+  IUserModel,
+  IUserMethods,
+  {},
+  IUserVirtuals
+>(
   {
     displayName: {
       type: String,
@@ -87,12 +113,6 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       enum: AuthProviderType
     },
-    /**
-     * The provider's own durable identifier for this user - the OIDC `sub`
-     * claim. Usernames are a local, normalised projection of whatever the
-     * provider asserted and can in principle change; `sub` is what actually
-     * identifies the account, so lookups go through this first.
-     */
     authProviderId: {
       type: String
     },
@@ -147,20 +167,17 @@ userSchema.method('comparePassword', function (password: string): boolean {
   if (bcrypt.compareSync(password, this.password)) return true
   return false
 })
-userSchema.method(
-  'addGroup',
-  async function (groupObjectId: Schema.Types.ObjectId) {
-    const groupIdIndex = this.groups.indexOf(groupObjectId)
-    if (groupIdIndex === -1) {
-      this.groups.push(groupObjectId)
-    }
-    this.markModified('groups')
-    return this.save()
+userSchema.method('addGroup', async function (groupObjectId: Types.ObjectId) {
+  const groupIdIndex = this.groups.indexOf(groupObjectId)
+  if (groupIdIndex === -1) {
+    this.groups.push(groupObjectId)
   }
-)
+  this.markModified('groups')
+  return this.save()
+})
 userSchema.method(
   'removeGroup',
-  async function (groupObjectId: Schema.Types.ObjectId) {
+  async function (groupObjectId: Types.ObjectId) {
     const groupIdIndex = this.groups.indexOf(groupObjectId)
     if (groupIdIndex > -1) {
       this.groups.splice(groupIdIndex, 1)
@@ -170,6 +187,9 @@ userSchema.method(
   }
 )
 
-export const User: IUserModel = model<IUser, IUserModel>('User', userSchema)
+export const User: IUserModel = model<IUserFields, IUserModel>(
+  'User',
+  userSchema
+)
 
 export default User

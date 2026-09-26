@@ -1,25 +1,36 @@
-import { Schema, model, Document, Model } from 'mongoose'
+import { Schema, model, Model, HydratedDocument, Types } from 'mongoose'
 import { PermissionDetailsResponse } from '../controllers'
 
 interface GetPermissionBy {
-  user?: Schema.Types.ObjectId
-  group?: Schema.Types.ObjectId
+  user?: Types.ObjectId
+  group?: Types.ObjectId
 }
 
-interface IPermissionDocument extends Document {
+interface IPermissionFields {
   path: string
   type: string
   setting: string
-  user: Schema.Types.ObjectId
-  group: Schema.Types.ObjectId
+  user?: Types.ObjectId
+  group?: Types.ObjectId
+}
 
-  // Declare virtual properties as read-only properties
+interface IPermissionVirtuals {
   readonly uid: string
 }
 
-interface IPermission extends IPermissionDocument {}
+export type IPermissionDocument = HydratedDocument<
+  IPermissionFields,
+  IPermissionVirtuals
+>
 
-interface IPermissionModel extends Model<IPermission> {
+export interface IPermission extends IPermissionFields, IPermissionVirtuals {}
+
+interface IPermissionModel extends Model<
+  IPermissionFields,
+  {},
+  {},
+  IPermissionVirtuals
+> {
   get(getBy: GetPermissionBy): Promise<PermissionDetailsResponse[]>
 }
 
@@ -34,7 +45,13 @@ const opts = {
   }
 }
 
-const permissionSchema = new Schema<IPermissionDocument>(
+const permissionSchema = new Schema<
+  IPermissionFields,
+  IPermissionModel,
+  {},
+  {},
+  IPermissionVirtuals
+>(
   {
     path: {
       type: String,
@@ -77,7 +94,7 @@ permissionSchema.static('get', async function (getBy: GetPermissionBy): Promise<
 })
 
 export const Permission: IPermissionModel = model<
-  IPermission,
+  IPermissionFields,
   IPermissionModel
 >('Permission', permissionSchema)
 
