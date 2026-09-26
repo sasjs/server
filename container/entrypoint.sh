@@ -126,6 +126,13 @@ if [[ -n "$CLOUDRON_MARKER" ]]; then
   export PORT="${PORT:-5000}"
   export PROTOCOL="${PROTOCOL:-http}"
   export CORS="${CORS:-disable}"
+
+  # Cloudron terminates TLS, so the app itself receives plain HTTP and cannot
+  # see the client's protocol or address without being told to believe the
+  # proxy's X-Forwarded-* headers. One hop is the platform's own proxy (the
+  # platform's proxy address is used instead when it exports one); the session
+  # cookie is marked Secure off the back of it.
+  export TRUST_PROXY="${TRUST_PROXY:-${CLOUDRON_PROXY_IP:-1}}"
 else
   # --- generic container ----------------------------------------------------
   export MODE="${MODE:-server}"
@@ -211,6 +218,7 @@ CONFIG_SUMMARY="${DATA_DIR}/config.txt"
   echo "PORT=${PORT}"
   echo "PROTOCOL=${PROTOCOL}"
   echo "CORS=${CORS}"
+  echo "TRUST_PROXY=${TRUST_PROXY:-none}"
   echo "DATA_DIR=${DATA_DIR}"
   echo "RUN_TIMES=${RUN_TIMES}"
   echo

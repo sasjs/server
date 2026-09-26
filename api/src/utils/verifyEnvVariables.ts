@@ -97,6 +97,7 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyPROTOCOL())
 
   errors.push(...verifyPORT())
+  errors.push(...verifyTrustProxy())
 
   errors.push(...verifyCORS())
 
@@ -584,6 +585,36 @@ const verifyAdminUserConfig = () => {
 
 const isNumeric = (val: string): boolean => {
   return !isNaN(Number(val))
+}
+
+/**
+ * TRUST_PROXY states how much of the X-Forwarded-* chain Express believes, and
+ * it decides whether the session cookie is marked Secure on a site whose TLS
+ * terminates at a proxy (see app.ts). Express accepts a boolean, a hop count or
+ * a list of IPs/CIDRs and throws at startup on anything else - a confusing way
+ * to learn about a typo, so the shape is checked here and reported with the
+ * other environment errors.
+ */
+const verifyTrustProxy = (): string[] => {
+  const errors: string[] = []
+  const { TRUST_PROXY } = process.env
+
+  if (!TRUST_PROXY) return errors
+  if (['true', 'false'].includes(TRUST_PROXY)) return errors
+  if (/^\d+$/.test(TRUST_PROXY)) return errors
+
+  const addressOrCidr = /^[0-9a-fA-F:.]+(\/\d{1,3})?$/
+
+  TRUST_PROXY.split(',').forEach((entry) => {
+    const candidate = entry.trim()
+    if (!candidate || !addressOrCidr.test(candidate)) {
+      errors.push(
+        `- TRUST_PROXY '${TRUST_PROXY}'\n - use true, false, a hop count, or a comma-separated list of IPs/CIDRs`
+      )
+    }
+  })
+
+  return errors
 }
 
 const isAbsoluteUrl = (val: string): boolean => {
