@@ -1,8 +1,8 @@
 {
   "id": "io.sasjs.server",
   "title": "SASjs Server",
-  "version": "1.3.2",
-  "upstreamVersion": "1.3.2",
+  "version": "1.3.3",
+  "upstreamVersion": "1.3.3",
   "tagline": "Stored programs in JavaScript and Python",
   "description": "file://DESCRIPTION.md",
   "changelog": "file://CHANGELOG",
