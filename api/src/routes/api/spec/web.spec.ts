@@ -49,10 +49,14 @@ describe('web', () => {
 
   describe('SASLogon/authorize', () => {
     let csrfToken: string
-    let authCookies: string
+    let agent: ReturnType<typeof request.agent>
 
     beforeAll(async () => {
-      ;({ csrfToken } = await getCSRF(app))
+      // One agent = one session across token mint, login and authorize: the
+      // per-session CSRF secret requires the token to travel with the
+      // session cookie that minted it.
+      agent = request.agent(app)
+      ;({ csrfToken } = await getCSRF(agent as any))
 
       await userController.createUser(user)
 
@@ -61,7 +65,10 @@ describe('web', () => {
         password: user.password
       }
 
-      ;({ authCookies } = await performLogin(app, credentials, csrfToken))
+      await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrfToken)
+        .send(credentials)
     })
 
     afterAll(async () => {
@@ -71,9 +78,8 @@ describe('web', () => {
     })
 
     it('should respond with authorization code', async () => {
-      const res = await request(app)
+      const res = await agent
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
         .set('x-xsrf-token', csrfToken)
         .send({ clientId })
 
@@ -81,9 +87,8 @@ describe('web', () => {
     })
 
     it('should respond with Bad Request if CSRF Token is missing', async () => {
-      const res = await request(app)
+      const res = await agent
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
         .send({ clientId })
         .expect(400)
 
@@ -92,9 +97,8 @@ describe('web', () => {
     })
 
     it('should respond with Bad Request if clientId is missing', async () => {
-      const res = await request(app)
+      const res = await agent
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
         .set('x-xsrf-token', csrfToken)
         .send({})
         .expect(400)
@@ -104,9 +108,8 @@ describe('web', () => {
     })
 
     it('should respond with Forbidden if clientId is incorrect', async () => {
-      const res = await request(app)
+      const res = await agent
         .post('/SASLogon/authorize')
-        .set('Cookie', [authCookies].join('; '))
         .set('x-xsrf-token', csrfToken)
         .send({
           clientId: 'WrongClientID'
@@ -119,11 +122,14 @@ describe('web', () => {
   })
 
   describe('SASLogon/login', () => {
-    let csrfToken: string
-
-    beforeAll(async () => {
-      ;({ csrfToken } = await getCSRF(app))
-    })
+    // CSRF tokens are bound to the session that minted them (per-session
+    // secret), so every request that presents a token must carry the same
+    // session cookie - a cookie jar (agent) does that.
+    const loginAgentWithToken = async () => {
+      const agent = request.agent(app)
+      const { csrfToken } = await getCSRF(agent as any)
+      return { agent, csrfToken }
+    }
 
     afterEach(async () => {
       const collections = mongoose.connection.collections
@@ -134,7 +140,9 @@ describe('web', () => {
     it('should respond with successful login', async () => {
       await userController.createUser(user)
 
-      const res = await request(app)
+      const { agent, csrfToken } = await loginAgentWithToken()
+
+      const res = await agent
         .post('/SASLogon/login')
         .set('x-xsrf-token', csrfToken)
         .send({
@@ -156,6 +164,8 @@ describe('web', () => {
     it('should respond with too many requests when attempting with invalid password for a same user too many times', async () => {
       await userController.createUser(user)
 
+      const { agent, csrfToken } = await loginAgentWithToken()
+
       const promises: request.Test[] = []
 
       const maxConsecutiveFailsByUsernameAndIp = Number(
@@ -166,19 +176,16 @@ describe('web', () => {
         .fill(0)
         .map((_, i) => {
           promises.push(
-            request(app)
-              .post('/SASLogon/login')
-              .set('x-xsrf-token', csrfToken)
-              .send({
-                username: user.username,
-                password: 'invalid-password'
-              })
+            agent.post('/SASLogon/login').set('x-xsrf-token', csrfToken).send({
+              username: user.username,
+              password: 'invalid-password'
+            })
           )
         })
 
       await Promise.all(promises)
 
-      const res = await request(app)
+      const res = await agent
         .post('/SASLogon/login')
         .set('x-xsrf-token', csrfToken)
         .send({
@@ -193,6 +200,8 @@ describe('web', () => {
     it('should respond with too many requests when attempting with invalid credentials for different users but with same ip too many times', async () => {
       await userController.createUser(user)
 
+      const { agent, csrfToken } = await loginAgentWithToken()
+
       const promises: request.Test[] = []
 
       const maxWrongAttemptsByIpPerDay = Number(
@@ -203,7 +212,7 @@ describe('web', () => {
         .fill(0)
         .map((_, i) => {
           promises.push(
-            request(app)
+            agent
               .post('/SASLogon/login')
               .set('x-xsrf-token', csrfToken)
               .send({
@@ -215,7 +224,7 @@ describe('web', () => {
 
       await Promise.all(promises)
 
-      const res = await request(app)
+      const res = await agent
         .post('/SASLogon/login')
         .set('x-xsrf-token', csrfToken)
         .send({
@@ -260,27 +269,12 @@ describe('web', () => {
   })
 })
 
-const getCSRF = async (app: Express) => {
-  // make request to get CSRF
-  const { text } = await request(app).get('/')
+const getCSRF = async (appOrAgent: any) => {
+  // make request to get CSRF. Accepts a supertest agent so the token is
+  // minted in the SAME session whose cookie jar will present it.
+  const { text } = await appOrAgent.get('/')
 
   return { csrfToken: extractCSRF(text) }
-}
-
-const performLogin = async (
-  app: Express,
-  credentials: { username: string; password: string },
-  csrfToken: string
-) => {
-  const { header } = await request(app)
-    .post('/SASLogon/login')
-    .set('x-xsrf-token', csrfToken)
-    .send(credentials)
-
-  return {
-    authCookies:
-      (header['set-cookie'] as unknown as string[] | undefined)?.join() || ''
-  }
 }
 
 const extractCSRF = (text: string) =>

@@ -30,7 +30,19 @@ export const configureExpressSession = (app: Express) => {
     const cookieOptions: CookieOptions = {
       secure: PROTOCOL === ProtocolType.HTTPS,
       httpOnly: true,
-      sameSite: PROTOCOL === ProtocolType.HTTPS ? 'none' : undefined,
+      // 'none' is required ONLY when the app is embedded in a third-party
+      // iframe (AppStream in an external portal), and it disables the
+      // browser-level CSRF defence (the session cookie is then sent on
+      // cross-site requests, leaving only the per-session token check).
+      // Default to 'lax' - full same-origin protection with top-level
+      // navigation still working - unless the operator opts into embedding
+      // with SESSION_SAMESITE=none.
+      sameSite:
+        process.env.SESSION_SAMESITE === 'none'
+          ? 'none'
+          : PROTOCOL === ProtocolType.HTTPS
+            ? 'lax'
+            : undefined,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       domain: ALLOWED_DOMAIN?.trim() || undefined
     }

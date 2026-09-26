@@ -1,5 +1,6 @@
 import path from 'path'
 import { getFilesFolder } from '../../utils/file'
+import { isSafePathSegment } from '../../utils/resolveWithinDrive'
 import {
   createFolder,
   createFile,
@@ -10,6 +11,12 @@ import {
   MemberType,
   FileTree
 } from '@sasjs/utils'
+
+/**
+ * Thrown shape understood by the drive deploy route: `code` becomes the HTTP
+ * status and `message` the body.
+ */
+const refuse = (code: number, message: string) => ({ code, message })
 
 // REFACTOR: export FileTreeCpntroller
 export const createFileTree = async (
@@ -27,6 +34,18 @@ export const createFileTree = async (
       let name = member.name
 
       if (member.type === MemberType.service) name += '.sas'
+
+      // Every member name becomes a path SEGMENT under the deployment root.
+      // A name carrying '/', '\' or '..' is a traversal attempt: joined onto
+      // the destination it would write outside the drive (arbitrary file
+      // write as the service account - the container runs as root). Fail the
+      // whole deployment rather than partially writing a hostile tree.
+      if (!isSafePathSegment(name)) {
+        throw refuse(
+          400,
+          `Invalid member name: '${name}'. Member names must be single path segments (no '/', '\\', '..').`
+        )
+      }
 
       if (member.type === MemberType.folder) {
         await createFolder(path.join(destinationPath, name)).catch((err) =>

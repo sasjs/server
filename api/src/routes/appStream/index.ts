@@ -3,7 +3,12 @@ import express, { Request } from 'express'
 import { authenticateAccessToken, generateCSRFToken } from '../../middlewares'
 import { folderExists } from '@sasjs/utils'
 
-import { addEntryToAppStreamConfig, getFilesFolder } from '../../utils'
+import {
+  addEntryToAppStreamConfig,
+  getFilesFolder,
+  resolveWithinDrive,
+  isSafePathSegment
+} from '../../utils'
 import { appStreamHtml } from './appStreamHtml'
 
 const appStreams: { [key: string]: string } = {}
@@ -13,7 +18,7 @@ const router = express.Router()
 router.get('/', authenticateAccessToken, async (req, res) => {
   const content = appStreamHtml(process.appStreamConfig)
 
-  res.cookie('XSRF-TOKEN', generateCSRFToken())
+  res.cookie('XSRF-TOKEN', generateCSRFToken(req))
 
   return res.send(content)
 })
@@ -28,9 +33,16 @@ export const publishAppStream = async (
   const driveFilesPath = getFilesFolder()
 
   const appLocParts = appLoc.replace(/^\//, '')?.split('/')
-  const appLocPath = path.join(driveFilesPath, ...appLocParts)
-  if (!appLocPath.includes(driveFilesPath)) {
+  const appLocPath = resolveWithinDrive(appLoc)
+  if (!appLocPath) {
     throw new Error('appLoc cannot be outside drive.')
+  }
+
+  // streamWebFolder must itself be a single safe segment: joined naively it
+  // could climb out of the deployment (and the drive) the same way a member
+  // name can.
+  if (!isSafePathSegment(streamWebFolder)) {
+    throw new Error('streamWebFolder must be a single path segment.')
   }
 
   const pathToDeployment = path.join(appLocPath, 'services', streamWebFolder)

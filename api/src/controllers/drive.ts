@@ -33,7 +33,7 @@ import {
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
 
 import { TreeNode } from '../types'
-import { getFilesFolder } from '../utils'
+import { getFilesFolder, resolveWithinDrive } from '../utils'
 
 interface DeployPayload {
   appLoc: string
@@ -288,20 +288,19 @@ const getFileTree = () => {
 }
 
 const deploy = async (data: DeployPayload) => {
-  const driveFilesPath = getFilesFolder()
-
-  const appLocParts = data.appLoc.replace(/^\//, '').split('/')
-
-  const appLocPath = path
-    .join(getFilesFolder(), ...appLocParts)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!appLocPath.includes(driveFilesPath)) {
-    throw new Error('appLoc cannot be outside drive.')
-  }
-
   if (!isFileTree(data.fileTree)) {
     throw { code: 400, ...invalidDeployFormatResponse }
+  }
+
+  // appLoc is caller-supplied and every segment must stay a single path
+  // segment: joined naively, '../' in a segment would make the deployment
+  // root climb out of the drive (an arbitrary-file-write primitive).
+  const appLocParts = data.appLoc.replace(/^\/+/, '').split('/')
+
+  const appLocPath = resolveWithinDrive(data.appLoc)
+
+  if (!appLocPath) {
+    throw new Error('appLoc cannot be outside drive.')
   }
 
   await createFileTree(data.fileTree.members, appLocParts).catch((err) => {
@@ -312,13 +311,9 @@ const deploy = async (data: DeployPayload) => {
 }
 
 const getFile = async (req: express.Request, filePath: string) => {
-  const driveFilesPath = getFilesFolder()
+  const filePathFull = resolveWithinDrive(filePath)
 
-  const filePathFull = path
-    .join(getFilesFolder(), filePath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!filePathFull.includes(driveFilesPath))
+  if (!filePathFull)
     throw {
       code: 400,
       status: 'Bad Request',
@@ -344,11 +339,9 @@ const getFolder = async (folderPath?: string) => {
   const driveFilesPath = getFilesFolder()
 
   if (folderPath) {
-    const folderPathFull = path
-      .join(getFilesFolder(), folderPath)
-      .replace(new RegExp('/', 'g'), path.sep)
+    const folderPathFull = resolveWithinDrive(folderPath)
 
-    if (!folderPathFull.includes(driveFilesPath))
+    if (!folderPathFull)
       throw {
         code: 400,
         status: 'Bad Request',
@@ -380,13 +373,9 @@ const getFolder = async (folderPath?: string) => {
 }
 
 const deleteFile = async (filePath: string) => {
-  const driveFilesPath = getFilesFolder()
+  const filePathFull = resolveWithinDrive(filePath)
 
-  const filePathFull = path
-    .join(getFilesFolder(), filePath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!filePathFull.includes(driveFilesPath))
+  if (!filePathFull)
     throw {
       code: 400,
       status: 'Bad Request',
@@ -406,13 +395,9 @@ const deleteFile = async (filePath: string) => {
 }
 
 const deleteFolder = async (folderPath: string) => {
-  const driveFolderPath = getFilesFolder()
+  const folderPathFull = resolveWithinDrive(folderPath)
 
-  const folderPathFull = path
-    .join(getFilesFolder(), folderPath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!folderPathFull.includes(driveFolderPath))
+  if (!folderPathFull)
     throw {
       code: 400,
       status: 'Bad Request',
@@ -435,13 +420,9 @@ const saveFile = async (
   filePath: string,
   multerFile: Express.Multer.File
 ): Promise<GetFileResponse> => {
-  const driveFilesPath = getFilesFolder()
+  const filePathFull = resolveWithinDrive(filePath)
 
-  const filePathFull = path
-    .join(driveFilesPath, filePath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!filePathFull.includes(driveFilesPath))
+  if (!filePathFull)
     throw {
       code: 400,
       status: 'Bad Request',
@@ -463,13 +444,9 @@ const saveFile = async (
 }
 
 const addFolder = async (folderPath: string): Promise<FileFolderResponse> => {
-  const drivePath = getFilesFolder()
+  const folderPathFull = resolveWithinDrive(folderPath)
 
-  const folderPathFull = path
-    .join(drivePath, folderPath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!folderPathFull.includes(drivePath))
+  if (!folderPathFull)
     throw {
       code: 400,
       status: 'Bad Request',
@@ -492,24 +469,17 @@ const rename = async (
   oldPath: string,
   newPath: string
 ): Promise<FileFolderResponse> => {
-  const drivePath = getFilesFolder()
+  const oldPathFull = resolveWithinDrive(oldPath)
+  const newPathFull = resolveWithinDrive(newPath)
 
-  const oldPathFull = path
-    .join(drivePath, oldPath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  const newPathFull = path
-    .join(drivePath, newPath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!oldPathFull.includes(drivePath))
+  if (!oldPathFull)
     throw {
       code: 400,
       status: 'Bad Request',
       message: `Old path can't be outside of drive.`
     }
 
-  if (!newPathFull.includes(drivePath))
+  if (!newPathFull)
     throw {
       code: 400,
       status: 'Bad Request',
@@ -548,13 +518,9 @@ const updateFile = async (
   filePath: string,
   multerFile: Express.Multer.File
 ): Promise<GetFileResponse> => {
-  const driveFilesPath = getFilesFolder()
+  const filePathFull = resolveWithinDrive(filePath)
 
-  const filePathFull = path
-    .join(driveFilesPath, filePath)
-    .replace(new RegExp('/', 'g'), path.sep)
-
-  if (!filePathFull.includes(driveFilesPath))
+  if (!filePathFull)
     throw {
       code: 400,
       status: 'Bad Request',

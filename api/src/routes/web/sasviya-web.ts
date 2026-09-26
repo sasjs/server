@@ -12,7 +12,7 @@ sasViyaWebRouter.get('/', async (req, res) => {
   } catch (_) {
     response = '<html><head></head><body>Web Build is not present</body></html>'
   } finally {
-    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken()}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
+    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken(req)}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
     const injectedContent = response?.replace(
       '</head>',
       `${codeToInject}</head>`

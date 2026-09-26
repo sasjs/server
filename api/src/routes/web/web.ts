@@ -26,7 +26,7 @@ webRouter.get('/', async (req, res) => {
     const { ALLOWED_DOMAIN } = process.env
     const allowedDomain = ALLOWED_DOMAIN?.trim()
     const domain = allowedDomain ? ` Domain=${allowedDomain};` : ''
-    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken()};${domain} Max-Age=86400; SameSite=Strict; Path=/;'</script>`
+    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken(req)};${domain} Max-Age=86400; SameSite=Strict; Path=/;'</script>`
     const injectedContent = response?.replace(
       '</head>',
       `${codeToInject}</head>`

@@ -5,7 +5,12 @@ import {
   PermissionSettingForRoute,
   PermissionType
 } from '../controllers/permission'
-import { getPath, isPublicRoute, TopLevelRoutes } from '../utils'
+import {
+  getPath,
+  isPublicRoute,
+  TopLevelRoutes,
+  canonicalizeRoutePath
+} from '../utils'
 
 export const authorize: RequestHandler = async (req, res, next) => {
   const { user } = req
@@ -23,8 +28,13 @@ export const authorize: RequestHandler = async (req, res, next) => {
 
   const path = getPath(req)
   const { baseUrl } = req
+  // Same case-insensitivity concern as getPath above: a request to /SASJSAPI/*
+  // must still resolve to the canonical top-level route ('/SASjsApi') when
+  // checking top-level Permission grants.
   const topLevelRoute =
-    TopLevelRoutes.find((route) => baseUrl.startsWith(route)) || baseUrl
+    TopLevelRoutes.find((route) =>
+      baseUrl.toLowerCase().startsWith(route.toLowerCase())
+    ) || canonicalizeRoutePath(baseUrl)
 
   // find permission w.r.t user
   const permission = await Permission.findOne({
