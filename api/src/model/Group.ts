@@ -1,6 +1,6 @@
-import { Schema, model, Document, Model } from 'mongoose'
+import { Schema, model, Model, HydratedDocument, Types } from 'mongoose'
 import { GroupDetailsResponse } from '../controllers'
-import User, { IUser } from './User'
+import User, { IUserDocument } from './User'
 import { AuthProviderType } from '../utils'
 
 export const PUBLIC_GROUP_NAME = 'public'
@@ -23,21 +23,35 @@ export interface GroupPayload {
   isActive?: boolean
 }
 
-interface IGroupDocument extends GroupPayload, Document {
+interface IGroupFields extends GroupPayload {
   isActive: boolean
-  users: Schema.Types.ObjectId[]
+  users: Types.ObjectId[]
   authProvider?: AuthProviderType
+}
 
-  // Declare virtual properties as read-only properties
+interface IGroupVirtuals {
   readonly uid: string
 }
 
-interface IGroup extends IGroupDocument {
-  addUser(user: IUser): Promise<GroupDetailsResponse>
-  removeUser(user: IUser): Promise<GroupDetailsResponse>
-  hasUser(user: IUser): boolean
+interface IGroupMethods {
+  addUser(user: IUserDocument): Promise<IGroupDocument>
+  removeUser(user: IUserDocument): Promise<IGroupDocument>
+  hasUser(user: IUserDocument): boolean
 }
-interface IGroupModel extends Model<IGroup> {}
+
+export type IGroupDocument = HydratedDocument<
+  IGroupFields,
+  IGroupMethods & IGroupVirtuals
+>
+
+export interface IGroup extends IGroupFields, IGroupVirtuals, IGroupMethods {}
+
+interface IGroupModel extends Model<
+  IGroupFields,
+  {},
+  IGroupMethods,
+  IGroupVirtuals
+> {}
 
 const opts = {
   toJSON: {
@@ -49,7 +63,14 @@ const opts = {
     }
   }
 }
-const groupSchema = new Schema<IGroupDocument>(
+
+const groupSchema = new Schema<
+  IGroupFields,
+  IGroupModel,
+  IGroupMethods,
+  {},
+  IGroupVirtuals
+>(
   {
     name: {
       type: String,
@@ -77,25 +98,30 @@ groupSchema.virtual('uid').get(function () {
   return this._id.toString()
 })
 
-groupSchema.post('save', function (group: IGroup, next: Function) {
+groupSchema.post('save', function (group: any, next: Function) {
   group.populate('users', 'uid username displayName').then(function () {
     next()
   })
 })
 
 // pre remove hook to remove all references of group from users
-groupSchema.pre('remove', async function (this: IGroupDocument) {
-  const userIds = this.users
-  await Promise.all(
-    userIds.map(async (userId) => {
-      const user = await User.findById(userId)
-      user?.removeGroup(this._id)
-    })
-  )
-})
+groupSchema.pre(
+  'deleteOne',
+  { document: true, query: false },
+  async function () {
+    const doc = this as unknown as IGroupDocument
+    const userIds = doc.users
+    await Promise.all(
+      userIds.map(async (userId) => {
+        const user = await User.findById(userId)
+        user?.removeGroup(doc._id)
+      })
+    )
+  }
+)
 
 // Instance Methods
-groupSchema.method('addUser', async function (user: IUser) {
+groupSchema.method('addUser', async function (user: IUserDocument) {
   const userObjectId = user._id
   const userIdIndex = this.users.indexOf(userObjectId)
   if (userIdIndex === -1) {
@@ -105,7 +131,7 @@ groupSchema.method('addUser', async function (user: IUser) {
   this.markModified('users')
   return this.save()
 })
-groupSchema.method('removeUser', async function (user: IUser) {
+groupSchema.method('removeUser', async function (user: IUserDocument) {
   const userObjectId = user._id
   const userIdIndex = this.users.indexOf(userObjectId)
   if (userIdIndex > -1) {
@@ -115,13 +141,13 @@ groupSchema.method('removeUser', async function (user: IUser) {
   this.markModified('users')
   return this.save()
 })
-groupSchema.method('hasUser', function (user: IUser) {
+groupSchema.method('hasUser', function (user: IUserDocument) {
   const userObjectId = user._id
   const userIdIndex = this.users.indexOf(userObjectId)
   return userIdIndex > -1
 })
 
-export const Group: IGroupModel = model<IGroup, IGroupModel>(
+export const Group: IGroupModel = model<IGroupFields, IGroupModel>(
   'Group',
   groupSchema
 )

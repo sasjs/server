@@ -26,7 +26,7 @@ import {
 } from './app-modules'
 import { folderExists } from '@sasjs/utils'
 
-dotenv.config()
+dotenv.config({ quiet: true })
 
 instantiateLogger()
 
@@ -67,6 +67,15 @@ export default setProcessVariables().then(async () => {
   // Body parser is used for decoding the formdata on POST request.
   // Currently only place we use it is SAS9 Mock - POST /SASLogon/login
   app.use(express.urlencoded({ extended: true }))
+
+  // Express 5 leaves req.body undefined when the request carries no parsable
+  // body (express 4 defaulted it to {}). Every route handler validates
+  // req.body with joi and assumes an object, and joi 18's validate(undefined)
+  // succeeds silently, so restore the express 4 default here.
+  app.use((req, _res, next) => {
+    if (req.body === undefined) req.body = {}
+    next()
+  })
 
   await setupUserAutoExec()
 

@@ -7,7 +7,7 @@ import path from 'path'
 import dotenv from 'dotenv'
 import { FileUploadController } from '../../controllers/internal'
 
-dotenv.config()
+dotenv.config({ quiet: true })
 
 const sas9WebRouter = express.Router()
 const webController = new WebController()
