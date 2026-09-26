@@ -231,18 +231,70 @@ else
   echo "PASS  no .initial-admin-password is written when ADMIN_PASSWORD_INITIAL is unset"
 fi
 
-# The operator's config file: sourced by the entrypoint, and read by the app
-# itself (it runs with DATA_DIR as its working directory and calls dotenv).
+# The operator's config files: read by the entrypoint (so its own defaults can
+# be overridden) and by the server itself, which runs with DATA_DIR as its
+# working directory and calls dotenv. config.env is the visible one; .env keeps
+# working for installs that already have it.
 mkdir -p "$T/app-data"
-printf 'ADMIN_USERNAME=fromenvfile\n' > "$T/app-data/.env"
+printf 'ADMIN_USERNAME=fromconfigenv\n' > "$T/app-data/config.env"
 OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]}" \
   bash "$T/start-under-test.sh")
-check "config file is sourced"        "loaded configuration from"   "$OUT"
-check "config file value reaches the app" "ADMIN_USERNAME=fromenvfile" "$OUT"
-rm -f "$T/app-data/.env"
+check "config.env is read"            "read configuration from $T/app-data/config.env" "$OUT"
+check "config.env value reaches the app" "ADMIN_USERNAME=fromconfigenv" "$OUT"
+
+printf 'ADMIN_USERNAME=fromdotenv\nRUN_TIMES="js,py" # quoted and commented\n' > "$T/app-data/.env"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh")
+check "dotfile .env is still read"     "read configuration from $T/app-data/.env" "$OUT"
+check "config.env wins over .env"      "ADMIN_USERNAME=fromconfigenv" "$OUT"
+check "quotes and trailing comments are stripped" "RUN_TIMES=js,py" "$OUT"
+rm -f "$T/app-data/.env" "$T/app-data/config.env"
 
 echo
-echo "--- TEST 6b: an explicit ADMIN_PASSWORD_INITIAL is honoured"
+echo "--- TEST 6b: the config file is READ, never sourced as shell"
+# The entrypoint runs as root and DATA_DIR is writable by the app user, so
+# executing a file from there would be privilege escalation - and this
+# application hands out code execution by design.
+mkdir -p "$T/app-data"
+printf 'EVIL=$(touch %s/pwned)\nALSO_BAD=`touch %s/pwned2`\nnot-a-key-value-line\n' "$T" "$T" > "$T/app-data/config.env"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh")
+check "malformed line is reported"     "not KEY=VALUE"                        "$OUT"
+if [[ -e "$T/pwned" || -e "$T/pwned2" ]]; then
+  echo "FAIL  the config file was executed as shell"
+  FAIL=1
+else
+  echo "PASS  the config file is not executed"
+fi
+rm -f "$T/app-data/config.env"
+
+echo
+echo "--- TEST 6c: the effective configuration is written where it can be seen"
+printf 'RUN_TIMES=js,py\n' > "$T/app-data/config.env"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]}" \
+  ADMIN_PASSWORD_INITIAL=summary-secret-value \
+  bash "$T/start-under-test.sh")
+SUMMARY="$T/app-data/config.txt"
+check "summary is announced"           "effective configuration written to"  "$OUT"
+check "summary lists RUN_TIMES"        "RUN_TIMES=js,py"                     "$(cat "$SUMMARY")"
+check "summary names the file it read" "config_files_read=$T/app-data/config.env" "$(cat "$SUMMARY")"
+check "summary does not leak the admin password" "ADMIN_PASSWORD_INITIAL=set" "$(cat "$SUMMARY")"
+if grep -q 'summary-secret-value' "$SUMMARY"; then
+  echo "FAIL  the summary prints the admin password"
+  FAIL=1
+else
+  echo "PASS  the summary reports the admin password as set, not by value"
+fi
+if grep -q 'mongodb://sasjs' "$SUMMARY"; then
+  echo "FAIL  the summary prints the database connection string"
+  FAIL=1
+else
+  echo "PASS  the summary reports DB_CONNECT as set, not by value"
+fi
+rm -f "$T/app-data/config.env"
+
+echo
+echo "--- TEST 6d: an explicit ADMIN_PASSWORD_INITIAL is honoured"
 OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
   ADMIN_PASSWORD_INITIAL=chosen-password "${ADDONS[@]}" \
   bash "$T/start-under-test.sh")

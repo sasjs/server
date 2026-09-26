@@ -39,12 +39,26 @@ matter most in a container:
 | `AUTH_PROVIDERS` | - | e.g. `oidc` or empty for local accounts only |
 | `ADMIN_PASSWORD_INITIAL` | unset | Seeded break-glass admin password. Unset means NO local admin is created, and the first user to sign in through the configured auth provider becomes the administrator |
 
-Every one of these can also be put in a `.env` file in `DATA_DIR`, read on
-every start. That file is the only configuration surface a Cloudron app has -
-the platform's File Manager can edit it, while the dashboard has no per-app
-environment UI. The entrypoint sources it before applying its own defaults,
-and the server loads it itself, because it runs with `DATA_DIR` as its working
-directory.
+Configuration files, in `DATA_DIR`, both editable from the platform's file
+manager and both read on every start:
+
+| File | Purpose |
+|---|---|
+| `config.env` | Operator-owned settings, `KEY=VALUE` per line. The visible name - use this one. |
+| `.env` | The same format, honoured for installs that already have one. `config.env` wins where both set a key. |
+
+They are read, never sourced: this entrypoint runs as root and `DATA_DIR` is
+writable by the application user, so executing a file from there would be
+privilege escalation on an application whose whole purpose is running uploaded
+code. Only `KEY=VALUE` lines are honoured - quotes and unquoted trailing
+comments are handled the way `dotenv` handles them in the server, so the two
+never disagree about what a line means, and anything else is reported and
+ignored.
+
+The effective configuration is written to `DATA_DIR/config.txt` on every start,
+so it can be read without shell access. That file is generated and never read
+back - it cannot become a second source of truth - and credentials appear in it
+as `set`/`unset`, never by value (`DB_CONNECT` carries the database password).
 
 Two consequences worth knowing:
 

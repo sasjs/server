@@ -26,23 +26,67 @@ else
 fi
 
 # --- operator configuration --------------------------------------------------
-# An optional .env in DATA_DIR, editable from the platform's file manager.
-# It is sourced BEFORE the platform wiring below, so a value here can override
-# a default (AUTH_PROVIDERS, RUN_TIMES, PORT, ADMIN_PASSWORD_INITIAL, ...).
-# The server loads the same file itself - it runs with DATA_DIR as its working
-# directory and calls dotenv - so the two agree.
+# Two optional files in DATA_DIR, both editable from the platform's file
+# manager: config.env (visible) and .env (a dotfile, still honoured for
+# installs that already have one). config.env wins where both set the same key.
 #
-# Cloudron's addon credentials are deliberately NOT read from here: the
-# platform can rotate them on any restart (reboot, backup restore, addon
-# re-provision), so they are mapped from the environment at every start.
-if [[ -f "${DATA_DIR}/.env" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  . "${DATA_DIR}/.env"
-  set +a
-  echo "NOTE: loaded configuration from ${DATA_DIR}/.env"
-else
-  echo "NOTE: no ${DATA_DIR}/.env - create one to configure this instance (it is read on every start)."
+# They are READ, never sourced. This script runs as root and DATA_DIR is
+# writable by the app user, so sourcing a file from there would let anyone who
+# can write to the data directory execute shell as root on the next restart -
+# and this application hands out code execution by design. Only KEY=VALUE lines
+# are honoured; anything else is reported and ignored.
+#
+# Values set here win over this script's own defaults, so AUTH_PROVIDERS,
+# RUN_TIMES, PORT and ADMIN_PASSWORD_INITIAL are all settable from the file.
+# Cloudron's addon credentials are the exception: the platform can rotate them
+# on any restart (reboot, backup restore, addon re-provision), so they are
+# always read from the environment.
+read_config_file() {
+  local file="$1" line key value
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ -z "${line//[[:space:]]/}" ]] && continue
+    [[ "${line#"${line%%[![:space:]]*}"}" == '#'* ]] && continue
+    if [[ "$line" != *=* ]]; then
+      echo "WARNING: ignoring a line in $(basename "$file") that is not KEY=VALUE"
+      continue
+    fi
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key//[[:space:]]/}"
+    if [[ ! "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      echo "WARNING: ignoring an invalid variable name in $(basename "$file")"
+      continue
+    fi
+    # One layer of matching quotes, else an unquoted trailing comment - the same
+    # reading dotenv applies in the server, so the two never disagree about what
+    # a line means.
+    value="$(printf '%s' "$value" | sed -E -e 's/^[[:space:]]+//')"
+    if [[ "$value" == \"* ]]; then
+      value="${value#\"}"
+      value="${value%%\"*}"
+    elif [[ "$value" == \'* ]]; then
+      value="${value#\'}"
+      value="${value%%\'*}"
+    else
+      value="$(printf '%s' "$value" | sed -E -e 's/[[:space:]]+#.*$//' -e 's/[[:space:]]+$//')"
+    fi
+    export "$key=$value"
+  done < "$file"
+}
+
+# .env first, then config.env, so the visible file wins where both set a key.
+CONFIG_FILES_READ=""
+for config_file in "${DATA_DIR}/.env" "${DATA_DIR}/config.env"; do
+  if [[ -f "$config_file" ]]; then
+    read_config_file "$config_file"
+    CONFIG_FILES_READ="${CONFIG_FILES_READ}${CONFIG_FILES_READ:+ }${config_file}"
+    echo "NOTE: read configuration from ${config_file}"
+  fi
+done
+if [[ -z "$CONFIG_FILES_READ" ]]; then
+  echo "NOTE: no ${DATA_DIR}/config.env and no ${DATA_DIR}/.env - create either to configure this instance (both are read on every start)."
+  echo "NOTE: the effective configuration is written to ${DATA_DIR}/config.txt on every start."
 fi
 
 if [[ -n "$CLOUDRON_MARKER" ]]; then
@@ -142,8 +186,60 @@ export ADMIN_PASSWORD_RESET="${ADMIN_PASSWORD_RESET:-NO}"
 if [[ -z "${ADMIN_PASSWORD_INITIAL-}" ]]; then
   echo "NOTE: ADMIN_PASSWORD_INITIAL is not set - no local admin will be seeded."
   echo "NOTE: the first user to sign in becomes the administrator."
-  echo "NOTE: to seed a break-glass local admin instead, set ADMIN_PASSWORD_INITIAL in ${DATA_DIR}/.env and restart."
+  echo "NOTE: to seed a break-glass local admin instead, set ADMIN_PASSWORD_INITIAL in ${DATA_DIR}/config.env and restart."
 fi
+
+# --- effective configuration --------------------------------------------------
+# A visible, generated summary of what this instance is actually running with,
+# so the configuration can be read from the platform's file manager without
+# shell access. It is rewritten on every start and never read back, so it cannot
+# become a second source of truth. Credentials are reported as set/unset and
+# never by value: DB_CONNECT carries the database password, and
+# OIDC_CLIENT_SECRET and ADMIN_PASSWORD_INITIAL are credentials themselves.
+CONFIG_SUMMARY="${DATA_DIR}/config.txt"
+{
+  echo "# SASjs Server - effective configuration"
+  echo "# Generated by the container entrypoint on every start, and NOT read back:"
+  echo "# edit config.env (or .env) in this directory to change anything below."
+  echo "#"
+  echo "generated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "config_files_read=${CONFIG_FILES_READ:-none}"
+  echo "cloudron_addons=${CLOUDRON_MARKER:+detected}"
+  echo
+  echo "# --- core ---"
+  echo "MODE=${MODE}"
+  echo "PORT=${PORT}"
+  echo "PROTOCOL=${PROTOCOL}"
+  echo "CORS=${CORS}"
+  echo "DATA_DIR=${DATA_DIR}"
+  echo "RUN_TIMES=${RUN_TIMES}"
+  echo
+  echo "# --- storage ---"
+  echo "DB_TYPE=${DB_TYPE:-}"
+  echo "DB_CONNECT=$([[ -n "${DB_CONNECT:-}" ]] && echo set || echo unset)"
+  echo "SASJS_ROOT=${SASJS_ROOT}"
+  echo "DRIVE_LOCATION=${DRIVE_LOCATION}"
+  echo "LOG_LOCATION=${LOG_LOCATION}"
+  echo
+  echo "# --- authentication ---"
+  echo "AUTH_PROVIDERS=${AUTH_PROVIDERS:-}"
+  echo "OIDC_PROVIDER_NAME=${OIDC_PROVIDER_NAME:-}"
+  echo "OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}"
+  echo "OIDC_DISCOVERY_URL=${OIDC_DISCOVERY_URL:-}"
+  echo "OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}"
+  echo "OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}"
+  echo "OIDC_CLIENT_SECRET=$([[ -n "${OIDC_CLIENT_SECRET:-}" ]] && echo set || echo unset)"
+  echo "OIDC_JIT_PROVISION=${OIDC_JIT_PROVISION:-}"
+  echo "ADMIN_USERNAME=${ADMIN_USERNAME:-}"
+  echo "ADMIN_PASSWORD_INITIAL=$([[ -n "${ADMIN_PASSWORD_INITIAL:-}" ]] && echo set || echo unset)"
+  echo
+  echo "# --- runtimes ---"
+  echo "NODE_PATH=${NODE_PATH:-}"
+  echo "PYTHON_PATH=${PYTHON_PATH:-}"
+  echo "SAS_PATH=${SAS_PATH:-}"
+  echo "R_PATH=${R_PATH:-}"
+} > "$CONFIG_SUMMARY" 2>/dev/null || echo "WARNING: could not write ${CONFIG_SUMMARY}" >&2
+echo "NOTE: effective configuration written to ${CONFIG_SUMMARY}"
 
 # --- permissions ------------------------------------------------------------
 # A backup, restore or migration can reset ownership of the data dir, so it

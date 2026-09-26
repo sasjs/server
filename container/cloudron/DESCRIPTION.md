@@ -42,10 +42,18 @@ administrator; every user after that is a normal user, so grant the others what
 they need under Settings > Permissions once you are in.
 
 A break-glass local `admin` account is optional. To seed one, put
-`ADMIN_PASSWORD_INITIAL=<a strong password>` in `/app/data/.env` (File Manager,
+`ADMIN_PASSWORD_INITIAL=<a strong password>` in `/app/data/config.env` (File Manager,
 or this app's Terminal) and restart the app. Note that a seeded admin counts as
 an existing administrator, so the first SSO user would then be a normal user -
 set it before anyone signs in only if that is the arrangement you want.
+
+## Configuration
+
+Settings live in `/app/data/config.env` (visible in the File Manager; `.env` in
+the same directory still works, and `config.env` wins where both set a key).
+The effective configuration - runtimes, ports, which auth providers are on,
+whether the admin password is set - is written to `/app/data/config.txt` on
+every start, so it can be read without opening a terminal.
 
 ## A note on what these runtimes do
 

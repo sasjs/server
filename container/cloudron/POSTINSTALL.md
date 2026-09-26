@@ -10,7 +10,7 @@ under Settings > Permissions.
 
 **Break-glass local account (optional).** To seed a local `admin` account
 instead, add `ADMIN_PASSWORD_INITIAL=<a strong password>` to
-`/app/data/.env` (File Manager, or this app's Terminal) and restart the app.
+`/app/data/config.env` (File Manager, or this app's Terminal) and restart the app.
 <sso>Note that a seeded admin counts as an existing administrator, so the first
 SSO user would then be a normal user - set it before anyone signs in only if
 that is what you want.</sso>
