@@ -1,3 +1,18 @@
+## 1.3.4
+
+- **The configuration is readable without shell access.** Settings live in
+  `/app/data/config.env` - the same `KEY=VALUE` format as before, under a
+  visible name - and the effective configuration is written to
+  `/app/data/config.txt` on every start. `RUN_TIMES`, the auth providers, the
+  ports and whether an admin password is set are all visible there; credentials
+  appear as `set`/`unset`, never by value.
+- **The config file is read, not sourced.** The entrypoint runs as root and the
+  data directory is writable by the application user, so executing a file from
+  there would let anyone who can write to it run shell as root on the next
+  restart - privilege escalation on an application whose purpose is running
+  uploaded code. Only `KEY=VALUE` lines are honoured now, with `dotenv`'s
+  quoting and comment rules so the entrypoint and the server agree.
+
 ## 1.3.3
 
 - **No admin account is created unless you ask for one.** The entrypoint no
