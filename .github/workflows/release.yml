@@ -257,7 +257,15 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore(release): record ${{ needs.release.outputs.tag }} in the container catalogue"
+          # [skip ci] is load-bearing: this commit rewrites generated JSON that
+          # this job has already validated (update-versions.py --check, the
+          # manifest rules, the smoke test), and without the marker the push
+          # re-triggers three workflows on main - Executable Release (~180s),
+          # Container CI (~220s) and Build (~95s) - for a commit that changes
+          # no code. Measured on the v1.3.3 catalogue commit: 495s of runner
+          # time. The image is already published and verified at this point,
+          # so nothing downstream depends on those runs.
+          git commit -m "chore(release): record ${{ needs.release.outputs.tag }} in the container catalogue [skip ci]"
           git push origin "$BRANCH"
 
       - name: Summary
