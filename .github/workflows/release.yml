@@ -18,10 +18,9 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
 
     steps:
-      # No App token in this job: with the changelog plugin gone, semantic-release
-      # creates the tag and the release through the API and never pushes to main.
-      # The one push to main left in this workflow is the container job's
-      # catalogue commit.
+      # This job never pushes to main: semantic-release creates the tag and the
+      # release through the API. The one push to main in this workflow is the
+      # container job's catalogue commit.
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -33,27 +32,57 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      # semantic-release is the authority on whether this commit releases
+      # anything, so ask it BEFORE spending three minutes building three platform
+      # executables. The plugin install plus the dry run costs about forty
+      # seconds, and the build steps below are skipped whenever the answer is no
+      # - which is every docs or chore merge on main.
+      - name: Install Semantic Release and plugins
+        run: |
+          npm i
+          npm i -g semantic-release
+
+      - name: Is a release pending?
+        id: pending
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          semantic-release --dry-run 2>&1 | tee /tmp/dry-run.log
+          if grep -q 'The next release version is' /tmp/dry-run.log; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            grep 'The next release version is' /tmp/dry-run.log
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "No release is pending for this commit: the build steps are skipped."
+          fi
+
       - name: Install Dependencies WEB
+        if: steps.pending.outputs.release == 'true'
         working-directory: ./web
         run: npm ci
 
       - name: Build WEB
+        if: steps.pending.outputs.release == 'true'
         working-directory: ./web
         run: npm run build
         env:
           CI: true
 
       - name: Install Dependencies API
+        if: steps.pending.outputs.release == 'true'
         working-directory: ./api
         run: npm ci
 
       - name: Build Executables
+        if: steps.pending.outputs.release == 'true'
         working-directory: ./api
         run: npm run exe
         env:
           CI: true
 
       - name: Compress Executables
+        if: steps.pending.outputs.release == 'true'
         working-directory: ./executables
         run: |
           zip linux.zip api-linux
@@ -61,16 +90,16 @@ jobs:
           zip windows.zip api-win.exe
 
       - name: Generate SHA256 checksums
+        if: steps.pending.outputs.release == 'true'
         working-directory: ./executables
         run: |
           sha256sum linux.zip macos.zip windows.zip > SHA256SUMS
           cat SHA256SUMS
 
-      - name: Install Semantic Release and plugins
-        run: |
-          npm i
-          npm i -g semantic-release
-
+      # Deliberately ungated: the dry run above is a cost gate, while this is
+      # the real release. Running it unconditionally keeps one source of truth,
+      # and means a change to semantic-release's log wording can never silently
+      # suppress a release.
       - name: Release
         run: |
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} semantic-release
