@@ -37,11 +37,15 @@ Inside that wall, day-to-day logins go through Cloudron single sign-on (OIDC),
 so access follows Cloudron users, groups and MFA. Set `AUTH_PROVIDERS` to an
 empty value to skip SSO and authenticate against the local database only.
 
-A local admin account is also seeded on first start for break-glass access.
-Set `ADMIN_PASSWORD_INITIAL` to choose its password; if you leave it unset one
-is generated on first boot and written to `/app/data/.initial-admin-password`
-(mode 600). Read it with the Cloudron File Manager or `cloudron exec`, log in,
-change it, and delete the file.
+There is no pre-created admin account. The FIRST user to sign in becomes the
+administrator; every user after that is a normal user, so grant the others what
+they need under Settings > Permissions once you are in.
+
+A break-glass local `admin` account is optional. To seed one, put
+`ADMIN_PASSWORD_INITIAL=<a strong password>` in `/app/data/.env` (File Manager,
+or this app's Terminal) and restart the app. Note that a seeded admin counts as
+an existing administrator, so the first SSO user would then be a normal user -
+set it before anyone signs in only if that is the arrangement you want.
 
 ## A note on what these runtimes do
 

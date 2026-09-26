@@ -124,6 +124,30 @@ describe('verifyEnvVariables', () => {
       expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
     })
 
+    it('should allow no local admin when OIDC can bootstrap one', () => {
+      delete process.env.ADMIN_PASSWORD_INITIAL
+      process.env.AUTH_PROVIDERS = 'oidc'
+      setValidOidcEnv()
+
+      // With a provider that provisions accounts, the first user to sign in
+      // becomes the administrator, so no local admin - and no credential
+      // nobody can read - is required. ADMIN_PASSWORD_INITIAL is normalised
+      // to '' so that seedDB seeds nothing.
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+      expect(process.env.ADMIN_PASSWORD_INITIAL).toEqual('')
+    })
+
+    it('should still require an admin password when only LDAP is enabled', () => {
+      delete process.env.ADMIN_PASSWORD_INITIAL
+      process.env.AUTH_PROVIDERS = 'ldap'
+      setValidLdapEnv()
+
+      // LDAP authenticates against an account that must already exist - it
+      // cannot provision one - so with no local admin nobody could ever sign
+      // in. Fail closed.
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
     it('should accept a single provider', () => {
       process.env.AUTH_PROVIDERS = 'ldap'
       setValidLdapEnv()

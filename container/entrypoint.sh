@@ -16,6 +16,35 @@ set -eu
 
 CLOUDRON_MARKER="${CLOUDRON_MONGODB_URL:-}${CLOUDRON_APP_ORIGIN:-}${CLOUDRON_OIDC_CLIENT_ID:-}${CLOUDRON_OIDC_CLIENT_SECRET:-}${CLOUDRON_OIDC_DISCOVERY_URL:-}${CLOUDRON_OIDC_ISSUER:-}${CLOUDRON_OIDC_PROVIDER_NAME:-}"
 
+# DATA_DIR is resolved first, because the optional config file below lives in
+# it. Inside a Cloudron app it is /app/data - the only path that is both
+# writable and persistent - and the manifest's httpPort is 5000.
+if [[ -n "$CLOUDRON_MARKER" ]]; then
+  export DATA_DIR=/app/data
+else
+  export DATA_DIR="${DATA_DIR:-/usr/server/data}"
+fi
+
+# --- operator configuration --------------------------------------------------
+# An optional .env in DATA_DIR, editable from the platform's file manager.
+# It is sourced BEFORE the platform wiring below, so a value here can override
+# a default (AUTH_PROVIDERS, RUN_TIMES, PORT, ADMIN_PASSWORD_INITIAL, ...).
+# The server loads the same file itself - it runs with DATA_DIR as its working
+# directory and calls dotenv - so the two agree.
+#
+# Cloudron's addon credentials are deliberately NOT read from here: the
+# platform can rotate them on any restart (reboot, backup restore, addon
+# re-provision), so they are mapped from the environment at every start.
+if [[ -f "${DATA_DIR}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "${DATA_DIR}/.env"
+  set +a
+  echo "NOTE: loaded configuration from ${DATA_DIR}/.env"
+else
+  echo "NOTE: no ${DATA_DIR}/.env - create one to configure this instance (it is read on every start)."
+fi
+
 if [[ -n "$CLOUDRON_MARKER" ]]; then
   # --- Cloudron addon wiring ----------------------------------------------
   # The platform exports addon credentials as CLOUDRON_* variables and may
@@ -47,16 +76,15 @@ if [[ -n "$CLOUDRON_MARKER" ]]; then
     echo "NOTE: AUTH_PROVIDERS=${AUTH_PROVIDERS} - Cloudron SSO is disabled, only local accounts can log in."
   fi
 
-  # /app/data is the only path that is both writable and persistent inside a
-  # Cloudron app, and the manifest's httpPort is 5000.
-  export DATA_DIR=/app/data
-  export PORT=5000
-  export PROTOCOL=http
+  # Listen settings come from the manifest's httpPort; a value in .env or the
+  # environment still wins, so an operator can change the port or protocol
+  # without patching the package.
+  export PORT="${PORT:-5000}"
+  export PROTOCOL="${PROTOCOL:-http}"
   export CORS="${CORS:-disable}"
 else
   # --- generic container ----------------------------------------------------
   export MODE="${MODE:-server}"
-  export DATA_DIR="${DATA_DIR:-/usr/server/data}"
   if [[ "${MODE}" == "server" && -z "${DB_CONNECT:-}" ]]; then
     echo "ERROR: MODE=${MODE} needs a database - set DB_CONNECT (and DB_TYPE)," >&2
     echo "       or start a single-user instance with MODE=desktop." >&2
@@ -97,25 +125,24 @@ NODE_BIN="${NODE_BIN:-/usr/local/node/bin/node}"
 SERVER_JS="${SERVER_JS:-/usr/server/api/build/src/server.js}"
 
 # --- admin account ----------------------------------------------------------
-# In server mode the seeded admin is a local break-glass account; day-to-day
-# logins go through SSO where it is enabled. Set ADMIN_PASSWORD_INITIAL to
-# choose the password yourself; leave it unset and one is generated on first
-# boot and kept in DATA_DIR, so it survives restarts and is included in
-# backups.
+# A local admin is seeded ONLY when ADMIN_PASSWORD_INITIAL is set - here, in
+# the .env above, or in the environment. With no password configured no local
+# admin is created at all, and the first user to sign in through the
+# configured auth provider becomes the administrator. That is the intended
+# state for a Cloudron install: a generated password would be a credential
+# nobody can read, and an admin that exists suppresses the first-user
+# bootstrap.
+#
+# Set ADMIN_PASSWORD_INITIAL to get a break-glass local account instead. Note
+# that a seeded admin counts as an existing administrator, so the first user
+# to sign in is then a normal user. Changing the password of an admin that
+# already exists needs ADMIN_PASSWORD_RESET=YES.
 export ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
-export ADMIN_PASSWORD_RESET=NO
-ADMIN_PW_FILE="${DATA_DIR}/.initial-admin-password"
+export ADMIN_PASSWORD_RESET="${ADMIN_PASSWORD_RESET:-NO}"
 if [[ -z "${ADMIN_PASSWORD_INITIAL-}" ]]; then
-  if [[ ! -f "$ADMIN_PW_FILE" ]]; then
-    umask 077
-    if command -v openssl >/dev/null 2>&1; then
-      ADMIN_PW="$(openssl rand -hex 12)"
-    else
-      ADMIN_PW="$(head -c 18 /dev/urandom | base64 | tr -d '\n/+=')"
-    fi
-    printf '%s' "$ADMIN_PW" > "$ADMIN_PW_FILE"
-  fi
-  export ADMIN_PASSWORD_INITIAL="$(cat "$ADMIN_PW_FILE")"
+  echo "NOTE: ADMIN_PASSWORD_INITIAL is not set - no local admin will be seeded."
+  echo "NOTE: the first user to sign in becomes the administrator."
+  echo "NOTE: to seed a break-glass local admin instead, set ADMIN_PASSWORD_INITIAL in ${DATA_DIR}/.env and restart."
 fi
 
 # --- permissions ------------------------------------------------------------
@@ -133,7 +160,6 @@ else
   echo "NOTE: no 'cloudron' user or gosu in this environment - running as $(id -un)."
   RUN_AS=()
 fi
-[[ -f "$ADMIN_PW_FILE" ]] && chmod 600 "$ADMIN_PW_FILE"
 
 # --- warnings ----------------------------------------------------------------
 # The server starts and passes its health check even when a configured runtime

@@ -42,26 +42,41 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     process.logger.success(`DB Seed - Group created: ${PUBLIC_GROUP.name}`)
   }
 
+  // The local admin is seeded ONLY when the operator supplied a password for
+  // it. Without one there is no local admin, and the first user to
+  // authenticate through an external provider becomes the administrator
+  // (resolveOidcUser) - which is what makes a fresh install usable without a
+  // credential nobody can read. verifyEnvVariables guarantees that in server
+  // mode this state is only reachable when an external provider is enabled.
   const ADMIN_USER = getAdminUser()
 
-  // Checking if user is already in the database
-  let usernameExist = await User.findOne({ username: ADMIN_USER.username })
-  if (usernameExist) {
-    usernameExist = await resetAdminPassword(usernameExist, ADMIN_USER.password)
+  if (!ADMIN_USER) {
+    process.logger.info(
+      'DB Seed - ADMIN_PASSWORD_INITIAL is not set, so no local admin is seeded. The first user to sign in through the configured auth provider becomes the administrator.'
+    )
   } else {
-    const user = new User(ADMIN_USER)
-    usernameExist = await user.save()
+    // Checking if user is already in the database
+    let usernameExist = await User.findOne({ username: ADMIN_USER.username })
+    if (usernameExist) {
+      usernameExist = await resetAdminPassword(
+        usernameExist,
+        ADMIN_USER.password
+      )
+    } else {
+      const user = new User(ADMIN_USER)
+      usernameExist = await user.save()
 
-    process.logger.success(
-      `DB Seed - admin account created: ${ADMIN_USER.username}`
-    )
-  }
+      process.logger.success(
+        `DB Seed - admin account created: ${ADMIN_USER.username}`
+      )
+    }
 
-  if (usernameExist.isAdmin && !groupExist.hasUser(usernameExist)) {
-    groupExist.addUser(usernameExist)
-    process.logger.success(
-      `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${ALL_USERS_GROUP.name}'`
-    )
+    if (usernameExist.isAdmin && !groupExist.hasUser(usernameExist)) {
+      groupExist.addUser(usernameExist)
+      process.logger.success(
+        `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${ALL_USERS_GROUP.name}'`
+      )
+    }
   }
 
   // checking if configuration is present in the database
@@ -100,8 +115,13 @@ const CLIENT = {
 const getAdminUser = () => {
   const { ADMIN_USERNAME, ADMIN_PASSWORD_INITIAL } = process.env
 
+  // No password configured means no local admin at all - see the note at the
+  // call site. Hashing an absent value would otherwise create an account whose
+  // password is the literal string 'undefined'.
+  if (!ADMIN_PASSWORD_INITIAL) return undefined
+
   const salt = bcrypt.genSaltSync(10)
-  const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD_INITIAL as string, salt)
+  const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD_INITIAL, salt)
 
   return {
     displayName: 'Super Admin',

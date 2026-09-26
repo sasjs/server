@@ -15,6 +15,12 @@ runs:
   steps:
     # A fresh database per run: the server only logs its seed lines the first
     # time it creates the admin account.
+    #
+    # ADMIN_PASSWORD_INITIAL is supplied explicitly: the entrypoint no longer
+    # generates one, and with AUTH_PROVIDERS empty there is no external
+    # provider to bootstrap the first user through, so without it the server
+    # refuses to start (fail closed). This is a throwaway credential for an
+    # ephemeral container; the flow below changes it immediately.
     - name: Boot in server mode against MongoDB
       shell: bash
       run: |
@@ -22,6 +28,7 @@ runs:
           -e CLOUDRON_MONGODB_URL="mongodb://127.0.0.1:27017/sasjs_smoke_${{ github.run_id }}_${{ github.run_attempt }}" \
           -e AUTH_PROVIDERS= \
           -e RUN_TIMES=js,py \
+          -e ADMIN_PASSWORD_INITIAL=smoke-test-initial-password \
           ${{ inputs.image }}
 
     - name: Wait for the health check and assert server mode
@@ -54,9 +61,10 @@ runs:
         echo "csrf length: ${#CSRF}"
         test -n "$CSRF"
 
-        # No ADMIN_PASSWORD_INITIAL is set, so the entrypoint generated one
-        # into DATA_DIR on first boot. Reading it back is the production path.
-        PW=$(docker exec sasjs cat /app/data/.initial-admin-password)
+        # The password this container was started with (see the docker run
+        # above). The entrypoint no longer generates one, so the smoke test
+        # supplies it and the admin is seeded from it.
+        PW=smoke-test-initial-password
         test -n "$PW"
 
         curl -s -b /tmp/cookies -c /tmp/cookies -o /tmp/login.json -w 'login -> HTTP %{http_code}\n' \
