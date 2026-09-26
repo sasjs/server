@@ -33,6 +33,7 @@ matter most in a container:
 | `DB_CONNECT` / `DB_TYPE` | - | MongoDB connection string / `mongodb` |
 | `DATA_DIR` | `/usr/server/data` | The only writable path - mount it to persist state |
 | `PORT` / `PROTOCOL` | `5000` / `http` | Listen settings; terminate TLS in front of the container |
+| `TRUST_PROXY` | unset; `1` on Cloudron | How much of the `X-Forwarded-*` chain Express believes: `true`, `false`, a hop count, or a comma-separated list of IPs/CIDRs. The session cookie is only marked `Secure` when the proxy's protocol is believed, so a TLS-terminating deployment needs this |
 | `RUN_TIMES` | `js,py` | Comma-separated: `sas`, `js`, `py`, `r` |
 | `NODE_PATH` / `PYTHON_PATH` | in-image | Runtime executables |
 | `SAS_PATH` / `R_PATH` | - | Required if `sas`/`r` are in `RUN_TIMES` (SAS is licensed and not bundled) |

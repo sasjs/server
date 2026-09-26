@@ -28,7 +28,15 @@ export const configureExpressSession = (app: Express) => {
 
     const { PROTOCOL, ALLOWED_DOMAIN } = process.env
     const cookieOptions: CookieOptions = {
-      secure: PROTOCOL === ProtocolType.HTTPS,
+      // 'auto' follows the connection's security, which respects
+      // X-Forwarded-Proto once TRUST_PROXY is configured (see app.ts). A
+      // static PROTOCOL === 'https' check cannot see it: behind a
+      // TLS-terminating proxy the app itself always receives plain HTTP, so
+      // the cookie was issued without Secure on an HTTPS site.
+      //
+      // The cast widens a stale type: @types/express-session declares `secure`
+      // as boolean, while express-session 1.19 accepts 'auto' at runtime.
+      secure: 'auto' as unknown as boolean,
       httpOnly: true,
       // 'none' is required ONLY when the app is embedded in a third-party
       // iframe (AppStream in an external portal), and it disables the
@@ -36,13 +44,9 @@ export const configureExpressSession = (app: Express) => {
       // cross-site requests, leaving only the per-session token check).
       // Default to 'lax' - full same-origin protection with top-level
       // navigation still working - unless the operator opts into embedding
-      // with SESSION_SAMESITE=none.
-      sameSite:
-        process.env.SESSION_SAMESITE === 'none'
-          ? 'none'
-          : PROTOCOL === ProtocolType.HTTPS
-            ? 'lax'
-            : undefined,
+      // with SESSION_SAMESITE=none. Stated explicitly rather than left to the
+      // browser's own default.
+      sameSite: process.env.SESSION_SAMESITE === 'none' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       domain: ALLOWED_DOMAIN?.trim() || undefined
     }

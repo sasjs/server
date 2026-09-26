@@ -171,6 +171,29 @@ describe('verifyEnvVariables', () => {
     })
   })
 
+  describe('TRUST_PROXY validation', () => {
+    it('should accept a hop count, a boolean, an address, and a list', () => {
+      ;['1', 'true', 'false', '172.18.0.1', '172.18.0.0/16,10.0.0.1'].forEach(
+        (value) => {
+          process.env.TRUST_PROXY = value
+          expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+        }
+      )
+    })
+
+    it('should reject a value Express cannot parse', () => {
+      // Express throws on an unparseable value at startup, which is a confusing
+      // way to learn about a typo - the shape is checked here instead.
+      process.env.TRUST_PROXY = 'yes please'
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('should be optional', () => {
+      delete process.env.TRUST_PROXY
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+  })
+
   describe('OIDC variables', () => {
     beforeEach(() => {
       process.env.AUTH_PROVIDERS = 'oidc'

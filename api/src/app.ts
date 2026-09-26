@@ -42,6 +42,26 @@ const onError: ErrorRequestHandler = (err, req, res, next) => {
 export default setProcessVariables().then(async () => {
   app.use(cookieParser())
 
+  // Behind a TLS-terminating proxy (Cloudron, any reverse proxy) the
+  // connection the app sees is plain HTTP, so req.secure and req.ip describe
+  // the proxy rather than the client. TRUST_PROXY states how much of the
+  // X-Forwarded-* chain to believe, which is what lets the session cookie be
+  // marked Secure on an HTTPS site and what a client-IP-keyed throttle would
+  // need. Left unset, nothing is trusted - the right default for a deployment
+  // that receives traffic directly.
+  if (process.env.TRUST_PROXY) {
+    app.set(
+      'trust proxy',
+      /^\d+$/.test(process.env.TRUST_PROXY)
+        ? Number(process.env.TRUST_PROXY)
+        : process.env.TRUST_PROXY === 'true'
+          ? true
+          : process.env.TRUST_PROXY === 'false'
+            ? false
+            : process.env.TRUST_PROXY.split(',').map((entry) => entry.trim())
+    )
+  }
+
   configureLogger(app)
 
   /***********************************
