@@ -1,3 +1,8 @@
+> **This file is no longer updated.** Releases publish their changelog as the
+> GitHub release notes - https://github.com/sasjs/server/releases - which is
+> generated from the same commits. The history below is kept as a record of the
+> versions that were written to it.
+
 ## [1.3.1](https://github.com/sasjs/server/compare/v1.3.0...v1.3.1) (2026-09-26)
 
 
