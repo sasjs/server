@@ -19,7 +19,7 @@ docker run -d --name sasjs \
 Server mode (the default) is multi-user and needs a MongoDB reachable at
 `DB_CONNECT`. For a single-user instance with no database, set `MODE=desktop`.
 
-Health check: `GET /SASjsApi/info`.
+Health check: `GET /SASjsApi/info` (no auth required).
 
 ## Configuration
 
