@@ -13,6 +13,8 @@ const managedEnvVars = [
   'MODE',
   'NODE_ENV',
   'DB_CONNECT',
+  'ADMIN_USERNAME',
+  'ADMIN_PASSWORD_INITIAL',
   'AUTH_PROVIDERS',
   'RUN_TIMES',
   'NODE_PATH',
@@ -48,6 +50,9 @@ const setValidServerEnv = () => {
   process.env.DB_CONNECT = 'mongodb://localhost:27017/test'
   process.env.RUN_TIMES = 'js'
   process.env.NODE_PATH = '/some/path/to/node'
+  // Required in server mode since the default credential was removed: a
+  // valid server configuration now includes an explicit admin password.
+  process.env.ADMIN_PASSWORD_INITIAL = 'a-valid-initial-password'
 }
 
 const setValidLdapEnv = () => {
@@ -111,6 +116,14 @@ describe('verifyEnvVariables', () => {
   })
 
   describe('AUTH_PROVIDERS validation', () => {
+    it('should require an explicit admin password in server mode', () => {
+      delete process.env.ADMIN_PASSWORD_INITIAL
+
+      // No default credential may be silently accepted: the deployment
+      // must fail to start (v1.2.0 review, HIGH 2).
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
     it('should accept a single provider', () => {
       process.env.AUTH_PROVIDERS = 'ldap'
       setValidLdapEnv()

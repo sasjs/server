@@ -570,8 +570,22 @@ const verifyAdminUserConfig = () => {
       process.env.ADMIN_USERNAME = DEFAULTS.ADMIN_USERNAME
     }
 
-    if (!ADMIN_PASSWORD_INITIAL)
+    if (ADMIN_PASSWORD_INITIAL) {
+      // Nothing to default: the operator provided the credential.
+    } else if (process.env.NODE_ENV === 'test') {
+      // Tests seed users explicitly; a hard requirement here would break
+      // every spec that boots the app without an explicit admin password.
       process.env.ADMIN_PASSWORD_INITIAL = DEFAULTS.ADMIN_PASSWORD_INITIAL
+    } else {
+      // A default password here used to be silently accepted, which shipped
+      // a known credential (secretpassword) as the deployment's admin in
+      // every configuration that forgot the env var - including ones whose
+      // only auth provider is OIDC. Fail closed instead: the operator must
+      // set ADMIN_PASSWORD_INITIAL explicitly.
+      errors.push(
+        `- ADMIN_PASSWORD_INITIAL is required in server mode. Set it to a strong, unique value before first start; the admin account it creates should be used to bootstrap a real admin (or be deactivated after an OIDC admin is promoted).`
+      )
+    }
 
     if (ADMIN_PASSWORD_RESET) {
       const resetPasswordTypes = Object.values(ResetAdminPasswordType)
