@@ -1,7 +1,7 @@
 import path from 'path'
 import express from 'express'
 import { Request, Route, Tags, Post, Body, Get, Example } from 'tsoa'
-import { readFile, convertSecondsToHms } from '@sasjs/utils'
+import { readFile } from '@sasjs/utils'
 import { randomBytes, timingSafeEqual } from 'crypto'
 
 import User from '../model/User'
@@ -9,7 +9,6 @@ import Client from '../model/Client'
 import {
   getWebBuildFolder,
   generateAuthCode,
-  RateLimiter,
   AuthProviderType,
   isAuthProviderEnabled,
   LDAPClient,
@@ -129,23 +128,8 @@ const login = async (
     }
   }
 
-  // code to prevent brute force attack
-
-  const rateLimiter = RateLimiter.getInstance()
-
-  if (!validPass) {
-    const retrySecs = await rateLimiter.consume(
-      req.ip || 'unknown',
-      user?.username
-    )
-    if (retrySecs > 0) throw errors.tooManyRequests(retrySecs)
-  }
-
   if (!user) throw errors.userNotFound
   if (!validPass) throw errors.invalidPassword
-
-  // Reset on successful authorization
-  rateLimiter.resetOnSuccess(req.ip || 'unknown', user.username)
 
   req.session.loggedIn = true
   req.session.user = {
@@ -380,9 +364,5 @@ const errors = {
       error === 'access_denied'
         ? 'Sign-in was cancelled at the identity provider.'
         : 'The identity provider refused the sign-in request.'
-  }),
-  tooManyRequests: (seconds: number) => ({
-    code: 429,
-    message: `Too Many Requests! Retry after ${convertSecondsToHms(seconds)}`
   })
 }

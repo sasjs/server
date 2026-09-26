@@ -7,7 +7,6 @@ export interface AuthorizedRoutesResponse {
 export interface InfoResponse {
   mode: string
   cors: string
-  whiteList: string[]
   protocol: string
   runTimes: string[]
   /**
@@ -27,13 +26,12 @@ export interface InfoResponse {
 @Tags('Info')
 export class InfoController {
   /**
-   * @summary Get server info (mode, cors, whiteList, protocol).
+   * @summary Get server info (mode, cors, protocol).
    *
    */
   @Example<InfoResponse>({
     mode: 'desktop',
     cors: 'enable',
-    whiteList: ['http://example.com', 'http://example2.com'],
     protocol: 'http',
     runTimes: ['sas', 'js'],
     authProviders: [],
@@ -48,8 +46,6 @@ export class InfoController {
       cors:
         process.env.CORS ||
         (process.env.MODE === 'server' ? 'disable' : 'enable'),
-      whiteList:
-        process.env.WHITELIST?.split(' ')?.filter((url) => !!url) ?? [],
       protocol: process.env.PROTOCOL ?? 'http',
       runTimes: process.runTimes,
       authProviders

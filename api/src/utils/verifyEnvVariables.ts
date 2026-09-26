@@ -114,8 +114,6 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyDbType())
 
-  errors.push(...verifyRateLimiter())
-
   errors.push(...verifyAdminUserConfig())
 
   if (errors.length) {
@@ -130,7 +128,7 @@ export const verifyEnvVariables = (): ReturnCode => {
 
 const verifyMOCK_SERVERTYPE = (): string[] => {
   const errors: string[] = []
-  const { MOCK_SERVERTYPE } = process.env
+  const { MOCK_SERVERTYPE, MODE } = process.env
 
   if (MOCK_SERVERTYPE) {
     const modeTypes = Object.values(MOCK_SERVERTYPEType)
@@ -138,6 +136,16 @@ const verifyMOCK_SERVERTYPE = (): string[] => {
       errors.push(
         `- MOCK_SERVERTYPE '${MOCK_SERVERTYPE}'\n - valid options ${modeTypes}`
       )
+
+    // The mock routers are served with NO authentication: they exist for
+    // frontend development against canned responses. A server-mode deployment
+    // with the variable set would expose /SASStoredProcess/* (and the mock
+    // login) unauthenticated to anyone who can reach the app.
+    if (MODE === ModeType.Server) {
+      errors.push(
+        `- MOCK_SERVERTYPE cannot be used in server mode: the mock routes are served without authentication. Unset it (or use MODE=desktop) and restart.`
+      )
+    }
   } else {
     // delete, not `= undefined`: assigning undefined to process.env stores the
     // STRING "undefined", so a second call to verifyEnvVariables in the same
@@ -519,46 +527,6 @@ const verifyDbType = () => {
   return errors
 }
 
-const verifyRateLimiter = () => {
-  const errors: string[] = []
-  const {
-    MODE,
-    MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY,
-    MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
-  } = process.env
-  if (MODE === ModeType.Server) {
-    if (MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY) {
-      if (
-        !isNumeric(MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY) ||
-        Number(MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY) < 1
-      ) {
-        errors.push(
-          `- Invalid value for 'MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY' - Only positive number is acceptable`
-        )
-      }
-    } else {
-      process.env.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY =
-        DEFAULTS.MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY
-    }
-
-    if (MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP) {
-      if (
-        !isNumeric(MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP) ||
-        Number(MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP) < 1
-      ) {
-        errors.push(
-          `- Invalid value for 'MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP' - Only positive number is acceptable`
-        )
-      }
-    } else {
-      process.env.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP =
-        DEFAULTS.MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP
-    }
-  }
-
-  return errors
-}
-
 const verifyAdminUserConfig = () => {
   const errors: string[] = []
   const { MODE, ADMIN_USERNAME, ADMIN_PASSWORD_INITIAL, ADMIN_PASSWORD_RESET } =
@@ -628,8 +596,6 @@ const DEFAULTS = {
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
   RUN_TIMES: RunTimeType.SAS,
   DB_TYPE: DatabaseType.MONGO,
-  MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY: '100',
-  MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP: '10',
   ADMIN_USERNAME: 'secretuser',
   ADMIN_PASSWORD_INITIAL: 'secretpassword',
   ADMIN_PASSWORD_RESET: ResetAdminPasswordType.NO,

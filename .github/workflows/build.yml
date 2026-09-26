@@ -19,6 +19,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  security:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js lts/*
+        uses: actions/setup-node@v2
+        with:
+          node-version: lts/*
+
+      - name: Install root dependencies
+        # --ignore-scripts: no install script from any dependency runs; the
+        # gitleaks binary below is a plain devDependency binary, no
+        # postinstall needed.
+        run: npm ci --ignore-scripts
+
+      - name: Scan for secrets (gitleaks)
+        # The local pre-commit hook is best-effort (and suppressed entirely
+        # when .npmrc sets ignore-scripts=true), so CI is the enforcement
+        # point: a leaked credential must fail the build, not just a commit.
+        # Uses the same @nogoo9/gitleaks binary the pre-commit hook pins - the
+        # gitleaks-action requires a license key for organization repos.
+        run: node_modules/.bin/gitleaks detect --source . --redact --no-banner -v
+
+      - name: Audit root dependencies
+        run: npm audit --omit=dev
+
+      - name: Audit API dependencies
+        # Fails the build on any known vulnerability, dev deps included -
+        # the same bar the pre-commit hook and local verification use.
+        working-directory: ./api
+        run: npm ci --ignore-scripts && npm audit --audit-level=low
+
+      - name: Audit Web dependencies (critical only)
+        # web/ still carries 6 moderate + 1 high advisory that need breaking
+        # bumps (react-router 6->7, copy-webpack-plugin 14, webpack-dev-server
+        # 6) - tracked for a dedicated web-deps PR. Until then this step only
+        # fails the build on a CRITICAL finding, so a new critical advisory
+        # cannot land silently.
+        working-directory: ./web
+        run: npm ci --ignore-scripts && npm audit --audit-level=critical
+
   lint:
     runs-on: ubuntu-22.04
 

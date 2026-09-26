@@ -64,9 +64,10 @@ export default setProcessVariables().then(async () => {
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
 
-  // Body parser is used for decoding the formdata on POST request.
-  // Currently only place we use it is SAS9 Mock - POST /SASLogon/login
-  app.use(express.urlencoded({ extended: true }))
+  // NOTE: no urlencoded body parser here. The only consumer of
+  // form-encoded bodies is the SAS9 mock's login form, which mounts its own
+  // parser inside the mock router (routes/web/sas9-web.ts) - keeping this
+  // global was body-parsing surface with no production need.
 
   // Express 5 leaves req.body undefined when the request carries no parsable
   // body (express 4 defaulted it to {}). Every route handler validates

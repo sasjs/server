@@ -1,0 +1,21 @@
+# gitleaks: findings (historical commits). Documented false positives.
+# Every entry is an EXAMPLE access token in the VS Code REST Client samples
+# under restClient/ - demo JWTs minted for a local dev instance, not real
+# credentials. These are old commits in the repo's history that CI's
+# `gitleaks detect` (full-history scan) trips on; the pre-commit hook
+# (`gitleaks protect --staged`) never sees them because they are not in any
+# staged diff.
+22dfcfddb9abd355a63d1ee5acd925c759e86d69:routes.rest:jwt:3
+22dfcfddb9abd355a63d1ee5acd925c759e86d69:routes.rest:jwt:7
+22dfcfddb9abd355a63d1ee5acd925c759e86d69:routes.rest:jwt:32
+d6aeb378de5a45125b9c6bfc509723e2c25a36ae:routes.rest:jwt:18
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/auth.rest:jwt:18
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/drive.rest:jwt:6
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/routes.rest:jwt:3
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/routes.rest:jwt:7
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/routes.rest:jwt:18
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/routes.rest:jwt:42
+e0aec1391ea7e20aaaeaffb15bf93983ab962abd:restClient/users.rest:jwt:3
+ed5c58e10e87e647a919a143fc6abe90199778bc:restClient/auth.rest:jwt:18
+ed5c58e10e87e647a919a143fc6abe90199778bc:restClient/drive.rest:jwt:3
+ed5c58e10e87e647a919a143fc6abe90199778bc:restClient/users.rest:jwt:3

@@ -461,10 +461,6 @@ components:
                     type: string
                 cors:
                     type: string
-                whiteList:
-                    items:
-                        type: string
-                    type: array
                 protocol:
                     type: string
                 runTimes:
@@ -482,7 +478,6 @@ components:
             required:
                 - mode
                 - cors
-                - whiteList
                 - protocol
                 - runTimes
                 - authProviders
@@ -1696,8 +1691,8 @@ paths:
                                 $ref: '#/components/schemas/InfoResponse'
                             examples:
                                 'Example 1':
-                                    value: {mode: desktop, cors: enable, whiteList: ['http://example.com', 'http://example2.com'], protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect'}
-            summary: 'Get server info (mode, cors, whiteList, protocol).'
+                                    value: {mode: desktop, cors: enable, protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect'}
+            summary: 'Get server info (mode, cors, protocol).'
             tags:
                 - Info
             security: []

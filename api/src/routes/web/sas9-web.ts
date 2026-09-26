@@ -22,6 +22,10 @@ const upload = multer({
   dest: path.join(process.cwd(), mockPath, 'sas9', 'files-received')
 })
 
+// The mock's login form posts application/x-www-form-urlencoded; the parser
+// is scoped here rather than mounted globally in app.ts.
+sas9WebRouter.use(express.urlencoded({ extended: true }))
+
 sas9WebRouter.get('/', async (req, res) => {
   let response
   try {
