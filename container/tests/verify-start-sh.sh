@@ -123,7 +123,9 @@ check "MODE defaults to server"            "MODE=server"                        
 check "DB_CONNECT passed through"         "DB_CONNECT=mongodb://127.0.0.1:27017/sasjs" "$OUT"
 check "HOME is the data dir"               "HOME=$T/data"                         "$OUT"
 check "cwd is the data dir"                "CWD=$T/data"                          "$OUT"
-check "admin password generated"           "ADMIN_PASSWORD_INITIAL="              "$OUT"
+check "no local admin without a password"  "no local admin will be seeded"       "$OUT"
+check "ADMIN_PASSWORD_INITIAL left unset"  "ADMIN_PASSWORD_INITIAL=<unset>"      "$OUT"
+check "first-user-admin note printed"      "the first user to sign in becomes the administrator" "$OUT"
 check "starts the app"                     "Starting SASjs Server"                "$OUT"
 
 echo
@@ -218,28 +220,38 @@ check "no LDAP left in the entrypoint"      "0" "$LDAP_IN_START"
 check "no ldap addon in the manifest"       "0" "$LDAP_IN_MANIFEST"
 
 echo
-echo "--- TEST 6: admin password generated once, mode 600, stable across restarts"
-P1=$(cat "$T/app-data/.initial-admin-password")
-PERM=$(stat -c '%a' "$T/app-data/.initial-admin-password")
-env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]}" \
-  bash "$T/start-under-test.sh" > /dev/null
-P2=$(cat "$T/app-data/.initial-admin-password")
-check "file mode 600"                 "600" "$PERM"
-check "24 characters"                 "24"  "${#P1}"
-check "stable across restarts"        "$P1" "$P2"
+echo "--- TEST 6: no admin password file, and DATA_DIR/.env is read"
+# An admin exists only when ADMIN_PASSWORD_INITIAL is set, so a fresh install
+# is usable via the first user to sign in rather than a credential nobody can
+# read.
+if [[ -f "$T/app-data/.initial-admin-password" ]]; then
+  echo "FAIL  no .initial-admin-password is written when ADMIN_PASSWORD_INITIAL is unset"
+  FAIL=1
+else
+  echo "PASS  no .initial-admin-password is written when ADMIN_PASSWORD_INITIAL is unset"
+fi
+
+# The operator's config file: sourced by the entrypoint, and read by the app
+# itself (it runs with DATA_DIR as its working directory and calls dotenv).
+mkdir -p "$T/app-data"
+printf 'ADMIN_USERNAME=fromenvfile\n' > "$T/app-data/.env"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh")
+check "config file is sourced"        "loaded configuration from"   "$OUT"
+check "config file value reaches the app" "ADMIN_USERNAME=fromenvfile" "$OUT"
+rm -f "$T/app-data/.env"
 
 echo
 echo "--- TEST 6b: an explicit ADMIN_PASSWORD_INITIAL is honoured"
-rm -f "$T/app-data/.initial-admin-password"
 OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
   ADMIN_PASSWORD_INITIAL=chosen-password "${ADDONS[@]}" \
   bash "$T/start-under-test.sh")
 check "explicit password passed through" "ADMIN_PASSWORD_INITIAL=chosen-password" "$OUT"
-if [[ -f "$T/app-data/.initial-admin-password" ]]; then
-  echo "FAIL  no password file written when the password is supplied"
+if grep -q "no local admin will be seeded" <<< "$OUT"; then
+  echo "FAIL  the no-admin note is printed even though ADMIN_PASSWORD_INITIAL is set"
   FAIL=1
 else
-  echo "PASS  no password file written when the password is supplied"
+  echo "PASS  the no-admin note is not printed when a password is set"
 fi
 
 echo

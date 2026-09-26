@@ -36,8 +36,8 @@
     }
   },
   "checklist": {
-    "change-admin-password": {
-      "message": "Log in as `admin` with the password stored in `/app/data/.initial-admin-password` (open this app's Terminal and run `cat /app/data/.initial-admin-password`), change it, then delete that file. Day-to-day logins go through Cloudron SSO instead."
+    "first-user-becomes-admin": {
+      "message": "There is no pre-created admin account. The FIRST user to sign in becomes the administrator; every user after that is a normal user, so grant the others what they need under Settings > Permissions. To seed a local break-glass `admin` account instead, put `ADMIN_PASSWORD_INITIAL=<a strong password>` in `/app/data/.env` and restart the app."
     },
     "restrict-drive-writes": {
       "message": "The `js` and `py` runtimes execute whatever is uploaded to SASjs Drive, server-side. Grant Drive write access only to trusted authors, and keep the app behind Cloudron access control."

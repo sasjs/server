@@ -16,7 +16,7 @@ services:
       DB_CONNECT: mongodb://mongo:27017/sasjs
       DB_TYPE: mongodb
       # AUTH_PROVIDERS: ""      # local accounts only
-      # ADMIN_PASSWORD_INITIAL: change-me
+      # ADMIN_PASSWORD_INITIAL: change-me   # unset = first user to sign in becomes admin
     volumes:
       - sasjs_data:/usr/server/data
     depends_on:

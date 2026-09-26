@@ -544,14 +544,23 @@ const verifyAdminUserConfig = () => {
       // Tests seed users explicitly; a hard requirement here would break
       // every spec that boots the app without an explicit admin password.
       process.env.ADMIN_PASSWORD_INITIAL = DEFAULTS.ADMIN_PASSWORD_INITIAL
+    } else if (isAuthProviderEnabled(AuthProviderType.OIDC)) {
+      // No local admin is seeded at all, and that is deliberate: the first
+      // user to authenticate through the provider becomes the administrator
+      // (resolveOidcUser), so a fresh install is usable without a credential
+      // nobody can read. Set ADMIN_PASSWORD_INITIAL to seed a local
+      // break-glass admin instead - which then also suppresses the bootstrap,
+      // because that account is an admin from the first start.
+      //
+      // A default is deliberately NOT applied: a default would ship a
+      // publicly-known credential as the deployment's admin in every
+      // configuration that omits the variable.
+      process.env.ADMIN_PASSWORD_INITIAL = ''
     } else {
-      // A default password here used to be silently accepted, which shipped
-      // a known credential (secretpassword) as the deployment's admin in
-      // every configuration that forgot the env var - including ones whose
-      // only auth provider is OIDC. Fail closed instead: the operator must
-      // set ADMIN_PASSWORD_INITIAL explicitly.
+      // Fail closed: with no external provider and no local admin there is no
+      // account at all, so nobody - not even the operator - could sign in.
       errors.push(
-        `- ADMIN_PASSWORD_INITIAL is required in server mode. Set it to a strong, unique value before first start; the admin account it creates should be used to bootstrap a real admin (or be deactivated after an OIDC admin is promoted).`
+        `- ADMIN_PASSWORD_INITIAL is required in server mode unless an external auth provider is enabled: without it no account exists and nobody can sign in. Set it, or enable AUTH_PROVIDERS='${AuthProviderType.OIDC}'.`
       )
     }
 
