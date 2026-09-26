@@ -1,0 +1,18 @@
+# Trivy exceptions for this image.
+#
+# Every entry needs a statement explaining why the finding is accepted rather
+# than fixed. An entry without one is a bug in this file.
+
+misconfigurations:
+  - id: DS-0002
+    paths:
+      - "container/Dockerfile"
+    statement: >-
+      Platform app images (Cloudron among them) are expected to start as root
+      and drop privileges themselves, so a top-level USER instruction is wrong
+      here rather than missing. DATA_DIR is a mount whose ownership can be
+      reset by backups, restores and migrations, so the entrypoint must chown
+      it before handing off - which a non-root entrypoint cannot do. The
+      process that actually runs the application is the non-root 'cloudron'
+      user (uid 1000): 'exec gosu cloudron:cloudron node .../server.js'.
+    expired_at: 2027-09-25

@@ -1,0 +1,56 @@
+{
+  "id": "io.sasjs.server",
+  "title": "SASjs Server",
+  "version": "1.2.1",
+  "upstreamVersion": "1.2.1",
+  "tagline": "Stored programs in JavaScript and Python",
+  "description": "file://DESCRIPTION.md",
+  "changelog": "file://CHANGELOG",
+  "postInstallMessage": "file://POSTINSTALL.md",
+  "author": "4GL Ltd",
+  "packagerName": "4GL Ltd",
+  "packagerUrl": "https://4gl.io",
+  "packageUrl": "https://github.com/sasjs/server",
+  "website": "https://server.sasjs.io",
+  "documentationUrl": "https://server.sasjs.io",
+  "contactEmail": "support@sasjs.io",
+  "icon": "file://logo.png",
+  "iconUrl": "https://raw.githubusercontent.com/sasjs/server/main/container/cloudron/logo.png",
+  "manifestVersion": 2,
+  "minBoxVersion": "10.0.0",
+  "targetBoxVersion": "10.0.5",
+  "healthCheckPath": "/SASjsApi/info",
+  "httpPort": 5000,
+  "memoryLimit": 1073741824,
+  "addons": {
+    "localstorage": {},
+    "mongodb": {},
+    "oidc": {
+      "loginRedirectUri": "/SASLogon/openid/callback",
+      "logoutRedirectUri": "/SASLogon/openid/logout",
+      "tokenSignatureAlgorithm": "RS256"
+    },
+    "proxyAuth": {
+      "path": "!/SASjsApi/info",
+      "supportsBearerAuth": true
+    }
+  },
+  "checklist": {
+    "change-admin-password": {
+      "message": "Log in as `admin` with the password stored in `/app/data/.initial-admin-password` (open this app's Terminal and run `cat /app/data/.initial-admin-password`), change it, then delete that file. Day-to-day logins go through Cloudron SSO instead."
+    },
+    "restrict-drive-writes": {
+      "message": "The `js` and `py` runtimes execute whatever is uploaded to SASjs Drive, server-side. Grant Drive write access only to trusted authors, and keep the app behind Cloudron access control."
+    }
+  },
+  "tags": [
+    "sas",
+    "api",
+    "development",
+    "backend",
+    "analytics"
+  ],
+  "mediaLinks": [
+    "https://raw.githubusercontent.com/sasjs/server/main/container/cloudron/screenshots/banner.png"
+  ]
+}

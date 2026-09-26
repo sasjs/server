@@ -1,0 +1,175 @@
+name: Smoke test
+description: >
+  Boot the container image in server mode against MongoDB and exercise it:
+  health check, the real login -> authorize -> token flow, then a JavaScript
+  and a Python stored program, and finally the OIDC sign-in redirect. Requires
+  a MongoDB service on 127.0.0.1:27017.
+
+inputs:
+  image:
+    description: Image reference to run
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # A fresh database per run: the server only logs its seed lines the first
+    # time it creates the admin account.
+    - name: Boot in server mode against MongoDB
+      shell: bash
+      run: |
+        docker run -d --name sasjs --network host \
+          -e CLOUDRON_MONGODB_URL="mongodb://127.0.0.1:27017/sasjs_smoke_${{ github.run_id }}_${{ github.run_attempt }}" \
+          -e AUTH_PROVIDERS= \
+          -e RUN_TIMES=js,py \
+          ${{ inputs.image }}
+
+    - name: Wait for the health check and assert server mode
+      shell: bash
+      run: |
+        set -eu
+        for i in $(seq 1 90); do
+          if curl -sf -m 3 http://127.0.0.1:5000/SASjsApi/info > /tmp/info.json; then
+            echo "health check passed after ${i}s"
+            break
+          fi
+          sleep 1
+        done
+        cat /tmp/info.json
+        jq -e '.mode == "server"' /tmp/info.json
+        jq -e '.runTimes == ["js","py"]' /tmp/info.json
+
+    # Server mode (unlike desktop mode) puts the Drive and Stored Program
+    # routes behind a token, so this drives the real auth flow. The web routes
+    # are CSRF-protected and the token is injected into index.html as a
+    # document.cookie assignment, so it is scraped from GET / and replayed in
+    # the x-xsrf-token header.
+    - name: Authenticate
+      shell: bash
+      run: |
+        set -eu
+        API=http://127.0.0.1:5000
+
+        curl -s -o /tmp/index.html -w 'GET / -> HTTP %{http_code}\n' "$API/"
+        CSRF=$(grep -o "XSRF-TOKEN=[^;']*" /tmp/index.html | cut -d= -f2 || true)
+        echo "csrf length: ${#CSRF}"
+        test -n "$CSRF"
+
+        # No ADMIN_PASSWORD_INITIAL is set, so the entrypoint generated one
+        # into DATA_DIR on first boot. Reading it back is the production path.
+        PW=$(docker exec sasjs cat /app/data/.initial-admin-password)
+        test -n "$PW"
+
+        curl -s -o /tmp/login.json -w 'login -> HTTP %{http_code}\n' \
+          -c /tmp/cookies -X POST "$API/SASLogon/login" \
+          -H "x-xsrf-token: $CSRF" -H 'Content-Type: application/json' \
+          -d "{\"username\":\"admin\",\"password\":\"$PW\"}"
+        cat /tmp/login.json
+        jq -e '.loggedIn == true' /tmp/login.json
+
+        CODE=$(curl -sf -b /tmp/cookies -c /tmp/cookies \
+          -X POST "$API/SASLogon/authorize" \
+          -H "x-xsrf-token: $CSRF" -H 'Content-Type: application/json' \
+          -d '{"clientId":"clientID1"}' | jq -r '.code')
+        test -n "$CODE"
+
+        curl -sf -X POST "$API/SASjsApi/auth/token" \
+          -H 'Content-Type: application/json' \
+          -d "{\"clientId\":\"clientID1\",\"code\":\"$CODE\"}" \
+          | jq -r '.accessToken' > /tmp/token
+        test -s /tmp/token
+
+    - name: Execute a JavaScript and a Python stored program
+      shell: bash
+      run: |
+        set -eu
+        API=http://127.0.0.1:5000
+        TOKEN=$(cat /tmp/token)
+
+        printf '%s\n' \
+          "console.log('js program ran')" \
+          "_webout = JSON.stringify({from:'js',marker:'js-ok'})" > /tmp/hello.js
+
+        printf '%s\n' \
+          "import json" \
+          "print('py program ran')" \
+          "with open(_WEBOUT,'w') as f: f.write(json.dumps({'from':'py','marker':'py-ok'}))" > /tmp/hello.py
+
+        curl -sf -X POST "$API/SASjsApi/drive/file?_filePath=/Public/hello.js" \
+          -H "Authorization: Bearer $TOKEN" -F "file=@/tmp/hello.js"
+        curl -sf -X POST "$API/SASjsApi/drive/file?_filePath=/Public/hello.py" \
+          -H "Authorization: Bearer $TOKEN" -F "file=@/tmp/hello.py"
+
+        curl -s "$API/SASjsApi/stp/execute?_program=/Public/hello.js" \
+          -H "Authorization: Bearer $TOKEN" > /tmp/js.json
+        curl -s "$API/SASjsApi/stp/execute?_program=/Public/hello.py" \
+          -H "Authorization: Bearer $TOKEN" > /tmp/py.json
+
+        echo "hello.js -> $(cat /tmp/js.json)"
+        echo "hello.py -> $(cat /tmp/py.json)"
+
+        jq -e '.marker == "js-ok"' /tmp/js.json
+        jq -e '.marker == "py-ok"' /tmp/py.json
+
+    # ---------------------------------------------------------------------
+    # OIDC sign-in. This is the step that catches a broken OIDC build: the
+    # sign-in path calls the global fetch, which the old pkg binaries did not
+    # have (they targeted node16), so against a node16-based image this
+    # returns 500 instead of a redirect. The image builds from the same
+    # source on a modern Node precisely so that this passes.
+    # ---------------------------------------------------------------------
+    - name: Boot again with Cloudron-shaped OIDC configuration
+      shell: bash
+      run: |
+        set -eu
+        # The entrypoint pins PORT=5000 in Cloudron mode, so the first
+        # container has to go.
+        docker rm -f sasjs >/dev/null 2>&1 || true
+
+        # A stub identity provider on the runner. The container shares the host
+        # network, so 127.0.0.1 is the same address on both sides.
+        nohup python3 container/tests/stub-idp.py 8899 > /tmp/idp.log 2>&1 &
+        for i in $(seq 1 20); do
+          curl -sf http://127.0.0.1:8899/.well-known/openid-configuration > /dev/null && break
+          sleep 0.5
+        done
+        curl -sf http://127.0.0.1:8899/.well-known/openid-configuration > /dev/null
+
+        docker run -d --name sasjs-oidc --network host \
+          -e CLOUDRON_MONGODB_URL="mongodb://127.0.0.1:27017/sasjs_oidc_${{ github.run_id }}_${{ github.run_attempt }}" \
+          -e CLOUDRON_APP_ORIGIN="http://127.0.0.1:5000" \
+          -e CLOUDRON_OIDC_CLIENT_ID="sasjs-ci-client" \
+          -e CLOUDRON_OIDC_CLIENT_SECRET="ci-secret" \
+          -e CLOUDRON_OIDC_DISCOVERY_URL="http://127.0.0.1:8899/.well-known/openid-configuration" \
+          -e CLOUDRON_OIDC_ISSUER="http://127.0.0.1:8899" \
+          -e CLOUDRON_OIDC_PROVIDER_NAME="Cloudron" \
+          ${{ inputs.image }}
+
+        for i in $(seq 1 90); do
+          if curl -sf -m 3 http://127.0.0.1:5000/SASjsApi/info > /dev/null; then
+            echo "health check passed after ${i}s"
+            break
+          fi
+          sleep 1
+        done
+
+    - name: Assert the sign-in route redirects to the provider
+      shell: bash
+      run: |
+        set -eu
+        LOC=$(curl -s -D - -o /dev/null http://127.0.0.1:5000/SASLogon/openid \
+          | grep -i '^location:' | tr -d '\r')
+        echo "$LOC"
+        echo "$LOC" | grep -q 'http://127.0.0.1:8899/authorize'
+        echo "$LOC" | grep -q 'client_id=sasjs-ci-client'
+        # Percent-encoded in full: the app encodes ':' as well as '/'.
+        echo "$LOC" | grep -q 'redirect_uri=http%3A%2F%2F127.0.0.1%3A5000%2FSASLogon%2Fopenid%2Fcallback'
+        echo "$LOC" | grep -q 'scope=openid'
+        echo "$LOC" | grep -q 'state='
+
+    - name: App logs on failure
+      if: failure()
+      shell: bash
+      run: |
+        docker logs sasjs || true
+        docker logs sasjs-oidc || true
