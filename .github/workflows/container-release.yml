@@ -1,27 +1,22 @@
-name: Container release
+name: Container release (manual)
 
-# Publishes the container image for a release of SASjs Server.
+# Manual repair path for the container image, for when the container job of
+# the main release workflow (.github/workflows/release.yml) failed part-way -
+# image pushed but catalogue not committed, or nothing published at all.
 #
-# Triggered by the release event (semantic-release creates the release and
-# tags the commit). A tag-push trigger would never fire: semantic-release
-# marks its own release commits with [skip ci], so the push of the tag and
-# the release commit would not start any workflow at all. The release event
-# is also the honest source of truth for the version: the app version, the
-# image tag and the git tag then refer to exactly one commit.
-#
-# workflow_dispatch re-runs the flow for the latest release, which is how a
-# partially-failed release (image pushed, catalogue not committed) is
-# repaired.
-#
-# The Cloudron catalogue (container/cloudron/CloudronVersions.json) is part
-# of this flow: the release workflow builds the image, records its digest in
-# the catalogue, and commits the catalogue back, so an existing Cloudron
-# install offers the update.
+# It is NOT triggered by releases: an event created by GITHUB_TOKEN (the
+# release semantic-release publishes) never starts another workflow run -
+# GitHub's recursion guard - so an on: release trigger can never fire in this
+# repository. The container job runs inside the release workflow for exactly
+# that reason; use this one to re-run it by hand.
 
 on:
-  release:
-    types: [ published ]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.3.0); empty = latest release'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -43,15 +38,13 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     steps:
-      # Resolved before checkout: a workflow_dispatch run has no
-      # release.tag_name, and the checkout needs the tag.
       - name: Resolve the release tag
         id: tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${{ github.event.inputs.tag }}"
           if [ -z "$TAG" ]; then
             TAG=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
           fi
@@ -162,8 +155,7 @@ jobs:
           # Check the INDEX, not the working tree. On a first release
           # CloudronVersions.json is an untracked file, and `git diff` does
           # not see untracked files - so a working-tree check reports
-          # "nothing to commit" and silently skips the push, which is exactly
-          # what happened on the first run of this workflow's ancestor.
+          # "nothing to commit" and silently skips the push.
           if git diff --cached --quiet; then
             echo "catalogue already records this image; nothing to commit"
             exit 0

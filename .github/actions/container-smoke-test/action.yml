@@ -40,17 +40,16 @@ runs:
         jq -e '.runTimes == ["js","py"]' /tmp/info.json
 
     # Server mode (unlike desktop mode) puts the Drive and Stored Program
-    # routes behind a token, so this drives the real auth flow. The web routes
-    # are CSRF-protected and the token is injected into index.html as a
-    # document.cookie assignment, so it is scraped from GET / and replayed in
-    # the x-xsrf-token header.
+    # routes behind a token, so this drives the real auth flow. The CSRF
+    # token is bound to the session that minted it, so the cookie jar must
+    # be kept across the scrape and every POST.
     - name: Authenticate
       shell: bash
       run: |
         set -eu
         API=http://127.0.0.1:5000
 
-        curl -s -o /tmp/index.html -w 'GET / -> HTTP %{http_code}\n' "$API/"
+        curl -s -c /tmp/cookies -o /tmp/index.html -w 'GET / -> HTTP %{http_code}\n' "$API/"
         CSRF=$(grep -o "XSRF-TOKEN=[^;']*" /tmp/index.html | cut -d= -f2 || true)
         echo "csrf length: ${#CSRF}"
         test -n "$CSRF"
@@ -60,12 +59,20 @@ runs:
         PW=$(docker exec sasjs cat /app/data/.initial-admin-password)
         test -n "$PW"
 
-        curl -s -o /tmp/login.json -w 'login -> HTTP %{http_code}\n' \
-          -c /tmp/cookies -X POST "$API/SASLogon/login" \
+        curl -s -b /tmp/cookies -c /tmp/cookies -o /tmp/login.json -w 'login -> HTTP %{http_code}\n' \
+          -X POST "$API/SASLogon/login" \
           -H "x-xsrf-token: $CSRF" -H 'Content-Type: application/json' \
           -d "{\"username\":\"admin\",\"password\":\"$PW\"}"
         cat /tmp/login.json
         jq -e '.loggedIn == true' /tmp/login.json
+
+        # The seeded admin is hard-gated server-side until its password is
+        # changed (it was seeded with the generated initial password), so
+        # change it before doing anything with the API.
+        curl -sf -b /tmp/cookies -c /tmp/cookies -X PATCH "$API/SASjsApi/auth/updatePassword" \
+          -H "x-xsrf-token: $CSRF" -H 'Content-Type: application/json' \
+          -d "{\"currentPassword\":\"$PW\",\"newPassword\":\"smoke-test-password-1\"}" \
+          -w 'updatePassword -> HTTP %{http_code}\n'
 
         CODE=$(curl -sf -b /tmp/cookies -c /tmp/cookies \
           -X POST "$API/SASLogon/authorize" \
