@@ -1,9 +1,16 @@
+import fs from 'fs-extra'
+import path from 'path'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController, ClientController } from '../../../controllers/'
+import {
+  BUNDLE_NAME,
+  bundleVersionFor,
+  getWebBuildFolder
+} from '../../../utils'
 
 const clientId = 'someclientID'
 const clientSecret = 'someclientSecret'
@@ -38,11 +45,51 @@ describe('web', () => {
   })
 
   describe('home', () => {
+    // The web build is a gitignored build artifact, absent in CI, so this
+    // suite lays down the two files the route reads and puts back whatever it
+    // found. Nothing else in the suite depends on their contents.
+    const buildFolder = getWebBuildFolder()
+    const indexHtml = path.join(buildFolder, 'index.html')
+    const bundlePath = path.join(buildFolder, BUNDLE_NAME)
+    const page =
+      '<html><head><script defer src=./index.bundle.js></script></head><body><div id=root></div></body></html>'
+    const bundle = 'console.log("the built bundle")'
+    const originals = new Map<string, Buffer>()
+
+    beforeAll(async () => {
+      await fs.ensureDir(buildFolder)
+
+      for (const file of [indexHtml, bundlePath]) {
+        if (await fs.pathExists(file))
+          originals.set(file, await fs.readFile(file))
+      }
+
+      await fs.writeFile(indexHtml, page)
+      await fs.writeFile(bundlePath, bundle)
+    })
+
+    afterAll(async () => {
+      for (const file of [indexHtml, bundlePath]) {
+        if (originals.has(file)) await fs.writeFile(file, originals.get(file)!)
+        else await fs.remove(file)
+      }
+    })
+
     it('should respond with CSRF Token', async () => {
       const res = await request(app).get('/').expect(200)
 
       expect(res.text).toMatch(
         /<script>document.cookie = '(XSRF-TOKEN=.*; Max-Age=86400; SameSite=Strict; Path=\/;)'<\/script>/
+      )
+    })
+
+    it('should reference the bundle by its contents, so a cached bundle is not reused', async () => {
+      const res = await request(app).get('/').expect(200)
+
+      // The defect this guards: the page referenced a fixed `index.bundle.js`,
+      // so a returning browser rendered the previous release's UI.
+      expect(res.text).toContain(
+        `src=./${BUNDLE_NAME}?v=${bundleVersionFor(bundle)}`
       )
     })
   })
