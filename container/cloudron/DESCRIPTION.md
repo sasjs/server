@@ -47,6 +47,25 @@ or this app's Terminal) and restart the app. Note that a seeded admin counts as
 an existing administrator, so the first SSO user would then be a normal user -
 set it before anyone signs in only if that is the arrangement you want.
 
+Password sign-in for local (database) accounts can be closed off entirely: set
+`LOCAL_LOGIN_ENABLED=false` in `/app/data/config.env` and a local account cannot
+sign in at all, while Cloudron single sign-on and LDAP keep working. This
+package's `proxyAuth` addon sets `supportsBearerAuth: true`, which programmatic
+SASjs clients need - but it also means Cloudron's login wall and MFA are skipped
+for any request that carries a Bearer header, so `/SASLogon/login` is reachable
+from the internet and a local account's password is the one credential such a
+caller can guess. With no local accounts able to sign in, there is nothing there
+to guess. Leave it enabled if you rely on the break-glass admin.
+
+## Access control
+
+Restrict the app to the users and groups who should reach it, before anyone
+signs in: open the app's **Settings > Access control** and choose "Only allow
+the following users and groups". A Cloudron install is unrestricted by default,
+and two things make that the wrong default here - the FIRST user to sign in
+becomes the administrator, and the `js` and `py` runtimes execute whatever is
+uploaded to SASjs Drive. Unrestricted, both go to every user on the Cloudron.
+
 ## Configuration
 
 Settings live in `/app/data/config.env` (visible in the File Manager; `.env` in

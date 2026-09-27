@@ -3,6 +3,11 @@
 **This app is behind Cloudron's login.** Anyone visiting it gets a Cloudron
 login screen first; access follows Cloudron users, groups and MFA.
 
+**Restrict access first.** Open the app's **Settings > Access control** and
+choose "Only allow the following users and groups" before anyone signs in: the
+FIRST user to sign in becomes the administrator, and this app executes whatever
+is uploaded to SASjs Drive.
+
 **Sign in and become the administrator.** There is no pre-created admin
 account: the FIRST user to sign in becomes the administrator, and every user
 after that is a normal user. Sign in now, then grant the others what they need
