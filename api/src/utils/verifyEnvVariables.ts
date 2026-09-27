@@ -87,6 +87,20 @@ export const getAuthProviders = (): string[] =>
 export const isAuthProviderEnabled = (provider: AuthProviderType): boolean =>
   getAuthProviders().includes(provider)
 
+/**
+ * Local sign-in is the database-account path: the password is compared against
+ * the bcrypt hash on the user record. A deployment whose accounts all live in
+ * an identity provider turns it off, which removes the one credential an
+ * unauthenticated caller can attack directly (see LOCAL_LOGIN_ENABLED in the
+ * README).
+ *
+ * Enabled unless explicitly switched off: a deployment that seeds a
+ * break-glass admin with ADMIN_PASSWORD_INITIAL reaches it through this path,
+ * and LDAP-verified sign-in is unaffected either way.
+ */
+export const isLocalLoginEnabled = (): boolean =>
+  process.env.LOCAL_LOGIN_ENABLED !== 'false'
+
 export const verifyEnvVariables = (): ReturnCode => {
   const errors: string[] = []
 
@@ -100,6 +114,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyTrustProxy())
 
   errors.push(...verifyLoginThrottle())
+
+  errors.push(...verifyLocalLogin())
 
   errors.push(...verifyCORS())
 
@@ -635,6 +651,35 @@ const verifyLoginThrottle = (): string[] => {
   ) {
     errors.push(
       `- LOGIN_LOCKOUT_MINUTES '${LOGIN_LOCKOUT_MINUTES}'\n - use a number of minutes`
+    )
+  }
+
+  return errors
+}
+
+/**
+ * LOCAL_LOGIN_ENABLED switches password sign-in for local (database) accounts
+ * off, for deployments that authenticate everyone through a provider instead.
+ * It is a boolean, and it cannot be switched off with no provider configured:
+ * with the local path gone and nothing else to authenticate against, no
+ * account could sign in at all.
+ */
+const verifyLocalLogin = (): string[] => {
+  const errors: string[] = []
+  const { LOCAL_LOGIN_ENABLED } = process.env
+
+  if (LOCAL_LOGIN_ENABLED === undefined) return errors
+
+  if (!isBoolean(LOCAL_LOGIN_ENABLED)) {
+    errors.push(
+      `- LOCAL_LOGIN_ENABLED '${LOCAL_LOGIN_ENABLED}'\n - use true or false`
+    )
+    return errors
+  }
+
+  if (LOCAL_LOGIN_ENABLED === 'false' && getAuthProviders().length === 0) {
+    errors.push(
+      `- LOCAL_LOGIN_ENABLED is false but AUTH_PROVIDERS is empty: no account could sign in. Enable a provider, or leave the local login enabled.`
     )
   }
 

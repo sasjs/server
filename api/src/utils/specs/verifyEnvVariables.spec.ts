@@ -3,6 +3,7 @@ import {
   ReturnCode,
   getAuthProviders,
   isAuthProviderEnabled,
+  isLocalLoginEnabled,
   AuthProviderType,
   ModeType
 } from '../verifyEnvVariables'
@@ -16,6 +17,7 @@ const managedEnvVars = [
   'ADMIN_USERNAME',
   'ADMIN_PASSWORD_INITIAL',
   'AUTH_PROVIDERS',
+  'LOCAL_LOGIN_ENABLED',
   'RUN_TIMES',
   'NODE_PATH',
   'LDAP_URL',
@@ -191,6 +193,48 @@ describe('verifyEnvVariables', () => {
     it('should be optional', () => {
       delete process.env.TRUST_PROXY
       expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+  })
+
+  describe('LOCAL_LOGIN_ENABLED validation', () => {
+    it('should accept a boolean', () => {
+      ;['true', 'false'].forEach((value) => {
+        process.env.AUTH_PROVIDERS = 'oidc'
+        setValidOidcEnv()
+        process.env.LOCAL_LOGIN_ENABLED = value
+
+        expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+      })
+    })
+
+    it('should reject a value that is not a boolean', () => {
+      process.env.LOCAL_LOGIN_ENABLED = 'no'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('should reject switching the local login off with no provider configured', () => {
+      delete process.env.AUTH_PROVIDERS
+      process.env.LOCAL_LOGIN_ENABLED = 'false'
+
+      // With the local path off and no provider to authenticate against, no
+      // account could sign in - the deployment fails to start instead.
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('should be optional, and enabled by default', () => {
+      delete process.env.LOCAL_LOGIN_ENABLED
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+      expect(isLocalLoginEnabled()).toEqual(true)
+    })
+
+    it('should report the configured value', () => {
+      process.env.AUTH_PROVIDERS = 'oidc'
+      setValidOidcEnv()
+      process.env.LOCAL_LOGIN_ENABLED = 'false'
+
+      expect(isLocalLoginEnabled()).toEqual(false)
     })
   })
 
