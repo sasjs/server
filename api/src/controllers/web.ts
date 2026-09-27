@@ -1,7 +1,6 @@
 import path from 'path'
 import express from 'express'
 import { Request, Route, Tags, Post, Body, Get, Example } from 'tsoa'
-import { readFile } from '@sasjs/utils'
 import { randomBytes, timingSafeEqual } from 'crypto'
 
 import User from '../model/User'
@@ -14,7 +13,8 @@ import {
   isLocalLoginEnabled,
   LDAPClient,
   OIDCClient,
-  resolveOidcUser
+  resolveOidcUser,
+  webPageWithBundleVersion
 } from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
@@ -101,9 +101,7 @@ const home = async () => {
 
   // Attention! Cannot use fileExists here,
   // due to limitation after building executable
-  const content = await readFile(indexHtmlPath)
-
-  return content
+  return webPageWithBundleVersion(indexHtmlPath)
 }
 
 const login = async (
