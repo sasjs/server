@@ -80,6 +80,9 @@ jobs:
         run: npm run exe
         env:
           CI: true
+          # The api build lists the SAS_PACKAGES macros over the GitHub API,
+          # which rate limits unauthenticated requests per source IP.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compress Executables
         if: steps.pending.outputs.release == 'true'
@@ -219,6 +222,7 @@ jobs:
           file: container/Dockerfile
           load: true
           tags: sasjs-server:release
+          secrets: github_token=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
 
       # Gate: never publish an image that has not been run.
@@ -247,6 +251,7 @@ jobs:
             ${{ format('ghcr.io/{0}:{1}', github.repository, needs.release.outputs.tag) }}
             ${{ format('ghcr.io/{0}:{1}', github.repository, needs.release.outputs.version) }}
             ${{ format('ghcr.io/{0}:latest', github.repository) }}
+          secrets: github_token=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
 
       - name: Record the image in CloudronVersions.json

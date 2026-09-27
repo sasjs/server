@@ -113,6 +113,11 @@ jobs:
       # api/ from source); BuildKit uses container/Dockerfile.dockerignore
       # instead of the root .dockerignore, which is written for the
       # development compose files.
+      #
+      # The api build lists the SAS_PACKAGES macros over the GitHub API, which
+      # rate limits unauthenticated requests per source IP - the token is
+      # passed as a build secret so a shared runner address cannot exhaust the
+      # budget and fail the build with a 403.
       - name: Build image
         uses: docker/build-push-action@v7
         with:
@@ -120,6 +125,7 @@ jobs:
           file: container/Dockerfile
           load: true
           tags: sasjs-server:ci
+          secrets: github_token=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -218,6 +224,7 @@ jobs:
           file: container/Dockerfile
           load: true
           tags: sasjs-server:ci
+          secrets: github_token=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
 
       - name: Smoke test

@@ -77,6 +77,12 @@ A complete compose example is in [docker-compose.yml](docker-compose.yml).
 - Builds `web/` then `api/` from this repository's source - the same order the
   api build itself requires, because it copies the built frontend into its
   own tree.
+- Lists the SAS_PACKAGES macros over the GitHub API while building `api/`.
+  That endpoint rate limits unauthenticated requests per source IP, so a build
+  from a shared address passes a token as a build secret - `docker buildx
+  build --secret id=github_token,env=GITHUB_TOKEN ...`. The token never
+  reaches a layer or the build log, and a build without it still works,
+  anonymously, until the IP's budget is spent. CI always passes one.
 - Speaks plain HTTP on port 5000: terminate TLS at whatever sits in front of
   it (a reverse proxy, a platform's router).
 - Runs the application as the non-root user (uid 1000); the entrypoint starts
