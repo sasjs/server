@@ -198,6 +198,13 @@ LDAP_GROUPS_BASE_DN = <ou=groups,dc=cloudron>
 # configurable. The `groups` scope is requested automatically from providers
 # that advertise it, and providers that cannot express groups are exempt.
 
+# Each sign-in also mirrors those memberships onto local groups of the same
+# name, so a Permission can be granted to a provider group rather than to each
+# of its members in turn. The mirror is authoritative: a membership the
+# provider stops asserting is removed at the next sign-in. A group whose name
+# an administrator has already used locally, or that another provider owns, is
+# left alone and reported in the log rather than adopted.
+
 # The issuer URL of your provider. Endpoints are read from
 # <OIDC_ISSUER_URL>/.well-known/openid-configuration
 # Supply OIDC_DISCOVERY_URL instead if discovery is served elsewhere.
