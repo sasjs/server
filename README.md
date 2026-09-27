@@ -189,6 +189,9 @@ LDAP_GROUPS_BASE_DN = <ou=groups,dc=cloudron>
 
 ## ENV variables required for AUTH_PROVIDERS: `oidc`
 
+# Sign-in uses PKCE (RFC 7636) with the S256 challenge method. No variable
+# controls it, and the provider needs no extra registration for it.
+
 # The issuer URL of your provider. Endpoints are read from
 # <OIDC_ISSUER_URL>/.well-known/openid-configuration
 # Supply OIDC_DISCOVERY_URL instead if discovery is served elsewhere.
