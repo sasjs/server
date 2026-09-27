@@ -17,6 +17,9 @@ cp CloudronManifest.json "$M_BACKUP"
 CV_BACKUP=$(mktemp)
 HAD_CV=0
 if [ -f CloudronVersions.json ]; then cp CloudronVersions.json "$CV_BACKUP"; HAD_CV=1; fi
+# The changelog is mutated by the --notes cases below, so it is backed up too.
+C_BACKUP=$(mktemp)
+cp CHANGELOG "$C_BACKUP"
 
 pass=0; fail=0
 check() { # check <label> <expected-rc> <actual-rc>
@@ -25,9 +28,10 @@ check() { # check <label> <expected-rc> <actual-rc>
 }
 restore() {
   cp "$M_BACKUP" CloudronManifest.json
+  cp "$C_BACKUP" CHANGELOG
   if [ "$HAD_CV" = 1 ]; then cp "$CV_BACKUP" CloudronVersions.json
   else rm -f CloudronVersions.json; fi
-  rm -f "$M_BACKUP" "$CV_BACKUP"
+  rm -f "$M_BACKUP" "$CV_BACKUP" "$C_BACKUP"
 }
 trap restore EXIT
 
@@ -112,6 +116,13 @@ PY
 OUT=$(python3 scripts/update-versions.py --image "$IMG_A" 2>&1); RC=$?
 check "refuse lower version" 1 $RC
 echo "      $OUT"
+# A negative test has to fail for the reason it names. The changelog guard
+# sits after the semver rule, so a lower version is refused for being lower
+# rather than for having no notes section.
+case "$OUT" in
+  *"lower than published"*) echo "PASS  the refusal names the ordering"; pass=$((pass+1));;
+  *) echo "FAIL  the refusal does not name the ordering"; fail=$((fail+1));;
+esac
 cp "$M_BACKUP" CloudronManifest.json
 
 echo
@@ -139,6 +150,76 @@ else
   rm -f CloudronVersions.json
   echo "      (no committed catalogue in this checkout; skipped)"
 fi
+
+echo
+echo "--- 9. a version with no CHANGELOG section must be refused"
+# The catalogue embeds the changelog as the release notes an operator reads in
+# the dashboard, so recording a version without its section publishes the
+# previous release's notes - which is what every entry from 1.3.5 to 1.8.0 did.
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+m['version'] = '9.9.9'          # deliberately absent from CHANGELOG
+json.dump(m, open('CloudronManifest.json','w'), indent=2)
+PY
+rm -f CloudronVersions.json
+OUT=$(python3 scripts/update-versions.py --image "$IMG_A" 2>&1); RC=$?
+check "refuse a version with no changelog section" 1 $RC
+echo "      $OUT"
+case "$OUT" in
+  *"has no '## 9.9.9' section"*) echo "PASS  the refusal names the missing section"; pass=$((pass+1));;
+  *) echo "FAIL  the refusal does not name the missing section"; fail=$((fail+1));;
+esac
+
+echo
+echo "--- 9b. --check reports the same gap"
+OUT=$(python3 scripts/update-versions.py --check 2>&1); RC=$?
+check "--check fails without the section" 1 $RC
+echo "      $OUT"
+case "$OUT" in
+  *"no '## 9.9.9' section"*) echo "PASS  --check names it"; pass=$((pass+1));;
+  *) echo "FAIL  --check does not name it"; fail=$((fail+1));;
+esac
+
+echo
+echo "--- 9c. --notes adds the section from the release body"
+# The release body opens with its own version heading; the section heading is
+# written by the script, so a copied-in second one would read as a duplicate.
+cat > /tmp/notes-9.9.9.md <<'NOTES'
+## [9.9.9](https://example.invalid/9.9.9) (2026-01-01)
+
+### Features
+
+* a thing that shipped
+NOTES
+OUT=$(python3 scripts/update-versions.py --notes /tmp/notes-9.9.9.md 2>&1); RC=$?
+check "--notes adds the section" 0 $RC
+echo "      $OUT"
+if grep -q '^## 9.9.9$' CHANGELOG; then
+  echo "PASS  the section is in CHANGELOG"; pass=$((pass+1))
+else
+  echo "FAIL  no section written"; fail=$((fail+1))
+fi
+if grep -q 'example.invalid' CHANGELOG; then
+  echo "FAIL  the release heading was copied into the section"; fail=$((fail+1))
+else
+  echo "PASS  the release heading was dropped"; pass=$((pass+1))
+fi
+
+echo
+echo "--- 9d. --notes is idempotent, and the version then records"
+OUT=$(python3 scripts/update-versions.py --notes /tmp/notes-9.9.9.md 2>&1); RC=$?
+check "second --notes is a no-op" 0 $RC
+echo "      $OUT"
+case "$OUT" in
+  *"already has"*) echo "PASS  reported as already present"; pass=$((pass+1));;
+  *) echo "FAIL  not reported as already present"; fail=$((fail+1));;
+esac
+OUT=$(python3 scripts/update-versions.py --image "$IMG_A" 2>&1); RC=$?
+check "record after --notes" 0 $RC
+echo "      $OUT"
+cp "$M_BACKUP" CloudronManifest.json
+rm -f /tmp/notes-9.9.9.md
 
 echo
 echo "PASSED: $pass   FAILED: $fail"

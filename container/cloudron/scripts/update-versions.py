@@ -13,6 +13,8 @@ publishing requirements in the docs.
 
 Usage:
     update-versions.py --image <registry-image>       # add/refresh a version
+    update-versions.py --notes <file>                 # add the version's
+                                                      # CHANGELOG section
     update-versions.py --check                        # verify the file matches
 """
 
@@ -26,6 +28,7 @@ from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST = os.path.join(ROOT, "CloudronManifest.json")
 VERSIONS = os.path.join(ROOT, "CloudronVersions.json")
+CHANGELOG = os.path.join(ROOT, "CHANGELOG")
 
 # Fields the docs require in the embedded manifest for publishing. `iconUrl`,
 # `packagerName` and `packagerUrl` are not needed for a local install, which is
@@ -93,6 +96,60 @@ def load_versions():
     return {"stable": True, "versions": {}}
 
 
+def changelog_sections():
+    """The version numbers CHANGELOG carries a `## <version>` section for.
+
+    The changelog is what an operator reads in the dashboard's update dialog -
+    the catalogue embeds the whole file - so a version recorded without its
+    section publishes whatever the previous release wrote, which is how every
+    entry from 1.3.5 to 1.8.0 came to show the 1.3.4 notes.
+    """
+    if not os.path.exists(CHANGELOG):
+        return set()
+    with open(CHANGELOG) as f:
+        return set(re.findall(r"^##\s+v?(\d+\.\d+\.\d+)\s*$", f.read(), re.M))
+
+
+def prepend_changelog_entry(version, notes_path):
+    """Put a `## <version>` section at the top of CHANGELOG, from `notes_path`.
+
+    Idempotent: a version that already has a section is left alone, so the
+    workflow can run this on every attempt. The release notes semantic-release
+    publishes are used as the body - the maintainer cannot know the version in
+    advance, so requiring a hand-written section would block the release.
+    """
+    if version in changelog_sections():
+        print(f"{version} already has a CHANGELOG section; leaving it alone")
+        return
+
+    with open(notes_path) as f:
+        notes = f.read().strip()
+
+    lines = notes.splitlines()
+
+    # The release body opens with its own heading naming the version and date
+    # (`## [1.8.0](url) (2026-09-27)`). Drop it: the section heading below
+    # carries the version, and a second one reads as a duplicated release.
+    if lines and lines[0].lstrip().startswith("#"):
+        lines = lines[1:]
+        while lines and not lines[0].strip():
+            lines.pop(0)
+
+    body = "\n".join(lines).strip()
+    if not body:
+        sys.exit(f"error: the release notes for {version} are empty")
+
+    existing = ""
+    if os.path.exists(CHANGELOG):
+        with open(CHANGELOG) as f:
+            existing = f.read()
+
+    with open(CHANGELOG, "w") as f:
+        f.write(f"## {version}\n\n{body}\n\n{existing.lstrip()}")
+
+    print(f"added a CHANGELOG section for {version} from {notes_path}")
+
+
 def cmd_add(image):
     manifest = load_manifest()
     version = manifest.get("version")
@@ -114,6 +171,19 @@ def cmd_add(image):
     for existing in versions:
         if semver(version) < semver(existing):
             sys.exit(f"error: version {version} is lower than published {existing}")
+
+    # The catalogue embeds the changelog, and the dashboard shows it as the
+    # release notes for this version. Recording a version whose section is
+    # missing publishes the previous release's notes, which is how entries
+    # 1.3.5 through 1.8.0 all came to read as 1.3.4. Checked after the semver
+    # rule so a nonsensical version is refused for that reason, not this one.
+    if version not in changelog_sections():
+        sys.exit(
+            f"error: {os.path.relpath(CHANGELOG, ROOT)} has no '## {version}' "
+            f"section, so {version} would publish the previous release's notes.\n"
+            f"  The release workflow passes --notes with the release body, which "
+            f"adds it; a hand-run needs the section written first."
+        )
 
     now = datetime.now(timezone.utc)
     stamp_ms = int(now.timestamp() * 1000)
@@ -154,9 +224,25 @@ def cmd_check():
     manifest = load_manifest()
     version = manifest.get("version")
 
+    problems = []
+
+    # The entry that is about to be written embeds the changelog as the release
+    # notes an operator reads in the dashboard, so the section is required
+    # whether or not a catalogue exists yet - the release workflow adds it from
+    # the release body before this runs.
+    if version and version not in changelog_sections():
+        problems.append(
+            f"CHANGELOG has no '## {version}' section, so {version} would be "
+            "published with the previous release's notes"
+        )
+
     if not os.path.exists(VERSIONS):
-        # Nothing is wrong: no release has been cut yet, so there is no
-        # catalogue to be out of sync with. The release workflow creates it.
+        # Otherwise nothing is wrong: no release has been cut yet, so there is
+        # no catalogue to be out of sync with. The release workflow creates it.
+        if problems:
+            for p in problems:
+                print(f"  - {p}", file=sys.stderr)
+            return 1
         print(f"no CloudronVersions.json yet (manifest version {version}); "
               "it is created by the release workflow")
         return 0
@@ -164,7 +250,6 @@ def cmd_check():
     catalog = load_versions()
     versions = catalog.get("versions") or {}
 
-    problems = []
     if not versions:
         problems.append("CloudronVersions.json has no versions")
 
@@ -209,14 +294,25 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--image", help="registry image reference for this version")
+    ap.add_argument("--notes", metavar="FILE",
+                    help="release notes for the manifest version; adds its "
+                         "CHANGELOG section if it has none")
     ap.add_argument("--check", action="store_true",
                     help="verify CloudronVersions.json is publishable and in sync")
     args = ap.parse_args()
 
     if args.check:
         sys.exit(cmd_check())
+    if args.notes:
+        manifest = load_manifest()
+        version = manifest.get("version")
+        if not version:
+            sys.exit("error: CloudronManifest.json has no version")
+        prepend_changelog_entry(version, args.notes)
     if not args.image:
-        ap.error("--image is required unless --check is given")
+        if args.notes:
+            sys.exit(0)
+        ap.error("--image is required unless --check or --notes is given")
     cmd_add(args.image)
 
 

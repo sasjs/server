@@ -1,3 +1,55 @@
+## 1.8.0
+
+- **Provider group memberships are mirrored into the app.** Each sign-in writes the groups the identity provider asserts onto SASjs groups of the same name, so a permission can be granted to a provider group rather than to each of its members. A membership the provider stops asserting is removed at the next sign-in. A name an administrator has already used locally is left alone and reported in the log rather than adopted.
+- **The login screen hides the password form** when local sign-in is switched off, which is the default on this package when single sign-on is configured and no break-glass admin is seeded - so the provider's button is the only thing on the screen.
+- Upstream v1.8.0.
+
+## 1.7.0
+
+- **The app authenticates users itself.** The `proxyAuth` addon is dropped, so the platform's login wall is no longer in front of the app and a browser user meets one prompt instead of two. The per-app access restriction still decides who may attempt a sign-in, and the app's own group policy decides what they are once they have.
+- Local password sign-in is closed by default when single sign-on is configured and no local admin is seeded. Seed `ADMIN_PASSWORD_INITIAL` for a break-glass local account, which keeps it open.
+- Upstream v1.7.0.
+
+## 1.6.0
+
+- **Sign-in is gated on the provider's groups**, by fixed name: `sasjs-admins` signs in as an administrator, `sasjs-users` as an ordinary user, and a user in neither is refused with no account created. The first-user-becomes-administrator bootstrap survives only for providers that cannot express groups at all.
+- Upstream v1.6.0.
+
+## 1.5.1
+
+- **The web app only accepts a session it actually returned.** A platform or proxy answering the session route with its own HTML no longer renders the signed-in shell for a user who has no session - which had left such a user with no way to sign in.
+- Upstream v1.5.1.
+
+## 1.5.0
+
+- OIDC sign-in sends a PKCE challenge (RFC 7636, S256 method).
+- Upstream v1.5.0.
+
+## 1.4.1
+
+- The build authenticates its macro download against the GitHub API, which clears the anonymous rate-limit failures that broke container builds intermittently.
+- Upstream v1.4.1.
+
+## 1.4.0
+
+- Local password sign-in can be switched off with `LOCAL_LOGIN_ENABLED=false`.
+- Upstream v1.4.0.
+
+## 1.3.7
+
+- Failed password logins are throttled by username, not by IP address: behind a reverse proxy every client shares the proxy's address, so an IP-keyed limit locks out the whole deployment rather than an attacker.
+- Upstream v1.3.7.
+
+## 1.3.6
+
+- Every value interpolated into generated stored-program source is escaped, across all four runtimes.
+- Upstream v1.3.6.
+
+## 1.3.5
+
+- The session cookie is marked Secure behind a TLS-terminating proxy, where the app itself sees plain http.
+- Upstream v1.3.5.
+
 ## 1.3.4
 
 - **The configuration is readable without shell access.** Settings live in

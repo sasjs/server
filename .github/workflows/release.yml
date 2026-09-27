@@ -204,6 +204,20 @@ jobs:
           PY
           echo "manifest version -> ${VERSION}"
 
+      # The catalogue embeds this changelog as the release notes an operator
+      # reads in the dashboard, and update-versions.py refuses to record a
+      # version that has no section in it. The version is only known here, so
+      # the section is generated from the release semantic-release has just
+      # published rather than written by hand in advance.
+      - name: Put the release notes in the Cloudron changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          set -eu
+          gh release view "$TAG" --json body --jq .body > /tmp/release-notes.md
+          python3 container/cloudron/scripts/update-versions.py --notes /tmp/release-notes.md
+
       - name: entrypoint behaviour tests
         run: container/tests/verify-start-sh.sh
 
@@ -272,9 +286,12 @@ jobs:
 
           # The generated files must survive the switch from the release tag
           # to the default branch, so they are stashed outside the tree
-          # first.
+          # first. The changelog is generated too - the notes step above adds
+          # this release's section - and it is committed so the next release
+          # stacks onto it rather than onto a file that skips this version.
           cp container/cloudron/CloudronVersions.json /tmp/CloudronVersions.json
           cp container/cloudron/CloudronManifest.json /tmp/CloudronManifest.json
+          cp container/cloudron/CHANGELOG /tmp/CloudronCHANGELOG
 
           git fetch origin "$BRANCH"
           git checkout -- .
@@ -282,7 +299,8 @@ jobs:
 
           cp /tmp/CloudronVersions.json container/cloudron/CloudronVersions.json
           cp /tmp/CloudronManifest.json container/cloudron/CloudronManifest.json
-          git add container/cloudron/CloudronVersions.json container/cloudron/CloudronManifest.json
+          cp /tmp/CloudronCHANGELOG container/cloudron/CHANGELOG
+          git add container/cloudron/CloudronVersions.json container/cloudron/CloudronManifest.json container/cloudron/CHANGELOG
           # Check the INDEX, not the working tree. On a first release
           # CloudronVersions.json is an untracked file, and `git diff` does
           # not see untracked files.
