@@ -29,18 +29,14 @@
       "loginRedirectUri": "/SASLogon/openid/callback",
       "logoutRedirectUri": "/SASLogon/openid/logout",
       "tokenSignatureAlgorithm": "RS256"
-    },
-    "proxyAuth": {
-      "path": "!/SASjsApi/info",
-      "supportsBearerAuth": true
     }
   },
   "checklist": {
     "restrict-access": {
-      "message": "Restrict this app to the users and groups who should reach it: open the app's **Settings > Access control** and choose \"Only allow the following users and groups\". A Cloudron install is unrestricted by default, and here that hands the administrator seat to whoever signs in first - on an app that executes whatever is uploaded to SASjs Drive."
+      "message": "Restrict this app to the users and groups who should reach it: open the app's **Settings > Access control** and choose \"Only allow the following users and groups\". The app authenticates users through Cloudron single sign-on, so this is the first of the two gates in front of it - and it is the one that decides who can even attempt to sign in."
     },
-    "first-user-becomes-admin": {
-      "message": "There is no pre-created admin account. The FIRST user to sign in becomes the administrator; every user after that is a normal user, so grant the others what they need under Settings > Permissions. To seed a local break-glass `admin` account instead, put `ADMIN_PASSWORD_INITIAL=<a strong password>` in `/app/data/config.env` and restart the app."
+    "create-the-groups": {
+      "message": "Create two groups under **Users > Groups** and assign people to them, because sign-in depends on membership: `sasjs-users` for everyone who should use the app, and `sasjs-admins` for its administrators. A user in neither group is refused at sign-in. Membership of `sasjs-admins` is what makes a SASjs administrator - nobody becomes one simply by signing in first."
     },
     "restrict-drive-writes": {
       "message": "The `js` and `py` runtimes execute whatever is uploaded to SASjs Drive, server-side. Grant Drive write access only to trusted authors, and keep the app behind Cloudron access control."

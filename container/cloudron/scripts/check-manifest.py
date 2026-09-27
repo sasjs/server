@@ -111,24 +111,31 @@ def main():
             f"minBoxVersion ({min_box})"
         )
 
-    # addons.proxyAuth is what keeps the app's API private on a platform
-    # deployment. Cloudron's login wall sits in front of every path except the
-    # ones named here, and it - not the app - is what an anonymous request
-    # meets first: the app's own session check is a second gate behind it.
-    # The exclusion list is therefore load-bearing and one line long, and
-    # widening it (or dropping the addon) silently exposes the API to whoever
-    # can reach the domain. Asserted here so the change has to be deliberate
-    # and accompanied by a test update.
+    # Two gates stand in front of the app, and this asserts both are declared.
+    #
+    # The app authenticates users itself: the oidc addon hands it Cloudron's
+    # OIDC credentials, and sign-in is decided there - by the platform's
+    # per-app access restriction and then by the app's own group policy. Drop
+    # the addon and nothing authenticates anybody.
+    #
+    # proxyAuth is the other model: a platform login wall in front of every
+    # route except the ones it excludes, with the app's session check as a
+    # second gate behind it. It is optional, but where it is present the
+    # exclusion list is load-bearing and one line long - widening it, or
+    # excluding everything, silently exposes the API to whoever can reach the
+    # domain.
+    addons = manifest.get("addons") or {}
     health_check = manifest.get("healthCheckPath")
-    proxy_auth = (manifest.get("addons") or {}).get("proxyAuth")
 
-    if not proxy_auth:
+    if not addons.get("oidc"):
         problems.append(
-            "addons.proxyAuth is missing: without it Cloudron authenticates "
-            "nobody in front of the app, so its API is reachable without a "
-            "platform login"
+            "addons.oidc is missing: the app authenticates users through "
+            "Cloudron single sign-on, so without this addon nothing does"
         )
-    else:
+
+    proxy_auth = addons.get("proxyAuth")
+
+    if proxy_auth is not None:
         path = str(proxy_auth.get("path") or "").strip()
         expected = f"!{health_check}" if health_check else None
 
@@ -144,6 +151,19 @@ def main():
                 "so that every route except the health check requires a "
                 "platform login"
             )
+
+    # The restriction is a platform setting, not a manifest field, so the
+    # checklist entry is the only thing that can prompt for it - and it is the
+    # gate that decides who may attempt to sign in at all.
+    checklist = manifest.get("checklist") or {}
+
+    if "restrict-access" not in checklist:
+        problems.append(
+            "the 'restrict-access' checklist item is missing: it is what "
+            "prompts the operator to restrict the app to named users and "
+            "groups, and an unrestricted app is reachable by every Cloudron "
+            "user"
+        )
 
     if problems:
         print("CloudronManifest.json would not load:", file=sys.stderr)
