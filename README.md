@@ -187,6 +187,51 @@ LDAP_BIND_PASSWORD = <password>
 LDAP_USERS_BASE_DN = <ou=users,dc=cloudron>
 LDAP_GROUPS_BASE_DN = <ou=groups,dc=cloudron>
 
+## ENV variables required for AUTH_PROVIDERS: `oidc`
+
+# The issuer URL of your provider. Endpoints are read from
+# <OIDC_ISSUER_URL>/.well-known/openid-configuration
+# Supply OIDC_DISCOVERY_URL instead if discovery is served elsewhere.
+# One of the two is required.
+OIDC_ISSUER_URL=
+OIDC_DISCOVERY_URL=
+
+# Required
+OIDC_CLIENT_ID=
+OIDC_CLIENT_SECRET=
+
+# The callback URL, registered with the provider and matching exactly.
+# The path is fixed by the server.
+# Required
+OIDC_REDIRECT_URI=
+
+# The label shown on the sign-in button, as in "Sign in with <name>"
+# default: OpenID Connect
+OIDC_PROVIDER_NAME=
+
+# Scopes requested from the provider - must include `openid`
+# default: openid profile email
+OIDC_SCOPE=
+
+# Claim used to derive the SASjs username for a new user, normalised to
+# lowercase alphanumerics, max 16 characters
+# default: preferred_username (falling back to `sub` when absent)
+OIDC_USERNAME_CLAIM=
+
+# Algorithm used to verify the provider's id_token signature - set it to match
+# what the provider signs with
+# options: [RS256|RS384|RS512|ES256|ES384|ES512|EdDSA] default: RS256
+OIDC_SIGNING_ALG=
+
+# Whether a successful sign-in with no SASjs account creates one.
+# The first user provisioned becomes an admin; later ones do not.
+# options: [true|false] default: true
+OIDC_JIT_PROVISION=
+
+# Where the provider sends the browser after the single sign-on session closes.
+# Optional - logout returns to the home page when omitted.
+OIDC_POST_LOGOUT_REDIRECT_URI=
+
 # options: [disable|enable] default: `disable` for `server` & `enable` for `desktop`
 # If enabled, be sure to also configure the WHITELIST of third party servers.
 CORS=
