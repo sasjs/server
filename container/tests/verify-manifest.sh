@@ -67,13 +67,60 @@ echo "      $OUT"
 cp "$BACKUP" CloudronManifest.json
 
 echo
-echo "--- 4. the platform login wall must keep covering everything but the health check"
-# proxyAuth.path is the only thing between an anonymous request and the API.
-# Each mutation below is a plausible edit that would expose it.
+echo "--- 4. the authentication gates must stay declared"
+# The app authenticates users itself through the oidc addon, and the platform's
+# access restriction is what limits who may try. Each mutation below is a
+# plausible edit that would leave the app reachable by people it should not be.
 python3 - <<'PY'
 import json
 m = json.load(open('CloudronManifest.json'))
-m['addons']['proxyAuth']['path'] = '!/'
+del m['addons']['oidc']
+json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
+check "dropping the oidc addon is rejected" 1 $RC
+case "$OUT" in
+  *"addons.oidc is missing"*)
+    echo "PASS  says nothing would authenticate users"; pass=$((pass+1));;
+  *) echo "FAIL  did not say nothing would authenticate users"; fail=$((fail+1));;
+esac
+cp "$BACKUP" CloudronManifest.json
+
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+del m['checklist']['restrict-access']
+json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
+check "removing the restrict-access checklist item is rejected" 1 $RC
+case "$OUT" in
+  *"restrict-access"*)
+    echo "PASS  names the missing checklist item"; pass=$((pass+1));;
+  *) echo "FAIL  did not name the missing checklist item"; fail=$((fail+1));;
+esac
+cp "$BACKUP" CloudronManifest.json
+
+echo
+echo "--- 5. the login wall, where it is used, must keep covering everything but the health check"
+# proxyAuth is optional now - the app authenticates users itself - but where a
+# package does use the platform wall, its exclusion list is the only thing
+# between an anonymous request and the API.
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+m['addons']['proxyAuth'] = {'path': '!/SASjsApi/info', 'supportsBearerAuth': True}
+json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
+check "a wall excluding only the health check is accepted" 0 $RC
+echo "      $OUT"
+cp "$BACKUP" CloudronManifest.json
+
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+m['addons']['proxyAuth'] = {'path': '!/', 'supportsBearerAuth': True}
 json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
 PY
 OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
@@ -81,14 +128,14 @@ check "a widened exclusion list is rejected" 1 $RC
 case "$OUT" in
   *"must be '!/SASjsApi/info'"*)
     echo "PASS  names the expected path"; pass=$((pass+1));;
-  *) echo "FAIL  did not name the expected path"; fail=$((fail+1));; 
+  *) echo "FAIL  did not name the expected path"; fail=$((fail+1));;
 esac
 cp "$BACKUP" CloudronManifest.json
 
 python3 - <<'PY'
 import json
 m = json.load(open('CloudronManifest.json'))
-m['addons']['proxyAuth']['path'] = '!'
+m['addons']['proxyAuth'] = {'path': '!', 'supportsBearerAuth': True}
 json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
 PY
 OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
@@ -100,19 +147,8 @@ case "$OUT" in
 esac
 cp "$BACKUP" CloudronManifest.json
 
-python3 - <<'PY'
-import json
-m = json.load(open('CloudronManifest.json'))
-del m['addons']['proxyAuth']
-json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
-PY
-OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
-check "dropping the proxyAuth addon is rejected" 1 $RC
-echo "      $OUT"
-cp "$BACKUP" CloudronManifest.json
-
 echo
-echo "--- 5. the manifest is restored"
+echo "--- 6. the manifest is restored"
 python3 scripts/check-manifest.py $SCHEMA_ARG > /dev/null 2>&1
 check "manifest restored and passing" 0 $?
 

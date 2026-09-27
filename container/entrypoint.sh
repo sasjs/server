@@ -192,8 +192,26 @@ export ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 export ADMIN_PASSWORD_RESET="${ADMIN_PASSWORD_RESET:-NO}"
 if [[ -z "${ADMIN_PASSWORD_INITIAL-}" ]]; then
   echo "NOTE: ADMIN_PASSWORD_INITIAL is not set - no local admin will be seeded."
-  echo "NOTE: the first user to sign in becomes the administrator."
   echo "NOTE: to seed a break-glass local admin instead, set ADMIN_PASSWORD_INITIAL in ${DATA_DIR}/config.env and restart."
+fi
+
+# --- local password login -----------------------------------------------------
+# With an identity provider configured, the local password route is the one
+# credential an anonymous caller can guess, and nothing here needs it: no local
+# account exists unless an operator seeded one. So it is closed by default when
+# single sign-on is configured and no break-glass admin exists to use it - and
+# left open otherwise, because then it is the only way in.
+#
+# Set LOCAL_LOGIN_ENABLED=true in ${DATA_DIR}/config.env to keep password login
+# with an identity provider configured (for admin-created local accounts, for
+# instance), or false to close it on an install with no provider.
+if [[ -z "${LOCAL_LOGIN_ENABLED-}" ]]; then
+  if [[ ",${AUTH_PROVIDERS:-}," == *",oidc,"* && -z "${ADMIN_PASSWORD_INITIAL-}" ]]; then
+    export LOCAL_LOGIN_ENABLED=false
+    echo "NOTE: LOCAL_LOGIN_ENABLED defaults to false - single sign-on is configured and no local admin is seeded."
+  else
+    export LOCAL_LOGIN_ENABLED=true
+  fi
 fi
 
 # --- effective configuration --------------------------------------------------
@@ -238,6 +256,7 @@ CONFIG_SUMMARY="${DATA_DIR}/config.txt"
   echo "OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}"
   echo "OIDC_CLIENT_SECRET=$([[ -n "${OIDC_CLIENT_SECRET:-}" ]] && echo set || echo unset)"
   echo "OIDC_JIT_PROVISION=${OIDC_JIT_PROVISION:-}"
+  echo "LOCAL_LOGIN_ENABLED=${LOCAL_LOGIN_ENABLED:-}"
   echo "ADMIN_USERNAME=${ADMIN_USERNAME:-}"
   echo "ADMIN_PASSWORD_INITIAL=$([[ -n "${ADMIN_PASSWORD_INITIAL:-}" ]] && echo set || echo unset)"
   echo

@@ -101,8 +101,11 @@ behind an authentication wall.
 On [Cloudron](https://cloudron.io) you do not run the image directly: the app
 package in [cloudron/](cloudron/) installs `ghcr.io/sasjs/server` with the
 platform's MongoDB, single sign-on (OIDC), access control and backups wired
-up. The entrypoint detects the platform's addon variables automatically; the
-two sides are kept in sync by `cloudron/tests/verify-start-sh.sh`.
+up. The app authenticates users itself through the platform's OIDC provider -
+there is no platform login wall in front of it - and sign-in requires
+membership of the `sasjs-users` or `sasjs-admins` Cloudron group. The
+entrypoint detects the platform's addon variables automatically; the two sides
+are kept in sync by `cloudron/tests/verify-start-sh.sh`.
 
 ## Verification
 

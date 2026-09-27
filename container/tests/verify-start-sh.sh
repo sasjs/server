@@ -45,7 +45,8 @@ const vars = [
   'OIDC_POST_LOGOUT_REDIRECT_URI', 'OIDC_SCOPE', 'OIDC_USERNAME_CLAIM',
   'SASJS_ROOT', 'DRIVE_LOCATION', 'LOG_LOCATION',
   'RUN_TIMES', 'NODE_PATH', 'PYTHON_PATH', 'SAS_PATH', 'ADMIN_USERNAME',
-  'ADMIN_PASSWORD_INITIAL', 'ADMIN_PASSWORD_RESET', 'NODE_OPTIONS'
+  'ADMIN_PASSWORD_INITIAL', 'ADMIN_PASSWORD_RESET', 'NODE_OPTIONS',
+  'LOCAL_LOGIN_ENABLED'
 ]
 console.log('CWD=' + process.cwd())
 console.log('HOME=' + process.env.HOME)
@@ -112,6 +113,10 @@ check "cwd is the data dir"                "CWD=$T/app-data"                    
 check "SAS_PATH not required"              "SAS_PATH=<unset>"                   "$OUT"
 check "NODE_OPTIONS cleared"               "NODE_OPTIONS=<unset>"               "$OUT"
 check "code-execution notice printed"      "execute code uploaded to SASjs Drive" "$OUT"
+# No local admin is seeded on a Cloudron install, so the local password route -
+# the one credential an anonymous caller can guess - is closed by default.
+check "local password login closed by default" "LOCAL_LOGIN_ENABLED=false"      "$OUT"
+check "says why it is closed"              "single sign-on is configured and no local admin is seeded" "$OUT"
 
 echo
 echo "--- TEST 1b: generic container (no CLOUDRON_* variables)"
@@ -125,7 +130,7 @@ check "HOME is the data dir"               "HOME=$T/data"                       
 check "cwd is the data dir"                "CWD=$T/data"                          "$OUT"
 check "no local admin without a password"  "no local admin will be seeded"       "$OUT"
 check "ADMIN_PASSWORD_INITIAL left unset"  "ADMIN_PASSWORD_INITIAL=<unset>"      "$OUT"
-check "first-user-admin note printed"      "the first user to sign in becomes the administrator" "$OUT"
+check "local login stays open without a provider" "LOCAL_LOGIN_ENABLED=true"      "$OUT"
 check "starts the app"                     "Starting SASjs Server"                "$OUT"
 
 echo
@@ -299,11 +304,27 @@ OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
   ADMIN_PASSWORD_INITIAL=chosen-password "${ADDONS[@]}" \
   bash "$T/start-under-test.sh")
 check "explicit password passed through" "ADMIN_PASSWORD_INITIAL=chosen-password" "$OUT"
+# A break-glass admin exists to be used when single sign-on is unavailable, so
+# seeding one keeps the password route open.
+check "a break-glass admin keeps password login open" "LOCAL_LOGIN_ENABLED=true" "$OUT"
 if grep -q "no local admin will be seeded" <<< "$OUT"; then
   echo "FAIL  the no-admin note is printed even though ADMIN_PASSWORD_INITIAL is set"
   FAIL=1
 else
   echo "PASS  the no-admin note is not printed when a password is set"
+fi
+
+echo
+echo "--- TEST 6e: an explicit LOCAL_LOGIN_ENABLED wins over the default"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
+  LOCAL_LOGIN_ENABLED=true "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh")
+check "explicit LOCAL_LOGIN_ENABLED=true honoured" "LOCAL_LOGIN_ENABLED=true" "$OUT"
+if grep -q "defaults to false" <<< "$OUT"; then
+  echo "FAIL  the default was applied despite an explicit value"
+  FAIL=1
+else
+  echo "PASS  the default note is not printed when the value is explicit"
 fi
 
 echo

@@ -1,24 +1,26 @@
 ### SASjs Server is running
 
-**This app is behind Cloudron's login.** Anyone visiting it gets a Cloudron
-login screen first; access follows Cloudron users, groups and MFA.
+**Create the groups before anyone signs in.** Sign-in depends on group
+membership: under **Users > Groups** create `sasjs-users` for everyone who
+should use the app and `sasjs-admins` for its administrators, then assign people
+to them. A user in neither group is refused at sign-in, and membership of
+`sasjs-admins` is what makes a SASjs administrator - nobody becomes one by
+signing in first.
 
-**Restrict access first.** Open the app's **Settings > Access control** and
-choose "Only allow the following users and groups" before anyone signs in: the
-FIRST user to sign in becomes the administrator, and this app executes whatever
-is uploaded to SASjs Drive.
+**Restrict access as well.** Open the app's **Settings > Access control** and
+choose "Only allow the following users and groups". The app authenticates users
+itself through Cloudron single sign-on, so this is what decides who can even
+attempt to sign in.
 
-**Sign in and become the administrator.** There is no pre-created admin
-account: the FIRST user to sign in becomes the administrator, and every user
-after that is a normal user. Sign in now, then grant the others what they need
-under Settings > Permissions.
+**Sign in with Cloudron.** The app shows its own sign-in screen; use "Sign in
+with Cloudron". Once you are in, grant other users what they need under
+Settings > Permissions.
 
-**Break-glass local account (optional).** To seed a local `admin` account
-instead, add `ADMIN_PASSWORD_INITIAL=<a strong password>` to
-`/app/data/config.env` (File Manager, or this app's Terminal) and restart the app.
-<sso>Note that a seeded admin counts as an existing administrator, so the first
-SSO user would then be a normal user - set it before anyone signs in only if
-that is what you want.</sso>
+**Break-glass local account (optional).** To seed a local `admin` account, add
+`ADMIN_PASSWORD_INITIAL=<a strong password>` to `/app/data/config.env` (File
+Manager, or this app's Terminal) and restart the app. Seeding one keeps password
+sign-in open, which is the point of a break-glass account; password sign-in is
+otherwise closed while single sign-on is configured.
 
 **Stored programs execute real code.** The `js` and `py` runtimes run whatever
 is uploaded to SASjs Drive, server-side. Grant Drive write access only to

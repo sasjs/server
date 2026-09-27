@@ -192,6 +192,12 @@ LDAP_GROUPS_BASE_DN = <ou=groups,dc=cloudron>
 # Sign-in uses PKCE (RFC 7636) with the S256 challenge method. No variable
 # controls it, and the provider needs no extra registration for it.
 
+# Sign-in also requires group membership, by fixed name: the provider's
+# `groups` claim must contain `sasjs-users` (ordinary user) or `sasjs-admins`
+# (administrator), and a user in neither is refused. The names are not
+# configurable. The `groups` scope is requested automatically from providers
+# that advertise it, and providers that cannot express groups are exempt.
+
 # The issuer URL of your provider. Endpoints are read from
 # <OIDC_ISSUER_URL>/.well-known/openid-configuration
 # Supply OIDC_DISCOVERY_URL instead if discovery is served elsewhere.
