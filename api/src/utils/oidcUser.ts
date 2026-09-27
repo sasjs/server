@@ -22,6 +22,38 @@ export const normaliseUsername = (raw: string): string =>
 export const MIN_USERNAME_LENGTH = 3
 
 /**
+ * The two provider groups that decide access, by fixed name.
+ *
+ * Membership is the whole access decision, so the names are constants rather
+ * than configuration: a deployment that could rename them could silently
+ * change who is allowed in, and the app is the last gate once the platform's
+ * login wall is out of the way.
+ */
+export const SASJS_ADMINS_GROUP = 'sasjs-admins'
+export const SASJS_USERS_GROUP = 'sasjs-users'
+
+export interface GroupPolicy {
+  /** False refuses the sign-in outright. */
+  allowed: boolean
+  /** True for a member of the administrators group. */
+  isAdmin: boolean
+}
+
+/**
+ * What a provider's group memberships grant: nothing at all, ordinary access,
+ * or administrator access. Membership of neither group is a refusal rather
+ * than a quiet demotion, so a user who was removed from both is told why.
+ */
+export const groupPolicyFor = (groups: string[]): GroupPolicy => {
+  const isAdmin = groups.includes(SASJS_ADMINS_GROUP)
+
+  return {
+    allowed: isAdmin || groups.includes(SASJS_USERS_GROUP),
+    isAdmin
+  }
+}
+
+/**
  * Thrown in the shape the route layer already understands: a non-Error object
  * carrying `code` and `message` becomes that status and body (see the catch in
  * routes/web/web.ts). Consistent with how `login` reports its failures.
@@ -55,14 +87,32 @@ export interface OidcUserResolution {
  *    deliberately.
  * 3. Otherwise, provision - but only when OIDC_JIT_PROVISION is true.
  *
- * Bootstrap rule: the first provisioned user becomes an admin only while no
- * admin exists at all. After that every provisioned user is a normal user.
- * This keeps a fresh install usable without granting admin to everyone who
- * can reach the login page.
+ * Access and administration come from the provider's groups, when the provider
+ * supplies them (`enforceGroupPolicy`): a member of `sasjs-admins` is an
+ * administrator, a member of `sasjs-users` is an ordinary user, and a member
+ * of neither is refused. The memberships are re-read on every sign-in, so
+ * removing someone from the administrators group demotes them at their next
+ * sign-in rather than leaving the elevation in place.
+ *
+ * Providers that cannot express groups are exempt, and for them the bootstrap
+ * rule still applies: the first provisioned user becomes an admin while no
+ * admin exists at all. Refusing every user of such a provider would be worse
+ * than the bootstrap, which only ever grants one account.
  */
 export const resolveOidcUser = async (
-  identity: OIDCIdentity
+  identity: OIDCIdentity,
+  enforceGroupPolicy: boolean
 ): Promise<OidcUserResolution> => {
+  const policy = enforceGroupPolicy
+    ? groupPolicyFor(identity.groups)
+    : undefined
+
+  if (policy && !policy.allowed) {
+    throw refuse(
+      `Your account is not a member of '${SASJS_USERS_GROUP}' or '${SASJS_ADMINS_GROUP}', which this server requires for access. Ask an administrator to add you to one of them.`
+    )
+  }
+
   const existingBySubject = await User.findOne({
     authProvider: AuthProviderType.OIDC,
     authProviderId: identity.subject
@@ -72,6 +122,20 @@ export const resolveOidcUser = async (
     if (!existingBySubject.isActive) {
       throw refuse('Your account is not active.')
     }
+
+    // The provider's groups are the source of truth for administration, so a
+    // membership change takes effect at the next sign-in.
+    if (policy && existingBySubject.isAdmin !== policy.isAdmin) {
+      process.logger?.info(
+        `OIDC user '${existingBySubject.username}' ${
+          policy.isAdmin ? 'promoted to' : 'demoted from'
+        } administrator by group membership`
+      )
+
+      existingBySubject.isAdmin = policy.isAdmin
+      await existingBySubject.save()
+    }
+
     return { user: existingBySubject, provisioned: false }
   }
 
@@ -100,9 +164,17 @@ export const resolveOidcUser = async (
 
   const adminExists = await User.findOne({ isAdmin: true })
 
+  // With the group policy in force the group decides; without it (a provider
+  // that cannot express groups) the first user bootstraps the install.
+  const isAdmin = policy ? policy.isAdmin : !adminExists
+
   process.logger?.info(
     `Provisioning OIDC user '${username}'${
-      adminExists ? '' : ' as the first administrator'
+      isAdmin
+        ? policy
+          ? ` as an administrator (member of '${SASJS_ADMINS_GROUP}')`
+          : ' as the first administrator'
+        : ''
     }`
   )
 
@@ -115,7 +187,7 @@ export const resolveOidcUser = async (
     password: User.hashPassword(randomBytes(64).toString('hex')),
     authProvider: AuthProviderType.OIDC,
     authProviderId: identity.subject,
-    isAdmin: !adminExists,
+    isAdmin,
     isActive: true,
     needsToUpdatePassword: false
   })

@@ -5,7 +5,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import User from '../../../model/User'
-import { OIDCClient } from '../../../utils'
+import {
+  OIDCClient,
+  SASJS_ADMINS_GROUP,
+  SASJS_USERS_GROUP
+} from '../../../utils'
 import {
   startStubIdP,
   StubIdP,
@@ -127,7 +131,9 @@ describe('OIDC web routes', () => {
         STUB_REDIRECT_URI
       )
       expect(location.searchParams.get('response_type')).toEqual('code')
-      expect(location.searchParams.get('scope')).toEqual('openid profile email')
+      expect((location.searchParams.get('scope') as string).split(' ')).toEqual(
+        expect.arrayContaining(['openid', 'profile', 'email'])
+      )
       expect(location.searchParams.get('state')).toBeTruthy()
       expect(location.searchParams.get('nonce')).toBeTruthy()
       expect(location.searchParams.get('code_challenge')).toBeTruthy()
@@ -157,6 +163,7 @@ describe('OIDC web routes', () => {
         sub: 'alice',
         preferred_username: 'alice',
         name: 'Alice Example',
+        groups: [SASJS_ADMINS_GROUP],
         nonce
       })
 
@@ -169,6 +176,7 @@ describe('OIDC web routes', () => {
       const session = await agent.get('/SASjsApi/session').expect(200)
 
       expect(session.body.username).toEqual('alice')
+      // The administrator flag follows the provider's groups.
       expect(session.body.isAdmin).toEqual(true)
     })
 
@@ -221,11 +229,16 @@ describe('OIDC web routes', () => {
       expect(await User.countDocuments({})).toEqual(0)
     })
 
-    it('should make the first provisioned user an administrator', async () => {
+    it('should make a member of sasjs-admins an administrator', async () => {
       const agent = request.agent(app)
       const { state, nonce } = await beginFlow(agent)
 
-      idp.setIdTokenClaims({ sub: 'first', preferred_username: 'first', nonce })
+      idp.setIdTokenClaims({
+        sub: 'first',
+        preferred_username: 'first',
+        groups: [SASJS_ADMINS_GROUP],
+        nonce
+      })
 
       await agent
         .get(`/SASLogon/openid/callback?code=c&state=${state}`)
@@ -240,20 +253,14 @@ describe('OIDC web routes', () => {
       expect(user!.needsToUpdatePassword).toEqual(false)
     })
 
-    it('should NOT make later users administrators', async () => {
-      await User.create({
-        displayName: 'Existing Admin',
-        username: 'theadmin',
-        password: 'x',
-        isAdmin: true
-      })
-
+    it('should make a member of sasjs-users an ordinary user, even with no admin present', async () => {
       const agent = request.agent(app)
       const { state, nonce } = await beginFlow(agent)
 
       idp.setIdTokenClaims({
         sub: 'second',
         preferred_username: 'second',
+        groups: [SASJS_USERS_GROUP],
         nonce
       })
 
@@ -264,6 +271,110 @@ describe('OIDC web routes', () => {
       const user = await User.findOne({ username: 'second' })
 
       expect(user!.isAdmin).toEqual(false)
+    })
+
+    it('should refuse a user who is in neither group, and create no account', async () => {
+      const agent = request.agent(app)
+      const { state, nonce } = await beginFlow(agent)
+
+      idp.setIdTokenClaims({
+        sub: 'outsider',
+        preferred_username: 'outsider',
+        groups: [],
+        nonce
+      })
+
+      const res = await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(403)
+
+      expect(res.text).toContain(SASJS_USERS_GROUP)
+      expect(res.text).toContain(SASJS_ADMINS_GROUP)
+      expect(await User.countDocuments({})).toEqual(0)
+    })
+
+    it('should take the groups from userinfo when the id_token omits them', async () => {
+      const agent = request.agent(app)
+      const { state, nonce } = await beginFlow(agent)
+
+      // No groups claim in the id_token, which is where some providers put
+      // them; the memberships are only served from userinfo.
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: undefined,
+        nonce
+      })
+      idp.setUserinfoGroups([SASJS_ADMINS_GROUP])
+
+      await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+
+      const user = await User.findOne({ username: 'alice' })
+
+      expect(user!.isAdmin).toEqual(true)
+      expect(idp.lastUserinfoRequest()!.headers.authorization).toEqual(
+        'Bearer at-123'
+      )
+    })
+
+    it('should demote an administrator who is no longer in sasjs-admins', async () => {
+      const first = request.agent(app)
+      const flow1 = await beginFlow(first)
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: [SASJS_ADMINS_GROUP],
+        nonce: flow1.nonce
+      })
+      await first
+        .get(`/SASLogon/openid/callback?code=c&state=${flow1.state}`)
+        .expect(302)
+
+      expect((await User.findOne({ username: 'alice' }))!.isAdmin).toEqual(true)
+
+      // Removed from the administrators group in the provider; the next
+      // sign-in must not leave the elevation in place.
+      const second = request.agent(app)
+      const flow2 = await beginFlow(second)
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: [SASJS_USERS_GROUP],
+        nonce: flow2.nonce
+      })
+      await second
+        .get(`/SASLogon/openid/callback?code=c&state=${flow2.state}`)
+        .expect(302)
+
+      expect((await User.findOne({ username: 'alice' }))!.isAdmin).toEqual(
+        false
+      )
+    })
+
+    it('should keep the first-user bootstrap for a provider without groups', async () => {
+      // A provider that cannot express memberships is exempt from the policy -
+      // refusing every one of its users would be worse than the bootstrap,
+      // which only ever grants one account.
+      idp.setGroupsScope(false)
+      OIDCClient.reset()
+
+      const agent = request.agent(app)
+      const { state, nonce } = await beginFlow(agent)
+
+      idp.setIdTokenClaims({
+        sub: 'first',
+        preferred_username: 'first',
+        groups: [],
+        nonce
+      })
+
+      await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+
+      expect((await User.findOne({ username: 'first' }))!.isAdmin).toEqual(true)
     })
 
     it('should sign an existing user back in without duplicating them', async () => {

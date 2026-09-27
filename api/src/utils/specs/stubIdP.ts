@@ -2,6 +2,7 @@ import http from 'http'
 import { createHash } from 'crypto'
 import { AddressInfo } from 'net'
 import { generateKeyPair, exportJWK, SignJWT, KeyLike } from 'jose'
+import { SASJS_USERS_GROUP } from '../oidcUser'
 
 /**
  * A minimal OpenID provider for tests: discovery document, JWKS, and a token
@@ -46,6 +47,14 @@ export interface StubIdP {
   setAuthMethods: (methods: string[]) => void
   setEndSessionEndpoint: (present: boolean) => void
   /**
+   * Whether the discovery document advertises the `groups` scope - i.e.
+   * whether the provider can express group memberships at all.
+   */
+  setGroupsScope: (present: boolean) => void
+  /** The groups the userinfo endpoint serves, for the id_token-less case. */
+  setUserinfoGroups: (groups: string[]) => void
+  lastUserinfoRequest: () => { headers: any } | undefined
+  /**
    * The code_challenge the authorization endpoint would have recorded for the
    * in-flight code. Pass undefined to model a flow that sent none.
    */
@@ -68,6 +77,9 @@ export const startStubIdP = async (): Promise<StubIdP> => {
   let endSessionEndpoint = false
   let codeChallenge: string | undefined
   let pkceRequired = false
+  let groupsScope = true
+  let userinfoGroups: string[] = []
+  let lastUserinfo: { headers: any } | undefined
   let lastRequest: { headers: any; body: string } | undefined
   let idTokenClaims: { [key: string]: unknown } = { sub: 'alice' }
   let baseUrl = ''
@@ -116,14 +128,27 @@ export const startStubIdP = async (): Promise<StubIdP> => {
           authorization_endpoint: `${baseUrl}${ISSUER_PATH}/auth`,
           token_endpoint: `${baseUrl}${ISSUER_PATH}/token`,
           jwks_uri: `${baseUrl}${ISSUER_PATH}/jwks`,
+          userinfo_endpoint: `${baseUrl}${ISSUER_PATH}/userinfo`,
           ...(authMethods.length
             ? { token_endpoint_auth_methods_supported: authMethods }
             : {}),
+          scopes_supported: [
+            'openid',
+            'profile',
+            'email',
+            ...(groupsScope ? ['groups'] : [])
+          ],
           ...(endSessionEndpoint
             ? { end_session_endpoint: `${baseUrl}${ISSUER_PATH}/logout` }
             : {})
         })
       )
+      return
+    }
+
+    if (url.pathname === `${ISSUER_PATH}/userinfo`) {
+      lastUserinfo = { headers: req.headers }
+      res.end(JSON.stringify({ ...idTokenClaims, groups: userinfoGroups }))
       return
     }
 
@@ -169,7 +194,12 @@ export const startStubIdP = async (): Promise<StubIdP> => {
         }
       }
 
-      const idToken = await sign(rsa.privateKey, 'rsa1', 'RS256', idTokenClaims)
+      // Claims default to membership of the ordinary-users group, so specs
+      // that are not about the group policy do not have to restate it. A spec
+      // that sets `groups` itself - including an empty list - overrides it.
+      const claims = { groups: [SASJS_USERS_GROUP], ...idTokenClaims }
+
+      const idToken = await sign(rsa.privateKey, 'rsa1', 'RS256', claims)
 
       res.end(JSON.stringify({ id_token: idToken, access_token: 'at-123' }))
       return
@@ -208,6 +238,13 @@ export const startStubIdP = async (): Promise<StubIdP> => {
     setEndSessionEndpoint: (present) => {
       endSessionEndpoint = present
     },
+    setGroupsScope: (present) => {
+      groupsScope = present
+    },
+    setUserinfoGroups: (groups) => {
+      userinfoGroups = groups
+    },
+    lastUserinfoRequest: () => lastUserinfo,
     setCodeChallenge: (challenge) => {
       codeChallenge = challenge
     },

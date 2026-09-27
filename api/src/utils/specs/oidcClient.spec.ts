@@ -116,9 +116,38 @@ describe('OIDCClient', () => {
       expect(url.searchParams.get('client_id')).toEqual(CLIENT_ID)
       expect(url.searchParams.get('redirect_uri')).toEqual(REDIRECT_URI)
       expect(url.searchParams.get('response_type')).toEqual('code')
-      expect(url.searchParams.get('scope')).toEqual('openid profile email')
+      expect((url.searchParams.get('scope') as string).split(' ')).toEqual(
+        expect.arrayContaining(['openid', 'profile', 'email'])
+      )
       expect(url.searchParams.get('state')).toEqual('state-123')
       expect(url.searchParams.get('nonce')).toEqual('nonce-456')
+    })
+
+    it('should ask for the groups scope when the provider advertises it', async () => {
+      const client = await OIDCClient.init()
+      const url = new URL(
+        client.getAuthorizationUrl('state-123', 'nonce-456', VERIFIER)
+      )
+
+      expect(client.providerSupportsGroups()).toEqual(true)
+      expect((url.searchParams.get('scope') as string).split(' ')).toContain(
+        'groups'
+      )
+    })
+
+    it('should not ask for the groups scope when the provider does not offer it', async () => {
+      idp.setGroupsScope(false)
+      OIDCClient.reset()
+
+      const client = await OIDCClient.init()
+      const url = new URL(
+        client.getAuthorizationUrl('state-123', 'nonce-456', VERIFIER)
+      )
+
+      expect(client.providerSupportsGroups()).toEqual(false)
+      expect(
+        (url.searchParams.get('scope') as string).split(' ')
+      ).not.toContain('groups')
     })
 
     it('should send the S256 challenge of the verifier, never the verifier', async () => {
@@ -209,8 +238,62 @@ describe('OIDCClient', () => {
       expect(identity).toEqual({
         subject: 'alice',
         username: 'alice',
-        displayName: 'Alice Example'
+        displayName: 'Alice Example',
+        groups: []
       })
+    })
+
+    it('should return the groups claim when the id_token carries one', async () => {
+      const client = await OIDCClient.init()
+      const idToken = await idp.signIdToken({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: ['sasjs-admins'],
+        nonce: 'nonce-456'
+      })
+
+      const identity = await client.verifyIdToken(idToken, 'nonce-456')
+
+      expect(identity.groups).toEqual(['sasjs-admins'])
+    })
+
+    it('should fall back to userinfo when the id_token carries no groups', async () => {
+      const client = await OIDCClient.init()
+      const idToken = await idp.signIdToken({
+        sub: 'alice',
+        preferred_username: 'alice',
+        nonce: 'nonce-456'
+      })
+      idp.setUserinfoGroups(['sasjs-users'])
+
+      const identity = await client.verifyIdToken(
+        idToken,
+        'nonce-456',
+        'at-123'
+      )
+
+      expect(identity.groups).toEqual(['sasjs-users'])
+      expect(idp.lastUserinfoRequest()!.headers.authorization).toEqual(
+        'Bearer at-123'
+      )
+    })
+
+    it('should return no groups when the provider serves none', async () => {
+      const client = await OIDCClient.init()
+      const idToken = await idp.signIdToken({
+        sub: 'alice',
+        preferred_username: 'alice',
+        nonce: 'nonce-456'
+      })
+      idp.setUserinfoGroups([])
+
+      const identity = await client.verifyIdToken(
+        idToken,
+        'nonce-456',
+        'at-123'
+      )
+
+      expect(identity.groups).toEqual([])
     })
 
     it('should accept an EdDSA id_token when that algorithm is configured', async () => {

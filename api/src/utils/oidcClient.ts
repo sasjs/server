@@ -15,6 +15,7 @@ export interface OIDCDiscoveryDocument {
   userinfo_endpoint?: string
   end_session_endpoint?: string
   token_endpoint_auth_methods_supported?: string[]
+  scopes_supported?: string[]
 }
 
 export interface OIDCTokens {
@@ -25,7 +26,8 @@ export interface OIDCTokens {
 /**
  * The identity as asserted by the provider, before any local policy is
  * applied. `username` is the raw claim value - normalising it into a sasjs
- * username is a provisioning concern, not a protocol one.
+ * username is a provisioning concern, not a protocol one, and so is deciding
+ * what the group membership means.
  */
 export interface OIDCIdentity {
   /** The `sub` claim - the durable external identifier for this user. */
@@ -33,7 +35,16 @@ export interface OIDCIdentity {
   /** The configured username claim, falling back to `sub`. */
   username: string
   displayName: string
+  /** The provider's `groups` claim, when it supplies one. */
+  groups: string[]
 }
+
+/**
+ * The scope that makes a provider release its group memberships. Providers
+ * that do not support it are not asked for it, and the group policy is only
+ * enforced where the provider advertises it.
+ */
+export const GROUPS_SCOPE = 'groups'
 
 const DISCOVERY_MEMBERS = [
   'issuer',
@@ -50,6 +61,19 @@ const DISCOVERY_MEMBERS = [
  */
 export const codeChallengeFor = (codeVerifier: string): string =>
   createHash('sha256').update(codeVerifier).digest('base64url')
+
+/**
+ * The `groups` claim as a list of strings. Anything else - absent, a string, a
+ * list with non-strings in it - yields only the usable entries, so a malformed
+ * claim cannot masquerade as a membership.
+ */
+const readGroups = (claims: { [key: string]: unknown }): string[] => {
+  const groups = claims.groups
+
+  if (!Array.isArray(groups)) return []
+
+  return groups.filter((group): group is string => typeof group === 'string')
+}
 
 /**
  * A generic OpenID Connect relying party.
@@ -194,9 +218,19 @@ export class OIDCClient {
       process.env.OIDC_REDIRECT_URI as string
     )
     url.searchParams.set('response_type', 'code')
+    // The group policy needs the provider's memberships, and a provider
+    // releases them only for a scope it advertises. Asking for a scope the
+    // provider does not support would fail the authorization request, so the
+    // scope follows the discovery document - and where the scope is absent the
+    // group policy is not applied at all.
+    const scope = process.env.OIDC_SCOPE ?? 'openid profile email'
+    const wantsGroups =
+      this.providerSupportsGroups() &&
+      !scope.split(/[\s,]+/).includes(GROUPS_SCOPE)
+
     url.searchParams.set(
       'scope',
-      process.env.OIDC_SCOPE ?? 'openid profile email'
+      wantsGroups ? `${scope} ${GROUPS_SCOPE}` : scope
     )
     url.searchParams.set('state', state)
     url.searchParams.set('nonce', nonce)
@@ -277,11 +311,24 @@ export class OIDCClient {
   }
 
   /**
+   * Whether the provider advertises group memberships. False means the
+   * provider cannot express them, so no group policy can be applied to its
+   * users - the alternative would be refusing every one of them.
+   */
+  providerSupportsGroups(): boolean {
+    return (this.discovery.scopes_supported ?? []).includes(GROUPS_SCOPE)
+  }
+
+  /**
    * Verifies the id_token's signature and claims and returns the asserted
    * identity. jose validates `iss`, `aud` and `exp`; the `nonce` is checked
    * here because it is not a registered claim jose knows to compare.
    */
-  async verifyIdToken(idToken: string, nonce: string): Promise<OIDCIdentity> {
+  async verifyIdToken(
+    idToken: string,
+    nonce: string,
+    accessToken?: string
+  ): Promise<OIDCIdentity> {
     const { payload } = await jwtVerify(idToken, this.jwks, {
       issuer: this.discovery.issuer,
       audience: process.env.OIDC_CLIENT_ID as string,
@@ -293,7 +340,45 @@ export class OIDCClient {
       throw new Error('OIDC id_token nonce mismatch')
     }
 
-    return this.toIdentity(payload)
+    const identity = this.toIdentity(payload)
+
+    // Providers differ on where the memberships appear: some carry the claim
+    // in the id_token, others serve it only from userinfo. Ask the second
+    // place rather than turning a member into a refusal.
+    if (
+      !identity.groups.length &&
+      this.providerSupportsGroups() &&
+      accessToken
+    ) {
+      identity.groups = await this.fetchGroups(accessToken)
+    }
+
+    return identity
+  }
+
+  /**
+   * The `groups` claim as served by the userinfo endpoint. A failure here is
+   * not fatal to the sign-in: the caller's policy decides, and it refuses when
+   * the memberships are missing.
+   */
+  private async fetchGroups(accessToken: string): Promise<string[]> {
+    const endpoint = this.discovery.userinfo_endpoint
+    if (!endpoint) return []
+
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          accept: 'application/json'
+        }
+      })
+
+      if (!response.ok) return []
+
+      return readGroups((await response.json()) as { [key: string]: unknown })
+    } catch {
+      return []
+    }
   }
 
   private toIdentity(payload: JWTPayload): OIDCIdentity {
@@ -312,7 +397,8 @@ export class OIDCClient {
     return {
       subject,
       username,
-      displayName: typeof name === 'string' && name ? name : username
+      displayName: typeof name === 'string' && name ? name : username,
+      groups: readGroups(payload)
     }
   }
 
