@@ -47,6 +47,15 @@ or this app's Terminal) and restart the app. Note that a seeded admin counts as
 an existing administrator, so the first SSO user would then be a normal user -
 set it before anyone signs in only if that is the arrangement you want.
 
+## Access control
+
+Restrict the app to the users and groups who should reach it, before anyone
+signs in: open the app's **Settings > Access control** and choose "Only allow
+the following users and groups". A Cloudron install is unrestricted by default,
+and two things make that the wrong default here - the FIRST user to sign in
+becomes the administrator, and the `js` and `py` runtimes execute whatever is
+uploaded to SASjs Drive. Unrestricted, both go to every user on the Cloudron.
+
 ## Configuration
 
 Settings live in `/app/data/config.env` (visible in the File Manager; `.env` in
