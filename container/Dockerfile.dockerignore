@@ -1,7 +1,6 @@
-# BuildKit uses this file - instead of the repository root .dockerignore -
-# when building container/Dockerfile. The root one cannot be used here: it
-# excludes api/public, which the api build needs (npm run public:copy), and
-# it was written for the development compose files.
+# BuildKit uses this file when building container/Dockerfile. It is the
+# only ignore file for that build, and it keeps api/public in the context,
+# which the api build needs (npm run public:copy).
 #
 # The image build needs api/, web/ and the entrypoint; nothing else.
 #

@@ -1,6 +1,6 @@
 # Minimal SASjs Server stack: the container image plus a MongoDB for
-# server mode. For development of the app itself, use the compose files at
-# the repository root instead.
+# server mode. Uncomment the build block below to run the image built from
+# this checkout instead of the published one.
 
 services:
   server:

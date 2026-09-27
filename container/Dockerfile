@@ -8,8 +8,8 @@
 # non-root application user, everything else configured by environment.
 #
 # The build context is the repository root; BuildKit uses
-# container/Dockerfile.dockerignore (not the root .dockerignore, which is
-# written for the development compose files and would exclude api/public).
+# container/Dockerfile.dockerignore, which keeps api/public in the context
+# (the api build copies it in with npm run public:copy).
 
 FROM cloudron/node-base:24-20260920@sha256:d984683ec59bf2379130bf41cf3c2b6bc0453f327297d7183525cb05424e7b34
 
