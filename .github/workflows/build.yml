@@ -133,6 +133,9 @@ jobs:
         run: npm run build
         env:
           CI: true
+          # The api build lists the SAS_PACKAGES macros over the GitHub API,
+          # which rate limits unauthenticated requests per source IP.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-web:
     runs-on: ubuntu-22.04

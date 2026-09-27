@@ -45,9 +45,26 @@ COPY api/ /usr/server/api/
 # devDependencies even though app.ts, setProcessVariables.ts and sas9-web.ts
 # import it at runtime, so pruning removes a module the server cannot start
 # without: the container dies with "Error: Cannot find module 'dotenv'".
-RUN set -eux; \
+#
+# The build lists the SAS_PACKAGES macros over the GitHub API. That endpoint
+# rate limits unauthenticated requests per source IP, and a CI runner shares
+# its address with the rest of the host, so the listing fails with a 403 often
+# enough to redden unrelated builds. The token arrives as a build secret -
+# never a build arg or an ENV, both of which persist in the image - and a
+# build without it still works, anonymously.
+#
+# `set +x` around the read keeps the value out of the build log: bash traces an
+# assignment after expansion, which would print the token.
+RUN --mount=type=secret,id=github_token \
+    set -eux; \
     cd /usr/server/api; \
     npm ci --no-audit --no-fund; \
+    set +x; \
+    if [ -f /run/secrets/github_token ]; then \
+      GITHUB_TOKEN="$(cat /run/secrets/github_token)"; \
+      export GITHUB_TOKEN; \
+    fi; \
+    set -x; \
     npm run build; \
     test -f /usr/server/api/build/src/server.js; \
     test -d /usr/server/api/web/build
