@@ -11,6 +11,7 @@ import {
   generateAuthCode,
   AuthProviderType,
   isAuthProviderEnabled,
+  isLocalLoginEnabled,
   LDAPClient,
   OIDCClient,
   resolveOidcUser
@@ -123,6 +124,12 @@ const login = async (
       validPass = await ldapClient
         .verifyUser(username, password)
         .catch(() => false)
+    } else if (!isLocalLoginEnabled()) {
+      // The operator has switched local sign-in off, so the stored password is
+      // never compared: there is no credential here to attack. Accounts that
+      // authenticate through LDAP keep working, and provider accounts sign in
+      // through the provider.
+      throw errors.localLoginDisabled
     } else {
       validPass = user.comparePassword(password)
     }
@@ -343,6 +350,11 @@ const errors = {
   userNotFound: {
     code: 401,
     message: 'Username is not found.'
+  },
+  localLoginDisabled: {
+    code: 401,
+    message:
+      'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
   },
   oidcInvalidState: {
     code: 401,
