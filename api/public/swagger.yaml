@@ -475,12 +475,16 @@ components:
                 oidcProviderName:
                     type: string
                     description: "The label for that button, from OIDC_PROVIDER_NAME. Absent unless OIDC is\nconfigured. Not sensitive - it is a display name."
+                localLoginEnabled:
+                    type: boolean
+                    description: "Whether password sign-in for local (database) accounts is switched on,\nfrom LOCAL_LOGIN_ENABLED. Public for the same reason as authProviders:\nthe login screen must not offer a form the server refuses to accept."
             required:
                 - mode
                 - cors
                 - protocol
                 - runTimes
                 - authProviders
+                - localLoginEnabled
             type: object
             additionalProperties: false
         AuthorizedRoutesResponse:
@@ -1691,7 +1695,7 @@ paths:
                                 $ref: '#/components/schemas/InfoResponse'
                             examples:
                                 'Example 1':
-                                    value: {mode: desktop, cors: enable, protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect'}
+                                    value: {mode: desktop, cors: enable, protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true}
             summary: 'Get server info (mode, cors, protocol).'
             tags:
                 - Info

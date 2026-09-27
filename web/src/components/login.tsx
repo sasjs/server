@@ -81,48 +81,67 @@ const Login = () => {
 
         {/*
           Shown only when the server reports an OIDC provider. The password
-          form stays below it deliberately: internal and LDAP users still need
-          it, and it is the way in for a local admin if the provider is down.
+          form stays below it while the server accepts local sign-in: internal
+          and LDAP users still need it, and it is the way in for a local admin
+          if the provider is down.
         */}
         {appContext.oidcProviderName && (
+          <Button type="button" variant="contained" onClick={startSingleSignOn}>
+            Sign in with {appContext.oidcProviderName}
+          </Button>
+        )}
+
+        {appContext.oidcProviderName && appContext.localLoginEnabled && (
+          <Divider sx={{ width: '25ch', m: 1 }}>
+            <Typography variant="caption">or</Typography>
+          </Divider>
+        )}
+
+        {/*
+          A deployment that authenticates everyone through a provider switches
+          local sign-in off, and the server then refuses every password attempt.
+          Offering the form anyway would only invite a refusal, so it is hidden.
+        */}
+        {appContext.localLoginEnabled && (
           <>
+            <TextField
+              id="username"
+              label="Username"
+              type="text"
+              variant="outlined"
+              onChange={(e: any) => setUsername(e.target.value)}
+              required
+            />
+            <TextField
+              id="password"
+              label="Password"
+              type="password"
+              variant="outlined"
+              onChange={(e: any) => setPassword(e.target.value)}
+              required
+            />
+            {errorMessage && <span>{errorMessage}</span>}
             <Button
-              type="button"
-              variant="contained"
-              onClick={startSingleSignOn}
+              type="submit"
+              variant="outlined"
+              disabled={!appContext.setLoggedIn}
             >
-              Sign in with {appContext.oidcProviderName}
+              Submit
             </Button>
-            <Divider sx={{ width: '25ch', m: 1 }}>
-              <Typography variant="caption">or</Typography>
-            </Divider>
           </>
         )}
 
-        <TextField
-          id="username"
-          label="Username"
-          type="text"
-          variant="outlined"
-          onChange={(e: any) => setUsername(e.target.value)}
-          required
-        />
-        <TextField
-          id="password"
-          label="Password"
-          type="password"
-          variant="outlined"
-          onChange={(e: any) => setPassword(e.target.value)}
-          required
-        />
-        {errorMessage && <span>{errorMessage}</span>}
-        <Button
-          type="submit"
-          variant="outlined"
-          disabled={!appContext.setLoggedIn}
-        >
-          Submit
-        </Button>
+        {/*
+          Unreachable through configuration - the server refuses to start when
+          local sign-in is off and no provider is configured - but a login
+          screen showing nothing but a title would leave the cause invisible.
+        */}
+        {!appContext.localLoginEnabled && !appContext.oidcProviderName && (
+          <Typography variant="body2">
+            This server has no sign-in method available. Ask an administrator to
+            configure an authentication provider.
+          </Typography>
+        )}
       </Box>
     </>
   )
