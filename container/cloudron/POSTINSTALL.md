@@ -5,7 +5,9 @@ membership: under **Users > Groups** create `sasjs-users` for everyone who
 should use the app and `sasjs-admins` for its administrators, then assign people
 to them. A user in neither group is refused at sign-in, and membership of
 `sasjs-admins` is what makes a SASjs administrator - nobody becomes one by
-signing in first.
+signing in first. Both groups appear inside the app as well, so permissions can
+be granted to the group instead of user by user; membership is taken from
+Cloudron at each sign-in, and cannot be edited in the app.
 
 **Restrict access as well.** Open the app's **Settings > Access control** and
 choose "Only allow the following users and groups". The app authenticates users

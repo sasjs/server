@@ -1,7 +1,8 @@
 import { randomBytes } from 'crypto'
-import User, { IUser } from '../model/User'
+import User, { IUser, IUserDocument } from '../model/User'
 import { AuthProviderType } from './verifyEnvVariables'
 import { OIDCIdentity } from './oidcClient'
+import { syncOidcGroups } from './oidcGroupSync'
 import { sanitiseDisplayName } from './programVariables'
 
 /**
@@ -72,6 +73,60 @@ export interface OidcUserResolution {
 }
 
 /**
+ * Applies the provider's group memberships to the local user, and refuses the
+ * sign-in when they cannot be applied.
+ *
+ * Membership is what the permission layer reads to decide what a user can
+ * reach, so a sign-in that left it stale would either keep a revoked user's
+ * access alive or grant access nobody asserted - hence failing closed rather
+ * than logging and carrying on. The policy is only applied, and so only
+ * mirrored, for a provider that expresses groups at all: one that cannot would
+ * otherwise strip memberships it never asserted.
+ */
+const mirrorGroups = async (
+  user: IUserDocument,
+  identity: OIDCIdentity,
+  policy: GroupPolicy | undefined
+): Promise<void> => {
+  if (!policy) return
+
+  try {
+    const { added, removed, skipped } = await syncOidcGroups(
+      user,
+      identity.groups
+    )
+
+    if (added.length || removed.length)
+      process.logger?.info(
+        `OIDC user '${user.username}' group memberships: ${
+          added.length
+        } added${added.length ? ` (${added.join(', ')})` : ''}, ${
+          removed.length
+        } removed${removed.length ? ` (${removed.join(', ')})` : ''}`
+      )
+
+    if (skipped.length)
+      process.logger?.error(
+        `OIDC groups not mirrored for '${
+          user.username
+        }' - a group of that name is not managed by the identity provider: ${skipped.join(
+          ', '
+        )}`
+      )
+  } catch (error) {
+    process.logger?.error(
+      `OIDC group mirroring failed for '${user.username}': ${
+        (error as Error).message
+      }`
+    )
+
+    throw refuse(
+      'Your group memberships could not be applied, so the sign-in was refused. Please try again, and ask an administrator if this persists.'
+    )
+  }
+}
+
+/**
  * Maps an asserted OIDC identity onto a local user, creating one if policy
  * allows.
  *
@@ -93,6 +148,10 @@ export interface OidcUserResolution {
  * of neither is refused. The memberships are re-read on every sign-in, so
  * removing someone from the administrators group demotes them at their next
  * sign-in rather than leaving the elevation in place.
+ *
+ * Those memberships are also mirrored onto local groups of the same name, so
+ * the permissions a group carries can be granted to a provider group rather
+ * than user by user (`syncOidcGroups`).
  *
  * Providers that cannot express groups are exempt, and for them the bootstrap
  * rule still applies: the first provisioned user becomes an admin while no
@@ -135,6 +194,8 @@ export const resolveOidcUser = async (
       existingBySubject.isAdmin = policy.isAdmin
       await existingBySubject.save()
     }
+
+    await mirrorGroups(existingBySubject, identity, policy)
 
     return { user: existingBySubject, provisioned: false }
   }
@@ -191,6 +252,8 @@ export const resolveOidcUser = async (
     isActive: true,
     needsToUpdatePassword: false
   })
+
+  await mirrorGroups(user, identity, policy)
 
   return { user, provisioned: true }
 }

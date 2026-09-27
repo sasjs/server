@@ -5,6 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import User from '../../../model/User'
+import Group from '../../../model/Group'
 import {
   OIDCClient,
   SASJS_ADMINS_GROUP,
@@ -80,6 +81,7 @@ describe('OIDC web routes', () => {
     OIDCClient.reset()
     await idp.close()
     await User.deleteMany({})
+    await Group.deleteMany({})
 
     managedEnvVars.forEach((key) => {
       if (originalEnv[key] === undefined) delete process.env[key]
@@ -351,6 +353,93 @@ describe('OIDC web routes', () => {
       expect((await User.findOne({ username: 'alice' }))!.isAdmin).toEqual(
         false
       )
+    })
+
+    it('should mirror the provider groups onto local groups', async () => {
+      const agent = request.agent(app)
+      const { state, nonce } = await beginFlow(agent)
+
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: [SASJS_ADMINS_GROUP, SASJS_USERS_GROUP],
+        nonce
+      })
+
+      await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+
+      const user = (await User.findOne({ username: 'alice' }))!
+      const admins = await Group.findOne({ name: SASJS_ADMINS_GROUP })
+
+      // Provider-managed, so the permission layer can grant access to the
+      // group rather than to each user in turn.
+      expect(admins?.authProvider).toEqual('oidc')
+      expect(admins?.hasUser(user)).toEqual(true)
+
+      const memberships = await Group.find({ users: user._id })
+
+      expect(memberships.map((group) => group.name).sort()).toEqual([
+        SASJS_ADMINS_GROUP,
+        SASJS_USERS_GROUP
+      ])
+    })
+
+    it('should move a membership when the provider changes it', async () => {
+      const first = request.agent(app)
+      const flow1 = await beginFlow(first)
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: [SASJS_USERS_GROUP],
+        nonce: flow1.nonce
+      })
+      await first
+        .get(`/SASLogon/openid/callback?code=c&state=${flow1.state}`)
+        .expect(302)
+
+      const second = request.agent(app)
+      const flow2 = await beginFlow(second)
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: [SASJS_ADMINS_GROUP],
+        nonce: flow2.nonce
+      })
+      await second
+        .get(`/SASLogon/openid/callback?code=c&state=${flow2.state}`)
+        .expect(302)
+
+      const user = (await User.findOne({ username: 'alice' }))!
+      const memberships = await Group.find({ users: user._id })
+
+      // Access follows the group, so a membership the provider stopped
+      // asserting must not survive the next sign-in.
+      expect(memberships.map((group) => group.name)).toEqual([
+        SASJS_ADMINS_GROUP
+      ])
+    })
+
+    it('should not mirror groups for a provider that cannot express them', async () => {
+      idp.setGroupsScope(false)
+      OIDCClient.reset()
+
+      const agent = request.agent(app)
+      const { state, nonce } = await beginFlow(agent)
+
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        groups: [SASJS_USERS_GROUP],
+        nonce
+      })
+
+      await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+
+      expect(await Group.countDocuments({})).toEqual(0)
     })
 
     it('should keep the first-user bootstrap for a provider without groups', async () => {
