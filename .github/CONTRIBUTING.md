@@ -25,46 +25,25 @@ Configuration is made using `.env` files (per [README.md](https://github.com/sas
 
 The `.env` file should be created in the location(s) below.  Each folder contains a `.env.example` file that may be adjusted and renamed.
 
-* `.env` - the root .env file is used only for Docker deploys.
 * `api/.env` - this is the primary file used in NodeJS deploys
 * `web/.env` - this file is only necessary in NodeJS when running `web` and `api` seperately (on different ports).
+
+A container is configured by environment variables rather than by a file on disk. The ones it reads are listed in [container/README.md](../container/README.md).
 
 
 ## Using Docker
 
-### Docker Development Mode
+The supported Docker deployment is the container image, which builds the web bundle and the API from this repository's own source and serves both from one process. Its contract - the environment variables, the port, the one writable path - is documented in [container/README.md](../container/README.md).
 
-Command to run docker for development:
-
-```
-docker-compose up -d
-```
-
-It uses default docker compose file i.e. `docker-compose.yml` present at root.
-It will build following images if running first time:
-
-- `sasjs_server_api` - image for sasjs api server app based on _ExpressJS_
-- `sasjs_server_web` - image for sasjs web component app based on _ReactJS_
-- `mongodb` - image for mongo database
-- `mongo-seed-users` - will be populating user data specified in _./mongo-seed/users/user.json_
-- `mongo-seed-clients` - will be populating client data specified in _./mongo-seed/clients/client.json_
-
-
-### Docker Production Mode
-
-Command to run docker for production:
+A minimal stack, that image plus a MongoDB for server mode, is in [`container/docker-compose.yml`](../container/docker-compose.yml):
 
 ```
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f container/docker-compose.yml up -d
 ```
 
-It uses specified docker compose file i.e. `docker-compose.prod.yml` present at root.
-It will build following images if running first time:
+The file carries a commented `build:` block, which builds `container/Dockerfile` from a local checkout instead of pulling the published image. It is the build CI runs, with the repository root as the context.
 
-- `sasjs_server_prod` - image for sasjs server app containing api and web component's build served at route `/`
-- `mongodb` - image for mongo database
-- `mongo-seed-users` - will be populating user data specified in _./mongo-seed/users/user.json_
-- `mongo-seed-clients` - will be populating client data specified in _./mongo-seed/clients/client.json_
+For single-user work with no database, run the image with `MODE=desktop`.
 
 ## Using NodeJS:
 

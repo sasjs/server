@@ -110,9 +110,8 @@ jobs:
       - uses: docker/setup-buildx-action@v4
 
       # The build context is the repository root (the image builds web/ and
-      # api/ from source); BuildKit uses container/Dockerfile.dockerignore
-      # instead of the root .dockerignore, which is written for the
-      # development compose files.
+      # api/ from source); BuildKit uses container/Dockerfile.dockerignore,
+      # which keeps api/public in the context.
       #
       # The api build lists the SAS_PACKAGES macros over the GitHub API, which
       # rate limits unauthenticated requests per source IP - the token is
