@@ -3,8 +3,7 @@
  *
  * Keying on the IP is not viable behind a reverse proxy - every client
  * shares the proxy's address, so one attacker's failures lock out the
- * whole deployment (that is why the previous IP-keyed limiter was
- * removed outright). The username is the stable key: it is validated by
+ * whole deployment. The username is the stable key: it is validated by
  * the login schema (lowercase alphanumerics), it is what an attacker
  * must guess, and in the small trusted user base this server targets,
  * a lockout is resolved by a word to an admin rather than a support

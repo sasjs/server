@@ -12,7 +12,7 @@ import {
 /**
  * The lockout is keyed on the username, not the IP: behind a reverse
  * proxy every client shares one address, so an IP-keyed limiter locks
- * out the whole deployment (the fate of the limiter this replaces).
+ * out the whole deployment.
  * These specs pin the behaviour the username keying is meant to give:
  * a locked account is refused with 429 before its password is checked,
  * and a successful login clears the counter.
