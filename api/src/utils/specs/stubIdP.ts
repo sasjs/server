@@ -1,4 +1,5 @@
 import http from 'http'
+import { createHash } from 'crypto'
 import { AddressInfo } from 'net'
 import { generateKeyPair, exportJWK, SignJWT, KeyLike } from 'jose'
 
@@ -44,6 +45,17 @@ export interface StubIdP {
   lastTokenRequest: () => { headers: any; body: string } | undefined
   setAuthMethods: (methods: string[]) => void
   setEndSessionEndpoint: (present: boolean) => void
+  /**
+   * The code_challenge the authorization endpoint would have recorded for the
+   * in-flight code. Pass undefined to model a flow that sent none.
+   */
+  setCodeChallenge: (challenge: string | undefined) => void
+  /**
+   * Make the token endpoint enforce PKCE the way RFC 9700 section 4.8.2
+   * requires: a code_verifier is only accepted when a code_challenge was
+   * recorded for the code, and it must hash to it.
+   */
+  requirePkce: () => void
   close: () => Promise<void>
 }
 
@@ -54,6 +66,8 @@ export const startStubIdP = async (): Promise<StubIdP> => {
 
   let authMethods: string[] = []
   let endSessionEndpoint = false
+  let codeChallenge: string | undefined
+  let pkceRequired = false
   let lastRequest: { headers: any; body: string } | undefined
   let idTokenClaims: { [key: string]: unknown } = { sub: 'alice' }
   let baseUrl = ''
@@ -121,9 +135,38 @@ export const startStubIdP = async (): Promise<StubIdP> => {
     if (url.pathname === `${ISSUER_PATH}/token`) {
       const chunks: Buffer[] = []
       for await (const chunk of req) chunks.push(chunk as Buffer)
-      lastRequest = {
-        headers: req.headers,
-        body: Buffer.concat(chunks).toString()
+      const body = Buffer.concat(chunks).toString()
+      lastRequest = { headers: req.headers, body }
+
+      if (pkceRequired) {
+        const verifier = new URLSearchParams(body).get('code_verifier')
+
+        // Computed here rather than with the client's own helper, so a wrong
+        // digest in the client cannot agree with itself and pass.
+        const digest = (value: string) =>
+          createHash('sha256').update(value).digest('base64url')
+
+        // RFC 9700 section 4.8.2: a verifier is only meaningful against a
+        // challenge the provider recorded for the code. Accepting one without
+        // a challenge is the downgrade the check exists to prevent.
+        const failure = !codeChallenge
+          ? 'no code_challenge was recorded for this code'
+          : !verifier
+            ? 'code_verifier is required'
+            : digest(verifier) !== codeChallenge
+              ? 'code_verifier does not match code_challenge'
+              : undefined
+
+        if (failure) {
+          res.statusCode = 400
+          res.end(
+            JSON.stringify({
+              error: 'invalid_grant',
+              error_description: failure
+            })
+          )
+          return
+        }
       }
 
       const idToken = await sign(rsa.privateKey, 'rsa1', 'RS256', idTokenClaims)
@@ -164,6 +207,12 @@ export const startStubIdP = async (): Promise<StubIdP> => {
     },
     setEndSessionEndpoint: (present) => {
       endSessionEndpoint = present
+    },
+    setCodeChallenge: (challenge) => {
+      codeChallenge = challenge
+    },
+    requirePkce: () => {
+      pkceRequired = true
     },
     close: () =>
       new Promise<void>((resolve) => {

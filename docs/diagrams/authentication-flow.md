@@ -139,9 +139,9 @@ sequenceDiagram
 
     Note over Browser,Web: STEP 1a - start the flow
     Browser->>Web: GET /SASLogon/openid
-    Web->>Web: 32 random bytes for state and for nonce
-    Web->>Sess: req.session.oidc = { state, nonce }
-    Web-->>Browser: 302 to the provider's authorization_endpoint,<br/>carrying client_id, redirect_uri, response_type=code,<br/>scope, state and nonce
+    Web->>Web: 32 random bytes for state, for nonce,<br/>and for the PKCE code verifier
+    Web->>Sess: req.session.oidc = { state, nonce, codeVerifier }
+    Web-->>Browser: 302 to the provider's authorization_endpoint,<br/>carrying client_id, redirect_uri, response_type=code,<br/>scope, state, nonce and the S256 challenge<br/>of the verifier - never the verifier itself
     Browser->>IdP: the user authenticates with the provider
 
     Note over Browser,Web: STEP 1b - the callback
@@ -150,9 +150,9 @@ sequenceDiagram
     Web->>Web: if the provider sent an error parameter, log it<br/>and refuse - its description is never reflected
     Web->>Sess: read req.session.oidc, then DELETE it -<br/>single use, cleared before anything else can fail
     Web->>Web: constant-time comparison of state<br/>(controllers/web.ts, safeEqual)
-    Web->>OIDC: exchangeCodeForTokens(code)
-    OIDC->>IdP: POST token_endpoint, authenticated with HTTP Basic<br/>unless the provider advertises client_secret_post
-    IdP-->>OIDC: id_token (and access_token)
+    Web->>OIDC: exchangeCodeForTokens(code, codeVerifier)
+    OIDC->>IdP: POST token_endpoint with the code_verifier,<br/>authenticated with HTTP Basic unless the provider<br/>advertises client_secret_post
+    IdP-->>OIDC: id_token (and access_token) - or a refusal, if the<br/>verifier does not hash to the challenge it recorded
     OIDC->>OIDC: verify signature against the provider's JWKS,<br/>then iss, aud, exp, then the nonce
     Web->>DB: resolveOidcUser(identity)
     Note right of DB: by authProviderId (the sub claim) first, so a changed<br/>username claim cannot orphan or hijack an account.<br/>Otherwise the username claim is normalised and, if a<br/>matching account already exists, the login is REFUSED<br/>rather than adopting it. A new account is admin only<br/>if no admin exists yet.
@@ -166,6 +166,18 @@ sequenceDiagram
 A failure anywhere in STEP 1b answers 401 as `text/plain`, with our own
 wording - never the provider's or the verifier's message, both of which can
 describe token internals. The reasons are logged instead.
+
+PKCE (RFC 7636) makes the authorization code redeemable only by the client
+instance that started the flow: the verifier stays server-side, only its
+SHA-256 digest travels in the authorization request, and the token endpoint
+refuses a code whose verifier does not hash to the challenge it recorded. That
+closes the one gap `state` and `nonce` leave - a code injected into a victim's
+callback (RFC 9700 section 4.5.3.1) - and providers that require PKCE, which
+some do for confidential clients too, are satisfied. `S256` is used and the
+challenge is sent unconditionally rather than only when the provider
+advertises `code_challenge_methods_supported`, because a conditional path is
+itself the downgrade surface RFC 9700 section 4.8 warns about; against a
+provider that ignores the parameter, the verifier is ignored with it.
 
 Logout has an SSO counterpart: `/SASLogon/openid/logout` destroys the local
 session and then redirects to the provider's end-session endpoint, when it
@@ -234,8 +246,8 @@ receiving a 200 - a cross-origin redirect would be followed as an XHR and fail.
   Connect variant of the same step, which is why they are not tsoa-decorated
   (they are browser redirects, not JSON APIs).
 - `api/src/utils/oidcClient.ts` - the relying-party client: discovery, JWKS
-  verification via jose, code exchange, id_token validation and the
-  end-session URL.
+  verification via jose, the PKCE challenge and verifier, code exchange,
+  id_token validation and the end-session URL.
 - `api/src/utils/oidcUser.ts` - maps an asserted OIDC identity onto a local
   user, including the fail-closed rules for a username clash.
 - `api/src/routes/api/auth.ts`, `api/src/controllers/auth.ts` - `/SASjsApi/auth/token`,

@@ -152,6 +152,10 @@ ENC_REDIRECT=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys
 check "carries our redirect URI"  "redirect_uri=${ENC_REDIRECT}" "$LOC"
 check "asks for openid scope"     "openid" "$LOC"
 check "sends a state parameter"   "state=" "$LOC"
+# PKCE - the verifier itself must never appear in this URL, only its S256
+# challenge, so the code cannot be redeemed by anything that intercepts it.
+check "sends an S256 PKCE challenge" "code_challenge_method=S256" "$LOC"
+check "sends the challenge value"    "code_challenge=" "$LOC"
 
 echo
 echo "--- the provider's callback path is the one the manifest registers"

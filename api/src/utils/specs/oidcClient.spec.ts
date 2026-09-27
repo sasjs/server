@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { OIDCClient } from '../oidcClient'
 import {
   startStubIdP,
@@ -7,6 +8,14 @@ import {
   STUB_CLIENT_SECRET as CLIENT_SECRET,
   STUB_REDIRECT_URI as REDIRECT_URI
 } from './stubIdP'
+
+const VERIFIER = 'verifier-abc'
+
+// The expected challenge, computed here rather than with the client's own
+// helper - otherwise a wrong digest in the client would agree with itself.
+const expectedChallenge = createHash('sha256')
+  .update(VERIFIER)
+  .digest('base64url')
 
 const managedEnvVars = [
   'AUTH_PROVIDERS',
@@ -99,7 +108,9 @@ describe('OIDCClient', () => {
   describe('getAuthorizationUrl', () => {
     it('should carry every parameter the provider requires', async () => {
       const client = await OIDCClient.init()
-      const url = new URL(client.getAuthorizationUrl('state-123', 'nonce-456'))
+      const url = new URL(
+        client.getAuthorizationUrl('state-123', 'nonce-456', VERIFIER)
+      )
 
       expect(url.origin + url.pathname).toEqual(`${idp.issuer}/auth`)
       expect(url.searchParams.get('client_id')).toEqual(CLIENT_ID)
@@ -109,13 +120,26 @@ describe('OIDCClient', () => {
       expect(url.searchParams.get('state')).toEqual('state-123')
       expect(url.searchParams.get('nonce')).toEqual('nonce-456')
     })
+
+    it('should send the S256 challenge of the verifier, never the verifier', async () => {
+      const client = await OIDCClient.init()
+      const url = new URL(
+        client.getAuthorizationUrl('state-123', 'nonce-456', VERIFIER)
+      )
+
+      expect(url.searchParams.get('code_challenge_method')).toEqual('S256')
+      expect(url.searchParams.get('code_challenge')).toEqual(expectedChallenge)
+      // The whole point of PKCE: the secret stays out of this URL, which is
+      // the one that travels through the browser.
+      expect(url.toString()).not.toContain(VERIFIER)
+    })
   })
 
   describe('exchangeCodeForTokens', () => {
     it('should return the id_token and access_token', async () => {
       const client = await OIDCClient.init()
 
-      const tokens = await client.exchangeCodeForTokens('auth-code-1')
+      const tokens = await client.exchangeCodeForTokens('auth-code-1', VERIFIER)
 
       expect(tokens.accessToken).toEqual('at-123')
       expect(typeof tokens.idToken).toEqual('string')
@@ -124,7 +148,7 @@ describe('OIDCClient', () => {
     it('should authenticate with HTTP Basic by default', async () => {
       const client = await OIDCClient.init()
 
-      await client.exchangeCodeForTokens('auth-code-1')
+      await client.exchangeCodeForTokens('auth-code-1', VERIFIER)
 
       const request = idp.lastTokenRequest()!
       const expected = Buffer.from(
@@ -135,12 +159,23 @@ describe('OIDCClient', () => {
       expect(request.body).not.toContain(CLIENT_SECRET)
     })
 
+    it('should redeem the code with the verifier, not the challenge', async () => {
+      const client = await OIDCClient.init()
+
+      await client.exchangeCodeForTokens('auth-code-1', VERIFIER)
+
+      const request = idp.lastTokenRequest()!
+
+      expect(request.body).toContain(`code_verifier=${VERIFIER}`)
+      expect(request.body).not.toContain('code_challenge')
+    })
+
     it('should fall back to credentials in the body when the provider advertises only client_secret_post', async () => {
       idp.setAuthMethods(['client_secret_post'])
       OIDCClient.reset()
       const client = await OIDCClient.init()
 
-      await client.exchangeCodeForTokens('auth-code-1')
+      await client.exchangeCodeForTokens('auth-code-1', VERIFIER)
 
       const request = idp.lastTokenRequest()!
       expect(request.headers.authorization).toBeUndefined()
@@ -153,9 +188,9 @@ describe('OIDCClient', () => {
       const client = await OIDCClient.init()
       idp.close()
 
-      await expect(client.exchangeCodeForTokens('auth-code-1')).rejects.toThrow(
-        /OIDC token exchange failed/
-      )
+      await expect(
+        client.exchangeCodeForTokens('auth-code-1', VERIFIER)
+      ).rejects.toThrow(/OIDC token exchange failed/)
     })
   })
 
