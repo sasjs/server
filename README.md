@@ -176,7 +176,8 @@ DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWr
 # options: [mongodb|cosmos_mongodb] default: mongodb
 DB_TYPE=
 
-# AUTH_PROVIDERS options: [ldap] default: ``
+# AUTH_PROVIDERS options: [ldap|oidc] default: ``
+# More than one provider may be listed, space or comma separated
 AUTH_PROVIDERS=
 
 ## ENV variables required for AUTH_MECHANISM: `ldap`
@@ -211,26 +212,44 @@ HELMET_COEP=
 # }
 HELMET_CSP_CONFIG_PATH=./csp.config.json
 
-# To prevent brute force attack on login route we have implemented rate limiter
-# Only valid for MODE: server
-# Following are configurable env variable rate limiter
+# Failed password attempts on the login route are throttled by username.
+# Only valid for MODE: server.
+#
+# The lockout is keyed on the username rather than the IP address: behind a
+# reverse proxy every client shares the proxy's address, so an IP-keyed limit
+# locks out the whole deployment rather than an attacker.
 
-# After this, access is blocked for 1 day
-MAX_WRONG_ATTEMPTS_BY_IP_PER_DAY = <number> default: 100;
+# Failed attempts against one username before further attempts are refused
+# with `429 Too Many Failed Attempts`
+# default: 5
+MAX_LOGIN_FAILURES=5
 
+# How long the username stays locked out once that threshold is reached
+# default: 15
+LOGIN_LOCKOUT_MINUTES=15
 
-# After this, access is blocked for an hour
-# Store number for 24 days since first fail
-# Once a successful login is attempted, it resets
-MAX_CONSECUTIVE_FAILS_BY_USERNAME_AND_IP = <number> default: 10;
+# Password sign-in for local (database) accounts.
+# Set to false to refuse it outright: the stored password is never compared, so
+# a local account cannot sign in at all. Accounts that authenticate through a
+# provider (eg OIDC) or through LDAP are unaffected. Use it on a deployment
+# whose accounts all live in the provider, where the local password is the only
+# credential an unauthenticated caller can attack.
+# Cannot be false when AUTH_PROVIDERS is empty, since then no account could
+# sign in.
+# options: [true|false] default: true
+LOCAL_LOGIN_ENABLED=true
 
-# Name of the admin user that will be created on startup if not exists already
-# Default is `secretuser`
+# Name of the local admin user, created on startup only when
+# ADMIN_PASSWORD_INITIAL is set
+# default: `secretuser`
 ADMIN_USERNAME=secretuser
 
-# Temporary password for the ADMIN_USERNAME, which is in place until the first login
-# Default is `secretpassword`
-ADMIN_PASSWORD_INITIAL=secretpassword
+# Password for the ADMIN_USERNAME, which is in place until the first login
+# There is no default: a default would ship a publicly-known credential.
+# In server mode it is required unless an external auth provider is enabled -
+# with a provider, leaving it unset seeds no local admin at all and the first
+# user to sign in through the provider becomes the administrator.
+ADMIN_PASSWORD_INITIAL=
 
 # Specify whether app has to reset the ADMIN_USERNAME's password or not
 # Default is NO. Possible options are YES and NO
