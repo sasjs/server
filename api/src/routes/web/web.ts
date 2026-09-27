@@ -1,7 +1,13 @@
 import express from 'express'
+import { convertSecondsToHms } from '@sasjs/utils'
 import { generateCSRFToken } from '../../middlewares'
 import { WebController } from '../../controllers/web'
 import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
+import {
+  getLoginLockoutRemaining,
+  recordLoginFailure,
+  resetLoginFailures
+} from '../../utils/loginThrottle'
 import {
   authorizeValidation,
   loginWebValidation,
@@ -36,10 +42,27 @@ webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {
   const { error, value: body } = loginWebValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
+  const lockoutRemaining = getLoginLockoutRemaining(body.username)
+  if (lockoutRemaining > 0) {
+    return res
+      .status(429)
+      .send(
+        `Too Many Failed Attempts! This account is locked. Retry after ${convertSecondsToHms(
+          lockoutRemaining
+        )}.`
+      )
+  }
+
   try {
     const response = await controller.login(req, body)
+    resetLoginFailures(body.username)
     res.send(response)
   } catch (err: any) {
+    // A wrong password and an unknown username are both failures worth
+    // counting: the lockout must also cover an attacker who is guessing
+    // usernames, and responding identically to both keeps the lockout
+    // from leaking which name exists.
+    recordLoginFailure(body.username)
     if (err instanceof Error) {
       res.status(500).send(err.toString())
     } else {

@@ -99,6 +99,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyPORT())
   errors.push(...verifyTrustProxy())
 
+  errors.push(...verifyLoginThrottle())
+
   errors.push(...verifyCORS())
 
   errors.push(...verifyHELMET_COEP())
@@ -613,6 +615,28 @@ const verifyTrustProxy = (): string[] => {
       )
     }
   })
+
+  return errors
+}
+
+const verifyLoginThrottle = (): string[] => {
+  const errors: string[] = []
+  const { MAX_LOGIN_FAILURES, LOGIN_LOCKOUT_MINUTES } = process.env
+
+  if (MAX_LOGIN_FAILURES !== undefined && !/^\d+$/.test(MAX_LOGIN_FAILURES)) {
+    errors.push(
+      `- MAX_LOGIN_FAILURES '${MAX_LOGIN_FAILURES}'\n - use a number of failed attempts`
+    )
+  }
+
+  if (
+    LOGIN_LOCKOUT_MINUTES !== undefined &&
+    !/^\d+$/.test(LOGIN_LOCKOUT_MINUTES)
+  ) {
+    errors.push(
+      `- LOGIN_LOCKOUT_MINUTES '${LOGIN_LOCKOUT_MINUTES}'\n - use a number of minutes`
+    )
+  }
 
   return errors
 }
