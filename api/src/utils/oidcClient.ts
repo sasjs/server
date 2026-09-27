@@ -4,6 +4,7 @@ import {
   JWTVerifyGetKey,
   JWTPayload
 } from 'jose'
+import { createHash } from 'crypto'
 import { AuthProviderType, isAuthProviderEnabled } from './verifyEnvVariables'
 
 export interface OIDCDiscoveryDocument {
@@ -40,6 +41,15 @@ const DISCOVERY_MEMBERS = [
   'token_endpoint',
   'jwks_uri'
 ]
+
+/**
+ * The PKCE code challenge for a verifier: BASE64URL(SHA256(ASCII(verifier))),
+ * RFC 7636 section 4.2. S256 is the only method worth using - `plain` sends
+ * the verifier itself in the authorization request, which is the value PKCE
+ * exists to keep out of it.
+ */
+export const codeChallengeFor = (codeVerifier: string): string =>
+  createHash('sha256').update(codeVerifier).digest('base64url')
 
 /**
  * A generic OpenID Connect relying party.
@@ -162,8 +172,20 @@ export class OIDCClient {
    * Builds the URL to redirect the browser to. `state` protects against CSRF
    * on the callback and `nonce` binds the id_token to this request - both must
    * be unguessable, stored server-side against the session, and consumed once.
+   *
+   * `codeVerifier` is the PKCE secret (RFC 7636): only its SHA-256 digest
+   * travels in this URL, and the verifier itself is sent at the token
+   * endpoint, so a code that reaches someone else cannot be redeemed. The
+   * challenge is sent unconditionally rather than only when the provider
+   * advertises support, because a conditional path is itself the downgrade
+   * surface RFC 9700 section 4.8 warns about - and a provider that ignores the
+   * parameter ignores the verifier with it.
    */
-  getAuthorizationUrl(state: string, nonce: string): string {
+  getAuthorizationUrl(
+    state: string,
+    nonce: string,
+    codeVerifier: string
+  ): string {
     const url = new URL(this.discovery.authorization_endpoint)
 
     url.searchParams.set('client_id', process.env.OIDC_CLIENT_ID as string)
@@ -178,18 +200,24 @@ export class OIDCClient {
     )
     url.searchParams.set('state', state)
     url.searchParams.set('nonce', nonce)
+    url.searchParams.set('code_challenge', codeChallengeFor(codeVerifier))
+    url.searchParams.set('code_challenge_method', 'S256')
 
     return url.toString()
   }
 
-  async exchangeCodeForTokens(code: string): Promise<OIDCTokens> {
+  async exchangeCodeForTokens(
+    code: string,
+    codeVerifier: string
+  ): Promise<OIDCTokens> {
     const clientId = process.env.OIDC_CLIENT_ID as string
     const clientSecret = process.env.OIDC_CLIENT_SECRET as string
 
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: process.env.OIDC_REDIRECT_URI as string
+      redirect_uri: process.env.OIDC_REDIRECT_URI as string,
+      code_verifier: codeVerifier
     })
 
     const headers: { [key: string]: string } = {

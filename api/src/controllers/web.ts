@@ -163,21 +163,23 @@ const login = async (
 }
 
 /**
- * Starts the authorization code flow: mint a state and a nonce, keep both
- * server-side against the session, and send the browser to the provider.
+ * Starts the authorization code flow: mint a state, a nonce and a PKCE code
+ * verifier, keep all three server-side against the session, and send the
+ * browser to the provider.
  */
 const startOidc = async (req: express.Request): Promise<{ url: string }> => {
   const client = await OIDCClient.init()
 
   const state = randomBytes(32).toString('base64url')
   const nonce = randomBytes(32).toString('base64url')
+  const codeVerifier = randomBytes(32).toString('base64url')
 
   // The callback arrives as a GET from the provider, so it cannot carry a CSRF
   // token; `state` is what proves this callback belongs to a flow that this
   // browser session started.
-  req.session.oidc = { state, nonce }
+  req.session.oidc = { state, nonce, codeVerifier }
 
-  return { url: client.getAuthorizationUrl(state, nonce) }
+  return { url: client.getAuthorizationUrl(state, nonce, codeVerifier) }
 }
 
 /**
@@ -221,7 +223,10 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
   let identity
 
   try {
-    const tokens = await client.exchangeCodeForTokens(query.code)
+    const tokens = await client.exchangeCodeForTokens(
+      query.code,
+      pending.codeVerifier
+    )
     identity = await client.verifyIdToken(tokens.idToken, pending.nonce)
     req.session.oidcIdToken = tokens.idToken
   } catch (error) {

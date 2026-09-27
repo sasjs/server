@@ -6,12 +6,15 @@ declare module 'express-session' {
     /**
      * In-flight OIDC authorization request. `state` binds the callback to this
      * browser session (the callback is a GET from the provider, so it carries
-     * no CSRF token), and `nonce` binds the returned id_token to this request.
-     * Both are single-use: consumed and cleared as soon as the callback runs.
+     * no CSRF token), `nonce` binds the returned id_token to this request, and
+     * `codeVerifier` is the PKCE secret whose digest travelled in the
+     * authorization request. All three are single-use: consumed and cleared as
+     * soon as the callback runs.
      */
     oidc?: {
       state: string
       nonce: string
+      codeVerifier: string
     }
     /**
      * The id_token issued at login, retained only so that logout can pass it

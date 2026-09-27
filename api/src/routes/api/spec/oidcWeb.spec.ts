@@ -1,4 +1,5 @@
 import { Express } from 'express'
+import { createHash } from 'crypto'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
@@ -95,7 +96,8 @@ describe('OIDC web routes', () => {
     return {
       location: url,
       state: url.searchParams.get('state') as string,
-      nonce: url.searchParams.get('nonce') as string
+      nonce: url.searchParams.get('nonce') as string,
+      codeChallenge: url.searchParams.get('code_challenge') as string
     }
   }
 
@@ -128,14 +130,21 @@ describe('OIDC web routes', () => {
       expect(location.searchParams.get('scope')).toEqual('openid profile email')
       expect(location.searchParams.get('state')).toBeTruthy()
       expect(location.searchParams.get('nonce')).toBeTruthy()
+      expect(location.searchParams.get('code_challenge')).toBeTruthy()
+      expect(location.searchParams.get('code_challenge_method')).toEqual('S256')
     })
 
-    it('should use a fresh state and nonce per attempt', async () => {
+    it('should use a fresh state, nonce and code challenge per attempt', async () => {
       const first = await beginFlow(request.agent(app))
       const second = await beginFlow(request.agent(app))
 
       expect(first.state).not.toEqual(second.state)
       expect(first.nonce).not.toEqual(second.nonce)
+      // A verifier reused across flows is worthless: anyone who has seen it
+      // once can redeem any code that carries its challenge (RFC 9700
+      // section 2.1.1 asks the provider to reject constant challenges, so the
+      // client must not send one).
+      expect(first.codeChallenge).not.toEqual(second.codeChallenge)
     })
   })
 
@@ -161,6 +170,55 @@ describe('OIDC web routes', () => {
 
       expect(session.body.username).toEqual('alice')
       expect(session.body.isAdmin).toEqual(true)
+    })
+
+    it('should redeem the code with a verifier the provider can match to the challenge', async () => {
+      const agent = request.agent(app)
+      const { state, nonce, codeChallenge } = await beginFlow(agent)
+
+      // What the provider records at the authorization endpoint, and then
+      // enforces at the token endpoint (RFC 9700 section 4.8.2).
+      idp.setCodeChallenge(codeChallenge)
+      idp.requirePkce()
+
+      idp.setIdTokenClaims({ sub: 'alice', preferred_username: 'alice', nonce })
+
+      await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+        .expect('location', '/')
+
+      const tokenRequest = idp.lastTokenRequest()!
+
+      expect(tokenRequest.body).toContain('code_verifier=')
+      expect(await User.countDocuments({ username: 'alice' })).toEqual(1)
+    })
+
+    it('should refuse a code injected with a challenge this session did not start', async () => {
+      const agent = request.agent(app)
+      const { state, nonce } = await beginFlow(agent)
+
+      // The attacker's own challenge: they obtained a code with it and are
+      // injecting that code into this victim's callback. The client's verifier
+      // cannot hash to it, so the exchange fails - which is exactly what PKCE
+      // buys over state and nonce alone.
+      idp.setCodeChallenge(
+        createHash('sha256')
+          .update('the-attackers-verifier')
+          .digest('base64url')
+      )
+      idp.requirePkce()
+
+      idp.setIdTokenClaims({ sub: 'alice', preferred_username: 'alice', nonce })
+
+      const res = await agent
+        .get(`/SASLogon/openid/callback?code=attacker-code&state=${state}`)
+        .expect(401)
+
+      expect(res.text).toEqual(
+        'OpenID Connect sign-in failed. Please try again.'
+      )
+      expect(await User.countDocuments({})).toEqual(0)
     })
 
     it('should make the first provisioned user an administrator', async () => {
