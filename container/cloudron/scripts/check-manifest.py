@@ -111,6 +111,40 @@ def main():
             f"minBoxVersion ({min_box})"
         )
 
+    # addons.proxyAuth is what keeps the app's API private on a platform
+    # deployment. Cloudron's login wall sits in front of every path except the
+    # ones named here, and it - not the app - is what an anonymous request
+    # meets first: the app's own session check is a second gate behind it.
+    # The exclusion list is therefore load-bearing and one line long, and
+    # widening it (or dropping the addon) silently exposes the API to whoever
+    # can reach the domain. Asserted here so the change has to be deliberate
+    # and accompanied by a test update.
+    health_check = manifest.get("healthCheckPath")
+    proxy_auth = (manifest.get("addons") or {}).get("proxyAuth")
+
+    if not proxy_auth:
+        problems.append(
+            "addons.proxyAuth is missing: without it Cloudron authenticates "
+            "nobody in front of the app, so its API is reachable without a "
+            "platform login"
+        )
+    else:
+        path = str(proxy_auth.get("path") or "").strip()
+        expected = f"!{health_check}" if health_check else None
+
+        if path == "!" or path == "":
+            problems.append(
+                "addons.proxyAuth.path is "
+                f"'{path}': it excludes every route, which turns the platform "
+                "login wall off entirely"
+            )
+        elif path != expected:
+            problems.append(
+                f"addons.proxyAuth.path is '{path}': it must be '{expected}', "
+                "so that every route except the health check requires a "
+                "platform login"
+            )
+
     if problems:
         print("CloudronManifest.json would not load:", file=sys.stderr)
         for p in problems:
