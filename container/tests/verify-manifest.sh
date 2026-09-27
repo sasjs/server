@@ -67,7 +67,52 @@ echo "      $OUT"
 cp "$BACKUP" CloudronManifest.json
 
 echo
-echo "--- 4. the manifest is restored"
+echo "--- 4. the platform login wall must keep covering everything but the health check"
+# proxyAuth.path is the only thing between an anonymous request and the API.
+# Each mutation below is a plausible edit that would expose it.
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+m['addons']['proxyAuth']['path'] = '!/'
+json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
+check "a widened exclusion list is rejected" 1 $RC
+case "$OUT" in
+  *"must be '!/SASjsApi/info'"*)
+    echo "PASS  names the expected path"; pass=$((pass+1));;
+  *) echo "FAIL  did not name the expected path"; fail=$((fail+1));; 
+esac
+cp "$BACKUP" CloudronManifest.json
+
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+m['addons']['proxyAuth']['path'] = '!'
+json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
+check "disabling the wall entirely is rejected" 1 $RC
+case "$OUT" in
+  *"excludes every route"*)
+    echo "PASS  says the wall would be off"; pass=$((pass+1));;
+  *) echo "FAIL  did not say the wall would be off"; fail=$((fail+1));;
+esac
+cp "$BACKUP" CloudronManifest.json
+
+python3 - <<'PY'
+import json
+m = json.load(open('CloudronManifest.json'))
+del m['addons']['proxyAuth']
+json.dump(m, open('CloudronManifest.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/check-manifest.py $SCHEMA_ARG 2>&1); RC=$?
+check "dropping the proxyAuth addon is rejected" 1 $RC
+echo "      $OUT"
+cp "$BACKUP" CloudronManifest.json
+
+echo
+echo "--- 5. the manifest is restored"
 python3 scripts/check-manifest.py $SCHEMA_ARG > /dev/null 2>&1
 check "manifest restored and passing" 0 $?
 
