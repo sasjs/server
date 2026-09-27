@@ -227,7 +227,11 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
       query.code,
       pending.codeVerifier
     )
-    identity = await client.verifyIdToken(tokens.idToken, pending.nonce)
+    identity = await client.verifyIdToken(
+      tokens.idToken,
+      pending.nonce,
+      tokens.accessToken
+    )
     req.session.oidcIdToken = tokens.idToken
   } catch (error) {
     // The provider's or the verifier's own words can describe token internals,
@@ -237,7 +241,10 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
     throw errors.oidcVerificationFailed
   }
 
-  const { user } = await resolveOidcUser(identity)
+  const { user } = await resolveOidcUser(
+    identity,
+    client.providerSupportsGroups()
+  )
 
   req.session.loggedIn = true
   req.session.user = {
