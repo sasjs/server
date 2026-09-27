@@ -67,6 +67,22 @@ describe('Info', () => {
       expect(res.body.whiteList).toBeUndefined()
       expect(res.text).not.toContain('example.com')
     })
+
+    it('should report whether local sign-in is available', async () => {
+      const enabled = await request(app).get('/SASjsApi/info').expect(200)
+
+      // Default on, so the login screen keeps the password form.
+      expect(enabled.body.localLoginEnabled).toEqual(true)
+
+      // The login screen reads this before anyone is authenticated, and it is
+      // what stops it offering a form the server refuses.
+      process.env.LOCAL_LOGIN_ENABLED = 'false'
+      const disabled = await request(app).get('/SASjsApi/info').expect(200)
+
+      expect(disabled.body.localLoginEnabled).toEqual(false)
+
+      delete process.env.LOCAL_LOGIN_ENABLED
+    })
   })
 
   describe('GET /SASjsApi/info/authorizedRoutes', () => {

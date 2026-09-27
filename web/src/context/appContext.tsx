@@ -45,6 +45,12 @@ interface AppContextProps {
    */
   authProviders: string[]
   oidcProviderName?: string
+  /**
+   * Whether the server accepts password sign-in for local accounts. False
+   * hides the password form: the server refuses those attempts outright, so
+   * offering the form would only invite a refusal.
+   */
+  localLoginEnabled: boolean
   logout?: () => void
 }
 
@@ -58,7 +64,8 @@ export const AppContext = createContext<AppContextProps>({
   isAdmin: false,
   mode: ModeType.Server,
   runTimes: [],
-  authProviders: []
+  authProviders: [],
+  localLoginEnabled: true
 })
 
 /**
@@ -114,6 +121,9 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   const [runTimes, setRunTimes] = useState<RunTimeType[]>([])
   const [authProviders, setAuthProviders] = useState<string[]>([])
   const [oidcProviderName, setOidcProviderName] = useState<string>()
+  // Defaults to true so a server that does not report the flag keeps the
+  // password form rather than hiding the only way in.
+  const [localLoginEnabled, setLocalLoginEnabled] = useState(true)
 
   useEffect(() => {
     setCheckingSession(true)
@@ -172,6 +182,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setRunTimes(data.runTimes)
         setAuthProviders(data.authProviders ?? [])
         setOidcProviderName(data.oidcProviderName)
+        setLocalLoginEnabled(data.localLoginEnabled !== false)
       })
       .catch(() => {})
   }, [])
@@ -204,6 +215,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         runTimes,
         authProviders,
         oidcProviderName,
+        localLoginEnabled,
         logout
       }}
     >

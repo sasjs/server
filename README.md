@@ -295,6 +295,8 @@ LOGIN_LOCKOUT_MINUTES=15
 # provider (eg OIDC) or through LDAP are unaffected. Use it on a deployment
 # whose accounts all live in the provider, where the local password is the only
 # credential an unauthenticated caller can attack.
+# The login screen hides the password form while this is false, so a deployment
+# that signs everyone in through a provider shows only the provider's button.
 # Cannot be false when AUTH_PROVIDERS is empty, since then no account could
 # sign in.
 # options: [true|false] default: true

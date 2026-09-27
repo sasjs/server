@@ -1,5 +1,9 @@
 import { Route, Tags, Example, Get } from 'tsoa'
-import { getAuthorizedRoutes, getAuthProviders } from '../utils'
+import {
+  getAuthorizedRoutes,
+  getAuthProviders,
+  isLocalLoginEnabled
+} from '../utils'
 export interface AuthorizedRoutesResponse {
   paths: string[]
 }
@@ -20,6 +24,12 @@ export interface InfoResponse {
    * configured. Not sensitive - it is a display name.
    */
   oidcProviderName?: string
+  /**
+   * Whether password sign-in for local (database) accounts is switched on,
+   * from LOCAL_LOGIN_ENABLED. Public for the same reason as authProviders:
+   * the login screen must not offer a form the server refuses to accept.
+   */
+  localLoginEnabled: boolean
 }
 
 @Route('SASjsApi/info')
@@ -35,7 +45,8 @@ export class InfoController {
     protocol: 'http',
     runTimes: ['sas', 'js'],
     authProviders: [],
-    oidcProviderName: 'OpenID Connect'
+    oidcProviderName: 'OpenID Connect',
+    localLoginEnabled: true
   })
   @Get('/')
   public info(): InfoResponse {
@@ -48,7 +59,8 @@ export class InfoController {
         (process.env.MODE === 'server' ? 'disable' : 'enable'),
       protocol: process.env.PROTOCOL ?? 'http',
       runTimes: process.runTimes,
-      authProviders
+      authProviders,
+      localLoginEnabled: isLocalLoginEnabled()
     }
 
     if (authProviders.includes('oidc'))
