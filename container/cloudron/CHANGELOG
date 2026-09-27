@@ -1,3 +1,18 @@
+## 1.8.1
+
+### Bug Fixes
+
+* **web:** version the served bundle by its contents ([0d91bd4](https://github.com/sasjs/server/commit/0d91bd452edf2610fdb1c3401dafe15ee3e03e7e))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.8.0
 
 - **Provider group memberships are mirrored into the app.** Each sign-in writes the groups the identity provider asserts onto SASjs groups of the same name, so a permission can be granted to a provider group rather than to each of its members. A membership the provider stops asserting is removed at the next sign-in. A name an administrator has already used locally is left alone and reported in the log rather than adopted.
