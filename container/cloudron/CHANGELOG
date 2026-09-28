@@ -1,3 +1,18 @@
+## 1.10.0
+
+### Features
+
+* **web:** hide the entries a caller is not authorised for ([0981c0b](https://github.com/sasjs/server/commit/0981c0bf30547df15f3ba27f55464c08f0584419))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.9.1
 
 ### Bug Fixes
