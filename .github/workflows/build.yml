@@ -155,10 +155,9 @@ jobs:
         working-directory: ./web
         run: npm ci
 
-      # TODO: Uncomment next step when unit tests provided
-      # - name: Run Unit Tests
-      #   working-directory: ./web
-      #   run: npm test
+      - name: Run Unit Tests
+        working-directory: ./web
+        run: npm test
 
       - name: Build Package
         working-directory: ./web
