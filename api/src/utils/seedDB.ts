@@ -72,7 +72,7 @@ export const seedDB = async (): Promise<ConfigurationType> => {
     }
 
     if (usernameExist.isAdmin && !groupExist.hasUser(usernameExist)) {
-      groupExist.addUser(usernameExist)
+      await groupExist.addUser(usernameExist)
       process.logger.success(
         `DB Seed - admin account '${ADMIN_USER.username}' added to Group '${ALL_USERS_GROUP.name}'`
       )
