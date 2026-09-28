@@ -13,3 +13,5 @@ certificates/
 executables/
 .env
 api/csp.config.json
+# Screenshots produced by the Studio browser test (api npm run test:e2e)
+api/src/e2e/screenshots/

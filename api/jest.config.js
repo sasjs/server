@@ -11,5 +11,11 @@ module.exports = {
   //   }
   // },
   collectCoverageFrom: ['src/**/{!(index),}.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/build/']
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/build/',
+    // The browser test needs a web build and a browser, so it runs through
+    // jest.e2e.config.js (`npm run test:e2e`) instead.
+    '<rootDir>/src/e2e/'
+  ]
 }

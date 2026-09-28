@@ -118,11 +118,16 @@ export const PasswordInput = ({
 }: PasswordInputProps) => {
   const [showPassword, setShowPassword] = useState(false)
 
+  // The id is derived from the label so each instance is addressable on its
+  // own. A shared id leaves every label pointing at the first field, so the New
+  // Password label focuses the Current Password input.
+  const id = `password-${label.toLowerCase().replace(/\s+/g, '-')}`
+
   return (
     <FormControl sx={{ width: '100%' }} variant="outlined" error={hasError}>
-      <InputLabel htmlFor="outlined-adornment-password">{label}</InputLabel>
+      <InputLabel htmlFor={id}>{label}</InputLabel>
       <OutlinedInput
-        id="outlined-adornment-password"
+        id={id}
         type={showPassword ? 'text' : 'password'}
         label={label}
         value={password}

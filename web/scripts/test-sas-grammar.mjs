@@ -33,6 +33,7 @@ const SAMPLE = `* This is a statement comment;
     set work.mydata;
     where &var is not missing;
     total = sum(&var, 1.5);
+    x = 1;
     if total > 100 then output;
     format total comma10.2;
     label total = "Total for &var";
@@ -110,7 +111,7 @@ check('%macro is a macro keyword', has('%macro', 'keyword.flow'))
 check('%if is a macro keyword', has('%if', 'keyword.flow'))
 check('%do is a macro keyword', has('%do', 'keyword.flow'))
 check('%mend is a macro keyword', has('%mend', 'keyword.flow'))
-check('%put is a macro function', has('%put', 'predefined'))
+check('%put is a macro function', has('%put', 'variable.predefined'))
 check('&lib. is a macro variable', has('&lib.', 'variable'))
 check('&dsn is a macro variable', has('&dsn', 'variable'))
 check('data is a keyword', has('data', 'keyword'))
@@ -119,7 +120,7 @@ check('run is a keyword', has('run', 'keyword'))
 check('quit is a keyword', has('quit', 'keyword'))
 check('set is a keyword', has('set', 'keyword'))
 check('keep= is a keyword', has('keep', 'keyword'))
-check('sum is a function', has('sum', 'predefined'))
+check('sum is a function', has('sum', 'variable.predefined'))
 check('comma10.2 is a format', has('comma10.2', 'type'))
 check('1.5 is a number', has('1.5', 'number'))
 check('work. is a library reference', has('work.', 'identifier'))
@@ -139,16 +140,32 @@ check(
   has('group', 'keyword') && has('by', 'keyword')
 )
 check('order by is a SQL keyword', has('order', 'keyword'))
-check('count is a function', has('count', 'predefined'))
-check('html is an ODS destination', has('html', 'predefined'))
+check('count is a function', has('count', 'variable.predefined'))
+check('html is an ODS destination', has('html', 'variable.predefined'))
 check('file is an ODS keyword', has('file', 'keyword'))
 check('symbolgen is a system option', has('symbolgen', 'keyword'))
 check('mprint is a system option', has('mprint', 'keyword'))
-check('missing is a function', has('missing', 'predefined'))
+check('missing is a function', has('missing', 'variable.predefined'))
 check('label is a keyword', has('label', 'keyword'))
 check(
   'if and then are control keywords',
   has('if', 'keyword.flow') && has('then', 'keyword.flow')
+)
+
+// A single letter statement keyword colours every variable named x, which is
+// the most common variable name there is. Plain text merges with the
+// whitespace around it, so this matches on the trimmed text.
+check(
+  'a variable named x is not a keyword',
+  !tokens.some((t) => t.text.trim() === 'x' && t.type.startsWith('keyword'))
+)
+
+// The themes colour variable.predefined but not a bare predefined, so a
+// function rendering as plain text would still pass an assertion written
+// against the bare type.
+check(
+  'no token uses a type the themes do not colour',
+  !tokens.some((t) => t.type === 'predefined')
 )
 
 // Every vocabulary list the grammar matches against must be usable by the

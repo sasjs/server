@@ -74,8 +74,7 @@ export const sasStatements: string[] = [
   'SELECT',
   'STOP',
   'TITLE',
-  'WINDOW',
-  'X'
+  'WINDOW'
 ]
 
 /** Words that open or close a step, and their ODS and CALL counterparts. */

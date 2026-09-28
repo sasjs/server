@@ -57,8 +57,8 @@ export const sasLanguageConfiguration: monaco.languages.LanguageConfiguration =
 const macroAction = () => ({
   cases: {
     '@macroKeywords': 'keyword.flow',
-    '@macroFunctions': 'predefined',
-    '@default': 'predefined'
+    '@macroFunctions': 'variable.predefined',
+    '@default': 'variable.predefined'
   }
 })
 
@@ -68,8 +68,8 @@ const statementAction = () => ({
     '@keywords': 'keyword',
     '@controlKeywords': 'keyword.flow',
     '@operators': 'operator',
-    '@functions': 'predefined',
-    '@procNames': 'predefined',
+    '@functions': 'variable.predefined',
+    '@procNames': 'variable.predefined',
     '@procStatements': 'keyword',
     '@dataOptions': 'keyword',
     '@styleKeywords': 'keyword',
@@ -192,7 +192,7 @@ export const sasMonarchLanguage: monaco.languages.IMonarchLanguage = {
         /[a-z_]\w*/,
         {
           cases: {
-            '@odsTypes': 'predefined',
+            '@odsTypes': 'variable.predefined',
             '@odsKeywords': 'keyword',
             '@default': ''
           }
@@ -241,7 +241,7 @@ export const sasMonarchLanguage: monaco.languages.IMonarchLanguage = {
           cases: {
             '@sqlKeywords': 'keyword',
             '@sqlOperators': 'operator',
-            '@functions': 'predefined',
+            '@functions': 'variable.predefined',
             '@default': ''
           }
         }
