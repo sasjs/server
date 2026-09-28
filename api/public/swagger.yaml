@@ -2103,7 +2103,7 @@ paths:
                     content:
                         application/json:
                             schema: {}
-            description: 'Ends the session held in the request cookie.'
+            description: "Ends the session held in the request cookie.\n\nThe session is REPLACED rather than destroyed: the browser keeps its\ncookies across a logout, so the route hands back a CSRF token bound to the\nnew session (see routes/web/web.ts). Destroying instead leaves the old\ntoken in place, bound to a session the server no longer has, and the next\nlogin is refused with `Invalid CSRF token!` (sasjs/server#304)."
             summary: 'Sign out'
             tags:
                 - Web

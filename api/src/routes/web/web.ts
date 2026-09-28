@@ -87,6 +87,14 @@ webRouter.post(
 webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
   try {
     await controller.logout(req)
+
+    // The session has just been replaced, so the token the browser holds is
+    // bound to a session that no longer exists. Hand back one that matches the
+    // new session, or the next login is refused with 'Invalid CSRF token!'
+    // (sasjs/server#304). The client keeps its cookie jar across a logout, so
+    // this is the only chance to correct it without another round trip.
+    setCSRFCookie(req, res)
+
     res.status(200).send('OK!')
   } catch (err: any) {
     res.status(403).send(err.toString())
@@ -152,6 +160,12 @@ webRouter.get(
   async (req, res) => {
     try {
       const { url } = await controller.oidcLogout(req)
+
+      // Same reason as /SASLogon/logout: the session was replaced, so the
+      // browser's token no longer matches. Set on the redirect, which the browser
+      // stores before following it.
+      setCSRFCookie(req, res)
+
       res.redirect(302, url)
     } catch (err: any) {
       sendOidcError(res, err)

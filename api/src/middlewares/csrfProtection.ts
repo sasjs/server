@@ -51,6 +51,8 @@ const getSecret = (req: Request): string => {
 export const generateCSRFToken = (req: Request) =>
   csrfTokens.create(getSecret(req))
 
+export const CSRF_COOKIE_NAME = 'XSRF-TOKEN'
+
 /**
  * Hand the CSRF token to the browser as a cookie.
  *
@@ -66,9 +68,38 @@ export const generateCSRFToken = (req: Request) =>
 export const setCSRFCookie = (req: Request, res: Response) => {
   const allowedDomain = process.env.ALLOWED_DOMAIN?.trim()
 
-  res.cookie('XSRF-TOKEN', generateCSRFToken(req), {
+  res.cookie(CSRF_COOKIE_NAME, generateCSRFToken(req), {
     httpOnly: false,
     maxAge: 86400 * 1000,
+    sameSite: 'strict',
+    path: '/',
+    ...(allowedDomain ? { domain: allowedDomain } : {})
+  })
+}
+
+/**
+ * Drop the CSRF cookie.
+ *
+ * The token is only valid against the session that minted it (see getSecret),
+ * so once that session is gone - or the caller turns out not to be
+ * authenticated at all - the browser is holding a token that can produce
+ * nothing but `Invalid CSRF token!` on the next state-changing request. A
+ * login is the first of those, which is what sasjs/server#304 reported.
+ *
+ * Removing it is enough: the next `GET /` mints one bound to the session the
+ * browser now has. Where the session is being REPLACED rather than lost, mint
+ * a fresh token instead of clearing (see the logout routes) so the client does
+ * not have to ask again.
+ *
+ * The options have to match setCSRFCookie's: a browser matches a clear against
+ * the cookie's name, domain and path, and keeps a cookie whose clear does not
+ * line up.
+ */
+export const clearCSRFCookie = (res: Response) => {
+  const allowedDomain = process.env.ALLOWED_DOMAIN?.trim()
+
+  res.clearCookie(CSRF_COOKIE_NAME, {
+    httpOnly: false,
     sameSite: 'strict',
     path: '/',
     ...(allowedDomain ? { domain: allowedDomain } : {})

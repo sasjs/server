@@ -1,6 +1,6 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { csrfProtection } from './'
+import { clearCSRFCookie, csrfProtection } from './'
 import {
   fetchLatestAutoExec,
   ModeType,
@@ -50,10 +50,10 @@ export const authenticateAccessToken: RequestHandler = async (
 
           req.user = user
           return csrfProtection(req, res, nextFunction)
-        } else return res.status(401).send('Unauthorized')
+        } else return sendUnauthenticated(res)
       }
     }
-    return res.status(401).send('Unauthorized')
+    return sendUnauthenticated(res)
   }
 
   await authenticateToken(
@@ -179,6 +179,23 @@ const authenticateToken = async (
       return next()
     }
 
-    res.status(401).send('Unauthorized')
+    sendUnauthenticated(res)
   }
+}
+
+/**
+ * A 401 from here means the caller is not authenticated at all, so whatever
+ * CSRF cookie the browser holds was minted for a session the server no longer
+ * honours: it can produce nothing but `Invalid CSRF token!` on the next
+ * state-changing request, a login included (sasjs/server#304). Dropping it lets
+ * the next `GET /` mint one bound to the session the browser now has.
+ *
+ * Deliberately NOT used by authorize.ts or verifyAdmin.ts. Their 401s refuse an
+ * AUTHENTICATED caller who lacks a grant, whose session and token are both
+ * perfectly valid - clearing there would break the next request that caller
+ * legitimately makes.
+ */
+const sendUnauthenticated = (res: Response) => {
+  clearCSRFCookie(res)
+  return res.status(401).send('Unauthorized')
 }
