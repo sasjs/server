@@ -22,11 +22,13 @@ const router = express.Router()
 /**
  * The apps this caller may open.
  *
- * A tile for an app the caller holds no grant on is a dead end: the app's own
- * route is permissioned, so following the tile answers 401. Each app is decided
- * by the same rule the gate applies to `/AppStream/<name>`, read from the same
- * place, so the list and the gate cannot disagree - and a grant on `/AppStream`
- * itself admits every app, exactly as it does at the gate.
+ * The landing page itself is always visible to a signed-in caller, so this is
+ * the only thing that varies: a tile for an app the caller holds no grant on is
+ * a dead end, because the app's own route is permissioned and following the
+ * tile answers 401. Each app is decided by the same rule the gate applies to
+ * `/AppStream/<name>`, read from the same place, so the list and the gate cannot
+ * disagree - and a grant on `/AppStream` itself admits every app, exactly as it
+ * does at the gate.
  *
  * Desktop mode has no permission model (authenticateAccessToken bypasses the
  * gate there), so the whole list stands.

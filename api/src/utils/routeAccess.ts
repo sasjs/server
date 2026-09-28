@@ -7,6 +7,7 @@ import {
   PermissionType
 } from '../controllers/permission'
 import {
+  AlwaysVisibleRoutes,
   TopLevelRoutes,
   canonicalizeRoutePath,
   getAuthorizedRoutes,
@@ -130,9 +131,9 @@ export const isRouteGranted = (
 }
 
 /**
- * Whether a request would pass the permission gate. Administrators and public
- * routes are handled by the middleware before it gets here, because both need
- * the request rather than the user.
+ * Whether a request would pass the permission gate. Administrators, public
+ * routes and always-visible routes are handled by the middleware before it gets
+ * here, because all three need the request rather than the user alone.
  */
 export const isGrantedForRequest = async (
   dbUser: IUserDocument,
@@ -147,7 +148,7 @@ export const isGrantedForRequest = async (
  * The subset of `routes` this caller may use.
  *
  * Administrators hold every route - the rules do not apply to them - and a
- * public grant is included for everyone.
+ * public grant or an always-visible route is included for everyone.
  */
 export const filterGrantedRoutes = async (
   dbUser: IUserDocument,
@@ -162,6 +163,7 @@ export const filterGrantedRoutes = async (
 
   return routes.filter(
     (route) =>
+      AlwaysVisibleRoutes.includes(route) ||
       publicPaths.includes(route) ||
       isRouteGranted(rules, route, topLevelRouteFor(route))
   )
