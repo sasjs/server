@@ -1,3 +1,18 @@
+## 1.11.0
+
+### Features
+
+* **web:** add SAS syntax highlighting to Studio ([928310f](https://github.com/sasjs/server/commit/928310fd1ff9681f2ae1189b3b16ae77789649f7)), closes [#154](https://github.com/sasjs/server/issues/154)
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.10.1
 
 ### Bug Fixes
