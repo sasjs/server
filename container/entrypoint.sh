@@ -214,6 +214,57 @@ if [[ -z "${LOCAL_LOGIN_ENABLED-}" ]]; then
   fi
 fi
 
+# --- run-as ------------------------------------------------------------------
+# The server executes uploaded code, so the identity it runs under is the
+# privilege every connected user gets - and in desktop mode there is no
+# authentication at all. Root is refused unless RUN_AS names an account
+# explicitly: RUN_AS=root is the deliberate override, and any other value
+# ASSERTS that the server really runs as that account.
+#
+# Inside the published image the non-root 'cloudron' user (uid 1000) and gosu
+# are present, so the default is to drop to that account and re-take ownership
+# of the data dir (a backup, restore or migration can reset it). Outside the
+# image - a source checkout, or a generic base without gosu - there is nothing
+# to drop to, and the entrypoint refuses to start as root rather than hand out
+# root code execution.
+current_uid="$(id -u)"
+current_user="$(id -un 2>/dev/null || printf '%s' "$current_uid")"
+RUN_AS="${RUN_AS:-}"
+RUN_AS_CMD=()
+
+if [[ -n "$RUN_AS" ]]; then
+  RUN_AS_EFFECTIVE="$RUN_AS"
+  if [[ "$current_user" == "$RUN_AS" || "$current_uid" == "$RUN_AS" ]]; then
+    echo "NOTE: running the server as the requested account '${RUN_AS}'."
+  elif id "$RUN_AS" >/dev/null 2>&1 && [[ -x /usr/local/bin/gosu ]]; then
+    chown -R "$RUN_AS" "${DATA_DIR}"
+    RUN_AS_CMD=(/usr/local/bin/gosu "$RUN_AS")
+    echo "NOTE: running the server as the requested account '${RUN_AS}' (via gosu)."
+  else
+    echo "ERROR: RUN_AS=${RUN_AS} but this entrypoint runs as ${current_user} and gosu cannot switch to it." >&2
+    exit 1
+  fi
+elif id cloudron >/dev/null 2>&1 && [[ -x /usr/local/bin/gosu ]]; then
+  RUN_AS_EFFECTIVE=cloudron
+  chown -R cloudron:cloudron "${DATA_DIR}"
+  RUN_AS_CMD=(/usr/local/bin/gosu cloudron:cloudron)
+  echo "NOTE: running the server as the 'cloudron' user (uid 1000)."
+elif [[ "$current_uid" == "0" ]]; then
+  echo "ERROR: refusing to run as root. Set RUN_AS=<username> to name the account the server should run as, or RUN_AS=root to allow root deliberately." >&2
+  exit 1
+else
+  RUN_AS_EFFECTIVE="$current_user"
+  echo "NOTE: running the server as ${current_user} (no 'cloudron' user or gosu in this environment)."
+fi
+
+# The server re-checks this itself, so the value has to reach it - but only
+# when it is actually set: an exported empty RUN_AS would read as a value.
+if [[ -n "$RUN_AS" ]]; then
+  export RUN_AS
+else
+  unset RUN_AS
+fi
+
 # --- effective configuration --------------------------------------------------
 # A visible, generated summary of what this instance is actually running with,
 # so the configuration can be read from the platform's file manager without
@@ -238,6 +289,8 @@ CONFIG_SUMMARY="${DATA_DIR}/config.txt"
   echo "CORS=${CORS}"
   echo "TRUST_PROXY=${TRUST_PROXY:-none}"
   echo "DATA_DIR=${DATA_DIR}"
+  echo "RUN_AS=${RUN_AS:-<unset>}"
+  echo "runs_as=${RUN_AS_EFFECTIVE}"
   echo "RUN_TIMES=${RUN_TIMES}"
   echo
   echo "# --- storage ---"
@@ -267,22 +320,6 @@ CONFIG_SUMMARY="${DATA_DIR}/config.txt"
   echo "R_PATH=${R_PATH:-}"
 } > "$CONFIG_SUMMARY" 2>/dev/null || echo "WARNING: could not write ${CONFIG_SUMMARY}" >&2
 echo "NOTE: effective configuration written to ${CONFIG_SUMMARY}"
-
-# --- permissions ------------------------------------------------------------
-# A backup, restore or migration can reset ownership of the data dir, so it
-# is re-taken on every start. Inside the published image the server always
-# runs as the non-root 'cloudron' user (uid 1000) via gosu. Outside the image
-# - running the entrypoint against a source checkout, in development or CI -
-# there is no 'cloudron' user and no gosu, and the entrypoint then runs the
-# server as the current user instead.
-if id cloudron >/dev/null 2>&1 && [[ -x /usr/local/bin/gosu ]]; then
-  chown -R cloudron:cloudron "${DATA_DIR}"
-  RUN_AS=(/usr/local/bin/gosu cloudron:cloudron)
-  echo "NOTE: running the server as the 'cloudron' user (uid 1000)."
-else
-  echo "NOTE: no 'cloudron' user or gosu in this environment - running as $(id -un)."
-  RUN_AS=()
-fi
 
 # --- warnings ----------------------------------------------------------------
 # The server starts and passes its health check even when a configured runtime
@@ -316,5 +353,5 @@ unset NODE_OPTIONS 2>/dev/null || true
 cd "${DATA_DIR}"
 
 echo "=> Starting SASjs Server (MODE=${MODE}, PORT=${PORT}, RUN_TIMES=${RUN_TIMES}, NODE_PATH=${NODE_PATH}, PYTHON_PATH=${PYTHON_PATH})"
-exec "${RUN_AS[@]}" \
+exec "${RUN_AS_CMD[@]}" \
   "${NODE_BIN}" "${SERVER_JS}"

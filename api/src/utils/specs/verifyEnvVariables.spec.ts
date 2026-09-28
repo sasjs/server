@@ -1,5 +1,6 @@
 import {
   verifyEnvVariables,
+  verifyRunAs,
   ReturnCode,
   getAuthProviders,
   isAuthProviderEnabled,
@@ -7,6 +8,7 @@ import {
   AuthProviderType,
   ModeType
 } from '../verifyEnvVariables'
+import { userInfo } from 'os'
 
 // AUTH_PROVIDERS validation is skipped when NODE_ENV is 'test', so the tests
 // that exercise it temporarily switch NODE_ENV and restore it afterwards.
@@ -35,7 +37,8 @@ const managedEnvVars = [
   'OIDC_PROVIDER_NAME',
   'OIDC_USERNAME_CLAIM',
   'OIDC_JIT_PROVISION',
-  'OIDC_POST_LOGOUT_REDIRECT_URI'
+  'OIDC_POST_LOGOUT_REDIRECT_URI',
+  'RUN_AS'
 ]
 
 let originalEnv: { [key: string]: string | undefined }
@@ -324,5 +327,101 @@ describe('verifyEnvVariables', () => {
 
       expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
     })
+  })
+})
+
+describe('verifyRunAs', () => {
+  // The server executes uploaded code, so its identity is the privilege every
+  // connected user gets - and in desktop mode there is no authentication at
+  // all. The effective uid is injectable, so the root branch is reachable
+  // without running the suite as root.
+  const NON_ROOT_UID = 1000
+
+  afterEach(() => {
+    delete process.env.RUN_AS
+  })
+
+  it('accepts a non-root process with RUN_AS unset', () => {
+    expect(verifyRunAs(NON_ROOT_UID)).toEqual([])
+  })
+
+  it('refuses to run as root when RUN_AS is unset', () => {
+    const errors = verifyRunAs(0)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('running as root')
+    expect(errors[0]).toContain('RUN_AS')
+  })
+
+  it('accepts root when RUN_AS=root names it deliberately', () => {
+    process.env.RUN_AS = 'root'
+
+    expect(verifyRunAs(0)).toEqual([])
+  })
+
+  it('accepts RUN_AS naming the account the process already runs as', () => {
+    process.env.RUN_AS = userInfo().username
+
+    expect(verifyRunAs(NON_ROOT_UID)).toEqual([])
+  })
+
+  it('accepts a numeric RUN_AS matching the uid', () => {
+    process.env.RUN_AS = String(NON_ROOT_UID)
+
+    expect(verifyRunAs(NON_ROOT_UID)).toEqual([])
+  })
+
+  it('rejects RUN_AS naming a different account', () => {
+    process.env.RUN_AS = 'someone-else'
+
+    const errors = verifyRunAs(NON_ROOT_UID)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain("RUN_AS 'someone-else'")
+  })
+
+  it('rejects RUN_AS=root when the process is not root', () => {
+    process.env.RUN_AS = 'root'
+
+    const errors = verifyRunAs(NON_ROOT_UID)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('start it as root')
+  })
+
+  it('treats an empty RUN_AS as unset', () => {
+    process.env.RUN_AS = ''
+
+    // An install that writes `RUN_AS=` into config.env gets the default, which
+    // still refuses root - so this stays fail-closed.
+    expect(verifyRunAs(NON_ROOT_UID)).toEqual([])
+
+    const errors = verifyRunAs(0)
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('running as root')
+  })
+
+  it('skips the uid comparison where there is no uid (Windows)', () => {
+    expect(verifyRunAs(undefined)).toEqual([])
+
+    process.env.RUN_AS = userInfo().username
+
+    expect(verifyRunAs(undefined)).toEqual([])
+  })
+
+  it('surfaces through the startup env gate', () => {
+    // verifyEnvVariables is the single gate app.ts acts on, so the RUN_AS
+    // errors have to reach it. A mismatched RUN_AS is an error on any host,
+    // root or not.
+    const originalNodeEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'development'
+    setValidServerEnv()
+    process.env.RUN_AS = 'definitely-not-this-account'
+
+    expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = originalNodeEnv
   })
 })

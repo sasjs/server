@@ -100,6 +100,17 @@ Example contents of a `.env` file:
 # Server mode is multi-user and suitable for intranet / internet use
 MODE=
 
+# The account the server must run as.
+# Unset: the server refuses to start as root.
+# Set to a username: the server must be running as that account, or it refuses
+# to start - so it is an assertion, not a hint.
+# RUN_AS=root is the deliberate override.
+# This application executes uploaded code by design, so the identity the server
+# runs under is the privilege every connected user gets. In desktop mode there
+# is no authentication at all.
+# default: unset (root refused)
+RUN_AS=
+
 # A comma separated string that defines the available runTimes.
 # Priority is given to the runtime that comes first in the string.
 # Possible options at the moment are sas, js, py and r
