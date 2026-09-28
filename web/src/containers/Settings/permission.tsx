@@ -1,4 +1,4 @@
-import { Box, Paper, Grid, CircularProgress } from '@mui/material'
+import { Box, Paper, Grid, CircularProgress, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import PermissionTable from './internal/components/permissionTable'
 import usePermission from './internal/hooks/usePermission'
@@ -40,13 +40,31 @@ const Permission = () => {
             {isAdmin && <AddPermissionButton />}
           </Paper>
         </BootstrapGridItem>
-        <BootstrapGridItem item xs={12}>
-          <PermissionTable
-            permissions={filterApplied ? filteredPermissions : permissions}
-            handleUpdatePermissionClick={handleUpdatePermissionClick}
-            handleDeletePermissionClick={handleDeletePermissionClick}
-          />
-        </BootstrapGridItem>
+        {permissions.length === 0 ? (
+          // An empty table says nothing about WHY it is empty, and the rules are
+          // deny-by-default - so the state is explained rather than left to look
+          // like a failure or an oversight.
+          <BootstrapGridItem item xs={12}>
+            <Paper elevation={3} sx={{ padding: '20px' }}>
+              <Typography variant="h6" sx={{ marginBottom: '10px' }}>
+                No permission rules
+              </Typography>
+              <Typography>
+                {isAdmin
+                  ? 'Routes that accept permissions deny by default, so a user or a group needs a Grant before anyone can use one. The add button above creates a rule.'
+                  : 'You hold no permission rules. Routes that accept permissions deny by default; an administrator grants access to a user or to a group, and the rules that apply to you appear here.'}
+              </Typography>
+            </Paper>
+          </BootstrapGridItem>
+        ) : (
+          <BootstrapGridItem item xs={12}>
+            <PermissionTable
+              permissions={filterApplied ? filteredPermissions : permissions}
+              handleUpdatePermissionClick={handleUpdatePermissionClick}
+              handleDeletePermissionClick={handleDeletePermissionClick}
+            />
+          </BootstrapGridItem>
+        )}
       </Grid>
       <PermissionResponseDialog />
       <UpdatePermissionDialog />
