@@ -1,3 +1,5 @@
+import os from 'os'
+
 export enum MOCK_SERVERTYPEType {
   SAS9 = 'sas9',
   SASVIYA = 'sasviya'
@@ -134,6 +136,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyDbType())
 
   errors.push(...verifyAdminUserConfig())
+
+  errors.push(...verifyRunAs())
 
   if (errors.length) {
     process.logger?.error(
@@ -684,6 +688,90 @@ const verifyLocalLogin = (): string[] => {
   }
 
   return errors
+}
+
+/**
+ * The identity the server runs under is the privilege every connected user
+ * gets, because this application executes uploaded code by design - and in
+ * desktop mode there is no authentication at all. Root is refused unless
+ * RUN_AS names an account explicitly.
+ *
+ * RUN_AS=root is the deliberate override. Any other value ASSERTS that the
+ * process really is that account, so a mismatch is an error rather than a
+ * silent downgrade: it is the operator's statement of intent, and a
+ * deployment that quietly stopped honouring it would be worse than one that
+ * refuses to start.
+ *
+ * POSIX only: Windows has no root and no uid, so the uid comparison is
+ * skipped there and only the account name is checked.
+ *
+ * The effective uid is injectable so the spec can exercise the root branch
+ * without running the suite as root.
+ */
+export const verifyRunAs = (
+  euid: number | undefined = getEffectiveUid()
+): string[] => {
+  const errors: string[] = []
+
+  // Unset and empty mean the same thing - no override - so an install that
+  // writes `RUN_AS=` into config.env gets the default rather than a crash.
+  // Both fail closed, because the default refuses root.
+  const runAs = process.env.RUN_AS?.trim() || undefined
+
+  if (!runAs) {
+    if (euid === 0) {
+      errors.push(
+        `- running as root\n - set RUN_AS=<username> to name the account the server should run as, or RUN_AS=root to allow root deliberately`
+      )
+    }
+    return errors
+  }
+
+  if (matchesCurrentAccount(runAs, euid)) return errors
+
+  const advice =
+    runAs === 'root'
+      ? `start it as root, or drop RUN_AS to run as the current account`
+      : `start it as '${runAs}', or set RUN_AS=root to allow root deliberately`
+
+  errors.push(
+    `- RUN_AS '${runAs}' but the server is running as '${currentAccount(
+      euid
+    )}'\n - ${advice}`
+  )
+
+  return errors
+}
+
+const getEffectiveUid = (): number | undefined =>
+  typeof process.geteuid === 'function' ? process.geteuid() : undefined
+
+const currentAccount = (euid: number | undefined): string => {
+  const uid = euid ?? 'unknown'
+
+  try {
+    return `${os.userInfo().username} (uid ${uid})`
+  } catch {
+    return `uid ${uid}`
+  }
+}
+
+const matchesCurrentAccount = (
+  runAs: string,
+  euid: number | undefined
+): boolean => {
+  if (euid !== undefined && String(euid) === runAs) return true
+
+  // uid 0 IS root, whatever the account database says: a container can run as
+  // root with no passwd entry to name it, and then userInfo() cannot confirm
+  // it.
+  if (euid === 0) return runAs === 'root'
+
+  try {
+    return os.userInfo().username === runAs
+  } catch {
+    return false
+  }
 }
 
 const isAbsoluteUrl = (val: string): boolean => {

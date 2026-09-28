@@ -30,6 +30,7 @@ matter most in a container:
 | Variable | Default | Purpose |
 |---|---|---|
 | `MODE` | `server` | `server` (multi-user, needs DB) or `desktop` (single-user) |
+| `RUN_AS` | unset | The account the server must run as. Unset, root is refused; set to a username, the server must be running as that account or it refuses to start. `RUN_AS=root` is the deliberate override. The image drops to the non-root `cloudron` user by default, so this is only needed when running the entrypoint outside the published image |
 | `DB_CONNECT` / `DB_TYPE` | - | MongoDB connection string / `mongodb` |
 | `DATA_DIR` | `/usr/server/data` | The only writable path - mount it to persist state |
 | `PORT` / `PROTOCOL` | `5000` / `http` | Listen settings; terminate TLS in front of the container |

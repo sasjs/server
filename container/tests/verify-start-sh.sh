@@ -46,7 +46,7 @@ const vars = [
   'SASJS_ROOT', 'DRIVE_LOCATION', 'LOG_LOCATION',
   'RUN_TIMES', 'NODE_PATH', 'PYTHON_PATH', 'SAS_PATH', 'ADMIN_USERNAME',
   'ADMIN_PASSWORD_INITIAL', 'ADMIN_PASSWORD_RESET', 'NODE_OPTIONS',
-  'LOCAL_LOGIN_ENABLED'
+  'LOCAL_LOGIN_ENABLED', 'RUN_AS'
 ]
 console.log('CWD=' + process.cwd())
 console.log('HOME=' + process.env.HOME)
@@ -63,6 +63,8 @@ sed -e "s#NODE_BIN=\"\${NODE_BIN:-/usr/local/node/bin/node}\"#NODE_BIN=\"\${NODE
     -e "s#/app/data#$T/app-data#g" \
     -e "s#/usr/local/bin/gosu#$T/bin/gosu#g" \
     -e "s#cloudron:cloudron#$(id -un):$(id -gn)#g" \
+    -e "s#^current_uid=\"\$(id -u)\"#current_uid=\"\${TEST_UID:-\$(id -u)}\"#g" \
+    -e "s#^current_user=\"\$(id -un 2>/dev/null || printf '%s' \"\$current_uid\")\"#current_user=\"\${TEST_USER:-\$(id -un 2>/dev/null || printf '%s' \"\$current_uid\")}\"#g" \
     "$PKG/container/entrypoint.sh" > "$T/start-under-test.sh"
 chmod +x "$T/start-under-test.sh"
 
@@ -334,6 +336,76 @@ check "sasjs_root"  "$T/app-data/sasjs_root"         "$OUT"
 check "drive"       "$T/app-data/sasjs_root/drive"   "$OUT"
 check "logs"        "$T/app-data/sasjs_root/logs"    "$OUT"
 check "mocks (cwd)" "$T/app-data/mocks"              "$OUT"
+
+echo
+echo "--- TEST 8: root is refused unless RUN_AS names an account"
+# The server executes uploaded code, so running it as root hands root to every
+# connected user - and in desktop mode there is no authentication at all.
+# TEST_UID/TEST_USER fake the identity so this branch is reachable on a host
+# that is not root; the substitutions above inject them.
+set +e
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
+  TEST_UID=0 "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh" 2>&1)
+RC=$?
+set -e
+check "non-zero exit"               "1"                     "$RC"
+check "names RUN_AS as the way out" "Set RUN_AS=<username>" "$OUT"
+if [[ "$OUT" == *"Starting SASjs Server"* ]]; then
+  echo "FAIL  the app started as root"
+  FAIL=1
+else
+  echo "PASS  the app did not start as root"
+fi
+
+echo
+echo "--- TEST 8b: RUN_AS=root is the deliberate override"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
+  TEST_UID=0 TEST_USER=root RUN_AS=root "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh" 2>&1)
+check "starts the app"            "Starting SASjs Server" "$OUT"
+check "RUN_AS reaches the server" "RUN_AS=root"           "$OUT"
+check "summary records the effective account" "runs_as=root" "$(cat "$T/app-data/config.txt" 2>/dev/null)"
+rm -f "$T/app-data/config.txt"
+
+echo
+echo "--- TEST 8c: RUN_AS naming the current account needs no gosu"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
+  RUN_AS="$(id -un)" "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh" 2>&1)
+check "starts the app"      "Starting SASjs Server" "$OUT"
+check "says which account"  "running the server as the requested account '$(id -un)'" "$OUT"
+check "summary records the account" "runs_as=$(id -un)" "$(cat "$T/app-data/config.txt" 2>/dev/null)"
+rm -f "$T/app-data/config.txt"
+
+echo
+echo "--- TEST 8d: RUN_AS naming an account that cannot be switched to is refused"
+set +e
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
+  RUN_AS=nosuchuser-sasjs "${ADDONS[@]}" \
+  bash "$T/start-under-test.sh" 2>&1)
+RC=$?
+set -e
+check "non-zero exit"           "1"                       "$RC"
+check "names the account"       "RUN_AS=nosuchuser-sasjs" "$OUT"
+check "says gosu cannot switch" "gosu cannot switch to it" "$OUT"
+
+echo
+echo "--- TEST 8e: a non-root start with RUN_AS unset is unaffected"
+OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" \
+  DATA_DIR="$T/data" DB_CONNECT='mongodb://127.0.0.1:27017/sasjs' DB_TYPE=mongodb \
+  bash "$T/start-under-test.sh" 2>&1)
+check "starts the app"      "Starting SASjs Server"      "$OUT"
+check "reports the account" "running the server as $(id -un)" "$OUT"
+# The server re-checks RUN_AS itself, and an exported EMPTY value would read as
+# a configured one - so the entrypoint must leave it absent when it is unset.
+check "RUN_AS is not exported when unset" "RUN_AS=<unset>" "$OUT"
+if grep -q "refusing to run as root" <<< "$OUT"; then
+  echo "FAIL  the root refusal fired for a non-root start"
+  FAIL=1
+else
+  echo "PASS  no root refusal on a non-root start"
+fi
 
 echo
 if [[ "$FAIL" -eq 0 ]]; then
