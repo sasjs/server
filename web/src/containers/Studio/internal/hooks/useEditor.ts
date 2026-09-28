@@ -19,6 +19,7 @@ import {
   useStateWithCallback
 } from '../../../../utils/hooks'
 import { parseErrorsAndWarnings, LogObject } from '../../../../utils'
+import { lintModel } from '../lint'
 
 const SASJS_LOGS_SEPARATOR =
   'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
@@ -328,6 +329,34 @@ const useEditor = ({
     if (runTimes.includes(fileExtension))
       setSelectedRunTime(fileExtension as RunTimeType)
   }, [selectedFileExtension, runTimes])
+
+  /**
+   * Lints SAS code and marks the editor with the findings.
+   *
+   * The endpoint applies SAS rules, so a program in another runtime is left
+   * unmarked rather than reported against rules that do not apply to it. A
+   * buffer with no path is judged by the run time the user selected.
+   */
+  const lint = useCallback(
+    (code: string, filePath?: string) => {
+      const isSas = filePath
+        ? filePath.split('.').pop()?.toLowerCase() === 'sas'
+        : selectedRunTime === RunTimeType.SAS
+
+      if (!isSas || !code) return
+
+      void lintModel(editorRef.current?.getModel() ?? null, code)
+    },
+    [selectedRunTime]
+  )
+
+  useEffect(() => {
+    // Linting the buffer on a delay keeps a request off the keystroke path,
+    // and the cleanup cancels the pending one as soon as typing continues.
+    const timer = setTimeout(() => lint(fileContent, selectedFilePath), 500)
+
+    return () => clearTimeout(timer)
+  }, [fileContent, selectedFilePath, lint])
 
   return {
     fileContent,

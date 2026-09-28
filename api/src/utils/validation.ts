@@ -189,6 +189,11 @@ export const runCodeValidation = (data: any): Joi.ValidationResult =>
     runTime: Joi.string().valid(...process.runTimes)
   }).validate(data)
 
+export const lintCodeValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    code: Joi.string().required()
+  }).validate(data)
+
 export const triggerCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     code: Joi.string().required(),

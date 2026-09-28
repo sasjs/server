@@ -138,6 +138,47 @@ components:
                 - runTime
             type: object
             additionalProperties: false
+        Severity:
+            description: 'Severity indicates the seriousness of a given violation.'
+            enum:
+                - 0
+                - 1
+                - 2
+            type: number
+        Diagnostic:
+            description: 'A diagnostic is produced by the execution of a lint rule against a file or line of text.'
+            properties:
+                lineNumber:
+                    type: number
+                    format: double
+                startColumnNumber:
+                    type: number
+                    format: double
+                endColumnNumber:
+                    type: number
+                    format: double
+                message:
+                    type: string
+                severity:
+                    $ref: '#/components/schemas/Severity'
+            required:
+                - lineNumber
+                - startColumnNumber
+                - endColumnNumber
+                - message
+                - severity
+            type: object
+            additionalProperties: false
+        LintCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'The SAS code to be linted'
+                    example: "data _null_;\n  x = 1;\nrun;"
+            required:
+                - code
+            type: object
+            additionalProperties: false
         MemberType.folder:
             enum:
                 - folder
@@ -893,6 +934,32 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/TriggerCodePayload'
+    /SASjsApi/code/lint:
+        post:
+            operationId: LintCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/Diagnostic'
+                                type: array
+            description: "Lints the supplied SAS code and returns the diagnostics.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can lint its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nRules come from the nearest `.sasjslint` above the server's working\ndirectory, falling back to the package default. Diagnostics describe the\nsubmitted text only; no other file is read."
+            summary: 'Lint SAS code and return the diagnostics'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LintCodePayload'
     /SASjsApi/drive/deploy:
         post:
             operationId: Deploy

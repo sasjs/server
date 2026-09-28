@@ -126,6 +126,49 @@ describe('code', () => {
       )
     }, 30000)
   })
+
+  describe('lint', () => {
+    // The caller here holds a grant for /SASjsApi/code/execute and nothing
+    // else. Lint needs no grant of its own: it neither reads a file nor runs
+    // anything, it analyses the text the caller submitted.
+    it('returns the diagnostics for the submitted code', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/lint')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code: 'data _null_;\n  x = 1; \nrun;' })
+        .expect(200)
+
+      expect(Array.isArray(response.body)).toEqual(true)
+
+      // Line 2 is '  x = 1; ' - the trailing space is the violation.
+      expect(response.body).toContainEqual({
+        message: 'Line contains trailing spaces',
+        lineNumber: 2,
+        startColumnNumber: 9,
+        endColumnNumber: 9,
+        severity: 1
+      })
+    })
+
+    it('returns 400 when the code is missing', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/lint')
+        .auth(accessToken, { type: 'bearer' })
+        .send({})
+        .expect(400)
+
+      expect(response.text).toEqual('"code" is required')
+    })
+
+    it('returns 401 without an access token', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/lint')
+        .send({ code: 'data _null_;\nrun;' })
+        .expect(401)
+
+      expect(response.text).toEqual('Unauthorized')
+    })
+  })
 })
 
 const generateAndSaveToken = async (userId: string) => {

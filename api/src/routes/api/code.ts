@@ -1,5 +1,9 @@
 import express from 'express'
-import { runCodeValidation, triggerCodeValidation } from '../../utils'
+import {
+  lintCodeValidation,
+  runCodeValidation,
+  triggerCodeValidation
+} from '../../utils'
 import { CodeController } from '../../controllers/'
 
 const runRouter = express.Router()
@@ -36,6 +40,22 @@ runRouter.post('/trigger', async (req, res) => {
     const response = await controller.triggerCode(req, body)
 
     res.status(200)
+    res.send(response)
+  } catch (err: any) {
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err)
+  }
+})
+
+runRouter.post('/lint', async (req, res) => {
+  const { error, value: body } = lintCodeValidation(req.body)
+  if (error) return res.status(400).send(error.details[0].message)
+
+  try {
+    const response = await controller.lintCode(body)
     res.send(response)
   } catch (err: any) {
     const statusCode = err.code

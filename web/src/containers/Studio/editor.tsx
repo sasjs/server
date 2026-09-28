@@ -22,7 +22,10 @@ import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 
 import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
-import { registerSasLanguage } from './internal/languages'
+import {
+  registerSasCompletions,
+  registerSasLanguage
+} from './internal/languages'
 import useEditor from './internal/hooks/useEditor'
 import { RunTimeType } from '../../context/appContext'
 import { LogObject } from '../../utils'
@@ -30,6 +33,7 @@ import { LogObject } from '../../utils'
 // Registered at import time, so Monaco knows the language before the first
 // editor model is created.
 registerSasLanguage()
+registerSasCompletions()
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
