@@ -75,12 +75,21 @@ describe('web', () => {
       }
     })
 
-    it('should respond with CSRF Token', async () => {
+    it('should respond with CSRF Token as a cookie, with no inline script in the page', async () => {
       const res = await request(app).get('/').expect(200)
 
-      expect(res.text).toMatch(
-        /<script>document.cookie = '(XSRF-TOKEN=.*; Max-Age=86400; SameSite=Strict; Path=\/;)'<\/script>/
+      const xsrfCookie = (
+        res.headers['set-cookie'] as unknown as string[]
+      ).find((cookie) => cookie.startsWith('XSRF-TOKEN='))
+
+      expect(xsrfCookie).toBeDefined()
+      expect(xsrfCookie).toMatch(
+        /^XSRF-TOKEN=[^;]+; Max-Age=86400; Path=\/; Expires=.*; SameSite=Strict/
       )
+
+      // The cookie is the whole delivery mechanism: an inline script would
+      // require 'unsafe-inline' in the CSP.
+      expect(res.text).not.toContain('<script>document.cookie')
     })
 
     it('should reference the bundle by its contents, so a cached bundle is not reused', async () => {
@@ -244,12 +253,12 @@ describe('web', () => {
 const getCSRF = async (appOrAgent: any) => {
   // make request to get CSRF. Accepts a supertest agent so the token is
   // minted in the SAME session whose cookie jar will present it.
-  const { text } = await appOrAgent.get('/')
+  const { headers } = await appOrAgent.get('/')
 
-  return { csrfToken: extractCSRF(text) }
+  return { csrfToken: extractCSRF(headers) }
 }
 
-const extractCSRF = (text: string) =>
-  /<script>document.cookie = 'XSRF-TOKEN=(.*); Max-Age=86400; SameSite=Strict; Path=\/;'<\/script>/.exec(
-    text
+const extractCSRF = (headers: { [key: string]: any }): string =>
+  /XSRF-TOKEN=(.*?);/.exec(
+    (headers['set-cookie'] as string[] | undefined)?.join(';') ?? ''
   )![1]

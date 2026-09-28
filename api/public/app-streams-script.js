@@ -47,3 +47,17 @@ function updateFileUploadMessage(message) {
 function resetFileUpload() {
   inputElement.value = null
 }
+
+// A stream logo that fails to load falls back to the default logo. Wired here
+// rather than with an inline `onerror` attribute, which the default
+// Content-Security-Policy refuses. `once` keeps a failing fallback from
+// retrying itself.
+document.querySelectorAll('img[data-fallback]').forEach(function (image) {
+  image.addEventListener(
+    'error',
+    function () {
+      this.src = this.dataset.fallback
+    },
+    { once: true }
+  )
+})

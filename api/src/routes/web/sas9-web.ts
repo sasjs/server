@@ -1,5 +1,5 @@
 import express from 'express'
-import { generateCSRFToken } from '../../middlewares'
+import { setCSRFCookie } from '../../middlewares'
 import { WebController } from '../../controllers'
 import { MockSas9Controller } from '../../controllers/mock-sas9'
 import multer from 'multer'
@@ -32,15 +32,11 @@ sas9WebRouter.get('/', async (req, res) => {
     response = await webController.home()
   } catch (_) {
     response = '<html><head></head><body>Web Build is not present</body></html>'
-  } finally {
-    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken(req)}; Max-Age=86400; SameSite=Strict; Path=/;'</script>`
-    const injectedContent = response?.replace(
-      '</head>',
-      `${codeToInject}</head>`
-    )
-
-    return res.send(injectedContent)
   }
+
+  setCSRFCookie(req, res)
+
+  return res.send(response)
 })
 
 sas9WebRouter.get('/SASStoredProcess', async (req, res) => {

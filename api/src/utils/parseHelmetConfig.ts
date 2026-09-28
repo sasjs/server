@@ -1,13 +1,25 @@
 import path from 'path'
 import fs from 'fs'
 
+/**
+ * The default Content-Security-Policy directives.
+ *
+ * No `'unsafe-inline'` on `script-src` or `script-src-attr`: the app's pages
+ * carry no inline script and no inline event handlers, so an injected script
+ * is refused rather than permitted. `style-src` keeps helmet's own
+ * `'unsafe-inline'`, which the styling libraries the SPA uses require.
+ *
+ * An application deployed on the server that depends on inline scripts or
+ * inline event handlers loosens this by pointing HELMET_CSP_CONFIG_PATH at a
+ * config file of its own.
+ */
 export const getEnvCSPDirectives = (
   HELMET_CSP_CONFIG_PATH: string | undefined
 ) => {
   let cspConfigJson = {
     'img-src': ["'self'", 'data:'],
-    'script-src': ["'self'", "'unsafe-inline'"],
-    'script-src-attr': ["'self'", "'unsafe-inline'"]
+    'script-src': ["'self'"],
+    'script-src-attr': ["'none'"]
   }
 
   if (

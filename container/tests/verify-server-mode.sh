@@ -97,13 +97,15 @@ echo "info: $INFO"
 
 echo
 echo "--- authenticate (GET / for the CSRF cookie value, then login -> authorize -> token)"
-# The web routes are CSRF-protected. The token is injected into index.html as
-# a document.cookie assignment, so it can be scraped from GET / and replayed
-# in the x-xsrf-token header.
-CSRF=$(curl -sf -m 20 "$API/" | grep -o "XSRF-TOKEN=[^;']*" | cut -d= -f2)
+# The web routes are CSRF-protected. The token arrives as a `Set-Cookie`
+# header on GET /, so it is read from the cookie jar and replayed in the
+# x-xsrf-token header. The page itself carries no inline script - that is
+# what lets the default CSP refuse one.
+curl -sf -m 20 -c "$T/cookies" "$API/" > /dev/null
+CSRF=$(awk '$6 == "XSRF-TOKEN" { print $7 }' "$T/cookies")
 echo "csrf:     ${CSRF:0:12}..."
 
-curl -sf -m 20 -c "$T/cookies" -X POST "$API/SASLogon/login" \
+curl -sf -m 20 -b "$T/cookies" -c "$T/cookies" -X POST "$API/SASLogon/login" \
   -H "x-xsrf-token: $CSRF" -H 'Content-Type: application/json' \
   -d "{\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASS\"}" > "$T/login.json"
 echo "login:    $(cat "$T/login.json")"
