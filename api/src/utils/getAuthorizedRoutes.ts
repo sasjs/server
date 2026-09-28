@@ -2,6 +2,21 @@ import { Request } from 'express'
 
 export const TopLevelRoutes = ['/AppStream', '/SASjsApi']
 
+/**
+ * Routes any authenticated caller can reach, even though they accept permission
+ * rules.
+ *
+ * The App Stream landing page is the one case. It is a navigation page whose
+ * whole job is to list the apps the caller may open, so gating it on
+ * `/AppStream` made reaching those apps depend on a grant that lists them: a
+ * caller granted a single app could not open the page that leads to it. Each
+ * app keeps its own rule, and the page lists only the apps the caller holds.
+ *
+ * `/AppStream` stays in the inventory because a rule on it is still meaningful -
+ * it is the top-level route for every app, so a grant on it admits them all.
+ */
+export const AlwaysVisibleRoutes = ['/AppStream']
+
 // Being authenticated is enough for most routes. These specifically also
 // require a granted Permission (checked by the authorize middleware) because
 // they run arbitrary submitted code or manipulate arbitrary files on disk - a
@@ -63,5 +78,10 @@ export const getPath = (req: Request) => {
   return canonicalizeRoutePath(baseUrl + reqPath)
 }
 
-export const isAuthorizingRoute = (req: Request): boolean =>
-  getAuthorizedRoutes().includes(getPath(req))
+export const isAuthorizingRoute = (req: Request): boolean => {
+  const path = getPath(req)
+
+  return (
+    getAuthorizedRoutes().includes(path) && !AlwaysVisibleRoutes.includes(path)
+  )
+}

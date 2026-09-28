@@ -44,9 +44,9 @@ const Header = (props: any) => {
   // alone would leave the URL as a way in.
   const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
 
-  // The App Stream landing page is permissioned too, so the button that opens
-  // it is offered on the same basis - a user with a grant on one app alone
-  // cannot load the stream, and the button would only answer 401.
+  // The App Stream landing page is always visible to a signed-in caller, so the
+  // server reports it for everyone. The button follows that answer rather than
+  // assuming it; it is the TILES inside that get filtered.
   const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {

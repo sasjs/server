@@ -110,12 +110,36 @@ describe('App Stream listing', () => {
     await request(app).get('/AppStream/').expect(401)
   })
 
-  it('should refuse the page itself to a caller with no grant on it', async () => {
+  it('should serve the page to a caller holding no grants, listing nothing', async () => {
     const { token } = await tokenFor(streamUser.username)
 
-    // The landing page is /AppStream, which is itself in the inventory.
-    await request(app)
+    // The landing page is always visible: it is the navigation that leads to the
+    // apps, so it cannot depend on the grant that lists them.
+    const res = await request(app)
       .get('/AppStream/')
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+
+    expect(res.text).not.toContain('href="Mario"')
+    expect(res.text).not.toContain('href="Sonic"')
+  })
+
+  it('should list only the app the caller is granted, without a stream-wide grant', async () => {
+    const { token, uid } = await tokenFor(streamUser.username)
+
+    await rule('/AppStream/Mario', PermissionSettingForRoute.grant, uid)
+
+    const res = await request(app)
+      .get('/AppStream/')
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+
+    expect(res.text).toContain('href="Mario"')
+    expect(res.text).not.toContain('href="Sonic"')
+
+    // And the app it does list is the one that opens.
+    await request(app)
+      .get('/AppStream/Sonic/')
       .auth(token, { type: 'bearer' })
       .expect(401)
   })

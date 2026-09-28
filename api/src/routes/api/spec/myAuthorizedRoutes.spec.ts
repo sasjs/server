@@ -112,7 +112,7 @@ describe('GET /SASjsApi/info/myAuthorizedRoutes', () => {
     expect(res.text).toEqual('Unauthorized')
   })
 
-  it('should hold nothing for a caller with no rules, because access denies by default', async () => {
+  it('should hold nothing but the always-visible routes for a caller with no rules', async () => {
     const { token } = await tokenFor(plainUser.username)
 
     const res = await request(app)
@@ -120,7 +120,9 @@ describe('GET /SASjsApi/info/myAuthorizedRoutes', () => {
       .auth(token, { type: 'bearer' })
       .expect(200)
 
-    expect(res.body.paths).toEqual([])
+    // Access denies by default, so nothing is held - except the App Stream
+    // landing page, which any signed-in caller can reach.
+    expect(res.body.paths).toEqual(['/AppStream'])
   })
 
   it('should hold the routes granted to the caller and nothing else', async () => {
@@ -144,7 +146,7 @@ describe('GET /SASjsApi/info/myAuthorizedRoutes', () => {
 
     // The granted route is offered; the denied one is not, and neither is
     // anything the caller holds no rule for.
-    expect(res.body.paths).toEqual(['/SASjsApi/code/execute'])
+    expect(res.body.paths).toEqual(['/AppStream', '/SASjsApi/code/execute'])
   })
 
   it('should hold a route granted to a group the caller belongs to', async () => {
@@ -175,7 +177,7 @@ describe('GET /SASjsApi/info/myAuthorizedRoutes', () => {
       .auth(token, { type: 'bearer' })
       .expect(200)
 
-    expect(res.body.paths).toEqual(['/SASjsApi/stp/execute'])
+    expect(res.body.paths).toEqual(['/AppStream', '/SASjsApi/stp/execute'])
   })
 
   it('should hold a route granted to the reserved public group, for everyone', async () => {
@@ -201,7 +203,7 @@ describe('GET /SASjsApi/info/myAuthorizedRoutes', () => {
       .auth(token, { type: 'bearer' })
       .expect(200)
 
-    expect(res.body.paths).toEqual(['/SASjsApi/drive/folder'])
+    expect(res.body.paths).toEqual(['/AppStream', '/SASjsApi/drive/folder'])
   })
 
   it('should hold every route for an admin, because the rules do not apply to them', async () => {
