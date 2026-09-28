@@ -1,3 +1,21 @@
+## 1.12.0
+
+### Features
+
+* **api:** lint submitted code and return the diagnostics ([69822e7](https://github.com/sasjs/server/commit/69822e7db43fecfaefb83ac00b1fe8cb45e70414)), closes [#154](https://github.com/sasjs/server/issues/154)
+* **web:** complete SAS words in the Studio editor ([b374908](https://github.com/sasjs/server/commit/b374908553697ebebe5e9177c7a77a9e3e129039)), closes [#154](https://github.com/sasjs/server/issues/154)
+* **web:** lint the editor buffer as it changes ([a19bcd0](https://github.com/sasjs/server/commit/a19bcd0dbf8648a31e01598ef8e2e3ea20c5720d)), closes [#154](https://github.com/sasjs/server/issues/154)
+* **web:** mark lint findings in the Studio editor ([3325524](https://github.com/sasjs/server/commit/33255240c353fec26d15313d6c5d3ba265106864)), closes [#154](https://github.com/sasjs/server/issues/154)
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.11.0
 
 ### Features
