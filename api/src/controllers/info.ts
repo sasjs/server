@@ -1,7 +1,10 @@
-import { Route, Tags, Example, Get } from 'tsoa'
+import { Route, Tags, Example, Get, Request, Security } from 'tsoa'
+import express from 'express'
+import User from '../model/User'
 import {
   getAuthorizedRoutes,
   getAuthProviders,
+  getGrantedRoutes,
   isLocalLoginEnabled
 } from '../utils'
 export interface AuthorizedRoutesResponse {
@@ -92,5 +95,37 @@ export class InfoController {
       paths: getAuthorizedRoutes()
     }
     return response
+  }
+
+  /**
+   * Returns the routes this caller may use, taken from the routes that accept
+   * permission rules. The web interface reads it to hide the parts of itself
+   * the caller cannot use - the Studio tab, for example - rather than offering
+   * an entry that only leads to a refusal.
+   *
+   * Administrators hold every route, because the permission rules do not apply
+   * to them, and a public route is included for everyone. A `404` is returned
+   * when the caller has no account.
+   *
+   * @summary List the routes this caller may use
+   */
+  @Example<AuthorizedRoutesResponse>({
+    paths: ['/AppStream', '/SASjsApi/code/execute']
+  })
+  @Security('bearerAuth')
+  @Get('/myAuthorizedRoutes')
+  public async myAuthorizedRoutes(
+    @Request() request: express.Request
+  ): Promise<AuthorizedRoutesResponse> {
+    const dbUser = await User.findOne({ _id: request.user?.userId })
+
+    if (!dbUser)
+      throw {
+        code: 404,
+        status: 'Not Found',
+        message: 'User not found.'
+      }
+
+    return { paths: await getGrantedRoutes(dbUser) }
   }
 }

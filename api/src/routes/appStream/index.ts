@@ -5,18 +5,58 @@ import { folderExists } from '@sasjs/utils'
 
 import {
   addEntryToAppStreamConfig,
+  filterGrantedRoutes,
   getFilesFolder,
+  ModeType,
   resolveWithinDrive,
   isSafePathSegment
 } from '../../utils'
+import User from '../../model/User'
+import { AppStreamConfig } from '../../types'
 import { appStreamHtml } from './appStreamHtml'
 
 const appStreams: { [key: string]: string } = {}
 
 const router = express.Router()
 
+/**
+ * The apps this caller may open.
+ *
+ * A tile for an app the caller holds no grant on is a dead end: the app's own
+ * route is permissioned, so following the tile answers 401. Each app is decided
+ * by the same rule the gate applies to `/AppStream/<name>`, read from the same
+ * place, so the list and the gate cannot disagree - and a grant on `/AppStream`
+ * itself admits every app, exactly as it does at the gate.
+ *
+ * Desktop mode has no permission model (authenticateAccessToken bypasses the
+ * gate there), so the whole list stands.
+ */
+const permittedAppStreamConfig = async (
+  req: Request
+): Promise<AppStreamConfig> => {
+  const appStreamConfig = process.appStreamConfig ?? {}
+
+  if (process.env.MODE === ModeType.Desktop) return appStreamConfig
+
+  const dbUser = await User.findOne({ _id: req.user?.userId })
+  if (!dbUser) return {}
+
+  const names = Object.keys(appStreamConfig)
+  const granted = await filterGrantedRoutes(
+    dbUser,
+    names.map((name) => `/AppStream/${name}`)
+  )
+
+  return names.reduce((config: AppStreamConfig, name) => {
+    if (granted.indexOf(`/AppStream/${name}`) > -1)
+      config[name] = appStreamConfig[name]
+
+    return config
+  }, {})
+}
+
 router.get('/', authenticateAccessToken, async (req, res) => {
-  const content = appStreamHtml(process.appStreamConfig)
+  const content = appStreamHtml(await permittedAppStreamConfig(req))
 
   res.cookie('XSRF-TOKEN', generateCSRFToken(req))
 

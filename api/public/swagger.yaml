@@ -1758,6 +1758,27 @@ paths:
                 - Info
             security: []
             parameters: []
+    /SASjsApi/info/myAuthorizedRoutes:
+        get:
+            operationId: MyAuthorizedRoutes
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizedRoutesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {paths: [/AppStream, /SASjsApi/code/execute]}
+            description: "Returns the routes this caller may use, taken from the routes that accept\npermission rules. The web interface reads it to hide the parts of itself\nthe caller cannot use - the Studio tab, for example - rather than offering\nan entry that only leads to a refusal.\n\nAdministrators hold every route, because the permission rules do not apply\nto them, and a public route is included for everyone. A `404` is returned\nwhen the caller has no account."
+            summary: 'List the routes this caller may use'
+            tags:
+                - Info
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
     /SASjsApi/permission:
         get:
             operationId: GetAllPermissions

@@ -17,6 +17,7 @@ import { OpenInNew, Settings, Menu as MenuIcon } from '@mui/icons-material'
 
 import Username from './username'
 import { AppContext } from '../context/appContext'
+import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../utils'
 
 const NODE_ENV = process.env.NODE_ENV
 const PORT_API = process.env.PORT_API
@@ -37,6 +38,16 @@ const Header = (props: any) => {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   )
+
+  // Running ad hoc code is permissioned, so the editor is offered only to a
+  // caller the server admits. App.tsx guards the route as well: hiding the tab
+  // alone would leave the URL as a way in.
+  const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
+
+  // The App Stream landing page is permissioned too, so the button that opens
+  // it is offered on the same basis - a user with a grant on one app alone
+  // cannot load the stream, and the button would only answer 401.
+  const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget)
@@ -95,24 +106,28 @@ const Header = (props: any) => {
             onChange={handleTabChange}
           >
             <Tab label="Home" value="/" to="/" component={Link} />
-            <Tab
-              label="Studio"
-              value="/SASjsStudio"
-              to="/SASjsStudio"
-              component={Link}
-            />
+            {canUseStudio && (
+              <Tab
+                label="Studio"
+                value="/SASjsStudio"
+                to="/SASjsStudio"
+                component={Link}
+              />
+            )}
           </Tabs>
-          <Button
-            href={`${baseUrl}/AppStream`}
-            target="_blank"
-            rel="noreferrer"
-            variant="contained"
-            color="primary"
-            size="large"
-            endIcon={<OpenInNew />}
-          >
-            Apps
-          </Button>
+          {canUseAppStream && (
+            <Button
+              href={`${baseUrl}/AppStream`}
+              target="_blank"
+              rel="noreferrer"
+              variant="contained"
+              color="primary"
+              size="large"
+              endIcon={<OpenInNew />}
+            >
+              Apps
+            </Button>
+          )}
         </Box>
 
         <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -150,31 +165,35 @@ const Header = (props: any) => {
               </Button>
             </MenuItem>
 
-            <MenuItem sx={{ justifyContent: 'center' }}>
-              <Button
-                component={Link}
-                to="/SASjsStudio"
-                onClick={handleCloseNavMenu}
-                variant="contained"
-                color="primary"
-              >
-                Studio
-              </Button>
-            </MenuItem>
+            {canUseStudio && (
+              <MenuItem sx={{ justifyContent: 'center' }}>
+                <Button
+                  component={Link}
+                  to="/SASjsStudio"
+                  onClick={handleCloseNavMenu}
+                  variant="contained"
+                  color="primary"
+                >
+                  Studio
+                </Button>
+              </MenuItem>
+            )}
 
-            <MenuItem sx={{ justifyContent: 'center' }}>
-              <Button
-                href={`${baseUrl}/AppStream`}
-                target="_blank"
-                rel="noreferrer"
-                onClick={handleCloseNavMenu}
-                variant="contained"
-                color="primary"
-                endIcon={<OpenInNew />}
-              >
-                Apps
-              </Button>
-            </MenuItem>
+            {canUseAppStream && (
+              <MenuItem sx={{ justifyContent: 'center' }}>
+                <Button
+                  href={`${baseUrl}/AppStream`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={handleCloseNavMenu}
+                  variant="contained"
+                  color="primary"
+                  endIcon={<OpenInNew />}
+                >
+                  Apps
+                </Button>
+              </MenuItem>
+            )}
           </Menu>
         </Box>
 

@@ -51,6 +51,19 @@ interface AppContextProps {
    * offering the form would only invite a refusal.
    */
   localLoginEnabled: boolean
+  /**
+   * The routes this caller may use, from
+   * `GET /SASjsApi/info/myAuthorizedRoutes`. Empty until the answer arrives,
+   * and empty for a caller the server grants nothing - which is what keeps the
+   * Studio tab away from someone who cannot run code.
+   */
+  authorizedRoutes: string[]
+  /**
+   * Whether the server admits a route for this caller. The list IS the gate's
+   * answer, so the interface asks the same question the server answers rather
+   * than re-deriving the rules and drifting from them.
+   */
+  isAuthorizedFor: (route: string) => boolean
   logout?: () => void
 }
 
@@ -65,7 +78,9 @@ export const AppContext = createContext<AppContextProps>({
   mode: ModeType.Server,
   runTimes: [],
   authProviders: [],
-  localLoginEnabled: true
+  localLoginEnabled: true,
+  authorizedRoutes: [],
+  isAuthorizedFor: () => false
 })
 
 /**
@@ -124,6 +139,12 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   // Defaults to true so a server that does not report the flag keeps the
   // password form rather than hiding the only way in.
   const [localLoginEnabled, setLocalLoginEnabled] = useState(true)
+  const [authorizedRoutes, setAuthorizedRoutes] = useState<string[]>([])
+
+  const isAuthorizedFor = useCallback(
+    (route: string) => authorizedRoutes.indexOf(route) > -1,
+    [authorizedRoutes]
+  )
 
   useEffect(() => {
     setCheckingSession(true)
@@ -179,6 +200,27 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       .catch(() => {})
   }, [])
 
+  /**
+   * What the server will admit for this caller, refetched whenever the session
+   * changes - a sign-in from the login screen sets loggedIn, and a logout
+   * clears it.
+   *
+   * A failure, or a signed-out state, leaves the list empty. Empty hides the
+   * permissioned entries, which is the safe direction: the alternative is
+   * offering an entry that answers 401.
+   */
+  useEffect(() => {
+    if (!loggedIn) {
+      setAuthorizedRoutes([])
+      return
+    }
+
+    axios
+      .get('/SASjsApi/info/myAuthorizedRoutes')
+      .then((res) => setAuthorizedRoutes(res.data?.paths ?? []))
+      .catch(() => setAuthorizedRoutes([]))
+  }, [loggedIn])
+
   const logout = useCallback(() => {
     axios.get('/SASLogon/logout').then(() => {
       setLoggedIn(false)
@@ -208,6 +250,8 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         authProviders,
         oidcProviderName,
         localLoginEnabled,
+        authorizedRoutes,
+        isAuthorizedFor,
         logout
       }}
     >
