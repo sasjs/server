@@ -74,14 +74,18 @@ export class WebController {
   /**
    * Ends the session held in the request cookie.
    *
+   * The session is REPLACED rather than destroyed: the browser keeps its
+   * cookies across a logout, so the route hands back a CSRF token bound to the
+   * new session (see routes/web/web.ts). Destroying instead leaves the old
+   * token in place, bound to a session the server no longer has, and the next
+   * login is refused with `Invalid CSRF token!` (sasjs/server#304).
+   *
    * @summary Sign out
    */
   @Get('/SASLogon/logout')
   public async logout(@Request() req: express.Request) {
-    return new Promise((resolve) => {
-      req.session.destroy(() => {
-        resolve(true)
-      })
+    return new Promise((resolve, reject) => {
+      req.session.regenerate((err) => (err ? reject(err) : resolve(true)))
     })
   }
 
@@ -295,7 +299,9 @@ const oidcLogout = async (req: express.Request): Promise<{ url: string }> => {
       .catch(() => undefined)
   }
 
-  await new Promise<void>((resolve) => req.session.destroy(() => resolve()))
+  await new Promise<void>((resolve, reject) =>
+    req.session.regenerate((err) => (err ? reject(err) : resolve()))
+  )
 
   return { url: endSessionUrl ?? '/' }
 }

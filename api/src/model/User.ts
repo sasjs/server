@@ -180,7 +180,16 @@ userSchema.method(
   async function (groupObjectId: Types.ObjectId) {
     const groupIdIndex = this.groups.indexOf(groupObjectId)
     if (groupIdIndex > -1) {
-      this.groups.splice(groupIdIndex, 1)
+      // `pull`, not `splice`: a splice can shift positions, so mongoose writes
+      // it as `$set` of the WHOLE array, and a save of a modified array carries
+      // a version filter - see the comment on Group.removeUser. `pull` registers
+      // an atomic `$pull`, which carries no version filter and so cannot lose a
+      // race.
+      //
+      // The cast is only for the type: the interface declares the field as an
+      // array, while mongoose's runtime value carries the array helpers.
+      const groups = this.groups as unknown as Types.Array<Types.ObjectId>
+      groups.pull(groupObjectId)
     }
     this.markModified('groups')
     return this.save()

@@ -1,4 +1,5 @@
 import { RequestHandler } from 'express'
+import { Request, Response } from 'express'
 import User from '../model/User'
 import Permission from '../model/Permission'
 import {
@@ -11,11 +12,26 @@ import {
   TopLevelRoutes,
   canonicalizeRoutePath
 } from '../utils'
+import { drainBody } from './drainBody'
+
+/**
+ * Refuses a caller who is authenticated but has no grant on the route.
+ *
+ * The body is drained first: this runs before multer, so a refused upload is
+ * still on the wire and answering it immediately resets the connection under
+ * the client (see drainBody). The decision comes from the permission records,
+ * never from the body.
+ */
+const sendPermissionDenied = async (req: Request, res: Response) => {
+  await drainBody(req)
+
+  return res.sendStatus(401)
+}
 
 export const authorize: RequestHandler = async (req, res, next) => {
   const { user } = req
 
-  if (!user) return res.sendStatus(401)
+  if (!user) return sendPermissionDenied(req, res)
 
   // no need to check for permissions when user is admin
   if (user.isAdmin) return next()
@@ -24,7 +40,7 @@ export const authorize: RequestHandler = async (req, res, next) => {
   if (await isPublicRoute(req)) return next()
 
   const dbUser = await User.findOne({ _id: user.userId })
-  if (!dbUser) return res.sendStatus(401)
+  if (!dbUser) return sendPermissionDenied(req, res)
 
   const path = getPath(req)
   const { baseUrl } = req
@@ -45,7 +61,7 @@ export const authorize: RequestHandler = async (req, res, next) => {
 
   if (permission) {
     if (permission.setting === PermissionSettingForRoute.grant) return next()
-    else return res.sendStatus(401)
+    else return sendPermissionDenied(req, res)
   }
 
   // find permission w.r.t user on top level
@@ -58,7 +74,7 @@ export const authorize: RequestHandler = async (req, res, next) => {
   if (topLevelPermission) {
     if (topLevelPermission.setting === PermissionSettingForRoute.grant)
       return next()
-    else return res.sendStatus(401)
+    else return sendPermissionDenied(req, res)
   }
 
   let isPermissionDenied = false
@@ -93,5 +109,5 @@ export const authorize: RequestHandler = async (req, res, next) => {
     }
   }
 
-  return res.sendStatus(401)
+  return sendPermissionDenied(req, res)
 }

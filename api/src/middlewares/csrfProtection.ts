@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express'
 import { Request, Response } from 'express'
 import csrf from 'csrf'
+import { drainBody } from './drainBody'
 
 declare module 'express-session' {
   interface SessionData {
@@ -51,6 +52,8 @@ const getSecret = (req: Request): string => {
 export const generateCSRFToken = (req: Request) =>
   csrfTokens.create(getSecret(req))
 
+export const CSRF_COOKIE_NAME = 'XSRF-TOKEN'
+
 /**
  * Hand the CSRF token to the browser as a cookie.
  *
@@ -66,7 +69,7 @@ export const generateCSRFToken = (req: Request) =>
 export const setCSRFCookie = (req: Request, res: Response) => {
   const allowedDomain = process.env.ALLOWED_DOMAIN?.trim()
 
-  res.cookie('XSRF-TOKEN', generateCSRFToken(req), {
+  res.cookie(CSRF_COOKIE_NAME, generateCSRFToken(req), {
     httpOnly: false,
     maxAge: 86400 * 1000,
     sameSite: 'strict',
@@ -75,7 +78,36 @@ export const setCSRFCookie = (req: Request, res: Response) => {
   })
 }
 
-export const csrfProtection: RequestHandler = (req, res, next) => {
+/**
+ * Drop the CSRF cookie.
+ *
+ * The token is only valid against the session that minted it (see getSecret),
+ * so once that session is gone - or the caller turns out not to be
+ * authenticated at all - the browser is holding a token that can produce
+ * nothing but `Invalid CSRF token!` on the next state-changing request. A
+ * login is the first of those, which is what sasjs/server#304 reported.
+ *
+ * Removing it is enough: the next `GET /` mints one bound to the session the
+ * browser now has. Where the session is being REPLACED rather than lost, mint
+ * a fresh token instead of clearing (see the logout routes) so the client does
+ * not have to ask again.
+ *
+ * The options have to match setCSRFCookie's: a browser matches a clear against
+ * the cookie's name, domain and path, and keeps a cookie whose clear does not
+ * line up.
+ */
+export const clearCSRFCookie = (res: Response) => {
+  const allowedDomain = process.env.ALLOWED_DOMAIN?.trim()
+
+  res.clearCookie(CSRF_COOKIE_NAME, {
+    httpOnly: false,
+    sameSite: 'strict',
+    path: '/',
+    ...(allowedDomain ? { domain: allowedDomain } : {})
+  })
+}
+
+export const csrfProtection: RequestHandler = async (req, res, next) => {
   if (req.method === 'GET') return next()
 
   // Reads the token from the following locations, in order:
@@ -98,6 +130,10 @@ export const csrfProtection: RequestHandler = (req, res, next) => {
     req.headers['x-xsrf-token']
 
   if (!csrfTokens.verify(getSecret(req), token)) {
+    // Drain before refusing. A session-authenticated upload reaches this
+    // before multer, so the body can still be arriving - see drainBody.
+    await drainBody(req)
+
     return res.status(400).send('Invalid CSRF token!')
   }
   next()

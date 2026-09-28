@@ -114,7 +114,7 @@ groupSchema.pre(
     await Promise.all(
       userIds.map(async (userId) => {
         const user = await User.findById(userId)
-        user?.removeGroup(doc._id)
+        await user?.removeGroup(doc._id)
       })
     )
   }
@@ -126,7 +126,9 @@ groupSchema.method('addUser', async function (user: IUserDocument) {
   const userIdIndex = this.users.indexOf(userObjectId)
   if (userIdIndex === -1) {
     this.users.push(userObjectId)
-    user.addGroup(this._id)
+    // Awaited: the caller must not resolve before the membership is durable,
+    // and a save still in flight is what an overlapping update trips over.
+    await user.addGroup(this._id)
   }
   this.markModified('users')
   return this.save()
@@ -135,8 +137,21 @@ groupSchema.method('removeUser', async function (user: IUserDocument) {
   const userObjectId = user._id
   const userIdIndex = this.users.indexOf(userObjectId)
   if (userIdIndex > -1) {
-    this.users.splice(userIdIndex, 1)
-    user.removeGroup(this._id)
+    // `pull`, not `splice`: a splice can shift array positions, so mongoose
+    // writes it as `$set` of the WHOLE `users` array, and a save of a modified
+    // array carries a version filter (`{_id, __v}` in the query). Two membership
+    // updates that overlap - two sign-ins for the same user, or a sign-in racing
+    // a directory sync - then make the second fail with
+    //
+    //   VersionError: No matching document found for id ... modifiedPaths "users"
+    //
+    // `pull` registers an atomic `$pull`, which carries no version filter.
+    //
+    // The cast is only for the type: the interface declares the field as an
+    // array, while mongoose's runtime value carries the array helpers.
+    const users = this.users as unknown as Types.Array<Types.ObjectId>
+    users.pull(userObjectId)
+    await user.removeGroup(this._id)
   }
   this.markModified('users')
   return this.save()
