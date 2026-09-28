@@ -40,8 +40,11 @@ enum GroupAction {
 @Tags('Group')
 export class GroupController {
   /**
-   * @summary Get list of all groups (groupName and groupDescription). All users can request this.
+   * Returns every group with its name and description.
    *
+   * Available to any authenticated user.
+   *
+   * @summary List all groups
    */
   @Example<GroupResponse[]>([
     {
@@ -56,8 +59,10 @@ export class GroupController {
   }
 
   /**
-   * @summary Create a new group. Admin only.
+   * Creates a new group. A `409` is returned when a group of that name already
+   * exists. Admin only.
    *
+   * @summary Create a group
    */
   @Example<GroupDetailsResponse>({
     uid: 'groupIdString',
@@ -74,9 +79,14 @@ export class GroupController {
   }
 
   /**
-   * @summary Get list of members of a group (userName). All users can request this.
+   * Returns a group and its members, looked up by name.
+   *
+   * Available to any authenticated user. A `404` is returned when no group has
+   * that name.
+   *
+   * @summary Get a group by name
    * @param name The group's name
-   * @example dcgroup
+   * @example name "dcgroup"
    */
   @Get('by/groupname/{name}')
   public async getGroupByName(
@@ -86,7 +96,12 @@ export class GroupController {
   }
 
   /**
-   * @summary Get list of members of a group (userName). All users can request this.
+   * Returns a group and its members, looked up by identifier.
+   *
+   * Available to any authenticated user. A `404` is returned when no group has
+   * that identifier.
+   *
+   * @summary Get a group by id
    * @param uid The group's identifier
    * @example uid "12ByteString"
    */
@@ -96,7 +111,12 @@ export class GroupController {
   }
 
   /**
-   * @summary Add a user to a group. Admin task only.
+   * Adds a user to a group and returns the updated group.
+   *
+   * Admin only. Refused with `400` for the reserved `public` group and with
+   * `405` when the group or the user is managed by an external auth provider.
+   *
+   * @summary Add a user to a group
    * @param groupUid The group's identifier
    * @example groupUid "12ByteString"
    * @param userUid The user's identifier
@@ -118,7 +138,12 @@ export class GroupController {
   }
 
   /**
-   * @summary Remove a user from a group. Admin task only.
+   * Removes a user from a group and returns the updated group.
+   *
+   * Admin only. Refused with `400` for the reserved `public` group and with
+   * `405` when the group or the user is managed by an external auth provider.
+   *
+   * @summary Remove a user from a group
    * @param groupUid The group's identifier
    * @example groupUid "12ByteString"
    * @param userUid The user's identifier
@@ -140,7 +165,10 @@ export class GroupController {
   }
 
   /**
-   * @summary Delete a group. Admin task only.
+   * Deletes a group. Admin only. A `404` is returned when no group has that
+   * identifier.
+   *
+   * @summary Delete a group
    * @param uid The group's identifier
    * @example uid "12ByteString"
    */

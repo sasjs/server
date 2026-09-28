@@ -15,11 +15,17 @@ import Permission from '../model/Permission'
 
 @Security('bearerAuth')
 @Route('SASjsApi/authConfig')
-@Tags('Auth_Config')
+@Tags('Auth Config')
 export class AuthConfigController {
   /**
-   * @summary Gives the detail of Auth Mechanism.
+   * Returns the non-secret configuration of each enabled authentication
+   * provider, for display in the administration interface.
    *
+   * Secrets are never echoed: for each provider the response reports only
+   * whether its bind password or client secret is set (`LDAP_BIND_PASSWORD_SET`,
+   * `OIDC_CLIENT_SECRET_SET`). Admin only.
+   *
+   * @summary Get the configured authentication providers
    */
   @Example({
     ldap: {
@@ -36,8 +42,12 @@ export class AuthConfigController {
   }
 
   /**
-   * @summary Synchronises LDAP users and groups with internal DB and returns the count of imported users and groups.
+   * Imports the users and groups of the configured LDAP directory into the
+   * internal database and returns the number imported.
    *
+   * Users and groups that already exist are left untouched. Admin only.
+   *
+   * @summary Import users and groups from LDAP
    */
   @Example({
     users: 5,

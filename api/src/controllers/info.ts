@@ -36,8 +36,15 @@ export interface InfoResponse {
 @Tags('Info')
 export class InfoController {
   /**
-   * @summary Get server info (mode, cors, protocol).
+   * Returns public information about this server instance: the mode it runs in
+   * (`server` or `desktop`), its CORS setting, the protocol it serves, the
+   * available runtimes, the configured external authentication providers, and
+   * whether password sign-in for local accounts is enabled.
    *
+   * This endpoint requires no authentication: the login screen reads it to
+   * decide which sign-in methods to offer.
+   *
+   * @summary Get public server information
    */
   @Example<InfoResponse>({
     mode: 'desktop',
@@ -70,8 +77,11 @@ export class InfoController {
   }
 
   /**
-   * @summary Get the list of available routes to which permissions can be applied.  Used to populate the dialog in the URI Permissions feature.
+   * Returns every route to which a permission rule can be applied. The
+   * permissions dialog in the web interface uses this list to populate its
+   * choices.
    *
+   * @summary List the routes that accept permissions
    */
   @Example<AuthorizedRoutesResponse>({
     paths: ['/AppStream', '/SASjsApi/stp/execute']

@@ -106,8 +106,14 @@ const execDeployErrorResponse: DeployResponse = {
 @Tags('Drive')
 export class DriveController {
   /**
-   * @summary Creates/updates files within SASjs Drive using provided payload.
+   * Creates or updates files within SASjs Drive from a JSON file tree.
    *
+   * `appLoc` is the folder within the drive to deploy into, and `fileTree` is a
+   * nested description of the folders, services and files to write. `appLoc`
+   * cannot point outside the drive. A `400` is returned for a payload that is
+   * not a valid file tree, and a `500` when writing fails.
+   *
+   * @summary Deploy a file tree to SASjs Drive
    */
   @Example<DeployResponse>(successDeployResponse)
   @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
@@ -118,13 +124,14 @@ export class DriveController {
   }
 
   /**
-   * Accepts JSON file and zipped compressed JSON file as well.
-   * Compressed file should only contain one JSON file and should have same name
-   * as of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip
-   * Any other file or JSON file in zipped will be ignored!
+   * Creates or updates files within SASjs Drive from an uploaded JSON file.
    *
-   * @summary Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.
+   * The file may be plain JSON or a zip holding a single JSON file of the same
+   * name (for example `deploy.json.zip` for `deploy.json`); any other member of
+   * the archive is ignored. The payload has the same shape as
+   * `POST /SASjsApi/drive/deploy`.
    *
+   * @summary Deploy an uploaded file to SASjs Drive
    */
   @Example<DeployResponse>(successDeployResponse)
   @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
@@ -138,9 +145,13 @@ export class DriveController {
   }
 
   /**
+   * Returns the content of a file within SASjs Drive.
    *
-   * @summary Get file from SASjs Drive
-   * @query _filePath Location of SAS program
+   * A `400` is returned for a path outside the drive and a `404` when the file
+   * does not exist. A `.sas` file is served as `text/plain`.
+   *
+   * @summary Get a file from SASjs Drive
+   * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file"
    */
   @Get('/file')
@@ -152,9 +163,14 @@ export class DriveController {
   }
 
   /**
+   * Returns the names of the files and sub-folders directly inside a folder of
+   * SASjs Drive. With no `_folderPath`, the drive root is listed.
    *
-   * @summary Get folder contents from SASjs Drive
-   * @query _folderPath Location of SAS program
+   * A `400` is returned for a path outside the drive and a `404` when the
+   * folder does not exist.
+   *
+   * @summary List a folder in SASjs Drive
+   * @param _folderPath Location of the folder within the drive
    * @example _folderPath "/Public/somefolder"
    */
   @Get('/folder')
@@ -163,9 +179,13 @@ export class DriveController {
   }
 
   /**
+   * Deletes a file from SASjs Drive.
    *
-   * @summary Delete file from SASjs Drive
-   * @query _filePath Location of file
+   * A `400` is returned for a path outside the drive and a `404` when the file
+   * does not exist.
+   *
+   * @summary Delete a file from SASjs Drive
+   * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file"
    */
   @Delete('/file')
@@ -174,9 +194,13 @@ export class DriveController {
   }
 
   /**
+   * Deletes a folder, and everything inside it, from SASjs Drive.
    *
-   * @summary Delete folder from SASjs Drive
-   * @query _folderPath Location of folder
+   * A `400` is returned for a path outside the drive and a `404` when the
+   * folder does not exist.
+   *
+   * @summary Delete a folder from SASjs Drive
+   * @param _folderPath Location of the folder within the drive
    * @example _folderPath "/Public/somefolder/"
    */
   @Delete('/folder')
@@ -185,14 +209,16 @@ export class DriveController {
   }
 
   /**
-   * It's optional to either provide `_filePath` in url as query parameter
-   * Or provide `filePath` in body as form field.
-   * But it's required to provide else API will respond with Bad Request.
+   * Uploads a new file into SASjs Drive, creating any missing parent folders.
+   *
+   * The destination is given either as the `_filePath` query parameter or as the
+   * `filePath` form field; one of the two is required. A `400` is returned for a
+   * path outside the drive and a `409` when a file already exists at that path
+   * (use `PATCH /SASjsApi/drive/file` to replace one).
    *
    * @summary Create a file in SASjs Drive
-   * @param _filePath Location of file
+   * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file.sas"
-   *
    */
   @Example<FileFolderResponse>({
     status: 'success'
@@ -211,8 +237,13 @@ export class DriveController {
   }
 
   /**
-   * @summary Create an empty folder in SASjs Drive
+   * Creates an empty folder in SASjs Drive, including any missing parent
+   * folders.
    *
+   * A `400` is returned for a path outside the drive and a `409` when the folder
+   * already exists.
+   *
+   * @summary Create a folder in SASjs Drive
    */
   @Example<FileFolderResponse>({
     status: 'success'
@@ -229,12 +260,14 @@ export class DriveController {
   }
 
   /**
-   * It's optional to either provide `_filePath` in url as query parameter
-   * Or provide `filePath` in body as form field.
-   * But it's required to provide else API will respond with Bad Request.
+   * Replaces the content of an existing file in SASjs Drive.
    *
-   * @summary Modify a file in SASjs Drive
-   * @param _filePath Location of SAS program
+   * The destination is given either as the `_filePath` query parameter or as the
+   * `filePath` form field; one of the two is required. A `400` is returned for a
+   * path outside the drive and a `404` when no file exists at that path.
+   *
+   * @summary Replace a file in SASjs Drive
+   * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file.sas"
    *
    */
@@ -255,8 +288,13 @@ export class DriveController {
   }
 
   /**
-   * @summary Renames a file/folder in SASjs Drive
+   * Moves a file or folder within SASjs Drive to a new path.
    *
+   * Both `oldPath` and `newPath` must be inside the drive. A `404` is returned
+   * when nothing exists at `oldPath`, and a `409` when something already exists
+   * at `newPath`.
+   *
+   * @summary Rename or move a file or folder in SASjs Drive
    */
   @Example<FileFolderResponse>({
     status: 'success'
@@ -273,8 +311,10 @@ export class DriveController {
   }
 
   /**
-   * @summary Fetch file tree within SASjs Drive.
+   * Returns the full folder-and-file tree of SASjs Drive, for rendering the
+   * drive browser.
    *
+   * @summary Get the SASjs Drive file tree
    */
   @Get('/filetree')
   public async getFileTree(): Promise<GetFileTreeResponse> {

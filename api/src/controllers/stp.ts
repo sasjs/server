@@ -55,14 +55,14 @@ interface TriggerProgramResponse {
 @Tags('STP')
 export class STPController {
   /**
-   * Trigger a Stored Program using the _program URL parameter.
+   * Executes a stored program and returns its `_webout` content.
    *
-   * Accepts additional URL parameters (converted to session variables)
-   * and file uploads.  For more details, see docs:
+   * The program is identified by the `_program` query parameter. Any other query
+   * parameter is passed to the program as a session variable, and files may be
+   * uploaded as form fields. When `_debug` is set, the session log is appended
+   * to the response body. See https://server.sasjs.io/storedprograms.
    *
-   * https://server.sasjs.io/storedprograms
-   *
-   * @summary Execute a Stored Program, returns _webout and (optionally) log.
+   * @summary Execute a stored program
    * @param _program Location of Stored Program in SASjs Drive.
    * @param _debug Optional query param for setting debug mode (returns the session log in the response body).
    * @example _program "/Projects/myApp/some/program"
@@ -86,14 +86,14 @@ export class STPController {
   }
 
   /**
-   * Trigger a Stored Program using the _program URL parameter.
+   * Executes a stored program and returns its `_webout` content.
    *
-   * Accepts URL parameters and file uploads.  For more details, see docs:
+   * The program is identified by the `_program` query parameter or by
+   * `_program` in the body. Other body fields and query parameters are passed to
+   * the program as session variables, and files may be uploaded as form fields.
+   * See https://server.sasjs.io/storedprograms.
    *
-   * https://server.sasjs.io/storedprograms
-   *
-   *
-   * @summary Execute a Stored Program, returns _webout and (optionally) log.
+   * @summary Execute a stored program
    * @param _program Location of code in SASjs Drive
    * @example _program "/Projects/myApp/some/program"
    */
@@ -114,8 +114,15 @@ export class STPController {
   }
 
   /**
-   * Trigger Program on the Specified Runtime.
-   * @summary Triggers program and returns SessionId immediately - does not wait for program completion.
+   * Starts a stored program and returns immediately, without waiting for it to
+   * finish.
+   *
+   * The response carries the `sessionId` of the session running the program.
+   * Poll `GET /SASjsApi/session/{sessionId}/state` for its state, or set
+   * `expiresAfterMins` to have the session destroyed that many minutes after it
+   * completes.
+   *
+   * @summary Trigger a stored program and return a session ID
    * @param _program Location of code in SASjs Drive.
    * @param expiresAfterMins Optional query param for setting amount of minutes after the completion of the program when the session must be destroyed.
    * @param _debug Optional query param for setting debug mode.

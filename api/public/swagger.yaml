@@ -657,11 +657,14 @@ components:
             scheme: bearer
             bearerFormat: JWT
 info:
-    title: api
+    title: 'SASjs Server API'
     version: 0.0.2
-    description: 'Api of SASjs server'
+    description: 'REST API for SASjs Server, the NodeJS wrapper around the SAS binary. Authenticate with a bearer token (see the **Auth** tag) or, for browser clients, with a session cookie.'
+    license:
+        name: MIT
     contact:
-        name: '4GL Ltd'
+        name: SASjs
+        url: 'https://sasjs.io'
 openapi: 3.0.0
 paths:
     /SASjsApi/auth/token:
@@ -677,7 +680,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
-            summary: 'Accepts client/auth code and returns access/refresh tokens'
+            description: "Exchanges an authorization code for a token pair.\n\nThe code is single-use, short-lived, and is issued by\n`POST /SASLogon/authorize` to a caller that already holds a session. This\nendpoint requires no authentication of its own: the code is the credential."
+            summary: 'Exchange an authorization code for tokens'
             tags:
                 - Auth
             security: []
@@ -701,7 +705,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
-            summary: 'Returns new access/refresh tokens'
+            description: "Issues a new access and refresh token pair for the caller identified by the\nbearer token. The previous pair is replaced."
+            summary: 'Refresh the access and refresh tokens'
             tags:
                 - Auth
             security:
@@ -714,7 +719,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            summary: 'Logout terminate access/refresh tokens and returns nothing'
+            description: 'Revokes the access and refresh tokens of the caller and returns no content.'
+            summary: 'Revoke the current tokens'
             tags:
                 - Auth
             security:
@@ -727,7 +733,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            summary: 'Update user''s password.'
+            description: "Changes the password of the authenticated user.\n\nThe current password must be supplied and must match. The request is refused\nwith `405` for an account that authenticates through an external provider\n(LDAP or OpenID Connect), whose password is not held here."
+            summary: 'Change the current user''s password'
             tags:
                 - Auth
             security:
@@ -752,9 +759,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron', LDAP_BIND_PASSWORD_SET: true}}
-            summary: 'Gives the detail of Auth Mechanism.'
+            description: "Returns the non-secret configuration of each enabled authentication\nprovider, for display in the administration interface.\n\nSecrets are never echoed: for each provider the response reports only\nwhether its bind password or client secret is set (`LDAP_BIND_PASSWORD_SET`,\n`OIDC_CLIENT_SECRET_SET`). Admin only."
+            summary: 'Get the configured authentication providers'
             tags:
-                - Auth_Config
+                - 'Auth Config'
             security:
                 -
                     bearerAuth: []
@@ -778,9 +786,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {users: 5, groups: 3}
-            summary: 'Synchronises LDAP users and groups with internal DB and returns the count of imported users and groups.'
+            description: "Imports the users and groups of the configured LDAP directory into the\ninternal database and returns the number imported.\n\nUsers and groups that already exist are left untouched. Admin only."
+            summary: 'Import users and groups from LDAP'
             tags:
-                - Auth_Config
+                - 'Auth Config'
             security:
                 -
                     bearerAuth: []
@@ -798,7 +807,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
-            summary: "Admin only task. Create client with the following attributes:\nClientId,\nClientSecret,\naccessTokenExpiration (optional),\nrefreshTokenExpiration (optional)"
+            description: "Registers a new OAuth client that SASjs applications can authenticate with.\n\nA client is identified by `clientId` and `clientSecret`. The two optional\nfields set token lifetimes in seconds; when omitted, the defaults of 86400\n(one day) for the access token and 2592000 (30 days) for the refresh token\napply. Admin only."
+            summary: 'Create a client'
             tags:
                 - Client
             security:
@@ -825,7 +835,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{clientId: someClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}, {clientId: someOtherClientID, clientSecret: someOtherRandomCryptoString, accessTokenExpiration: 86400}]
-            summary: 'Admin only task. Returns the list of all the clients'
+            description: "Returns every registered client with its id, secret and token lifetimes.\nAdmin only."
+            summary: 'List all clients'
             tags:
                 - Client
             security:
@@ -844,8 +855,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: 'Execute Code on the Specified Runtime'
-            summary: "Run Code and Return Webout Content, Log and Print output\nThe order of returned parts of the payload is:\n1. Webout (if present)\n2. Logs UUID (used as separator)\n3. Log\n4. Logs UUID (used as separator)\n5. Print (if present and if the runtime is SAS)\nPlease see"
+            description: "Runs the supplied code on the requested runtime and returns its output.\n\nThe response body is assembled from the parts the program produced, joined\nwith newlines and separated by a UUID that marks the boundaries of the log:\n\n1. Webout - the `_webout` content, omitted when the program writes none\n2. Logs UUID - the server's identifier opening the log section\n3. Log - the program log\n4. Logs UUID - the same identifier closing the log section\n5. Print - the SAS listing, present only for the `sas` runtime\n\nThis endpoint waits for the program to finish. To start a program and poll\nfor its result instead, use `POST /SASjsApi/code/trigger`. See\nhttps://server.sasjs.io/ for the available runtimes."
+            summary: 'Execute code and return its output'
             tags:
                 - Code
             security:
@@ -868,8 +879,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TriggerCodeResponse'
-            description: 'Trigger Code on the Specified Runtime'
-            summary: 'Triggers code and returns SessionId immediately - does not wait for job completion'
+            description: "Starts the supplied code on the requested runtime and returns immediately,\nwithout waiting for it to finish.\n\nThe response carries the `sessionId` of the session running the code. Poll\n`GET /SASjsApi/session/{sessionId}/state` for its state, or set\n`expiresAfterMins` to have the session destroyed that many minutes after it\ncompletes. See https://server.sasjs.io/ for the available runtimes."
+            summary: 'Trigger code and return a session ID'
             tags:
                 - Code
             security:
@@ -913,7 +924,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            summary: 'Creates/updates files within SASjs Drive using provided payload.'
+            description: "Creates or updates files within SASjs Drive from a JSON file tree.\n\n`appLoc` is the folder within the drive to deploy into, and `fileTree` is a\nnested description of the folders, services and files to write. `appLoc`\ncannot point outside the drive. A `400` is returned for a payload that is\nnot a valid file tree, and a `500` when writing fails."
+            summary: 'Deploy a file tree to SASjs Drive'
             tags:
                 - Drive
             security:
@@ -957,8 +969,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: "Accepts JSON file and zipped compressed JSON file as well.\nCompressed file should only contain one JSON file and should have same name\nas of compressed file e.g. deploy.JSON should be compressed to deploy.JSON.zip\nAny other file or JSON file in zipped will be ignored!"
-            summary: 'Creates/updates files within SASjs Drive using uploaded JSON/compressed JSON file.'
+            description: "Creates or updates files within SASjs Drive from an uploaded JSON file.\n\nThe file may be plain JSON or a zip holding a single JSON file of the same\nname (for example `deploy.json.zip` for `deploy.json`); any other member of\nthe archive is ignored. The payload has the same shape as\n`POST /SASjsApi/drive/deploy`."
+            summary: 'Deploy an uploaded file to SASjs Drive'
             tags:
                 - Drive
             security:
@@ -983,7 +995,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            summary: 'Get file from SASjs Drive'
+            description: "Returns the content of a file within SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the file\ndoes not exist. A `.sas` file is served as `text/plain`."
+            summary: 'Get a file from SASjs Drive'
             tags:
                 - Drive
             security:
@@ -991,6 +1004,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of the file within the drive'
                     in: query
                     name: _filePath
                     required: true
@@ -1010,7 +1024,8 @@ paths:
                                 required:
                                     - status
                                 type: object
-            summary: 'Delete file from SASjs Drive'
+            description: "Deletes a file from SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the file\ndoes not exist."
+            summary: 'Delete a file from SASjs Drive'
             tags:
                 - Drive
             security:
@@ -1018,6 +1033,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of the file within the drive'
                     in: query
                     name: _filePath
                     required: true
@@ -1045,7 +1061,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
+            description: "Uploads a new file into SASjs Drive, creating any missing parent folders.\n\nThe destination is given either as the `_filePath` query parameter or as the\n`filePath` form field; one of the two is required. A `400` is returned for a\npath outside the drive and a `409` when a file already exists at that path\n(use `PATCH /SASjsApi/drive/file` to replace one)."
             summary: 'Create a file in SASjs Drive'
             tags:
                 - Drive
@@ -1054,7 +1070,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of file'
+                    description: 'Location of the file within the drive'
                     in: query
                     name: _filePath
                     required: false
@@ -1096,8 +1112,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'File request failed.'}
-            description: "It's optional to either provide `_filePath` in url as query parameter\nOr provide `filePath` in body as form field.\nBut it's required to provide else API will respond with Bad Request."
-            summary: 'Modify a file in SASjs Drive'
+            description: "Replaces the content of an existing file in SASjs Drive.\n\nThe destination is given either as the `_filePath` query parameter or as the\n`filePath` form field; one of the two is required. A `400` is returned for a\npath outside the drive and a `404` when no file exists at that path."
+            summary: 'Replace a file in SASjs Drive'
             tags:
                 - Drive
             security:
@@ -1105,7 +1121,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'Location of SAS program'
+                    description: 'Location of the file within the drive'
                     in: query
                     name: _filePath
                     required: false
@@ -1142,7 +1158,8 @@ paths:
                                     - folders
                                     - files
                                 type: object
-            summary: 'Get folder contents from SASjs Drive'
+            description: "Returns the names of the files and sub-folders directly inside a folder of\nSASjs Drive. With no `_folderPath`, the drive root is listed.\n\nA `400` is returned for a path outside the drive and a `404` when the\nfolder does not exist."
+            summary: 'List a folder in SASjs Drive'
             tags:
                 - Drive
             security:
@@ -1150,6 +1167,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of the folder within the drive'
                     in: query
                     name: _folderPath
                     required: false
@@ -1169,7 +1187,8 @@ paths:
                                 required:
                                     - status
                                 type: object
-            summary: 'Delete folder from SASjs Drive'
+            description: "Deletes a folder, and everything inside it, from SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the\nfolder does not exist."
+            summary: 'Delete a folder from SASjs Drive'
             tags:
                 - Drive
             security:
@@ -1177,6 +1196,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: 'Location of the folder within the drive'
                     in: query
                     name: _folderPath
                     required: true
@@ -1204,7 +1224,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Add folder request failed.'}
-            summary: 'Create an empty folder in SASjs Drive'
+            description: "Creates an empty folder in SASjs Drive, including any missing parent\nfolders.\n\nA `400` is returned for a path outside the drive and a `409` when the folder\nalready exists."
+            summary: 'Create a folder in SASjs Drive'
             tags:
                 - Drive
             security:
@@ -1239,7 +1260,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'rename request failed.'}
-            summary: 'Renames a file/folder in SASjs Drive'
+            description: "Moves a file or folder within SASjs Drive to a new path.\n\nBoth `oldPath` and `newPath` must be inside the drive. A `404` is returned\nwhen nothing exists at `oldPath`, and a `409` when something already exists\nat `newPath`."
+            summary: 'Rename or move a file or folder in SASjs Drive'
             tags:
                 - Drive
             security:
@@ -1262,7 +1284,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetFileTreeResponse'
-            summary: 'Fetch file tree within SASjs Drive.'
+            description: "Returns the full folder-and-file tree of SASjs Drive, for rendering the\ndrive browser."
+            summary: 'Get the SASjs Drive file tree'
             tags:
                 - Drive
             security:
@@ -1284,7 +1307,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{uid: userIdString, username: johnusername, displayName: John, isAdmin: false}, {uid: anotherUserIdString, username: starkusername, displayName: Stark, isAdmin: true}]
-            summary: 'Get list of all users (username, displayname). All users can request this.'
+            description: "Returns every user with their id, username, display name and administrator\nflag.\n\nAvailable to any authenticated user."
+            summary: 'List all users'
             tags:
                 - User
             security:
@@ -1303,7 +1327,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            summary: 'Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.'
+            description: "Creates a user from a display name, username, password and the `isAdmin`\nand `isActive` flags.\n\nA `409` is returned when the username already exists. Admin only. The new\nuser is added to the all-users group."
+            summary: 'Create a user'
             tags:
                 - User
             security:
@@ -1326,8 +1351,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UserDetailsResponse'
-            description: 'Only Admin or user itself will get user autoExec code.'
-            summary: 'Get user properties - such as group memberships, userName, displayName.'
+            description: "Returns a user's properties - display name, username, active and admin\nflags and group memberships - looked up by username.\n\nThe `autoExec` code is returned only to an administrator or to the user\nthemselves; for anyone else it is omitted."
+            summary: 'Get a user by username'
             tags:
                 - User
             security:
@@ -1354,7 +1379,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+            description: "Updates a user's display name, username, password and `isAdmin` and\n`isActive` flags, looked up by username.\n\nCan be performed by an administrator or by the user themselves. A `409` is\nreturned when the new username is already taken, and a `405` when changing\nthe username or display name of an account managed by an external auth\nprovider."
+            summary: 'Update a user by username'
             tags:
                 - User
             security:
@@ -1380,7 +1406,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            summary: 'Delete a user. Can be performed either by admins, or the user in question.'
+            description: "Deletes a user, looked up by username.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match."
+            summary: 'Delete a user by username'
             tags:
                 - User
             security:
@@ -1414,8 +1441,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UserDetailsResponse'
-            description: 'Only Admin or user itself will get user autoExec code.'
-            summary: 'Get user properties - such as group memberships, userName, displayName.'
+            description: "Returns a user's properties - display name, username, active and admin\nflags and group memberships - looked up by identifier.\n\nThe `autoExec` code is returned only to an administrator or to the user\nthemselves; for anyone else it is omitted."
+            summary: 'Get a user by id'
             tags:
                 - User
             security:
@@ -1442,7 +1469,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
-            summary: 'Update user properties - such as displayName. Can be performed either by admins, or the user in question.'
+            description: "Updates a user's display name, username, password and `isAdmin` and\n`isActive` flags, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves. A `409` is\nreturned when the new username is already taken, and a `405` when changing\nthe username or display name of an account managed by an external auth\nprovider."
+            summary: 'Update a user by id'
             tags:
                 - User
             security:
@@ -1468,7 +1496,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            summary: 'Delete a user. Can be performed either by admins, or the user in question.'
+            description: "Deletes a user, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match."
+            summary: 'Delete a user by id'
             tags:
                 - User
             security:
@@ -1507,7 +1536,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users'}]
-            summary: 'Get list of all groups (groupName and groupDescription). All users can request this.'
+            description: "Returns every group with its name and description.\n\nAvailable to any authenticated user."
+            summary: 'List all groups'
             tags:
                 - Group
             security:
@@ -1526,7 +1556,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Create a new group. Admin only.'
+            description: "Creates a new group. A `409` is returned when a group of that name already\nexists. Admin only."
+            summary: 'Create a group'
             tags:
                 - Group
             security:
@@ -1549,7 +1580,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
-            summary: 'Get list of members of a group (userName). All users can request this.'
+            description: "Returns a group and its members, looked up by name.\n\nAvailable to any authenticated user. A `404` is returned when no group has\nthat name."
+            summary: 'Get a group by name'
             tags:
                 - Group
             security:
@@ -1563,6 +1595,7 @@ paths:
                     required: true
                     schema:
                         type: string
+                    example: dcgroup
     '/SASjsApi/group/{uid}':
         get:
             operationId: GetGroup
@@ -1573,7 +1606,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
-            summary: 'Get list of members of a group (userName). All users can request this.'
+            description: "Returns a group and its members, looked up by identifier.\n\nAvailable to any authenticated user. A `404` is returned when no group has\nthat identifier."
+            summary: 'Get a group by id'
             tags:
                 - Group
             security:
@@ -1597,7 +1631,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/DeleteResult'
-            summary: 'Delete a group. Admin task only.'
+            description: "Deletes a group. Admin only. A `404` is returned when no group has that\nidentifier."
+            summary: 'Delete a group'
             tags:
                 - Group
             security:
@@ -1625,7 +1660,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Add a user to a group. Admin task only.'
+            description: "Adds a user to a group and returns the updated group.\n\nAdmin only. Refused with `400` for the reserved `public` group and with\n`405` when the group or the user is managed by an external auth provider."
+            summary: 'Add a user to a group'
             tags:
                 - Group
             security:
@@ -1660,7 +1696,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
-            summary: 'Remove a user from a group. Admin task only.'
+            description: "Removes a user from a group and returns the updated group.\n\nAdmin only. Refused with `400` for the reserved `public` group and with\n`405` when the group or the user is managed by an external auth provider."
+            summary: 'Remove a user from a group'
             tags:
                 - Group
             security:
@@ -1696,7 +1733,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {mode: desktop, cors: enable, protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true}
-            summary: 'Get server info (mode, cors, protocol).'
+            description: "Returns public information about this server instance: the mode it runs in\n(`server` or `desktop`), its CORS setting, the protocol it serves, the\navailable runtimes, the configured external authentication providers, and\nwhether password sign-in for local accounts is enabled.\n\nThis endpoint requires no authentication: the login screen reads it to\ndecide which sign-in methods to offer."
+            summary: 'Get public server information'
             tags:
                 - Info
             security: []
@@ -1714,7 +1752,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {paths: [/AppStream, /SASjsApi/stp/execute]}
-            summary: 'Get the list of available routes to which permissions can be applied.  Used to populate the dialog in the URI Permissions feature.'
+            description: "Returns every route to which a permission rule can be applied. The\npermissions dialog in the web interface uses this list to populate its\nchoices."
+            summary: 'List the routes that accept permissions'
             tags:
                 - Info
             security: []
@@ -1734,8 +1773,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{uid: permissionId1String, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: user1-id, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {uid: permissionId2String, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: {uid: group1-id, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
-            description: "Get the list of permission rules applicable the authenticated user.\nIf the user is an admin, all rules are returned."
-            summary: 'Get the list of permission rules. If the user is admin, all rules are returned.'
+            description: "Returns the permission rules that apply to the authenticated user: the\nrules assigned to them directly and the rules assigned to any group they\nbelong to. An administrator receives every rule."
+            summary: 'List the permission rules for the current user'
             tags:
                 - Permission
             security:
@@ -1754,7 +1793,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
-            summary: 'Create a new permission. Admin only.'
+            description: "Creates a permission rule granting or denying access to a route for a user\nor a group.\n\n`principalType` selects a user or a group and `principalId` is that\nprincipal's identifier. A `409` is returned when an identical rule already\nexists, and a `400` when the principal is an administrator. Admin only."
+            summary: 'Create a permission rule'
             tags:
                 - Permission
             security:
@@ -1780,7 +1820,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
-            summary: 'Update permission setting. Admin only'
+            description: "Changes whether an existing permission rule grants or denies access.\n\nAdmin only. A `404` is returned when no rule has that identifier."
+            summary: 'Update a permission rule'
             tags:
                 - Permission
             security:
@@ -1806,7 +1847,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
-            summary: 'Delete a permission. Admin only.'
+            description: "Deletes a permission rule. Admin only. A `404` is returned when no rule has\nthat identifier."
+            summary: 'Delete a permission rule'
             tags:
                 - Permission
             security:
@@ -1834,7 +1876,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}
-            summary: 'Get session info (username).'
+            description: "Returns the properties of the authenticated user as held in the session:\ntheir id, username, display name, whether they are an administrator, and\nwhether they still have to change their password."
+            summary: 'Get the current session'
             tags:
                 - Session
             security:
@@ -1851,8 +1894,11 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/SessionState'
-            description: "The polling endpoint is currently implemented for single-server deployments only.<br>\nLoad balanced / grid topologies will be supported in a future release.<br>\nIf your site requires this, please reach out to SASjs Support."
-            summary: 'Get session state (initialising, pending, running, completed, failed).'
+                            examples:
+                                'Example 1':
+                                    value: completed
+            description: "Returns the current state of a session created by `POST /SASjsApi/code/trigger`\nor `POST /SASjsApi/stp/trigger`.\n\nThe state is one of `initialising`, `pending`, `running`, `completed` or\n`failed`. A `404` is returned when no session has that id.\n\nPolling is implemented for single-server deployments only; load-balanced and\ngrid topologies are not yet supported. If your site requires this, please\ncontact SASjs Support."
+            summary: 'Get the state of a session'
             tags:
                 - Session
             security:
@@ -1877,8 +1923,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts additional URL parameters (converted to session variables)\nand file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
-            summary: 'Execute a Stored Program, returns _webout and (optionally) log.'
+            description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter. Any other query\nparameter is passed to the program as a session variable, and files may be\nuploaded as form fields. When `_debug` is set, the session log is appended\nto the response body. See https://server.sasjs.io/storedprograms."
+            summary: 'Execute a stored program'
             tags:
                 - STP
             security:
@@ -1913,8 +1959,8 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
-            description: "Trigger a Stored Program using the _program URL parameter.\n\nAccepts URL parameters and file uploads.  For more details, see docs:\n\nhttps://server.sasjs.io/storedprograms"
-            summary: 'Execute a Stored Program, returns _webout and (optionally) log.'
+            description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter or by\n`_program` in the body. Other body fields and query parameters are passed to\nthe program as session variables, and files may be uploaded as form fields.\nSee https://server.sasjs.io/storedprograms."
+            summary: 'Execute a stored program'
             tags:
                 - STP
             security:
@@ -1945,8 +1991,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TriggerProgramResponse'
-            description: 'Trigger Program on the Specified Runtime.'
-            summary: 'Triggers program and returns SessionId immediately - does not wait for program completion.'
+            description: "Starts a stored program and returns immediately, without waiting for it to\nfinish.\n\nThe response carries the `sessionId` of the session running the program.\nPoll `GET /SASjsApi/session/{sessionId}/state` for its state, or set\n`expiresAfterMins` to have the session destroyed that many minutes after it\ncompletes."
+            summary: 'Trigger a stored program and return a session ID'
             tags:
                 - STP
             security:
@@ -1989,7 +2035,8 @@ paths:
                         application/json:
                             schema:
                                 type: string
-            summary: 'Render index.html'
+            description: "Serves the web interface's `index.html`, with the current bundle version\nappended so a returning browser loads the updated bundle."
+            summary: 'Serve the web interface'
             tags:
                 - Web
             security: []
@@ -2010,7 +2057,8 @@ paths:
                                     - user
                                     - loggedIn
                                 type: object
-            summary: 'Accept a valid username/password'
+            description: "Signs a user in with a username and password and starts a session.\n\nCredentials are checked against the local database or, for an account that\nauthenticates through LDAP, against the directory. A `401` is returned for\nunknown credentials, and also when password sign-in for local accounts is\ndisabled on the server."
+            summary: 'Sign in with a username and password'
             tags:
                 - Web
             security: []
@@ -2034,7 +2082,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {code: someRandomCryptoString}
-            summary: 'Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE'
+            description: "Issues a short-lived, single-use authorization code for the signed-in user\nand the given client.\n\nThe code is exchanged for tokens at `POST /SASjsApi/auth/token`. A session\nis required; an unknown client id is rejected."
+            summary: 'Issue an authorization code'
             tags:
                 - Web
             security: []
@@ -2054,7 +2103,8 @@ paths:
                     content:
                         application/json:
                             schema: {}
-            summary: 'Destroy the session stored in cookies'
+            description: 'Ends the session held in the request cookie.'
+            summary: 'Sign out'
             tags:
                 - Web
             security: []
@@ -2065,37 +2115,37 @@ servers:
 tags:
     -
         name: Auth
-        description: 'Operations about auth'
+        description: 'Sign-in, token exchange and password management'
     -
-        name: Auth_Config
-        description: 'Operations about external auth providers'
+        name: 'Auth Config'
+        description: 'Configuration of external authentication providers'
     -
         name: Client
-        description: 'Operations about clients'
+        description: 'OAuth clients that SASjs applications authenticate with'
     -
         name: Code
-        description: 'Execution of code (various runtimes are supported)'
+        description: 'Execution of code in the supported runtimes (SAS, JS, Python, R)'
     -
         name: Drive
-        description: 'Operations on SASjs Drive'
+        description: 'Files and folders in SASjs Drive'
     -
         name: Group
-        description: 'Operations on groups and group memberships'
+        description: 'Groups and their memberships'
     -
         name: Info
-        description: 'Get Server Information'
+        description: 'Public server information'
     -
         name: Permission
-        description: 'Operations about permissions'
+        description: 'Permission rules that grant or deny access to routes'
     -
         name: Session
-        description: 'Get Session information'
+        description: 'Session information and the state of triggered jobs'
     -
         name: STP
-        description: 'Execution of Stored Programs'
+        description: 'Execution of Stored Programs held in SASjs Drive'
     -
         name: User
-        description: 'Operations with users'
+        description: 'User accounts'
     -
         name: Web
-        description: 'Operations on Web'
+        description: 'Browser-facing endpoints that serve the web interface and its sign-in flow'

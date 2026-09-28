@@ -44,8 +44,12 @@ export interface UserDetailsResponse extends UserResponse {
 @Tags('User')
 export class UserController {
   /**
-   * @summary Get list of all users (username, displayname). All users can request this.
+   * Returns every user with their id, username, display name and administrator
+   * flag.
    *
+   * Available to any authenticated user.
+   *
+   * @summary List all users
    */
   @Example<UserResponse[]>([
     {
@@ -67,8 +71,13 @@ export class UserController {
   }
 
   /**
-   * @summary Create user with the following attributes: UserId, UserName, Password, isAdmin, isActive. Admin only task.
+   * Creates a user from a display name, username, password and the `isAdmin`
+   * and `isActive` flags.
    *
+   * A `409` is returned when the username already exists. Admin only. The new
+   * user is added to the all-users group.
+   *
+   * @summary Create a user
    */
   @Example<UserDetailsResponse>({
     uid: 'userIdString',
@@ -85,8 +94,13 @@ export class UserController {
   }
 
   /**
-   * Only Admin or user itself will get user autoExec code.
-   * @summary Get user properties - such as group memberships, userName, displayName.
+   * Returns a user's properties - display name, username, active and admin
+   * flags and group memberships - looked up by username.
+   *
+   * The `autoExec` code is returned only to an administrator or to the user
+   * themselves; for anyone else it is omitted.
+   *
+   * @summary Get a user by username
    * @param username The User's username
    * @example username "johnSnow01"
    */
@@ -105,8 +119,13 @@ export class UserController {
   }
 
   /**
-   * Only Admin or user itself will get user autoExec code.
-   * @summary Get user properties - such as group memberships, userName, displayName.
+   * Returns a user's properties - display name, username, active and admin
+   * flags and group memberships - looked up by identifier.
+   *
+   * The `autoExec` code is returned only to an administrator or to the user
+   * themselves; for anyone else it is omitted.
+   *
+   * @summary Get a user by id
    * @param uid The user's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
@@ -125,7 +144,15 @@ export class UserController {
   }
 
   /**
-   * @summary Update user properties - such as displayName. Can be performed either by admins, or the user in question.
+   * Updates a user's display name, username, password and `isAdmin` and
+   * `isActive` flags, looked up by username.
+   *
+   * Can be performed by an administrator or by the user themselves. A `409` is
+   * returned when the new username is already taken, and a `405` when changing
+   * the username or display name of an account managed by an external auth
+   * provider.
+   *
+   * @summary Update a user by username
    * @param username The User's username
    * @example username "johnSnow01"
    */
@@ -150,7 +177,15 @@ export class UserController {
   }
 
   /**
-   * @summary Update user properties - such as displayName. Can be performed either by admins, or the user in question.
+   * Updates a user's display name, username, password and `isAdmin` and
+   * `isActive` flags, looked up by identifier.
+   *
+   * Can be performed by an administrator or by the user themselves. A `409` is
+   * returned when the new username is already taken, and a `405` when changing
+   * the username or display name of an account managed by an external auth
+   * provider.
+   *
+   * @summary Update a user by id
    * @param uid The user's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
@@ -175,7 +210,13 @@ export class UserController {
   }
 
   /**
-   * @summary Delete a user. Can be performed either by admins, or the user in question.
+   * Deletes a user, looked up by username.
+   *
+   * Can be performed by an administrator or by the user themselves; anyone else
+   * must supply the account password in the body, and a `401` is returned when
+   * it does not match.
+   *
+   * @summary Delete a user by username
    * @param username The User's username
    * @example username "johnSnow01"
    */
@@ -189,7 +230,13 @@ export class UserController {
   }
 
   /**
-   * @summary Delete a user. Can be performed either by admins, or the user in question.
+   * Deletes a user, looked up by identifier.
+   *
+   * Can be performed by an administrator or by the user themselves; anyone else
+   * must supply the account password in the body, and a `401` is returned when
+   * it does not match.
+   *
+   * @summary Delete a user by id
    * @param uid The user's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
