@@ -12,39 +12,15 @@
  * the unit-test run deliberately excludes.
  */
 import path from 'path'
-import os from 'os'
 import { rm, writeFile } from 'fs/promises'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, chromium, Page } from 'playwright'
-import { createFile, createFolder, fileExists } from '@sasjs/utils'
+import { createFile, fileExists } from '@sasjs/utils'
+import { PROGRAM_NAME, TRAILING_SPACE_LINE } from './fixture'
 import { UserController } from '../controllers/'
 import { RunTimeType, getWebBuildFolder, sysInitCompiledPath } from '../utils/'
-
-const PROGRAM_NAME = 'studio-test.sas'
-
-// Line 6 ends with a trailing space, which is what the lint endpoint reports.
-// Written as an explicit space rather than a template literal so that a
-// whitespace-stripping editor or hook cannot quietly remove the fixture.
-const PROGRAM = [
-  '/**',
-  '  @file',
-  '  @brief Program opened by the Studio browser test',
-  '**/',
-  'data _null_;',
-  '  x = 1; ',
-  '  y = sum(x, 2);',
-  '  format y comma10.2;',
-  'run;',
-  '',
-  'proc means data=sashelp.class noprint;',
-  '  var age;',
-  'run;',
-  ''
-].join('\n')
-
-const TRAILING_SPACE_LINE = 6
 
 // The password the user is moved to on the first-login change screen.
 const NEW_PASSWORD = 'newpass123'
@@ -87,16 +63,9 @@ describe('Studio in a browser', () => {
       )
     }
 
-    // A throwaway drive holding the program the test opens.
-    driveLocation = path.join(os.tmpdir(), 'sasjs-studio-e2e', 'drive')
-    await createFolder(driveLocation)
-    await createFolder(path.join(driveLocation, 'files'))
-    await createFile(path.join(driveLocation, 'files', PROGRAM_NAME), PROGRAM)
-
-    process.env.DRIVE_LOCATION = driveLocation
-    process.env.MODE = 'server'
-    process.env.RUN_TIMES = 'js'
-    process.env.NODE_PATH = process.execPath
+    // setupEnv.ts points the working directory at a throwaway tree, so the
+    // drive the app resolves under NODE_ENV=test holds this suite's fixture.
+    driveLocation = process.env.DRIVE_LOCATION!
 
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()
@@ -161,7 +130,10 @@ describe('Studio in a browser', () => {
     await con?.connection.dropDatabase()
     await con?.connection.close()
     await mongoServer?.stop()
-    await rm(driveLocation, { recursive: true, force: true })
+    await rm(path.dirname(path.dirname(driveLocation)), {
+      recursive: true,
+      force: true
+    })
   })
 
   it('opens a program without unmounting the app', async () => {

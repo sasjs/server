@@ -7,6 +7,9 @@ module.exports = {
   preset: 'ts-jest/presets/js-with-ts',
   testEnvironment: 'node',
   testMatch: ['<rootDir>/src/e2e/**/*.spec.ts'],
+  // Sets the drive location and writes the fixture before the spec module is
+  // imported: importing ../utils resolves the drive location as a side effect.
+  setupFiles: ['<rootDir>/src/e2e/setupEnv.ts'],
   testTimeout: 120000,
   maxWorkers: 1
 }
