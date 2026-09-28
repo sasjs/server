@@ -1,3 +1,18 @@
+## 1.8.2
+
+### Bug Fixes
+
+* **security:** serve the CSRF token as a cookie and drop 'unsafe-inline' from the default CSP ([97dd676](https://github.com/sasjs/server/commit/97dd6767b492b21185434a7af04910a0790985a7))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.8.1
 
 ### Bug Fixes
