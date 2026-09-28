@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express'
-import { Request } from 'express'
+import { Request, Response } from 'express'
 import csrf from 'csrf'
 
 declare module 'express-session' {
@@ -50,6 +50,30 @@ const getSecret = (req: Request): string => {
 
 export const generateCSRFToken = (req: Request) =>
   csrfTokens.create(getSecret(req))
+
+/**
+ * Hand the CSRF token to the browser as a cookie.
+ *
+ * It travels as a `Set-Cookie` header rather than in an inline `<script>` tag
+ * in the page: an inline script requires `'unsafe-inline'` in the
+ * Content-Security-Policy, which also permits any script an attacker manages
+ * to inject. The browser stores the cookie from the header on its own, and
+ * both readers pick it up unchanged - axios echoes it as the `X-XSRF-TOKEN`
+ * request header, and `getPreProgramVariables` reads it server-side.
+ *
+ * Not httpOnly: the cookie exists to be read by the app's JavaScript.
+ */
+export const setCSRFCookie = (req: Request, res: Response) => {
+  const allowedDomain = process.env.ALLOWED_DOMAIN?.trim()
+
+  res.cookie('XSRF-TOKEN', generateCSRFToken(req), {
+    httpOnly: false,
+    maxAge: 86400 * 1000,
+    sameSite: 'strict',
+    path: '/',
+    ...(allowedDomain ? { domain: allowedDomain } : {})
+  })
+}
 
 export const csrfProtection: RequestHandler = (req, res, next) => {
   if (req.method === 'GET') return next()

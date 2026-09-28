@@ -56,7 +56,9 @@ describe('login throttle', () => {
   const newAgentWithToken = async (): Promise<any> => {
     const agent: any = request.agent(app)
     const home = await agent.get('/')
-    const csrfToken = /XSRF-TOKEN=(.*?);/.exec(home.text)?.[1]
+    const csrfToken = /XSRF-TOKEN=(.*?);/.exec(
+      (home.headers['set-cookie'] as string[]).join(';')
+    )?.[1]
     return { agent, csrfToken }
   }
 

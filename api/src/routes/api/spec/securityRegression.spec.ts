@@ -223,7 +223,7 @@ describe('security regression (v1.2.0 review)', () => {
       // Session A harvests a token from the public home page
       const agentA = request.agent(app)
       const homeA = await agentA.get('/')
-      const tokenA = extractCSRF(homeA.text)
+      const tokenA = extractCSRF(homeA)
       expect(tokenA).toBeTruthy()
 
       await controller.createUser({
@@ -251,7 +251,7 @@ describe('security regression (v1.2.0 review)', () => {
     it('rejects a csrf_token supplied via query string', async () => {
       const agent = request.agent(app)
       const home = await agent.get('/')
-      const token = extractCSRF(home.text)
+      const token = extractCSRF(home)
       expect(token).toBeTruthy()
 
       await controller.createUser({
@@ -273,7 +273,7 @@ describe('security regression (v1.2.0 review)', () => {
     it('accepts its own token minted in the same session', async () => {
       const agent = request.agent(app)
       const home = await agent.get('/')
-      const token = extractCSRF(home.text)
+      const token = extractCSRF(home)
       expect(token).toBeTruthy()
 
       await controller.createUser({
@@ -369,7 +369,45 @@ describe('security regression (v1.2.0 review)', () => {
       expect(res.status).toBe(200)
     })
   })
+
+  /**
+   * sasjs/server#168: the default policy allows no inline script, and the
+   * home page carries none. Both halves matter - a page that still needs
+   * 'unsafe-inline' would force the policy back open.
+   */
+  describe('Content-Security-Policy allows no inline script (#168)', () => {
+    it('serves the home page without unsafe-inline on the script directives', async () => {
+      const res = await request(app).get('/').expect(200)
+
+      const policy = res.headers['content-security-policy'] as string
+
+      expect(policy).toBeDefined()
+
+      const scriptSrc = policy
+        .split(';')
+        .map((directive) => directive.trim())
+        .filter((directive) => directive.startsWith('script-src'))
+
+      expect(scriptSrc).toHaveLength(2)
+
+      for (const directive of scriptSrc) {
+        expect(directive).not.toContain('unsafe-inline')
+        expect(directive).not.toContain('unsafe-eval')
+      }
+    })
+
+    it('delivers the CSRF token as a cookie rather than an inline script', async () => {
+      const res = await request(app).get('/').expect(200)
+
+      expect(res.text).not.toMatch(/<script(?![^>]*\ssrc=)/i)
+      expect(
+        (res.headers['set-cookie'] as unknown as string[]).join(';')
+      ).toMatch(/XSRF-TOKEN=/)
+    })
+  })
 })
 
-const extractCSRF = (text: string) =>
-  /XSRF-TOKEN=(.*); Max-Age=86400/.exec(text)?.[1]
+const extractCSRF = (response: { headers: { [key: string]: any } }) =>
+  /XSRF-TOKEN=(.*?);/.exec(
+    (response.headers['set-cookie'] as string[] | undefined)?.join(';') ?? ''
+  )![1]

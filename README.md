@@ -265,7 +265,19 @@ HELMET_COEP=
 # Path to a json file containing HELMET `contentSecurityPolicy` directives
 # Docs: https://helmetjs.github.io/#reference
 #
+# The default policy allows no inline scripts and no inline event handlers, so
+# a page with an injected <script> tag cannot run it. An application deployed
+# on the server that needs inline scripts (many Angular and Data Controller
+# builds inject them) loosens the policy with its own config file.
+#
 # Example config:
+# {
+#   "img-src": ["'self'", "data:"],
+#   "script-src": ["'self'"],
+#   "script-src-attr": ["'none'"]
+# }
+#
+# Loosened config for an app that requires inline scripts:
 # {
 #   "img-src": ["'self'", "data:"],
 #   "script-src": ["'self'", "'unsafe-inline'"],

@@ -3,6 +3,11 @@ import { style } from './style'
 
 const defaultAppLogo = '/sasjs-logo.svg'
 
+/**
+ * The fallback logo is declared as data, not as an inline `onerror` handler:
+ * the default Content-Security-Policy refuses inline event handlers
+ * (`script-src-attr 'none'`), and `app-streams-script.js` wires the fallback up.
+ */
 const singleAppStreamHtml = (
   streamServiceName: string,
   appLoc: string,
@@ -11,7 +16,7 @@ const singleAppStreamHtml = (
   ` <a class="app" href="${streamServiceName}" title="${appLoc}">
       <img
         src="${logo ? streamServiceName + '/' + logo : defaultAppLogo}"
-        onerror="this.src = '${defaultAppLogo}';"
+        data-fallback="${defaultAppLogo}"
       />
       ${streamServiceName}
     </a>`

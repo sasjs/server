@@ -1,6 +1,6 @@
 import express from 'express'
 import { convertSecondsToHms } from '@sasjs/utils'
-import { generateCSRFToken } from '../../middlewares'
+import { setCSRFCookie } from '../../middlewares'
 import { WebController } from '../../controllers/web'
 import { authenticateAccessToken, desktopRestrict } from '../../middlewares'
 import {
@@ -24,18 +24,14 @@ webRouter.get('/', async (req, res) => {
     response = await controller.home()
   } catch (_) {
     response = '<html><head></head><body>Web Build is not present</body></html>'
-  } finally {
-    const { ALLOWED_DOMAIN } = process.env
-    const allowedDomain = ALLOWED_DOMAIN?.trim()
-    const domain = allowedDomain ? ` Domain=${allowedDomain};` : ''
-    const codeToInject = `<script>document.cookie = 'XSRF-TOKEN=${generateCSRFToken(req)};${domain} Max-Age=86400; SameSite=Strict; Path=/;'</script>`
-    const injectedContent = response?.replace(
-      '</head>',
-      `${codeToInject}</head>`
-    )
-
-    return res.send(injectedContent)
   }
+
+  // The page carries no inline script: the CSRF token reaches the browser as a
+  // cookie header, so the default Content-Security-Policy needs no
+  // `'unsafe-inline'`.
+  setCSRFCookie(req, res)
+
+  return res.send(response)
 })
 
 webRouter.post('/SASLogon/login', desktopRestrict, async (req, res) => {

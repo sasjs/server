@@ -129,9 +129,9 @@ const AppContextProvider = (props: { children: ReactNode }) => {
     setCheckingSession(true)
 
     /**
-     * The signed-out state, plus the CSRF cookie the login POST needs. The
-     * token is injected into the app's own index.html rather than sent as a
-     * header, so a failed session poll has to fetch the page to obtain it.
+     * The signed-out state, plus the CSRF cookie the login POST is checked
+     * against. The cookie arrives as a `Set-Cookie` header on this GET and the
+     * browser stores it, so nothing here has to read the page body.
      */
     const handleSignedOut = () => {
       setCheckingSession(false)
@@ -142,17 +142,9 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       setIsAdmin(false)
       setNeedsToUpdatePassword(false)
 
-      axios
-        .get('/')
-        .then((res) => res.data)
-        .then((data: string) => {
-          const result =
-            /<script>document.cookie = '(XSRF-TOKEN=.*; Max-Age=86400; SameSite=Strict; Path=\/;)'<\/script>/.exec(
-              data
-            )?.[1]
-
-          if (result) document.cookie = result
-        })
+      // Refreshes the XSRF-TOKEN cookie, which expires after a day; axios
+      // echoes it as the X-XSRF-TOKEN header on the login POST.
+      axios.get('/').catch(() => {})
     }
 
     axios
