@@ -1,3 +1,20 @@
+## 1.9.1
+
+### Bug Fixes
+
+* **api:** drain the request body before refusing an upload ([4685d43](https://github.com/sasjs/server/commit/4685d43affb91200a34a9be2f3ed048ddf3ac3e4))
+* **api:** keep membership updates from losing a version race ([01d95aa](https://github.com/sasjs/server/commit/01d95aa12ad55ba56c4b728bd9c52c4981b88ce9))
+* **security:** keep the CSRF cookie valid across a logout and a 401 ([75d6da1](https://github.com/sasjs/server/commit/75d6da1a505bd9bfc00dfc0d290220ce829c56ba))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.9.0
 
 ### Features
