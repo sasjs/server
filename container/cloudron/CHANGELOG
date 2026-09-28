@@ -1,3 +1,18 @@
+## 1.9.0
+
+### Features
+
+* **security:** refuse to run as root unless RUN_AS names an account ([d3d4d87](https://github.com/sasjs/server/commit/d3d4d8726f51c8f602452b7f580480d849aae1f5))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.8.2
 
 ### Bug Fixes
