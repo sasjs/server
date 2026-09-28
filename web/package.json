@@ -5,9 +5,10 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
+    "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
   },

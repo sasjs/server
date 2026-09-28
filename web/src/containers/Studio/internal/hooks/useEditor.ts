@@ -19,6 +19,7 @@ import {
   useStateWithCallback
 } from '../../../../utils/hooks'
 import { parseErrorsAndWarnings, LogObject } from '../../../../utils'
+import { lintModel } from '../lint'
 
 const SASJS_LOGS_SEPARATOR =
   'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
@@ -125,6 +126,8 @@ const useEditor = ({
           setSnackbarMessage('File saved!')
           setSnackbarSeverity(AlertSeverityType.Success)
           setOpenSnackbar(true)
+
+          void lintModel(editorRef.current?.getModel() ?? null, fileContent)
         })
         .catch((err) => {
           setModalTitle('Abort')
@@ -296,6 +299,9 @@ const useEditor = ({
             typeof res.data === 'object' ? JSON.stringify(res.data) : res.data
           setPrevFileContent(content)
           setFileContent(content)
+
+          // Markers describe the code, not the file on disk.
+          void lintModel(editorRef.current?.getModel() ?? null, content)
         })
         .catch((err) => {
           setModalTitle('Abort')
