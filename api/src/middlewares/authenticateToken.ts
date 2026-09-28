@@ -1,6 +1,6 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { clearCSRFCookie, csrfProtection } from './'
+import { clearCSRFCookie, csrfProtection, drainBody } from './'
 import {
   fetchLatestAutoExec,
   ModeType,
@@ -45,21 +45,21 @@ export const authenticateAccessToken: RequestHandler = async (
             isInitialAdminPasswordEnforced(user.username) &&
             !isPasswordChangeRoute(req)
           ) {
-            return res.status(403).send('Password update required')
+            return sendPasswordUpdateRequired(req, res)
           }
 
           req.user = user
           return csrfProtection(req, res, nextFunction)
-        } else return sendUnauthenticated(res)
+        } else return sendUnauthenticated(req, res)
       }
     }
-    return sendUnauthenticated(res)
+    return sendUnauthenticated(req, res)
   }
 
   await authenticateToken(
     req,
     res,
-    (err?: unknown) => {
+    async (err?: unknown) => {
       if (err) return next(err)
 
       // Same enforcement on the bearer-token path as on the session path.
@@ -69,7 +69,7 @@ export const authenticateAccessToken: RequestHandler = async (
         isInitialAdminPasswordEnforced(req.user.username) &&
         !isPasswordChangeRoute(req)
       ) {
-        return res.status(403).send('Password update required')
+        return sendPasswordUpdateRequired(req, res)
       }
 
       return nextFunction()
@@ -179,7 +179,7 @@ const authenticateToken = async (
       return next()
     }
 
-    sendUnauthenticated(res)
+    await sendUnauthenticated(req, res)
   }
 }
 
@@ -194,8 +194,25 @@ const authenticateToken = async (
  * AUTHENTICATED caller who lacks a grant, whose session and token are both
  * perfectly valid - clearing there would break the next request that caller
  * legitimately makes.
+ *
+ * The body is drained first: this refuses before multer runs, so an
+ * unauthenticated upload is answered while the file is still on the wire. See
+ * drainBody.
  */
-const sendUnauthenticated = (res: Response) => {
+const sendUnauthenticated = async (req: Request, res: Response) => {
+  await drainBody(req)
+
   clearCSRFCookie(res)
   return res.status(401).send('Unauthorized')
+}
+
+/**
+ * The account is on its initial password, so it may do nothing but change it.
+ * The body is drained for the same reason as sendUnauthenticated: this can
+ * refuse an upload before multer has read it.
+ */
+const sendPasswordUpdateRequired = async (req: Request, res: Response) => {
+  await drainBody(req)
+
+  return res.status(403).send('Password update required')
 }

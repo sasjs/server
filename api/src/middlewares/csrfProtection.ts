@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express'
 import { Request, Response } from 'express'
 import csrf from 'csrf'
+import { drainBody } from './drainBody'
 
 declare module 'express-session' {
   interface SessionData {
@@ -106,7 +107,7 @@ export const clearCSRFCookie = (res: Response) => {
   })
 }
 
-export const csrfProtection: RequestHandler = (req, res, next) => {
+export const csrfProtection: RequestHandler = async (req, res, next) => {
   if (req.method === 'GET') return next()
 
   // Reads the token from the following locations, in order:
@@ -129,6 +130,10 @@ export const csrfProtection: RequestHandler = (req, res, next) => {
     req.headers['x-xsrf-token']
 
   if (!csrfTokens.verify(getSecret(req), token)) {
+    // Drain before refusing. A session-authenticated upload reaches this
+    // before multer, so the body can still be arriving - see drainBody.
+    await drainBody(req)
+
     return res.status(400).send('Invalid CSRF token!')
   }
   next()
