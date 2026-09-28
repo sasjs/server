@@ -1,9 +1,11 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
+import { Diagnostic } from '@sasjs/lint'
 import { ExecutionController, getSessionController } from './internal'
 import {
   getPreProgramVariables,
   getUserAutoExec,
+  lintProgram,
   ModeType,
   RunTimeType
 } from '../utils'
@@ -50,6 +52,14 @@ interface TriggerCodeResponse {
    * @example "20241028074744-54132-1730101664824"
    */
   sessionId: string
+}
+
+interface LintCodePayload {
+  /**
+   * The SAS code to be linted
+   * @example "data _null_;\n  x = 1;\nrun;"
+   */
+  code: string
 }
 
 @Security('bearerAuth')
@@ -99,6 +109,24 @@ export class CodeController {
     @Body() body: TriggerCodePayload
   ): Promise<TriggerCodeResponse> {
     return triggerCode(request, body)
+  }
+
+  /**
+   * Lints the supplied SAS code and returns the diagnostics.
+   *
+   * The code is submitted in the request rather than named as a file, so an
+   * editor can lint its buffer, including unsaved changes, and no drive
+   * permission is involved. Nothing is executed.
+   *
+   * Rules come from the nearest `.sasjslint` above the server's working
+   * directory, falling back to the package default. Diagnostics describe the
+   * submitted text only; no other file is read.
+   *
+   * @summary Lint SAS code and return the diagnostics
+   */
+  @Post('/lint')
+  public async lintCode(@Body() body: LintCodePayload): Promise<Diagnostic[]> {
+    return lintProgram(body.code)
   }
 }
 
