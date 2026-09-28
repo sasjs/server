@@ -1,14 +1,28 @@
 import { RunTimeType } from '../../../context/appContext'
 
-export const getLanguageFromExtension = (extension: string) => {
-  if (extension === 'js') return 'javascript'
-
-  if (extension === 'ts') return 'typescript'
-
-  if (extension === 'md' || extension === 'mdx') return 'markdown'
-
-  return extension
+/**
+ * Monaco language ids, keyed by file extension. Monaco falls back to plain text
+ * for any extension that is not listed here.
+ */
+const languageByExtension: Record<string, string> = {
+  sas: 'sas',
+  js: 'javascript',
+  ts: 'typescript',
+  py: 'python',
+  r: 'r',
+  sql: 'sql',
+  md: 'markdown',
+  mdx: 'markdown',
+  json: 'json',
+  html: 'html',
+  css: 'css',
+  yaml: 'yaml',
+  xml: 'xml',
+  sh: 'shell'
 }
+
+export const getLanguageFromExtension = (extension: string) =>
+  languageByExtension[extension] ?? 'plaintext'
 
 export const getSelection = (editor: any) => {
   const selection = editor?.getModel().getValueInRange(editor?.getSelection())
