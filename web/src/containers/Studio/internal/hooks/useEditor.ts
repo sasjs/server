@@ -126,8 +126,6 @@ const useEditor = ({
           setSnackbarMessage('File saved!')
           setSnackbarSeverity(AlertSeverityType.Success)
           setOpenSnackbar(true)
-
-          void lintModel(editorRef.current?.getModel() ?? null, fileContent)
         })
         .catch((err) => {
           setModalTitle('Abort')
@@ -299,9 +297,6 @@ const useEditor = ({
             typeof res.data === 'object' ? JSON.stringify(res.data) : res.data
           setPrevFileContent(content)
           setFileContent(content)
-
-          // Markers describe the code, not the file on disk.
-          void lintModel(editorRef.current?.getModel() ?? null, content)
         })
         .catch((err) => {
           setModalTitle('Abort')
@@ -334,6 +329,34 @@ const useEditor = ({
     if (runTimes.includes(fileExtension))
       setSelectedRunTime(fileExtension as RunTimeType)
   }, [selectedFileExtension, runTimes])
+
+  /**
+   * Lints SAS code and marks the editor with the findings.
+   *
+   * The endpoint applies SAS rules, so a program in another runtime is left
+   * unmarked rather than reported against rules that do not apply to it. A
+   * buffer with no path is judged by the run time the user selected.
+   */
+  const lint = useCallback(
+    (code: string, filePath?: string) => {
+      const isSas = filePath
+        ? filePath.split('.').pop()?.toLowerCase() === 'sas'
+        : selectedRunTime === RunTimeType.SAS
+
+      if (!isSas || !code) return
+
+      void lintModel(editorRef.current?.getModel() ?? null, code)
+    },
+    [selectedRunTime]
+  )
+
+  useEffect(() => {
+    // Linting the buffer on a delay keeps a request off the keystroke path,
+    // and the cleanup cancels the pending one as soon as typing continues.
+    const timer = setTimeout(() => lint(fileContent, selectedFilePath), 500)
+
+    return () => clearTimeout(timer)
+  }, [fileContent, selectedFilePath, lint])
 
   return {
     fileContent,
