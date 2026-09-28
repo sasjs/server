@@ -3,6 +3,13 @@
   "noImplicitAdditionalProperties": "throw-on-extras",
   "spec": {
     "outputDirectory": "public",
+    "name": "SASjs Server API",
+    "description": "REST API for SASjs Server, the NodeJS wrapper around the SAS binary. Authenticate with a bearer token (see the **Auth** tag) or, for browser clients, with a session cookie.",
+    "license": "MIT",
+    "contact": {
+      "name": "SASjs",
+      "url": "https://sasjs.io"
+    },
     "securityDefinitions": {
       "bearerAuth": {
         "type": "http",
@@ -13,51 +20,51 @@
     "tags": [
       {
         "name": "Auth",
-        "description": "Operations about auth"
+        "description": "Sign-in, token exchange and password management"
       },
       {
-        "name": "Auth_Config",
-        "description": "Operations about external auth providers"
+        "name": "Auth Config",
+        "description": "Configuration of external authentication providers"
       },
       {
         "name": "Client",
-        "description": "Operations about clients"
+        "description": "OAuth clients that SASjs applications authenticate with"
       },
       {
         "name": "Code",
-        "description": "Execution of code (various runtimes are supported)"
+        "description": "Execution of code in the supported runtimes (SAS, JS, Python, R)"
       },
       {
         "name": "Drive",
-        "description": "Operations on SASjs Drive"
+        "description": "Files and folders in SASjs Drive"
       },
       {
         "name": "Group",
-        "description": "Operations on groups and group memberships"
+        "description": "Groups and their memberships"
       },
       {
         "name": "Info",
-        "description": "Get Server Information"
+        "description": "Public server information"
       },
       {
         "name": "Permission",
-        "description": "Operations about permissions"
+        "description": "Permission rules that grant or deny access to routes"
       },
       {
         "name": "Session",
-        "description": "Get Session information"
+        "description": "Session information and the state of triggered jobs"
       },
       {
         "name": "STP",
-        "description": "Execution of Stored Programs"
+        "description": "Execution of Stored Programs held in SASjs Drive"
       },
       {
         "name": "User",
-        "description": "Operations with users"
+        "description": "User accounts"
       },
       {
         "name": "Web",
-        "description": "Operations on Web"
+        "description": "Browser-facing endpoints that serve the web interface and its sign-in flow"
       }
     ],
     "yaml": true,

@@ -13,8 +13,11 @@ interface SessionResponse extends UserResponse {
 @Tags('Session')
 export class SessionController {
   /**
-   * @summary Get session info (username).
+   * Returns the properties of the authenticated user as held in the session:
+   * their id, username, display name, whether they are an administrator, and
+   * whether they still have to change their password.
    *
+   * @summary Get the current session
    */
   @Example<SessionResponse>({
     uid: 'userIdString',
@@ -31,12 +34,19 @@ export class SessionController {
   }
 
   /**
-   * The polling endpoint is currently implemented for single-server deployments only.<br>
-   * Load balanced / grid topologies will be supported in a future release.<br>
-   * If your site requires this, please reach out to SASjs Support.
-   * @summary Get session state (initialising, pending, running, completed, failed).
-   * @example completed
+   * Returns the current state of a session created by `POST /SASjsApi/code/trigger`
+   * or `POST /SASjsApi/stp/trigger`.
+   *
+   * The state is one of `initialising`, `pending`, `running`, `completed` or
+   * `failed`. A `404` is returned when no session has that id.
+   *
+   * Polling is implemented for single-server deployments only; load-balanced and
+   * grid topologies are not yet supported. If your site requires this, please
+   * contact SASjs Support.
+   *
+   * @summary Get the state of a session
    */
+  @Example<SessionState>(SessionState.completed)
   @Get('/:sessionId/state')
   public async sessionState(sessionId: string): Promise<SessionState> {
     return sessionState(sessionId)

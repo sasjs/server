@@ -23,8 +23,10 @@ import { AuthController } from './auth'
 @Tags('Web')
 export class WebController {
   /**
-   * @summary Render index.html
+   * Serves the web interface's `index.html`, with the current bundle version
+   * appended so a returning browser loads the updated bundle.
    *
+   * @summary Serve the web interface
    */
   @Get('/')
   public async home() {
@@ -32,8 +34,14 @@ export class WebController {
   }
 
   /**
-   * @summary Accept a valid username/password
+   * Signs a user in with a username and password and starts a session.
    *
+   * Credentials are checked against the local database or, for an account that
+   * authenticates through LDAP, against the directory. A `401` is returned for
+   * unknown credentials, and also when password sign-in for local accounts is
+   * disabled on the server.
+   *
+   * @summary Sign in with a username and password
    */
   @Post('/SASLogon/login')
   public async login(
@@ -44,8 +52,13 @@ export class WebController {
   }
 
   /**
-   * @summary Accept a valid username/password, plus a CLIENT_ID, and return an AUTH_CODE
+   * Issues a short-lived, single-use authorization code for the signed-in user
+   * and the given client.
    *
+   * The code is exchanged for tokens at `POST /SASjsApi/auth/token`. A session
+   * is required; an unknown client id is rejected.
+   *
+   * @summary Issue an authorization code
    */
   @Example<AuthorizeResponse>({
     code: 'someRandomCryptoString'
@@ -59,8 +72,9 @@ export class WebController {
   }
 
   /**
-   * @summary Destroy the session stored in cookies
+   * Ends the session held in the request cookie.
    *
+   * @summary Sign out
    */
   @Get('/SASLogon/logout')
   public async logout(@Request() req: express.Request) {

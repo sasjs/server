@@ -83,11 +83,11 @@ export interface PermissionDetailsResponse {
 @Tags('Permission')
 export class PermissionController {
   /**
-   * Get the list of permission rules applicable the authenticated user.
-   * If the user is an admin, all rules are returned.
+   * Returns the permission rules that apply to the authenticated user: the
+   * rules assigned to them directly and the rules assigned to any group they
+   * belong to. An administrator receives every rule.
    *
-   * @summary Get the list of permission rules. If the user is admin, all rules are returned.
-   *
+   * @summary List the permission rules for the current user
    */
   @Example<PermissionDetailsResponse[]>([
     {
@@ -124,8 +124,14 @@ export class PermissionController {
   }
 
   /**
-   * @summary Create a new permission. Admin only.
+   * Creates a permission rule granting or denying access to a route for a user
+   * or a group.
    *
+   * `principalType` selects a user or a group and `principalId` is that
+   * principal's identifier. A `409` is returned when an identical rule already
+   * exists, and a `400` when the principal is an administrator. Admin only.
+   *
+   * @summary Create a permission rule
    */
   @Example<PermissionDetailsResponse>({
     uid: 'permissionIdString',
@@ -147,7 +153,11 @@ export class PermissionController {
   }
 
   /**
-   * @summary Update permission setting. Admin only
+   * Changes whether an existing permission rule grants or denies access.
+   *
+   * Admin only. A `404` is returned when no rule has that identifier.
+   *
+   * @summary Update a permission rule
    * @param uid The permission's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
@@ -172,7 +182,10 @@ export class PermissionController {
   }
 
   /**
-   * @summary Delete a permission. Admin only.
+   * Deletes a permission rule. Admin only. A `404` is returned when no rule has
+   * that identifier.
+   *
+   * @summary Delete a permission rule
    * @param uid The permission's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */

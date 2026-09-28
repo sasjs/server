@@ -38,8 +38,13 @@ export class AuthController {
     delete AuthController.authCodes[userId][clientId]
 
   /**
-   * @summary Accepts client/auth code and returns access/refresh tokens
+   * Exchanges an authorization code for a token pair.
    *
+   * The code is single-use, short-lived, and is issued by
+   * `POST /SASLogon/authorize` to a caller that already holds a session. This
+   * endpoint requires no authentication of its own: the code is the credential.
+   *
+   * @summary Exchange an authorization code for tokens
    */
   @Example<TokenResponse>({
     accessToken: 'someRandomCryptoString',
@@ -51,8 +56,10 @@ export class AuthController {
   }
 
   /**
-   * @summary Returns new access/refresh tokens
+   * Issues a new access and refresh token pair for the caller identified by the
+   * bearer token. The previous pair is replaced.
    *
+   * @summary Refresh the access and refresh tokens
    */
   @Example<TokenResponse>({
     accessToken: 'someRandomCryptoString',
@@ -67,8 +74,9 @@ export class AuthController {
   }
 
   /**
-   * @summary Logout terminate access/refresh tokens and returns nothing
+   * Revokes the access and refresh tokens of the caller and returns no content.
    *
+   * @summary Revoke the current tokens
    */
   @Security('bearerAuth')
   @Post('/logout')
@@ -77,7 +85,13 @@ export class AuthController {
   }
 
   /**
-   * @summary Update user's password.
+   * Changes the password of the authenticated user.
+   *
+   * The current password must be supplied and must match. The request is refused
+   * with `405` for an account that authenticates through an external provider
+   * (LDAP or OpenID Connect), whose password is not held here.
+   *
+   * @summary Change the current user's password
    */
   @Security('bearerAuth')
   @Patch('updatePassword')

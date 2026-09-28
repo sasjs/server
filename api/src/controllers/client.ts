@@ -10,12 +10,14 @@ import Client, {
 @Tags('Client')
 export class ClientController {
   /**
-   * @summary Admin only task. Create client with the following attributes:
-   * ClientId,
-   * ClientSecret,
-   * accessTokenExpiration (optional),
-   * refreshTokenExpiration (optional)
+   * Registers a new OAuth client that SASjs applications can authenticate with.
    *
+   * A client is identified by `clientId` and `clientSecret`. The two optional
+   * fields set token lifetimes in seconds; when omitted, the defaults of 86400
+   * (one day) for the access token and 2592000 (30 days) for the refresh token
+   * apply. Admin only.
+   *
+   * @summary Create a client
    */
   @Example<ClientPayload>({
     clientId: 'someFormattedClientID1234',
@@ -31,7 +33,10 @@ export class ClientController {
   }
 
   /**
-   * @summary Admin only task. Returns the list of all the clients
+   * Returns every registered client with its id, secret and token lifetimes.
+   * Admin only.
+   *
+   * @summary List all clients
    */
   @Example<ClientPayload[]>([
     {

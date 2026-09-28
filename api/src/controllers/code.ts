@@ -57,15 +57,22 @@ interface TriggerCodeResponse {
 @Tags('Code')
 export class CodeController {
   /**
-   * Execute Code on the Specified Runtime
-   * @summary Run Code and Return Webout Content, Log and Print output
-   * The order of returned parts of the payload is:
-   * 1. Webout (if present)
-   * 2. Logs UUID (used as separator)
-   * 3. Log
-   * 4. Logs UUID (used as separator)
-   * 5. Print (if present and if the runtime is SAS)
-   * Please see @sasjs/server/api/src/controllers/internal/Execution.ts for more information
+   * Runs the supplied code on the requested runtime and returns its output.
+   *
+   * The response body is assembled from the parts the program produced, joined
+   * with newlines and separated by a UUID that marks the boundaries of the log:
+   *
+   * 1. Webout - the `_webout` content, omitted when the program writes none
+   * 2. Logs UUID - the server's identifier opening the log section
+   * 3. Log - the program log
+   * 4. Logs UUID - the same identifier closing the log section
+   * 5. Print - the SAS listing, present only for the `sas` runtime
+   *
+   * This endpoint waits for the program to finish. To start a program and poll
+   * for its result instead, use `POST /SASjsApi/code/trigger`. See
+   * https://server.sasjs.io/ for the available runtimes.
+   *
+   * @summary Execute code and return its output
    */
   @Post('/execute')
   public async executeCode(
@@ -76,8 +83,15 @@ export class CodeController {
   }
 
   /**
-   * Trigger Code on the Specified Runtime
-   * @summary Triggers code and returns SessionId immediately - does not wait for job completion
+   * Starts the supplied code on the requested runtime and returns immediately,
+   * without waiting for it to finish.
+   *
+   * The response carries the `sessionId` of the session running the code. Poll
+   * `GET /SASjsApi/session/{sessionId}/state` for its state, or set
+   * `expiresAfterMins` to have the session destroyed that many minutes after it
+   * completes. See https://server.sasjs.io/ for the available runtimes.
+   *
+   * @summary Trigger code and return a session ID
    */
   @Post('/trigger')
   public async triggerCode(
