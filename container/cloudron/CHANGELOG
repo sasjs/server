@@ -1,3 +1,18 @@
+## 1.14.1
+
+### Bug Fixes
+
+* **cloudron:** publish only the release's own notes in the catalogue ([77cfff9](https://github.com/sasjs/server/commit/77cfff9f356aee20bb01884682d20b0a7db9613b))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.14.0
 
 ### Features
