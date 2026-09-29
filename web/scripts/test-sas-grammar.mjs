@@ -53,7 +53,7 @@ const SAMPLE = `* This is a statement comment;
     order by n desc;
   quit;
 
-  ods html file="report.html" style=styles.min;
+  ods csv file="report.csv" style=styles.min;
   options symbolgen mprint;
 %mend report;
 `
@@ -111,7 +111,7 @@ check('%macro is a macro keyword', has('%macro', 'keyword.flow'))
 check('%if is a macro keyword', has('%if', 'keyword.flow'))
 check('%do is a macro keyword', has('%do', 'keyword.flow'))
 check('%mend is a macro keyword', has('%mend', 'keyword.flow'))
-check('%put is a macro function', has('%put', 'variable.predefined'))
+check('%put is a macro keyword', has('%put', 'keyword.flow'))
 check('&lib. is a macro variable', has('&lib.', 'variable'))
 check('&dsn is a macro variable', has('&dsn', 'variable'))
 check('data is a keyword', has('data', 'keyword'))
@@ -133,7 +133,7 @@ check(
   'a single quoted string is not substituted',
   has("'no &substitution here'", 'string')
 )
-check('noprint is a PROC statement', has('noprint', 'keyword'))
+check('by is a statement keyword', has('by', 'keyword'))
 check('select is a SQL keyword', has('select', 'keyword'))
 check(
   'group by is a SQL keyword',
@@ -141,15 +141,15 @@ check(
 )
 check('order by is a SQL keyword', has('order', 'keyword'))
 check('count is a function', has('count', 'variable.predefined'))
-check('html is an ODS destination', has('html', 'variable.predefined'))
+check('csv is an ODS destination', has('csv', 'variable.predefined'))
 check('file is an ODS keyword', has('file', 'keyword'))
 check('symbolgen is a system option', has('symbolgen', 'keyword'))
 check('mprint is a system option', has('mprint', 'keyword'))
-check('missing is a function', has('missing', 'variable.predefined'))
+check('missing is a control keyword', has('missing', 'keyword.flow'))
 check('label is a keyword', has('label', 'keyword'))
 check(
-  'if and then are control keywords',
-  has('if', 'keyword.flow') && has('then', 'keyword.flow')
+  'if and then are keywords',
+  has('if', 'keyword') && has('then', 'keyword.flow')
 )
 
 // A single letter statement keyword colours every variable named x, which is
@@ -171,22 +171,19 @@ check(
 // Every vocabulary list the grammar matches against must be usable by the
 // keyword matcher, which tests a single token against a case insensitive list.
 const vocabulary = [
-  'keywords',
-  'stepKeywords',
-  'controlKeywords',
-  'functions',
+  'statements',
   'procNames',
-  'procStatements',
-  'dataOptions',
-  'odsTypes',
-  'odsKeywords',
-  'options',
-  'sqlKeywords',
-  'sqlOperators',
-  'styleKeywords',
-  'macroKeywords',
+  'functions',
+  'callRoutines',
+  'macroStatements',
   'macroFunctions',
-  'operators'
+  'options',
+  'systemOptions',
+  'odsTagsets',
+  'styleElements',
+  'styleAttributes',
+  'styleLocations',
+  'sqlKeywords'
 ]
 
 for (const name of vocabulary) {
