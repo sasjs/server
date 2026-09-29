@@ -1,21 +1,5 @@
 import type * as monaco from 'monaco-editor'
 
-import {
-  sasStatements,
-  sasProcNames,
-  sasFunctions,
-  sasCallRoutines,
-  sasMacroStatements,
-  sasMacroFunctions,
-  sasOptions,
-  sasSystemOptions,
-  sasOdsTagsets,
-  sasStyleElements,
-  sasStyleAttributes,
-  sasStyleLocations,
-  sasSqlKeywords
-} from './sasKeywords'
-
 export const SAS_LANGUAGE_ID = 'sas'
 
 export const sasLanguageConfiguration: monaco.languages.LanguageConfiguration =

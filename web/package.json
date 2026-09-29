@@ -5,11 +5,12 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
     "test:completions": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-completions.mjs",
+    "test:hover": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-hover.mjs",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
   },
@@ -20,6 +21,7 @@
     "@mui/lab": "^5.0.0-alpha.50",
     "@mui/material": "^5.0.3",
     "@mui/styles": "^5.0.1",
+    "@sasjs/sas-language": "^0.1.0",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",

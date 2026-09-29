@@ -1,20 +1,7 @@
 import type * as monaco from 'monaco-editor'
 
-import {
-  sasCallRoutines,
-  sasFunctions,
-  sasMacroFunctions,
-  sasMacroStatements,
-  sasOdsTagsets,
-  sasOptions,
-  sasProcNames,
-  sasSqlKeywords,
-  sasStatements,
-  sasStyleAttributes,
-  sasStyleElements,
-  sasSystemOptions
-} from './sasKeywords'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
+import { groupWords, sasVocabularyGroups } from './vocabulary'
 
 /**
  * Completion kinds and insert rules, mirrored so that this module carries no
@@ -23,48 +10,45 @@ import { SAS_LANGUAGE_ID } from './sasLanguage'
  * monaco.languages.CompletionItemInsertTextRule.
  */
 const FUNCTION = 1 as monaco.languages.CompletionItemKind
-const KEYWORD = 17 as monaco.languages.CompletionItemKind
 const INSERT_AS_SNIPPET = 4 as monaco.languages.CompletionItemInsertTextRule
 
 type CompletionSpec = Omit<monaco.languages.CompletionItem, 'range'>
 
-const keywordItems = (words: string[], detail: string): CompletionSpec[] =>
-  words.map((label) => ({ label, kind: KEYWORD, insertText: label, detail }))
-
 /**
+ * Every SAS word the editor knows, from the vocabulary published by
+ * @sasjs/sas-language. A word claimed by more than one group appears once, and
+ * the function entry wins, so accepting `sum` inserts a call rather than the
+ * bare word.
+ *
  * Functions are offered as snippets, so accepting one leaves the cursor inside
- * the parentheses rather than after them.
- */
-const functionItems = (words: string[], detail: string): CompletionSpec[] =>
-  words.map((label) => ({
-    label,
-    kind: FUNCTION,
-    insertText: `${label}($0)`,
-    insertTextRules: INSERT_AS_SNIPPET,
-    detail
-  }))
-
-/**
- * Every SAS word the editor knows, from the same vocabulary the syntax
- * highlighter uses. A word claimed by more than one list appears once, and the
- * function entry wins, so accepting `sum` inserts a call rather than the bare
- * word.
+ * the parentheses. Options that take a value insert the trailing equals, so
+ * accepting `bufno` leaves the cursor where the value belongs.
  */
 export const sasCompletionItems = (): CompletionSpec[] => {
-  const items: CompletionSpec[] = [
-    ...functionItems(sasFunctions, 'SAS function'),
-    ...functionItems(sasCallRoutines, 'SAS call routine'),
-    ...functionItems(sasMacroFunctions, 'SAS macro function'),
-    ...keywordItems(sasStatements, 'SAS statement'),
-    ...keywordItems(sasProcNames, 'SAS procedure'),
-    ...keywordItems(sasOdsTagsets, 'ODS destination'),
-    ...keywordItems(sasStyleElements, 'SAS style element'),
-    ...keywordItems(sasStyleAttributes, 'SAS style attribute'),
-    ...keywordItems(sasOptions, 'SAS data set option'),
-    ...keywordItems(sasSystemOptions, 'SAS system option'),
-    ...keywordItems(sasSqlKeywords, 'PROC SQL keyword'),
-    ...keywordItems(sasMacroStatements, 'SAS macro statement')
-  ]
+  const items: CompletionSpec[] = []
+
+  for (const group of sasVocabularyGroups) {
+    const isFunction = group.kind === FUNCTION
+
+    for (const { name, takesValue } of groupWords(group)) {
+      items.push(
+        isFunction
+          ? {
+              label: name,
+              kind: group.kind,
+              insertText: `${name}($0)`,
+              insertTextRules: INSERT_AS_SNIPPET,
+              detail: group.label
+            }
+          : {
+              label: name,
+              kind: group.kind,
+              insertText: takesValue ? `${name}=` : name,
+              detail: group.label
+            }
+      )
+    }
+  }
 
   const seen = new Set<string>()
 
