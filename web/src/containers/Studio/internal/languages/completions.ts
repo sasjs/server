@@ -1,22 +1,18 @@
 import type * as monaco from 'monaco-editor'
 
 import {
-  sasControlKeywords,
-  sasDataOptions,
+  sasCallRoutines,
   sasFunctions,
   sasMacroFunctions,
-  sasMacroKeywords,
-  sasOdsKeywords,
-  sasOdsTypes,
-  sasOperators,
+  sasMacroStatements,
+  sasOdsTagsets,
   sasOptions,
   sasProcNames,
-  sasProcStatements,
   sasSqlKeywords,
-  sasSqlOperators,
   sasStatements,
-  sasStepKeywords,
-  sasStyleKeywords
+  sasStyleAttributes,
+  sasStyleElements,
+  sasSystemOptions
 } from './sasKeywords'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
 
@@ -57,21 +53,17 @@ const functionItems = (words: string[], detail: string): CompletionSpec[] =>
 export const sasCompletionItems = (): CompletionSpec[] => {
   const items: CompletionSpec[] = [
     ...functionItems(sasFunctions, 'SAS function'),
+    ...functionItems(sasCallRoutines, 'SAS call routine'),
     ...functionItems(sasMacroFunctions, 'SAS macro function'),
     ...keywordItems(sasStatements, 'SAS statement'),
-    ...keywordItems(sasStepKeywords, 'SAS statement'),
-    ...keywordItems(sasControlKeywords, 'SAS control keyword'),
     ...keywordItems(sasProcNames, 'SAS procedure'),
-    ...keywordItems(sasProcStatements, 'SAS procedure statement'),
-    ...keywordItems(sasDataOptions, 'SAS data set option'),
-    ...keywordItems(sasOdsTypes, 'ODS destination'),
-    ...keywordItems(sasOdsKeywords, 'ODS option'),
-    ...keywordItems(sasOptions, 'SAS system option'),
+    ...keywordItems(sasOdsTagsets, 'ODS destination'),
+    ...keywordItems(sasStyleElements, 'SAS style element'),
+    ...keywordItems(sasStyleAttributes, 'SAS style attribute'),
+    ...keywordItems(sasOptions, 'SAS data set option'),
+    ...keywordItems(sasSystemOptions, 'SAS system option'),
     ...keywordItems(sasSqlKeywords, 'PROC SQL keyword'),
-    ...keywordItems(sasSqlOperators, 'PROC SQL operator'),
-    ...keywordItems(sasStyleKeywords, 'SAS style attribute'),
-    ...keywordItems(sasMacroKeywords, 'SAS macro statement'),
-    ...keywordItems(sasOperators, 'SAS operator')
+    ...keywordItems(sasMacroStatements, 'SAS macro statement')
   ]
 
   const seen = new Set<string>()
