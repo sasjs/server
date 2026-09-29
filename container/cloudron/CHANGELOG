@@ -1,3 +1,18 @@
+## 1.14.0
+
+### Features
+
+* **web:** source the SAS vocabulary from @sasjs/sas-language, and add hover ([0e3dce4](https://github.com/sasjs/server/commit/0e3dce48bdbf9776fc1a17d2e89a4f508c7acf21))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.13.1
 
 ### Bug Fixes
