@@ -1,3 +1,18 @@
+## 1.13.1
+
+### Bug Fixes
+
+* **api:** serve the Swagger UI stylesheet the bundle expects ([25364d5](https://github.com/sasjs/server/commit/25364d5e84deb3ce15777a84fe2f991ad51d0332))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.13.0
 
 ### Features
