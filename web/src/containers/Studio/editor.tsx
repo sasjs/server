@@ -24,6 +24,7 @@ import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
 import {
   registerSasCompletions,
+  registerSasHover,
   registerSasLanguage
 } from './internal/languages'
 import useEditor from './internal/hooks/useEditor'
@@ -34,6 +35,7 @@ import { LogObject } from '../../utils'
 // editor model is created.
 registerSasLanguage()
 registerSasCompletions()
+registerSasHover()
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'

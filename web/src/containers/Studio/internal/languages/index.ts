@@ -1,5 +1,6 @@
 export {
   registerSasCompletions,
+  registerSasHover,
   registerSasLanguage,
   sasLanguageConfiguration,
   sasMonarchLanguage,
