@@ -71,22 +71,20 @@ export const provideCompletions = async (
 
   return {
     incomplete: false,
-    suggestions: items.map(
-      (item): monaco.languages.CompletionItem => ({
-        label: item.label,
-        kind: (item.kind ?? 1) as monaco.languages.CompletionItemKind,
-        insertText: item.insertText ?? item.textEdit?.newText ?? item.label,
-        insertTextRules:
-          item.insertTextFormat === 2
-            ? (INSERT_AS_SNIPPET as monaco.languages.CompletionItemInsertTextRule)
-            : undefined,
-        documentation: (item.documentation as { value?: string } | undefined)
-          ?.value,
-        detail: item.detail,
-        sortText: item.sortText,
-        range: wordRange
-      })
-    )
+    suggestions: items.map((item): monaco.languages.CompletionItem => ({
+      label: item.label,
+      kind: (item.kind ?? 1) as monaco.languages.CompletionItemKind,
+      insertText: item.insertText ?? item.textEdit?.newText ?? item.label,
+      insertTextRules:
+        item.insertTextFormat === 2
+          ? (INSERT_AS_SNIPPET as monaco.languages.CompletionItemInsertTextRule)
+          : undefined,
+      documentation: (item.documentation as { value?: string } | undefined)
+        ?.value,
+      detail: item.detail,
+      sortText: item.sortText,
+      range: wordRange
+    }))
   }
 }
 
@@ -107,13 +105,12 @@ export const provideHover = async (
   if (!response) return null
 
   const contents = response.contents as
-    | { value?: string }
-    | { value?: string }[]
+    { value?: string } | { value?: string }[]
 
   // The server sends its help as a markdown string inside a MarkupContent.
   const text = Array.isArray(contents)
     ? contents.map((c) => c.value ?? '').join('\n\n')
-    : contents.value ?? ''
+    : (contents.value ?? '')
 
   if (!text) return null
 
@@ -198,8 +195,7 @@ export const provideFoldingRanges = async (
       start: range.startLine + 1,
       end: range.endLine + 1,
       kind: (range.kind ?? undefined) as
-        | monaco.languages.FoldingRangeKind
-        | undefined
+        monaco.languages.FoldingRangeKind | undefined
     })
   )
 }
