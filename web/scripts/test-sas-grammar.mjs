@@ -68,7 +68,23 @@ const check = (label, condition) => {
 const bare = (type) => (type || '').replace('.sas', '')
 
 const lexer = compile(SAS_LANGUAGE_ID, sasMonarchLanguage)
-const tokenizer = new MonarchTokenizer(null, null, SAS_LANGUAGE_ID, lexer)
+
+// monaco 0.52 made the configuration service a required constructor argument,
+// and reads editor.maxTokenizationLineLength from it while constructing. The
+// tokenizer only ever asks for that one number, and only needs a subscription it
+// can dispose, so a stub is enough to drive it outside a browser.
+const configurationService = {
+  getValue: () => 10000,
+  onDidChangeConfiguration: () => ({ dispose() {} })
+}
+
+const tokenizer = new MonarchTokenizer(
+  null,
+  null,
+  SAS_LANGUAGE_ID,
+  lexer,
+  configurationService
+)
 
 const lines = SAMPLE.split('\n')
 const tokens = []
