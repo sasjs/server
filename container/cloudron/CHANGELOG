@@ -255,6 +255,20 @@ your platform from that directory. Each checked file should report `OK`.
   provider can bootstrap the first administrator. It still fails closed when no
   provider is configured, since then no account could ever exist.
 
+## 1.3.2
+
+- **CI:** the container smoke test warms the mongod binary before jest.
+  `ignore-scripts` suppresses the memory-server postinstall pre-download, so the
+  first spec hit a 5s hook timeout downloading 120MB.
+- **Security:** removes the misapplied rate limiter, protects the route
+  inventory, gates CI on audits, and refuses mock routes in server mode.
+
+## 1.3.1
+
+- **CI:** the container smoke test keeps the session cookie jar and changes the
+  admin password, so a stale cookie can no longer make it pass vacuously.
+- **CI:** the container image is published from inside the release workflow.
+
 ## 1.2.1
 
 - **The Cloudron package has moved into the SASjs Server repository** as
