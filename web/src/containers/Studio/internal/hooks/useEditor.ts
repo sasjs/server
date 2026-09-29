@@ -291,10 +291,15 @@ const useEditor = ({
         selectedFilePath.split('.').pop()?.toLowerCase() ?? ''
       )
       axios
-        .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`)
+        .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`, {
+          // Ask for the file as text whatever its type. axios otherwise parses
+          // a JSON file into an object, and stringifying that back minifies it,
+          // so a prettified file on the drive opened in the editor with its
+          // formatting stripped. The editor shows the file as it is stored.
+          responseType: 'text'
+        })
         .then((res: any) => {
-          const content =
-            typeof res.data === 'object' ? JSON.stringify(res.data) : res.data
+          const content = res.data
           setPrevFileContent(content)
           setFileContent(content)
         })
