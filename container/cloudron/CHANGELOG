@@ -1,3 +1,18 @@
+## 1.13.0
+
+### Features
+
+* **web:** statement-position-aware SAS grammar with official SAS vocabulary ([fa4e464](https://github.com/sasjs/server/commit/fa4e464ff2e067cf5bf5e86226ad9082cdbdae57))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.12.0
 
 ### Features
