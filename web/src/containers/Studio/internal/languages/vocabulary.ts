@@ -91,6 +91,53 @@ export const groupWords = (group: IndexFile): VocabularyWord[] =>
     .map(([name, , takesValue]) => ({ name, takesValue: takesValue === 1 }))
     .filter(({ name }) => !isWidthTemplate(name))
 
+/**
+ * The same groups, shaped for the syntax highlighter.
+ *
+ * Monarch resolves a `@list` against the words as written, and the grammar has
+ * always carried them upper case, so they are normalised here. Duplicates are
+ * collapsed: upstream packs aliases into one entry (`%INCLUDE|%INC`), which the
+ * build already splits, and two groups can hold the same word.
+ *
+ * The groups are looked up by name rather than imported again, so this adds no
+ * data of its own. Array.from rather than a spread: the app targets ES5, where
+ * spreading a Set needs downlevelIteration.
+ */
+const grammarGroups = new Map(
+  sasVocabularyGroups.map((group) => [group.group, group])
+)
+
+const monarchList = (name: string): string[] => {
+  const group = grammarGroups.get(name)
+
+  if (!group) return []
+
+  return Array.from(
+    new Set(group.entries.map(([word]) => word.toUpperCase()))
+  ).sort()
+}
+
+/**
+ * The highlighter's word lists, taken from the same groups as the completions so
+ * the editor has one vocabulary rather than two. Each name matches a Monarch
+ * `@list` reference in sasLanguage.ts.
+ */
+export const sasGrammarLists = {
+  statements: monarchList('statements'),
+  procNames: monarchList('procNames'),
+  functions: monarchList('functions'),
+  callRoutines: monarchList('callRoutines'),
+  macroStatements: monarchList('macroStatements'),
+  macroFunctions: monarchList('macroFunctions'),
+  options: monarchList('options'),
+  systemOptions: monarchList('systemOptions'),
+  odsTagsets: monarchList('odsTagsets'),
+  styleElements: monarchList('styleElements'),
+  styleAttributes: monarchList('styleAttributes'),
+  styleLocations: monarchList('styleLocations'),
+  sqlKeywords: monarchList('sqlKeywords')
+}
+
 /** The path of a group's documentation, loaded on demand rather than up front. */
 export const groupDocsPath = (group: string): string =>
   `@sasjs/sas-language/data/${group}.docs.json`
