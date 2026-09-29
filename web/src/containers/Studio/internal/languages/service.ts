@@ -108,20 +108,32 @@ export const startSasLanguageService = (): Promise<void> => {
     registerSasLanguageServer(monaco, connection, legend)
 
     // The models that exist before the service starts, then everything
-    // monaco creates or disposes from here on.
+    // monaco creates, retargets or disposes from here on. A model's
+    // language is tracked rather than assumed: an editor mounted before its
+    // file's extension is known starts as plaintext, and the language
+    // switch to sas arrives as a setModelLanguage call, so the open and
+    // the close both key off the current language of a tracked model.
     const syncs = new Map<string, monaco.IDisposable>()
 
-    monaco.editor.getModels().forEach((model) => {
-      if (isSasModel(model)) openModel(connection, syncs, model)
-    })
+    const sync = (model: monaco.editor.ITextModel): void => {
+      const sas = isSasModel(model)
+      const tracked = syncs.has(model.uri.toString())
 
-    monaco.editor.onDidCreateModel((model) => {
-      if (isSasModel(model)) openModel(connection, syncs, model)
-    })
+      if (sas && !tracked) openModel(connection, syncs, model)
+      if (!sas && tracked) closeModel(connection, syncs, model)
+    }
+
+    monaco.editor.getModels().forEach(sync)
+
+    monaco.editor.onDidCreateModel(sync)
 
     monaco.editor.onWillDisposeModel((model) => {
-      if (isSasModel(model)) closeModel(connection, syncs, model)
+      if (syncs.has(model.uri.toString())) {
+        closeModel(connection, syncs, model)
+      }
     })
+
+    monaco.editor.onDidChangeModelLanguage((event) => sync(event.model))
   })()
 
   return startPromise
