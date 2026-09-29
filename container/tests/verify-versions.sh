@@ -222,5 +222,134 @@ cp "$M_BACKUP" CloudronManifest.json
 rm -f /tmp/notes-9.9.9.md
 
 echo
+echo "--- 10. the recorded notes are this version's own"
+# The dashboard renders the embedded changelog as the release notes for the
+# version being installed, so an entry carrying the whole file reads as the
+# app's entire history - which is what every entry published before this did.
+# The catalogue holds only 9.9.9 at this point, so start clean and record the
+# manifest version: that is the entry an operator would be reading.
+rm -f CloudronVersions.json
+OUT=$(python3 scripts/update-versions.py --image "$IMG_A" 2>&1); RC=$?
+check "record the manifest version" 0 $RC
+echo "      $OUT"
+python3 - <<'PY'
+import json, re, sys
+v = json.load(open('CloudronManifest.json'))['version']
+notes = json.load(open('CloudronVersions.json'))['versions'][v]['manifest']['changelog']
+text = open('CHANGELOG').read()
+headings = re.findall(r'^##\s+v?(\d+\.\d+\.\d+)\s*$', text, re.M)
+problems = []
+# The premise: an older release's notes must exist for the leak to be possible.
+if len(headings) < 2:
+    problems.append('CHANGELOG carries fewer than two sections, so this proves nothing')
+# Shape, independent of how the section is extracted: a version heading in the
+# notes means the file went in whole.
+if re.search(r'^##\s+v?\d+\.\d+\.\d+\s*$', notes, re.M):
+    problems.append('the notes carry a version heading, so the whole file is embedded')
+# And the notes must BE this version's section, heading dropped. An extraction
+# that stopped at the next `##` of any kind would truncate at the release
+# notes' own `## Verifying the download` subsection, which this catches.
+parts = re.split(r'^##\s+v?(\d+\.\d+\.\d+)\s*$', text, flags=re.M)
+want = next((parts[i + 1].strip() for i in range(1, len(parts), 2)
+             if parts[i] == v), None)
+if want is None:
+    problems.append(f'CHANGELOG has no section for {v}, so the fixture is wrong')
+elif notes != want:
+    problems.append('the notes are not the section for this version')
+print(f"      {len(notes)} bytes of notes for {v}; {len(headings)} sections in CHANGELOG")
+for p in problems:
+    print("      -", p)
+sys.exit(1 if problems else 0)
+PY
+check "the notes are this version's section" 0 $?
+
+echo
+echo "--- 10b. a whole-file entry is caught by --check"
+# Negative self-test: stage the defect the guard exists for and watch it fire.
+python3 - <<'PY'
+import json
+v = json.load(open('CloudronManifest.json'))['version']
+c = json.load(open('CloudronVersions.json'))
+c['versions'][v]['manifest']['changelog'] = open('CHANGELOG').read()
+json.dump(c, open('CloudronVersions.json', 'w'), indent=2)
+PY
+OUT=$(python3 scripts/update-versions.py --check 2>&1); RC=$?
+check "--check refuses a whole-file entry" 1 $RC
+echo "      $OUT"
+case "$OUT" in
+  *"run --refresh-notes"*) echo "PASS  the refusal names the repair"; pass=$((pass+1));;
+  *) echo "FAIL  the refusal does not name the repair"; fail=$((fail+1));;
+esac
+
+echo
+echo "--- 10c. --refresh-notes repairs it without moving the artifact"
+python3 - <<'PY' > /tmp/entry-before.txt
+import json
+v = json.load(open('CloudronManifest.json'))['version']
+e = json.load(open('CloudronVersions.json'))['versions'][v]
+print(e['manifest']['dockerImage'])
+print(json.dumps({k: e[k] for k in ('creationDate', 'ts', 'publishState')}, sort_keys=True))
+PY
+OUT=$(python3 scripts/update-versions.py --refresh-notes 2>&1); RC=$?
+check "--refresh-notes" 0 $RC
+echo "      $OUT"
+case "$OUT" in
+  *"re-scoped"*) echo "PASS  the rewrite is announced"; pass=$((pass+1));;
+  *) echo "FAIL  the rewrite was not announced"; fail=$((fail+1));;
+esac
+python3 - <<'PY' > /tmp/entry-after.txt
+import json
+v = json.load(open('CloudronManifest.json'))['version']
+e = json.load(open('CloudronVersions.json'))['versions'][v]
+print(e['manifest']['dockerImage'])
+print(json.dumps({k: e[k] for k in ('creationDate', 'ts', 'publishState')}, sort_keys=True))
+PY
+if diff -q /tmp/entry-before.txt /tmp/entry-after.txt > /dev/null; then
+  echo "PASS  the image and the dates are untouched"; pass=$((pass+1))
+else
+  echo "FAIL  --refresh-notes moved the artifact"; fail=$((fail+1))
+  diff /tmp/entry-before.txt /tmp/entry-after.txt
+fi
+python3 scripts/update-versions.py --check > /dev/null 2>&1
+check "--check after --refresh-notes" 0 $?
+
+echo
+echo "--- 10d. --refresh-notes is idempotent"
+OUT=$(python3 scripts/update-versions.py --refresh-notes 2>&1); RC=$?
+check "second --refresh-notes" 0 $RC
+echo "      $OUT"
+case "$OUT" in
+  *"nothing to do"*) echo "PASS  reported as a no-op"; pass=$((pass+1));;
+  *) echo "FAIL  not reported as a no-op"; fail=$((fail+1));;
+esac
+
+echo
+echo "--- 10e. --refresh-notes refuses a recorded version with no section"
+# 1.14.0 was recorded by scenario 10; its section is then removed, so the
+# premise (recorded version, no section) is asserted before the refusal.
+python3 - <<'PY'
+import json, re, sys
+v = json.load(open('CloudronManifest.json'))['version']
+parts = re.split(r'(^##\s+v?\d+\.\d+\.\d+\s*$)', open('CHANGELOG').read(), flags=re.M)
+for i, part in enumerate(parts):
+    if part.strip() == f'## {v}':
+        parts[i] = ''
+        parts[i + 1] = ''
+open('CHANGELOG', 'w').write(''.join(parts))
+recorded = v in json.load(open('CloudronVersions.json'))['versions']
+stripped = not re.search(rf'^##\s+v?{re.escape(v)}\s*$', open('CHANGELOG').read(), re.M)
+sys.exit(0 if (recorded and stripped) else 1)
+PY
+check "the premise: the version is recorded, its section gone" 0 $?
+OUT=$(python3 scripts/update-versions.py --refresh-notes 2>&1); RC=$?
+check "--refresh-notes refuses it" 1 $RC
+echo "      $OUT"
+V=$(python3 -c 'import json; print(json.load(open("CloudronManifest.json"))["version"])')
+case "$OUT" in
+  *"no section for $V"*) echo "PASS  the refusal names the version"; pass=$((pass+1));;
+  *) echo "FAIL  the refusal does not name the version"; fail=$((fail+1));;
+esac
+
+echo
 echo "PASSED: $pass   FAILED: $fail"
 [ "$fail" -eq 0 ]
