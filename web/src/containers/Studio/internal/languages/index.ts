@@ -6,3 +6,5 @@ export {
   sasMonarchLanguage,
   SAS_LANGUAGE_ID
 } from './sas'
+
+export { startSasLanguageService } from './service'
