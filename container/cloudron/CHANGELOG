@@ -1,3 +1,25 @@
+## 1.15.0
+
+### Bug Fixes
+
+* address the language server review findings ([1b836e8](https://github.com/sasjs/server/commit/1b836e84e0d97f22aa5bee215376a036178579a8))
+* pull the openssl packages up to the archive's fixed version ([3ea20b7](https://github.com/sasjs/server/commit/3ea20b751d416a6fa7d49815bcb72ebe71a981e7))
+* **web:** open the model with the server when its language becomes sas ([84207c5](https://github.com/sasjs/server/commit/84207c5e776ff185a8894d55f8af3783060cb386))
+
+
+### Features
+
+* **web:** drive the SAS language server in the Studio editor ([46414b7](https://github.com/sasjs/server/commit/46414b769fa0c602e02a2d7cb0a6986b0cc8ca1a))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.14.2
 
 ### Bug Fixes
