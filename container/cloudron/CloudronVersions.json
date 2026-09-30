@@ -672,6 +672,67 @@
       "publishState": "published",
       "ts": 1790775198490
     },
+    "1.17.0": {
+      "creationDate": "2026-09-30T15:51:20.807Z",
+      "manifest": {
+        "addons": {
+          "localstorage": {},
+          "mongodb": {},
+          "oidc": {
+            "loginRedirectUri": "/SASLogon/openid/callback",
+            "logoutRedirectUri": "/SASLogon/openid/logout",
+            "tokenSignatureAlgorithm": "RS256"
+          }
+        },
+        "author": "4GL Ltd",
+        "changelog": "### Features\n\n* **studio:** resolve lint rules from the file's own folder ([5f0809b](https://github.com/sasjs/server/commit/5f0809b2f590fcdebce22ebc410be99e996d7ebc)), closes [sasjs/lint#236](https://github.com/sasjs/lint/issues/236)\n## Verifying the download\n\n`SHA256SUMS` contains the SHA256 checksum of every asset in this release.\n\n    sha256sum --check SHA256SUMS              # Linux\n    shasum --algorithm 256 --check SHA256SUMS # macOS\n\nDownload `SHA256SUMS` and the executable next to it, then run the command for\nyour platform from that directory. Each checked file should report `OK`.",
+        "checklist": {
+          "create-the-groups": {
+            "message": "Create two groups under **Users > Groups** and assign people to them, because sign-in depends on membership: `sasjs-users` for everyone who should use the app, and `sasjs-admins` for its administrators. A user in neither group is refused at sign-in. Membership of `sasjs-admins` is what makes a SASjs administrator - nobody becomes one simply by signing in first."
+          },
+          "restrict-access": {
+            "message": "Restrict this app to the users and groups who should reach it: open the app's **Settings > Access control** and choose \"Only allow the following users and groups\". The app authenticates users through Cloudron single sign-on, so this is the first of the two gates in front of it - and it is the one that decides who can even attempt to sign in."
+          },
+          "restrict-drive-writes": {
+            "message": "The `js` and `py` runtimes execute whatever is uploaded to SASjs Drive, server-side. Grant Drive write access only to trusted authors, and keep the app behind Cloudron access control."
+          }
+        },
+        "contactEmail": "support@sasjs.io",
+        "description": "# SASjs Server\n\nSASjs Server is an open-source Node.js wrapper that gives you a REST API, a\nfilesystem (SASjs Drive) for storing programs, execution of Stored Programs\nfrom a URL, and web-app streaming - the same role SAS 9 Stored Processes and\nViya Jobs play.\n\nThis package runs it in **server mode**: multi-user, with Cloudron single\nsign-on, and a MongoDB store.\n\n## Runtimes: JavaScript and Python\n\n`RUN_TIMES` defaults to `js,py`, so stored programs are JavaScript or Python.\nNode and Python 3 are both in the image, which makes this package\nself-contained - **no SAS binary is required**.\n\nSAS and R can be enabled by adding them to `RUN_TIMES`, but each needs an\nexecutable supplied from outside the image: SAS is proprietary and licensed\nand cannot be redistributed, and R is not installed here.\n\n## Addons used\n\n- **MongoDB** - the server-mode database (users, groups, tokens, sessions).\n- **OIDC** - Cloudron single sign-on. Users sign in with their Cloudron\n  account, so access follows Cloudron users, groups and MFA without\n  maintaining a second account list.\n- **Local storage** - `/app/data`, which holds the SASjs Drive, logs, uploads\n  and the initial admin password.\n\n## Authentication\n\nThe app authenticates users itself, through Cloudron single sign-on (OIDC), so\naccess follows Cloudron users, groups and MFA without maintaining a second\naccount list. There is no platform login wall in front of it: the app's own\nsign-in screen is what a visitor meets.\n\nSign-in requires group membership, by fixed name. Create both groups under\n**Users > Groups** and assign people to them:\n\n- `sasjs-users` - everyone who should use the app; members are ordinary users.\n- `sasjs-admins` - its administrators.\n\nA user in neither group is refused at sign-in. Membership of `sasjs-admins` is\nwhat makes a SASjs administrator - nobody becomes one simply by signing in\nfirst. Set `AUTH_PROVIDERS` to an empty value to skip SSO and authenticate\nagainst the local database only.\n\nPassword sign-in for local accounts is closed by default while single sign-on\nis configured: no local account exists unless one is seeded, and an exposed\npassword form is the one credential an anonymous caller can guess. To seed a\nbreak-glass local `admin` account, put `ADMIN_PASSWORD_INITIAL=<a strong\npassword>` in `/app/data/config.env` and restart the app - seeding one keeps\npassword sign-in open, which is the point of a break-glass account. Set\n`LOCAL_LOGIN_ENABLED` explicitly to override either default.\n\n## Access control\n\nRestrict the app to the users and groups who should reach it, before anyone\nsigns in: open the app's **Settings > Access control** and choose \"Only allow\nthe following users and groups\". A Cloudron install is unrestricted by default,\nwhich here means every Cloudron user can reach the sign-in screen and try -\nand the `js` and `py` runtimes execute whatever is uploaded to SASjs Drive, so\nthe app itself is a privilege boundary worth closing.\n\n## Configuration\n\nSettings live in `/app/data/config.env` (visible in the File Manager; `.env` in\nthe same directory still works, and `config.env` wins where both set a key).\nThe effective configuration - runtimes, ports, which auth providers are on,\nwhether the admin password is set - is written to `/app/data/config.txt` on\nevery start, so it can be read without opening a terminal.\n\n## A note on what these runtimes do\n\nThe `js` and `py` runtimes execute the program files stored on SASjs Drive,\nserver-side. That is the point of the application - and it is a privilege\nboundary. Anyone who can write to the Drive can run code in this container.\n\nKeep the app behind Cloudron access control, and grant Drive write access only\nto trusted authors.\n\n## Backups\n\nCloudron backs up `/app/data` and the MongoDB addon, so the SASjs Drive, logs\nand uploaded content are all covered. Backups are taken automatically before\nevery app update.\n",
+        "dockerImage": "ghcr.io/sasjs/server@sha256:2201afa2017b88b0e141e36a18604524f254af9574ac599054d6df728233ef43",
+        "documentationUrl": "https://server.sasjs.io",
+        "healthCheckPath": "/SASjsApi/info",
+        "httpPort": 5000,
+        "icon": "file://logo.png",
+        "iconUrl": "https://raw.githubusercontent.com/sasjs/server/main/container/cloudron/logo.png",
+        "id": "io.sasjs.server",
+        "manifestVersion": 2,
+        "mediaLinks": [
+          "https://raw.githubusercontent.com/sasjs/server/main/container/cloudron/screenshots/banner.png"
+        ],
+        "memoryLimit": 1073741824,
+        "minBoxVersion": "10.0.0",
+        "packageUrl": "https://github.com/sasjs/server",
+        "packagerName": "4GL Ltd",
+        "packagerUrl": "https://4gl.io",
+        "postInstallMessage": "### SASjs Server is running\n\n**Create the groups before anyone signs in.** Sign-in depends on group\nmembership: under **Users > Groups** create `sasjs-users` for everyone who\nshould use the app and `sasjs-admins` for its administrators, then assign people\nto them. A user in neither group is refused at sign-in, and membership of\n`sasjs-admins` is what makes a SASjs administrator - nobody becomes one by\nsigning in first. Both groups appear inside the app as well, so permissions can\nbe granted to the group instead of user by user; membership is taken from\nCloudron at each sign-in, and cannot be edited in the app.\n\n**Restrict access as well.** Open the app's **Settings > Access control** and\nchoose \"Only allow the following users and groups\". The app authenticates users\nitself through Cloudron single sign-on, so this is what decides who can even\nattempt to sign in.\n\n**Sign in with Cloudron.** The app shows its own sign-in screen; use \"Sign in\nwith Cloudron\". Once you are in, grant other users what they need under\nSettings > Permissions.\n\n**Break-glass local account (optional).** To seed a local `admin` account, add\n`ADMIN_PASSWORD_INITIAL=<a strong password>` to `/app/data/config.env` (File\nManager, or this app's Terminal) and restart the app. Seeding one keeps password\nsign-in open, which is the point of a break-glass account; password sign-in is\notherwise closed while single sign-on is configured.\n\n**Stored programs execute real code.** The `js` and `py` runtimes run whatever\nis uploaded to SASjs Drive, server-side. Grant Drive write access only to\ntrusted authors, and keep this app behind Cloudron access control.\n\n**Check it is up.**\n\n```\ncurl $CLOUDRON-APP-ORIGIN/SASjsApi/info\n```\n\n**No SAS binary is required.** JavaScript and Python are built into the image.\nSAS and R are available if you add them to `RUN_TIMES` and point `SAS_PATH` or\n`R_PATH` at an executable you supply - SAS is licensed and is not\nredistributed here.\n\nFull notes, including the CI pipeline and what was verified, are in the\nrepository README.\n",
+        "tagline": "Stored programs in JavaScript and Python",
+        "tags": [
+          "sas",
+          "api",
+          "development",
+          "backend",
+          "analytics"
+        ],
+        "targetBoxVersion": "10.0.5",
+        "title": "SASjs Server",
+        "upstreamVersion": "1.17.0",
+        "version": "1.17.0",
+        "website": "https://server.sasjs.io"
+      },
+      "publishState": "published",
+      "ts": 1790783480807
+    },
     "1.3.1": {
       "creationDate": "2026-09-26T10:50:29.447Z",
       "manifest": {

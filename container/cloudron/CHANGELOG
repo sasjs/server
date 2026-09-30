@@ -1,3 +1,18 @@
+## 1.17.0
+
+### Features
+
+* **studio:** resolve lint rules from the file's own folder ([5f0809b](https://github.com/sasjs/server/commit/5f0809b2f590fcdebce22ebc410be99e996d7ebc)), closes [sasjs/lint#236](https://github.com/sasjs/lint/issues/236)
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.16.0
 
 ### Features
