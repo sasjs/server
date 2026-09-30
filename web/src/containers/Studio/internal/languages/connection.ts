@@ -154,6 +154,10 @@ export const didOpen = (
  * change: the server declares incremental sync, but a full-text change is
  * valid under it and keeps this module independent of monaco's diff
  * computation.
+ *
+ * The send is debounced by the caller's intent: monaco's content events
+ * arrive per keystroke and there is no reason the server needs each one,
+ * so the service batches them.
  */
 export const didChange = (
   connection: MessageConnection,

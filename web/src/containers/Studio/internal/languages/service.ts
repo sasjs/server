@@ -40,21 +40,41 @@ const SERVER_WORKER_URL = new URL(
 let startPromise: Promise<void> | null = null
 
 /**
- * Forwards a model's changes to the server. Registered per model, because
- * the change event belongs to the model, and disposed with it.
+ * Forwards a model's changes to the server, debounced: monaco emits a
+ * content event per keystroke and the server needs the settled text, not
+ * every intermediate one, so the last event in the window is sent and
+ * earlier ones are dropped. The timer belongs to the model's sync and is
+ * disposed with it.
  */
 const syncModel = (
   connection: MessageConnection,
   model: monaco.editor.ITextModel
-): monaco.IDisposable =>
-  model.onDidChangeContent(() => {
-    didChange(
-      connection,
-      model.uri.toString(),
-      model.getValue(),
-      model.getVersionId()
-    )
+): monaco.IDisposable => {
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  const listener = model.onDidChangeContent(() => {
+    if (timer) clearTimeout(timer)
+
+    timer = setTimeout(() => {
+      timer = null
+
+      didChange(
+        connection,
+        model.uri.toString(),
+        model.getValue(),
+        model.getVersionId()
+      )
+    }, 300)
   })
+
+  return {
+    dispose() {
+      if (timer) clearTimeout(timer)
+
+      listener.dispose()
+    }
+  }
+}
 
 /** Opens a model with the server, and keeps its changes flowing. */
 const openModel = (
@@ -97,7 +117,7 @@ const isSasModel = (model: monaco.editor.ITextModel): boolean =>
 export const startSasLanguageService = (): Promise<void> => {
   if (startPromise) return startPromise
 
-  startPromise = (async () => {
+  const start = (async () => {
     enableSemanticHighlighting()
 
     const { connection, legend }: SasConnection =
@@ -135,6 +155,15 @@ export const startSasLanguageService = (): Promise<void> => {
 
     monaco.editor.onDidChangeModelLanguage((event) => sync(event.model))
   })()
+
+  // A failed start leaves the editor on its static providers, and clears
+  // the cached rejection so a later mount retries the start instead of
+  // awaiting the same failure forever.
+  startPromise = start.catch((error) => {
+    startPromise = null
+
+    throw error
+  })
 
   return startPromise
 }

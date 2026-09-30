@@ -21,6 +21,98 @@ type ProtocolPosition = { line: number; character: number }
  */
 const INSERT_AS_SNIPPET = 4
 
+/**
+ * LSP CompletionItemKind mapped to monaco's, which do not share a numbering:
+ * the protocol starts at Text=1, monaco at Method=0, so a value passed
+ * straight through lands on the wrong icon (an LSP Keyword=14 renders as a
+ * monaco Constant). Unknown kinds fall back to Text, the neutral one.
+ */
+const completionKindByLspKind: Partial<
+  Record<number, monaco.languages.CompletionItemKind>
+> = {
+  1: 18, // Text
+  2: 1, // Method -> Function
+  3: 1, // Function
+  4: 2, // Constructor
+  5: 3, // Field
+  6: 4, // Variable
+  7: 5, // Class
+  8: 7, // Interface
+  9: 8, // Module
+  10: 9, // Property
+  11: 12, // Unit
+  12: 13, // Value
+  13: 15, // Enum
+  14: 17, // Keyword
+  15: 27, // Snippet
+  16: 19, // Color
+  17: 20, // File
+  18: 21, // Reference
+  19: 23, // Folder
+  20: 16, // EnumMember
+  21: 14, // Constant
+  22: 6, // Struct
+  23: 10, // Event
+  24: 11, // Operator
+  25: 24 // TypeParameter
+}
+
+const toMonacoCompletionKind = (
+  kind: number | undefined
+): monaco.languages.CompletionItemKind =>
+  completionKindByLspKind[kind ?? 1] ?? 18 // Text, the neutral kind
+
+/**
+ * LSP SymbolKind mapped to monaco's. The protocol numbers are monaco's plus
+ * one (LSP File=1, monaco File=0), so a value passed straight through lands
+ * one kind off. A kind the protocol adds later falls back to Variable.
+ */
+const symbolKindByLspKind: Record<number, monaco.languages.SymbolKind> = {
+  1: 0, // File
+  2: 1, // Module
+  3: 2, // Namespace
+  4: 3, // Package
+  5: 4, // Class
+  6: 5, // Method
+  7: 6, // Property
+  8: 7, // Field
+  9: 8, // Constructor
+  10: 9, // Enum
+  11: 10, // Interface
+  12: 11, // Function
+  13: 12, // Variable
+  14: 13, // Constant
+  15: 14, // String
+  16: 15, // Number
+  17: 16, // Boolean
+  18: 17, // Array
+  19: 18, // Object
+  20: 19, // Key
+  21: 20, // Null
+  22: 21, // EnumMember
+  23: 22, // Struct
+  24: 23, // Event
+  25: 24, // Operator
+  26: 25 // TypeParameter
+}
+
+const toMonacoSymbolKind = (
+  kind: number | undefined
+): monaco.languages.SymbolKind =>
+  // An absent kind defaults to the protocol's Variable (13), the neutral
+  // outline entry; the fallback catches kinds the protocol adds later.
+  symbolKindByLspKind[kind ?? 13] ?? 12
+
+/**
+ * Reads documentation that the protocol allows as either a plain string or a
+ * MarkupContent; only .value was read before, so string documentation
+ * arrived as undefined.
+ */
+const documentationText = (
+  documentation: { value?: string } | string | undefined
+): string | undefined =>
+  typeof documentation === 'string' ? documentation : documentation?.value
+
 const toLspPosition = (position: monaco.Position): ProtocolPosition => ({
   line: position.lineNumber - 1,
   character: position.column - 1
@@ -73,14 +165,13 @@ export const provideCompletions = async (
     incomplete: false,
     suggestions: items.map((item): monaco.languages.CompletionItem => ({
       label: item.label,
-      kind: (item.kind ?? 1) as monaco.languages.CompletionItemKind,
+      kind: toMonacoCompletionKind(item.kind),
       insertText: item.insertText ?? item.textEdit?.newText ?? item.label,
       insertTextRules:
         item.insertTextFormat === 2
           ? (INSERT_AS_SNIPPET as monaco.languages.CompletionItemInsertTextRule)
           : undefined,
-      documentation: (item.documentation as { value?: string } | undefined)
-        ?.value,
+      documentation: documentationText(item.documentation),
       detail: item.detail,
       sortText: item.sortText,
       range: wordRange
@@ -134,9 +225,13 @@ export const provideDocumentSymbols = async (
   return (response ?? []).map((symbol: any) => ({
     name: symbol.name,
     detail: symbol.detail,
-    kind: (symbol.kind ?? 1) as monaco.languages.SymbolKind,
+    kind: toMonacoSymbolKind(symbol.kind),
     range: fromLspRange(symbol.range),
-    selectionRange: fromLspRange(symbol.selectionRange)
+    // selectionRange is required on DocumentSymbol but absent on
+    // SymbolInformation; a flat answer falls back to the full range.
+    selectionRange: symbol.selectionRange
+      ? fromLspRange(symbol.selectionRange)
+      : fromLspRange(symbol.range)
   }))
 }
 
@@ -163,13 +258,10 @@ export const provideSignatureHelp = async (
   const value: monaco.languages.SignatureHelp = {
     signatures: request.signatures.map((signature: any) => ({
       label: signature.label,
-      documentation: (signature.documentation as { value?: string } | undefined)
-        ?.value,
+      documentation: documentationText(signature.documentation),
       parameters: (signature.parameters ?? []).map((parameter: any) => ({
         label: parameter.label,
-        documentation: (
-          parameter.documentation as { value?: string } | undefined
-        )?.value
+        documentation: documentationText(parameter.documentation)
       }))
     })),
     activeSignature: request.activeSignature ?? 0,

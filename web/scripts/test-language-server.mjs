@@ -79,13 +79,15 @@ const fakeWorker = () => {
             id: message.id,
             result: {
               items: [
-                { label: 'data', kind: 17 },
+                { label: 'data', kind: 14, documentation: { value: 'DATA statement help' } },
                 {
                   label: 'sum',
-                  kind: 1,
+                  kind: 3,
                   insertText: 'sum($0)',
-                  insertTextFormat: 2
-                }
+                  insertTextFormat: 2,
+                  documentation: 'string documentation the protocol allows'
+                },
+                { label: 'unmaped-kind', kind: 99 }
               ]
             }
           })
@@ -102,7 +104,7 @@ const fakeWorker = () => {
             result: [
               {
                 name: 'work.example',
-                kind: 1,
+                kind: 13,
                 range: {
                   start: { line: 0, character: 0 },
                   end: { line: 1, character: 2 }
@@ -110,6 +112,16 @@ const fakeWorker = () => {
                 selectionRange: {
                   start: { line: 0, character: 0 },
                   end: { line: 0, character: 4 }
+                }
+              },
+              {
+                // A SymbolInformation-shaped answer: no selectionRange,
+                // which the provider guards by falling back to range.
+                name: 'flat-symbol',
+                kind: 12,
+                range: {
+                  start: { line: 2, character: 0 },
+                  end: { line: 3, character: 4 }
                 }
               }
             ]
@@ -270,7 +282,7 @@ const completions = await provideCompletions(
 )
 check(
   'completions translate to suggestions',
-  completions.suggestions.length === 2
+  completions.suggestions.length === 3
 )
 check(
   'a snippet item keeps its snippet insert rule',
@@ -279,6 +291,28 @@ check(
 check(
   'every suggestion carries the typed word range',
   completions.suggestions.every((s) => s.range.startColumn === 1)
+)
+check(
+  'an LSP keyword maps to the monaco keyword kind',
+  completions.suggestions.find((s) => s.label === 'data')?.kind === 17
+)
+check(
+  'an LSP function maps to the monaco function kind',
+  completions.suggestions.find((s) => s.label === 'sum')?.kind === 1
+)
+check(
+  'MarkupContent documentation survives the translation',
+  completions.suggestions.find((s) => s.label === 'data')?.documentation ===
+    'DATA statement help'
+)
+check(
+  'string documentation survives the translation',
+  completions.suggestions.find((s) => s.label === 'sum')?.documentation ===
+    'string documentation the protocol allows'
+)
+check(
+  'an unknown LSP kind falls back to the neutral text kind',
+  completions.suggestions.find((s) => s.label === 'unmaped-kind')?.kind === 18
 )
 
 const hover = await provideHover(connection, model, {
@@ -298,6 +332,16 @@ check(
 check(
   'a 0-based protocol line becomes 1-based',
   symbols[0].range.endLineNumber === 2
+)
+check(
+  'an LSP symbol kind maps to its monaco value',
+  symbols[0].kind === 12 // protocol Variable=13 -> monaco Variable=12
+)
+check(
+  'a symbol without selectionRange falls back to its range',
+  symbols[1].selectionRange.startLineNumber ===
+    symbols[1].range.startLineNumber &&
+    symbols[1].selectionRange.endColumn === symbols[1].range.endColumn
 )
 
 const signature = await provideSignatureHelp(connection, model, {

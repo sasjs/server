@@ -1,0 +1,13 @@
+# Minimum pre-commit hooks for this repo.
+#
+# The .git-hooks/pre-commit gitleaks scan stays the primary hook (installed
+# by the root prepare script); this config carries a repo-local gitleaks
+# hook as the fallback for contributors who install hooks with pre-commit
+# rather than npm, and survives npm's ignore-scripts=true (which suppresses
+# the prepare script that wires .git-hooks). CI also runs a full-repo
+# gitleaks scan on every push to main.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

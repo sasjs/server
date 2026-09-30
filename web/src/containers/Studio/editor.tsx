@@ -39,8 +39,10 @@ registerSasCompletions()
 registerSasHover()
 
 // The language server starts once for the app: it serves every editor, so
-// the lifecycle belongs here rather than to any single editor mount.
-void startSasLanguageService()
+// the lifecycle belongs here rather than to any single editor mount. A
+// failed start leaves the editor on its static providers; the service
+// clears its cached rejection, so a later mount retries the start.
+startSasLanguageService().catch(() => undefined)
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
