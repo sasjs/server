@@ -169,6 +169,43 @@ describe('code', () => {
       expect(response.text).toEqual('Unauthorized')
     })
   })
+
+  describe('format', () => {
+    // Like lint, format needs no grant of its own: it neither reads a file
+    // nor runs anything, it rewrites the text the caller submitted.
+    it('returns the formatted text for the submitted code', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/format')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code: 'data _null_;\n  x = 1; \nrun;' })
+        .expect(200)
+
+      expect(typeof response.body).toEqual('string')
+
+      // The trailing space on line 2 is removed by the noTrailingSpaces fix.
+      expect(response.body).not.toContain('x = 1; \n')
+      expect(response.body).toContain('x = 1;\n')
+    })
+
+    it('returns 400 when the code is missing', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/format')
+        .auth(accessToken, { type: 'bearer' })
+        .send({})
+        .expect(400)
+
+      expect(response.text).toEqual('"code" is required')
+    })
+
+    it('returns 401 without an access token', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/format')
+        .send({ code: 'data _null_;\nrun;' })
+        .expect(401)
+
+      expect(response.text).toEqual('Unauthorized')
+    })
+  })
 })
 
 const generateAndSaveToken = async (userId: string) => {

@@ -8,6 +8,7 @@ import TabPanel from '@mui/lab/TabPanel'
 import Permission from './permission'
 import Profile from './profile'
 import AuthConfig from './authConfig'
+import EditorSettings from './editorSettings'
 
 import { AppContext, ModeType } from '../../context/appContext'
 import PermissionsContextProvider from '../../context/permissionsContext'
@@ -57,6 +58,7 @@ const Settings = () => {
             onChange={handleChange}
           >
             <StyledTab label="Profile" value="profile" />
+            <StyledTab label="Editor" value="editor" />
             {appContext.mode === ModeType.Server && (
               <StyledTab label="Permissions" value="permission" />
             )}
@@ -67,6 +69,9 @@ const Settings = () => {
         </Box>
         <StyledTabpanel value="profile">
           <Profile />
+        </StyledTabpanel>
+        <StyledTabpanel value="editor">
+          <EditorSettings />
         </StyledTabpanel>
         <StyledTabpanel value="permission">
           <PermissionsContextProvider>

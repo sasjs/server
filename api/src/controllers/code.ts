@@ -1,6 +1,6 @@
 import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
-import { Diagnostic } from '@sasjs/lint'
+import { Diagnostic, formatText } from '@sasjs/lint'
 import { ExecutionController, getSessionController } from './internal'
 import {
   getPreProgramVariables,
@@ -57,6 +57,14 @@ interface TriggerCodeResponse {
 interface LintCodePayload {
   /**
    * The SAS code to be linted
+   * @example "data _null_;\n  x = 1;\nrun;"
+   */
+  code: string
+}
+
+interface FormatCodePayload {
+  /**
+   * The SAS code to be formatted
    * @example "data _null_;\n  x = 1;\nrun;"
    */
   code: string
@@ -127,6 +135,25 @@ export class CodeController {
   @Post('/lint')
   public async lintCode(@Body() body: LintCodePayload): Promise<Diagnostic[]> {
     return lintProgram(body.code)
+  }
+
+  /**
+   * Formats the supplied SAS code and returns the formatted text.
+   *
+   * The code is submitted in the request rather than named as a file, so an
+   * editor can format its buffer, including unsaved changes, and no drive
+   * permission is involved. Nothing is executed.
+   *
+   * Rules come from the nearest `.sasjslint` above the server's working
+   * directory, falling back to the package default - the same resolution the
+   * lint endpoint, the CLI and the VS Code extension use. Formatting only
+   * rewrites the submitted text; no other file is read or written.
+   *
+   * @summary Format SAS code and return the formatted text
+   */
+  @Post('/format')
+  public async formatCode(@Body() body: FormatCodePayload): Promise<string> {
+    return formatText(body.code)
   }
 }
 

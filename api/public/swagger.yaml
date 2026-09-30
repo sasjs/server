@@ -179,6 +179,16 @@ components:
                 - code
             type: object
             additionalProperties: false
+        FormatCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'The SAS code to be formatted'
+                    example: "data _null_;\n  x = 1;\nrun;"
+            required:
+                - code
+            type: object
+            additionalProperties: false
         MemberType.folder:
             enum:
                 - folder
@@ -960,6 +970,30 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/LintCodePayload'
+    /SASjsApi/code/format:
+        post:
+            operationId: FormatCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+            description: "Formats the supplied SAS code and returns the formatted text.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can format its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nRules come from the nearest `.sasjslint` above the server's working\ndirectory, falling back to the package default - the same resolution the\nlint endpoint, the CLI and the VS Code extension use. Formatting only\nrewrites the submitted text; no other file is read or written."
+            summary: 'Format SAS code and return the formatted text'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FormatCodePayload'
     /SASjsApi/drive/deploy:
         post:
             operationId: Deploy
