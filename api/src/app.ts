@@ -102,6 +102,11 @@ export default setProcessVariables().then(async () => {
 
   if (!(await folderExists(getFilesFolder()))) await setupFilesFolder()
 
+  // The drive-root `.sasjslint` is the default lint/format rules file, so seed
+  // it before the first lint or format request can read it.
+  const { seedDefaultLintConfig } = await import('./utils/lintConfig')
+  await seedDefaultLintConfig()
+
   if (!(await folderExists(getPackagesFolder()))) await setupPackagesFolder()
 
   const sasautosPath = path.join(process.driveLoc, 'sas', 'sasautos')

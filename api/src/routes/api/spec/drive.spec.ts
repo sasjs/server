@@ -507,7 +507,9 @@ describe('drive', () => {
           .auth(accessToken, { type: 'bearer' })
 
         expect(res.statusCode).toEqual(200)
-        expect(res.body).toEqual({ files: [], folders: [] })
+        // The drive root carries the seeded `.sasjslint` rules file, so it is
+        // the one file every listing of the root includes.
+        expect(res.body).toEqual({ files: ['.sasjslint'], folders: [] })
       })
 
       it('should get a SAS folder on drive having _folderPath as query param', async () => {
@@ -534,7 +536,10 @@ describe('drive', () => {
           .auth(accessToken, { type: 'bearer' })
 
         expect(res1.statusCode).toEqual(200)
-        expect(res1.body).toEqual({ files: [], folders: [dirLevel1] })
+        expect(res1.body).toEqual({
+          files: ['.sasjslint'],
+          folders: [dirLevel1]
+        })
 
         const res2 = await request(app)
           .get(getFolderApi)

@@ -1,13 +1,17 @@
-import { Diagnostic, lintText } from '@sasjs/lint'
+import { Diagnostic, LintConfig, lintText } from '@sasjs/lint'
 
 /**
  * Lints SAS program content and returns the diagnostics.
  *
  * The content arrives in the request rather than as a path, so nothing is read
  * from disk: a caller lints the buffer it is editing, and no drive permission
- * is involved. Rules come from the nearest `.sasjslint` above the server's
- * working directory, falling back to the package default - the same resolution
- * the CLI and the VS Code extension use.
+ * is involved.
+ *
+ * The caller supplies the lint configuration the buffer must be judged
+ * against; the drive-rooted `.sasjslint` resolution that provides it lives
+ * with the code controller's other request concerns.
  */
-export const lintProgram = async (content: string): Promise<Diagnostic[]> =>
-  lintText(content)
+export const lintProgram = async (
+  content: string,
+  configuration?: LintConfig
+): Promise<Diagnostic[]> => lintText(content, configuration)
