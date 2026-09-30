@@ -1,5 +1,5 @@
 import path from 'path'
-import { createFile, fileExists } from '@sasjs/utils'
+import { createFile, createFolder, fileExists, readFile } from '@sasjs/utils'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -150,6 +150,54 @@ describe('code', () => {
       })
     })
 
+    it('applies the .sasjslint nearest the named file, walking up the drive', async () => {
+      const driveFiles = process.driveLoc
+        ? path.join(process.driveLoc, 'files')
+        : path.join(process.cwd(), 'sasjs_root', 'drive', 'files')
+
+      // A project folder with its own rules: no trailing-space complaints.
+      await createFolder(path.join(driveFiles, 'lint-project'))
+      await createFile(
+        path.join(driveFiles, 'lint-project', '.sasjslint'),
+        JSON.stringify({ noTrailingSpaces: false })
+      )
+
+      // The drive root keeps the seeded default, which flags the same text.
+      const rootConfig = JSON.parse(
+        await readFile(path.join(driveFiles, '.sasjslint'))
+      )
+      expect(rootConfig.noTrailingSpaces).toEqual(true)
+
+      const code = 'data _null_;\n  x = 1; \nrun;'
+
+      const projectResponse = await request(app)
+        .post('/SASjsApi/code/lint')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code, filePath: '/lint-project/run.sas' })
+        .expect(200)
+
+      expect(
+        projectResponse.body.filter(
+          (d: { message: string }) =>
+            d.message === 'Line contains trailing spaces'
+        )
+      ).toEqual([])
+
+      const rootResponse = await request(app)
+        .post('/SASjsApi/code/lint')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code, filePath: '/run.sas' })
+        .expect(200)
+
+      expect(rootResponse.body).toContainEqual({
+        message: 'Line contains trailing spaces',
+        lineNumber: 2,
+        startColumnNumber: 9,
+        endColumnNumber: 9,
+        severity: 1
+      })
+    })
+
     it('returns 400 when the code is missing', async () => {
       const response = await request(app)
         .post('/SASjsApi/code/lint')
@@ -185,6 +233,39 @@ describe('code', () => {
       // The trailing space on line 2 is removed by the noTrailingSpaces fix.
       expect(response.body).not.toContain('x = 1; \n')
       expect(response.body).toContain('x = 1;\n')
+    })
+
+    it('applies the .sasjslint nearest the named file, walking up the drive', async () => {
+      const driveFiles = process.driveLoc
+        ? path.join(process.driveLoc, 'files')
+        : path.join(process.cwd(), 'sasjs_root', 'drive', 'files')
+
+      // The project folder's rules forbid the fix the default applies.
+      await createFolder(path.join(driveFiles, 'format-project'))
+      await createFile(
+        path.join(driveFiles, 'format-project', '.sasjslint'),
+        JSON.stringify({ noTrailingSpaces: false })
+      )
+
+      const code = 'data _null_;\n  x = 1; \nrun;'
+
+      const projectResponse = await request(app)
+        .post('/SASjsApi/code/format')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code, filePath: '/format-project/run.sas' })
+        .expect(200)
+
+      // The trailing space survives: the project's rules turn the fix off.
+      expect(projectResponse.body).toContain('x = 1; \n')
+
+      const rootResponse = await request(app)
+        .post('/SASjsApi/code/format')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code, filePath: '/run.sas' })
+        .expect(200)
+
+      expect(rootResponse.body).not.toContain('x = 1; \n')
+      expect(rootResponse.body).toContain('x = 1;\n')
     })
 
     it('returns 400 when the code is missing', async () => {

@@ -175,6 +175,10 @@ components:
                     type: string
                     description: 'The SAS code to be linted'
                     example: "data _null_;\n  x = 1;\nrun;"
+                filePath:
+                    type: string
+                    description: "The drive path of the file the code comes from, when it has one. The rules\nresolve from the nearest `.sasjslint` at or above that file's folder, so\neach folder in the drive tree can carry its own rules. Omitted for an\nuntitled buffer, which lints against the drive-root rules."
+                    example: /projects/app/run.sas
             required:
                 - code
             type: object
@@ -185,6 +189,10 @@ components:
                     type: string
                     description: 'The SAS code to be formatted'
                     example: "data _null_;\n  x = 1;\nrun;"
+                filePath:
+                    type: string
+                    description: "The drive path of the file the code comes from, when it has one. The rules\nresolve from the nearest `.sasjslint` at or above that file's folder, so\neach folder in the drive tree can carry its own rules. Omitted for an\nuntitled buffer, which formats against the drive-root rules."
+                    example: /projects/app/run.sas
             required:
                 - code
             type: object
@@ -956,7 +964,7 @@ paths:
                                 items:
                                     $ref: '#/components/schemas/Diagnostic'
                                 type: array
-            description: "Lints the supplied SAS code and returns the diagnostics.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can lint its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nRules come from the nearest `.sasjslint` above the server's working\ndirectory, falling back to the package default. Diagnostics describe the\nsubmitted text only; no other file is read."
+            description: "Lints the supplied SAS code and returns the diagnostics.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can lint its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nWhen the request names the file's drive path, the rules come from the\nnearest `.sasjslint` at or above that file's folder, so each folder in\nthe drive tree can carry its own rules; a request without a path lints\nagainst the drive-root rules file. Diagnostics describe the submitted\ntext only; no other file is read."
             summary: 'Lint SAS code and return the diagnostics'
             tags:
                 - Code
@@ -980,7 +988,7 @@ paths:
                         application/json:
                             schema:
                                 type: string
-            description: "Formats the supplied SAS code and returns the formatted text.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can format its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nRules come from the nearest `.sasjslint` above the server's working\ndirectory, falling back to the package default - the same resolution the\nlint endpoint, the CLI and the VS Code extension use. Formatting only\nrewrites the submitted text; no other file is read or written."
+            description: "Formats the supplied SAS code and returns the formatted text.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can format its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nWhen the request names the file's drive path, the rules come from the\nnearest `.sasjslint` at or above that file's folder, so each folder in\nthe drive tree can carry its own rules; a request without a path formats\nagainst the drive-root rules file. Formatting only rewrites the submitted\ntext; no other file is read or written."
             summary: 'Format SAS code and return the formatted text'
             tags:
                 - Code

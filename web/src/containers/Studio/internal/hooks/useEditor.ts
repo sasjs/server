@@ -274,7 +274,9 @@ const useEditor = ({
 
       let formatted = code
       try {
-        formatted = await formatSasCode(code)
+        // The buffer's file, when it has one, names the file whose tree the
+        // rules resolve from - the same path the lint flow passes.
+        formatted = await formatSasCode(code, selectedFilePath || undefined)
       } catch {
         return
       }
@@ -293,7 +295,7 @@ const useEditor = ({
 
       return formatted
     },
-    [isSasBuffer]
+    [isSasBuffer, selectedFilePath]
   )
 
   useEffect(() => {
@@ -463,7 +465,13 @@ const useEditor = ({
 
       if (!isSas || !code) return
 
-      void lintModel(editorRef.current?.getModel() ?? null, code)
+      // The file's own path drives the `.sasjslint` resolution on the server,
+      // so the buffer is judged by the rules that apply where it lives.
+      void lintModel(
+        editorRef.current?.getModel() ?? null,
+        code,
+        filePath || undefined
+      )
     },
     [selectedRunTime]
   )

@@ -191,12 +191,14 @@ export const runCodeValidation = (data: any): Joi.ValidationResult =>
 
 export const lintCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    code: Joi.string().required()
+    code: Joi.string().required(),
+    filePath: Joi.string()
   }).validate(data)
 
 export const formatCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    code: Joi.string().required()
+    code: Joi.string().required(),
+    filePath: Joi.string()
   }).validate(data)
 
 export const triggerCodeValidation = (data: any): Joi.ValidationResult =>

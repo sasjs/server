@@ -5,6 +5,7 @@ import { ExecutionController, getSessionController } from './internal'
 import {
   getPreProgramVariables,
   getUserAutoExec,
+  getDriveLintConfig,
   lintProgram,
   ModeType,
   RunTimeType
@@ -60,6 +61,14 @@ interface LintCodePayload {
    * @example "data _null_;\n  x = 1;\nrun;"
    */
   code: string
+  /**
+   * The drive path of the file the code comes from, when it has one. The rules
+   * resolve from the nearest `.sasjslint` at or above that file's folder, so
+   * each folder in the drive tree can carry its own rules. Omitted for an
+   * untitled buffer, which lints against the drive-root rules.
+   * @example "/projects/app/run.sas"
+   */
+  filePath?: string
 }
 
 interface FormatCodePayload {
@@ -68,6 +77,14 @@ interface FormatCodePayload {
    * @example "data _null_;\n  x = 1;\nrun;"
    */
   code: string
+  /**
+   * The drive path of the file the code comes from, when it has one. The rules
+   * resolve from the nearest `.sasjslint` at or above that file's folder, so
+   * each folder in the drive tree can carry its own rules. Omitted for an
+   * untitled buffer, which formats against the drive-root rules.
+   * @example "/projects/app/run.sas"
+   */
+  filePath?: string
 }
 
 @Security('bearerAuth')
@@ -126,15 +143,17 @@ export class CodeController {
    * editor can lint its buffer, including unsaved changes, and no drive
    * permission is involved. Nothing is executed.
    *
-   * Rules come from the nearest `.sasjslint` above the server's working
-   * directory, falling back to the package default. Diagnostics describe the
-   * submitted text only; no other file is read.
+   * When the request names the file's drive path, the rules come from the
+   * nearest `.sasjslint` at or above that file's folder, so each folder in
+   * the drive tree can carry its own rules; a request without a path lints
+   * against the drive-root rules file. Diagnostics describe the submitted
+   * text only; no other file is read.
    *
    * @summary Lint SAS code and return the diagnostics
    */
   @Post('/lint')
   public async lintCode(@Body() body: LintCodePayload): Promise<Diagnostic[]> {
-    return lintProgram(body.code)
+    return lintProgram(body.code, await getDriveLintConfig(body.filePath))
   }
 
   /**
@@ -144,16 +163,17 @@ export class CodeController {
    * editor can format its buffer, including unsaved changes, and no drive
    * permission is involved. Nothing is executed.
    *
-   * Rules come from the nearest `.sasjslint` above the server's working
-   * directory, falling back to the package default - the same resolution the
-   * lint endpoint, the CLI and the VS Code extension use. Formatting only
-   * rewrites the submitted text; no other file is read or written.
+   * When the request names the file's drive path, the rules come from the
+   * nearest `.sasjslint` at or above that file's folder, so each folder in
+   * the drive tree can carry its own rules; a request without a path formats
+   * against the drive-root rules file. Formatting only rewrites the submitted
+   * text; no other file is read or written.
    *
    * @summary Format SAS code and return the formatted text
    */
   @Post('/format')
   public async formatCode(@Body() body: FormatCodePayload): Promise<string> {
-    return formatText(body.code)
+    return formatText(body.code, await getDriveLintConfig(body.filePath))
   }
 }
 
