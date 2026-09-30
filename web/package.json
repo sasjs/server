@@ -5,13 +5,14 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
     "test:completions": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-completions.mjs",
     "test:hover": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-hover.mjs",
     "test:language-server": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-language-server.mjs",
+    "test:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-studio-settings.mjs",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\""
   },

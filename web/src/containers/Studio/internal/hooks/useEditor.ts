@@ -20,6 +20,8 @@ import {
 } from '../../../../utils/hooks'
 import { parseErrorsAndWarnings, LogObject } from '../../../../utils'
 import { lintModel } from '../lint'
+import { formatSasCode } from '../format'
+import { readSettings } from '../settings'
 
 const SASJS_LOGS_SEPARATOR =
   'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
@@ -88,8 +90,13 @@ const useEditor = ({
   }
 
   const saveFile = useCallback(
-    (filePath?: string) => {
+    (filePath?: string, content?: string) => {
       setIsLoading(true)
+
+      // The caller may hand in the text it just formatted; otherwise the
+      // buffer as React knows it is saved. Formatting applies its edits to
+      // the model first, so the two can differ for one render.
+      const text = content ?? fileContent
 
       if (filePath) {
         filePath = filePath.startsWith('/') ? filePath : `/${filePath}`
@@ -97,7 +104,7 @@ const useEditor = ({
 
       const formData = new FormData()
 
-      const stringBlob = new Blob([fileContent], { type: 'text/plain' })
+      const stringBlob = new Blob([text], { type: 'text/plain' })
       formData.append('file', stringBlob)
       formData.append('filePath', filePath ?? selectedFilePath)
 
@@ -107,7 +114,7 @@ const useEditor = ({
 
       axiosPromise
         .then(() => {
-          if (filePath && fileContent === prevFileContent) {
+          if (filePath && text === prevFileContent) {
             // when fileContent and prevFileContent is same,
             // callback function in setPrevFileContent method is not called
             // because behind the scene useEffect hook is being used
@@ -117,7 +124,7 @@ const useEditor = ({
 
             setSelectedFilePath(filePath, true)
           } else {
-            setPrevFileContent(fileContent, () => {
+            setPrevFileContent(text, () => {
               if (filePath) {
                 setSelectedFilePath(filePath, true)
               }
@@ -230,6 +237,65 @@ const useEditor = ({
     saveFile(filePath)
   }
 
+  /**
+   * Whether the buffer holds a SAS program. The model's language tells it for
+   * a file opened from the drive; an untitled buffer mounts as plaintext, so
+   * there the selected runtime decides - the same signal the lint flow uses.
+   */
+  const isSasBuffer = useCallback(() => {
+    const model = editorRef.current?.getModel()
+    if (model && model.getLanguageId() !== 'plaintext') {
+      return model.getLanguageId() === 'sas'
+    }
+
+    if (selectedFilePath) {
+      return selectedFilePath.split('.').pop()?.toLowerCase() === 'sas'
+    }
+
+    return selectedRunTime === RunTimeType.SAS
+  }, [selectedFilePath, selectedRunTime])
+
+  /**
+   * Formats the buffer and applies the result to the editor model, returning
+   * the text the buffer now holds. Formatting only applies when the buffer
+   * holds a SAS program: the api applies SAS rules, so a program in another
+   * runtime stays exactly as typed. A formatting failure returns the buffer
+   * untouched - the caller's action (save or format) proceeds with what is
+   * there.
+   */
+  const formatBuffer = useCallback(
+    async (editor: monaco.editor.ICodeEditor) => {
+      if (!isSasBuffer()) return
+
+      const model = editor.getModel()
+      if (!model) return
+
+      const code = model.getValue()
+
+      let formatted = code
+      try {
+        formatted = await formatSasCode(code)
+      } catch {
+        return
+      }
+
+      if (formatted === code) return
+
+      editor.pushUndoStop()
+      editor.executeEdits('sasjs-format', [
+        {
+          range: model.getFullModelRange(),
+          text: formatted,
+          forceMoveMarkers: true
+        }
+      ])
+      editor.pushUndoStop()
+
+      return formatted
+    },
+    [isSasBuffer]
+  )
+
   useEffect(() => {
     const saveFileAction = editorRef.current?.addAction({
       // An unique identifier of the contributed action.
@@ -245,9 +311,45 @@ const useEditor = ({
 
       // Method that will be executed when the action is triggered.
       // @param editor The editor instance is passed in as a convenience
-      run: () => {
+      run: async (ed) => {
         if (!selectedFilePath) return setOpenFilePathInputModal(true)
-        if (prevFileContent !== fileContent) return saveFile()
+
+        // Format on save is a setting, so a user who prefers the buffer as
+        // typed keeps it. The formatted text is handed to the save directly:
+        // the model already holds it, but React's copy of the buffer lags
+        // the edit by one render.
+        const content = readSettings()['editor.formatOnSave']
+          ? await formatBuffer(ed)
+          : undefined
+
+        const modelValue = editorRef.current?.getModel()?.getValue()
+        const text = content ?? modelValue
+
+        if (prevFileContent !== text) return saveFile(undefined, text)
+      }
+    })
+
+    const formatAction = editorRef.current?.addAction({
+      // An unique identifier of the contributed action.
+      id: 'format-code',
+
+      // A label of the action that will be presented to the user.
+      label: 'Format Code',
+
+      // An optional array of keybindings for the action.
+      keybindings: [
+        monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF
+      ],
+
+      contextMenuGroupId: 'navigation',
+
+      // Method that will be executed when the action is triggered.
+      // @param editor The editor instance is passed in as a convenience
+      run: async (ed) => {
+        await formatBuffer(ed)
+        setSnackbarMessage('Code formatted!')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
       }
     })
 
@@ -272,9 +374,20 @@ const useEditor = ({
 
     return () => {
       saveFileAction?.dispose()
+      formatAction?.dispose()
       runCodeAction?.dispose()
     }
-  }, [fileContent, prevFileContent, selectedFilePath, saveFile, runCode])
+  }, [
+    fileContent,
+    prevFileContent,
+    selectedFilePath,
+    saveFile,
+    runCode,
+    formatBuffer,
+    setOpenSnackbar,
+    setSnackbarMessage,
+    setSnackbarSeverity
+  ])
 
   useEffect(() => {
     setRunTimes(Object.values(appContext.runTimes))
