@@ -16,12 +16,14 @@ FROM cloudron/node-base:24-20260920@sha256:d984683ec59bf2379130bf41cf3c2b6bc0453
 # Node ships with this base image (the 'js' runtime). Python does not, so add
 # it for the 'py' runtime.
 #
-# linux-libc-dev is pulled up to the archive's current version as well. The
-# base image ships the release-pocket build, and the kernel headers carry a
-# stream of CVEs that would otherwise trip the OS-layer scan gate on every
-# build with something this repo cannot act on.
+# linux-libc-dev and the openssl packages are pulled up to the archive's
+# current version as well. The base image ships the release-pocket builds,
+# and both carry a stream of CVEs that would otherwise trip the OS-layer
+# scan gate on every build with something this repo cannot act on.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 linux-libc-dev && \
+    apt-get install -y --no-install-recommends \
+      python3 linux-libc-dev \
+      openssl libssl3t64 libssl-dev openssl-provider-legacy && \
     rm -rf /var/lib/apt/lists/*
 
 COPY web/ /usr/server/web/

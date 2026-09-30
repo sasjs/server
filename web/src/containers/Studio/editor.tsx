@@ -25,7 +25,8 @@ import { getLanguageFromExtension } from './internal/helper'
 import {
   registerSasCompletions,
   registerSasHover,
-  registerSasLanguage
+  registerSasLanguage,
+  startSasLanguageService
 } from './internal/languages'
 import useEditor from './internal/hooks/useEditor'
 import { RunTimeType } from '../../context/appContext'
@@ -36,6 +37,12 @@ import { LogObject } from '../../utils'
 registerSasLanguage()
 registerSasCompletions()
 registerSasHover()
+
+// The language server starts once for the app: it serves every editor, so
+// the lifecycle belongs here rather than to any single editor mount. A
+// failed start leaves the editor on its static providers; the service
+// clears its cached rejection, so a later mount retries the start.
+startSasLanguageService().catch(() => undefined)
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'

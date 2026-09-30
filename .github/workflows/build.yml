@@ -55,14 +55,15 @@ jobs:
         working-directory: ./api
         run: npm ci --ignore-scripts && npm audit --audit-level=low
 
-      - name: Audit Web dependencies (critical only)
-        # web/ still carries 6 moderate + 1 high advisory that need breaking
-        # bumps (react-router 6->7, copy-webpack-plugin 14, webpack-dev-server
-        # 6) - tracked for a dedicated web-deps PR. Until then this step only
-        # fails the build on a CRITICAL finding, so a new critical advisory
-        # cannot land silently.
+      - name: Audit Web dependencies (high and above)
+        # The high advisories (serialize-javascript via copy-webpack-plugin,
+        # webpack-dev-middleware/sockjs/uuid via webpack-dev-server) clear
+        # with this PR's tooling bumps. Two moderate react-router advisories
+        # remain: the fix is react-router-dom 7, which needs react >= 18 -
+        # a breaking app-code migration tracked for the web-deps PR. Until
+        # it lands this step fails the build on HIGH or above.
         working-directory: ./web
-        run: npm ci --ignore-scripts && npm audit --audit-level=critical
+        run: npm ci --ignore-scripts && npm audit --audit-level=high
 
   lint:
     runs-on: ubuntu-22.04
