@@ -1,3 +1,18 @@
+## 1.18.0
+
+### Features
+
+* adopt @sasjs/lint 2.7.0 and its noSingleAsteriskComments rule ([983abfa](https://github.com/sasjs/server/commit/983abfa6783e76c7e5b21e4efb831b491b2ed00a))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.17.0
 
 ### Features
