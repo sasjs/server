@@ -22,6 +22,10 @@ const managedEnvVars = [
   'LOCAL_LOGIN_ENABLED',
   'RUN_TIMES',
   'NODE_PATH',
+  'VIYA_URL',
+  'VIYA_USER',
+  'VIYA_PASSWORD',
+  'VIYA_CONTEXT',
   'LDAP_URL',
   'LDAP_BIND_DN',
   'LDAP_BIND_PASSWORD',
@@ -195,6 +199,44 @@ describe('verifyEnvVariables', () => {
 
     it('should be optional', () => {
       delete process.env.TRUST_PROXY
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+  })
+
+  describe('Viya runtime variables', () => {
+    beforeEach(() => {
+      process.env.RUN_TIMES = 'sasviya'
+      process.env.VIYA_URL = 'https://viya.example.com'
+      process.env.VIYA_USER = 'service-account'
+      process.env.VIYA_PASSWORD = 'service-secret'
+    })
+
+    it('should accept a valid Viya configuration', () => {
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+
+    it('should require VIYA_URL, VIYA_USER and VIYA_PASSWORD', () => {
+      delete process.env.VIYA_URL
+      delete process.env.VIYA_USER
+      delete process.env.VIYA_PASSWORD
+
+      // The runtime reaches SAS over the network, so without these there is
+      // nothing to connect to - fail at startup rather than per request.
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('should reject a VIYA_URL that is not an absolute http(s) URL', () => {
+      process.env.VIYA_URL = 'viya.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('should not require Viya variables when the runtime is not enabled', () => {
+      process.env.RUN_TIMES = 'js'
+      delete process.env.VIYA_URL
+      delete process.env.VIYA_USER
+      delete process.env.VIYA_PASSWORD
+
       expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
     })
   })

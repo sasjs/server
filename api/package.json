@@ -47,6 +47,7 @@
   },
   "author": "4GL Ltd",
   "dependencies": {
+    "@sasjs/adapter": "4.19.1",
     "@sasjs/core": "^5.2.10",
     "@sasjs/lint": "4.1.0",
     "@sasjs/utils": "^3.6.2",
