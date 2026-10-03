@@ -55,15 +55,17 @@ jobs:
         working-directory: ./api
         run: npm ci --ignore-scripts && npm audit --audit-level=low
 
-      - name: Audit Web dependencies (high and above)
-        # The high advisories (serialize-javascript via copy-webpack-plugin,
-        # webpack-dev-middleware/sockjs/uuid via webpack-dev-server) clear
-        # with this PR's tooling bumps. Two moderate react-router advisories
-        # remain: the fix is react-router-dom 7, which needs react >= 18 -
-        # a breaking app-code migration tracked for the web-deps PR. Until
-        # it lands this step fails the build on HIGH or above.
+      - name: Audit Web dependencies
+        # Production dependencies only. The dev toolchain carries an advisory
+        # that no upgrade clears: braces GHSA-vfj7-8cjw-p6xm, reached through
+        # webpack-cli -> webpack-dev-server -> http-proxy-middleware ->
+        # micromatch, and braces has published no fixed release. It is a
+        # build-time denial of service in a tool that never ships, so the
+        # production set is what this gate covers - the same scope the root
+        # audit uses. The two react-router moderates cleared with
+        # react-router-dom 7, so the level is back to the default.
         working-directory: ./web
-        run: npm ci --ignore-scripts && npm audit --audit-level=high
+        run: npm ci --ignore-scripts && npm audit --omit=dev
 
   lint:
     runs-on: ubuntu-22.04
