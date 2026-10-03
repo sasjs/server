@@ -34,6 +34,21 @@ export const resetViyaAuth = () => {
   cachedAuth = undefined
 }
 
+/**
+ * Whether a failure is the token's rather than the program's.
+ *
+ * The adapter reports a refused token as a 401/403 from the compute API, which
+ * reaches here either as a status on the error or inside its message.
+ */
+const looksLikeAuthFailure = (err: any): boolean => {
+  const status = err?.status ?? err?.statusCode ?? err?.response?.status
+  if (status === 401 || status === 403) return true
+
+  return /\b401\b|\b403\b|unauthori[sz]ed|forbidden|invalid[_ ]?token|token[^.]{0,40}expired/i.test(
+    String(err?.message ?? '')
+  )
+}
+
 const getViyaUrl = (): string => {
   const url = process.env.VIYA_URL
 
@@ -127,7 +142,7 @@ export interface ViyaExecutionResult {
  * injects. The program writes its response with `%mv_webout`.
  * @param jobName - a name for the submitted job, used for logs and diagnostics.
  */
-export const executeViyaProgram = async (
+const runProgram = async (
   program: string,
   jobName: string
 ): Promise<ViyaExecutionResult> => {
@@ -188,5 +203,30 @@ export const executeViyaProgram = async (
     }
 
     throw err
+  }
+}
+
+/**
+ * Runs a program on Viya, minting a fresh token once if the cached one is
+ * refused.
+ *
+ * The cached pair can become unusable without the process dying: the access
+ * token expires and the refresh token that would replace it is single-use and
+ * already spent, so every later request is refused until the process restarts.
+ * One more password grant is the way back, so the cache is dropped and the job
+ * retried once rather than failing every caller from then on.
+ */
+export const executeViyaProgram = async (
+  program: string,
+  jobName: string
+): Promise<ViyaExecutionResult> => {
+  try {
+    return await runProgram(program, jobName)
+  } catch (err) {
+    if (!looksLikeAuthFailure(err)) throw err
+
+    resetViyaAuth()
+
+    return runProgram(program, jobName)
   }
 }
