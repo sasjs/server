@@ -1,3 +1,30 @@
+## 1.21.0
+
+### Bug Fixes
+
+* **api:** answer the app shell's edge cases ([c828e4b](https://github.com/sasjs/server/commit/c828e4b6e6d3a134ef4c940330876f492f909c60))
+* **api:** mint a fresh Viya token when the cached one is refused ([6e8fc20](https://github.com/sasjs/server/commit/6e8fc2029c20f97a1936f26f47e70876c1116450))
+* **api:** report every route as authorized in desktop mode ([ad38d10](https://github.com/sasjs/server/commit/ad38d10ccfe66183b1a7e174790d308994263e22))
+* **api:** resolve an app's logo under its stream path ([76778a7](https://github.com/sasjs/server/commit/76778a73ff6caf29ec1ac406a5f0ca981c34caac))
+* **web:** address the interface's assets from the root ([b16b235](https://github.com/sasjs/server/commit/b16b2351e4dd9a45e3f19e80b56fc859865ec903))
+
+
+### Features
+
+* **api:** serve the app shell for the interface's own routes ([5a175ae](https://github.com/sasjs/server/commit/5a175ae31d2cf9af4d050e6a76e4486b791d43dc))
+* **api:** serve the app stream list as JSON ([f106b21](https://github.com/sasjs/server/commit/f106b21468d9ff6aa4388cce36a27c5ad55149dc))
+* **web:** give the interface's own screens real paths ([a53a8ee](https://github.com/sasjs/server/commit/a53a8ee86526f3ef09505cbc2ae302afda46cb44))
+* **web:** the home screen lists the apps ([652064b](https://github.com/sasjs/server/commit/652064b2aed912a05fbe825dafbc7067392c772b))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.20.0
 
 ### Bug Fixes
