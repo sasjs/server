@@ -80,7 +80,10 @@ router.get('/apps.json', authenticateAccessToken, async (req, res) => {
     apps: Object.entries(config).map(([name, entry]) => ({
       name,
       appLoc: entry.appLoc,
-      logo: entry.streamLogo ?? null,
+      // Resolved here rather than in the interface: a configured logo is an
+      // asset inside the app, so it is addressed relative to the app's stream
+      // path. The landing page resolves the same value the same way.
+      logo: entry.streamLogo ? `/AppStream/${name}/${entry.streamLogo}` : null,
       url: `/AppStream/${name}/`
     }))
   })

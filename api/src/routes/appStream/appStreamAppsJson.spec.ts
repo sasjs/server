@@ -130,7 +130,10 @@ describe('App Stream listing as JSON', () => {
       {
         name: 'Mario',
         appLoc: '/Public/app/mario',
-        logo: 'logo.png',
+        // A configured logo is an asset inside the app, so it is answered as a
+        // URL under the app's stream path - the same way the landing page
+        // resolves it. Rendered raw it would resolve against the interface root.
+        logo: '/AppStream/Mario/logo.png',
         url: '/AppStream/Mario/'
       }
     ])
@@ -185,5 +188,35 @@ describe('App Stream listing as JSON', () => {
       expect(html.text).toContain(`href="${app.name}"`)
     }
     expect(html.text).not.toContain('href="Sonic"')
+  })
+
+  it('should resolve a configured logo the way the landing page does', async () => {
+    const { token, uid } = await tokenFor(streamUser.username)
+
+    await rule('/AppStream/Mario', PermissionSettingForRoute.grant, uid)
+    await rule('/AppStream/Sonic', PermissionSettingForRoute.grant, uid)
+
+    const json = await request(app)
+      .get('/AppStream/apps.json')
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+
+    const html = await request(app)
+      .get('/AppStream/')
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+
+    const byName = Object.fromEntries(
+      json.body.apps.map((app: any) => [app.name, app.logo])
+    )
+
+    // Mario configures a logo, which is an asset inside the app - so it is
+    // answered under the app's stream path. The page renders the same value
+    // relative to its <base href="/AppStream/">.
+    expect(byName.Mario).toEqual('/AppStream/Mario/logo.png')
+    expect(html.text).toContain('src="Mario/logo.png"')
+
+    // Sonic configures none, and the interface falls back to its own logo.
+    expect(byName.Sonic).toBeNull()
   })
 })
