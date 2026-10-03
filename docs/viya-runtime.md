@@ -52,6 +52,14 @@ data work.result; x = 42; run;
 
 `getRunTimeAndFilePath` picks the runtime from the file extension. A program with no extension is resolved against `RUN_TIMES` in enum order (`sas`, `js`, `py`, `r`, `sasviya`), so `.sas` still means the local runtime. To run on Viya, the program must be stored with the `.sasviya` extension.
 
+## Triggering a long-running job
+
+`POST /SASjsApi/stp/trigger` and `POST /SASjsApi/code/trigger` return as soon as the session exists - the response carries the `sessionId`, and the program keeps running. Poll `GET /SASjsApi/session/{sessionId}/state` until it reads `completed` or `failed`, then read the session's `webout.txt` and `log.log` from the session folder.
+
+That is the shape a long Viya job needs: measured on a 12-second program on the `js` runtime, the trigger call returned in 64 ms and the state moved `running` to `completed` at 13 seconds. A synchronous call to the same program waited the full 3.1 seconds.
+
+`expiresAfterMins` applies to every runtime. The session lifecycle lives on the base session controller, so a triggered program on any runtime is destroyed when its death time arrives rather than leaving its folder behind - before this, only the local `sas` runtime scheduled that cleanup, and a triggered job on the other runtimes leaked its folder permanently.
+
 ## Known limits
 
 - **File uploads are not relayed.** Upload staging points at local server paths, which the compute server cannot read. A program that expects uploaded files will not find them.
