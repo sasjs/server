@@ -49,13 +49,13 @@ const UpdatePassword = () => {
         appContext.setNeedsToUpdatePassword?.(false)
         toast.success('Password updated', {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .catch((err) => {
         toast.error('Failed: ' + err.response?.data || err.text, {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .finally(() => {

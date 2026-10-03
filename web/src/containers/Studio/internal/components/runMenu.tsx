@@ -31,9 +31,8 @@ const RunMenu = ({
   handleRunBtnClick
 }: RunMenuProps) => {
   const launchProgram = () => {
-    const pathName =
-      window.location.pathname === '/' ? '' : window.location.pathname
-    const baseUrl = window.location.origin + pathName
+    // The current path is the interface's route, not a base for the API.
+    const baseUrl = window.location.origin
 
     window.open(`${baseUrl}/SASjsApi/stp/execute?_program=${selectedFilePath}`)
   }

@@ -134,7 +134,7 @@ const AddPermissionModal = ({
       </BootstrapDialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               multiple
               disableClearable
@@ -147,7 +147,7 @@ const AddPermissionModal = ({
               renderInput={(params) => <TextField {...params} label="Paths" />}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               options={['Route']}
               disableClearable
@@ -164,7 +164,7 @@ const AddPermissionModal = ({
               }
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               options={['Group', 'User']}
               disableClearable
@@ -177,7 +177,7 @@ const AddPermissionModal = ({
               )}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             {principalType.toLowerCase() === 'user' ? (
               <Autocomplete
                 options={userPrincipals}
@@ -214,7 +214,7 @@ const AddPermissionModal = ({
               />
             )}
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               options={['Grant', 'Deny']}
               disableClearable

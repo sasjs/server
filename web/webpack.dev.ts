@@ -1,9 +1,9 @@
 import path from 'path'
-import { Configuration as WebpackConfiguration } from 'webpack'
-import { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server'
+import type { Configuration as WebpackConfiguration } from 'webpack'
+import type { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server'
 import { merge } from 'webpack-merge'
 
-import common from './webpack.common'
+import common from './webpack.common.ts'
 
 interface Configuration extends WebpackConfiguration {
   devServer?: WebpackDevServerConfiguration
@@ -12,13 +12,13 @@ interface Configuration extends WebpackConfiguration {
 const devConfig: Configuration = merge(common, {
   mode: 'development',
   output: {
-    path: path.join(__dirname, 'build'),
+    path: path.join(import.meta.dirname, 'build'),
     filename: 'index.bundle.js',
     publicPath: '/'
   },
   devServer: {
     static: {
-      directory: path.join(__dirname, 'build')
+      directory: path.join(import.meta.dirname, 'build')
     },
     historyApiFallback: true,
     port: 3000

@@ -59,6 +59,13 @@ interface AppContextProps {
    */
   authorizedRoutes: string[]
   /**
+   * Whether the list above has been answered for the current session. It is
+   * false while the answer is in flight, which is not the same as "not
+   * permitted" - a route that redirects on an empty list would bounce a deep
+   * link to the home screen before the server had been asked.
+   */
+  authorizedRoutesLoaded: boolean
+  /**
    * Whether the server admits a route for this caller. The list IS the gate's
    * answer, so the interface asks the same question the server answers rather
    * than re-deriving the rules and drifting from them.
@@ -80,6 +87,7 @@ export const AppContext = createContext<AppContextProps>({
   authProviders: [],
   localLoginEnabled: true,
   authorizedRoutes: [],
+  authorizedRoutesLoaded: false,
   isAuthorizedFor: () => false
 })
 
@@ -140,6 +148,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   // password form rather than hiding the only way in.
   const [localLoginEnabled, setLocalLoginEnabled] = useState(true)
   const [authorizedRoutes, setAuthorizedRoutes] = useState<string[]>([])
+  const [authorizedRoutesLoaded, setAuthorizedRoutesLoaded] = useState(false)
 
   const isAuthorizedFor = useCallback(
     (route: string) => authorizedRoutes.indexOf(route) > -1,
@@ -212,13 +221,17 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   useEffect(() => {
     if (!loggedIn) {
       setAuthorizedRoutes([])
+      setAuthorizedRoutesLoaded(false)
       return
     }
+
+    setAuthorizedRoutesLoaded(false)
 
     axios
       .get('/SASjsApi/info/myAuthorizedRoutes')
       .then((res) => setAuthorizedRoutes(res.data?.paths ?? []))
       .catch(() => setAuthorizedRoutes([]))
+      .finally(() => setAuthorizedRoutesLoaded(true))
   }, [loggedIn])
 
   const logout = useCallback(() => {
@@ -251,6 +264,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         oidcProviderName,
         localLoginEnabled,
         authorizedRoutes,
+        authorizedRoutesLoaded,
         isAuthorizedFor,
         logout
       }}

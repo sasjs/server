@@ -65,6 +65,27 @@ router.get('/', authenticateAccessToken, async (req, res) => {
   return res.send(content)
 })
 
+/**
+ * The same list the landing page renders, as JSON, so the single-page app's home
+ * screen can show the apps without scraping the HTML. It answers with the same
+ * permission-filtered config the page uses, so the two cannot disagree.
+ *
+ * Declared before the `/*splat` handler below, which would otherwise serve this
+ * path as an app's static asset.
+ */
+router.get('/apps.json', authenticateAccessToken, async (req, res) => {
+  const config = await permittedAppStreamConfig(req)
+
+  return res.json({
+    apps: Object.entries(config).map(([name, entry]) => ({
+      name,
+      appLoc: entry.appLoc,
+      logo: entry.streamLogo ?? null,
+      url: `/AppStream/${name}/`
+    }))
+  })
+})
+
 export const publishAppStream = async (
   appLoc: string,
   streamWebFolder: string,

@@ -29,7 +29,7 @@ const AuthConfig = () => {
       .catch((err) => {
         toast.error('Failed: ' + err.response?.data || err.text, {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .finally(() => setIsLoading(false))
@@ -47,14 +47,14 @@ const AuthConfig = () => {
           } and ${groupCount} ${groupCount > 1 ? 'groups' : 'group'}`,
           {
             theme: 'dark',
-            position: toast.POSITION.BOTTOM_RIGHT
+            position: 'bottom-right'
           }
         )
       })
       .catch((err) => {
         toast.error('Failed: ' + err.response?.data || err.text, {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .finally(() => setIsLoading(false))
@@ -75,7 +75,7 @@ const AuthConfig = () => {
           <Divider />
           <CardContent>
             <Grid container spacing={4}>
-              <Grid item md={6} xs={12}>
+              <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
                   fullWidth
                   label="LDAP_URL"
@@ -86,7 +86,7 @@ const AuthConfig = () => {
                 />
               </Grid>
 
-              <Grid item md={6} xs={12}>
+              <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
                   fullWidth
                   label="LDAP_BIND_DN"
@@ -97,7 +97,7 @@ const AuthConfig = () => {
                 />
               </Grid>
 
-              <Grid item md={6} xs={12}>
+              <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
                   fullWidth
                   label="LDAP_BIND_PASSWORD"
@@ -112,7 +112,7 @@ const AuthConfig = () => {
                 />
               </Grid>
 
-              <Grid item md={6} xs={12}>
+              <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
                   fullWidth
                   label="LDAP_USERS_BASE_DN"
@@ -123,7 +123,7 @@ const AuthConfig = () => {
                 />
               </Grid>
 
-              <Grid item md={6} xs={12}>
+              <Grid size={{ md: 6, xs: 12 }}>
                 <TextField
                   fullWidth
                   label="LDAP_GROUPS_BASE_DN"

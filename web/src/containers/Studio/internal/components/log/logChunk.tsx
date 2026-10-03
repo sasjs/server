@@ -1,7 +1,7 @@
 import { useState, useEffect, SyntheticEvent } from 'react'
 import { Typography } from '@mui/material'
 import Highlight from 'react-highlight'
-import { ErrorOutline, Warning } from '@mui/icons-material'
+import { ErrorOutlined, Warning } from '@mui/icons-material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import CheckIcon from '@mui/icons-material/Check'
@@ -13,7 +13,6 @@ import {
   clearErrorsAndWarningsHtmlWrapping,
   download
 } from '../../../../../utils'
-import { logStyles } from './logComponent'
 import classes from './log.module.css'
 
 interface LogChunkProps {
@@ -32,7 +31,6 @@ const LogChunk = (props: LogChunkProps) => {
     props.scrollToLogInstance
   )
   const rowText = clearErrorsAndWarningsHtmlWrapping(text)
-  const styles = logStyles()
   const [expanded, setExpanded] = useState(props.expanded)
   const [copied, setCopied] = useState(false)
 
@@ -117,7 +115,7 @@ const LogChunk = (props: LogChunkProps) => {
               }}
             />
             {errors && errors.length !== 0 && (
-              <ErrorOutline
+              <ErrorOutlined
                 color="error"
                 className={classes.Icon}
                 onClick={() => {
@@ -155,7 +153,7 @@ const LogChunk = (props: LogChunkProps) => {
       >
         <div
           id={`log_container`}
-          className={[styles.expansionDescription, classes.LogContainer].join(
+          className={[classes.expansionDescription, classes.LogContainer].join(
             ' '
           )}
         >

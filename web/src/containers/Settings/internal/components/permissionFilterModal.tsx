@@ -83,7 +83,7 @@ const PermissionFilterModal = ({
       </BootstrapDialogTitle>
       <DialogContent dividers>
         <Grid container spacing={1}>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               multiple
               options={paths}
@@ -95,7 +95,7 @@ const PermissionFilterModal = ({
               renderInput={(params) => <TextField {...params} label="Paths" />}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               multiple
               options={principals}
@@ -109,7 +109,7 @@ const PermissionFilterModal = ({
               )}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               multiple
               options={Object.values(PrincipalType)}
@@ -123,7 +123,7 @@ const PermissionFilterModal = ({
               )}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               multiple
               options={['Grant', 'Deny']}
