@@ -4,6 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import {
+  InfoController,
   PermissionController,
   PermissionSettingForRoute,
   PermissionType,
@@ -13,6 +14,7 @@ import {
 import {
   generateAccessToken,
   getAuthorizedRoutes,
+  ModeType,
   saveTokensInDB
 } from '../../../utils/'
 import Group, { PUBLIC_GROUP_NAME } from '../../../model/Group'
@@ -215,5 +217,22 @@ describe('GET /SASjsApi/info/myAuthorizedRoutes', () => {
       .expect(200)
 
     expect(res.body.paths).toEqual(getAuthorizedRoutes())
+  })
+
+  it('should hold every route in desktop mode, which has no rules to resolve', async () => {
+    const previousMode = process.env.MODE
+    process.env.MODE = ModeType.Desktop
+
+    try {
+      // Desktop mode runs as one fixed user with no permission model, so the
+      // answer comes from the controller rather than from a lookup. The
+      // interface reads this to decide what to offer, so an empty answer hides
+      // everything - which is what happened before this branch existed.
+      const response = await new InfoController().myAuthorizedRoutes({} as any)
+
+      expect(response.paths).toEqual(getAuthorizedRoutes())
+    } finally {
+      process.env.MODE = previousMode
+    }
   })
 })
