@@ -24,6 +24,7 @@ import {
   configureLogger,
   configureSecurity
 } from './app-modules'
+import { setCSRFCookie } from './middlewares'
 import { folderExists } from '@sasjs/utils'
 
 dotenv.config({ quiet: true })
@@ -129,6 +130,46 @@ export default setProcessVariables().then(async () => {
   // should be served after setting up web route
   // index.html needs to be injected with some js script.
   app.use(express.static(getWebBuildFolder()))
+
+  // The interface's own screens are real paths, so a deep link or a refresh -
+  // /SASjsStudio, /SASjsSettings - arrives here with no file to serve. Anything
+  // that reaches this point is not an API route, not an AppStream app and not a
+  // file, so it is one of the interface's routes: serve the app shell and let
+  // the router resolve it.
+  //
+  // The reserved prefixes are refused rather than answered with HTML, so an
+  // unknown API path stays a 404 instead of turning into the app shell.
+  app.get('/*splat', async (req, res) => {
+    if (!req.accepts('html')) return res.status(404).send('Not Found')
+
+    // Express matches the mounted routers case-insensitively, so the refusal
+    // has to be case-insensitive too - otherwise /sasjsapi/unknown falls past
+    // the API router and is answered with the app shell.
+    const reserved = ['/sasjsapi', '/appstream', '/saslogon']
+    const requestPath = req.path.toLowerCase()
+    if (reserved.some((prefix) => requestPath.startsWith(prefix)))
+      return res.status(404).send('Not Found')
+
+    // A path that names a file is an asset request, not a route. Answering it
+    // with the app shell would turn a missing bundle into a confusing MIME
+    // error in the browser rather than an honest 404.
+    if (/\.[a-z0-9]+$/i.test(req.path)) return res.status(404).send('Not Found')
+
+    try {
+      const { WebController } = await import('./controllers/web')
+      const shell = await new WebController().home()
+
+      // The web router's own shell route hands back the CSRF token as a cookie
+      // header, and this serves the same shell - so it sets the cookie too, or
+      // the two entry points differ in their side effects and a deep link
+      // depends on the client fetching / for the token.
+      setCSRFCookie(req, res)
+
+      return res.send(shell)
+    } catch (_) {
+      return res.status(404).send('Web Build is not present')
+    }
+  })
 
   app.use(onError)
 

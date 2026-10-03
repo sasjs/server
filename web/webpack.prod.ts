@@ -1,15 +1,14 @@
 import path from 'path'
-import { Configuration } from 'webpack'
+import type { Configuration } from 'webpack'
 import { merge } from 'webpack-merge'
 
-import common from './webpack.common'
+import common from './webpack.common.ts'
 
 const prodConfig: Configuration = merge(common, {
   mode: 'production',
   output: {
-    path: path.join(__dirname, 'build'),
-    filename: 'index.bundle.js',
-    publicPath: './'
+    path: path.join(import.meta.dirname, 'build'),
+    filename: 'index.bundle.js'
   },
   performance: {
     hints: false

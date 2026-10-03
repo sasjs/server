@@ -49,9 +49,11 @@ const Settings = () => {
           }}
         >
           <TabList
-            TabIndicatorProps={{
-              style: {
-                display: 'none'
+            slotProps={{
+              indicator: {
+                style: {
+                  display: 'none'
+                }
               }
             }}
             orientation="vertical"

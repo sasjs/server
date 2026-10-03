@@ -61,14 +61,14 @@ const UpdatePasswordModal = (props: Props) => {
         </BootstrapDialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <PasswordInput
                 label="Current Password"
                 password={currentPassword}
                 setPassword={setCurrentPassword}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <PasswordInput
                 label="New Password"
                 password={newPassword}

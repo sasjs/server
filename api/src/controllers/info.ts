@@ -5,7 +5,8 @@ import {
   getAuthorizedRoutes,
   getAuthProviders,
   getGrantedRoutes,
-  isLocalLoginEnabled
+  isLocalLoginEnabled,
+  ModeType
 } from '../utils'
 export interface AuthorizedRoutesResponse {
   paths: string[]
@@ -117,6 +118,13 @@ export class InfoController {
   public async myAuthorizedRoutes(
     @Request() request: express.Request
   ): Promise<AuthorizedRoutesResponse> {
+    // Desktop mode has no accounts and no permission model - one fixed user
+    // holds everything - so every route is available. Answering 404 here left
+    // the interface offering nothing at all in desktop mode, because the
+    // routes it reads to decide what to show came back empty.
+    if (process.env.MODE === ModeType.Desktop)
+      return { paths: getAuthorizedRoutes() }
+
     const dbUser = await User.findOne({ _id: request.user?.userId })
 
     if (!dbUser)

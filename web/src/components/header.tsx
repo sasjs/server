@@ -86,7 +86,7 @@ const Header = (props: any) => {
       <Toolbar variant="dense">
         <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
           <img
-            src="logo.png"
+            src="/logo.png"
             alt="logo"
             style={{
               width: '35px',
@@ -199,7 +199,7 @@ const Header = (props: any) => {
 
         <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
           <img
-            src="logo.png"
+            src="/logo.png"
             alt="logo"
             style={{
               width: '35px',

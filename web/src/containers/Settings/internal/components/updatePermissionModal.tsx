@@ -43,7 +43,7 @@ const UpdatePermissionModal = ({
       </BootstrapDialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Autocomplete
               sx={{ width: 300 }}
               options={['Grant', 'Deny']}
