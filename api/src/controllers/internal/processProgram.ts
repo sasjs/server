@@ -10,7 +10,9 @@ import {
   createSASProgram,
   createJSProgram,
   createPythonProgram,
-  createRProgram
+  createRProgram,
+  createViyaSASProgram,
+  executeViyaProgram
 } from './'
 
 export const processProgram = async (
@@ -25,6 +27,39 @@ export const processProgram = async (
   logPath: string,
   otherArgs?: any
 ) => {
+  if (runTime === RunTimeType.SASVIYA) {
+    const viyaProgram = await createViyaSASProgram(
+      program,
+      preProgramVariables,
+      vars,
+      otherArgs
+    )
+
+    try {
+      const { webout, log } = await executeViyaProgram(viyaProgram, session.id)
+
+      await createFile(weboutPath, webout)
+      await createFile(logPath, log)
+    } catch (err: any) {
+      // The run failed on the Viya side. processProgram resolves rather than
+      // throwing, so Execution.ts folds session.failureReason into the response
+      // - the same shape a local SAS %abort; produces. The reason is written to
+      // the log file so the caller sees why, not just that it failed.
+      session.state = SessionState.failed
+      session.failureReason = err?.message ?? err.toString()
+
+      await createFile(logPath, session.failureReason as string)
+
+      process.logger.error(
+        'viya session crashed',
+        session.id,
+        session.failureReason
+      )
+    }
+
+    return
+  }
+
   if (runTime === RunTimeType.SAS) {
     program = await createSASProgram(
       program,
