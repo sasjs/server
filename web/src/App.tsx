@@ -76,6 +76,9 @@ function App() {
           <Route path="/SASjsStudio" element={studioElement} />
           <Route path="/SASjsSettings" element={<Settings />} />
           <Route path="/SASjsLogon" element={<AuthCode />} />
+          {/* The server answers any unmatched path with the app shell, so a
+              mistyped URL would otherwise render an empty screen. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ToastContainer />
       </BrowserRouter>

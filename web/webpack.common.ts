@@ -7,6 +7,13 @@ import dotenv from 'dotenv-webpack'
 
 const config: Configuration = {
   entry: path.join(import.meta.dirname, 'src', 'index.tsx'),
+  output: {
+    // Absolute asset URLs. The interface's own screens are real paths, so the
+    // shell is served from /SASjsStudio and from deeper paths too - a relative
+    // reference resolves under that path rather than the root, and the bundle
+    // is then fetched from a URL that does not exist.
+    publicPath: '/'
+  },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx']
   },

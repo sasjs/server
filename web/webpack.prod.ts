@@ -8,8 +8,7 @@ const prodConfig: Configuration = merge(common, {
   mode: 'production',
   output: {
     path: path.join(import.meta.dirname, 'build'),
-    filename: 'index.bundle.js',
-    publicPath: './'
+    filename: 'index.bundle.js'
   },
   performance: {
     hints: false
