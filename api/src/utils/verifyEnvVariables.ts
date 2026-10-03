@@ -42,7 +42,14 @@ export enum RunTimeType {
   SAS = 'sas',
   JS = 'js',
   PY = 'py',
-  R = 'r'
+  R = 'r',
+  /**
+   * Executes SAS on a remote SAS Viya compute server rather than a local SAS
+   * binary. The server mints a Viya access token from VIYA_USER/VIYA_PASSWORD,
+   * runs the program in a compute session on VIYA_CONTEXT, and relays the log
+   * and the program's _webout content back to the caller.
+   */
+  SASVIYA = 'sasviya'
 }
 
 export enum ReturnCode {
@@ -128,6 +135,8 @@ export const verifyEnvVariables = (): ReturnCode => {
   errors.push(...verifyRUN_TIMES())
 
   errors.push(...verifyExecutablePaths())
+
+  errors.push(...verifyViyaVariables())
 
   errors.push(...verifyLDAPVariables())
 
@@ -377,6 +386,41 @@ const verifyExecutablePaths = (): string[] => {
     if (runTimes?.includes(RunTimeType.R) && !R_PATH) {
       errors.push(`- R_PATH is required for ${RunTimeType.R} run time`)
     }
+  }
+
+  return errors
+}
+
+/**
+ * The sasviya runtime reaches SAS over the network instead of spawning a local
+ * binary, so it needs connection details rather than an executable path. These
+ * are validated in both server and desktop mode, because the credentials are
+ * required wherever the runtime is enabled.
+ */
+const verifyViyaVariables = (): string[] => {
+  const errors: string[] = []
+  const { RUN_TIMES, VIYA_URL, VIYA_USER, VIYA_PASSWORD } = process.env
+
+  const runTimes = RUN_TIMES?.split(',')
+
+  if (!runTimes?.includes(RunTimeType.SASVIYA)) return errors
+
+  if (!VIYA_URL) {
+    errors.push(`- VIYA_URL is required for ${RunTimeType.SASVIYA} run time`)
+  } else if (!isAbsoluteUrl(VIYA_URL)) {
+    errors.push(
+      `- VIYA_URL must be an absolute http(s) URL, received '${VIYA_URL}'`
+    )
+  }
+
+  if (!VIYA_USER) {
+    errors.push(`- VIYA_USER is required for ${RunTimeType.SASVIYA} run time`)
+  }
+
+  if (!VIYA_PASSWORD) {
+    errors.push(
+      `- VIYA_PASSWORD is required for ${RunTimeType.SASVIYA} run time`
+    )
   }
 
   return errors

@@ -51,6 +51,10 @@ export class SessionController {
 
     await createFile(headersPath, 'content-type: text/html; charset=utf-8')
 
+    // we do not want to leave sessions running forever
+    // we clean them up after a predefined period, if unused
+    this.scheduleSessionDestroy(session)
+
     this.sessions.push(session)
 
     return session
@@ -70,6 +74,60 @@ export class SessionController {
 
   public getSessionById(id: string) {
     return this.sessions.find((session) => session.id === id)
+  }
+
+  protected async deleteSession(session: Session) {
+    // remove the temporary files, to avoid buildup
+    await deleteFolder(session.path)
+
+    // remove the session from the session array
+    this.sessions = this.sessions.filter(
+      (sess: Session) => sess.id !== session.id
+    )
+  }
+
+  /**
+   * Removes the session once it is no longer needed, so a deployment does not
+   * accumulate session folders. A session still running when its death time
+   * arrives is given another 10 minutes; `expiresAfterMins`, when the caller
+   * set it, delays the destroy that many minutes past completion.
+   *
+   * Every runtime schedules this, not just the local SAS one - a triggered
+   * program on any runtime would otherwise leave its folder behind forever and
+   * `expiresAfterMins` would be silently ignored.
+   */
+  protected scheduleSessionDestroy(session: Session) {
+    setTimeout(
+      async () => {
+        if (session.state === SessionState.running) {
+          // adding 10 more minutes
+          const newDeathTimeStamp =
+            parseInt(session.deathTimeStamp) + 10 * 60 * 1000
+          session.deathTimeStamp = newDeathTimeStamp.toString()
+
+          this.scheduleSessionDestroy(session)
+        } else {
+          const { expiresAfterMins } = session
+
+          // delay session destroy if expiresAfterMins present
+          if (expiresAfterMins && session.state !== SessionState.completed) {
+            // calculate session death time using expiresAfterMins
+            const newDeathTimeStamp =
+              parseInt(session.deathTimeStamp) +
+              expiresAfterMins.mins * 60 * 1000
+            session.deathTimeStamp = newDeathTimeStamp.toString()
+
+            // set expiresAfterMins to true to avoid using it again
+            session.expiresAfterMins!.used = true
+
+            this.scheduleSessionDestroy(session)
+          } else {
+            await this.deleteSession(session)
+          }
+        }
+      },
+      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
+    )
   }
 }
 
@@ -189,50 +247,6 @@ ${autoExecContent}`
     } else {
       session.state = SessionState.pending
     }
-  }
-
-  private async deleteSession(session: Session) {
-    // remove the temporary files, to avoid buildup
-    await deleteFolder(session.path)
-
-    // remove the session from the session array
-    this.sessions = this.sessions.filter(
-      (sess: Session) => sess.id !== session.id
-    )
-  }
-
-  private scheduleSessionDestroy(session: Session) {
-    setTimeout(
-      async () => {
-        if (session.state === SessionState.running) {
-          // adding 10 more minutes
-          const newDeathTimeStamp =
-            parseInt(session.deathTimeStamp) + 10 * 60 * 1000
-          session.deathTimeStamp = newDeathTimeStamp.toString()
-
-          this.scheduleSessionDestroy(session)
-        } else {
-          const { expiresAfterMins } = session
-
-          // delay session destroy if expiresAfterMins present
-          if (expiresAfterMins && session.state !== SessionState.completed) {
-            // calculate session death time using expiresAfterMins
-            const newDeathTimeStamp =
-              parseInt(session.deathTimeStamp) +
-              expiresAfterMins.mins * 60 * 1000
-            session.deathTimeStamp = newDeathTimeStamp.toString()
-
-            // set expiresAfterMins to true to avoid using it again
-            session.expiresAfterMins!.used = true
-
-            this.scheduleSessionDestroy(session)
-          } else {
-            await this.deleteSession(session)
-          }
-        }
-      },
-      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
-    )
   }
 }
 
