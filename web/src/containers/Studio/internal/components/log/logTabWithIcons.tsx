@@ -1,4 +1,4 @@
-import { ErrorOutline, Warning } from '@mui/icons-material'
+import { ErrorOutlined, Warning } from '@mui/icons-material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import {
   LogObject,
@@ -19,7 +19,7 @@ const LogTabWithIcons = (props: LogTabProps) => {
     <div className={classes.TabContainer}>
       <span>log</span>
       {errors && errors.length !== 0 && (
-        <ErrorOutline color="error" className={classes.Icon} />
+        <ErrorOutlined color="error" className={classes.Icon} />
       )}
       {warnings && warnings.length !== 0 && (
         <Warning className={[classes.Icon, classes.GreenIcon].join(' ')} />

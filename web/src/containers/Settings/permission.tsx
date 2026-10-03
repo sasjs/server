@@ -33,8 +33,8 @@ const Permission = () => {
     />
   ) : (
     <Box className="permissions-page">
-      <Grid container direction="column" spacing={1}>
-        <BootstrapGridItem item xs={12}>
+      <Grid container spacing={1}>
+        <BootstrapGridItem size={{ xs: 12 }}>
           <Paper elevation={3} sx={{ display: 'flex' }}>
             <FilterPermissionsButton />
             {isAdmin && <AddPermissionButton />}
@@ -44,7 +44,7 @@ const Permission = () => {
           // An empty table says nothing about WHY it is empty, and the rules are
           // deny-by-default - so the state is explained rather than left to look
           // like a failure or an oversight.
-          <BootstrapGridItem item xs={12}>
+          <BootstrapGridItem size={{ xs: 12 }}>
             <Paper elevation={3} sx={{ padding: '20px' }}>
               <Typography variant="h6" sx={{ marginBottom: '10px' }}>
                 No permission rules
@@ -57,7 +57,7 @@ const Permission = () => {
             </Paper>
           </BootstrapGridItem>
         ) : (
-          <BootstrapGridItem item xs={12}>
+          <BootstrapGridItem size={{ xs: 12 }}>
             <PermissionTable
               permissions={filterApplied ? filteredPermissions : permissions}
               handleUpdatePermissionClick={handleUpdatePermissionClick}

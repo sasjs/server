@@ -4,24 +4,12 @@ import TreeItem from '@mui/lab/TreeItem'
 import { ChevronRight, ExpandMore } from '@mui/icons-material'
 import { Typography } from '@mui/material'
 import { ListItemText } from '@mui/material'
-import { makeStyles } from '@mui/styles'
 import Highlight from 'react-highlight'
 import { LogObject, defaultChunkSize } from '../../../../../utils'
 import { RunTimeType } from '../../../../../context/appContext'
 import { splitIntoChunks, LogInstance } from '../../../../../utils'
 import LogChunk from './logChunk'
 import classes from './log.module.css'
-
-export const logStyles: any = makeStyles((theme: any) => ({
-  expansionDescription: {
-    [theme.breakpoints.down('sm')]: {
-      fontSize: theme.typography.pxToRem(12)
-    },
-    [theme.breakpoints.up('md')]: {
-      fontSize: theme.typography.pxToRem(16)
-    }
-  }
-}))
 
 interface LogComponentProps {
   log: LogObject | string
@@ -40,8 +28,6 @@ const LogComponent = (props: LogComponentProps) => {
     logChunksState.length - 1
   )
   const maxOpenedChunks = 2
-
-  const styles = logStyles()
 
   const goToLogLine = (logInstance: LogInstance, ind: number) => {
     let chunkNumber = 0
@@ -217,7 +203,7 @@ const LogComponent = (props: LogComponentProps) => {
                 id={`log_container`}
                 variant="h5"
                 className={[
-                  styles.expansionDescription,
+                  classes.expansionDescription,
                   classes.LogContainer
                 ].join(' ')}
               >

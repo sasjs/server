@@ -58,13 +58,13 @@ const Profile = () => {
       .then((res: any) => {
         toast.success('User information updated', {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .catch((err) => {
         toast.error('Failed: ' + err.response?.data || err.text, {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .finally(() => {
@@ -83,13 +83,13 @@ const Profile = () => {
       .then((res: any) => {
         toast.success('Password updated', {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .catch((err) => {
         toast.error('Failed: ' + err.response?.data || err.text, {
           theme: 'dark',
-          position: toast.POSITION.BOTTOM_RIGHT
+          position: 'bottom-right'
         })
       })
       .finally(() => {
@@ -108,7 +108,7 @@ const Profile = () => {
         <Divider />
         <CardContent>
           <Grid container spacing={4}>
-            <Grid item md={6} xs={12}>
+            <Grid size={{ md: 6, xs: 12 }}>
               <TextField
                 fullWidth
                 error={user.displayName?.length === 0}
@@ -123,7 +123,7 @@ const Profile = () => {
               />
             </Grid>
 
-            <Grid item md={6} xs={12}>
+            <Grid size={{ md: 6, xs: 12 }}>
               <TextField
                 fullWidth
                 error={user.username?.length === 0}
@@ -138,7 +138,7 @@ const Profile = () => {
               />
             </Grid>
 
-            <Grid item lg={6} md={8} sm={12} xs={12}>
+            <Grid size={{ lg: 6, md: 8, sm: 12, xs: 12 }}>
               <TextField
                 fullWidth
                 label="autoExec"
@@ -151,7 +151,7 @@ const Profile = () => {
               />
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <FormGroup row>
                 <FormControlLabel
                   disabled
@@ -166,7 +166,7 @@ const Profile = () => {
               </FormGroup>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 variant="contained"
                 onClick={() => setIsPasswordModalOpen(true)}

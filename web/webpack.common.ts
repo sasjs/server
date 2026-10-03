@@ -1,12 +1,12 @@
 import path from 'path'
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin'
-import { Configuration } from 'webpack'
+import type { Configuration } from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import CopyPlugin from 'copy-webpack-plugin'
 import dotenv from 'dotenv-webpack'
 
 const config: Configuration = {
-  entry: path.join(__dirname, 'src', 'index.tsx'),
+  entry: path.join(import.meta.dirname, 'src', 'index.tsx'),
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx']
   },
@@ -63,7 +63,7 @@ const config: Configuration = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, 'src', 'index.html')
+      template: path.join(import.meta.dirname, 'src', 'index.html')
     }),
     new CopyPlugin({
       patterns: [{ from: 'public' }]

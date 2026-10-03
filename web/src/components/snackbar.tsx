@@ -49,7 +49,7 @@ const BootstrapSnackbar = ({
       open={open}
       autoHideDuration={3000}
       onClose={handleClose}
-      TransitionComponent={Transition}
+      slots={{ transition: Transition }}
     >
       <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
         {message}

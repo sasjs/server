@@ -48,6 +48,16 @@
   width: 100%;
 }
 
+.expansionDescription {
+  font-size: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .expansionDescription {
+    font-size: 1rem;
+  }
+}
+
 .LogWrapper {
   overflow-y: auto;
   max-height: calc(100vh - 130px);

@@ -27,15 +27,15 @@ interface PermissionsContextProps {
   filterApplied: boolean
   setFilterApplied: Dispatch<SetStateAction<boolean>>
   fetchPermissions: () => void
-  Dialog: () => JSX.Element
+  Dialog: () => React.JSX.Element
   setOpenModal: Dispatch<SetStateAction<boolean>>
   setModalTitle: Dispatch<SetStateAction<string>>
   setModalPayload: Dispatch<SetStateAction<string>>
-  Snackbar: () => JSX.Element
+  Snackbar: () => React.JSX.Element
   setOpenSnackbar: Dispatch<React.SetStateAction<boolean>>
   setSnackbarMessage: Dispatch<React.SetStateAction<string>>
   setSnackbarSeverity: Dispatch<React.SetStateAction<AlertSeverityType>>
-  PermissionResponseDialog: () => JSX.Element
+  PermissionResponseDialog: () => React.JSX.Element
   setOpenPermissionResponseModal: Dispatch<React.SetStateAction<boolean>>
   setPermissionResponsePayload: Dispatch<
     React.SetStateAction<PermissionResponsePayload>

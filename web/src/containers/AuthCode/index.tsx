@@ -52,7 +52,7 @@ const AuthCode = () => {
       <br />
       <h2>Authorization Code</h2>
       {displayCode && (
-        <Typography m={2} p={3} style={{ overflowWrap: 'anywhere' }}>
+        <Typography sx={{ m: 2, p: 3 }} style={{ overflowWrap: 'anywhere' }}>
           {displayCode}
         </Typography>
       )}
@@ -65,7 +65,7 @@ const AuthCode = () => {
         onCopy={() =>
           toast.info('Code copied to ClipBoard', {
             theme: 'dark',
-            position: toast.POSITION.BOTTOM_RIGHT
+            position: 'bottom-right'
           })
         }
       >

@@ -1,5 +1,5 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import AppContextProvider from './context/appContext'
@@ -18,11 +18,12 @@ axios.defaults = Object.assign(axios.defaults, {
   baseURL: baseUrl
 })
 
-ReactDOM.render(
+const container = document.getElementById('root') as HTMLElement
+
+createRoot(container).render(
   <React.StrictMode>
     <AppContextProvider>
       <App />
     </AppContextProvider>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 )
