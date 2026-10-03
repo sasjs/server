@@ -1,3 +1,23 @@
+## 1.20.0
+
+### Bug Fixes
+
+* schedule session destruction for every runtime ([5aff50e](https://github.com/sasjs/server/commit/5aff50e441ba6c214be99c7495926b9862d215bd))
+
+
+### Features
+
+* add the sasviya runtime ([6d82bc3](https://github.com/sasjs/server/commit/6d82bc3a591858bdaed620767196359582aaecbf))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.19.0
 
 ### Features
