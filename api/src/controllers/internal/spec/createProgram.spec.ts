@@ -137,6 +137,11 @@ describe('generated stored-program source', () => {
       expect(program).toContain(
         "%let userparam=%nrstr(x  proc sql  quit  %%put %'a & b%' o%'brien);"
       )
+
+      // The process-mode marker is set under both names, so core releases
+      // either side of the _SASJS_ rename detect a SASjs server.
+      expect(program).toContain('%let _sasjs_processmode=Stored Program;')
+      expect(program).toContain('%let sasjsprocessmode=Stored Program;')
     })
   })
 

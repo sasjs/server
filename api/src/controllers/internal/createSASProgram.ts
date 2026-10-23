@@ -40,11 +40,14 @@ export const createSASProgram = async (
 /* the below is here for compatibility and will be removed in a future release */
 %let sasjs_stpsrv_header_loc=&_sasjs_webout_headers;
 
+/* both names carry the same value - core releases either side of the _SASJS_
+   rename read one of them, so a server upgrade cannot break either */
 %let sasjsprocessmode=Stored Program;
+%let _sasjs_processmode=Stored Program;
 
 %global SYSPROCESSMODE SYSTCPIPHOSTNAME SYSHOSTINFOLONG;
 %macro _sasjs_server_init();
-%if "&SYSPROCESSMODE"="" %then %let SYSPROCESSMODE=&sasjsprocessmode;
+%if "&SYSPROCESSMODE"="" %then %let SYSPROCESSMODE=&_sasjs_processmode;
 %if "&SYSTCPIPHOSTNAME"="" %then %let SYSTCPIPHOSTNAME=&_sasjs_apiserverurl;
 %mend;
 %_sasjs_server_init()
