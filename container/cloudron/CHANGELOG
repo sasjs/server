@@ -1,3 +1,19 @@
+## 1.21.2
+
+### Bug Fixes
+
+* **programs:** set _SASJS_PROCESSMODE in the SAS pre-program ([bd12a4c](https://github.com/sasjs/server/commit/bd12a4c2f10e8ff8ef234f15c578538575a6b892)), closes [sasjs/core#472](https://github.com/sasjs/core/issues/472)
+* **programs:** set the process-mode marker in the Viya pre-program too ([04a60eb](https://github.com/sasjs/server/commit/04a60eb2599aa729c4d38feedfcd4a05d3121e62))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.21.1
 
 ### Bug Fixes
