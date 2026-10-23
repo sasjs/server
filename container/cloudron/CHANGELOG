@@ -1,3 +1,18 @@
+## 1.21.1
+
+### Bug Fixes
+
+* **deps:** lint 4.3.0, clear the api audit, and refresh the container base ([66fba95](https://github.com/sasjs/server/commit/66fba95dab4307fd377845066fc577c21153002b))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.21.0
 
 ### Bug Fixes
