@@ -38,7 +38,10 @@ export const createViyaSASProgram = async (
 %let _metaperson=&_sasjs_displayname;
 %let _metauser=&_sasjs_username;
 
+/* both names carry the same value - core releases either side of the _SASJS_
+   rename read one of them, so a server upgrade cannot break either */
 %let sasjsprocessmode=Stored Program;
+%let _sasjs_processmode=Stored Program;
 `
 
   // NOTE: uploaded files are not relayed to Viya in this release - the upload

@@ -6,7 +6,8 @@ import {
   createJSProgram,
   createPythonProgram,
   createRProgram,
-  createSASProgram
+  createSASProgram,
+  createViyaSASProgram
 } from '..'
 /**
  * The generated stored-program source is assembled by string concatenation, so
@@ -140,6 +141,19 @@ describe('generated stored-program source', () => {
 
       // The process-mode marker is set under both names, so core releases
       // either side of the _SASJS_ rename detect a SASjs server.
+      expect(program).toContain('%let _sasjs_processmode=Stored Program;')
+      expect(program).toContain('%let sasjsprocessmode=Stored Program;')
+    })
+  })
+
+  describe('Viya SAS', () => {
+    it('sets the process-mode marker under both names', async () => {
+      const program = await createViyaSASProgram(
+        '/* stored program */',
+        preProgramVariables,
+        { userparam: 'simple' }
+      )
+
       expect(program).toContain('%let _sasjs_processmode=Stored Program;')
       expect(program).toContain('%let sasjsprocessmode=Stored Program;')
     })
