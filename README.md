@@ -179,6 +179,12 @@ HTTPS_BIND_ADDRESS=
 # PROTOCOL and PORT are deprecated: for one release they are translated into the
 # matching port variable with a warning, and removed after that.
 
+# Optional. The URL stored programs use to call back into this server, when the
+# derived value is wrong for the topology - a program that runs on another host
+# cannot reach 127.0.0.1. Set it with a scheme and no trailing slash:
+# API_SERVER_URL=https://sasjs.internal.example.com
+API_SERVER_URL=
+
 # options: [sas9|sasviya]
 # If not present, mocking function is disabled
 MOCK_SERVERTYPE=

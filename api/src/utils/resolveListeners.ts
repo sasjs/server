@@ -82,6 +82,7 @@ const translateLegacy = (
   env: NodeJS.ProcessEnv
 ): {
   httpPort?: string
+  httpName?: string
   httpsPort?: string
   warnings: string[]
   errors: string[]
@@ -121,7 +122,7 @@ const translateLegacy = (
     // PORT on its own meant plain HTTP before the split (PROTOCOL defaulted to
     // http), so it keeps meaning that rather than refusing to start
     warnings.push(`- PORT is deprecated, set HTTP_PORT=${legacyPort} instead`)
-    return { httpPort: legacyPort, warnings, errors }
+    return { httpPort: legacyPort, httpName: 'PORT', warnings, errors }
   }
 
   if (protocol === 'https') {
@@ -135,7 +136,7 @@ const translateLegacy = (
     warnings.push(
       `- PROTOCOL and PORT are deprecated, set HTTP_PORT=${legacyPort} instead`
     )
-    return { httpPort: legacyPort, warnings, errors }
+    return { httpPort: legacyPort, httpName: 'PORT', warnings, errors }
   }
 
   errors.push(
@@ -144,8 +145,30 @@ const translateLegacy = (
   return { warnings, errors }
 }
 
+/** The variables the resolution depends on. */
+const SOURCE_VARIABLES = [
+  'HTTP_PORT',
+  'HTTPS_PORT',
+  'HTTP_BIND_ADDRESS',
+  'HTTP_ALLOW_REMOTE',
+  'HTTPS_BIND_ADDRESS',
+  'CERT_CHAIN',
+  'PRIVATE_KEY',
+  'PROTOCOL',
+  'PORT'
+]
+
+let memo: { key: string; result: ListenerResolution } | undefined
+
 /**
  * Resolves and validates the listener configuration.
+ *
+ * The configuration is fixed at startup, and this is called from several places
+ * per request (the info endpoint, the AppStream log line, the callback URL), so
+ * the result is memoised on the values it was derived from: the same environment
+ * returns the same object instead of re-parsing and re-validating on every call,
+ * and a changed environment - which is how the specs switch cases - resolves
+ * again.
  *
  * @param env - the environment to read, `process.env` by default.
  * @returns the configuration, or the reasons it could not be built.
@@ -153,11 +176,27 @@ const translateLegacy = (
 export const resolveListeners = (
   env: NodeJS.ProcessEnv = process.env
 ): ListenerResolution => {
+  const key = SOURCE_VARIABLES.map((name) => `${name}=${env[name] ?? ''}`).join(
+    '|'
+  )
+
+  if (memo?.key === key) return memo.result
+
+  const result = computeListeners(env)
+
+  memo = { key, result }
+
+  return result
+}
+
+const computeListeners = (env: NodeJS.ProcessEnv): ListenerResolution => {
   const errors: string[] = []
   const legacy = translateLegacy(env)
   errors.push(...legacy.errors)
 
-  const http = parsePort('HTTP_PORT', legacy.httpPort)
+  // the legacy shim's value is named in the error by the variable the operator
+  // actually set, not by the one it was translated into
+  const http = parsePort(legacy.httpName ?? 'HTTP_PORT', legacy.httpPort)
   const https = parsePort('HTTPS_PORT', legacy.httpsPort)
 
   if ('error' in http) errors.push(http.error)

@@ -212,6 +212,15 @@ describe('resolveListeners', () => {
       expect(warnings).toEqual([])
     })
 
+    it('should name PORT, not HTTP_PORT, when the legacy value is not a port', () => {
+      const { errors } = resolve({ PORT: 'abc' })
+
+      // the operator set PORT; naming the variable it was translated into sends
+      // them looking for a value they never wrote
+      expect(errors.join('\n')).toContain("PORT 'abc'")
+      expect(errors.join('\n')).not.toContain("HTTP_PORT 'abc'")
+    })
+
     it('should read PORT without PROTOCOL as plain HTTP, as it always did', () => {
       const { config, warnings, errors } = resolve({ PORT: '5000' })
 

@@ -116,6 +116,8 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyLISTENERS())
 
+  errors.push(...verifyApiServerUrl())
+
   errors.push(...verifyTrustProxy())
 
   errors.push(...verifyLoginThrottle())
@@ -229,6 +231,26 @@ const verifyMODE = (): string[] => {
  * TLS material HTTPS_PORT implies, and the bind policy for plain HTTP.
  */
 const verifyLISTENERS = (): string[] => resolveListeners(process.env).errors
+
+/**
+ * `API_SERVER_URL` is written into generated programs verbatim, so a missing
+ * scheme or a trailing slash reaches the SAS session as a broken URL. Refusing
+ * at startup names it while someone is still looking at the configuration.
+ */
+const verifyApiServerUrl = (): string[] => {
+  const { API_SERVER_URL } = process.env
+
+  if (!API_SERVER_URL) return []
+
+  const errors: string[] = []
+
+  if (!/^https?:\/\/[^/\s]+$/i.test(API_SERVER_URL.trim()))
+    errors.push(
+      `- API_SERVER_URL '${API_SERVER_URL}'\n - should be an http(s) URL with a host and no trailing slash`
+    )
+
+  return errors
+}
 
 const verifyCORS = (): string[] => {
   const errors: string[] = []
