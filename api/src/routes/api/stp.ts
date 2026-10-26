@@ -1,6 +1,7 @@
 import express from 'express'
 import {
   executeProgramRawValidation,
+  parseDebugValue,
   triggerProgramValidation
 } from '../../utils'
 import { STPController } from '../../controllers/'
@@ -19,7 +20,7 @@ stpRouter.get('/execute', async (req, res) => {
     const response = await controller.executeGetRequest(
       req,
       query._program,
-      query._debug
+      parseDebugValue(query._debug)
     )
 
     if (response instanceof Buffer) {
@@ -81,7 +82,7 @@ stpRouter.post('/trigger', async (req, res) => {
     const response = await controller.triggerProgram(
       req,
       query._program,
-      query._debug,
+      parseDebugValue(query._debug),
       query.expiresAfterMins
     )
 

@@ -22,12 +22,14 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
+    // Only the query is judged here: multer has not run, so req.body is empty and
+    // a body validation would fail every request with "_program is required" -
+    // which is also what it reported when the query was the part that failed.
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
-    const { error: errB, value: body } = executeProgramRawValidation(req.body)
 
-    if (errQ && errB) return res.status(400).send(errB.details[0].message)
+    if (errQ) return res.status(400).send(errQ.details[0].message)
 
-    const programPath = (query?._program ?? body?._program) as string
+    const programPath = query?._program as string
 
     let runTime
 

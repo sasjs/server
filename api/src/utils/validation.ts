@@ -208,10 +208,15 @@ export const triggerCodeValidation = (data: any): Joi.ValidationResult =>
     expiresAfterMins: Joi.number().greater(0)
   }).validate(data)
 
+// `_debug` follows the SAS Application Broker convention, where a keyword works
+// as well as the number (128 = LOG there, 131 in SASjs); parseDebugValue turns
+// any name into the value the macros test with `%if &_debug ge 131`
+const debugValue = Joi.alternatives().try(Joi.number(), Joi.string())
+
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required(),
-    _debug: Joi.number()
+    _debug: debugValue
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)
@@ -219,7 +224,7 @@ export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
 export const triggerProgramValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required(),
-    _debug: Joi.number(),
+    _debug: debugValue,
     expiresAfterMins: Joi.number().greater(0)
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))

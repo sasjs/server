@@ -8,7 +8,8 @@ import {
 import {
   getPreProgramVariables,
   makeFilesNamesMap,
-  getRunTimeAndFilePath
+  getRunTimeAndFilePath,
+  parseDebugValue
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 
@@ -74,12 +75,12 @@ export class STPController {
     @Query() _program: string,
     @Query() _debug?: number
   ): Promise<string | Buffer> {
-    let vars = request.query as ExecutionVars
-    if (_debug) {
-      vars = {
-        ...vars,
-        _debug
-      }
+    // normalised where the variables are built: every reader of ExecutionVars -
+    // isDebugOn included - then sees the same number, rather than each route
+    // remembering to convert
+    const vars: ExecutionVars = {
+      ...request.query,
+      _debug: parseDebugValue(_debug ?? request.query._debug)
     }
 
     return execute(request, _program, vars)
@@ -104,7 +105,11 @@ export class STPController {
     @Query() _program?: string
   ): Promise<string | Buffer> {
     const program = _program ?? body?._program
-    const vars = { ...request.query, ...request.body }
+    const vars: ExecutionVars = {
+      ...request.query,
+      ...request.body,
+      _debug: parseDebugValue(request.query._debug ?? request.body?._debug)
+    }
     const filesNamesMap = request.files?.length
       ? makeFilesNamesMap(request.files as MulterFile[])
       : null
