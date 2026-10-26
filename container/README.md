@@ -97,6 +97,22 @@ boundary: anyone who can write to the Drive can run code in this container.
 Grant Drive write access only to trusted authors, and keep the instance
 behind an authentication wall.
 
+## The base image
+
+The image is built from `cloudron/node-base`, pinned by tag and digest so a
+build is reproducible - which also means the OS packages it carries only move
+when the pin moves. Cloudron republishes that base monthly with the security
+updates of the day, and every day between adds CVEs to the snapshot the image
+was built from; those are what `Container CI` reports through its Trivy OS gate.
+
+`.github/workflows/base-image-check.yml` runs weekly, resolves the newest
+`24-YYYYMMDD` tag for the node major in the pin, and opens **one** pull request
+when the Dockerfile is behind. Later runs update that same pull request rather
+than opening another (one fixed head branch, plus a stand-down when somebody
+else already has a bump open), and it closes its own pull request when the pin
+is already current. Only the date moves: a node major change stays a human
+decision.
+
 ## Cloudron
 
 On [Cloudron](https://cloudron.io) you do not run the image directly: the app
