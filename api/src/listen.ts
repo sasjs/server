@@ -122,7 +122,9 @@ export const listen = async (
       listening.push(`http on ${config.httpBindAddress}:${config.httpPort}`)
     }
   } catch (error) {
-    close()
+    // await: the listener that did bind holds a socket, and the caller exits on
+    // the rejection, so an unawaited close would race the process teardown
+    await close()
     throw error
   }
 

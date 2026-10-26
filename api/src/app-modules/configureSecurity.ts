@@ -22,7 +22,7 @@ const stripUpgradeDirective = (
   const original = res.setHeader.bind(res)
 
   const strip = (value: string): string =>
-    value.replace(/;?\s*upgrade-insecure-requests\b/g, '')
+    value.replace(/;?\s*upgrade-insecure-requests\b;?/g, '')
 
   res.setHeader = ((name: string, value: number | string | string[]) => {
     if (String(name).toLowerCase() === 'content-security-policy')

@@ -17,11 +17,6 @@ export enum AuthProviderType {
   OIDC = 'oidc'
 }
 
-export enum ProtocolType {
-  HTTP = 'http',
-  HTTPS = 'https'
-}
-
 export enum CorsType {
   ENABLED = 'enable',
   DISABLED = 'disable'

@@ -100,6 +100,13 @@ if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" && -n "${PROTOCOL:-}" ]]; then
     # an upgraded container kept serving TLS there and a non-root user can bind it
     https) export HTTPS_PORT="${PORT:-5000}" ;;
     http) export HTTP_PORT="${PORT:-5000}" ;;
+    *)
+      # a typo used to fall through to the plain HTTP default below, publishing
+      # an unencrypted listener where the previous image refused to start
+      echo "ERROR: PROTOCOL='${PROTOCOL}' is not a transport." >&2
+      echo "       Use 'http' or 'https', or set HTTP_PORT / HTTPS_PORT directly." >&2
+      exit 1
+      ;;
   esac
 fi
 
