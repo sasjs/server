@@ -11,6 +11,8 @@ module.exports = {
   //   }
   // },
   collectCoverageFrom: ['src/**/{!(index),}.ts'],
+  // the suite declares the listener it assumes, see src/setupEnv.ts
+  setupFiles: ['<rootDir>/src/setupEnv.ts'],
   testPathIgnorePatterns: [
     '/node_modules/',
     '<rootDir>/build/',

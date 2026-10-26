@@ -11,6 +11,7 @@ const preProgramVariables: PreProgramVars = {
   userId: '1',
   displayName: 'Test User',
   serverUrl: 'http://localhost:5000',
+  localServerUrl: 'http://127.0.0.1:5000',
   httpHeaders: []
 }
 

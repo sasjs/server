@@ -1,5 +1,7 @@
 import os from 'os'
 
+import { resolveListeners } from './resolveListeners'
+
 export enum MOCK_SERVERTYPEType {
   SAS9 = 'sas9',
   SASVIYA = 'sasviya'
@@ -13,11 +15,6 @@ export enum ModeType {
 export enum AuthProviderType {
   LDAP = 'ldap',
   OIDC = 'oidc'
-}
-
-export enum ProtocolType {
-  HTTP = 'http',
-  HTTPS = 'https'
 }
 
 export enum CorsType {
@@ -117,9 +114,10 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyMODE())
 
-  errors.push(...verifyPROTOCOL())
+  errors.push(...verifyLISTENERS())
 
-  errors.push(...verifyPORT())
+  errors.push(...verifyApiServerUrl())
+
   errors.push(...verifyTrustProxy())
 
   errors.push(...verifyLoginThrottle())
@@ -227,31 +225,29 @@ const verifyMODE = (): string[] => {
   return errors
 }
 
-const verifyPROTOCOL = (): string[] => {
+/**
+ * The listener configuration is validated by the resolver that builds it, so the
+ * rules live in one place: two ports, either of which enables a listener, the
+ * TLS material HTTPS_PORT implies, and the bind policy for plain HTTP.
+ */
+const verifyLISTENERS = (): string[] => resolveListeners(process.env).errors
+
+/**
+ * `API_SERVER_URL` is written into generated programs verbatim, so a missing
+ * scheme or a trailing slash reaches the SAS session as a broken URL. Refusing
+ * at startup names it while someone is still looking at the configuration.
+ */
+const verifyApiServerUrl = (): string[] => {
+  const { API_SERVER_URL } = process.env
+
+  if (!API_SERVER_URL) return []
+
   const errors: string[] = []
-  const { PROTOCOL } = process.env
 
-  if (PROTOCOL) {
-    const protocolTypes = Object.values(ProtocolType)
-    if (!protocolTypes.includes(PROTOCOL as ProtocolType))
-      errors.push(`- PROTOCOL '${PROTOCOL}'\n - valid options ${protocolTypes}`)
-  } else {
-    process.env.PROTOCOL = DEFAULTS.PROTOCOL
-  }
-
-  if (process.env.PROTOCOL === ProtocolType.HTTPS) {
-    const { PRIVATE_KEY, CERT_CHAIN } = process.env
-
-    if (!PRIVATE_KEY)
-      errors.push(
-        `- PRIVATE_KEY is required for PROTOCOL '${ProtocolType.HTTPS}'`
-      )
-
-    if (!CERT_CHAIN)
-      errors.push(
-        `- CERT_CHAIN is required for PROTOCOL '${ProtocolType.HTTPS}'`
-      )
-  }
+  if (!/^https?:\/\/[^/\s]+$/i.test(API_SERVER_URL.trim()))
+    errors.push(
+      `- API_SERVER_URL '${API_SERVER_URL}'\n - should be an http(s) URL with a host and no trailing slash`
+    )
 
   return errors
 }
@@ -292,19 +288,10 @@ const verifyCORS = (): string[] => {
   return errors
 }
 
-const verifyPORT = (): string[] => {
-  const errors: string[] = []
-  const { PORT } = process.env
-
-  if (PORT) {
-    if (Number.isNaN(parseInt(PORT)))
-      errors.push(`- PORT '${PORT}'\n - should be a valid number`)
-  } else {
-    process.env.PORT = DEFAULTS.PORT
-  }
-  return errors
-}
-
+/**
+ * PORT is read only by the deprecation shim in resolveListeners, which validates
+ * the value it translates - so there is no separate check here.
+ */
 const verifyHELMET_COEP = (): string[] => {
   const errors: string[] = []
   const { HELMET_COEP } = process.env
@@ -831,8 +818,6 @@ const isBoolean = (val: string): boolean => ['true', 'false'].includes(val)
 
 const DEFAULTS = {
   MODE: ModeType.Desktop,
-  PROTOCOL: ProtocolType.HTTP,
-  PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
   RUN_TIMES: RunTimeType.SAS,

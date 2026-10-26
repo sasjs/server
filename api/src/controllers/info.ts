@@ -6,7 +6,8 @@ import {
   getAuthProviders,
   getGrantedRoutes,
   isLocalLoginEnabled,
-  ModeType
+  ModeType,
+  resolveListeners
 } from '../utils'
 export interface AuthorizedRoutesResponse {
   paths: string[]
@@ -15,7 +16,14 @@ export interface AuthorizedRoutesResponse {
 export interface InfoResponse {
   mode: string
   cors: string
-  protocol: string
+  /**
+   * Port the plain HTTP listener serves on, or null when it is disabled.
+   */
+  httpPort: number | null
+  /**
+   * Port the TLS listener serves on, or null when it is disabled.
+   */
+  httpsPort: number | null
   runTimes: string[]
   /**
    * Which external authentication providers are configured. Public, because
@@ -41,7 +49,7 @@ export interface InfoResponse {
 export class InfoController {
   /**
    * Returns public information about this server instance: the mode it runs in
-   * (`server` or `desktop`), its CORS setting, the protocol it serves, the
+   * (`server` or `desktop`), its CORS setting, the ports its listeners serve on, the
    * available runtimes, the configured external authentication providers, and
    * whether password sign-in for local accounts is enabled.
    *
@@ -53,7 +61,8 @@ export class InfoController {
   @Example<InfoResponse>({
     mode: 'desktop',
     cors: 'enable',
-    protocol: 'http',
+    httpPort: 5000,
+    httpsPort: 443,
     runTimes: ['sas', 'js'],
     authProviders: [],
     oidcProviderName: 'OpenID Connect',
@@ -62,13 +71,15 @@ export class InfoController {
   @Get('/')
   public info(): InfoResponse {
     const authProviders = getAuthProviders()
+    const listeners = resolveListeners(process.env)
 
     const response: InfoResponse = {
       mode: process.env.MODE ?? 'desktop',
       cors:
         process.env.CORS ||
         (process.env.MODE === 'server' ? 'disable' : 'enable'),
-      protocol: process.env.PROTOCOL ?? 'http',
+      httpPort: listeners.config?.httpPort || null,
+      httpsPort: listeners.config?.httpsPort || null,
       runTimes: process.runTimes,
       authProviders,
       localLoginEnabled: isLocalLoginEnabled()

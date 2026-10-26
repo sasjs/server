@@ -65,8 +65,7 @@ echo
 echo "--- boot in SERVER mode (AUTH_PROVIDERS empty: local accounts only)"
 mkdir -p "$T/root"
 MODE=server \
-  PORT="$PORT" \
-  PROTOCOL=http \
+  HTTP_PORT="$PORT" \
   DB_CONNECT="$MONGO_URL" \
   DB_TYPE=mongodb \
   AUTH_PROVIDERS= \

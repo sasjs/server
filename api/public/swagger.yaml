@@ -521,8 +521,16 @@ components:
                     type: string
                 cors:
                     type: string
-                protocol:
-                    type: string
+                httpPort:
+                    type: number
+                    format: double
+                    nullable: true
+                    description: 'Port the plain HTTP listener serves on, or null when it is disabled.'
+                httpsPort:
+                    type: number
+                    format: double
+                    nullable: true
+                    description: 'Port the TLS listener serves on, or null when it is disabled.'
                 runTimes:
                     items:
                         type: string
@@ -541,7 +549,8 @@ components:
             required:
                 - mode
                 - cors
-                - protocol
+                - httpPort
+                - httpsPort
                 - runTimes
                 - authProviders
                 - localLoginEnabled
@@ -1842,8 +1851,8 @@ paths:
                                 $ref: '#/components/schemas/InfoResponse'
                             examples:
                                 'Example 1':
-                                    value: {mode: desktop, cors: enable, protocol: http, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true}
-            description: "Returns public information about this server instance: the mode it runs in\n(`server` or `desktop`), its CORS setting, the protocol it serves, the\navailable runtimes, the configured external authentication providers, and\nwhether password sign-in for local accounts is enabled.\n\nThis endpoint requires no authentication: the login screen reads it to\ndecide which sign-in methods to offer."
+                                    value: {mode: desktop, cors: enable, httpPort: 5000, httpsPort: 443, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true}
+            description: "Returns public information about this server instance: the mode it runs in\n(`server` or `desktop`), its CORS setting, the ports its listeners serve on, the\navailable runtimes, the configured external authentication providers, and\nwhether password sign-in for local accounts is enabled.\n\nThis endpoint requires no authentication: the login screen reads it to\ndecide which sign-in methods to offer."
             summary: 'Get public server information'
             tags:
                 - Info

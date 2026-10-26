@@ -86,8 +86,7 @@ CLIENT_SECRET="test-secret"
 REDIRECT_URI="${APP_ORIGIN}/SASLogon/openid/callback"
 
 export MODE=server
-export PORT=$APP_PORT
-export PROTOCOL=http
+export HTTP_PORT=$APP_PORT
 export DB_CONNECT="$MONGO_URL/sasjs_oidc_test"
 export DB_TYPE=mongodb
 export AUTH_PROVIDERS=oidc

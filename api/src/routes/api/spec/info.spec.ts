@@ -58,7 +58,10 @@ describe('Info', () => {
 
       expect(res.body.mode).toEqual('server')
       expect(res.body.cors).toEqual('disable')
-      expect(res.body.protocol).toEqual('http')
+      // the ports the listeners serve on; the suite declares HTTP_PORT, see
+      // src/setupEnv.ts
+      expect(res.body.httpPort).toEqual(5000)
+      expect(res.body.httpsPort).toBeNull()
     })
 
     it('should not disclose the CORS whitelist', async () => {

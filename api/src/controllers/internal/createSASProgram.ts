@@ -26,12 +26,16 @@ export const createSASProgram = async (
     ''
   )
 
+  // This template is for a program this server executes itself (SAS 9, js, py) -
+  // processProgram routes Viya to createViyaSASProgram - so the callback can be
+  // the local listener: the session is a child of this process and reaches
+  // loopback. The remote path uses serverUrl, the request's origin.
   const preProgramVarStatments = `
 %let _sasjs_tokenfile=${asSasMacroValue(tokenFile)};
 %let _sasjs_username=${asSasMacroValue(preProgramVariables?.username)};
 %let _sasjs_userid=${asSasMacroValue(preProgramVariables?.userId)};
 %let _sasjs_displayname=${asSasMacroValue(preProgramVariables?.displayName)};
-%let _sasjs_apiserverurl=${asSasMacroValue(preProgramVariables?.serverUrl)};
+%let _sasjs_apiserverurl=${asSasMacroValue(preProgramVariables?.localServerUrl ?? preProgramVariables?.serverUrl)};
 %let _sasjs_apipath=/SASjsApi/stp/execute;
 %let _sasjs_webout_headers=${asSasMacroValue(headersPath)};
 %let _metaperson=&_sasjs_displayname;

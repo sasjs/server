@@ -1,28 +1,43 @@
-import { createServer } from 'https'
-
+import { Express } from 'express'
 import appPromise from './app'
-import { getCertificates } from './utils'
+import { listen } from './listen'
+import { resolveListeners } from './utils'
 
-appPromise.then(async (app) => {
-  const protocol = process.env.PROTOCOL || 'http'
-  const sasJsPort = process.env.PORT || 5000
+appPromise.then(async (app: Express) => {
+  const { config, errors, warnings } = resolveListeners(process.env)
 
-  process.logger.info('PROTOCOL: ', protocol)
+  warnings.forEach((warning: string) =>
+    process.logger.warn(`[server] ${warning}`)
+  )
 
-  if (protocol !== 'https') {
-    app.listen(sasJsPort, () => {
-      process.logger.info(
-        `⚡️[server]: Server is running at http://localhost:${sasJsPort}`
-      )
-    })
-  } else {
-    const { key, cert, ca } = await getCertificates()
-
-    const httpsServer = createServer({ key, cert, ca }, app)
-    httpsServer.listen(sasJsPort, () => {
-      process.logger.info(
-        `⚡️[server]: Server is running at https://localhost:${sasJsPort}`
-      )
-    })
+  if (!config) {
+    errors.forEach((error: string) => process.logger.error(`[server] ${error}`))
+    process.logger.error(
+      '[server] refusing to start: no usable listener configuration'
+    )
+    process.exit(1)
   }
+
+  let listeners
+
+  try {
+    listeners = await listen(app, config)
+  } catch (error: any) {
+    process.logger.error(`[server] ${error?.message ?? error}`)
+    process.exit(1)
+  }
+
+  process.logger.info(`⚡️[server]: listening: ${listeners.description}`)
+
+  const stop = async (signal: string) => {
+    process.logger.info(`[server] ${signal} received, closing listeners`)
+
+    // waits for in-flight requests, with a ceiling of its own
+    await listeners.close()
+
+    process.exit(0)
+  }
+
+  process.on('SIGINT', () => stop('SIGINT'))
+  process.on('SIGTERM', () => stop('SIGTERM'))
 })

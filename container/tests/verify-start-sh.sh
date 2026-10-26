@@ -39,7 +39,8 @@ chmod +x "$T/bin/gosu"
 mkdir -p "$T/code/api/build/src"
 cat > "$T/code/api/build/src/server.js" <<'EOF'
 const vars = [
-  'MODE', 'PORT', 'PROTOCOL', 'CORS', 'DB_CONNECT', 'DB_TYPE', 'AUTH_PROVIDERS',
+  'MODE', 'HTTP_PORT', 'HTTPS_PORT', 'HTTP_BIND_ADDRESS', 'HTTP_ALLOW_REMOTE',
+  'CORS', 'DB_CONNECT', 'DB_TYPE', 'AUTH_PROVIDERS',
   'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET', 'OIDC_DISCOVERY_URL', 'OIDC_ISSUER_URL',
   'OIDC_PROVIDER_NAME', 'OIDC_SIGNING_ALG', 'OIDC_REDIRECT_URI',
   'OIDC_POST_LOGOUT_REDIRECT_URI', 'OIDC_SCOPE', 'OIDC_USERNAME_CLAIM',
@@ -97,7 +98,11 @@ OUT=$(env -i PATH=/usr/bin:/bin NODE_PATH="$NODE" PYTHON_PATH="$PY" "${ADDONS[@]
   bash "$T/start-under-test.sh")
 check "RUN_TIMES defaults to js,py"        "RUN_TIMES=js,py"                    "$OUT"
 check "MODE=server"                        "MODE=server"                        "$OUT"
-check "PROTOCOL=http (proxy does TLS)"     "PROTOCOL=http"                      "$OUT"
+check "HTTP_PORT=5000"                     "HTTP_PORT=5000"                     "$OUT"
+# the proxy terminates TLS, so the container's own listener is plain HTTP and
+# binds every interface with the opt-in recorded
+check "plain HTTP binds every interface"   "HTTP_BIND_ADDRESS=0.0.0.0"          "$OUT"
+check "wide bind is opted in"              "HTTP_ALLOW_REMOTE=true"             "$OUT"
 check "MongoDB URL mapped to DB_CONNECT"   "DB_CONNECT=mongodb://sasjs"         "$OUT"
 check "AUTH_PROVIDERS defaults to oidc"    "AUTH_PROVIDERS=oidc"                 "$OUT"
 check "OIDC client id mapped"              "OIDC_CLIENT_ID=sasjs-client-id"     "$OUT"

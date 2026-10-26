@@ -33,7 +33,7 @@ matter most in a container:
 | `RUN_AS` | unset | The account the server must run as. Unset, root is refused; set to a username, the server must be running as that account or it refuses to start. `RUN_AS=root` is the deliberate override. The image drops to the non-root `cloudron` user by default, so this is only needed when running the entrypoint outside the published image |
 | `DB_CONNECT` / `DB_TYPE` | - | MongoDB connection string / `mongodb` |
 | `DATA_DIR` | `/usr/server/data` | The only writable path - mount it to persist state |
-| `PORT` / `PROTOCOL` | `5000` / `http` | Listen settings; terminate TLS in front of the container |
+| `HTTP_PORT` | `5000` | Plain HTTP listener. The image sets `HTTP_BIND_ADDRESS=0.0.0.0` and `HTTP_ALLOW_REMOTE=true` because the platform terminates TLS in front of it. Set `HTTPS_PORT` (with `CERT_CHAIN` and `PRIVATE_KEY`) to serve TLS from the container instead. `PORT` and `PROTOCOL` are deprecated and translated for one release |
 | `TRUST_PROXY` | unset; `1` on Cloudron | How much of the `X-Forwarded-*` chain Express believes: `true`, `false`, a hop count, or a comma-separated list of IPs/CIDRs. The session cookie is only marked `Secure` when the proxy's protocol is believed, so a TLS-terminating deployment needs this |
 | `RUN_TIMES` | `js,py` | Comma-separated: `sas`, `js`, `py`, `r` |
 | `NODE_PATH` / `PYTHON_PATH` | in-image | Runtime executables |

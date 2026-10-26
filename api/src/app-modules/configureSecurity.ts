@@ -1,16 +1,80 @@
-import { Express } from 'express'
+import { Express, NextFunction, Request, Response } from 'express'
 import { getEnvCSPDirectives } from '../utils/parseHelmetConfig'
-import { HelmetCoepType, ProtocolType } from '../utils'
+import { HelmetCoepType, ListenerConfig, resolveListeners } from '../utils'
 import helmet from 'helmet'
 
+/**
+ * `upgrade-insecure-requests` tells the browser to rewrite http:// subresources
+ * as https://. It is right for a page served over TLS and wrong for one served
+ * over plain HTTP, where it breaks every subresource the page loads.
+ *
+ * The decision therefore belongs to the request, not to the process: one express
+ * app serves both listeners, so a process-wide switch would either break the
+ * plain listener or weaken the TLS one.
+ */
+const stripUpgradeDirective =
+  (config: ListenerConfig | null) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!arrivedOverPlainListener(req, config)) return next()
+
+    const original = res.setHeader.bind(res)
+
+    // split on ';' and re-join: a regex that swallows the separators joins the
+    // directives either side of the one being removed, and the browser then reads
+    // them as one directive
+    const strip = (value: string): string =>
+      value
+        .split(';')
+        .map((directive) => directive.trim())
+        .filter(
+          (directive) => directive && directive !== 'upgrade-insecure-requests'
+        )
+        .join('; ')
+
+    res.setHeader = ((name: string, value: number | string | string[]) => {
+      if (String(name).toLowerCase() === 'content-security-policy')
+        // helmet writes one string today; a list is handled element-wise so a
+        // future multi-header policy is not silently joined into one value
+        value = Array.isArray(value) ? value.map(strip) : strip(String(value))
+
+      return original(name, value)
+    }) as typeof res.setHeader
+
+    next()
+  }
+
+/**
+ * Which listener served this request, from the socket rather than from
+ * `req.secure`: `secure` is only true behind a proxy when TRUST_PROXY is set, and
+ * making CSP depend on that would strip the directive from a TLS deployment that
+ * simply has not configured it.
+ */
+const arrivedOverPlainListener = (
+  req: Request,
+  config: ListenerConfig | null
+): boolean => {
+  // nothing readable: fall back to the connection's own view
+  if (!config) return !req.secure
+
+  if (config.httpPort && req.socket.localPort === config.httpPort) return true
+
+  // with no TLS listener configured, whatever arrived here came over plain HTTP
+  return !config.httpsPort
+}
+
 export const configureSecurity = (app: Express) => {
-  const { PROTOCOL, HELMET_CSP_CONFIG_PATH, HELMET_COEP } = process.env
+  const { HELMET_CSP_CONFIG_PATH, HELMET_COEP } = process.env
+
+  // resolved once: the listener configuration is fixed at startup, and parsing it
+  // per request would allocate errors and warnings arrays on every call
+  const { config: listeners } = resolveListeners(process.env)
 
   const cspConfigJson: { [key: string]: string[] | null } = getEnvCSPDirectives(
     HELMET_CSP_CONFIG_PATH
   )
-  if (PROTOCOL === ProtocolType.HTTP)
-    cspConfigJson['upgrade-insecure-requests'] = null
+
+  // before helmet, so the write helmet makes passes through the wrapper
+  app.use(stripUpgradeDirective(listeners))
 
   app.use(
     helmet({

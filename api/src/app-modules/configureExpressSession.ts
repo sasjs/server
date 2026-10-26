@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 
-import { DatabaseType, ModeType, ProtocolType } from '../utils'
+import { DatabaseType, ModeType } from '../utils'
 
 export const configureExpressSession = (app: Express) => {
   const { MODE, DB_TYPE } = process.env
@@ -26,7 +26,7 @@ export const configureExpressSession = (app: Express) => {
       }
     }
 
-    const { PROTOCOL, ALLOWED_DOMAIN } = process.env
+    const { ALLOWED_DOMAIN } = process.env
     const cookieOptions: CookieOptions = {
       // 'auto' follows the connection's security, which respects
       // X-Forwarded-Proto once TRUST_PROXY is configured (see app.ts). A
