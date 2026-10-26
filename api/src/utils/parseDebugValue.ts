@@ -24,7 +24,10 @@ export const DEBUG_ON = 131
 export const parseDebugValue = (value: unknown): number | undefined => {
   if (value === undefined || value === null || value === '') return undefined
 
-  if (typeof value === 'number') return value
+  // NaN and Infinity are not levels; treat them as not asked for rather than
+  // letting a comparison against 131 decide
+  if (typeof value === 'number')
+    return Number.isFinite(value) ? value : undefined
 
   const text = String(value).trim()
 
