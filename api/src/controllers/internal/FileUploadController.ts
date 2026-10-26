@@ -22,14 +22,32 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
-    // Only the query is judged here: multer has not run, so req.body is empty and
-    // a body validation would fail every request with "_program is required" -
-    // which is also what it reported when the query was the part that failed.
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
 
-    if (errQ) return res.status(400).send(errQ.details[0].message)
+    // multer has not run yet, so a multipart body is empty here - but a JSON body
+    // was parsed before the router (app.ts installs express.json ahead of it), and
+    // `_program` in that body is a documented way to call this route.
+    //
+    // The value is checked, not cast: a JSON body can carry a number, an array or
+    // an object where a query string is always text, and any of those would reach
+    // getRunTimeAndFilePath as a path.
+    const rawBodyProgram = (req.body as { _program?: unknown } | undefined)
+      ?._program
+    const bodyProgram =
+      typeof rawBodyProgram === 'string' ? rawBodyProgram : undefined
 
-    const programPath = query?._program as string
+    // Only the missing-`_program` error is excused by the body carrying it: any
+    // other query failure - a malformed `_debug`, say - still refuses the request
+    if (errQ) {
+      const missingProgram = errQ.details.some((detail) =>
+        detail.path.includes('_program')
+      )
+
+      if (!missingProgram || !bodyProgram)
+        return res.status(400).send(errQ.details[0].message)
+    }
+
+    const programPath = (query?._program ?? bodyProgram) as string
 
     let runTime
 

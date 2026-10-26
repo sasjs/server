@@ -425,6 +425,58 @@ describe('stp', () => {
         })
       })
     })
+
+    describe('post with the program in the body', () => {
+      const testFilesFolder = `test-stp-post-${generateTimestamp()}`
+      const programPath = path.join(testFilesFolder, 'program')
+
+      beforeAll(async () => {
+        process.runTimes = [RunTimeType.JS]
+        await createFile(
+          path.join(filesFolder, `${programPath}.js`),
+          sampleJsProgram
+        )
+      })
+
+      beforeEach(() => {
+        jest.resetModules()
+        setupMocks()
+      })
+
+      afterEach(async () => {
+        jest.resetAllMocks()
+      })
+
+      it('should accept _program in a JSON body', async () => {
+        // swagger and executePostRequest both document this shape; the
+        // pre-upload middleware used to reject it because the query had no
+        // _program and multer had not run
+        await request(app)
+          .post('/SASjsApi/stp/execute')
+          .set('Content-Type', 'application/json')
+          .auth(accessToken, { type: 'bearer' })
+          .send({ _program: programPath })
+          .expect(200)
+      })
+
+      it('should refuse a JSON body whose _program is not a string', async () => {
+        await request(app)
+          .post('/SASjsApi/stp/execute')
+          .set('Content-Type', 'application/json')
+          .auth(accessToken, { type: 'bearer' })
+          .send({ _program: 42 })
+          .expect(400)
+      })
+
+      it('should refuse when neither the query nor the body carries _program', async () => {
+        await request(app)
+          .post('/SASjsApi/stp/execute')
+          .set('Content-Type', 'application/json')
+          .auth(accessToken, { type: 'bearer' })
+          .send({})
+          .expect(400)
+      })
+    })
   })
 })
 
