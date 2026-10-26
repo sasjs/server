@@ -45,7 +45,6 @@ jobs:
           # own checks run - a GITHUB_TOKEN push raises nothing, which left the
           # Trivy gate this PR relies on unexecuted
           token: ${{ steps.app-token.outputs.token }}
-        with:
           # The branch is rebuilt from the default branch on every run, and the
           # comparison reads the committed Dockerfile, so history is not needed
           # beyond the checkout - but a shallow clone cannot force-push cleanly.
