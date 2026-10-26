@@ -11,6 +11,13 @@ describe('parseDebugValue', () => {
     expect(parseDebugValue(' 132 ')).toEqual(132)
   })
 
+  it('should not read exponent or hex forms as numbers', () => {
+    // Number() would take these as 1000 and 16, which no macro compares against
+    expect(parseDebugValue('1e3')).toEqual(DEBUG_ON)
+    expect(parseDebugValue('0x10')).toEqual(DEBUG_ON)
+    expect(parseDebugValue('Infinity')).toEqual(DEBUG_ON)
+  })
+
   it('should translate a named level to the debug-on value', () => {
     // %mx_execute defaults to _debug=log; there is no per-level behaviour to
     // preserve, so a name means "return the session log"

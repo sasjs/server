@@ -30,7 +30,8 @@ export const parseDebugValue = (value: unknown): number | undefined => {
 
   if (!text) return undefined
 
-  const parsed = Number(text)
-
-  return Number.isFinite(parsed) ? parsed : DEBUG_ON
+  // an integer, which is the only numeric form the macros' `%if &_debug ge 131`
+  // test recognises: `1e3` and `0x10` are text, not levels, and Number() would
+  // read them as 1000 and 16
+  return /^[+-]?\d+$/.test(text) ? Number(text) : DEBUG_ON
 }
