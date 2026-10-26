@@ -96,7 +96,9 @@ fi
 # it into a plaintext listener that merely carries a different name.
 if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" && -n "${PROTOCOL:-}" ]]; then
   case "$(printf '%s' "${PROTOCOL}" | tr '[:upper:]' '[:lower:]')" in
-    https) export HTTPS_PORT="${PORT:-443}" ;;
+    # 5000, matching the Node shim: PORT defaulted to 5000 before the split, so
+    # an upgraded container kept serving TLS there and a non-root user can bind it
+    https) export HTTPS_PORT="${PORT:-5000}" ;;
     http) export HTTP_PORT="${PORT:-5000}" ;;
   esac
 fi

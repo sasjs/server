@@ -136,16 +136,25 @@ export const publishAppStream = async (
       addEntryToFile
     )
 
-    // the port the app is reachable on, from the listener configuration rather
-    // than a variable nothing sets any more
-    const { config } = resolveListeners(process.env)
-    const sasJsPort = config?.httpPort || config?.httpsPort
-    const scheme = config?.httpPort ? 'http' : 'https'
+    // the URL the app is reachable on, from the listener configuration rather
+    // than a variable nothing sets any more - scheme and port are read together
+    // so the pair always describes a listener that exists
+    const { config, errors } = resolveListeners(process.env)
 
-    process.logger.info(
-      'Serving Stream App: ',
-      `${scheme}://localhost:${sasJsPort ?? 5000}/AppStream/${streamServiceName}`
-    )
+    if (config) {
+      const port = config.httpPort || config.httpsPort
+      const scheme = config.httpPort ? 'http' : 'https'
+
+      process.logger.info(
+        'Serving Stream App: ',
+        `${scheme}://localhost:${port}/AppStream/${streamServiceName}`
+      )
+    } else {
+      process.logger.warn(
+        'Serving Stream App: ',
+        `${streamServiceName} - no listener is configured, so there is no URL to report: ${errors.join(' ')}`
+      )
+    }
     return { streamServiceName }
   }
   return {}
