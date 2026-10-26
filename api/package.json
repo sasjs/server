@@ -91,7 +91,7 @@
     "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/unzipper": "^0.10.11",
-    "@yao-pkg/pkg": "^6.22.0",
+    "@yao-pkg/pkg": "6.24.0",
     "adm-zip": "^0.6.1",
     "axios": "^1.20.0",
     "cpr": "^3.0.1",
