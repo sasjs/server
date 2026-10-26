@@ -13,14 +13,9 @@ jobs:
       matrix:
         node-version: [lts/*]
 
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
-      version: ${{ steps.tag.outputs.version }}
-
     steps:
       # This job never pushes to main: semantic-release creates the tag and the
-      # release through the API. The one push to main in this workflow is the
-      # container job's catalogue commit.
+      # release through the API.
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -124,15 +119,15 @@ jobs:
           fi
           bash .github/scripts/add-verify-section.sh "$TAG"
 
-      # Exported for the container job below (and visible in the run summary).
+      # Exported for the run summary below.
       - name: Export the release tag
         id: tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # Same remote-tag read as the checksums step above: the container job
-          # is skipped unless this produces a tag.
+          # Same remote-tag read as the checksums step above: the release notes
+          # step is skipped unless this produces a tag.
           git fetch --tags --force
           TAG=$(git tag --points-at HEAD | head -n1)
           if [ -z "$TAG" ]; then
@@ -143,190 +138,3 @@ jobs:
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-
-  # ---------------------------------------------------------------------
-  # Container image. Runs in the same workflow run that created the release,
-  # because an event created by GITHUB_TOKEN (the release semantic-release
-  # publishes) never triggers another workflow run - GitHub's recursion
-  # guard. A separate on: release workflow can never fire in this
-  # repository for the same reason.
-  # ---------------------------------------------------------------------
-  container:
-    name: Publish the container image
-    needs: release
-    runs-on: ubuntu-latest
-    if: >
-      needs.release.outputs.tag != ''
-    services:
-      # Cloudron's MongoDB addon is MongoDB 8, so verify against that.
-      mongo:
-        image: mongo:8.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 12
-    steps:
-      # This job commits the updated Cloudron catalogue back to main - the one
-      # push to main left in this workflow, and the one branch protection gates.
-      # The GITHUB_TOKEN identity (github-actions[bot]) cannot be added to a
-      # bypass list; a GitHub App can, so push as the sasjs-dev App (same
-      # pattern as sasjs/utils and sasjs/lint).
-      - name: Generate token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
-      - uses: actions/checkout@v4
-        with:
-          # The tag semantic-release created on this commit.
-          ref: ${{ needs.release.outputs.tag }}
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-          persist-credentials: true
-
-      - name: Sync the Cloudron manifest version with the release
-        run: |
-          set -eu
-          TAG="${{ needs.release.outputs.tag }}"
-          VERSION="${TAG#v}"
-          python3 - "$VERSION" <<'PY'
-          import json, sys
-          path = "container/cloudron/CloudronManifest.json"
-          m = json.load(open(path))
-          m["version"] = sys.argv[1]
-          m["upstreamVersion"] = sys.argv[1]
-          json.dump(m, open(path, "w"), indent=2)
-          PY
-          echo "manifest version -> ${VERSION}"
-
-      # The catalogue embeds this changelog as the release notes an operator
-      # reads in the dashboard, and update-versions.py refuses to record a
-      # version that has no section in it. The version is only known here, so
-      # the section is generated from the release semantic-release has just
-      # published rather than written by hand in advance.
-      - name: Put the release notes in the Cloudron changelog
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.release.outputs.tag }}
-        run: |
-          set -eu
-          gh release view "$TAG" --json body --jq .body > /tmp/release-notes.md
-          python3 container/cloudron/scripts/update-versions.py --notes /tmp/release-notes.md
-
-      - name: entrypoint behaviour tests
-        run: container/tests/verify-start-sh.sh
-
-      - name: manifest rule tests
-        run: container/tests/verify-manifest.sh
-
-      - name: CloudronVersions.json is publishable and in sync
-        run: python3 container/cloudron/scripts/update-versions.py --check
-
-      - uses: docker/setup-buildx-action@v4
-
-      - name: Build the image (not pushed yet)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: container/Dockerfile
-          load: true
-          tags: sasjs-server:release
-          secrets: github_token=${{ secrets.GITHUB_TOKEN }}
-          cache-from: type=gha
-
-      # Gate: never publish an image that has not been run.
-      - name: Smoke test the image before publishing it
-        uses: ./.github/actions/container-smoke-test
-        with:
-          image: sasjs-server:release
-
-      - name: Log in to ghcr.io
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push the image
-        id: push
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: container/Dockerfile
-          push: true
-          # ghcr.io requires a lowercase repository path. Both tag forms are
-          # published: vX.Y.Z matches the git tag, X.Y.Z the plain semver.
-          tags: |
-            ${{ format('ghcr.io/{0}:{1}', github.repository, needs.release.outputs.tag) }}
-            ${{ format('ghcr.io/{0}:{1}', github.repository, needs.release.outputs.version) }}
-            ${{ format('ghcr.io/{0}:latest', github.repository) }}
-          secrets: github_token=${{ secrets.GITHUB_TOKEN }}
-          cache-from: type=gha
-
-      - name: Record the image in CloudronVersions.json
-        run: |
-          set -eu
-          IMAGE="${{ format('ghcr.io/{0}@{1}', github.repository, steps.push.outputs.digest) }}"
-          IMAGE=$(echo "$IMAGE" | tr 'A-Z' 'a-z')
-          python3 container/cloudron/scripts/update-versions.py --image "$IMAGE"
-          python3 container/cloudron/scripts/update-versions.py --check
-
-      - name: Commit the catalogue back to the default branch
-        env:
-          BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          set -eu
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-
-          # The generated files must survive the switch from the release tag
-          # to the default branch, so they are stashed outside the tree
-          # first. The changelog is generated too - the notes step above adds
-          # this release's section - and it is committed so the next release
-          # stacks onto it rather than onto a file that skips this version.
-          cp container/cloudron/CloudronVersions.json /tmp/CloudronVersions.json
-          cp container/cloudron/CloudronManifest.json /tmp/CloudronManifest.json
-          cp container/cloudron/CHANGELOG /tmp/CloudronCHANGELOG
-
-          git fetch origin "$BRANCH"
-          git checkout -- .
-          git checkout "$BRANCH"
-
-          cp /tmp/CloudronVersions.json container/cloudron/CloudronVersions.json
-          cp /tmp/CloudronManifest.json container/cloudron/CloudronManifest.json
-          cp /tmp/CloudronCHANGELOG container/cloudron/CHANGELOG
-          git add container/cloudron/CloudronVersions.json container/cloudron/CloudronManifest.json container/cloudron/CHANGELOG
-          # Check the INDEX, not the working tree. On a first release
-          # CloudronVersions.json is an untracked file, and `git diff` does
-          # not see untracked files.
-          if git diff --cached --quiet; then
-            echo "catalogue already records this image; nothing to commit"
-            exit 0
-          fi
-
-          # [skip ci] is load-bearing: this commit rewrites generated JSON that
-          # this job has already validated (update-versions.py --check, the
-          # manifest rules, the smoke test), and without the marker the push
-          # re-triggers three workflows on main - Executable Release (~180s),
-          # Container CI (~220s) and Build (~95s) - for a commit that changes
-          # no code. Measured on the v1.3.3 catalogue commit: 495s of runner
-          # time. The image is already published and verified at this point,
-          # so nothing downstream depends on those runs.
-          git commit -m "chore(release): record ${{ needs.release.outputs.tag }} in the container catalogue [skip ci]"
-          git push origin "$BRANCH"
-
-      - name: Summary
-        run: |
-          {
-            echo "### Container image released"
-            echo
-            echo "Image: \`ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}\`"
-            echo
-            echo "The Cloudron catalogue records this digest, so a dashboard"
-            echo "pointed at it will offer this version."
-          } >> "$GITHUB_STEP_SUMMARY"

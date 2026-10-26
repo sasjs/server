@@ -9,8 +9,8 @@
  * a lockout is resolved by a word to an admin rather than a support
  * ticket.
  *
- * Counters live in process memory: single-container deployments
- * restart to zero, which is acceptable for a lockout this short.
+ * Counters live in process memory: a restart clears them, which is acceptable
+ * for a lockout this short.
  */
 
 const failures: { [username: string]: number } = {}

@@ -2,7 +2,7 @@
 
 Contributions are very welcome!  Feel free to raise an issue or start a discussion, for help in getting started.
 
-The app can be deployed using Docker or NodeJS.
+The app is deployed as a standalone executable or as a NodeJS process.
 
 ## Git hooks
 
@@ -28,20 +28,9 @@ The `.env` file should be created in the location(s) below.  Each folder contain
 * `api/.env` - this is the primary file used in NodeJS deploys
 * `web/.env` - this file is only necessary in NodeJS when running `web` and `api` seperately (on different ports).
 
-A container is configured by environment variables rather than by a file on disk. The ones it reads are listed in [container/README.md](../container/README.md).
+The server is configured by environment variables rather than by a file on disk. The ones it reads are listed in the [README](../README.md).
 
-
-## Using Docker
-
-The supported Docker deployment is the container image, which builds the web bundle and the API from this repository's own source and serves both from one process. Its contract - the environment variables, the port, the one writable path - is documented in [container/README.md](../container/README.md).
-
-A minimal stack, that image plus a MongoDB for server mode, is in [`container/docker-compose.yml`](../container/docker-compose.yml):
-
-```
-docker compose -f container/docker-compose.yml up -d
-```
-
-The file carries a commented `build:` block, which builds `container/Dockerfile` from a local checkout instead of pulling the published image. It is the build CI runs, with the repository root as the context.
+Everything is driven by two processes: the API in `api/` and the web client in `web/`. `npm run build` in `api/` compiles the server and copies the built web bundle into its own tree, so one process serves both.
 
 For single-user work with no database, run the image with `MODE=desktop`.
 

@@ -42,41 +42,24 @@ You are presented with two prompts (if not set as ENV vars):
 - Location of your `sas.exe` / `sas.sh` executable
 - Path to a filesystem location for Stored Programs and temporary files
 
-## Container image
+## Deployment options
 
-A prebuilt container image is published as
-[`ghcr.io/sasjs/server`](https://github.com/orgs/sasjs/packages/container/package/server)
-with every release, usable anywhere Docker runs. It is built from this
-repository's own source by the release workflow, so the image tag and the
-release always refer to the same commit. See
-[`container/README.md`](container/README.md) for the full container
-documentation, and
-[`container/docker-compose.yml`](container/docker-compose.yml) for a complete
-stack with MongoDB.
+The server runs as a standalone executable (above) and as a Node process. Both
+read the same environment variables and serve the same API.
 
-```bash
-docker run -d --name sasjs \
-  -p 5000:5000 \
-  -v sasjs_data:/usr/server/data \
-  -e DB_CONNECT=mongodb://mongo:27017/sasjs \
-  ghcr.io/sasjs/server
-```
+- **Standalone executable** - the zip from the releases page, with SAS and a data
+  path supplied either as prompts or as `SAS_PATH` / `DATA_DIR`.
+- **Node** - `npx @sasjs/server`, or `npm install -g @sasjs/server` and run
+  `sasjs-server`. Useful where Node is already managed by the platform.
+- **Embedded** - the server's pieces are also used inside other SASjs tooling,
+  such as the VS Code extension, and the mock backend runs in the browser for
+  front-end development without a server at all.
 
-Server mode (the default) is multi-user and needs a MongoDB reachable at
-`DB_CONNECT`; set `MODE=desktop` for a single-user instance with no database.
-The container is configured entirely by the environment variables documented
-below and speaks plain HTTP on port 5000, so terminate TLS in front of it. Its
-health check is `GET /SASjsApi/info`, which needs no authentication.
-
-The same image is packaged for [Cloudron](https://cloudron.io) as a community
-app - paste this URL into the dashboard's Community Apps field:
-
-    https://raw.githubusercontent.com/sasjs/server/main/container/cloudron/CloudronVersions.json
-
-Cloudron installs `ghcr.io/sasjs/server` from the app package in
-[`container/cloudron/`](container/cloudron/), wiring up its MongoDB, single
-sign-on (OIDC), access control and backups. The entrypoint detects the
-platform's addon variables by itself, so one image serves both.
+There is no container image. The previous `ghcr.io/sasjs/server` image could not
+carry SAS - the licence does not permit redistribution - so it could only serve
+the `js` and `py` runtimes, and it needed a SAS installation mounted from the
+host to do the work the server exists for. It has been withdrawn along with the
+Cloudron packaging built on it.
 
 ## ENV Var configuration
 
@@ -228,10 +211,10 @@ AUTH_PROVIDERS=
 
 ## ENV variables required for AUTH_MECHANISM: `ldap`
 LDAP_URL= <LDAP_SERVER_URL>
-LDAP_BIND_DN= <cn=admin,ou=system,dc=cloudron>
+LDAP_BIND_DN= <cn=admin,ou=system,dc=example>
 LDAP_BIND_PASSWORD = <password>
-LDAP_USERS_BASE_DN = <ou=users,dc=cloudron>
-LDAP_GROUPS_BASE_DN = <ou=groups,dc=cloudron>
+LDAP_USERS_BASE_DN = <ou=users,dc=example>
+LDAP_GROUPS_BASE_DN = <ou=groups,dc=example>
 
 ## ENV variables required for AUTH_PROVIDERS: `oidc`
 
