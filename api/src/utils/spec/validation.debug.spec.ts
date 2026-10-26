@@ -40,14 +40,15 @@ describe('_debug validation', () => {
     expect(error).toBeUndefined()
   })
 
-  it('should refuse a name that is not one of the levels', () => {
-    // a typo used to be silently accepted once the value stopped being numeric
+  it('should accept any non-empty name, as the SAS broker does', () => {
+    // the parameter has one effect behind it, so a name only has to say "on";
+    // refusing unfamiliar words would fail a caller that SAS would have accepted
     const { error } = executeProgramRawValidation({
       _program: '/Public/app/run.sas',
-      _debug: 'lgo'
+      _debug: 'anything'
     })
 
-    expect(error).toBeDefined()
+    expect(error).toBeUndefined()
   })
 
   it('should still require _program', () => {

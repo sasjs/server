@@ -208,14 +208,10 @@ export const triggerCodeValidation = (data: any): Joi.ValidationResult =>
     expiresAfterMins: Joi.number().greater(0)
   }).validate(data)
 
-// the core macros send `_debug=log` as readily as `_debug=131`, and both mean
-// "return the session log". The named forms are enumerated rather than accepted
-// as any string, so a typo is a validation error instead of silently switching
-// logging on; parseDebugValue turns them into the numeric value.
-const debugValue = Joi.alternatives().try(
-  Joi.number(),
-  Joi.string().valid('log', 'trace', 'false', 'off', 'no')
-)
+// `_debug` follows the SAS Application Broker convention, where a keyword works
+// as well as the number (128 = LOG there, 131 in SASjs); parseDebugValue turns
+// any name into the value the macros test with `%if &_debug ge 131`
+const debugValue = Joi.alternatives().try(Joi.number(), Joi.string())
 
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
