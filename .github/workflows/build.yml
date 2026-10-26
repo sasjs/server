@@ -193,7 +193,17 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Install dependencies
+      - name: Install web dependencies
+        working-directory: ./web
+        run: npm ci
+
+      # The api build copies ../web/build into its own tree, so the client has to
+      # be built first
+      - name: Build the web client
+        working-directory: ./web
+        run: npm run build
+
+      - name: Install api dependencies
         working-directory: ./api
         run: npm ci
 
@@ -213,10 +223,17 @@ jobs:
           DB_TYPE: mongodb
           AUTH_PROVIDERS: ''
           RUN_TIMES: js,py
+          # the account the flow below signs in as; without it the seed uses its
+          # own default name
+          ADMIN_USERNAME: admin
           ADMIN_PASSWORD_INITIAL: smoke-test-initial-password
           HTTP_PORT: 5000
         run: |
           set -eu
+          # the js and py runtimes refuse to boot without the interpreter paths
+          export NODE_PATH="$(command -v node)"
+          export PYTHON_PATH="$(command -v python3)"
+
           nohup node build/src/server.js > /tmp/server.log 2>&1 &
           echo $! > /tmp/server.pid
 
@@ -315,6 +332,9 @@ jobs:
             curl -sf http://127.0.0.1:8899/.well-known/openid-configuration > /dev/null && break
             sleep 0.5
           done
+
+          export NODE_PATH="$(command -v node)"
+          export PYTHON_PATH="$(command -v python3)"
 
           cd api
           MODE=server \
