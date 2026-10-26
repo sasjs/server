@@ -22,14 +22,36 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
-    // Only the query is judged here: multer has not run, so req.body is empty and
-    // a body validation would fail every request with "_program is required" -
-    // which is also what it reported when the query was the part that failed.
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
 
-    if (errQ) return res.status(400).send(errQ.details[0].message)
+    // multer has not run yet, so a multipart body is empty here - but a JSON body
+    // was parsed before the router (app.ts installs express.json ahead of it), and
+    // `_program` in that body is a documented way to call this route.
+    //
+    // The body value goes through the same schema as the query, so the same
+    // request resolves to the same path wherever `_program` was sent: a bare
+    // typeof check would accept a number, an array or an object that the schema
+    // refuses, and skip anything the schema does to the value.
+    const { error: errB, value: bodyVars } = executeProgramRawValidation({
+      _program: (req.body as { _program?: unknown } | undefined)?._program
+    })
+    const bodyProgram = errB ? undefined : bodyVars._program
 
-    const programPath = query?._program as string
+    // Only a query whose ONLY failure is the missing `_program` is excused by the
+    // body carrying it: any other query error - a malformed `_debug`, say - still
+    // refuses the request, otherwise the body would silently paper over it
+    if (errQ) {
+      const soleMissingProgram = errQ.details.every((detail) =>
+        detail.path.includes('_program')
+      )
+
+      if (!soleMissingProgram || !bodyProgram)
+        return res.status(400).send(errQ.details[0].message)
+    }
+
+    // `||`, not `??`: an empty query value is absent in every sense that matters,
+    // and must not shadow a program the body does carry
+    const programPath = (query?._program || bodyProgram) as string
 
     let runTime
 

@@ -9,11 +9,10 @@ import { UserController } from '../../../controllers/'
  * LOCAL_LOGIN_ENABLED=false closes the local (database) password path: the
  * stored hash is never compared, so there is no credential to attack.
  *
- * That matters on a deployment whose Cloudron manifest carries
- * `supportsBearerAuth: true`: the platform's login wall and MFA are skipped for
- * any request that sends a Bearer header, which leaves /SASLogon/login
- * reachable from the internet, and the local password login is the one
- * credential such a caller can guess. Accounts that authenticate through an
+ * That matters where an upstream proxy carries the platform's own login wall and
+ * MFA and skips both for a request that sends a Bearer header: that leaves
+ * /SASLogon/login reachable from the internet, and the local password login is
+ * the one credential such a caller can guess. Accounts that authenticate through an
  * identity provider sign in through the provider, and LDAP-verified sign-in is
  * unaffected, so switching the local path off does not lock anyone out who has
  * another way in.

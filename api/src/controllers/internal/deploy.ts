@@ -38,8 +38,8 @@ export const createFileTree = async (
       // Every member name becomes a path SEGMENT under the deployment root.
       // A name carrying '/', '\' or '..' is a traversal attempt: joined onto
       // the destination it would write outside the drive (arbitrary file
-      // write as the service account - the container runs as root). Fail the
-      // whole deployment rather than partially writing a hostile tree.
+      // write as the service account). Fail the whole deployment rather than
+      // partially writing a hostile tree.
       if (!isSafePathSegment(name)) {
         throw refuse(
           400,
