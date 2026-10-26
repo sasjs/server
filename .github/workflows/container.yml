@@ -97,6 +97,11 @@ jobs:
       - name: CloudronVersions.json generator tests
         run: container/tests/verify-versions.sh
 
+      # the bump script rewrites a Dockerfile in a scheduled pull request, so its
+      # --write path is proven here rather than after the PR is opened
+      - name: base image bump script tests
+        run: container/tests/verify-base-image-bump.sh
+
       - name: CloudronVersions.json is publishable and in sync
         run: python3 container/cloudron/scripts/update-versions.py --check
 

@@ -31,7 +31,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const DOCKERFILE = path.join(ROOT, 'container', 'Dockerfile')
 const REGISTRY = 'cloudron/node-base'
 const ARCHITECTURE = 'amd64'
-const PIN = /^FROM\s+(cloudron\/node-base):([^@\s]+)@(sha256:[0-9a-f]{64})\s*$/m
+// [^\S\n] rather than \s: \s matches a newline, and a --write would then
+// consume the line break after FROM along with the blank line below it
+const PIN = /^FROM\s+(cloudron\/node-base):([^@\s]+)@(sha256:[0-9a-f]{64})[^\S\n]*$/m
 
 const args = process.argv.slice(2)
 const write = args.includes('--write')
@@ -84,7 +86,18 @@ const newest = async () => {
   const tag = chosenTag ? candidates.find((c) => c.name === chosenTag) : candidates[0]
   if (!tag) throw new Error(`${chosenTag} is not a ${major}-YYYYMMDD tag for ${REGISTRY}`)
 
-  return { tag: tag.name, digest: digestOf(tag) ?? current.digest }
+  const digest = digestOf(tag)
+
+  // falling back to the current digest would pair the new tag with a digest it
+  // does not resolve to, and `FROM tag@digest` then fails to pull: fail here,
+  // where the registry problem is visible, rather than opening a red bump PR
+  if (!digest) {
+    throw new Error(
+      `${tag.name} carries no ${ARCHITECTURE} digest on ${REGISTRY}`
+    )
+  }
+
+  return { tag: tag.name, digest }
 }
 
 const main = async () => {
