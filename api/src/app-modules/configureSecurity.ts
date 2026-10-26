@@ -21,8 +21,17 @@ const stripUpgradeDirective = (
 
   const original = res.setHeader.bind(res)
 
+  // split on ';' and re-join: a regex that swallows the separators joins the
+  // directives either side of the one being removed, and the browser then reads
+  // them as one directive
   const strip = (value: string): string =>
-    value.replace(/;?\s*upgrade-insecure-requests\b;?/g, '')
+    value
+      .split(';')
+      .map((directive) => directive.trim())
+      .filter(
+        (directive) => directive && directive !== 'upgrade-insecure-requests'
+      )
+      .join('; ')
 
   res.setHeader = ((name: string, value: number | string | string[]) => {
     if (String(name).toLowerCase() === 'content-security-policy')

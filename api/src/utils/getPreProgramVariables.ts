@@ -25,7 +25,11 @@ const asUrlHost = (address: string): string => {
   return address.includes(':') && !bracketed ? `[${address}]` : address
 }
 
-const getApiServerUrl = (req: Request): string => {
+const getLocalServerUrl = (req: Request): string => {
+  // an explicit override is the operator's statement about reachability, so it
+  // wins over anything derived here - for both topologies
+  if (process.env.API_SERVER_URL) return process.env.API_SERVER_URL
+
   const { config } = resolveListeners(process.env)
 
   if (!config?.httpPort) return `${req.protocol}://${req.get('host')}`
@@ -59,7 +63,11 @@ export const getPreProgramVariables = (req: Request): PreProgramVars => {
     username: user ? user.username : 'demo',
     userId: user ? user.userId : 'demoId',
     displayName: user ? user.displayName : 'demo',
-    serverUrl: getApiServerUrl(req),
+    // a program submitted to Viya compute runs elsewhere, so it gets the origin
+    // the request arrived on rather than this server's loopback
+    serverUrl:
+      process.env.API_SERVER_URL ?? `${req.protocol}://${req.get('host')}`,
+    localServerUrl: getLocalServerUrl(req),
     httpHeaders
   }
 }

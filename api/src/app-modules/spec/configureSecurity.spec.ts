@@ -73,6 +73,22 @@ describe('configureSecurity', () => {
     expect(cspOf(res)).toContain('upgrade-insecure-requests')
   })
 
+  it('should drop only that directive, keeping the ones around it', async () => {
+    // a policy that lists a directive after upgrade-insecure-requests: a regex
+    // spanning the separators would join default-src and script-src into one
+    process.env.HTTP_PORT = '5000'
+    process.env.HELMET_CSP_CONFIG_PATH = ''
+
+    const res = await request(buildApp()).get('/probe')
+    const policy = cspOf(res)
+
+    expect(policy).not.toContain('upgrade-insecure-requests')
+    expect(policy).toContain("default-src 'self'")
+    expect(policy).toContain("script-src 'self'")
+    // each directive stays its own, semicolon separated
+    expect(policy.split(';').filter(Boolean).length).toBeGreaterThan(1)
+  })
+
   it('should drop upgrade-insecure-requests when only a plain listener runs', async () => {
     process.env.HTTP_PORT = '5000'
 

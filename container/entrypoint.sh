@@ -94,8 +94,10 @@ fi
 # the single port and PROTOCOL named its transport. Translating here, before the
 # per-mode defaults, keeps a PROTOCOL=https deployment on TLS instead of turning
 # it into a plaintext listener that merely carries a different name.
-if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" && -n "${PROTOCOL:-}" ]]; then
-  case "$(printf '%s' "${PROTOCOL}" | tr '[:upper:]' '[:lower:]')" in
+if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" && ( -n "${PROTOCOL:-}" || -n "${PORT:-}" ) ]]; then
+  # PORT on its own meant plain HTTP before the split, so it still does; an
+  # unrecognised PROTOCOL is refused rather than falling through to that default
+  case "$(printf '%s' "${PROTOCOL:-http}" | tr '[:upper:]' '[:lower:]')" in
     # 5000, matching the Node shim: PORT defaulted to 5000 before the split, so
     # an upgraded container kept serving TLS there and a non-root user can bind it
     https) export HTTPS_PORT="${PORT:-5000}" ;;

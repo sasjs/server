@@ -11,6 +11,7 @@ const request = (overrides: Partial<Record<string, unknown>> = {}) =>
   }) as unknown as Request
 
 const ENV = [
+  'API_SERVER_URL',
   'HTTP_PORT',
   'HTTPS_PORT',
   'HTTP_BIND_ADDRESS',
@@ -45,9 +46,9 @@ describe('getPreProgramVariables', () => {
 
       // an https request on the public name: the callback still goes to loopback,
       // so the SAS session never has to trust this server's certificate
-      const { serverUrl } = getPreProgramVariables(request())
+      const { localServerUrl } = getPreProgramVariables(request())
 
-      expect(serverUrl).toEqual('http://127.0.0.1:5000')
+      expect(localServerUrl).toEqual('http://127.0.0.1:5000')
     })
 
     it('should use loopback when the plain listener binds every interface', () => {
@@ -55,7 +56,7 @@ describe('getPreProgramVariables', () => {
       process.env.HTTP_BIND_ADDRESS = '0.0.0.0'
       process.env.HTTP_ALLOW_REMOTE = 'true'
 
-      expect(getPreProgramVariables(request()).serverUrl).toEqual(
+      expect(getPreProgramVariables(request()).localServerUrl).toEqual(
         'http://127.0.0.1:5000'
       )
     })
@@ -65,7 +66,7 @@ describe('getPreProgramVariables', () => {
       process.env.HTTP_BIND_ADDRESS = '192.168.1.5'
       process.env.HTTP_ALLOW_REMOTE = 'true'
 
-      expect(getPreProgramVariables(request()).serverUrl).toEqual(
+      expect(getPreProgramVariables(request()).localServerUrl).toEqual(
         'http://192.168.1.5:8080'
       )
     })
@@ -75,7 +76,7 @@ describe('getPreProgramVariables', () => {
       process.env.HTTP_BIND_ADDRESS = '::1'
 
       // http://::1:5000 is not parseable; the authority needs brackets
-      expect(getPreProgramVariables(request()).serverUrl).toEqual(
+      expect(getPreProgramVariables(request()).localServerUrl).toEqual(
         'http://[::1]:5000'
       )
     })
@@ -85,9 +86,21 @@ describe('getPreProgramVariables', () => {
       process.env.CERT_CHAIN = './certs/fullchain.pem'
       process.env.PRIVATE_KEY = 'key'
 
-      expect(getPreProgramVariables(request()).serverUrl).toEqual(
-        'https://sas.example.com'
-      )
+      // a remote program (Viya compute) gets the origin, not loopback
+      const { serverUrl, localServerUrl } = getPreProgramVariables(request())
+
+      expect(serverUrl).toEqual('https://sas.example.com')
+      expect(localServerUrl).toEqual('https://sas.example.com')
+    })
+
+    it('should let API_SERVER_URL override both callbacks', () => {
+      process.env.HTTP_PORT = '5000'
+      process.env.API_SERVER_URL = 'https://sasjs.internal.example.com'
+
+      const { serverUrl, localServerUrl } = getPreProgramVariables(request())
+
+      expect(serverUrl).toEqual('https://sasjs.internal.example.com')
+      expect(localServerUrl).toEqual('https://sasjs.internal.example.com')
     })
 
     it('should keep the caller identity variables beside the URL', () => {
