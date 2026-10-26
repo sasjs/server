@@ -112,6 +112,43 @@ EOF
 OUT=$(run "$DIR" "$T/tags-same.json" --write)
 check "reports no change"          "stale:   false" "$OUT"
 
+# --- case 4: the invocation the scheduled job makes, --write --tag ----------
+DIR="$T/write-tag"
+make_tree "$DIR"
+cat > "$T/tags-pinned.json" <<'EOF'
+[
+  { "name": "24-20261028", "images": [ { "architecture": "amd64", "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333" } ] },
+  { "name": "24-20261026", "images": [ { "architecture": "amd64", "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444" } ] }
+]
+EOF
+
+OUT=$(run "$DIR" "$T/tags-pinned.json" --write --tag 24-20261026)
+check "--tag writes the named tag"  "FROM cloudron/node-base:24-20261026@sha256:444444" "$(cat "$DIR/container/Dockerfile")"
+check "--tag does not take the newest" "0" "$(grep -c 24-20261028 "$DIR/container/Dockerfile" || true)"
+
+# --- case 5: a Dockerfile whose pin cannot be read --------------------------
+DIR="$T/unparseable"
+mkdir -p "$DIR/.github/scripts" "$DIR/container"
+cp "$SCRIPT" "$DIR/.github/scripts/base-image-bump.mjs"
+printf 'FROM scratch\n' > "$DIR/container/Dockerfile"
+
+OUT=$(run "$DIR" "$T/tags-newer.json"); CODE=$?
+check "refuses an unreadable pin" "could not read the base image pin" "$OUT"
+check "unreadable pin exits non-zero" "1" "$CODE"
+
+# --- case 6: the tag is current but the digest moved ------------------------
+DIR="$T/digest-only"
+make_tree "$DIR"
+cat > "$T/tags-digest.json" <<'EOF'
+[
+  { "name": "24-20260920", "images": [ { "architecture": "amd64", "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555" } ] }
+]
+EOF
+
+OUT=$(run "$DIR" "$T/tags-digest.json" --write)
+check "reports the digest move"     "stale:   true" "$OUT"
+check "rewrites the digest in place" "FROM cloudron/node-base:24-20260920@sha256:555555" "$(cat "$DIR/container/Dockerfile")"
+
 echo
 if [[ $FAIL -ne 0 ]]; then
   echo "SOME TESTS FAILED"

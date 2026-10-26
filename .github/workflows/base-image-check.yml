@@ -61,10 +61,12 @@ jobs:
           # One open pull request, whoever opened it: if another branch already
           # proposes a base-image bump, this run stands down rather than adding a
           # second opinion.
-          others="$(gh pr list --state open --limit 200 --json title,headRefName \
+          # judged by the file a pull request touches, not its title: a human
+          # bump titled "refresh node base" would otherwise be invisible
+          others="$(gh pr list --state open --limit 200 --json number,headRefName,files \
             | jq --arg branch "$BRANCH" \
                 '[.[] | select(.headRefName != $branch)
-                     | select(.title | test("bump the base image"; "i"))] | length')"
+                     | select(any(.files[]?; .path == "container/Dockerfile"))] | length')"
           if [ "$others" != "0" ]; then
             echo "another open pull request already bumps the base image; standing down"
             exit 0
@@ -82,11 +84,18 @@ jobs:
             exit 0
           fi
 
+          # a digest-only move keeps the tag, so naming the tag alone would say
+          # "bump the base image to 24-20260920" while it is already on it
+          TITLE="chore(container): bump the base image to ${NEXT_TAG}"
+          if [ "${NEXT_TAG}" = "${CURRENT_TAG}" ]; then
+            TITLE="chore(container): move the base image pin for ${NEXT_TAG}"
+          fi
+
           git config user.name "sasjs"
           git config user.email "sasjs@4gl.io"
           git checkout -B "$BRANCH"
           git add container/Dockerfile
-          git commit -m "chore(container): bump the base image to ${NEXT_TAG}"
+          git commit -m "$TITLE"
           git push --force-with-lease origin "$BRANCH"
 
           cat > /tmp/base-image-body.md <<BODY
@@ -109,18 +118,20 @@ jobs:
           before they run - the push uses the workflow's own \`GITHUB_TOKEN\`.
           BODY
 
-          existing="$(gh pr list --state open --limit 200 --head "$BRANCH" --json number --jq '.[].number')"
+          # one number: the branch is fixed, so any other match is a duplicate of
+          # the same review, and `gh pr edit` rejects a newline-joined list
+          existing="$(gh pr list --state open --limit 200 --head "$BRANCH" --json number --jq '.[0].number // empty')"
           if [ -z "$existing" ]; then
             gh pr create \
               --base main \
               --head "$BRANCH" \
-              --title "chore(container): bump the base image to ${NEXT_TAG}" \
+              --title "$TITLE" \
               --body-file /tmp/base-image-body.md
           else
             # The branch is fixed, so this is the same pull request: keep its
             # title and body on the tag it now proposes.
             gh pr edit "$existing" \
-              --title "chore(container): bump the base image to ${NEXT_TAG}" \
+              --title "$TITLE" \
               --body-file /tmp/base-image-body.md
             echo "updated pull request #$existing"
           fi
@@ -133,7 +144,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          number="$(gh pr list --state open --limit 200 --head chore/base-image-bump --json number --jq '.[].number')"
+          number="$(gh pr list --state open --limit 200 --head chore/base-image-bump --json number --jq '.[0].number // empty')"
           if [ -z "$number" ]; then
             echo "pin is current at ${NEXT_TAG}; no pull request to close"
             exit 0
