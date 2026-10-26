@@ -100,8 +100,18 @@ if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" && ( -n "${PROTOCOL:-}" || -n 
   case "$(printf '%s' "${PROTOCOL:-http}" | tr '[:upper:]' '[:lower:]')" in
     # 5000, matching the Node shim: PORT defaulted to 5000 before the split, so
     # an upgraded container kept serving TLS there and a non-root user can bind it
-    https) export HTTPS_PORT="${PORT:-5000}" ;;
-    http) export HTTP_PORT="${PORT:-5000}" ;;
+    # unset after translating: leaving them exported makes the Node shim log
+    # "PROTOCOL and PORT are ignored because HTTP_PORT or HTTPS_PORT is set" on
+    # exactly the upgraded deployment this shim exists to keep working, and puts
+    # two sources of truth in the config summary
+    https)
+      export HTTPS_PORT="${PORT:-5000}"
+      unset PORT PROTOCOL
+      ;;
+    http)
+      export HTTP_PORT="${PORT:-5000}"
+      unset PORT PROTOCOL
+      ;;
     *)
       # a typo used to fall through to the plain HTTP default below, publishing
       # an unencrypted listener where the previous image refused to start

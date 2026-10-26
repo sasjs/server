@@ -22,14 +22,19 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
-    // Only the query is judged here: multer has not run, so req.body is empty and
-    // a body validation would fail every request with "_program is required" -
-    // which is also what it reported when the query was the part that failed.
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
 
-    if (errQ) return res.status(400).send(errQ.details[0].message)
+    // multer has not run yet, so a multipart body is empty here - but a JSON body
+    // was parsed before the router (app.ts installs express.json ahead of it), and
+    // `_program` in that body is a documented way to call this route. Only when
+    // neither place carries it is the request missing the field.
+    const bodyProgram = (req.body as { _program?: string } | undefined)
+      ?._program
 
-    const programPath = query?._program as string
+    if (errQ && !bodyProgram)
+      return res.status(400).send(errQ.details[0].message)
+
+    const programPath = (query?._program ?? bodyProgram) as string
 
     let runTime
 

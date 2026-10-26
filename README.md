@@ -178,6 +178,14 @@ HTTPS_BIND_ADDRESS=
 #
 # PROTOCOL and PORT are deprecated: for one release they are translated into the
 # matching port variable with a warning, and removed after that.
+#
+# MIGRATION NOTE: a bare install (not the container image) that ran with
+# PROTOCOL=http and no HTTP_BIND_ADDRESS used to accept connections on every
+# interface, because the app was started with a bare app.listen(port). It now
+# listens on 127.0.0.1 only. Remote clients get connection refused until you set
+# HTTP_BIND_ADDRESS=0.0.0.0 (or the interface you serve on) and
+# HTTP_ALLOW_REMOTE=true. The container image is unaffected: its entrypoint sets
+# both.
 
 # Optional. The URL stored programs use to call back into this server, when the
 # derived value is wrong for the topology - a program that runs on another host
