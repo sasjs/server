@@ -1,15 +1,18 @@
 import { Express } from 'express'
 import { getEnvCSPDirectives } from '../utils/parseHelmetConfig'
-import { HelmetCoepType, ProtocolType } from '../utils'
+import { HelmetCoepType, resolveListeners } from '../utils'
 import helmet from 'helmet'
 
 export const configureSecurity = (app: Express) => {
-  const { PROTOCOL, HELMET_CSP_CONFIG_PATH, HELMET_COEP } = process.env
+  const { HELMET_CSP_CONFIG_PATH, HELMET_COEP } = process.env
 
   const cspConfigJson: { [key: string]: string[] | null } = getEnvCSPDirectives(
     HELMET_CSP_CONFIG_PATH
   )
-  if (PROTOCOL === ProtocolType.HTTP)
+  // `upgrade-insecure-requests` rewrites http:// subresources to https://, which
+  // breaks a client served over plain HTTP - so it is dropped whenever a plain
+  // HTTP listener is enabled, whatever the TLS listener is doing.
+  if (resolveListeners(process.env).config?.httpPort)
     cspConfigJson['upgrade-insecure-requests'] = null
 
   app.use(

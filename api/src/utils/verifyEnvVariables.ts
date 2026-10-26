@@ -1,5 +1,7 @@
 import os from 'os'
 
+import { resolveListeners } from './resolveListeners'
+
 export enum MOCK_SERVERTYPEType {
   SAS9 = 'sas9',
   SASVIYA = 'sasviya'
@@ -117,9 +119,8 @@ export const verifyEnvVariables = (): ReturnCode => {
 
   errors.push(...verifyMODE())
 
-  errors.push(...verifyPROTOCOL())
+  errors.push(...verifyLISTENERS())
 
-  errors.push(...verifyPORT())
   errors.push(...verifyTrustProxy())
 
   errors.push(...verifyLoginThrottle())
@@ -227,34 +228,12 @@ const verifyMODE = (): string[] => {
   return errors
 }
 
-const verifyPROTOCOL = (): string[] => {
-  const errors: string[] = []
-  const { PROTOCOL } = process.env
-
-  if (PROTOCOL) {
-    const protocolTypes = Object.values(ProtocolType)
-    if (!protocolTypes.includes(PROTOCOL as ProtocolType))
-      errors.push(`- PROTOCOL '${PROTOCOL}'\n - valid options ${protocolTypes}`)
-  } else {
-    process.env.PROTOCOL = DEFAULTS.PROTOCOL
-  }
-
-  if (process.env.PROTOCOL === ProtocolType.HTTPS) {
-    const { PRIVATE_KEY, CERT_CHAIN } = process.env
-
-    if (!PRIVATE_KEY)
-      errors.push(
-        `- PRIVATE_KEY is required for PROTOCOL '${ProtocolType.HTTPS}'`
-      )
-
-    if (!CERT_CHAIN)
-      errors.push(
-        `- CERT_CHAIN is required for PROTOCOL '${ProtocolType.HTTPS}'`
-      )
-  }
-
-  return errors
-}
+/**
+ * The listener configuration is validated by the resolver that builds it, so the
+ * rules live in one place: two ports, either of which enables a listener, the
+ * TLS material HTTPS_PORT implies, and the bind policy for plain HTTP.
+ */
+const verifyLISTENERS = (): string[] => resolveListeners(process.env).errors
 
 const verifyCORS = (): string[] => {
   const errors: string[] = []
@@ -292,19 +271,10 @@ const verifyCORS = (): string[] => {
   return errors
 }
 
-const verifyPORT = (): string[] => {
-  const errors: string[] = []
-  const { PORT } = process.env
-
-  if (PORT) {
-    if (Number.isNaN(parseInt(PORT)))
-      errors.push(`- PORT '${PORT}'\n - should be a valid number`)
-  } else {
-    process.env.PORT = DEFAULTS.PORT
-  }
-  return errors
-}
-
+/**
+ * PORT is read only by the deprecation shim in resolveListeners, which validates
+ * the value it translates - so there is no separate check here.
+ */
 const verifyHELMET_COEP = (): string[] => {
   const errors: string[] = []
   const { HELMET_COEP } = process.env
@@ -831,8 +801,6 @@ const isBoolean = (val: string): boolean => ['true', 'false'].includes(val)
 
 const DEFAULTS = {
   MODE: ModeType.Desktop,
-  PROTOCOL: ProtocolType.HTTP,
-  PORT: '5000',
   HELMET_COEP: HelmetCoepType.TRUE,
   LOG_FORMAT_MORGAN: LOG_FORMAT_MORGANType.Common,
   RUN_TIMES: RunTimeType.SAS,

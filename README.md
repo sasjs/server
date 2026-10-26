@@ -144,11 +144,33 @@ SASJS_ROOT=./sasjs_root
 DRIVE_LOCATION=./sasjs_root/drive
 
 
-# options: [http|https] default: http
-PROTOCOL=
+# Listener configuration. Each variable is a listener, enabled by carrying a value.
+# Unset, empty and 0 all disable it. At least one must be set.
+#
+# Plain HTTP. Nothing terminates TLS for this listener, so it binds 127.0.0.1 by
+# default: set HTTP_BIND_ADDRESS to widen it, and HTTP_ALLOW_REMOTE=true to
+# confirm that you intend to publish an unencrypted API. Credentials cross this
+# listener in clear text, so put it behind a reverse proxy if it leaves the host.
+HTTP_PORT=
 
-# default: 5000
-PORT=
+# Interface the plain HTTP listener binds to. default: 127.0.0.1
+HTTP_BIND_ADDRESS=
+
+# Required to bind the plain HTTP listener to a non-loopback address.
+HTTP_ALLOW_REMOTE=
+
+# TLS listener. Requires CERT_CHAIN and PRIVATE_KEY.
+HTTPS_PORT=
+
+# Interface the TLS listener binds to. default: every interface
+HTTPS_BIND_ADDRESS=
+
+# Both listeners can run at once and serve the same API: routes, authentication,
+# CSRF protection and sessions are identical on each, and GET /SASjsApi/info
+# reports `httpPort` and `httpsPort` (null for a disabled listener).
+#
+# PROTOCOL and PORT are deprecated: for one release they are translated into the
+# matching port variable with a warning, and removed after that.
 
 # options: [sas9|sasviya]
 # If not present, mocking function is disabled
@@ -176,7 +198,7 @@ SASV9_OPTIONS= -NOXCMD
 ## Additional Web Server Options
 #
 
-# ENV variables for PROTOCOL: `https`
+# TLS material, required when HTTPS_PORT is set and ignored otherwise
 PRIVATE_KEY=privkey.pem (required)
 CERT_CHAIN=certificate.pem (required)
 CA_ROOT=fullchain.pem (optional)

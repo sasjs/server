@@ -123,8 +123,11 @@ if [[ -n "$CLOUDRON_MARKER" ]]; then
   # Listen settings come from the manifest's httpPort; a value in .env or the
   # environment still wins, so an operator can change the port or protocol
   # without patching the package.
-  export PORT="${PORT:-5000}"
-  export PROTOCOL="${PROTOCOL:-http}"
+  # The container speaks plain HTTP behind the platform's proxy, so the listener
+  # binds every interface and the opt-in records that as deliberate.
+  export HTTP_PORT="${HTTP_PORT:-${PORT:-5000}}"
+  export HTTP_BIND_ADDRESS="${HTTP_BIND_ADDRESS:-0.0.0.0}"
+  export HTTP_ALLOW_REMOTE="${HTTP_ALLOW_REMOTE:-true}"
   export CORS="${CORS:-disable}"
 
   # Cloudron terminates TLS, so the app itself receives plain HTTP and cannot
@@ -142,8 +145,11 @@ else
     exit 1
   fi
   export DB_TYPE="${DB_TYPE:-mongodb}"
-  export PORT="${PORT:-5000}"
-  export PROTOCOL="${PROTOCOL:-http}"
+  # Plain HTTP inside the container, behind whatever terminates TLS in front of
+  # it; PORT is still honoured so an existing deployment keeps its port.
+  export HTTP_PORT="${HTTP_PORT:-${PORT:-5000}}"
+  export HTTP_BIND_ADDRESS="${HTTP_BIND_ADDRESS:-0.0.0.0}"
+  export HTTP_ALLOW_REMOTE="${HTTP_ALLOW_REMOTE:-true}"
   export CORS="${CORS:-disable}"
 fi
 
@@ -284,8 +290,8 @@ CONFIG_SUMMARY="${DATA_DIR}/config.txt"
   echo
   echo "# --- core ---"
   echo "MODE=${MODE}"
-  echo "PORT=${PORT}"
-  echo "PROTOCOL=${PROTOCOL}"
+  echo "HTTP_PORT=${HTTP_PORT}"
+  echo "HTTP_BIND_ADDRESS=${HTTP_BIND_ADDRESS}"
   echo "CORS=${CORS}"
   echo "TRUST_PROXY=${TRUST_PROXY:-none}"
   echo "DATA_DIR=${DATA_DIR}"
@@ -352,6 +358,6 @@ unset NODE_OPTIONS 2>/dev/null || true
 # to it (STATIC_MOCK_LOCATION defaults to 'mocks').
 cd "${DATA_DIR}"
 
-echo "=> Starting SASjs Server (MODE=${MODE}, PORT=${PORT}, RUN_TIMES=${RUN_TIMES}, NODE_PATH=${NODE_PATH}, PYTHON_PATH=${PYTHON_PATH})"
+echo "=> Starting SASjs Server (MODE=${MODE}, HTTP_PORT=${HTTP_PORT}, RUN_TIMES=${RUN_TIMES}, NODE_PATH=${NODE_PATH}, PYTHON_PATH=${PYTHON_PATH})"
 exec "${RUN_AS_CMD[@]}" \
   "${NODE_BIN}" "${SERVER_JS}"
