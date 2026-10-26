@@ -118,23 +118,3 @@ jobs:
             exit 0
           fi
           bash .github/scripts/add-verify-section.sh "$TAG"
-
-      # Exported for the run summary below.
-      - name: Export the release tag
-        id: tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          # Same remote-tag read as the checksums step above: the release notes
-          # step is skipped unless this produces a tag.
-          git fetch --tags --force
-          TAG=$(git tag --points-at HEAD | head -n1)
-          if [ -z "$TAG" ]; then
-            echo "No release was created for this commit."
-            echo "tag=" >> "$GITHUB_OUTPUT"
-            echo "version=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"

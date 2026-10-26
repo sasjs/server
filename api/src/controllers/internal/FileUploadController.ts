@@ -28,22 +28,24 @@ export class FileUploadController {
     // was parsed before the router (app.ts installs express.json ahead of it), and
     // `_program` in that body is a documented way to call this route.
     //
-    // The value is checked, not cast: a JSON body can carry a number, an array or
-    // an object where a query string is always text, and any of those would reach
-    // getRunTimeAndFilePath as a path.
-    const rawBodyProgram = (req.body as { _program?: unknown } | undefined)
-      ?._program
-    const bodyProgram =
-      typeof rawBodyProgram === 'string' ? rawBodyProgram : undefined
+    // The body value goes through the same schema as the query, so the same
+    // request resolves to the same path wherever `_program` was sent: a bare
+    // typeof check would accept a number, an array or an object that the schema
+    // refuses, and skip anything the schema does to the value.
+    const { error: errB, value: bodyVars } = executeProgramRawValidation({
+      _program: (req.body as { _program?: unknown } | undefined)?._program
+    })
+    const bodyProgram = errB ? undefined : bodyVars._program
 
-    // Only the missing-`_program` error is excused by the body carrying it: any
-    // other query failure - a malformed `_debug`, say - still refuses the request
+    // Only a query whose ONLY failure is the missing `_program` is excused by the
+    // body carrying it: any other query error - a malformed `_debug`, say - still
+    // refuses the request, otherwise the body would silently paper over it
     if (errQ) {
-      const missingProgram = errQ.details.some((detail) =>
+      const soleMissingProgram = errQ.details.every((detail) =>
         detail.path.includes('_program')
       )
 
-      if (!missingProgram || !bodyProgram)
+      if (!soleMissingProgram || !bodyProgram)
         return res.status(400).send(errQ.details[0].message)
     }
 
