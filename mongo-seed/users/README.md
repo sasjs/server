@@ -2,8 +2,7 @@
 
 This seeder used to import a pre-hashed `secretuser` / `secretpassword` admin
 account straight into the database - a known credential baked into a public
-repository, active and admin in every deployment built from the repository's
-production compose file.
+repository, active and admin in every deployment seeded from it.
 
 It now seeds no users. The API's own `seedDB` runs at first boot and creates
 the admin account from the `ADMIN_USERNAME` and `ADMIN_PASSWORD_INITIAL`
@@ -14,8 +13,7 @@ password is changed the account can do nothing but change it.
 
 Set these before first start:
 
-```yaml
-environment:
-  ADMIN_USERNAME: youradmin
-  ADMIN_PASSWORD_INITIAL: a-long-random-value
+```
+ADMIN_USERNAME=youradmin
+ADMIN_PASSWORD_INITIAL=a-long-random-value
 ```

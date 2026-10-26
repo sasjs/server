@@ -32,7 +32,7 @@ The server is configured by environment variables rather than by a file on disk.
 
 Everything is driven by two processes: the API in `api/` and the web client in `web/`. `npm run build` in `api/` compiles the server and copies the built web bundle into its own tree, so one process serves both.
 
-For single-user work with no database, run the image with `MODE=desktop`.
+For single-user work with no database, run the executable (or `npx @sasjs/server`) with `MODE=desktop`.
 
 ## Using NodeJS:
 
