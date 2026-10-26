@@ -326,6 +326,23 @@ describe('stp', () => {
         it('should throw error when no program exists', async () => {
           await makeRequestAndAssert([], 400)
         })
+
+        it('should accept a named _debug level from the core macros', async () => {
+          // %mx_execute defaults to _debug=log and %ms_runstp puts whatever it
+          // was given into the URL; a name used to fail query validation, and
+          // the middleware reported the body error instead of the real one
+          const programPath = path.join(testFilesFolder, 'program')
+          await createFile(
+            path.join(filesFolder, `${programPath}.js`),
+            sampleJsProgram
+          )
+
+          await request(app)
+            .get(`/SASjsApi/stp/execute?_program=${programPath}&_debug=log`)
+            .auth(accessToken, { type: 'bearer' })
+            .send()
+            .expect(200)
+        })
       })
 
       describe('with runtime js, sas and py', () => {

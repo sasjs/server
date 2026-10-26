@@ -208,10 +208,14 @@ export const triggerCodeValidation = (data: any): Joi.ValidationResult =>
     expiresAfterMins: Joi.number().greater(0)
   }).validate(data)
 
+// the core macros send `_debug=log` as readily as `_debug=131`, and both mean
+// "return the session log"; the value is normalised by parseDebugValue
+const debugValue = Joi.alternatives().try(Joi.number(), Joi.string())
+
 export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required(),
-    _debug: Joi.number()
+    _debug: debugValue
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))
     .validate(data)
@@ -219,7 +223,7 @@ export const executeProgramRawValidation = (data: any): Joi.ValidationResult =>
 export const triggerProgramValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _program: Joi.string().required(),
-    _debug: Joi.number(),
+    _debug: debugValue,
     expiresAfterMins: Joi.number().greater(0)
   })
     .pattern(/^/, Joi.alternatives(Joi.string(), Joi.number()))

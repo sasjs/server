@@ -23,9 +23,13 @@ export class FileUploadController {
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
-    const { error: errB, value: body } = executeProgramRawValidation(req.body)
+    const { value: body } = executeProgramRawValidation(req.body)
 
-    if (errQ && errB) return res.status(400).send(errB.details[0].message)
+    // multer has not run yet, so req.body is empty here and its "body" error is
+    // always "_program is required" - reporting it when the query is what failed
+    // told the caller about a field the request did not even use. The query is
+    // the part that can be judged now, so it is the part that is reported.
+    if (errQ) return res.status(400).send(errQ.details[0].message)
 
     const programPath = (query?._program ?? body?._program) as string
 
