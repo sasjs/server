@@ -1,6 +1,6 @@
 import { Express, NextFunction, Request, Response } from 'express'
 import { getEnvCSPDirectives } from '../utils/parseHelmetConfig'
-import { HelmetCoepType } from '../utils'
+import { HelmetCoepType, resolveListeners } from '../utils'
 import helmet from 'helmet'
 
 /**
@@ -17,7 +17,7 @@ const stripUpgradeDirective = (
   res: Response,
   next: NextFunction
 ) => {
-  if (req.secure) return next()
+  if (!arrivedOverPlainListener(req)) return next()
 
   const original = res.setHeader.bind(res)
 
@@ -34,6 +34,24 @@ const stripUpgradeDirective = (
   }) as typeof res.setHeader
 
   next()
+}
+
+/**
+ * Which listener served this request, from the socket rather than from
+ * `req.secure`: `secure` is only true behind a proxy when TRUST_PROXY is set, and
+ * making CSP depend on that would strip the directive from a TLS deployment that
+ * simply has not configured it.
+ */
+const arrivedOverPlainListener = (req: Request): boolean => {
+  const { config } = resolveListeners(process.env)
+
+  // nothing readable: fall back to the connection's own view
+  if (!config) return !req.secure
+
+  if (config.httpPort && req.socket.localPort === config.httpPort) return true
+
+  // with no TLS listener configured, whatever arrived here came over plain HTTP
+  return !config.httpsPort
 }
 
 export const configureSecurity = (app: Express) => {

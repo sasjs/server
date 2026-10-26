@@ -70,6 +70,16 @@ describe('getPreProgramVariables', () => {
       )
     })
 
+    it('should bracket an IPv6 bind address in the URL', () => {
+      process.env.HTTP_PORT = '5000'
+      process.env.HTTP_BIND_ADDRESS = '::1'
+
+      // http://::1:5000 is not parseable; the authority needs brackets
+      expect(getPreProgramVariables(request()).serverUrl).toEqual(
+        'http://[::1]:5000'
+      )
+    })
+
     it('should follow the request when only a TLS listener is enabled', () => {
       process.env.HTTPS_PORT = '443'
       process.env.CERT_CHAIN = './certs/fullchain.pem'

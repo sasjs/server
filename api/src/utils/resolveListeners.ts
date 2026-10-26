@@ -118,10 +118,10 @@ const translateLegacy = (
     // check, which names the variables an operator should set
     if (!legacySet) return { warnings, errors }
 
-    errors.push(
-      `- PORT is set but PROTOCOL is not, so the listener it described cannot be determined\n - set HTTP_PORT=${legacyPort} or HTTPS_PORT=${legacyPort} instead`
-    )
-    return { warnings, errors }
+    // PORT on its own meant plain HTTP before the split (PROTOCOL defaulted to
+    // http), so it keeps meaning that rather than refusing to start
+    warnings.push(`- PORT is deprecated, set HTTP_PORT=${legacyPort} instead`)
+    return { httpPort: legacyPort, warnings, errors }
   }
 
   if (protocol === 'https') {

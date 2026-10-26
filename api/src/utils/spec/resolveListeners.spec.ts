@@ -212,12 +212,12 @@ describe('resolveListeners', () => {
       expect(warnings).toEqual([])
     })
 
-    it('should refuse PORT without PROTOCOL, naming the replacement', () => {
-      const { config, errors } = resolve({ PORT: '5000' })
+    it('should read PORT without PROTOCOL as plain HTTP, as it always did', () => {
+      const { config, warnings, errors } = resolve({ PORT: '5000' })
 
-      expect(config).toBeNull()
-      expect(errors.join('\n')).toContain('PROTOCOL is not')
-      expect(errors.join('\n')).toContain('HTTP_PORT=5000')
+      expect(errors).toEqual([])
+      expect(config?.httpPort).toBe(5000)
+      expect(warnings.join('\n')).toContain('HTTP_PORT=5000')
     })
 
     it('should refuse an unknown PROTOCOL', () => {

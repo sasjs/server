@@ -14,6 +14,17 @@ import { resolveListeners } from './resolveListeners'
  * With no plain listener the request's own origin is the only address available,
  * so the request decides.
  */
+/**
+ * A URL authority holding an IPv6 literal needs brackets - `http://::1:5000` is
+ * not parseable, `http://[::1]:5000` is. Hostnames and IPv4 addresses are left
+ * alone.
+ */
+const asUrlHost = (address: string): string => {
+  const bracketed = address.startsWith('[') && address.endsWith(']')
+
+  return address.includes(':') && !bracketed ? `[${address}]` : address
+}
+
 const getApiServerUrl = (req: Request): string => {
   const { config } = resolveListeners(process.env)
 
@@ -24,7 +35,7 @@ const getApiServerUrl = (req: Request): string => {
     config.httpBindAddress === '0.0.0.0' || config.httpBindAddress === '::'
   const host = wildcard ? '127.0.0.1' : config.httpBindAddress
 
-  return `http://${host}:${config.httpPort}`
+  return `http://${asUrlHost(host)}:${config.httpPort}`
 }
 
 export const getPreProgramVariables = (req: Request): PreProgramVars => {
