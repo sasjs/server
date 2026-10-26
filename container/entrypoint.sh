@@ -89,6 +89,31 @@ if [[ -z "$CONFIG_FILES_READ" ]]; then
   echo "NOTE: the effective configuration is written to ${DATA_DIR}/config.txt on every start."
 fi
 
+# --- listeners --------------------------------------------------------------
+# One-release shim for the variables this image used before the split: PORT named
+# the single port and PROTOCOL named its transport. Translating here, before the
+# per-mode defaults, keeps a PROTOCOL=https deployment on TLS instead of turning
+# it into a plaintext listener that merely carries a different name.
+if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" && -n "${PROTOCOL:-}" ]]; then
+  case "$(printf '%s' "${PROTOCOL}" | tr '[:upper:]' '[:lower:]')" in
+    https) export HTTPS_PORT="${PORT:-443}" ;;
+    http) export HTTP_PORT="${PORT:-5000}" ;;
+  esac
+fi
+
+# neither listener chosen: keep the image's plain HTTP default
+if [[ -z "${HTTP_PORT:-}" && -z "${HTTPS_PORT:-}" ]]; then
+  export HTTP_PORT=5000
+fi
+
+# A container that publishes a port binds every interface; that is this image's
+# documented behaviour, and the opt-in records that it is deliberate. It applies
+# to plain HTTP only - the TLS listener has no such guard.
+if [[ -n "${HTTP_PORT:-}" ]]; then
+  export HTTP_BIND_ADDRESS="${HTTP_BIND_ADDRESS:-0.0.0.0}"
+  export HTTP_ALLOW_REMOTE="${HTTP_ALLOW_REMOTE:-true}"
+fi
+
 if [[ -n "$CLOUDRON_MARKER" ]]; then
   # --- Cloudron addon wiring ----------------------------------------------
   # The platform exports addon credentials as CLOUDRON_* variables and may
@@ -121,13 +146,8 @@ if [[ -n "$CLOUDRON_MARKER" ]]; then
   fi
 
   # Listen settings come from the manifest's httpPort; a value in .env or the
-  # environment still wins, so an operator can change the port or protocol
-  # without patching the package.
-  # The container speaks plain HTTP behind the platform's proxy, so the listener
-  # binds every interface and the opt-in records that as deliberate.
-  export HTTP_PORT="${HTTP_PORT:-${PORT:-5000}}"
-  export HTTP_BIND_ADDRESS="${HTTP_BIND_ADDRESS:-0.0.0.0}"
-  export HTTP_ALLOW_REMOTE="${HTTP_ALLOW_REMOTE:-true}"
+  # environment still wins, so an operator can change the port or transport
+  # without patching the package. The listener defaults are set above.
   export CORS="${CORS:-disable}"
 
   # Cloudron terminates TLS, so the app itself receives plain HTTP and cannot
@@ -145,11 +165,7 @@ else
     exit 1
   fi
   export DB_TYPE="${DB_TYPE:-mongodb}"
-  # Plain HTTP inside the container, behind whatever terminates TLS in front of
-  # it; PORT is still honoured so an existing deployment keeps its port.
-  export HTTP_PORT="${HTTP_PORT:-${PORT:-5000}}"
-  export HTTP_BIND_ADDRESS="${HTTP_BIND_ADDRESS:-0.0.0.0}"
-  export HTTP_ALLOW_REMOTE="${HTTP_ALLOW_REMOTE:-true}"
+  # Listener defaults are set above; plain HTTP behind whatever terminates TLS.
   export CORS="${CORS:-disable}"
 fi
 
@@ -290,8 +306,9 @@ CONFIG_SUMMARY="${DATA_DIR}/config.txt"
   echo
   echo "# --- core ---"
   echo "MODE=${MODE}"
-  echo "HTTP_PORT=${HTTP_PORT}"
-  echo "HTTP_BIND_ADDRESS=${HTTP_BIND_ADDRESS}"
+  echo "HTTP_PORT=${HTTP_PORT:-<disabled>}"
+  echo "HTTPS_PORT=${HTTPS_PORT:-<disabled>}"
+  echo "HTTP_BIND_ADDRESS=${HTTP_BIND_ADDRESS:-<unset>}"
   echo "CORS=${CORS}"
   echo "TRUST_PROXY=${TRUST_PROXY:-none}"
   echo "DATA_DIR=${DATA_DIR}"

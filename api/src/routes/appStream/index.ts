@@ -9,6 +9,7 @@ import {
   getFilesFolder,
   ModeType,
   resolveWithinDrive,
+  resolveListeners,
   isSafePathSegment
 } from '../../utils'
 import User from '../../model/User'
@@ -135,10 +136,15 @@ export const publishAppStream = async (
       addEntryToFile
     )
 
-    const sasJsPort = process.env.PORT || 5000
+    // the port the app is reachable on, from the listener configuration rather
+    // than a variable nothing sets any more
+    const { config } = resolveListeners(process.env)
+    const sasJsPort = config?.httpPort || config?.httpsPort
+    const scheme = config?.httpPort ? 'http' : 'https'
+
     process.logger.info(
       'Serving Stream App: ',
-      `http://localhost:${sasJsPort}/AppStream/${streamServiceName}`
+      `${scheme}://localhost:${sasJsPort ?? 5000}/AppStream/${streamServiceName}`
     )
     return { streamServiceName }
   }

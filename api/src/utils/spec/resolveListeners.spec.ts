@@ -181,7 +181,7 @@ describe('resolveListeners', () => {
       expect(warnings.join('\n')).toContain('HTTP_PORT=5000')
     })
 
-    it('should let the new variables win over the legacy ones', () => {
+    it('should let the new variables win over the legacy ones, and say so', () => {
       const { config, warnings, errors } = resolve({
         HTTP_PORT: '5000',
         PROTOCOL: 'https',
@@ -192,6 +192,23 @@ describe('resolveListeners', () => {
       expect(errors).toEqual([])
       expect(config?.httpPort).toBe(5000)
       expect(config?.httpsPort).toBe(0)
+      // silence would let an operator believe the PROTOCOL=https beside the port
+      // variable is still what the deployment serves
+      expect(warnings.join('\n')).toContain('ignored')
+    })
+
+    it('should keep PROTOCOL=http meaning the old default port when PORT is unset', () => {
+      const { config, warnings, errors } = resolve({ PROTOCOL: 'http' })
+
+      expect(errors).toEqual([])
+      expect(config?.httpPort).toBe(5000)
+      expect(warnings.join('\n')).toContain('HTTP_PORT=5000')
+    })
+
+    it('should not warn about legacy variables when none are set', () => {
+      const { warnings, errors } = resolve({ HTTP_PORT: '5000' })
+
+      expect(errors).toEqual([])
       expect(warnings).toEqual([])
     })
 

@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 
-import { DatabaseType, ModeType, ProtocolType } from '../utils'
+import { DatabaseType, ModeType } from '../utils'
 
 export const configureExpressSession = (app: Express) => {
   const { MODE, DB_TYPE } = process.env

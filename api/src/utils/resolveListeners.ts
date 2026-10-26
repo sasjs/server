@@ -89,20 +89,35 @@ const translateLegacy = (
   const warnings: string[] = []
   const errors: string[] = []
 
-  if (isSet(env.HTTP_PORT) || isSet(env.HTTPS_PORT))
+  const legacySet = isSet(env.PROTOCOL) || isSet(env.PORT)
+
+  if (isSet(env.HTTP_PORT) || isSet(env.HTTPS_PORT)) {
+    // the new variables win, but say so: silently ignoring a PROTOCOL=https
+    // leaves an operator believing a deployment is encrypted when the port
+    // variable beside it says otherwise
+    if (legacySet)
+      warnings.push(
+        '- PROTOCOL and PORT are ignored because HTTP_PORT or HTTPS_PORT is set\n - remove them so the deployment states its intent in one place'
+      )
+
     return {
       httpPort: env.HTTP_PORT,
       httpsPort: env.HTTPS_PORT,
       warnings,
       errors
     }
+  }
 
   const protocol = env.PROTOCOL?.trim().toLowerCase()
-  const legacyPort = env.PORT
-
-  if (!protocol && !isSet(legacyPort)) return { warnings, errors }
+  // PORT carried a default of 5000 before the split, so PROTOCOL on its own must
+  // keep meaning that transport on 5000 for the one release this shim exists
+  const legacyPort = isSet(env.PORT) ? env.PORT : '5000'
 
   if (!protocol) {
+    // nothing legacy in use at all: leave the refusal to the "no listener"
+    // check, which names the variables an operator should set
+    if (!legacySet) return { warnings, errors }
+
     errors.push(
       `- PORT is set but PROTOCOL is not, so the listener it described cannot be determined\n - set HTTP_PORT=${legacyPort} or HTTPS_PORT=${legacyPort} instead`
     )
