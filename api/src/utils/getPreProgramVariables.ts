@@ -3,18 +3,6 @@ import { PreProgramVars } from '../types'
 import { resolveListeners } from './resolveListeners'
 
 /**
- * The URL a generated program uses to call back into this server, exposed to SAS
- * as `_sasjs_apiserverurl` and consumed by the `ms_*` macros in @sasjs/core.
- *
- * A plain HTTP listener is preferred when one is enabled. The callback comes from
- * a SAS process on the same host as the API, so loopback reachability is enough,
- * and an https callback would require that SAS session to trust this server's own
- * certificate - which a self-signed or internally-issued one does not provide.
- *
- * With no plain listener the request's own origin is the only address available,
- * so the request decides.
- */
-/**
  * A URL authority holding an IPv6 literal needs brackets - `http://::1:5000` is
  * not parseable, `http://[::1]:5000` is. Hostnames and IPv4 addresses are left
  * alone.
@@ -25,6 +13,16 @@ const asUrlHost = (address: string): string => {
   return address.includes(':') && !bracketed ? `[${address}]` : address
 }
 
+/**
+ * The callback URL for a program this server executes itself - the value the
+ * `ms_*` macros in @sasjs/core read as `_sasjs_apiserverurl`.
+ *
+ * A plain HTTP listener is preferred when one is enabled: the SAS session is a
+ * child of this process, so loopback reaches it, and an https callback would make
+ * it trust this server's own certificate - which a self-signed or
+ * internally-issued one does not provide. With no plain listener the request's
+ * origin is the only address available.
+ */
 const getLocalServerUrl = (req: Request): string => {
   // an explicit override is the operator's statement about reachability, so it
   // wins over anything derived here - for both topologies

@@ -144,10 +144,21 @@ export const publishAppStream = async (
     if (config) {
       const port = config.httpPort || config.httpsPort
       const scheme = config.httpPort ? 'http' : 'https'
+      // the bound address, not localhost: a listener on 0.0.0.0 or a specific
+      // interface is not reachable as localhost from another machine
+      const bind = config.httpPort
+        ? config.httpBindAddress
+        : config.httpsBindAddress
+      const host =
+        !bind || bind === '0.0.0.0' || bind === '::'
+          ? 'localhost'
+          : bind.includes(':')
+            ? `[${bind}]`
+            : bind
 
       process.logger.info(
         'Serving Stream App: ',
-        `${scheme}://localhost:${port}/AppStream/${streamServiceName}`
+        `${scheme}://${host}:${port}/AppStream/${streamServiceName}`
       )
     } else {
       process.logger.warn(
