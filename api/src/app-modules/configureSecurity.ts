@@ -21,9 +21,14 @@ const stripUpgradeDirective = (
 
   const original = res.setHeader.bind(res)
 
+  const strip = (value: string): string =>
+    value.replace(/;?\s*upgrade-insecure-requests\b/g, '')
+
   res.setHeader = ((name: string, value: number | string | string[]) => {
     if (String(name).toLowerCase() === 'content-security-policy')
-      value = String(value).replace(/;?\s*upgrade-insecure-requests\b/g, '')
+      // helmet writes one string today; a list is handled element-wise so a
+      // future multi-header policy is not silently joined into one value
+      value = Array.isArray(value) ? value.map(strip) : strip(String(value))
 
     return original(name, value)
   }) as typeof res.setHeader

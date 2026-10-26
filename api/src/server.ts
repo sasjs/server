@@ -29,9 +29,12 @@ appPromise.then(async (app: Express) => {
 
   process.logger.info(`⚡️[server]: listening: ${listeners.description}`)
 
-  const stop = (signal: string) => {
+  const stop = async (signal: string) => {
     process.logger.info(`[server] ${signal} received, closing listeners`)
-    listeners.close()
+
+    // waits for in-flight requests, with a ceiling of its own
+    await listeners.close()
+
     process.exit(0)
   }
 

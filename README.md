@@ -169,6 +169,13 @@ HTTPS_BIND_ADDRESS=
 # CSRF protection and sessions are identical on each, and GET /SASjsApi/info
 # reports `httpPort` and `httpsPort` (null for a disabled listener).
 #
+# Stored programs call back into this server through the SAS macro variable
+# `_sasjs_apiserverurl`, which the generated program derives from the listener
+# configuration: when a plain HTTP listener is enabled the callback uses it
+# (loopback for a wildcard bind, the bound address otherwise), so the SAS session
+# never has to trust this server's own certificate. With only a TLS listener the
+# value follows the request that started the program.
+#
 # PROTOCOL and PORT are deprecated: for one release they are translated into the
 # matching port variable with a warning, and removed after that.
 

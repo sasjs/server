@@ -113,7 +113,16 @@ fi
 # to plain HTTP only - the TLS listener has no such guard.
 if [[ -n "${HTTP_PORT:-}" ]]; then
   export HTTP_BIND_ADDRESS="${HTTP_BIND_ADDRESS:-0.0.0.0}"
-  export HTTP_ALLOW_REMOTE="${HTTP_ALLOW_REMOTE:-true}"
+
+  if [[ -z "${HTTP_ALLOW_REMOTE:-}" ]]; then
+    export HTTP_ALLOW_REMOTE=true
+    # the default is the image's own behaviour, so it is not an error - but it is
+    # a clear-text listener on a published port, and the operator should see that
+    # decided on their behalf every start, not discover it
+    echo "NOTE: plain HTTP listens on ${HTTP_BIND_ADDRESS}:${HTTP_PORT} with HTTP_ALLOW_REMOTE=true -"
+    echo "      that port is unencrypted. Terminate TLS in front of it, or set"
+    echo "      HTTP_BIND_ADDRESS=127.0.0.1 to keep it on loopback."
+  fi
 fi
 
 if [[ -n "$CLOUDRON_MARKER" ]]; then

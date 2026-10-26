@@ -5,12 +5,15 @@ import { createServer as createHttpsServer } from 'https'
 import { getCertificates } from './utils/getCertificates'
 import { ListenerConfig } from './utils/resolveListeners'
 
+/** How long in-flight requests get to finish before their sockets are dropped. */
+const SHUTDOWN_CEILING_MS = 5000
+
 export interface RunningListeners {
   servers: Server[]
   /** What to log, e.g. `https on *:443, http on 127.0.0.1:5000`. */
   description: string
   /** Stops accepting connections and drops the ones already open. */
-  close: () => void
+  close: () => Promise<void>
 }
 
 /**
@@ -56,13 +59,34 @@ export const listen = async (
       server.listen(port, address)
     })
 
-  const close = () => {
-    // close() stops accepting connections but leaves established keep-alive
-    // sockets open, so an orchestrator would wait out its kill timeout
-    servers.forEach((server) => {
-      server.close()
-      server.closeAllConnections?.()
+  /**
+   * Stops accepting connections, lets the requests already in flight finish, and
+   * resolves when every listener has closed - or after a short ceiling, so a
+   * client that holds a request open cannot keep the process alive past an
+   * orchestrator's kill timeout.
+   */
+  const close = async () => {
+    const closed = servers.map(
+      (server) =>
+        new Promise<void>((resolve) => {
+          server.close(() => resolve())
+          server.closeIdleConnections?.()
+        })
+    )
+
+    let timer: NodeJS.Timeout | undefined
+
+    const ceiling = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        // whatever is still open now is not going to finish in time: drop it
+        servers.forEach((server) => server.closeAllConnections?.())
+        resolve()
+      }, SHUTDOWN_CEILING_MS)
     })
+
+    await Promise.race([Promise.all(closed), ceiling])
+
+    if (timer) clearTimeout(timer)
   }
 
   try {
