@@ -1,3 +1,18 @@
+## 1.21.3
+
+### Bug Fixes
+
+* **deps:** clear the outstanding high advisories in the API tree ([94b2691](https://github.com/sasjs/server/commit/94b26918d3ec44a6d12c269b5c4e288b3da29a91))
+## Verifying the download
+
+`SHA256SUMS` contains the SHA256 checksum of every asset in this release.
+
+    sha256sum --check SHA256SUMS              # Linux
+    shasum --algorithm 256 --check SHA256SUMS # macOS
+
+Download `SHA256SUMS` and the executable next to it, then run the command for
+your platform from that directory. Each checked file should report `OK`.
+
 ## 1.21.2
 
 ### Bug Fixes
