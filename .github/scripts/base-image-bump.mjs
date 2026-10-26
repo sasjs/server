@@ -32,8 +32,11 @@ const DOCKERFILE = path.join(ROOT, 'container', 'Dockerfile')
 const REGISTRY = 'cloudron/node-base'
 const ARCHITECTURE = 'amd64'
 // [^\S\n] rather than \s: \s matches a newline, and a --write would then
-// consume the line break after FROM along with the blank line below it
-const PIN = /^FROM\s+(cloudron\/node-base):([^@\s]+)@(sha256:[0-9a-f]{64})[^\S\n]*$/m
+// consume the line break after FROM along with the blank line below it. A
+// trailing comment is allowed and is dropped by --write, so a human note next to
+// the pin does not stop the weekly job.
+const PIN =
+  /^FROM\s+(cloudron\/node-base):([^@\s]+)@(sha256:[0-9a-f]{64})[^\S\n]*(?:#.*)?$/m
 
 const args = process.argv.slice(2)
 const write = args.includes('--write')
@@ -85,6 +88,13 @@ const newest = async () => {
   candidates.sort((a, b) => b.name.localeCompare(a.name))
   const tag = chosenTag ? candidates.find((c) => c.name === chosenTag) : candidates[0]
   if (!tag) throw new Error(`${chosenTag} is not a ${major}-YYYYMMDD tag for ${REGISTRY}`)
+
+  // --tag is a manual interface, so the direction is checked: a stale output or a
+  // hand-typed tag must not rewrite the pin backwards and open that as a bump
+  if (chosenTag && tag.name < current.tag)
+    throw new Error(
+      `--tag ${tag.name} is older than the pinned ${current.tag}; refusing to move the pin backwards`
+    )
 
   const digest = digestOf(tag)
 

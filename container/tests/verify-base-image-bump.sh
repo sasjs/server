@@ -171,6 +171,30 @@ OUT=$(run "$DIR" "$T/tags-paged.json" --write)
 check "reads past the first page"   "newest:  24-20261029" "$OUT"
 check "writes the later-page tag"   "FROM cloudron/node-base:24-20261029@sha256:777777" "$(cat "$DIR/container/Dockerfile")"
 
+# --- case 8: --tag may not move the pin backwards ---------------------------
+DIR="$T/backwards"
+make_tree "$DIR"
+cat > "$T/tags-older.json" <<'EOF'
+[
+  { "name": "24-20260901", "images": [ { "architecture": "amd64", "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888" } ] },
+  { "name": "24-20260920", "images": [ { "architecture": "amd64", "digest": "sha256:d984683ec59bf2379130bf41cf3c2b6bc0453f327297d7183525cb05424e7b34" } ] }
+]
+EOF
+
+OUT=$(run "$DIR" "$T/tags-older.json" --write --tag 24-20260901); CODE=$?
+check "refuses to move the pin backwards" "older than the pinned" "$OUT"
+check "backwards bump exits non-zero"     "1" "$CODE"
+check_absent "backwards pin not written"  "24-20260901" "$(cat "$DIR/container/Dockerfile")"
+
+# --- case 9: a comment after the FROM line ----------------------------------
+DIR="$T/commented"
+make_tree "$DIR"
+sed -i 's|^FROM cloudron/node-base:24-20260920@sha256:d984683ec59bf2379130bf41cf3c2b6bc0453f327297d7183525cb05424e7b34$|& # keep an eye on this|' "$DIR/container/Dockerfile"
+
+OUT=$(run "$DIR" "$T/tags-newer.json" --write)
+check "reads a pin with a trailing comment" "newest:  24-20261026" "$OUT"
+check "rewrites it anyway"                  "FROM cloudron/node-base:24-20261026@sha256:111111" "$(cat "$DIR/container/Dockerfile")"
+
 echo
 if [[ $FAIL -ne 0 ]]; then
   echo "SOME TESTS FAILED"
