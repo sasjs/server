@@ -16,12 +16,32 @@ export const DEBUG_ON = 131
  * Returns undefined for an absent parameter, so "not asked for" stays distinct
  * from "asked for".
  */
+/** Names that mean "no session log". */
+const OFF = new Set(['false', 'off', 'no'])
+
+/** Names that mean "return the session log". */
+const ON = new Set(['log', 'trace', 'true', 'on', 'yes'])
+
 export const parseDebugValue = (value: unknown): number | undefined => {
   if (value === undefined || value === null || value === '') return undefined
 
   if (typeof value === 'number') return value
 
-  const parsed = Number(String(value).trim())
+  const text = String(value).trim()
 
-  return Number.isFinite(parsed) ? parsed : DEBUG_ON
+  const parsed = Number(text)
+
+  if (Number.isFinite(parsed)) return parsed
+
+  const name = text.toLowerCase()
+
+  // `false` and `off` must not turn logging on - that is the one direction a
+  // caller would never expect
+  if (OFF.has(name)) return 0
+
+  if (ON.has(name)) return DEBUG_ON
+
+  // validation admits only the names above, so this is the normaliser doing the
+  // safe thing for a caller that skipped it rather than a supported value
+  return DEBUG_ON
 }

@@ -18,6 +18,12 @@ describe('parseDebugValue', () => {
     expect(parseDebugValue('trace')).toEqual(DEBUG_ON)
   })
 
+  it('should read a falsy name as logging off, not on', () => {
+    expect(parseDebugValue('false')).toEqual(0)
+    expect(parseDebugValue('off')).toEqual(0)
+    expect(parseDebugValue('NO')).toEqual(0)
+  })
+
   it('should treat absent and empty values as not set', () => {
     expect(parseDebugValue(undefined)).toBeUndefined()
     expect(parseDebugValue(null)).toBeUndefined()

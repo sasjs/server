@@ -40,6 +40,16 @@ describe('_debug validation', () => {
     expect(error).toBeUndefined()
   })
 
+  it('should refuse a name that is not one of the levels', () => {
+    // a typo used to be silently accepted once the value stopped being numeric
+    const { error } = executeProgramRawValidation({
+      _program: '/Public/app/run.sas',
+      _debug: 'lgo'
+    })
+
+    expect(error).toBeDefined()
+  })
+
   it('should still require _program', () => {
     const { error } = executeProgramRawValidation({ _debug: 'log' })
 
