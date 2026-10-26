@@ -149,6 +149,28 @@ OUT=$(run "$DIR" "$T/tags-digest.json" --write)
 check "reports the digest move"     "stale:   true" "$OUT"
 check "rewrites the digest in place" "FROM cloudron/node-base:24-20260920@sha256:555555" "$(cat "$DIR/container/Dockerfile")"
 
+# --- case 7: the newest tag is on a later page ------------------------------
+# fetchTags walks `next` until it is null; a single-page fixture never exercises
+# that loop, and it decides which tags the scheduled run ever sees
+DIR="$T/paged"
+make_tree "$DIR"
+cat > "$T/tags-paged.json" <<'EOF'
+{
+  "pages": [
+    [
+      { "name": "24-20260901", "images": [ { "architecture": "amd64", "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666" } ] }
+    ],
+    [
+      { "name": "24-20261029", "images": [ { "architecture": "amd64", "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777" } ] }
+    ]
+  ]
+}
+EOF
+
+OUT=$(run "$DIR" "$T/tags-paged.json" --write)
+check "reads past the first page"   "newest:  24-20261029" "$OUT"
+check "writes the later-page tag"   "FROM cloudron/node-base:24-20261029@sha256:777777" "$(cat "$DIR/container/Dockerfile")"
+
 echo
 if [[ $FAIL -ne 0 ]]; then
   echo "SOME TESTS FAILED"

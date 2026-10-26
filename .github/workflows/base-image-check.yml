@@ -32,7 +32,19 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
+        with:
+          # an App token, so the push raises pull_request events and the bump's
+          # own checks run - a GITHUB_TOKEN push raises nothing, which left the
+          # Trivy gate this PR relies on unexecuted
+          token: ${{ steps.app-token.outputs.token }}
         with:
           # The branch is rebuilt from the default branch on every run, and the
           # comparison reads the committed Dockerfile, so history is not needed
@@ -50,7 +62,9 @@ jobs:
       - name: Open or update the bump pull request
         if: steps.pin.outputs.stale == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # the App token: gh opens and edits the pull request as the App, and the
+          # push below inherits it through the checkout's credential
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BRANCH: chore/base-image-bump
           NEXT_TAG: ${{ steps.pin.outputs.nextTag }}
           NEXT_DIGEST: ${{ steps.pin.outputs.nextDigest }}
@@ -61,14 +75,20 @@ jobs:
           # One open pull request, whoever opened it: if another branch already
           # proposes a base-image bump, this run stands down rather than adding a
           # second opinion.
-          # judged by the file a pull request touches, not its title: a human
-          # bump titled "refresh node base" would otherwise be invisible
+          # judged by the files a pull request touches, not its title: a human
+          # bump titled "refresh node base" would otherwise be invisible. Narrowed
+          # to a pull request that changes ONLY the Dockerfile, so an unrelated
+          # change that happens to touch it cannot suspend this job for weeks.
           others="$(gh pr list --state open --limit 200 --json number,headRefName,files \
-            | jq --arg branch "$BRANCH" \
+            | jq -r --arg branch "$BRANCH" \
                 '[.[] | select(.headRefName != $branch)
-                     | select(any(.files[]?; .path == "container/Dockerfile"))] | length')"
-          if [ "$others" != "0" ]; then
-            echo "another open pull request already bumps the base image; standing down"
+                     | select((.files | length) > 0)
+                     | select(all(.files[]?; .path == "container/Dockerfile"))
+                     | .number] | first // empty')"
+          if [ -n "$others" ]; then
+            # surfaced, not swallowed: a weekly no-op that says nothing is
+            # indistinguishable from "nothing to do"
+            echo "::warning title=Base image bump suspended::pull request #${others} already proposes a base-image bump"
             exit 0
           fi
 
@@ -112,10 +132,9 @@ jobs:
           pull request goes red.
 
           CI verifies it, because an OS scan only means anything against the built image:
-          \`Container build and scan\` runs Trivy over it and gates on HIGH and CRITICAL.
-
-          This pull request was opened by a scheduled job, so its checks may need approval
-          before they run - the push uses the workflow's own \`GITHUB_TOKEN\`.
+          \`Container build and scan\` runs Trivy over it and gates on HIGH and CRITICAL. The
+          branch is pushed with a GitHub App token rather than \`GITHUB_TOKEN\`, so those
+          checks run on this pull request instead of waiting for an approval.
           BODY
 
           # one number: the branch is fixed, so any other match is a duplicate of
