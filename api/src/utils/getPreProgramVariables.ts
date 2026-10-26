@@ -1,9 +1,33 @@
 import { Request } from 'express'
 import { PreProgramVars } from '../types'
+import { resolveListeners } from './resolveListeners'
+
+/**
+ * The URL a generated program uses to call back into this server, exposed to SAS
+ * as `_sasjs_apiserverurl` and consumed by the `ms_*` macros in @sasjs/core.
+ *
+ * A plain HTTP listener is preferred when one is enabled. The callback comes from
+ * a SAS process on the same host as the API, so loopback reachability is enough,
+ * and an https callback would require that SAS session to trust this server's own
+ * certificate - which a self-signed or internally-issued one does not provide.
+ *
+ * With no plain listener the request's own origin is the only address available,
+ * so the request decides.
+ */
+const getApiServerUrl = (req: Request): string => {
+  const { config } = resolveListeners(process.env)
+
+  if (!config?.httpPort) return `${req.protocol}://${req.get('host')}`
+
+  // a wildcard bind answers on loopback; a specific address is used as written
+  const wildcard =
+    config.httpBindAddress === '0.0.0.0' || config.httpBindAddress === '::'
+  const host = wildcard ? '127.0.0.1' : config.httpBindAddress
+
+  return `http://${host}:${config.httpPort}`
+}
 
 export const getPreProgramVariables = (req: Request): PreProgramVars => {
-  const host = req.get('host')
-  const protocol = req.protocol + '://'
   const { user, accessToken } = req
   const csrfToken = req.headers['x-xsrf-token'] || req.cookies['XSRF-TOKEN']
   const sessionId = req.cookies['connect.sid']
@@ -24,7 +48,7 @@ export const getPreProgramVariables = (req: Request): PreProgramVars => {
     username: user ? user.username : 'demo',
     userId: user ? user.userId : 'demoId',
     displayName: user ? user.displayName : 'demo',
-    serverUrl: protocol + host,
+    serverUrl: getApiServerUrl(req),
     httpHeaders
   }
 }
