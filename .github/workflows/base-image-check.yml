@@ -61,7 +61,7 @@ jobs:
           # One open pull request, whoever opened it: if another branch already
           # proposes a base-image bump, this run stands down rather than adding a
           # second opinion.
-          others="$(gh pr list --state open --json title,headRefName \
+          others="$(gh pr list --state open --limit 200 --json title,headRefName \
             | jq --arg branch "$BRANCH" \
                 '[.[] | select(.headRefName != $branch)
                      | select(.title | test("bump the base image"; "i"))] | length')"
@@ -70,7 +70,10 @@ jobs:
             exit 0
           fi
 
-          node .github/scripts/base-image-bump.mjs --write
+          # --tag: resolve once. Without it the script looks the newest tag up
+          # again, and a tag published in between would be written while the
+          # commit, PR title and body all quote the first one.
+          node .github/scripts/base-image-bump.mjs --write --tag "$NEXT_TAG"
 
           # A human (or a merge) may have moved the pin between the check and
           # here; then there is nothing to commit and this run is a no-op.
@@ -84,7 +87,7 @@ jobs:
           git checkout -B "$BRANCH"
           git add container/Dockerfile
           git commit -m "chore(container): bump the base image to ${NEXT_TAG}"
-          git push --force origin "$BRANCH"
+          git push --force-with-lease origin "$BRANCH"
 
           cat > /tmp/base-image-body.md <<BODY
           The container's OS-layer gate reported CVEs against the package snapshot
@@ -106,7 +109,7 @@ jobs:
           before they run - the push uses the workflow's own \`GITHUB_TOKEN\`.
           BODY
 
-          existing="$(gh pr list --state open --head "$BRANCH" --json number --jq '.[].number')"
+          existing="$(gh pr list --state open --limit 200 --head "$BRANCH" --json number --jq '.[].number')"
           if [ -z "$existing" ]; then
             gh pr create \
               --base main \
@@ -130,7 +133,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          number="$(gh pr list --state open --head chore/base-image-bump --json number --jq '.[].number')"
+          number="$(gh pr list --state open --limit 200 --head chore/base-image-bump --json number --jq '.[].number')"
           if [ -z "$number" ]; then
             echo "pin is current at ${NEXT_TAG}; no pull request to close"
             exit 0
