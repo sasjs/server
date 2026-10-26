@@ -61,6 +61,11 @@ the `js` and `py` runtimes, and it needed a SAS installation mounted from the
 host to do the work the server exists for. It has been withdrawn along with the
 Cloudron packaging built on it.
 
+That also withdraws the OS-layer scan the image pipeline ran: nothing in the
+remaining pipeline looks for CVEs in a bundled runtime, because there is no
+bundled runtime. The js and py interpreters a deployment uses are the ones on its
+own host, and patching them is part of that host's maintenance.
+
 ## ENV Var configuration
 
 When launching the app, it will make use of specific environment variables. These can be set in the following places:

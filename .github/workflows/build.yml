@@ -184,12 +184,12 @@ jobs:
           - 27017:27017
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Use Node.js lts/*
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
@@ -362,6 +362,9 @@ jobs:
           echo "$LOC"
           echo "$LOC" | grep -q 'http://127.0.0.1:8899/authorize'
           echo "$LOC" | grep -q 'client_id=sasjs-ci-client'
+          # percent-encoded in full: the app encodes ':' as well as '/'. This is
+          # the only guard on the client encoding its own callback.
+          echo "$LOC" | grep -q 'redirect_uri=http%3A%2F%2F127.0.0.1%3A5000%2FSASLogon%2Fopenid%2Fcallback'
           echo "$LOC" | grep -q 'scope=openid'
           echo "$LOC" | grep -q 'state='
 

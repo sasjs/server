@@ -49,7 +49,9 @@ export class FileUploadController {
         return res.status(400).send(errQ.details[0].message)
     }
 
-    const programPath = (query?._program ?? bodyProgram) as string
+    // `||`, not `??`: an empty query value is absent in every sense that matters,
+    // and must not shadow a program the body does carry
+    const programPath = (query?._program || bodyProgram) as string
 
     let runTime
 
