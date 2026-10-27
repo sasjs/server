@@ -51,7 +51,15 @@ const config: Configuration = {
             loader: 'css-loader',
             options: {
               modules: {
-                localIdentName: '[local]--[hash:base64:5]'
+                localIdentName: '[local]--[hash:base64:5]',
+                // css-loader 7 derives `namedExport` from `esModule`, which is
+                // true by default, so a `.module.css` gets NAMED exports and no
+                // default. Every stylesheet here is imported as
+                // `import classes from './x.module.css'`, which then yields
+                // undefined - and the first `classes.TabContainer` throws,
+                // blanking the page. Keep the default export.
+                namedExport: false,
+                exportLocalsConvention: 'as-is'
               }
             }
           }
