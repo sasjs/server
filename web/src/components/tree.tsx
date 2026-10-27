@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { Menu, MenuItem, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import MuiTreeView from '@mui/lab/TreeView'
-import MuiTreeItem from '@mui/lab/TreeItem'
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
+import { TreeItem } from '@mui/x-tree-view/TreeItem'
 
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
@@ -12,7 +12,7 @@ import { TreeNode } from '../utils/types'
 
 interface Props {
   node: TreeNode
-  handleSelect: (filePath: string) => void
+  handleSelect: (path: string) => void
   deleteNode: (path: string, isFolder: boolean) => void
   addFile: (path: string) => void
   addFolder: (path: string) => void
@@ -22,6 +22,12 @@ interface Props {
 interface TreeViewProps extends Props {
   defaultExpanded?: string[]
 }
+
+// MUI X requires a non-empty itemId, and the drive root's relativePath is the
+// empty string, so the root is addressed by this constant instead.
+const ROOT_ITEM_ID = 'sasjs-drive-root'
+const itemIdFor = (relativePath: string) =>
+  relativePath === '' ? ROOT_ITEM_ID : relativePath
 
 const TreeView = ({
   node,
@@ -33,9 +39,9 @@ const TreeView = ({
   defaultExpanded
 }: TreeViewProps) => {
   const renderTree = (nodes: TreeNode) => (
-    <MuiTreeItem
+    <TreeItem
       key={nodes.relativePath}
-      nodeId={nodes.relativePath}
+      itemId={itemIdFor(nodes.relativePath)}
       label={
         <TreeItemWithContextMenu
           node={nodes}
@@ -50,18 +56,20 @@ const TreeView = ({
       {Array.isArray(nodes.children)
         ? nodes.children.map((node) => renderTree(node))
         : null}
-    </MuiTreeItem>
+    </TreeItem>
   )
 
   return (
-    <MuiTreeView
-      defaultCollapseIcon={<ExpandMoreIcon />}
-      defaultExpandIcon={<ChevronRightIcon />}
-      defaultExpanded={defaultExpanded}
+    <SimpleTreeView
+      slots={{
+        collapseIcon: ExpandMoreIcon,
+        expandIcon: ChevronRightIcon
+      }}
+      defaultExpandedItems={defaultExpanded?.map(itemIdFor)}
       sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
     >
       {renderTree(node)}
-    </MuiTreeView>
+    </SimpleTreeView>
   )
 }
 
