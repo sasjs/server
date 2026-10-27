@@ -182,7 +182,12 @@ export const folderParamValidation = (
 export const fileTreeParamValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     _folderPath: Joi.string().allow('')
-  }).validate(data)
+  })
+    // Unknown query parameters are tolerated: this route ignored them before it
+    // had any validation at all, and a cache-buster or a tracking parameter an
+    // existing client appends must not turn a working request into a 400.
+    .unknown(true)
+    .validate(data)
 
 export const folderBodyValidation = (data: any): Joi.ValidationResult =>
   Joi.object({

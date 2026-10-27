@@ -17,8 +17,8 @@ const {
   ancestorPathsOf,
   childrenOf,
   expandedDescendantsOf,
-  parentPathOf,
-  withLevel
+  graftLevel,
+  parentPathOf
 } = await import('../src/utils/driveTree.ts')
 
 const node = (name, relativePath, isFolder, children = [], extra = {}) => ({
@@ -53,14 +53,14 @@ check('parentPathOf returns the containing folder', () => {
   assert.equal(parentPathOf('/a'), '')
 })
 
-check('withLevel replaces the named node and leaves the input untouched', () => {
+check('graftLevel replaces the named node and leaves the input untouched', () => {
   const tree = node('files', '', true, [
     node('a', '/a', true, [node('stale.sas', '/a/stale.sas', false)])
   ])
 
   const level = node('a', '/a', true, [node('fresh.sas', '/a/fresh.sas', false)])
 
-  const next = withLevel(tree, '/a', level)
+  const next = graftLevel(tree, '/a', level)
 
   assert.deepEqual(
     next.children[0].children.map((child) => child.name),
@@ -73,11 +73,17 @@ check('withLevel replaces the named node and leaves the input untouched', () => 
   )
 })
 
-check('withLevel of the root replaces the whole tree', () => {
+check('graftLevel of the root replaces the whole tree', () => {
   const tree = node('files', '', true, [node('old', '/old', true)])
-  const next = withLevel(tree, '', node('files', '', true, []))
+  const next = graftLevel(tree, '', node('files', '', true, []))
 
   assert.deepEqual(next.children, [])
+})
+
+check('graftLevel reports null when no node carries the path', () => {
+  const tree = node('files', '', true, [node('a', '/a', true)])
+
+  assert.equal(graftLevel(tree, '/not/in/tree', node('x', '/not/in/tree', true)), null)
 })
 
 check('childrenOf returns loaded children as they are', () => {

@@ -5,10 +5,12 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import AdmZip from 'adm-zip'
 
+import { symlink } from 'fs/promises'
 import {
   folderExists,
   fileExists,
   readFile,
+  deleteFile,
   deleteFolder,
   generateTimestamp,
   copy,
@@ -615,6 +617,49 @@ describe('drive', () => {
 
       expect(res.statusCode).toEqual(404)
       expect(res.text).toContain('does not exist')
+    })
+
+    it('should resolve .. to the canonical spelling of the folder', async () => {
+      const res = await getTree({
+        _folderPath: `${rootFolder}/../${rootFolder}/${subFolder}`
+      })
+
+      expect(res.statusCode).toEqual(200)
+      // the canonical spelling, not an echo of the request: the interface keys
+      // its nodes on this, so a '..' would graft onto nothing
+      expect(res.body.tree.relativePath).toEqual(`/${rootFolder}/${subFolder}`)
+    })
+
+    it('should ignore query parameters it does not understand', async () => {
+      // this route ignored extra parameters before it had any validation; a
+      // cache-buster must not turn a working request into a 400
+      const res = await request(app)
+        .get(fileTreeApi)
+        .query({ _folderPath: `/${rootFolder}`, cacheBuster: '12345' })
+        .auth(accessToken, { type: 'bearer' })
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body.tree.relativePath).toEqual(`/${rootFolder}`)
+    })
+
+    it('should not list an entry whose real path leaves the drive', async () => {
+      const pathToDrive = fileUtilModules.getFilesFolder()
+      const outside = path.join(pathToDrive, '..', 'outside-the-drive')
+      const link = path.join(pathToDrive, rootFolder, 'escape-link')
+
+      await createFolder(outside)
+      await createFile(path.join(outside, 'secret.txt'), 'not yours')
+      await symlink(outside, link)
+
+      const res = await getTree({ _folderPath: `/${rootFolder}` })
+
+      expect(res.statusCode).toEqual(200)
+      expect(
+        res.body.tree.children.map((child: any) => child.name)
+      ).not.toContain('escape-link')
+
+      await deleteFile(link)
+      await deleteFolder(outside)
     })
 
     it('should respond with 400 when the path is a file', async () => {
