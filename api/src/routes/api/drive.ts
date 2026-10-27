@@ -11,6 +11,7 @@ import {
   extractName,
   fileBodyValidation,
   fileParamValidation,
+  fileTreeParamValidation,
   folderBodyValidation,
   folderParamValidation,
   isZipFile,
@@ -281,7 +282,7 @@ driveRouter.post('/rename', async (req, res) => {
 })
 
 driveRouter.get('/fileTree', async (req, res) => {
-  const { error, value: query } = folderParamValidation(req.query)
+  const { error, value: query } = fileTreeParamValidation(req.query)
 
   if (error) return res.status(400).send(error.details[0].message)
 

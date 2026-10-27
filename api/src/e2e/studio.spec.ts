@@ -17,7 +17,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, chromium, Page } from 'playwright'
-import { createFile, fileExists } from '@sasjs/utils'
+import { createFile, createFolder, fileExists } from '@sasjs/utils'
 import { PROGRAM_NAME, TRAILING_SPACE_LINE } from './fixture'
 import { UserController } from '../controllers/'
 import { RunTimeType, getWebBuildFolder, sysInitCompiledPath } from '../utils/'
@@ -45,6 +45,9 @@ describe('Studio in a browser', () => {
   let page: Page
   let driveLocation: string
   const pageErrors: string[] = []
+  // Every fileTree request the page makes, as the `_folderPath` it asked for -
+  // or '<whole-tree>' if it asked for the entire drive in one call.
+  const fileTreeRequests: string[] = []
 
   const baseUrl = () => `http://localhost:${(server.address() as any).port}`
 
@@ -66,6 +69,13 @@ describe('Studio in a browser', () => {
     // setupEnv.ts points the working directory at a throwaway tree, so the
     // drive the app resolves under NODE_ENV=test holds this suite's fixture.
     driveLocation = process.env.DRIVE_LOCATION!
+
+    // A folder that has not been opened, so the lazy load can be observed.
+    await createFolder(path.join(driveLocation, 'files', 'e2eFolder'))
+    await createFile(
+      path.join(driveLocation, 'files', 'e2eFolder', 'nested.sas'),
+      'data _null_;'
+    )
 
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()
@@ -93,6 +103,13 @@ describe('Studio in a browser', () => {
     )
     page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
     page.on('pageerror', (error) => pageErrors.push(String(error)))
+    page.on('request', (request) => {
+      if (!request.url().includes('/SASjsApi/drive/fileTree')) return
+
+      fileTreeRequests.push(
+        new URL(request.url()).searchParams.get('_folderPath') ?? '<whole-tree>'
+      )
+    })
 
     // Log in.
     await page.goto(baseUrl())
@@ -147,6 +164,20 @@ describe('Studio in a browser', () => {
     await page.screenshot({
       path: path.join(screenshotDir, '01-highlighting.png')
     })
+  }, 60000)
+
+  it('loads the drive one folder level at a time', async () => {
+    // Opening Studio asked for the root level only - not the whole drive, and
+    // not the folder that holds most of it.
+    expect(fileTreeRequests).toEqual([''])
+
+    // The nested program exists but was never requested into the tree.
+    await page.click('text=e2eFolder')
+    await page.waitForSelector('text=nested.sas', { timeout: 30000 })
+
+    // Expanding the folder is what asked for its contents, and it asked for
+    // that folder alone.
+    expect(fileTreeRequests).toEqual(['', '/e2eFolder'])
   }, 60000)
 
   it('colours SAS tokens', async () => {

@@ -323,8 +323,9 @@ export class DriveController {
    * requesting that folder's contents.
    *
    * @summary Get the SASjs Drive file tree, or one folder of it
-   * @param _folderPath Drive-relative folder path, e.g. /Public/services. Omit
-   * for the whole tree.
+   * @param _folderPath Drive-relative folder path, e.g. /Public/services. An
+   * empty value means the drive root; omit the parameter entirely for the whole
+   * tree.
    */
   @Get('/filetree')
   public async getFileTree(

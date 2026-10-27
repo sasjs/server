@@ -579,6 +579,22 @@ describe('drive', () => {
       expect(file.isFolder).toEqual(false)
     })
 
+    it('should treat an empty _folderPath as the drive root', async () => {
+      const res = await getTree({ _folderPath: '' })
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body.tree.relativePath).toEqual('')
+
+      const root = res.body.tree.children.find(
+        (child: any) => child.name === rootFolder
+      )
+
+      // the root LEVEL, not the whole tree: the folder is listed without its
+      // own contents, which is what tells the two forms apart
+      expect(root.children).toEqual([])
+      expect(root.hasChildren).toEqual(true)
+    })
+
     it('should normalize a folder path to a single spelling of the same node', async () => {
       const res = await getTree({ _folderPath: `${rootFolder}//${subFolder}/` })
 

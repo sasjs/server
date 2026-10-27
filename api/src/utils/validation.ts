@@ -172,6 +172,18 @@ export const folderParamValidation = (
     _folderPath: folderPathRequired ? Joi.string().required() : Joi.string()
   }).validate(data)
 
+/**
+ * The file tree is the one route that accepts an EMPTY `_folderPath`, meaning
+ * the drive root: the browser starts by asking for the root level, and the same
+ * route with no parameter at all returns the whole tree. The generic folder
+ * validation keeps rejecting '' so that an empty path can never reach the
+ * delete-folder endpoint, where it would name the drive root.
+ */
+export const fileTreeParamValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    _folderPath: Joi.string().allow('')
+  }).validate(data)
+
 export const folderBodyValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     folderPath: Joi.string().required()

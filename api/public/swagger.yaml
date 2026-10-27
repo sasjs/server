@@ -1415,7 +1415,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: "Drive-relative folder path, e.g. /Public/services. Omit\nfor the whole tree."
+                    description: "Drive-relative folder path, e.g. /Public/services. An\nempty value means the drive root; omit the parameter entirely for the whole\ntree."
                     in: query
                     name: _folderPath
                     required: false
