@@ -521,7 +521,10 @@ describe('drive', () => {
 
       await createFolder(path.join(pathToDrive, rootFolder, subFolder))
       await createFolder(path.join(pathToDrive, rootFolder, emptyFolder))
-      await createFile(path.join(pathToDrive, rootFolder, rootFile), 'root file')
+      await createFile(
+        path.join(pathToDrive, rootFolder, rootFile),
+        'root file'
+      )
       await createFile(
         path.join(pathToDrive, rootFolder, subFolder, subFile),
         'sub file'
@@ -531,7 +534,9 @@ describe('drive', () => {
     // The later suites list the drive root and assert its exact contents, so the
     // fixture folder must not outlive this block.
     afterAll(async () => {
-      await deleteFolder(path.join(fileUtilModules.getFilesFolder(), rootFolder))
+      await deleteFolder(
+        path.join(fileUtilModules.getFilesFolder(), rootFolder)
+      )
     })
 
     it('should return the whole tree when _folderPath is omitted', async () => {
@@ -560,9 +565,9 @@ describe('drive', () => {
       expect(folder.name).toEqual(rootFolder)
       expect(folder.relativePath).toEqual(`/${rootFolder}`)
 
-      expect(
-        folder.children.map((child: any) => child.name).sort()
-      ).toEqual([emptyFolder, rootFile, subFolder].sort())
+      expect(folder.children.map((child: any) => child.name).sort()).toEqual(
+        [emptyFolder, rootFile, subFolder].sort()
+      )
 
       const sub = folder.children.find((child: any) => child.name === subFolder)
       const empty = folder.children.find(

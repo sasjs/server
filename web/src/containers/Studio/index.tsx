@@ -26,8 +26,12 @@ const Studio = () => {
   // Refs, not state: these are consulted inside callbacks that must not be
   // rebuilt on every fetch, and a folder must never be requested twice.
   const loadedFolders = useRef<Set<string>>(new Set())
-  const foldersInFlight = useRef<Set<string>>(new Set())
   const expandedRef = useRef<Set<string>>(new Set([ROOT_PATH]))
+  // The in-flight request per folder, as a promise. Deduplicating on the
+  // promise (rather than on a set of paths) is what lets a caller AWAIT a
+  // request another caller started - the deep-link walk depends on that to sit
+  // behind the root fetch instead of racing it.
+  const folderRequests = useRef<Map<string, Promise<void>>>(new Map())
 
   useEffect(() => {
     setSelectedFilePath(searchParams.get('filePath') ?? '')
@@ -41,42 +45,52 @@ const Studio = () => {
    * stat and a readdir for every entry on the drive.
    */
   const fetchFolder = useCallback(
-    async (folderPath: string, force?: boolean) => {
-      if (
-        !force &&
-        (loadedFolders.current.has(folderPath) ||
-          foldersInFlight.current.has(folderPath))
-      )
-        return
+    (folderPath: string, force?: boolean): Promise<void> => {
+      if (!force && loadedFolders.current.has(folderPath))
+        return Promise.resolve()
 
-      foldersInFlight.current.add(folderPath)
+      const inFlight = folderRequests.current.get(folderPath)
 
-      try {
-        const res = await axios.get('/SASjsApi/drive/fileTree', {
-          params: { _folderPath: folderPath }
-        })
+      if (!force && inFlight) return inFlight
 
-        if (res.data?.status === 'success') {
-          const level = { ...res.data.tree, childrenLoaded: true } as TreeNode
-
-          // Replacing a level replaces its whole subtree, so anything loaded
-          // underneath it is now stale and must be fetched again on expand.
-          const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
-          Array.from(loadedFolders.current).forEach((loaded) => {
-            if (loaded.startsWith(prefix)) loadedFolders.current.delete(loaded)
+      const request = (async () => {
+        try {
+          const res = await axios.get('/SASjsApi/drive/fileTree', {
+            params: { _folderPath: folderPath }
           })
 
-          loadedFolders.current.add(folderPath)
+          if (res.data?.status === 'success') {
+            const level = { ...res.data.tree, childrenLoaded: true } as TreeNode
 
-          setDirectoryData((previous) =>
-            previous ? withLevel(previous, folderPath, level) : level
-          )
+            // Replacing a level replaces its whole subtree, so anything loaded
+            // underneath it is now stale and must be fetched again on expand.
+            const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
+            Array.from(loadedFolders.current).forEach((loaded) => {
+              if (loaded.startsWith(prefix))
+                loadedFolders.current.delete(loaded)
+            })
+
+            loadedFolders.current.add(folderPath)
+
+            setDirectoryData((previous) => {
+              // A folder level arriving before the root must never BECOME the
+              // tree: the drive root is the only node whose relativePath is ''
+              // and every later graft walks from it.
+              if (!previous) return folderPath === ROOT_PATH ? level : previous
+
+              return withLevel(previous, folderPath, level)
+            })
+          }
+        } catch (err) {
+          console.log(err)
+        } finally {
+          folderRequests.current.delete(folderPath)
         }
-      } catch (err) {
-        console.log(err)
-      } finally {
-        foldersInFlight.current.delete(folderPath)
-      }
+      })()
+
+      folderRequests.current.set(folderPath, request)
+
+      return request
     },
     []
   )
@@ -95,6 +109,10 @@ const Studio = () => {
 
     const openAncestors = async () => {
       const ancestors = ancestorPathsOf(selectedFilePath)
+
+      // The root is awaited first: the ancestors are grafted onto it, so a
+      // level that resolves before the root has nowhere to go.
+      await fetchFolder(ROOT_PATH)
 
       for (const ancestor of ancestors) {
         if (cancelled) return

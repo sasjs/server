@@ -167,17 +167,20 @@ describe('Studio in a browser', () => {
   }, 60000)
 
   it('loads the drive one folder level at a time', async () => {
-    // Opening Studio asked for the root level only - not the whole drive, and
-    // not the folder that holds most of it.
-    expect(fileTreeRequests).toEqual([''])
+    // Opening Studio asked for the root level, never for the whole drive.
+    // Asserted as a property of the session rather than of a fixed array, so
+    // another test touching the tree cannot make this pass or fail by order.
+    expect(fileTreeRequests[0]).toEqual('')
+    expect(fileTreeRequests).not.toContain('<whole-tree>')
 
-    // The nested program exists but was never requested into the tree.
+    // The nested program exists but has never been requested into the tree.
+    const requestsBefore = fileTreeRequests.length
+
     await page.click('text=e2eFolder')
     await page.waitForSelector('text=nested.sas', { timeout: 30000 })
 
-    // Expanding the folder is what asked for its contents, and it asked for
-    // that folder alone.
-    expect(fileTreeRequests).toEqual(['', '/e2eFolder'])
+    // Expanding the folder asked for that folder alone, once.
+    expect(fileTreeRequests.slice(requestsBefore)).toEqual(['/e2eFolder'])
   }, 60000)
 
   it('colours SAS tokens', async () => {

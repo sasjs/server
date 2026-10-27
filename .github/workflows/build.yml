@@ -168,6 +168,67 @@ jobs:
         env:
           CI: true
 
+  # The browser suite (jest.e2e.config.js). It is excluded from the unit run on
+  # purpose - it needs a web build, a browser and a database - but nothing else
+  # ran it, so a regression in the Studio interface could merge unnoticed. That
+  # is exactly how the drive sidebar came to render nothing at all. It writes a
+  # program into a throwaway drive, so it needs no SAS binary: the runtimes under
+  # test are js only.
+  e2e:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js lts/*
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install web dependencies
+        working-directory: ./web
+        run: npm ci
+
+      # The API serves the client from ../web/build, and the spec refuses to run
+      # without it rather than silently testing a stale bundle.
+      - name: Build the web client
+        working-directory: ./web
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Install api dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: Warm mongod binary for tests
+        # Same reason as build-api: ignore-scripts=true suppresses
+        # mongodb-memory-server's postinstall download, and the first spec
+        # creates a server inside jest's hook timeout.
+        working-directory: ./api
+        run: node -e "require('mongodb-memory-server').MongoMemoryServer.create().then(s => s.stop()).then(() => console.log('mongod cached'))"
+
+      - name: Install Chromium for playwright
+        working-directory: ./api
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the browser tests
+        working-directory: ./api
+        # setupEnv.ts sets MODE/RUN_TIMES/NODE_PATH for the suite but no
+        # listener, and verifyEnvVariables exits 1 without one.
+        env:
+          CI: true
+          HTTP_PORT: '5000'
+        run: npm run test:e2e
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: api/src/e2e/screenshots
+          if-no-files-found: ignore
+
   # End-to-end verification of MODE=server against a real database: boot, health
   # check, the real login -> authorize -> token flow, and a JavaScript and a
   # Python stored program. This is what the withdrawn container smoke test

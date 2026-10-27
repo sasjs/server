@@ -14,16 +14,10 @@ import { FolderOpen } from '@mui/icons-material'
 import TreeView from '../../components/tree'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 import Modal from '../../components/modal'
+import { parentPathOf } from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
 
 const drawerWidth = '15%'
-
-/** '' for the drive root, '/Public/foo' for a folder under it. */
-const parentPathOf = (relativePath: string) => {
-  const segments = relativePath.split('/')
-  segments.pop()
-  return segments.join('/')
-}
 
 type Props = {
   selectedFilePath: string
