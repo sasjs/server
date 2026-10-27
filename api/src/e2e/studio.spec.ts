@@ -77,6 +77,13 @@ describe('Studio in a browser', () => {
       'data _null_;'
     )
 
+    // A folder with contents, for the delete test.
+    await createFolder(path.join(driveLocation, 'files', 'deleteMe', 'nested'))
+    await createFile(
+      path.join(driveLocation, 'files', 'deleteMe', 'nested', 'deep.sas'),
+      'data _null_;'
+    )
+
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()
 
@@ -181,6 +188,65 @@ describe('Studio in a browser', () => {
 
     // Expanding the folder asked for that folder alone, once.
     expect(fileTreeRequests.slice(requestsBefore)).toEqual(['/e2eFolder'])
+  }, 60000)
+
+  it('deletes a folder and its contents from the row context menu', async () => {
+    const row = page.locator('[role="treeitem"]:has-text("deleteMe")').first()
+    const box = await row.boundingBox()
+
+    expect(box).not.toBeNull()
+
+    // Right-click the ROW, well away from the label text: the menu lives on the
+    // item for exactly this reason - on the label alone, a right-click anywhere
+    // else in the row did nothing and the feature was invisible.
+    await page.mouse.click(box!.x + box!.width - 40, box!.y + box!.height / 2, {
+      button: 'right'
+    })
+
+    await page.click('[role="menuitem"]:has-text("Delete")')
+    await page.waitForSelector('text=and everything under it', {
+      timeout: 10000
+    })
+    await page.click('[role="dialog"] button:has-text("Delete")')
+    await page.waitForSelector('text=Deleted!', { timeout: 20000 })
+    await page.waitForTimeout(500)
+
+    expect(
+      await page.locator('[role="treeitem"]:has-text("deleteMe")').count()
+    ).toBe(0)
+    // and it is gone from disk, contents included
+    expect(
+      await fileExists(path.join(driveLocation, 'files', 'deleteMe'))
+    ).toBe(false)
+  }, 120000)
+
+  it('moves the menu to the row that was right-clicked last', async () => {
+    // The label, not the treeitem: ':has-text' also matches the root item,
+    // which contains every name in the tree.
+    const folderLabel = page.getByText('e2eFolder', { exact: true }).first()
+    // Dispatched rather than clicked: an open MUI Menu renders a modal backdrop
+    // that swallows the pointer, so a physical second right-click can never
+    // reach the row - the state itself is what this covers.
+    await folderLabel.dispatchEvent('contextmenu')
+    await page.waitForSelector('[role="menuitem"]:has-text("Add Folder")')
+
+    const fileLabel = page.getByText(PROGRAM_NAME, { exact: true }).first()
+    await fileLabel.dispatchEvent('contextmenu')
+
+    // the FILE's actions, not the folder's: keeping the previous node left the
+    // menu acting on the row it was first opened for
+    await page.waitForSelector(
+      '[role="menuitem"]:has-text("Launch and Debug")',
+      {
+        timeout: 10000
+      }
+    )
+    expect(
+      await page.locator('[role="menuitem"]:has-text("Add Folder")').count()
+    ).toBe(0)
+
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
   }, 60000)
 
   it('colours SAS tokens', async () => {
