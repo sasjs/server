@@ -642,6 +642,44 @@ describe('drive', () => {
       expect(res.body.tree.relativePath).toEqual(`/${rootFolder}`)
     })
 
+    it('should list an entry whose NAME begins with two dots', async () => {
+      const pathToDrive = fileUtilModules.getFilesFolder()
+      const dotted = path.join(pathToDrive, rootFolder, '..config')
+
+      await createFile(dotted, 'not a parent reference')
+
+      const res = await getTree({ _folderPath: `/${rootFolder}` })
+
+      // '..config' has a relative path beginning with '..' but is a legitimate
+      // sibling; a prefix test dropped it from every listing
+      expect(res.statusCode).toEqual(200)
+      expect(res.body.tree.children.map((child: any) => child.name)).toContain(
+        '..config'
+      )
+
+      await deleteFile(dotted)
+    })
+
+    it('should refuse a folder path that is a symlink out of the drive', async () => {
+      const pathToDrive = fileUtilModules.getFilesFolder()
+      const outside = path.join(pathToDrive, '..', 'outside-the-drive')
+      const link = path.join(pathToDrive, 'escape-folder')
+
+      await createFolder(outside)
+      await symlink(outside, link)
+
+      const res = await getTree({ _folderPath: '/escape-folder' })
+
+      // 400, not a 200 with an empty listing: the refusal must not depend on
+      // which route the caller took to the same folder
+      expect(res.statusCode).toEqual(400)
+      expect(res.text).toContain('outside drive')
+      expect(res.headers['content-type']).toContain('text/plain')
+
+      await deleteFile(link)
+      await deleteFolder(outside)
+    })
+
     it('should not list an entry whose real path leaves the drive', async () => {
       const pathToDrive = fileUtilModules.getFilesFolder()
       const outside = path.join(pathToDrive, '..', 'outside-the-drive')

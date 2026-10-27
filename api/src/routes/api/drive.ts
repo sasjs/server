@@ -299,7 +299,10 @@ driveRouter.get('/fileTree', async (req, res) => {
     const statusCode = err instanceof HttpError ? err.status : 403
     const message = err?.message ?? err?.toString()
 
-    res.status(statusCode).send(message)
+    // text/plain, not the text/html `send(string)` defaults to: the message
+    // names the caller's own path, and this API backs an authenticated admin
+    // UI, so it must not be rendered as a document.
+    res.status(statusCode).type('text/plain').send(message)
   }
 })
 
