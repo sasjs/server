@@ -9,6 +9,7 @@ import Permission from './permission'
 import Profile from './profile'
 import AuthConfig from './authConfig'
 import EditorSettings from './editorSettings'
+import Admin from '../Admin'
 
 import { AppContext, ModeType } from '../../context/appContext'
 import PermissionsContextProvider from '../../context/permissionsContext'
@@ -67,6 +68,9 @@ const Settings = () => {
             {appContext.mode === ModeType.Server && appContext.isAdmin && (
               <StyledTab label="Auth Config" value="auth_config" />
             )}
+            {appContext.isAdmin && (
+              <StyledTab label="Administration" value="admin" />
+            )}
           </TabList>
         </Box>
         <StyledTabpanel value="profile">
@@ -82,6 +86,9 @@ const Settings = () => {
         </StyledTabpanel>
         <StyledTabpanel value="auth_config">
           <AuthConfig />
+        </StyledTabpanel>
+        <StyledTabpanel value="admin">
+          <Admin />
         </StyledTabpanel>
       </TabContext>
     </Box>

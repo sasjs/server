@@ -9,6 +9,7 @@ import {
 } from '../../middlewares'
 
 import infoRouter from './info'
+import adminRouter from './admin'
 import driveRouter from './drive'
 import stpRouter from './stp'
 import codeRouter from './code'
@@ -23,6 +24,10 @@ import authConfigRouter from './authConfig'
 const router = express.Router()
 
 router.use('/info', infoRouter)
+// Read-only operational data (logs, disk usage, version) is for administrators
+// only: verifyAdmin answers 401 for anyone else, and passes every caller in
+// desktop mode, where there is one fixed user and no permission model.
+router.use('/admin', authenticateAccessToken, verifyAdmin, adminRouter)
 router.use('/session', authenticateAccessToken, sessionRouter)
 router.use('/auth', desktopRestrict, authRouter)
 router.use(

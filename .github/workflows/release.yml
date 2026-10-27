@@ -47,6 +47,21 @@ jobs:
           if grep -q 'The next release version is' /tmp/dry-run.log; then
             echo "release=true" >> "$GITHUB_OUTPUT"
             grep 'The next release version is' /tmp/dry-run.log
+            # The tag does not exist yet, so `git describe` inside the build
+            # would report the PREVIOUS release. Capture the version here and
+            # pass it to the build through SASJS_SERVER_VERSION so the binary
+            # names the release it is about to be published as.
+            VERSION=$(grep -oE 'The next release version is [0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?' /tmp/dry-run.log | head -1 | awk '{print $NF}')
+            # An empty value here would stamp every binary with the literal
+            # "v" and publish a build that cannot name its own release - fail
+            # the job instead of shipping that.
+            if [ -z "$VERSION" ]; then
+              echo "Could not parse the next version out of the dry-run output:"
+              cat /tmp/dry-run.log
+              exit 1
+            fi
+            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
+            echo "Building as v$VERSION"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
             echo "No release is pending for this commit: the build steps are skipped."
@@ -75,6 +90,11 @@ jobs:
         run: npm run exe
         env:
           CI: true
+          # Stamped into the binary by scripts/generateBuildInfo.ts and served
+          # by GET /SASjsApi/admin/diagnostics, so an operator can tell which
+          # release a binary is without downloading it again.
+          SASJS_SERVER_VERSION: ${{ steps.pending.outputs.version }}
+          SASJS_SERVER_GIT_HASH: ${{ github.sha }}
           # The api build lists the SAS_PACKAGES macros over the GitHub API,
           # which rate limits unauthenticated requests per source IP.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
