@@ -2,17 +2,18 @@ import React, { useState } from 'react'
 import { Menu, MenuItem, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import MuiTreeView from '@mui/lab/TreeView'
-import MuiTreeItem from '@mui/lab/TreeItem'
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
+import { TreeItem } from '@mui/x-tree-view/TreeItem'
 
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
+import { LOADING_SUFFIX, childrenOf } from '../utils/driveTree'
 import { TreeNode } from '../utils/types'
 
 interface Props {
   node: TreeNode
-  handleSelect: (filePath: string) => void
+  handleSelect: (path: string) => void
   deleteNode: (path: string, isFolder: boolean) => void
   addFile: (path: string) => void
   addFolder: (path: string) => void
@@ -20,8 +21,18 @@ interface Props {
 }
 
 interface TreeViewProps extends Props {
-  defaultExpanded?: string[]
+  /** Drive-relative paths of the folders currently expanded. */
+  expanded: string[]
+  onExpandedChange: (expandedPaths: string[]) => void
 }
+
+// MUI X requires a non-empty itemId, and the drive root's relativePath is the
+// empty string, so the root is addressed by this constant instead.
+const ROOT_ITEM_ID = 'sasjs-drive-root'
+const itemIdFor = (relativePath: string) =>
+  relativePath === '' ? ROOT_ITEM_ID : relativePath
+const relativePathFor = (itemId: string) =>
+  itemId === ROOT_ITEM_ID ? '' : itemId
 
 const TreeView = ({
   node,
@@ -30,12 +41,13 @@ const TreeView = ({
   addFile,
   addFolder,
   rename,
-  defaultExpanded
+  expanded,
+  onExpandedChange
 }: TreeViewProps) => {
   const renderTree = (nodes: TreeNode) => (
-    <MuiTreeItem
+    <TreeItem
       key={nodes.relativePath}
-      nodeId={nodes.relativePath}
+      itemId={itemIdFor(nodes.relativePath)}
       label={
         <TreeItemWithContextMenu
           node={nodes}
@@ -47,21 +59,24 @@ const TreeView = ({
         />
       }
     >
-      {Array.isArray(nodes.children)
-        ? nodes.children.map((node) => renderTree(node))
-        : null}
-    </MuiTreeItem>
+      {childrenOf(nodes).map((child) => renderTree(child))}
+    </TreeItem>
   )
 
   return (
-    <MuiTreeView
-      defaultCollapseIcon={<ExpandMoreIcon />}
-      defaultExpandIcon={<ChevronRightIcon />}
-      defaultExpanded={defaultExpanded}
+    <SimpleTreeView
+      slots={{
+        collapseIcon: ExpandMoreIcon,
+        expandIcon: ChevronRightIcon
+      }}
+      expandedItems={expanded.map(itemIdFor)}
+      onExpandedItemsChange={(_event, itemIds) =>
+        onExpandedChange(itemIds.map(relativePathFor))
+      }
       sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
     >
       {renderTree(node)}
-    </MuiTreeView>
+    </SimpleTreeView>
   )
 }
 
@@ -122,7 +137,8 @@ const TreeItemWithContextMenu = ({
   }
 
   const handleItemClick = (event: React.MouseEvent) => {
-    if (node.children.length) return
+    if (node.isFolder) return
+    if (node.relativePath.endsWith(LOADING_SUFFIX)) return
     handleSelect(node.relativePath)
   }
 

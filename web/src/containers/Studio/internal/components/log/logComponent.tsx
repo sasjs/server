@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import TreeView from '@mui/lab/TreeView'
-import TreeItem from '@mui/lab/TreeItem'
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
+import { TreeItem } from '@mui/x-tree-view/TreeItem'
 import { ChevronRight, ExpandMore } from '@mui/icons-material'
 import { Typography } from '@mui/material'
 import { ListItemText } from '@mui/material'
@@ -119,13 +119,12 @@ const LogComponent = (props: LogComponentProps) => {
           <div>
             {hasErrorsOrWarnings && (
               <div className={classes.TreeContainer}>
-                <TreeView
-                  defaultCollapseIcon={<ExpandMore />}
-                  defaultExpandIcon={<ChevronRight />}
+                <SimpleTreeView
+                  slots={{ collapseIcon: ExpandMore, expandIcon: ChevronRight }}
                 >
                   {logObject.errors && logObject.errors.length !== 0 && (
                     <TreeItem
-                      nodeId="errors"
+                      itemId="errors"
                       label={
                         <Typography color="error">
                           {`Errors (${logObject.errors.length})`}
@@ -135,7 +134,7 @@ const LogComponent = (props: LogComponentProps) => {
                       {logObject.errors &&
                         logObject.errors.map((error, ind) => (
                           <TreeItem
-                            nodeId={`error_${ind}`}
+                            itemId={`error_${ind}`}
                             label={<ListItemText primary={error.body} />}
                             key={`error_${ind}`}
                             onClick={() => goToLogLine(error, ind)}
@@ -145,7 +144,7 @@ const LogComponent = (props: LogComponentProps) => {
                   )}
                   {logObject.warnings && logObject.warnings.length !== 0 && (
                     <TreeItem
-                      nodeId="warnings"
+                      itemId="warnings"
                       label={
                         <Typography>{`Warnings (${logObject.warnings.length})`}</Typography>
                       }
@@ -153,7 +152,7 @@ const LogComponent = (props: LogComponentProps) => {
                       {logObject.warnings &&
                         logObject.warnings.map((warning, ind) => (
                           <TreeItem
-                            nodeId={`warning_${ind}`}
+                            itemId={`warning_${ind}`}
                             label={<ListItemText primary={warning.body} />}
                             key={`warning_${ind}`}
                             onClick={() => goToLogLine(warning, ind)}
@@ -161,7 +160,7 @@ const LogComponent = (props: LogComponentProps) => {
                         ))}
                     </TreeItem>
                   )}
-                </TreeView>
+                </SimpleTreeView>
               </div>
             )}
           </div>

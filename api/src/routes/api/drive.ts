@@ -11,6 +11,7 @@ import {
   extractName,
   fileBodyValidation,
   fileParamValidation,
+  fileTreeParamValidation,
   folderBodyValidation,
   folderParamValidation,
   isZipFile,
@@ -281,11 +282,23 @@ driveRouter.post('/rename', async (req, res) => {
 })
 
 driveRouter.get('/fileTree', async (req, res) => {
+  const { error, value: query } = fileTreeParamValidation(req.query)
+
+  if (error) return res.status(400).send(error.details[0].message)
+
   try {
-    const response = await controller.getFileTree()
+    const response = await controller.getFileTree(query._folderPath)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    // buildDirectoryLevel reports the reason it refused a folder (outside the
+    // drive, missing, not a folder); anything else stays a blanket 403. The
+    // check is on the TYPE: a Node fs error surfacing from the whole-tree walk
+    // carries a string code ('ENOENT', 'EACCES') that is not a valid HTTP
+    // status, so it must fall back to 403 rather than reach res.status().
+    const statusCode = typeof err?.code === 'number' ? err.code : 403
+    const message = err?.message ?? err?.toString()
+
+    res.status(statusCode).send(message)
   }
 })
 

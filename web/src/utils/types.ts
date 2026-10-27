@@ -38,6 +38,10 @@ export interface TreeNode {
   relativePath: string
   isFolder: boolean
   children: Array<TreeNode>
+  /** Reported by the API for one-level loads: this folder is not empty. */
+  hasChildren?: boolean
+  /** Set once this node's children have been fetched, so [] means "empty". */
+  childrenLoaded?: boolean
 }
 
 export interface LogInstance {

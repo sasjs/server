@@ -23,7 +23,6 @@ import {
   type SasConnection
 } from './connection'
 import { registerSasLanguageServer } from './providers'
-import { enableSemanticHighlighting } from './semanticHighlighting'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
 
 /**
@@ -118,8 +117,18 @@ export const startSasLanguageService = (): Promise<void> => {
   if (startPromise) return startPromise
 
   const start = (async () => {
-    enableSemanticHighlighting()
-
+    // Semantic highlighting is deliberately NOT enabled here.
+    //
+    // The server's legend (sep, keyword, sec-keyword, proc-name, comment,
+    // macro-*, cards-data, string, date, time, dt, bitmask, namelit, hex,
+    // numeric, format) has no variable or function type at all. Turning the
+    // feature on therefore paints a PARTIAL classification over the Monarch
+    // grammar: semantic types take precedence where the server emits them and
+    // the grammar's colour shows everywhere else, so one program renders the
+    // same construct two ways - `data _null_;` grey but `data=` in a proc
+    // statement blue, a variable blue in one statement and grey in the next.
+    // With the feature off the grammar alone paints it, consistently: keywords
+    // blue, functions in the theme's variable.predefined colour, numbers green.
     const { connection, legend }: SasConnection =
       await connectSasLanguageServer(
         () => new Worker(SERVER_WORKER_URL, { type: 'classic' })

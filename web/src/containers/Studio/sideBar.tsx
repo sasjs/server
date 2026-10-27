@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import axios from 'axios'
 import {
   Backdrop,
@@ -14,6 +14,7 @@ import { FolderOpen } from '@mui/icons-material'
 import TreeView from '../../components/tree'
 import BootstrapSnackbar, { AlertSeverityType } from '../../components/snackbar'
 import Modal from '../../components/modal'
+import { parentPathOf } from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
 
 const drawerWidth = '15%'
@@ -21,17 +22,23 @@ const drawerWidth = '15%'
 type Props = {
   selectedFilePath: string
   directoryData: TreeNode | null
+  /** Drive-relative paths of the folders currently expanded. */
+  expanded: string[]
+  onExpandedChange: (expandedPaths: string[]) => void
   handleSelect: (filePath: string) => void
   removeFileFromTree: (filePath: string) => void
-  refreshSideBar: () => void
+  /** Re-reads one folder from the server, leaving the rest of the tree alone. */
+  refreshFolder: (folderPath: string) => void
 }
 
 const SideBar = ({
   selectedFilePath,
   directoryData,
+  expanded,
+  onExpandedChange,
   handleSelect,
   removeFileFromTree,
-  refreshSideBar
+  refreshFolder
 }: Props) => {
   const [isLoading, setIsLoading] = useState(false)
   const [openModal, setOpenModal] = useState(false)
@@ -52,19 +59,6 @@ const SideBar = ({
     setMobileOpen(false)
     handleSelect(filePath)
   }
-
-  const defaultExpanded = useMemo(() => {
-    const splittedPath = selectedFilePath.split('/')
-    const arr = ['']
-    let nodeId = ''
-    splittedPath.forEach((path) => {
-      if (path !== '') {
-        nodeId += '/' + path
-        arr.push(nodeId)
-      }
-    })
-    return arr
-  }, [selectedFilePath])
 
   const deleteNode = (path: string, isFolder: boolean) => {
     setIsLoading(true)
@@ -106,7 +100,7 @@ const SideBar = ({
         setSnackbarMessage('File added!')
         setSnackbarSeverity(AlertSeverityType.Success)
         setOpenSnackbar(true)
-        refreshSideBar()
+        refreshFolder(parentPathOf(filePath))
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -128,7 +122,7 @@ const SideBar = ({
         setSnackbarMessage('Folder added!')
         setSnackbarSeverity(AlertSeverityType.Success)
         setOpenSnackbar(true)
-        refreshSideBar()
+        refreshFolder(parentPathOf(folderPath))
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -153,7 +147,7 @@ const SideBar = ({
         if (oldPath === selectedFilePath) handleSelect(newPath)
         else if (selectedFilePath.startsWith(oldPath))
           handleSelect(selectedFilePath.replace(oldPath, newPath))
-        refreshSideBar()
+        refreshFolder(parentPathOf(newPath))
       })
       .catch((err) => {
         setModalTitle('Abort')
@@ -185,7 +179,8 @@ const SideBar = ({
             addFile={addFile}
             addFolder={addFolder}
             rename={rename}
-            defaultExpanded={defaultExpanded}
+            expanded={expanded}
+            onExpandedChange={onExpandedChange}
           />
         )}
       </Box>

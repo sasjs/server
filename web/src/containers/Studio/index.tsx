@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 
 import CssBaseline from '@mui/material/CssBaseline'
 import Box from '@mui/material/Box'
 
+import {
+  ROOT_PATH,
+  ancestorPathsOf,
+  expandedDescendantsOf,
+  parentPathOf,
+  withLevel
+} from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
 
 import SideBar from './sideBar'
@@ -14,39 +21,177 @@ const Studio = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedFilePath, setSelectedFilePath] = useState('')
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
+  const [expanded, setExpanded] = useState<string[]>([ROOT_PATH])
   const [tab, setTab] = useState('code')
+
+  // Refs, not state: these are consulted inside callbacks that must not be
+  // rebuilt on every fetch, and a folder must never be requested twice.
+  const loadedFolders = useRef<Set<string>>(new Set())
+  const expandedRef = useRef<Set<string>>(new Set([ROOT_PATH]))
+  // The in-flight request per folder, as a promise. Deduplicating on the
+  // promise (rather than on a set of paths) is what lets a caller AWAIT a
+  // request another caller started - the deep-link walk depends on that to sit
+  // behind the root fetch instead of racing it.
+  const folderRequests = useRef<Map<string, Promise<void>>>(new Map())
+  // The authoritative tree. State mirrors it for rendering; keeping the
+  // readable copy in a ref is what lets a fetch decide whether its level can be
+  // grafted BEFORE it records the folder as loaded, and is why this callback
+  // needs no state updater.
+  const treeRef = useRef<TreeNode | null>(null)
 
   useEffect(() => {
     setSelectedFilePath(searchParams.get('filePath') ?? '')
   }, [searchParams])
 
-  const fetchDirectoryData = useCallback(() => {
-    axios
-      .get(`/SASjsApi/drive/fileTree`)
-      .then((res: any) => {
-        if (res.data && res.data?.status === 'success') {
-          setDirectoryData(res.data.tree)
+  /**
+   * Fetches one folder's immediate children and grafts them into the tree.
+   *
+   * The drive is loaded a level at a time - the whole tree is not requested on
+   * page load, so opening Studio costs one readdir of the root instead of a
+   * stat and a readdir for every entry on the drive.
+   */
+  const fetchFolder = useCallback(
+    (folderPath: string, force?: boolean): Promise<void> => {
+      if (!force && loadedFolders.current.has(folderPath))
+        return Promise.resolve()
+
+      const inFlight = folderRequests.current.get(folderPath)
+
+      if (!force && inFlight) return inFlight
+
+      const request = (async () => {
+        try {
+          const res = await axios.get('/SASjsApi/drive/fileTree', {
+            params: { _folderPath: folderPath }
+          })
+
+          if (res.data?.status === 'success') {
+            const level = { ...res.data.tree, childrenLoaded: true } as TreeNode
+            const previous = treeRef.current
+
+            // A folder level arriving before the root must never BECOME the
+            // tree: the drive root is the only node whose relativePath is '' and
+            // every later graft walks from it. Leaving it un-grafted is only
+            // safe because the folder is not recorded as loaded here either, so
+            // the next expand requests it again instead of showing a childless
+            // node for ever.
+            const next =
+              previous !== null
+                ? withLevel(previous, folderPath, level)
+                : folderPath === ROOT_PATH
+                  ? level
+                  : null
+
+            if (next !== null) {
+              // Replacing a level replaces its whole subtree, so anything loaded
+              // underneath it is now stale.
+              const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
+
+              Array.from(loadedFolders.current).forEach((loaded) => {
+                if (loaded.startsWith(prefix))
+                  loadedFolders.current.delete(loaded)
+              })
+
+              loadedFolders.current.add(folderPath)
+              treeRef.current = next
+              setDirectoryData(next)
+
+              // ...but the folders the user has OPEN under it stay open, and
+              // expansion is what triggers a fetch - so re-read them here, or
+              // the tree settles on a placeholder that never resolves.
+              const reopen = expandedDescendantsOf(
+                expandedRef.current,
+                folderPath
+              )
+
+              for (const descendant of reopen) await fetchFolder(descendant)
+            }
+          }
+        } catch (err) {
+          console.log(err)
+        } finally {
+          folderRequests.current.delete(folderPath)
         }
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-  }, [])
+      })()
+
+      folderRequests.current.set(folderPath, request)
+
+      return request
+    },
+    []
+  )
 
   useEffect(() => {
-    fetchDirectoryData()
-  }, [fetchDirectoryData])
+    fetchFolder(ROOT_PATH)
+  }, [fetchFolder])
+
+  // A deep link (?filePath=/Public/app/services/run.sas) has to open the folders
+  // above the file, and their contents arrive one level at a time, so walk the
+  // ancestors in order before expanding them.
+  useEffect(() => {
+    if (!selectedFilePath) return
+
+    let cancelled = false
+
+    const openAncestors = async () => {
+      const ancestors = ancestorPathsOf(selectedFilePath)
+
+      // The root is awaited first: the ancestors are grafted onto it, so a
+      // level that resolves before the root has nowhere to go.
+      await fetchFolder(ROOT_PATH)
+
+      for (const ancestor of ancestors) {
+        if (cancelled) return
+        await fetchFolder(ancestor)
+      }
+
+      if (cancelled) return
+
+      const next = new Set(Array.from(expandedRef.current).concat(ancestors))
+      expandedRef.current = next
+      setExpanded(Array.from(next))
+    }
+
+    openAncestors()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedFilePath, fetchFolder])
+
+  const handleExpandedChange = useCallback(
+    (expandedPaths: string[]) => {
+      const newlyExpanded = expandedPaths.filter(
+        (path) => !expandedRef.current.has(path)
+      )
+
+      expandedRef.current = new Set(expandedPaths)
+      setExpanded(expandedPaths)
+
+      // Expanding a folder is the moment its contents are needed.
+      newlyExpanded.forEach((path) => fetchFolder(path))
+    },
+    [fetchFolder]
+  )
 
   const handleSelect = (filePath: string, refreshSideBar?: boolean) => {
     setSearchParams({ filePath })
-    if (refreshSideBar) fetchDirectoryData()
+    if (refreshSideBar) fetchFolder(parentPathOf(filePath), true)
   }
 
   const removeFileFromTree = (path: string) => {
-    if (directoryData) {
-      const newTree = JSON.parse(JSON.stringify(directoryData)) as TreeNode
+    if (treeRef.current) {
+      const newTree = JSON.parse(JSON.stringify(treeRef.current)) as TreeNode
       findAndRemoveNode(newTree, newTree, path)
+      treeRef.current = newTree
       setDirectoryData(newTree)
+
+      // A deleted folder takes its loaded levels with it, and its parent may now
+      // be empty - so let the next visit fetch it again.
+      loadedFolders.current.forEach((loaded) => {
+        if (loaded === path || loaded.startsWith(`${path}/`))
+          loadedFolders.current.delete(loaded)
+      })
     }
   }
 
@@ -88,9 +233,11 @@ const Studio = () => {
         <SideBar
           selectedFilePath={selectedFilePath}
           directoryData={directoryData}
+          expanded={expanded}
+          onExpandedChange={handleExpandedChange}
           handleSelect={handleSelect}
           removeFileFromTree={removeFileFromTree}
-          refreshSideBar={fetchDirectoryData}
+          refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
         />
       )}
       <SASjsEditor

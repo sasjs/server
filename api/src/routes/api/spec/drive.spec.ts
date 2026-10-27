@@ -106,6 +106,11 @@ describe('drive', () => {
       path: '/SASjsApi/drive/rename',
       principalId: dbUser.uid
     })
+    await permissionController.createPermission({
+      ...permission,
+      path: '/SASjsApi/drive/fileTree',
+      principalId: dbUser.uid
+    })
   })
 
   afterAll(async () => {
@@ -494,6 +499,136 @@ describe('drive', () => {
 
         await deleteFolder(path.join(getFilesFolder(), 'public'))
       })
+    })
+  })
+
+  describe('fileTree', () => {
+    const fileTreeApi = '/SASjsApi/drive/fileTree'
+    const rootFolder = 'treeRoot'
+    const subFolder = 'treeSub'
+    const emptyFolder = 'treeEmpty'
+    const rootFile = 'treeFile.txt'
+    const subFile = 'treeSubFile.txt'
+
+    const getTree = async (query: any = {}) =>
+      await request(app)
+        .get(fileTreeApi)
+        .query(query)
+        .auth(accessToken, { type: 'bearer' })
+
+    beforeAll(async () => {
+      const pathToDrive = fileUtilModules.getFilesFolder()
+
+      await createFolder(path.join(pathToDrive, rootFolder, subFolder))
+      await createFolder(path.join(pathToDrive, rootFolder, emptyFolder))
+      await createFile(
+        path.join(pathToDrive, rootFolder, rootFile),
+        'root file'
+      )
+      await createFile(
+        path.join(pathToDrive, rootFolder, subFolder, subFile),
+        'sub file'
+      )
+    })
+
+    // The later suites list the drive root and assert its exact contents, so the
+    // fixture folder must not outlive this block.
+    afterAll(async () => {
+      await deleteFolder(
+        path.join(fileUtilModules.getFilesFolder(), rootFolder)
+      )
+    })
+
+    it('should return the whole tree when _folderPath is omitted', async () => {
+      const res = await getTree()
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body.status).toEqual('success')
+
+      const tree = res.body.tree
+      expect(tree.relativePath).toEqual('')
+      expect(tree.isFolder).toEqual(true)
+
+      const root = tree.children.find((child: any) => child.name === rootFolder)
+      const sub = root.children.find((child: any) => child.name === subFolder)
+
+      expect(sub.children.map((child: any) => child.name)).toEqual([subFile])
+    })
+
+    it('should return only the immediate children of _folderPath', async () => {
+      const res = await getTree({ _folderPath: `/${rootFolder}` })
+
+      expect(res.statusCode).toEqual(200)
+
+      const folder = res.body.tree
+
+      expect(folder.name).toEqual(rootFolder)
+      expect(folder.relativePath).toEqual(`/${rootFolder}`)
+
+      expect(folder.children.map((child: any) => child.name).sort()).toEqual(
+        [emptyFolder, rootFile, subFolder].sort()
+      )
+
+      const sub = folder.children.find((child: any) => child.name === subFolder)
+      const empty = folder.children.find(
+        (child: any) => child.name === emptyFolder
+      )
+      const file = folder.children.find((child: any) => child.name === rootFile)
+
+      // one level only: a subfolder arrives with no children of its own...
+      expect(sub.children).toEqual([])
+      // ...but says whether it has any, so the browser can offer an expander
+      expect(sub.hasChildren).toEqual(true)
+      expect(empty.hasChildren).toEqual(false)
+      expect(file.hasChildren).toEqual(false)
+      expect(file.isFolder).toEqual(false)
+    })
+
+    it('should treat an empty _folderPath as the drive root', async () => {
+      const res = await getTree({ _folderPath: '' })
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body.tree.relativePath).toEqual('')
+
+      const root = res.body.tree.children.find(
+        (child: any) => child.name === rootFolder
+      )
+
+      // the root LEVEL, not the whole tree: the folder is listed without its
+      // own contents, which is what tells the two forms apart
+      expect(root.children).toEqual([])
+      expect(root.hasChildren).toEqual(true)
+    })
+
+    it('should normalize a folder path to a single spelling of the same node', async () => {
+      const res = await getTree({ _folderPath: `${rootFolder}//${subFolder}/` })
+
+      expect(res.statusCode).toEqual(200)
+      expect(res.body.tree.relativePath).toEqual(`/${rootFolder}/${subFolder}`)
+      expect(res.body.tree.children.map((child: any) => child.name)).toEqual([
+        subFile
+      ])
+    })
+
+    it('should respond with 404 for a folder that does not exist', async () => {
+      const res = await getTree({ _folderPath: '/noSuchFolder' })
+
+      expect(res.statusCode).toEqual(404)
+      expect(res.text).toContain('does not exist')
+    })
+
+    it('should respond with 400 when the path is a file', async () => {
+      const res = await getTree({ _folderPath: `/${rootFolder}/${rootFile}` })
+
+      expect(res.statusCode).toEqual(400)
+      expect(res.text).toContain('is not a folder')
+    })
+
+    it('should respond with 400 for a path outside the drive', async () => {
+      const res = await getTree({ _folderPath: '../../etc' })
+
+      expect(res.statusCode).toEqual(400)
+      expect(res.text).toContain('outside drive')
     })
   })
 
