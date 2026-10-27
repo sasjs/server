@@ -6,6 +6,7 @@ import { PreProgramVars, Session, TreeNode, SessionState } from '../../types'
 import {
   extractHeaders,
   getFilesFolder,
+  HttpError,
   HTTPHeaders,
   isDebugOn,
   resolveWithinDrive,
@@ -226,27 +227,22 @@ export class ExecutionController {
     const absolutePath = resolveWithinDrive(relativePath)
 
     if (!absolutePath)
-      throw {
-        code: 400,
-        status: 'Bad Request',
-        message: 'folderPath cannot be outside drive.'
-      }
+      throw new HttpError(400, 'folderPath cannot be outside drive.')
 
     if (!fs.existsSync(absolutePath))
-      throw {
-        code: 404,
-        status: 'Not Found',
-        message: `The folder at (${relativePath || '/'}) does not exist.`
-      }
+      throw new HttpError(
+        404,
+        `The folder at (${relativePath || '/'}) does not exist.`
+      )
 
     if (!fs.statSync(absolutePath).isDirectory())
-      throw {
-        code: 400,
-        status: 'Bad Request',
-        message: `The path at (${relativePath}) is not a folder.`
-      }
+      throw new HttpError(400, `The path at (${relativePath}) is not a folder.`)
 
-    const normalisedPath = normaliseRelativePath(relativePath)
+    // The canonical spelling is derived from the RESOLVED path, not from the
+    // request: a caller that sends `Public/../Public/x` gets `/Public/x` back,
+    // which is the node the interface keys on. Echoing the request would return
+    // a path no node matches, and the level would graft onto nothing.
+    const normalisedPath = driveRelativePath(absolutePath)
 
     return {
       name: normalisedPath === '' ? 'files' : path.basename(normalisedPath),
@@ -259,17 +255,19 @@ export class ExecutionController {
 }
 
 /**
- * The drive-relative form of a caller-supplied folder path: '' for the root,
- * otherwise a leading slash followed by the caller's own segments.
+ * The drive-relative form of a RESOLVED path: '' for the drive root, otherwise
+ * a leading slash followed by the segments below it.
  *
- * Normalising here rather than echoing the request back means the tree the
- * interface builds keys its nodes on one spelling, so a path that arrives as
- * `Public/` or `/Public//x` still matches the node it names.
+ * Deriving it from the resolved path rather than from the request is what makes
+ * it canonical: `Public/../Public/x`, `Public//x` and `/Public/x` all name one
+ * node, and the interface keys nodes on exactly one spelling. A normaliser that
+ * merely dropped empty and '.' segments would pass '..' straight through and
+ * answer with a path no node matches.
  */
-const normaliseRelativePath = (relativePath: string) => {
-  const segments = relativePath
-    .replace(/\\/g, '/')
-    .split('/')
+const driveRelativePath = (absolutePath: string) => {
+  const segments = path
+    .relative(path.resolve(getFilesFolder()), absolutePath)
+    .split(path.sep)
     .filter((segment) => segment !== '' && segment !== '.')
 
   return segments.length ? '/' + segments.join('/') : ''
@@ -278,16 +276,22 @@ const normaliseRelativePath = (relativePath: string) => {
 /**
  * The immediate children of one folder, in readdir order.
  *
- * An entry that cannot be stat'ed (a dangling symlink, a subfolder the service
- * account cannot read) is skipped and logged. It used to be fatal: the tree
- * endpoints walk with statSync, so a single such entry answered 403 for the
- * whole folder and the drive browser showed nothing at all.
+ * Two kinds of entry are skipped and logged rather than failing the folder:
+ *
+ * - one that cannot be stat'ed (a dangling symlink, a subfolder the service
+ *   account cannot read). It used to be fatal: the tree endpoints walk with
+ *   statSync, so a single such entry answered 403 for the whole folder and the
+ *   drive browser showed nothing at all.
+ * - one whose REAL path leaves the drive. A symlink stored in the drive is
+ *   listed by readdir and, because stat follows it, would otherwise be offered
+ *   as an ordinary folder that the caller can then ask for by name.
  */
 const listChildNodes = (
   absolutePath: string,
   relativeParentPath: string
 ): TreeNode[] => {
   const children: TreeNode[] = []
+  const driveRootRealPath = fs.realpathSync(path.resolve(getFilesFolder()))
 
   for (const name of fs.readdirSync(absolutePath)) {
     const absoluteChildPath = path.join(absolutePath, name)
@@ -297,11 +301,19 @@ const listChildNodes = (
     let hasChildren = false
 
     try {
-      isFolder = fs.statSync(absoluteChildPath).isDirectory()
-      if (isFolder) hasChildren = fs.readdirSync(absoluteChildPath).length > 0
+      const realChildPath = fs.realpathSync(absoluteChildPath)
+      const escaped = path.relative(driveRootRealPath, realChildPath)
+
+      if (escaped.startsWith('..') || path.isAbsolute(escaped))
+        throw new Error('real path is outside the drive')
+
+      isFolder = fs.statSync(realChildPath).isDirectory()
+      if (isFolder) hasChildren = fs.readdirSync(realChildPath).length > 0
     } catch (err: any) {
       process.logger.warn(
-        `Drive entry skipped: ${relativeChildPath} (${err?.code ?? err})`
+        `Drive entry skipped: ${relativeChildPath} (${
+          err?.code ?? err?.message ?? err
+        })`
       )
       continue
     }

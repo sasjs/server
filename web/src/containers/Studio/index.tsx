@@ -9,8 +9,8 @@ import {
   ROOT_PATH,
   ancestorPathsOf,
   expandedDescendantsOf,
-  parentPathOf,
-  withLevel
+  graftLevel,
+  parentPathOf
 } from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
 
@@ -71,16 +71,16 @@ const Studio = () => {
 
             // A folder level arriving before the root must never BECOME the
             // tree: the drive root is the only node whose relativePath is '' and
-            // every later graft walks from it. Leaving it un-grafted is only
-            // safe because the folder is not recorded as loaded here either, so
-            // the next expand requests it again instead of showing a childless
-            // node for ever.
+            // every later graft walks from it. That, and a level whose path no
+            // node carries, both come back as null - and a level that was not
+            // grafted is NOT recorded as loaded, so the next expand requests it
+            // again instead of leaving a childless node for ever.
             const next =
-              previous !== null
-                ? withLevel(previous, folderPath, level)
-                : folderPath === ROOT_PATH
+              previous === null
+                ? folderPath === ROOT_PATH
                   ? level
                   : null
+                : graftLevel(previous, folderPath, level)
 
             if (next !== null) {
               // Replacing a level replaces its whole subtree, so anything loaded

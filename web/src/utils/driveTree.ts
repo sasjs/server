@@ -33,25 +33,38 @@ export const ancestorPathsOf = (relativePath: string) => {
 }
 
 /**
- * Grafts one folder level into the tree, returning a new tree.
+ * Grafts one folder level into the tree, or returns null when no node in the
+ * tree carries that path.
  *
  * The node named by `relativePath` is REPLACED rather than merged: a freshly
  * fetched level is the folder's complete contents, so anything the old node
  * carried beneath it is stale.
+ *
+ * The null return is the caller's signal that nothing was grafted - which is
+ * what stops a level for a folder the tree does not contain from being recorded
+ * as loaded, where it would leave the folder stale for the rest of the session.
  */
-export const withLevel = (
+export const graftLevel = (
   node: TreeNode,
   relativePath: string,
   level: TreeNode
-): TreeNode =>
-  node.relativePath === relativePath
-    ? level
-    : {
-        ...node,
-        children: node.children.map((child) =>
-          withLevel(child, relativePath, level)
-        )
-      }
+): TreeNode | null => {
+  if (node.relativePath === relativePath) return level
+
+  let grafted = false
+
+  const children = node.children.map((child) => {
+    const next = graftLevel(child, relativePath, level)
+
+    if (!next) return child
+
+    grafted = true
+
+    return next
+  })
+
+  return grafted ? { ...node, children } : null
+}
 
 /**
  * The expanded folders underneath `folderPath`, nearest first.

@@ -14,6 +14,7 @@ import {
   fileTreeParamValidation,
   folderBodyValidation,
   folderParamValidation,
+  HttpError,
   isZipFile,
   renameBodyValidation
 } from '../../utils'
@@ -291,11 +292,11 @@ driveRouter.get('/fileTree', async (req, res) => {
     res.send(response)
   } catch (err: any) {
     // buildDirectoryLevel reports the reason it refused a folder (outside the
-    // drive, missing, not a folder); anything else stays a blanket 403. The
-    // check is on the TYPE: a Node fs error surfacing from the whole-tree walk
-    // carries a string code ('ENOENT', 'EACCES') that is not a valid HTTP
-    // status, so it must fall back to 403 rather than reach res.status().
-    const statusCode = typeof err?.code === 'number' ? err.code : 403
+    // drive, missing, not a folder) by throwing an HttpError; anything else
+    // stays a blanket 403. Reading the status off the class keeps Node fs errors
+    // - whose `code` is a string such as 'ENOENT' and is not a valid HTTP
+    // status - from ever reaching res.status().
+    const statusCode = err instanceof HttpError ? err.status : 403
     const message = err?.message ?? err?.toString()
 
     res.status(statusCode).send(message)
