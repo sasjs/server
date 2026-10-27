@@ -5,6 +5,254 @@ components:
     requestBodies: {}
     responses: {}
     schemas:
+        BuildInfo:
+            properties:
+                version:
+                    type: string
+                    description: 'Semantic version of the release this build came from, or ''dev''.'
+                gitHash:
+                    type: string
+                    description: 'Short git hash of the commit this build came from, or ''unknown''.'
+                buildDate:
+                    type: string
+                    nullable: true
+                    description: 'ISO timestamp of the build, or null when it is not known.'
+            required:
+                - version
+                - gitHash
+                - buildDate
+            type: object
+            additionalProperties: false
+        ServerDetails:
+            properties:
+                mode:
+                    type: string
+                uptimeSeconds:
+                    type: number
+                    format: double
+                startedAt:
+                    type: string
+                pid:
+                    type: number
+                    format: double
+                nodeVersion:
+                    type: string
+                platform:
+                    type: string
+                arch:
+                    type: string
+                cpuCount:
+                    type: number
+                    format: double
+                cpuModel:
+                    type: string
+                loadAverage:
+                    items:
+                        type: number
+                        format: double
+                    type: array
+                runTimes:
+                    items:
+                        type: string
+                    type: array
+                sasjsRoot:
+                    type: string
+            required:
+                - mode
+                - uptimeSeconds
+                - startedAt
+                - pid
+                - nodeVersion
+                - platform
+                - arch
+                - cpuCount
+                - cpuModel
+                - loadAverage
+                - runTimes
+                - sasjsRoot
+            type: object
+            additionalProperties: false
+        MemoryDetails:
+            properties:
+                rssBytes:
+                    type: number
+                    format: double
+                heapTotalBytes:
+                    type: number
+                    format: double
+                heapUsedBytes:
+                    type: number
+                    format: double
+                externalBytes:
+                    type: number
+                    format: double
+                systemTotalBytes:
+                    type: number
+                    format: double
+                systemFreeBytes:
+                    type: number
+                    format: double
+            required:
+                - rssBytes
+                - heapTotalBytes
+                - heapUsedBytes
+                - externalBytes
+                - systemTotalBytes
+                - systemFreeBytes
+            type: object
+            additionalProperties: false
+        FilesystemUsage:
+            properties:
+                path:
+                    type: string
+                totalBytes:
+                    type: number
+                    format: double
+                freeBytes:
+                    type: number
+                    format: double
+                usedBytes:
+                    type: number
+                    format: double
+                usedPercent:
+                    type: number
+                    format: double
+            required:
+                - path
+                - totalBytes
+                - freeBytes
+                - usedBytes
+                - usedPercent
+            type: object
+            additionalProperties: false
+        FolderUsage:
+            properties:
+                label:
+                    type: string
+                path:
+                    type: string
+                exists:
+                    type: boolean
+                bytes:
+                    type: number
+                    format: double
+                files:
+                    type: number
+                    format: double
+                truncated:
+                    type: boolean
+                    description: 'True when the walk stopped at MAX_ENTRIES, so `bytes` is a lower bound.'
+                error:
+                    type: string
+            required:
+                - label
+                - path
+                - exists
+                - bytes
+                - files
+                - truncated
+            type: object
+            additionalProperties: false
+        LogFolderSummary:
+            properties:
+                folder:
+                    type: string
+                fileCount:
+                    type: number
+                    format: double
+                totalBytes:
+                    type: number
+                    format: double
+                newestFile:
+                    type: string
+                    nullable: true
+                newestModified:
+                    type: string
+                    nullable: true
+            required:
+                - folder
+                - fileCount
+                - totalBytes
+                - newestFile
+                - newestModified
+            type: object
+            additionalProperties: false
+        DiagnosticsResponse:
+            properties:
+                build:
+                    $ref: '#/components/schemas/BuildInfo'
+                server:
+                    $ref: '#/components/schemas/ServerDetails'
+                memory:
+                    $ref: '#/components/schemas/MemoryDetails'
+                filesystem:
+                    allOf:
+                        -
+                            $ref: '#/components/schemas/FilesystemUsage'
+                    nullable: true
+                folders:
+                    items:
+                        $ref: '#/components/schemas/FolderUsage'
+                    type: array
+                logs:
+                    $ref: '#/components/schemas/LogFolderSummary'
+            required:
+                - build
+                - server
+                - memory
+                - filesystem
+                - folders
+                - logs
+            type: object
+            additionalProperties: false
+        LogFileInfo:
+            properties:
+                name:
+                    type: string
+                sizeBytes:
+                    type: number
+                    format: double
+                modified:
+                    type: string
+            required:
+                - name
+                - sizeBytes
+                - modified
+            type: object
+            additionalProperties: false
+        LogFilesResponse:
+            properties:
+                files:
+                    items:
+                        $ref: '#/components/schemas/LogFileInfo'
+                    type: array
+            required:
+                - files
+            type: object
+            additionalProperties: false
+        LogTail:
+            properties:
+                fileName:
+                    type: string
+                lines:
+                    type: number
+                    format: double
+                bytesRead:
+                    type: number
+                    format: double
+                truncated:
+                    type: boolean
+                    description: 'True when earlier lines exist but are not included in `content`.'
+                content:
+                    type: string
+            required:
+                - fileName
+                - lines
+                - bytesRead
+                - truncated
+                - content
+            type: object
+            additionalProperties: false
         TokenResponse:
             properties:
                 accessToken:
@@ -739,6 +987,85 @@ info:
         url: 'https://sasjs.io'
 openapi: 3.0.0
 paths:
+    /SASjsApi/admin/diagnostics:
+        get:
+            operationId: Diagnostics
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DiagnosticsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {build: {version: v3.2.2, gitHash: 4a26a3d, buildDate: '2026-10-27T19:41:38.000Z'}, server: {mode: server, uptimeSeconds: 3600, startedAt: '2026-10-27T20:00:00.000Z', pid: 1462058, nodeVersion: v22.11.0, platform: 'linux 5.14.0', arch: x64, cpuCount: 8, cpuModel: 'Intel(R) Xeon(R) CPU', loadAverage: [0.08, 0.11, 0.15], runTimes: [sas], sasjsRoot: /home/sasjssrv/sasjs_root}, memory: {rssBytes: 214302720, heapTotalBytes: 41943040, heapUsedBytes: 31457280, externalBytes: 12582912, systemTotalBytes: 66571993088, systemFreeBytes: 61203283968}, filesystem: {path: /home/sasjssrv/sasjs_root, totalBytes: 468151435264, freeBytes: 114890375168, usedBytes: 353261060096, usedPercent: 75.5}, folders: [{label: sessions, path: /home/sasjssrv/sasjs_root/sessions, exists: true, bytes: 346341376, files: 2411, truncated: false}], logs: {folder: /home/sasjssrv/sasjs_root/logs, fileCount: 42, totalBytes: 43008000, newestFile: 20261027210826.log, newestModified: '2026-10-27T21:09:41.000Z'}}
+            description: "Reports what this server is running and how it is using the machine:\nthe release tag and commit the binary was built from, process uptime and\nmemory, the free space on the filesystem holding SASJS_ROOT, and the size\nof each folder underneath it.\n\nFolder sizes are best-effort: a subfolder that cannot be read contributes\nan `error` field, and a walk that stops at the entry cap is marked\n`truncated`, rather than the whole answer failing."
+            summary: 'Diagnostics: version, uptime, memory, disk usage'
+            tags:
+                - Admin
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/admin/logs:
+        get:
+            operationId: Logs
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogFilesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {files: [{name: 20261027210826.log, sizeBytes: 2979977, modified: '2026-10-27T21:09:41.000Z'}]}
+            description: "Lists the access logs the server has written, newest first, with their\nsizes - so an operator can see at a glance whether the log folder is\ngrowing and which file to read."
+            summary: 'List the server''s log files'
+            tags:
+                - Admin
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    '/SASjsApi/admin/logs/{fileName}':
+        get:
+            operationId: LogTail
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogTail'
+                            examples:
+                                'Example 1':
+                                    value: {fileName: 20261027210826.log, lines: 200, bytesRead: 65536, truncated: true, content: '::ffff:127.0.0.1 - - [27/Oct/2026:21:09:41 +0000] "GET /SASjsApi/info HTTP/1.1" 200 118'}
+            description: "Returns the end of one log file.\n\n`fileName` must be a bare file name ending in `.log`; anything that could\nresolve outside the log folder is refused with `400`, and a name that does\nnot exist inside it with `404`. The read starts near the end of the file,\nso a large log costs a bounded read rather than a full one, and\n`truncated` says whether earlier lines exist."
+            summary: 'Read the tail of a log file'
+            tags:
+                - Admin
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Name of the log file, as returned by GET /logs'
+                    in: path
+                    name: fileName
+                    required: true
+                    schema:
+                        type: string
+                -
+                    description: 'How many trailing lines to return (default 200, max 5000)'
+                    in: query
+                    name: lines
+                    required: false
+                    schema:
+                        default: 200
+                        format: double
+                        type: number
     /SASjsApi/auth/token:
         post:
             operationId: Token
@@ -2263,6 +2590,9 @@ servers:
     -
         url: /
 tags:
+    -
+        name: Admin
+        description: 'Operational data for administrators: logs, disk usage, versions and metrics'
     -
         name: Auth
         description: 'Sign-in, token exchange and password management'

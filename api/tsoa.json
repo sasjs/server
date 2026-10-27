@@ -19,6 +19,10 @@
     },
     "tags": [
       {
+        "name": "Admin",
+        "description": "Operational data for administrators: logs, disk usage, versions and metrics"
+      },
+      {
         "name": "Auth",
         "description": "Sign-in, token exchange and password management"
       },
