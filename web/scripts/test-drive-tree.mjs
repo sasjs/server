@@ -13,9 +13,13 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { ancestorPathsOf, childrenOf, parentPathOf, withLevel } = await import(
-  '../src/utils/driveTree.ts'
-)
+const {
+  ancestorPathsOf,
+  childrenOf,
+  expandedDescendantsOf,
+  parentPathOf,
+  withLevel
+} = await import('../src/utils/driveTree.ts')
 
 const node = (name, relativePath, isFolder, children = [], extra = {}) => ({
   name,
@@ -107,6 +111,30 @@ check('childrenOf leaves an empty folder and a loaded empty folder childless', (
 
 check('childrenOf never fabricates a child for a file', () => {
   assert.deepEqual(childrenOf(node('x.sas', '/x.sas', false, [])), [])
+})
+
+check('expandedDescendantsOf finds open folders under a refreshed one', () => {
+  const expanded = ['', '/a', '/a/b', '/a/b/c', '/other', '/ab']
+
+  // nearest first, and only real descendants of /a - '/ab' must not match
+  assert.deepEqual(expandedDescendantsOf(expanded, '/a'), [
+    '/a/b',
+    '/a/b/c'
+  ])
+})
+
+check('expandedDescendantsOf of the root is every other open folder', () => {
+  const expanded = ['', '/a', '/a/b', '/other']
+
+  assert.deepEqual(expandedDescendantsOf(expanded, ''), [
+    '/a',
+    '/other',
+    '/a/b'
+  ])
+})
+
+check('expandedDescendantsOf of a leaf folder is empty', () => {
+  assert.deepEqual(expandedDescendantsOf(['', '/a'], '/a'), [])
 })
 
 console.log(`\n${checks} checks passed`)

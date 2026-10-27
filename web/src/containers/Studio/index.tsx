@@ -8,6 +8,7 @@ import Box from '@mui/material/Box'
 import {
   ROOT_PATH,
   ancestorPathsOf,
+  expandedDescendantsOf,
   parentPathOf,
   withLevel
 } from '../../utils/driveTree'
@@ -32,6 +33,11 @@ const Studio = () => {
   // request another caller started - the deep-link walk depends on that to sit
   // behind the root fetch instead of racing it.
   const folderRequests = useRef<Map<string, Promise<void>>>(new Map())
+  // The authoritative tree. State mirrors it for rendering; keeping the
+  // readable copy in a ref is what lets a fetch decide whether its level can be
+  // grafted BEFORE it records the folder as loaded, and is why this callback
+  // needs no state updater.
+  const treeRef = useRef<TreeNode | null>(null)
 
   useEffect(() => {
     setSelectedFilePath(searchParams.get('filePath') ?? '')
@@ -61,25 +67,45 @@ const Studio = () => {
 
           if (res.data?.status === 'success') {
             const level = { ...res.data.tree, childrenLoaded: true } as TreeNode
+            const previous = treeRef.current
 
-            // Replacing a level replaces its whole subtree, so anything loaded
-            // underneath it is now stale and must be fetched again on expand.
-            const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
-            Array.from(loadedFolders.current).forEach((loaded) => {
-              if (loaded.startsWith(prefix))
-                loadedFolders.current.delete(loaded)
-            })
+            // A folder level arriving before the root must never BECOME the
+            // tree: the drive root is the only node whose relativePath is '' and
+            // every later graft walks from it. Leaving it un-grafted is only
+            // safe because the folder is not recorded as loaded here either, so
+            // the next expand requests it again instead of showing a childless
+            // node for ever.
+            const next =
+              previous !== null
+                ? withLevel(previous, folderPath, level)
+                : folderPath === ROOT_PATH
+                  ? level
+                  : null
 
-            loadedFolders.current.add(folderPath)
+            if (next !== null) {
+              // Replacing a level replaces its whole subtree, so anything loaded
+              // underneath it is now stale.
+              const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
 
-            setDirectoryData((previous) => {
-              // A folder level arriving before the root must never BECOME the
-              // tree: the drive root is the only node whose relativePath is ''
-              // and every later graft walks from it.
-              if (!previous) return folderPath === ROOT_PATH ? level : previous
+              Array.from(loadedFolders.current).forEach((loaded) => {
+                if (loaded.startsWith(prefix))
+                  loadedFolders.current.delete(loaded)
+              })
 
-              return withLevel(previous, folderPath, level)
-            })
+              loadedFolders.current.add(folderPath)
+              treeRef.current = next
+              setDirectoryData(next)
+
+              // ...but the folders the user has OPEN under it stay open, and
+              // expansion is what triggers a fetch - so re-read them here, or
+              // the tree settles on a placeholder that never resolves.
+              const reopen = expandedDescendantsOf(
+                expandedRef.current,
+                folderPath
+              )
+
+              for (const descendant of reopen) await fetchFolder(descendant)
+            }
           }
         } catch (err) {
           console.log(err)
@@ -154,9 +180,10 @@ const Studio = () => {
   }
 
   const removeFileFromTree = (path: string) => {
-    if (directoryData) {
-      const newTree = JSON.parse(JSON.stringify(directoryData)) as TreeNode
+    if (treeRef.current) {
+      const newTree = JSON.parse(JSON.stringify(treeRef.current)) as TreeNode
       findAndRemoveNode(newTree, newTree, path)
+      treeRef.current = newTree
       setDirectoryData(newTree)
 
       // A deleted folder takes its loaded levels with it, and its parent may now

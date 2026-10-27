@@ -53,6 +53,25 @@ export const withLevel = (
         )
       }
 
+/**
+ * The expanded folders underneath `folderPath`, nearest first.
+ *
+ * Replacing a folder level drops the loaded levels beneath it, but the folders
+ * the user has open stay open - so they have to be fetched again, or the tree
+ * settles on a `Loading...` placeholder that nothing ever resolves because
+ * expansion is what triggers a fetch.
+ */
+export const expandedDescendantsOf = (
+  expanded: Iterable<string>,
+  folderPath: string
+): string[] => {
+  const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
+
+  return Array.from(expanded)
+    .filter((path) => path !== folderPath && path.startsWith(prefix))
+    .sort((a, b) => a.split('/').length - b.split('/').length)
+}
+
 /** The children to render under one node. */
 export const childrenOf = (nodes: TreeNode): TreeNode[] => {
   if (nodes.children.length) return nodes.children
