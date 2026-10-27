@@ -10,13 +10,24 @@ const adminRouter = express.Router()
  *
  * The controller throws `{ code, message }` for a refused log name, which is
  * passed through so a traversal attempt answers 400 rather than looking like a
- * permission problem - 403 would suggest the caller is not an admin, and they
- * are.
+ * permission problem. Anything *without* a numeric code is a genuine failure in
+ * the handler (EACCES, EMFILE, an unexpected throw): that is a 500, logged
+ * before it is answered, because reporting it as 403 would blame the caller and
+ * leave nothing in the logs.
  */
 const sendError = (res: express.Response, err: any) => {
-  const code = typeof err?.code === 'number' ? err.code : 403
+  const code = typeof err?.code === 'number' ? err.code : 500
 
-  res.status(code).send(err?.message ?? err?.toString() ?? 'Error')
+  if (code >= 500) {
+    const logger = (process as any).logger
+
+    if (logger?.error) logger.error('Admin route failed:', err)
+    else console.error('Admin route failed:', err)
+  }
+
+  res
+    .status(code)
+    .send(code >= 500 ? 'Internal server error' : (err?.message ?? String(err)))
 }
 
 adminRouter.get('/diagnostics', async (req, res) => {

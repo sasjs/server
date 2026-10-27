@@ -237,6 +237,7 @@ components:
                 lines:
                     type: number
                     format: double
+                    description: 'Lines actually returned in `content`.'
                 bytesRead:
                     type: number
                     format: double

@@ -180,9 +180,11 @@ describe('log files', () => {
   })
 
   describe('resolveLogFile', () => {
-    it('accepts a bare log name inside the folder', () => {
-      expect(resolveLogFile('20260101000000.log')).toBe(
-        path.join(logFolder, '20260101000000.log')
+    it('accepts a bare log name inside the folder', async () => {
+      const resolved = await resolveLogFile('20260101000000.log')
+
+      expect(resolved).toBe(
+        await fs.promises.realpath(path.join(logFolder, '20260101000000.log'))
       )
     })
 
@@ -193,14 +195,32 @@ describe('log files', () => {
       'sub/dir/a.log',
       'notes.txt',
       'a.log\0'
-    ])('refuses %s', (name) => {
-      expect(() => resolveLogFile(name)).toThrow()
+    ])('refuses %s', async (name) => {
+      await expect(resolveLogFile(name)).rejects.toMatchObject({ code: 400 })
     })
 
-    it('refuses everything when no log folder is configured', () => {
+    it('refuses a symlink that points outside the log folder', async () => {
+      const outside = path.join(os.tmpdir(), `sasjs-outside-${Date.now()}.log`)
+      fs.writeFileSync(outside, 'secret\n')
+      fs.symlinkSync(outside, path.join(logFolder, 'linked.log'))
+
+      // A lexical containment check passes this name; only resolving the real
+      // path (or refusing the link) keeps the read inside the folder.
+      await expect(resolveLogFile('linked.log')).rejects.toMatchObject({
+        code: 400
+      })
+    })
+
+    it('answers 404 for a name that is simply not there', async () => {
+      await expect(resolveLogFile('20200101000000.log')).rejects.toMatchObject({
+        code: 404
+      })
+    })
+
+    it('refuses everything when no log folder is configured', async () => {
       process.logsLoc = undefined as any
 
-      expect(() => resolveLogFile('a.log')).toThrow()
+      await expect(resolveLogFile('a.log')).rejects.toMatchObject({ code: 400 })
     })
   })
 
@@ -226,6 +246,8 @@ describe('log files', () => {
 
       expect(tail.content.split('\n')).toEqual(['line 1', 'line 2', 'line 3'])
       expect(tail.truncated).toBe(false)
+      // The count describes the answer, not the request: 3 lines, not 100.
+      expect(tail.lines).toBe(3)
     })
 
     it('falls back to the default and caps the maximum', async () => {

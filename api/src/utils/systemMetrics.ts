@@ -83,6 +83,7 @@ export interface LogFolderSummary {
 
 export interface LogTail {
   fileName: string
+  /** Lines actually returned in `content`. */
   lines: number
   bytesRead: number
   /** True when earlier lines exist but are not included in `content`. */
@@ -277,12 +278,15 @@ export const getLogFolderSummary = async (): Promise<LogFolderSummary> => {
  * Resolves a caller-supplied log name inside the log folder, refusing anything
  * that could escape it.
  *
- * The name is rejected unless it is a bare file name ending in `.log`, and the
- * resolved path is checked again against the folder - so `../../.env`, an
- * absolute path and a URL-encoded traversal all fail before any file is
- * opened.
+ * Two guards, because the first is not enough on its own: the name must be a
+ * bare file name ending in `.log` (so `..`, an absolute path and a traversal
+ * die before any file is touched), and the resolved path must still be under
+ * the resolved log folder. The second check is what stops a symlink *inside*
+ * the log folder pointing somewhere else - a lexical check alone follows it.
+ * Symlinks are refused outright rather than resolved: the folder holds files
+ * the server wrote.
  */
-export const resolveLogFile = (fileName: string): string => {
+export const resolveLogFile = async (fileName: string): Promise<string> => {
   const folder = getLogFolder()
 
   if (!folder)
@@ -303,17 +307,49 @@ export const resolveLogFile = (fileName: string): string => {
       message: 'Invalid log file name.'
     }
 
-  const folderPath = path.resolve(folder)
-  const filePath = path.resolve(folderPath, fileName)
+  const folderPath = await fs.promises.realpath(folder).catch(() => null)
 
-  if (filePath !== path.join(folderPath, fileName))
+  if (!folderPath)
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: 'Log folder is not readable.'
+    }
+
+  const candidate = path.join(folderPath, fileName)
+  const entry = await fs.promises.lstat(candidate).catch(() => null)
+
+  if (!entry)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Log file not found.'
+    }
+
+  if (entry.isSymbolicLink())
     throw {
       code: 400,
       status: 'Bad Request',
       message: 'Invalid log file name.'
     }
 
-  return filePath
+  const real = await fs.promises.realpath(candidate).catch(() => null)
+
+  if (!real)
+    throw {
+      code: 404,
+      status: 'Not Found',
+      message: 'Log file not found.'
+    }
+
+  if (real !== candidate && !real.startsWith(folderPath + path.sep))
+    throw {
+      code: 400,
+      status: 'Bad Request',
+      message: 'Invalid log file name.'
+    }
+
+  return real
 }
 
 export const DEFAULT_LOG_LINES = 200
@@ -328,7 +364,7 @@ export const readLogTail = async (
   fileName: string,
   lines: number = DEFAULT_LOG_LINES
 ): Promise<LogTail> => {
-  const filePath = resolveLogFile(fileName)
+  const filePath = await resolveLogFile(fileName)
   const stats = await statOrNull(filePath)
 
   if (!stats || !stats.isFile())
@@ -371,15 +407,19 @@ export const readLogTail = async (
 
     if (allLines[allLines.length - 1] === '') allLines.pop()
 
+    const returned = allLines.slice(-wanted)
+
     return {
       fileName,
-      lines: wanted,
+      // How many lines `content` actually holds, not what was asked for: a
+      // short file or a capped window must not be reported as a full answer.
+      lines: returned.length,
       bytesRead,
       // `truncated` describes the answer, not the read: earlier lines are
       // missing either because the window started mid-file, or because the
       // caller asked for fewer lines than the file holds.
       truncated: start > 0 || allLines.length > wanted,
-      content: allLines.slice(-wanted).join('\n')
+      content: returned.join('\n')
     }
   } finally {
     await handle.close()

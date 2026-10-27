@@ -52,6 +52,14 @@ jobs:
             # pass it to the build through SASJS_SERVER_VERSION so the binary
             # names the release it is about to be published as.
             VERSION=$(grep -oE 'The next release version is [0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?' /tmp/dry-run.log | head -1 | awk '{print $NF}')
+            # An empty value here would stamp every binary with the literal
+            # "v" and publish a build that cannot name its own release - fail
+            # the job instead of shipping that.
+            if [ -z "$VERSION" ]; then
+              echo "Could not parse the next version out of the dry-run output:"
+              cat /tmp/dry-run.log
+              exit 1
+            fi
             echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
             echo "Building as v$VERSION"
           else

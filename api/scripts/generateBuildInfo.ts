@@ -69,7 +69,14 @@ try {
   // First run: nothing to compare against.
 }
 
-if (current === contents) {
+// Compare only what identifies the build. buildDate is part of the file but not
+// of the identity, so including it in the check rewrote a committed file on
+// every `npm run initial` (prestart, build, exe) and left a dirty working tree
+// for developers and for the release job.
+const currentVersion = /version:\s*"([^"]*)"/.exec(current)?.[1]
+const currentHash = /gitHash:\s*"([^"]*)"/.exec(current)?.[1]
+
+if (currentVersion === version && currentHash === gitHash) {
   console.log(`buildInfo: unchanged (${version} ${gitHash})`)
 } else {
   fs.writeFileSync(OUT_FILE, contents)
