@@ -15,8 +15,15 @@ const adminRouter = express.Router()
  * before it is answered, because reporting it as 403 would blame the caller and
  * leave nothing in the logs.
  */
-const sendError = (res: express.Response, err: any) => {
-  const code = typeof err?.code === 'number' ? err.code : 500
+export const sendError = (res: express.Response, err: any) => {
+  // A numeric `code` is not automatically an HTTP status: driver-style errors
+  // carry numbers like 11000 (duplicate key) or 13 (unauthorized), and
+  // res.status(11000) throws inside the handler, leaving the caller with no
+  // response at all. Only 4xx/5xx are honoured.
+  const code =
+    typeof err?.code === 'number' && err.code >= 400 && err.code <= 599
+      ? err.code
+      : 500
 
   if (code >= 500) {
     const logger = (process as any).logger

@@ -13,6 +13,7 @@ import {
   getFilesystemUsage,
   getLogFolderSummary,
   getProcessMetrics,
+  getReportedFolders,
   listLogFiles,
   readLogTail,
   resolveLogFile
@@ -112,6 +113,47 @@ describe('getFilesystemUsage', () => {
 
   it('answers null when there is no folder to measure', async () => {
     expect(await getFilesystemUsage(undefined)).toBeNull()
+  })
+})
+
+describe('getReportedFolders', () => {
+  it('derives child sizes from a single walk of SASJS_ROOT', async () => {
+    const root = makeTempDir()
+    fs.mkdirSync(path.join(root, 'drive', 'files'), { recursive: true })
+    fs.mkdirSync(path.join(root, 'sessions'), { recursive: true })
+    fs.writeFileSync(path.join(root, 'drive', 'files', 'a.sas'), '12345')
+    fs.writeFileSync(path.join(root, 'sessions', 'b.log'), '1234567890')
+
+    const previous = {
+      root: process.sasjsRoot,
+      drive: process.driveLoc,
+      logs: process.logsLoc
+    }
+
+    process.sasjsRoot = root
+    process.driveLoc = path.join(root, 'drive')
+    process.logsLoc = path.join(root, 'logs')
+
+    try {
+      const rows = await getReportedFolders()
+      const byLabel = new Map(rows.map((row) => [row.label, row]))
+
+      // 5 + 10 bytes, counted once: the root total is the tree, not the tree
+      // plus every child row's walk of the same files.
+      expect(byLabel.get('sasjs_root')?.bytes).toBe(15)
+      expect(byLabel.get('sasjs_root')?.files).toBe(2)
+      expect(byLabel.get('drive')?.bytes).toBe(5)
+      expect(byLabel.get('drive/files')?.bytes).toBe(5)
+      expect(byLabel.get('sessions')?.bytes).toBe(10)
+
+      // Configured but absent: derived as missing rather than as zero bytes.
+      expect(byLabel.get('logs')?.exists).toBe(false)
+      expect(byLabel.get('logs')?.error).toBe('not found')
+    } finally {
+      process.sasjsRoot = previous.root
+      process.driveLoc = previous.drive
+      process.logsLoc = previous.logs
+    }
   })
 })
 

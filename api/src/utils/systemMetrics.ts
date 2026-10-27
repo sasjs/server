@@ -105,6 +105,117 @@ const statOrNull = async (filePath: string): Promise<fs.Stats | null> => {
  * Symlinks are counted as entries but never traversed: a link pointing at `/`
  * or at its own parent would otherwise walk the whole filesystem or loop.
  */
+const STAT_CONCURRENCY = 32
+
+interface WalkTotals {
+  bytes: number
+  files: number
+  truncated: boolean
+  /** Totals per leading path segment, relative to the folder that was walked. */
+  byPrefix: Map<string, { bytes: number; files: number }>
+}
+
+/**
+ * One walk of a folder tree.
+ *
+ * Two things make this cheaper than the obvious version, because diagnostics
+ * runs it on the request path (on tab mount and on every Refresh):
+ *
+ * - the stat calls run in bounded batches rather than one awaited stat at a
+ *   time, which on a large SASJS_ROOT was seconds of serialised IO;
+ * - the per-prefix totals let a caller derive the child folders (`drive`,
+ *   `sessions`, ...) from the same walk instead of walking the tree again for
+ *   each of them.
+ *
+ * Symlinks are counted as entries but never followed: a link to `/` or to its
+ * own parent would otherwise walk the filesystem or loop.
+ */
+const walkFolder = async (
+  folder: string,
+  cap: number = MAX_ENTRIES
+): Promise<WalkTotals> => {
+  const totals: WalkTotals = {
+    bytes: 0,
+    files: 0,
+    truncated: false,
+    byPrefix: new Map()
+  }
+
+  const rootPath = path.resolve(folder)
+  const pendingDirs: string[] = [rootPath]
+  const files: string[] = []
+  let entries = 0
+  let truncated = false
+
+  while (pendingDirs.length && !truncated) {
+    const current = pendingDirs.pop() as string
+
+    let dirents: fs.Dirent[]
+
+    try {
+      dirents = await fs.promises.readdir(current, { withFileTypes: true })
+    } catch (error) {
+      // Unreadable subfolder: keep what has been counted so far.
+      continue
+    }
+
+    for (const dirent of dirents) {
+      if (entries >= cap) {
+        truncated = true
+        break
+      }
+
+      entries++
+
+      if (dirent.isSymbolicLink()) continue
+
+      const fullPath = path.join(current, dirent.name)
+
+      if (dirent.isDirectory()) {
+        pendingDirs.push(fullPath)
+        continue
+      }
+
+      if (dirent.isFile()) files.push(fullPath)
+    }
+  }
+
+  for (let index = 0; index < files.length; index += STAT_CONCURRENCY) {
+    const batch = files.slice(index, index + STAT_CONCURRENCY)
+    const sizes = await Promise.all(
+      batch.map(async (filePath) => {
+        const stats = await statOrNull(filePath)
+
+        return stats && stats.isFile() ? stats.size : null
+      })
+    )
+
+    sizes.forEach((size, position) => {
+      if (size === null) return
+
+      const segments = path.relative(rootPath, batch[position]).split(path.sep)
+      const keys = [segments[0]]
+
+      if (segments.length > 1) keys.push(segments.slice(0, 2).join('/'))
+
+      totals.bytes += size
+      totals.files++
+
+      for (const key of keys) {
+        const entry = totals.byPrefix.get(key) ?? { bytes: 0, files: 0 }
+
+        entry.bytes += size
+        entry.files++
+        totals.byPrefix.set(key, entry)
+      }
+    })
+  }
+
+  totals.truncated = truncated
+
+  return totals
+}
+
 export const getFolderUsage = async (
   label: string,
   folder: string | undefined
@@ -126,52 +237,16 @@ export const getFolderUsage = async (
   if (!stats.isDirectory())
     return { ...result, exists: true, error: 'not a directory' }
 
-  result.exists = true
+  const totals = await walkFolder(folder)
 
-  let entries = 0
-  const pending: string[] = [folder]
-
-  while (pending.length) {
-    const current = pending.pop() as string
-
-    let dirents: fs.Dirent[]
-
-    try {
-      dirents = await fs.promises.readdir(current, { withFileTypes: true })
-    } catch (error) {
-      // Unreadable subfolder: keep what has been counted so far.
-      continue
-    }
-
-    for (const dirent of dirents) {
-      if (entries >= MAX_ENTRIES) {
-        result.truncated = true
-        return result
-      }
-
-      entries++
-
-      const fullPath = path.join(current, dirent.name)
-
-      if (dirent.isSymbolicLink()) continue
-
-      if (dirent.isDirectory()) {
-        pending.push(fullPath)
-        continue
-      }
-
-      if (!dirent.isFile()) continue
-
-      const fileStats = await statOrNull(fullPath)
-
-      if (!fileStats) continue
-
-      result.files++
-      result.bytes += fileStats.size
-    }
+  return {
+    label,
+    path: folder,
+    exists: true,
+    bytes: totals.bytes,
+    files: totals.files,
+    truncated: totals.truncated
   }
-
-  return result
 }
 
 export const getFilesystemUsage = async (
@@ -428,17 +503,78 @@ export const readLogTail = async (
 
 /** The folders the administration screen reports on, in display order. */
 export const getReportedFolders = async (): Promise<FolderUsage[]> => {
-  const targets: [string, string | undefined][] = [
-    ['sasjs_root', getSasjsRootFolder()],
-    ['drive', getSasjsDriveFolder()],
-    ['drive/files', getFilesFolder()],
-    ['sessions', getSessionsFolder()],
-    ['logs', getLogFolder()],
-    ['uploads', getUploadsFolder()],
-    ['webouts', getWeboutFolder()]
+  const root = getSasjsRootFolder()
+  const rootPath = root ? path.resolve(root) : ''
+  const rootStats = rootPath ? await statOrNull(rootPath) : null
+  const rootTotals =
+    rootPath && rootStats?.isDirectory() ? await walkFolder(rootPath) : null
+
+  // The prefix is the path of the folder relative to SASJS_ROOT, which is how a
+  // child row is derived from the single walk rather than walked again. A folder
+  // that is configured outside the root (a logs folder on another mount, say)
+  // has no prefix and falls back to its own walk.
+  const targets: [string, string | undefined, string][] = [
+    ['sasjs_root', root, ''],
+    ['drive', getSasjsDriveFolder(), 'drive'],
+    ['drive/files', getFilesFolder(), 'drive/files'],
+    ['sessions', getSessionsFolder(), 'sessions'],
+    ['logs', getLogFolder(), 'logs'],
+    ['uploads', getUploadsFolder(), 'uploads'],
+    ['webouts', getWeboutFolder(), 'webouts']
   ]
 
-  return Promise.all(
-    targets.map(([label, folder]) => getFolderUsage(label, folder))
-  )
+  const rows: FolderUsage[] = []
+
+  for (const [label, folder, prefix] of targets) {
+    const resolved = folder ? path.resolve(folder) : ''
+    const nestsInsideRoot =
+      !!rootTotals &&
+      prefix !== '' &&
+      resolved === path.join(rootPath, ...prefix.split('/'))
+
+    if (rootTotals && prefix === '' && resolved === rootPath) {
+      rows.push({
+        label,
+        path: folder as string,
+        exists: true,
+        bytes: rootTotals.bytes,
+        files: rootTotals.files,
+        truncated: rootTotals.truncated
+      })
+      continue
+    }
+
+    if (nestsInsideRoot) {
+      const derived = rootTotals.byPrefix.get(prefix) ?? { bytes: 0, files: 0 }
+      // Absence is still a real question: a configured child that does not
+      // exist is not the same as an empty one.
+      const exists = !!(await statOrNull(resolved))
+
+      rows.push(
+        exists
+          ? {
+              label,
+              path: folder as string,
+              exists: true,
+              bytes: derived.bytes,
+              files: derived.files,
+              truncated: rootTotals.truncated
+            }
+          : {
+              label,
+              path: folder as string,
+              exists: false,
+              bytes: 0,
+              files: 0,
+              truncated: false,
+              error: 'not found'
+            }
+      )
+      continue
+    }
+
+    rows.push(await getFolderUsage(label, folder))
+  }
+
+  return rows
 }

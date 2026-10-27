@@ -5,6 +5,7 @@ import request from 'supertest'
 
 import { UserController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import { sendError } from '../admin'
 
 // MODE must be set BEFORE the app module is loaded: `setProcessVariables()`
 // decides whether to install JWT secrets from the mode it sees at boot, and an
@@ -149,6 +150,72 @@ const createUserAndToken = async (user: any): Promise<string> => {
 
   return generateAndSaveToken(dbUser.uid)
 }
+
+/**
+ * Error mapping in the router.
+ *
+ * A numeric `code` is not automatically an HTTP status - driver errors carry
+ * 11000 and 13 - and `res.status(11000)` throws inside the handler, leaving the
+ * caller with no response at all.
+ */
+describe('sendError', () => {
+  // The app installs a winston logger on `process.logger`, so which sink the
+  // error reaches depends on whether the app was booted.
+  const spyOnErrorLog = () => {
+    const logger = (process as any).logger
+
+    return logger?.error
+      ? jest.spyOn(logger, 'error').mockImplementation(() => {})
+      : jest.spyOn(console, 'error').mockImplementation(() => {})
+  }
+
+  const restoreErrorLog = (spy: any) => spy.mockRestore()
+
+  const fakeResponse = () => {
+    const res: any = {}
+
+    res.status = jest.fn(() => res)
+    res.send = jest.fn(() => res)
+
+    return res
+  }
+
+  it('passes a controller code through unchanged', () => {
+    const res = fakeResponse()
+
+    sendError(res, { code: 400, message: 'Invalid log file name.' })
+
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(res.send).toHaveBeenCalledWith('Invalid log file name.')
+  })
+
+  it('answers 500 for a numeric code that is not an HTTP status', () => {
+    const res = fakeResponse()
+    const logged = spyOnErrorLog()
+
+    sendError(res, { code: 11000, message: 'E11000 duplicate key error' })
+
+    expect(res.status).toHaveBeenCalledWith(500)
+    expect(res.send).toHaveBeenCalledWith('Internal server error')
+    // The original error must reach the log, not just the client's 500.
+    expect(logged).toHaveBeenCalled()
+
+    restoreErrorLog(logged)
+  })
+
+  it('answers 500 when there is no code at all', () => {
+    const res = fakeResponse()
+    const logged = spyOnErrorLog()
+
+    sendError(res, new Error('EMFILE: too many open files'))
+
+    expect(res.status).toHaveBeenCalledWith(500)
+    expect(res.send).toHaveBeenCalledWith('Internal server error')
+    expect(logged).toHaveBeenCalled()
+
+    restoreErrorLog(logged)
+  })
+})
 
 const generateAndSaveToken = async (userId: string) => {
   const accessToken = generateAccessToken({ clientId, userId })
