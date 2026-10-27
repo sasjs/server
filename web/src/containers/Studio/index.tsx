@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 
 import CssBaseline from '@mui/material/CssBaseline'
 import Box from '@mui/material/Box'
 
+import {
+  ROOT_PATH,
+  ancestorPathsOf,
+  parentPathOf,
+  withLevel
+} from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
 
 import SideBar from './sideBar'
@@ -14,32 +20,119 @@ const Studio = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedFilePath, setSelectedFilePath] = useState('')
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
+  const [expanded, setExpanded] = useState<string[]>([ROOT_PATH])
   const [tab, setTab] = useState('code')
+
+  // Refs, not state: these are consulted inside callbacks that must not be
+  // rebuilt on every fetch, and a folder must never be requested twice.
+  const loadedFolders = useRef<Set<string>>(new Set())
+  const foldersInFlight = useRef<Set<string>>(new Set())
+  const expandedRef = useRef<Set<string>>(new Set([ROOT_PATH]))
 
   useEffect(() => {
     setSelectedFilePath(searchParams.get('filePath') ?? '')
   }, [searchParams])
 
-  const fetchDirectoryData = useCallback(() => {
-    axios
-      .get(`/SASjsApi/drive/fileTree`)
-      .then((res: any) => {
-        if (res.data && res.data?.status === 'success') {
-          setDirectoryData(res.data.tree)
+  /**
+   * Fetches one folder's immediate children and grafts them into the tree.
+   *
+   * The drive is loaded a level at a time - the whole tree is not requested on
+   * page load, so opening Studio costs one readdir of the root instead of a
+   * stat and a readdir for every entry on the drive.
+   */
+  const fetchFolder = useCallback(
+    async (folderPath: string, force?: boolean) => {
+      if (
+        !force &&
+        (loadedFolders.current.has(folderPath) ||
+          foldersInFlight.current.has(folderPath))
+      )
+        return
+
+      foldersInFlight.current.add(folderPath)
+
+      try {
+        const res = await axios.get('/SASjsApi/drive/fileTree', {
+          params: { _folderPath: folderPath }
+        })
+
+        if (res.data?.status === 'success') {
+          const level = { ...res.data.tree, childrenLoaded: true } as TreeNode
+
+          // Replacing a level replaces its whole subtree, so anything loaded
+          // underneath it is now stale and must be fetched again on expand.
+          const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
+          Array.from(loadedFolders.current).forEach((loaded) => {
+            if (loaded.startsWith(prefix)) loadedFolders.current.delete(loaded)
+          })
+
+          loadedFolders.current.add(folderPath)
+
+          setDirectoryData((previous) =>
+            previous ? withLevel(previous, folderPath, level) : level
+          )
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.log(err)
-      })
-  }, [])
+      } finally {
+        foldersInFlight.current.delete(folderPath)
+      }
+    },
+    []
+  )
 
   useEffect(() => {
-    fetchDirectoryData()
-  }, [fetchDirectoryData])
+    fetchFolder(ROOT_PATH)
+  }, [fetchFolder])
+
+  // A deep link (?filePath=/Public/app/services/run.sas) has to open the folders
+  // above the file, and their contents arrive one level at a time, so walk the
+  // ancestors in order before expanding them.
+  useEffect(() => {
+    if (!selectedFilePath) return
+
+    let cancelled = false
+
+    const openAncestors = async () => {
+      const ancestors = ancestorPathsOf(selectedFilePath)
+
+      for (const ancestor of ancestors) {
+        if (cancelled) return
+        await fetchFolder(ancestor)
+      }
+
+      if (cancelled) return
+
+      const next = new Set(Array.from(expandedRef.current).concat(ancestors))
+      expandedRef.current = next
+      setExpanded(Array.from(next))
+    }
+
+    openAncestors()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedFilePath, fetchFolder])
+
+  const handleExpandedChange = useCallback(
+    (expandedPaths: string[]) => {
+      const newlyExpanded = expandedPaths.filter(
+        (path) => !expandedRef.current.has(path)
+      )
+
+      expandedRef.current = new Set(expandedPaths)
+      setExpanded(expandedPaths)
+
+      // Expanding a folder is the moment its contents are needed.
+      newlyExpanded.forEach((path) => fetchFolder(path))
+    },
+    [fetchFolder]
+  )
 
   const handleSelect = (filePath: string, refreshSideBar?: boolean) => {
     setSearchParams({ filePath })
-    if (refreshSideBar) fetchDirectoryData()
+    if (refreshSideBar) fetchFolder(parentPathOf(filePath), true)
   }
 
   const removeFileFromTree = (path: string) => {
@@ -47,6 +140,13 @@ const Studio = () => {
       const newTree = JSON.parse(JSON.stringify(directoryData)) as TreeNode
       findAndRemoveNode(newTree, newTree, path)
       setDirectoryData(newTree)
+
+      // A deleted folder takes its loaded levels with it, and its parent may now
+      // be empty - so let the next visit fetch it again.
+      loadedFolders.current.forEach((loaded) => {
+        if (loaded === path || loaded.startsWith(`${path}/`))
+          loadedFolders.current.delete(loaded)
+      })
     }
   }
 
@@ -88,9 +188,11 @@ const Studio = () => {
         <SideBar
           selectedFilePath={selectedFilePath}
           directoryData={directoryData}
+          expanded={expanded}
+          onExpandedChange={handleExpandedChange}
           handleSelect={handleSelect}
           removeFileFromTree={removeFileFromTree}
-          refreshSideBar={fetchDirectoryData}
+          refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
         />
       )}
       <SASjsEditor

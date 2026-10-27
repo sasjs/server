@@ -281,11 +281,20 @@ driveRouter.post('/rename', async (req, res) => {
 })
 
 driveRouter.get('/fileTree', async (req, res) => {
+  const { error, value: query } = folderParamValidation(req.query)
+
+  if (error) return res.status(400).send(error.details[0].message)
+
   try {
-    const response = await controller.getFileTree()
+    const response = await controller.getFileTree(query._folderPath)
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    // buildDirectoryLevel reports the reason it refused a folder (outside the
+    // drive, missing, not a folder); anything else stays a blanket 403.
+    const statusCode = err?.code ?? 403
+    const message = err?.message ?? err?.toString()
+
+    res.status(statusCode).send(message)
   }
 })
 

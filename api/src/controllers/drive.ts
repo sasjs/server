@@ -311,19 +311,37 @@ export class DriveController {
   }
 
   /**
-   * Returns the full folder-and-file tree of SASjs Drive, for rendering the
-   * drive browser.
+   * Returns the folder-and-file tree of SASjs Drive, for rendering the drive
+   * browser.
    *
-   * @summary Get the SASjs Drive file tree
+   * With no `_folderPath` the whole tree is returned, which is kept for callers
+   * that want to hash or mirror the drive in one request. With `_folderPath`
+   * the response holds that folder and its IMMEDIATE children only, which is
+   * what the Studio browser uses: it loads a level when a folder is expanded
+   * rather than walking the entire drive on every page load. Each child folder
+   * carries `hasChildren` so the caller can render an expander before
+   * requesting that folder's contents.
+   *
+   * @summary Get the SASjs Drive file tree, or one folder of it
+   * @param _folderPath Drive-relative folder path, e.g. /Public/services. Omit
+   * for the whole tree.
    */
   @Get('/filetree')
-  public async getFileTree(): Promise<GetFileTreeResponse> {
-    return getFileTree()
+  public async getFileTree(
+    @Query() _folderPath?: string
+  ): Promise<GetFileTreeResponse> {
+    return getFileTree(_folderPath)
   }
 }
 
-const getFileTree = () => {
-  const tree = new ExecutionController().buildDirectoryTree()
+const getFileTree = (folderPath?: string) => {
+  const controller = new ExecutionController()
+
+  const tree =
+    folderPath === undefined
+      ? controller.buildDirectoryTree()
+      : controller.buildDirectoryLevel(folderPath)
+
   return { status: 'success', tree }
 }
 

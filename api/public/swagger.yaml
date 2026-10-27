@@ -353,6 +353,9 @@ components:
                     items:
                         $ref: '#/components/schemas/TreeNode'
                     type: array
+                hasChildren:
+                    type: boolean
+                    description: "Whether a FOLDER holds at least one entry. Populated for the immediate\nchildren of a folder, so a caller that loaded one level at a time knows to\noffer an expander before it has requested that folder's contents."
             required:
                 - name
                 - relativePath
@@ -1403,14 +1406,21 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetFileTreeResponse'
-            description: "Returns the full folder-and-file tree of SASjs Drive, for rendering the\ndrive browser."
-            summary: 'Get the SASjs Drive file tree'
+            description: "Returns the folder-and-file tree of SASjs Drive, for rendering the drive\nbrowser.\n\nWith no `_folderPath` the whole tree is returned, which is kept for callers\nthat want to hash or mirror the drive in one request. With `_folderPath`\nthe response holds that folder and its IMMEDIATE children only, which is\nwhat the Studio browser uses: it loads a level when a folder is expanded\nrather than walking the entire drive on every page load. Each child folder\ncarries `hasChildren` so the caller can render an expander before\nrequesting that folder's contents."
+            summary: 'Get the SASjs Drive file tree, or one folder of it'
             tags:
                 - Drive
             security:
                 -
                     bearerAuth: []
-            parameters: []
+            parameters:
+                -
+                    description: "Drive-relative folder path, e.g. /Public/services. Omit\nfor the whole tree."
+                    in: query
+                    name: _folderPath
+                    required: false
+                    schema:
+                        type: string
     /SASjsApi/user:
         get:
             operationId: GetAllUsers

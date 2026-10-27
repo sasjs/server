@@ -8,6 +8,7 @@ import {
   getFilesFolder,
   HTTPHeaders,
   isDebugOn,
+  resolveWithinDrive,
   RunTimeType
 } from '../../utils'
 
@@ -208,4 +209,112 @@ export class ExecutionController {
 
     return root
   }
+
+  /**
+   * One level of the drive tree: the folder named by `relativePath`, with its
+   * immediate children only.
+   *
+   * This is what the Studio browser uses. Fetching the whole tree per page load
+   * costs a stat and a readdir for every entry on the drive, which grows with
+   * the drive rather than with what the caller is looking at; loading one level
+   * at a time keeps the cost proportional to the folders actually opened.
+   *
+   * Each child folder carries `hasChildren`, so the caller can offer an
+   * expander for a folder whose contents it has not requested yet.
+   */
+  buildDirectoryLevel(relativePath: string): TreeNode {
+    const absolutePath = resolveWithinDrive(relativePath)
+
+    if (!absolutePath)
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: 'folderPath cannot be outside drive.'
+      }
+
+    if (!fs.existsSync(absolutePath))
+      throw {
+        code: 404,
+        status: 'Not Found',
+        message: `The folder at (${relativePath || '/'}) does not exist.`
+      }
+
+    if (!fs.statSync(absolutePath).isDirectory())
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: `The path at (${relativePath}) is not a folder.`
+      }
+
+    const normalisedPath = normaliseRelativePath(relativePath)
+
+    return {
+      name: normalisedPath === '' ? 'files' : path.basename(normalisedPath),
+      relativePath: normalisedPath,
+      absolutePath,
+      isFolder: true,
+      children: listChildNodes(absolutePath, normalisedPath)
+    }
+  }
+}
+
+/**
+ * The drive-relative form of a caller-supplied folder path: '' for the root,
+ * otherwise a leading slash followed by the caller's own segments.
+ *
+ * Normalising here rather than echoing the request back means the tree the
+ * interface builds keys its nodes on one spelling, so a path that arrives as
+ * `Public/` or `/Public//x` still matches the node it names.
+ */
+const normaliseRelativePath = (relativePath: string) => {
+  const segments = relativePath
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter((segment) => segment !== '' && segment !== '.')
+
+  return segments.length ? '/' + segments.join('/') : ''
+}
+
+/**
+ * The immediate children of one folder, in readdir order.
+ *
+ * An entry that cannot be stat'ed (a dangling symlink, a subfolder the service
+ * account cannot read) is skipped and logged. It used to be fatal: the tree
+ * endpoints walk with statSync, so a single such entry answered 403 for the
+ * whole folder and the drive browser showed nothing at all.
+ */
+const listChildNodes = (
+  absolutePath: string,
+  relativeParentPath: string
+): TreeNode[] => {
+  const children: TreeNode[] = []
+
+  for (const name of fs.readdirSync(absolutePath)) {
+    const absoluteChildPath = path.join(absolutePath, name)
+    const relativeChildPath = `${relativeParentPath}/${name}`
+
+    let isFolder = false
+    let hasChildren = false
+
+    try {
+      isFolder = fs.statSync(absoluteChildPath).isDirectory()
+      if (isFolder) hasChildren = fs.readdirSync(absoluteChildPath).length > 0
+    } catch (err: any) {
+      process.logger.warn(
+        `Drive entry skipped: ${relativeChildPath} (${err?.code ?? err})`
+      )
+      continue
+    }
+
+    children.push({
+      name,
+      relativePath: relativeChildPath,
+      absolutePath: absoluteChildPath,
+      isFolder,
+      children: [],
+      hasChildren
+    })
+  }
+
+  return children
 }
