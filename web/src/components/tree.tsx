@@ -74,15 +74,15 @@ const TreeView = ({
     event.preventDefault()
     event.stopPropagation()
 
-    setContextMenu(
-      contextMenu === null
-        ? {
-            node: target,
-            mouseX: event.clientX + 2,
-            mouseY: event.clientY - 6
-          }
-        : null
-    )
+    // Always the row that was clicked. This used to toggle, keeping the
+    // PREVIOUS node whenever a menu was already open, so a right-click on a
+    // second row could leave the menu acting on the first one - and whether it
+    // did depended on the backdrop's onClose running before or after this.
+    setContextMenu({
+      node: target,
+      mouseX: event.clientX + 2,
+      mouseY: event.clientY - 6
+    })
   }
 
   const closeContextMenu = (event: any) => {
@@ -90,19 +90,14 @@ const TreeView = ({
     setContextMenu(null)
   }
 
-  const handleItemClick = (event: React.MouseEvent, target: TreeNode) => {
+  const handleItemClick = (target: TreeNode) => {
     if (target.isFolder) return
     if (target.relativePath.endsWith(LOADING_SUFFIX)) return
 
     handleSelect(target.relativePath)
   }
 
-  const launch = (
-    event: React.MouseEvent | null,
-    target: TreeNode,
-    debug?: boolean
-  ) => {
-    event?.stopPropagation()
+  const launch = (target: TreeNode, debug?: boolean) => {
     setContextMenu(null)
 
     window.open(
@@ -149,7 +144,7 @@ const TreeView = ({
       // used to do nothing at all.
       onContextMenu={(event) => openContextMenu(event, nodes)}
       label={
-        <Typography onClick={(event) => handleItemClick(event, nodes)}>
+        <Typography onClick={() => handleItemClick(nodes)}>
           {nodes.name}
         </Typography>
       }
@@ -220,10 +215,8 @@ const TreeView = ({
           </>
         ) : (
           <>
-            <MenuItem onClick={(event) => launch(event, menuNode!)}>
-              Launch
-            </MenuItem>
-            <MenuItem onClick={(event) => launch(event, menuNode!, true)}>
+            <MenuItem onClick={() => launch(menuNode!)}>Launch</MenuItem>
+            <MenuItem onClick={() => launch(menuNode!, true)}>
               Launch and Debug
             </MenuItem>
           </>

@@ -220,6 +220,35 @@ describe('Studio in a browser', () => {
     ).toBe(false)
   }, 120000)
 
+  it('moves the menu to the row that was right-clicked last', async () => {
+    // The label, not the treeitem: ':has-text' also matches the root item,
+    // which contains every name in the tree.
+    const folderLabel = page.getByText('e2eFolder', { exact: true }).first()
+    // Dispatched rather than clicked: an open MUI Menu renders a modal backdrop
+    // that swallows the pointer, so a physical second right-click can never
+    // reach the row - the state itself is what this covers.
+    await folderLabel.dispatchEvent('contextmenu')
+    await page.waitForSelector('[role="menuitem"]:has-text("Add Folder")')
+
+    const fileLabel = page.getByText(PROGRAM_NAME, { exact: true }).first()
+    await fileLabel.dispatchEvent('contextmenu')
+
+    // the FILE's actions, not the folder's: keeping the previous node left the
+    // menu acting on the row it was first opened for
+    await page.waitForSelector(
+      '[role="menuitem"]:has-text("Launch and Debug")',
+      {
+        timeout: 10000
+      }
+    )
+    expect(
+      await page.locator('[role="menuitem"]:has-text("Add Folder")').count()
+    ).toBe(0)
+
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+  }, 60000)
+
   it('colours SAS tokens', async () => {
     // Asserted on the computed colour rather than the token class: a token
     // whose type the themes do not colour still gets a class of its own, so a
