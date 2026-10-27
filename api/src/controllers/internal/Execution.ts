@@ -235,7 +235,16 @@ export class ExecutionController {
         `The folder at (${relativePath || '/'}) does not exist.`
       )
 
-    if (!fs.statSync(absolutePath).isDirectory())
+    // Containment has to be checked on the FOLDER as well as on each child: a
+    // symlink stored in the drive passes the lexical check in
+    // resolveWithinDrive, so naming it here would otherwise answer 200 with an
+    // empty listing and make the refusal depend on which route was taken.
+    const realFolderPath = fs.realpathSync(absolutePath)
+
+    if (escapesDrive(driveRootReal(), realFolderPath))
+      throw new HttpError(400, 'folderPath cannot be outside drive.')
+
+    if (!fs.statSync(realFolderPath).isDirectory())
       throw new HttpError(400, `The path at (${relativePath}) is not a folder.`)
 
     // The canonical spelling is derived from the RESOLVED path, not from the
@@ -249,7 +258,7 @@ export class ExecutionController {
       relativePath: normalisedPath,
       absolutePath,
       isFolder: true,
-      children: listChildNodes(absolutePath, normalisedPath)
+      children: listChildNodes(realFolderPath, normalisedPath)
     }
   }
 }
@@ -273,6 +282,26 @@ const driveRelativePath = (absolutePath: string) => {
   return segments.length ? '/' + segments.join('/') : ''
 }
 
+/** The drive root with symlinks resolved, for containment tests. */
+const driveRootReal = () => fs.realpathSync(path.resolve(getFilesFolder()))
+
+/**
+ * Whether a resolved real path sits outside the drive.
+ *
+ * The test is on the PARENT segment, not on a '..' prefix: a legitimate entry
+ * can be named `..config`, whose relative path also begins with two dots, and
+ * `startsWith('..')` silently dropped every such entry from the listing.
+ */
+const escapesDrive = (driveRootRealPath: string, realPath: string): boolean => {
+  const relative = path.relative(driveRootRealPath, realPath)
+
+  return (
+    relative === '..' ||
+    relative.startsWith('..' + path.sep) ||
+    path.isAbsolute(relative)
+  )
+}
+
 /**
  * The immediate children of one folder, in readdir order.
  *
@@ -291,7 +320,7 @@ const listChildNodes = (
   relativeParentPath: string
 ): TreeNode[] => {
   const children: TreeNode[] = []
-  const driveRootRealPath = fs.realpathSync(path.resolve(getFilesFolder()))
+  const driveRootRealPath = driveRootReal()
 
   for (const name of fs.readdirSync(absolutePath)) {
     const absoluteChildPath = path.join(absolutePath, name)
@@ -302,9 +331,8 @@ const listChildNodes = (
 
     try {
       const realChildPath = fs.realpathSync(absoluteChildPath)
-      const escaped = path.relative(driveRootRealPath, realChildPath)
 
-      if (escaped.startsWith('..') || path.isAbsolute(escaped))
+      if (escapesDrive(driveRootRealPath, realChildPath))
         throw new Error('real path is outside the drive')
 
       isFolder = fs.statSync(realChildPath).isDirectory()
