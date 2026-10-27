@@ -77,6 +77,13 @@ describe('Studio in a browser', () => {
       'data _null_;'
     )
 
+    // A folder with contents, for the delete test.
+    await createFolder(path.join(driveLocation, 'files', 'deleteMe', 'nested'))
+    await createFile(
+      path.join(driveLocation, 'files', 'deleteMe', 'nested', 'deep.sas'),
+      'data _null_;'
+    )
+
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()
 
@@ -182,6 +189,36 @@ describe('Studio in a browser', () => {
     // Expanding the folder asked for that folder alone, once.
     expect(fileTreeRequests.slice(requestsBefore)).toEqual(['/e2eFolder'])
   }, 60000)
+
+  it('deletes a folder and its contents from the row context menu', async () => {
+    const row = page.locator('[role="treeitem"]:has-text("deleteMe")').first()
+    const box = await row.boundingBox()
+
+    expect(box).not.toBeNull()
+
+    // Right-click the ROW, well away from the label text: the menu lives on the
+    // item for exactly this reason - on the label alone, a right-click anywhere
+    // else in the row did nothing and the feature was invisible.
+    await page.mouse.click(box!.x + box!.width - 40, box!.y + box!.height / 2, {
+      button: 'right'
+    })
+
+    await page.click('[role="menuitem"]:has-text("Delete")')
+    await page.waitForSelector('text=and everything under it', {
+      timeout: 10000
+    })
+    await page.click('[role="dialog"] button:has-text("Delete")')
+    await page.waitForSelector('text=Deleted!', { timeout: 20000 })
+    await page.waitForTimeout(500)
+
+    expect(
+      await page.locator('[role="treeitem"]:has-text("deleteMe")').count()
+    ).toBe(0)
+    // and it is gone from disk, contents included
+    expect(
+      await fileExists(path.join(driveLocation, 'files', 'deleteMe'))
+    ).toBe(false)
+  }, 120000)
 
   it('colours SAS tokens', async () => {
     // Asserted on the computed colour rather than the token class: a token

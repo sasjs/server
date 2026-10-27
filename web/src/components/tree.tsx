@@ -26,6 +26,29 @@ interface TreeViewProps extends Props {
   onExpandedChange: (expandedPaths: string[]) => void
 }
 
+interface ContextMenuState {
+  node: TreeNode
+  mouseX: number
+  mouseY: number
+}
+
+/**
+ * The dialog the tree has open, if any.
+ *
+ * One dialog lives at the tree level rather than one per row: a drive with a few
+ * hundred entries used to mount a menu and two dialogs for every one of them.
+ */
+type DialogState =
+  | { kind: 'delete'; node: TreeNode }
+  | {
+      kind: 'name'
+      node: TreeNode
+      title: string
+      actionLabel: 'Add' | 'Rename'
+      isFolder: boolean
+    }
+  | null
+
 // MUI X requires a non-empty itemId, and the drive root's relativePath is the
 // empty string, so the root is addressed by this constant instead.
 const ROOT_ITEM_ID = 'sasjs-drive-root'
@@ -44,86 +67,17 @@ const TreeView = ({
   expanded,
   onExpandedChange
 }: TreeViewProps) => {
-  const renderTree = (nodes: TreeNode) => (
-    <TreeItem
-      key={nodes.relativePath}
-      itemId={itemIdFor(nodes.relativePath)}
-      label={
-        <TreeItemWithContextMenu
-          node={nodes}
-          handleSelect={handleSelect}
-          deleteNode={deleteNode}
-          addFile={addFile}
-          addFolder={addFolder}
-          rename={rename}
-        />
-      }
-    >
-      {childrenOf(nodes).map((child) => renderTree(child))}
-    </TreeItem>
-  )
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const [dialog, setDialog] = useState<DialogState>(null)
 
-  return (
-    <SimpleTreeView
-      slots={{
-        collapseIcon: ExpandMoreIcon,
-        expandIcon: ChevronRightIcon
-      }}
-      expandedItems={expanded.map(itemIdFor)}
-      onExpandedItemsChange={(_event, itemIds) =>
-        onExpandedChange(itemIds.map(relativePathFor))
-      }
-      sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
-    >
-      {renderTree(node)}
-    </SimpleTreeView>
-  )
-}
-
-export default TreeView
-
-const TreeItemWithContextMenu = ({
-  node,
-  handleSelect,
-  deleteNode,
-  addFile,
-  addFolder,
-  rename
-}: Props) => {
-  const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
-    useState(false)
-  const [deleteConfirmationModalMessage, setDeleteConfirmationModalMessage] =
-    useState('')
-  const [defaultInputModalName, setDefaultInputModalName] = useState('')
-  const [nameInputModalOpen, setNameInputModalOpen] = useState(false)
-  const [nameInputModalTitle, setNameInputModalTitle] = useState('')
-  const [nameInputModalActionLabel, setNameInputModalActionLabel] = useState('')
-  const [nameInputModalForFolder, setNameInputModalForFolder] = useState(false)
-  const [contextMenu, setContextMenu] = useState<{
-    mouseX: number
-    mouseY: number
-  } | null>(null)
-
-  const launchProgram = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    const baseUrl = window.location.origin
-    window.open(`${baseUrl}/SASjsApi/stp/execute?_program=${node.relativePath}`)
-  }
-
-  const launchProgramWithDebug = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    const baseUrl = window.location.origin
-    window.open(
-      `${baseUrl}/SASjsApi/stp/execute?_program=${node.relativePath}&_debug=131`
-    )
-  }
-
-  const handleContextMenu = (event: React.MouseEvent) => {
+  const openContextMenu = (event: React.MouseEvent, target: TreeNode) => {
     event.preventDefault()
     event.stopPropagation()
+
     setContextMenu(
       contextMenu === null
         ? {
+            node: target,
             mouseX: event.clientX + 2,
             mouseY: event.clientY - 6
           }
@@ -131,102 +85,100 @@ const TreeItemWithContextMenu = ({
     )
   }
 
-  const handleClose = (event: any) => {
+  const closeContextMenu = (event: any) => {
     event.stopPropagation()
     setContextMenu(null)
   }
 
-  const handleItemClick = (event: React.MouseEvent) => {
-    if (node.isFolder) return
-    if (node.relativePath.endsWith(LOADING_SUFFIX)) return
-    handleSelect(node.relativePath)
+  const handleItemClick = (event: React.MouseEvent, target: TreeNode) => {
+    if (target.isFolder) return
+    if (target.relativePath.endsWith(LOADING_SUFFIX)) return
+
+    handleSelect(target.relativePath)
   }
 
-  const handleDeleteItemClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
+  const launch = (
+    event: React.MouseEvent | null,
+    target: TreeNode,
+    debug?: boolean
+  ) => {
+    event?.stopPropagation()
     setContextMenu(null)
-    setDeleteConfirmationModalOpen(true)
-    setDeleteConfirmationModalMessage(
-      `Are you sure you want to delete ${node.isFolder ? 'folder' : 'file'} "${
-        node.relativePath
-      }"?`
+
+    window.open(
+      `${window.location.origin}/SASjsApi/stp/execute?_program=${
+        target.relativePath
+      }${debug ? '&_debug=131' : ''}`
     )
   }
 
-  const deleteConfirm = () => {
-    setDeleteConfirmationModalOpen(false)
-    deleteNode(node.relativePath, node.isFolder)
+  const confirmDelete = () => {
+    if (dialog?.kind !== 'delete') return
+
+    deleteNode(dialog.node.relativePath, dialog.node.isFolder)
+    setDialog(null)
   }
 
-  const handleNewFolderItemClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    setContextMenu(null)
-    setNameInputModalOpen(true)
-    setNameInputModalTitle('Add Folder')
-    setNameInputModalActionLabel('Add')
-    setNameInputModalForFolder(true)
-    setDefaultInputModalName('')
+  const submitName = (name: string) => {
+    if (dialog?.kind !== 'name') return
+
+    const target = dialog.node
+    setDialog(null)
+
+    if (dialog.actionLabel === 'Add') {
+      const createdPath = `${target.relativePath}/${name}`
+
+      if (dialog.isFolder) addFolder(createdPath)
+      else addFile(createdPath)
+
+      return
+    }
+
+    const segments = target.relativePath.split('/')
+    segments.splice(-1, 1, name)
+
+    rename(target.relativePath, segments.join('/'))
   }
 
-  const handleNewFileItemClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    setContextMenu(null)
-    setNameInputModalOpen(true)
-    setNameInputModalTitle('Add File')
-    setNameInputModalActionLabel('Add')
-    setNameInputModalForFolder(false)
-    setDefaultInputModalName('')
-  }
+  const renderTree = (nodes: TreeNode) => (
+    <TreeItem
+      key={nodes.relativePath}
+      itemId={itemIdFor(nodes.relativePath)}
+      // On the ITEM, not on the label: the label is only as wide as the name, so
+      // a right-click on the rest of the row - where a user naturally clicks -
+      // used to do nothing at all.
+      onContextMenu={(event) => openContextMenu(event, nodes)}
+      label={
+        <Typography onClick={(event) => handleItemClick(event, nodes)}>
+          {nodes.name}
+        </Typography>
+      }
+    >
+      {childrenOf(nodes).map((child) => renderTree(child))}
+    </TreeItem>
+  )
 
-  const addFileFolder = (name: string) => {
-    setNameInputModalOpen(false)
-    const path = node.relativePath + '/' + name
-    if (nameInputModalForFolder) addFolder(path)
-    else addFile(path)
-  }
-
-  const handleRenameItemClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    setContextMenu(null)
-    setNameInputModalOpen(true)
-    setNameInputModalTitle('Rename')
-    setNameInputModalActionLabel('Rename')
-    setNameInputModalForFolder(node.isFolder)
-    setDefaultInputModalName(node.relativePath.split('/').pop() ?? '')
-  }
-
-  const renameFileFolder = (name: string) => {
-    setNameInputModalOpen(false)
-    const oldPath = node.relativePath
-    const splittedPath = node.relativePath.split('/')
-    splittedPath.splice(-1, 1, name)
-    const newPath = splittedPath.join('/')
-    rename(oldPath, newPath)
-  }
+  const menuNode = contextMenu?.node
 
   return (
-    <div onContextMenu={handleContextMenu} style={{ cursor: 'context-menu' }}>
-      <Typography onClick={handleItemClick}>{node.name}</Typography>
-      <DeleteConfirmationModal
-        open={deleteConfirmationModalOpen}
-        setOpen={setDeleteConfirmationModalOpen}
-        message={deleteConfirmationModalMessage}
-        _delete={deleteConfirm}
-      />
-      <NameInputModal
-        open={nameInputModalOpen}
-        setOpen={setNameInputModalOpen}
-        title={nameInputModalTitle}
-        isFolder={nameInputModalForFolder}
-        actionLabel={nameInputModalActionLabel}
-        action={
-          nameInputModalActionLabel === 'Add' ? addFileFolder : renameFileFolder
+    <>
+      <SimpleTreeView
+        slots={{
+          collapseIcon: ExpandMoreIcon,
+          expandIcon: ChevronRightIcon
+        }}
+        expandedItems={expanded.map(itemIdFor)}
+        onExpandedItemsChange={(_event, itemIds) =>
+          onExpandedChange(itemIds.map(relativePathFor))
         }
-        defaultName={defaultInputModalName}
-      />
+        sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
+      >
+        {renderTree(node)}
+      </SimpleTreeView>
+
       <Menu
         open={contextMenu !== null}
-        onClose={handleClose}
+        onClose={closeContextMenu}
         anchorReference="anchorPosition"
         anchorPosition={
           contextMenu !== null
@@ -234,31 +186,104 @@ const TreeItemWithContextMenu = ({
             : undefined
         }
       >
-        {node.isFolder ? (
+        {menuNode?.isFolder ? (
           <>
-            <MenuItem onClick={handleNewFolderItemClick}>Add Folder</MenuItem>
             <MenuItem
-              disabled={!node.relativePath}
-              onClick={handleNewFileItemClick}
+              onClick={() => {
+                setContextMenu(null)
+                setDialog({
+                  kind: 'name',
+                  node: menuNode,
+                  title: 'Add Folder',
+                  actionLabel: 'Add',
+                  isFolder: true
+                })
+              }}
+            >
+              Add Folder
+            </MenuItem>
+            <MenuItem
+              disabled={!menuNode.relativePath}
+              onClick={() => {
+                setContextMenu(null)
+                setDialog({
+                  kind: 'name',
+                  node: menuNode,
+                  title: 'Add File',
+                  actionLabel: 'Add',
+                  isFolder: false
+                })
+              }}
             >
               Add File
             </MenuItem>
           </>
         ) : (
           <>
-            <MenuItem onClick={launchProgram}>Launch</MenuItem>
-            <MenuItem onClick={launchProgramWithDebug}>
+            <MenuItem onClick={(event) => launch(event, menuNode!)}>
+              Launch
+            </MenuItem>
+            <MenuItem onClick={(event) => launch(event, menuNode!, true)}>
               Launch and Debug
             </MenuItem>
           </>
         )}
-        {!!node.relativePath && (
+        {!!menuNode?.relativePath && (
           <>
-            <MenuItem onClick={handleRenameItemClick}>Rename</MenuItem>
-            <MenuItem onClick={handleDeleteItemClick}>Delete</MenuItem>
+            <MenuItem
+              onClick={() => {
+                setContextMenu(null)
+                setDialog({
+                  kind: 'name',
+                  node: menuNode,
+                  title: 'Rename',
+                  actionLabel: 'Rename',
+                  isFolder: menuNode.isFolder
+                })
+              }}
+            >
+              Rename
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setContextMenu(null)
+                setDialog({ kind: 'delete', node: menuNode })
+              }}
+            >
+              Delete
+            </MenuItem>
           </>
         )}
       </Menu>
-    </div>
+
+      <DeleteConfirmationModal
+        open={dialog?.kind === 'delete'}
+        setOpen={(open) => (open ? undefined : setDialog(null))}
+        message={
+          dialog?.kind === 'delete'
+            ? dialog.node.isFolder
+              ? `Are you sure you want to delete the folder "${dialog.node.relativePath}" and everything under it?`
+              : `Are you sure you want to delete the file "${dialog.node.relativePath}"?`
+            : ''
+        }
+        _delete={confirmDelete}
+      />
+
+      <NameInputModal
+        open={dialog?.kind === 'name'}
+        setOpen={(open) => (open ? undefined : setDialog(null))}
+        title={dialog?.kind === 'name' ? dialog.title : ''}
+        isFolder={dialog?.kind === 'name' ? dialog.isFolder : false}
+        actionLabel={dialog?.kind === 'name' ? dialog.actionLabel : 'Add'}
+        action={submitName}
+        defaultName={
+          dialog?.kind === 'name' && dialog.actionLabel === 'Rename'
+            ? (dialog.node.relativePath.split('/').pop() ?? '')
+            : ''
+        }
+      />
+    </>
   )
 }
+
+export default TreeView
