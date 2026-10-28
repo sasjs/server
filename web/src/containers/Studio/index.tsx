@@ -13,16 +13,28 @@ import {
   parentPathOf
 } from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
+import { homeFilePathFor } from '../../utils/userHome'
+import {
+  forgetLastFile,
+  recallLastFile,
+  rememberLastFile
+} from '../../utils/lastFile'
+import { AppContext } from '../../context/appContext'
 
 import SideBar from './sideBar'
 import SASjsEditor from './editor'
 
 const Studio = () => {
+  const { username } = React.useContext(AppContext)
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedFilePath, setSelectedFilePath] = useState('')
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
   const [expanded, setExpanded] = useState<string[]>([ROOT_PATH])
   const [tab, setTab] = useState('code')
+
+  // One default-file resolution per Studio session: a re-render or a tab
+  // switch must not re-create the program or fight the user's open file.
+  const defaultFileRequested = useRef(false)
 
   // Refs, not state: these are consulted inside callbacks that must not be
   // rebuilt on every fetch, and a folder must never be requested twice.
@@ -40,8 +52,16 @@ const Studio = () => {
   const treeRef = useRef<TreeNode | null>(null)
 
   useEffect(() => {
-    setSelectedFilePath(searchParams.get('filePath') ?? '')
-  }, [searchParams])
+    const fromUrl = searchParams.get('filePath') ?? ''
+
+    setSelectedFilePath(fromUrl)
+
+    // Whatever the user opens is what they expect to find again - and a file
+    // can arrive two ways: from the tree (handleSelect) or from the URL (a
+    // deep link, a reload, the back button). Both land here, so this is the
+    // one place that remembers it.
+    if (fromUrl && username) rememberLastFile(username, fromUrl)
+  }, [searchParams, username])
 
   /**
    * Fetches one folder's immediate children and grafts them into the tree.
@@ -179,6 +199,86 @@ const Studio = () => {
     if (refreshSideBar) fetchFolder(parentPathOf(filePath), true)
   }
 
+  /**
+   * Where the editor opens when Studio is entered without a file.
+   *
+   * A fresh buffer used to have no path at all: Run injected no `_program`,
+   * Save needed a modal before anything could be written, and the explorer
+   * showed nothing - a file with no home. Studio now resolves one:
+   *
+   *   1. the file the user was last in, if the drive still has it;
+   *   2. otherwise their default program, /home/<username>/program.sas.
+   *
+   * The default program is only ever CREATED. The drive refuses a second POST
+   * for an existing file with 409 and that is treated as success, so reopening
+   * Studio shows the program instead of replacing it.
+   *
+   * A refusal - no drive grant, a read-only drive - is not fatal: it is logged
+   * and the editor falls back to the unsaved buffer it had before.
+   */
+  useEffect(() => {
+    // Wait for the session: the home path is built from the username.
+    if (!username) return
+
+    // The URL wins: opening Studio at a file must not create or replace one.
+    // `selectedFilePath` is still empty on the first pass - the search-params
+    // effect above has set it as state, not as a render value - so the query
+    // string is consulted directly.
+    if (
+      selectedFilePath ||
+      searchParams.get('filePath') ||
+      defaultFileRequested.current
+    )
+      return
+
+    defaultFileRequested.current = true
+
+    /** Whether the drive still has this file. A lost grant reads the same. */
+    const isOnDrive = async (filePath: string): Promise<boolean> => {
+      try {
+        await axios.get('/SASjsApi/drive/file', {
+          params: { _filePath: filePath }
+        })
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    const resolveDefaultFile = async (): Promise<string> => {
+      const remembered = recallLastFile(username)
+
+      if (remembered && (await isOnDrive(remembered))) return remembered
+
+      // Gone since it was remembered (deleted, moved, renamed).
+      if (remembered) forgetLastFile(username)
+
+      const filePath = homeFilePathFor(username)
+
+      const formData = new FormData()
+      formData.append('file', new Blob([''], { type: 'text/plain' }))
+      formData.append('filePath', filePath)
+
+      await axios.post('/SASjsApi/drive/file', formData).catch((err) => {
+        // 409: the program is already there. Open it, never replace it.
+        if (err?.response?.status !== 409) throw err
+      })
+
+      return filePath
+    }
+
+    resolveDefaultFile()
+      // The root was read before the home folder existed, so re-read it before
+      // pointing the editor at the file: the deep-link walk can only open the
+      // ancestors of a path whose top level is already in the tree.
+      .then(async (filePath) => {
+        await fetchFolder(ROOT_PATH, true)
+        handleSelect(filePath)
+      })
+      .catch((err) => console.log(err))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilePath, username, searchParams])
+
   const removeFileFromTree = (path: string) => {
     if (treeRef.current) {
       const newTree = JSON.parse(JSON.stringify(treeRef.current)) as TreeNode
@@ -206,8 +306,14 @@ const Studio = () => {
       if (
         node.relativePath === selectedFilePath ||
         selectedFilePath.startsWith(node.relativePath)
-      )
+      ) {
+        // The open file is gone: forget it so the next Studio entry does not
+        // try to open a path that no longer exists, and let the default-file
+        // effect run again.
+        forgetLastFile(username)
+        defaultFileRequested.current = false
         setSearchParams({})
+      }
       return true
     }
     if (Array.isArray(node.children)) {
@@ -229,17 +335,18 @@ const Studio = () => {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      {tab === 'code' && (
-        <SideBar
-          selectedFilePath={selectedFilePath}
-          directoryData={directoryData}
-          expanded={expanded}
-          onExpandedChange={handleExpandedChange}
-          handleSelect={handleSelect}
-          removeFileFromTree={removeFileFromTree}
-          refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
-        />
-      )}
+      {/* The explorer is part of the screen, not part of the Code tab: a run
+          switches the right-hand pane to the log, and hiding the tree with it
+          took the file list away exactly when the user needed it. */}
+      <SideBar
+        selectedFilePath={selectedFilePath}
+        directoryData={directoryData}
+        expanded={expanded}
+        onExpandedChange={handleExpandedChange}
+        handleSelect={handleSelect}
+        removeFileFromTree={removeFileFromTree}
+        refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
+      />
       <SASjsEditor
         selectedFilePath={selectedFilePath}
         setSelectedFilePath={handleSelect}
