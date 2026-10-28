@@ -726,8 +726,14 @@ describe('drive', () => {
 
         expect(res.statusCode).toEqual(200)
         // The drive root carries the seeded `.sasjslint` rules file, so it is
-        // the one file every listing of the root includes.
-        expect(res.body).toEqual({ files: ['.sasjslint'], folders: [] })
+        // the one file every listing of the root includes. `/home` is filtered
+        // out: the server provisions a home folder per user at the root, and
+        // this test is about the level's own contents, not about what the
+        // server creates by itself.
+        expect({
+          files: res.body.files,
+          folders: withoutUserHomes(res.body.folders)
+        }).toEqual({ files: ['.sasjslint'], folders: [] })
       })
 
       it('should get a SAS folder on drive having _folderPath as query param', async () => {
@@ -754,10 +760,10 @@ describe('drive', () => {
           .auth(accessToken, { type: 'bearer' })
 
         expect(res1.statusCode).toEqual(200)
-        expect(res1.body).toEqual({
-          files: ['.sasjslint'],
-          folders: [dirLevel1]
-        })
+        expect({
+          files: res1.body.files,
+          folders: withoutUserHomes(res1.body.folders)
+        }).toEqual({ files: ['.sasjslint'], folders: [dirLevel1] })
 
         const res2 = await request(app)
           .get(getFolderApi)
@@ -1436,4 +1442,9 @@ const generateAndSaveToken = async (userId: string) => {
   })
   await saveTokensInDB(userId, clientId, adminAccessToken, 'refreshToken')
   return adminAccessToken
-}
+} /**
+ * The drive root holds a `/home` folder once users are provisioned, which every
+ * counting assertion about the top level would otherwise trip over.
+ */
+const withoutUserHomes = (folders: string[]): string[] =>
+  (folders ?? []).filter((folder) => folder !== 'home')

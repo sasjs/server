@@ -11,6 +11,7 @@ import {
   getWebBuildFolder,
   instantiateLogger,
   loadAppStreamConfig,
+  ModeType,
   ReturnCode,
   setProcessVariables,
   setupFilesFolder,
@@ -109,6 +110,28 @@ export default setProcessVariables().then(async () => {
   await seedDefaultLintConfig()
 
   if (!(await folderExists(getPackagesFolder()))) await setupPackagesFolder()
+
+  // Every user gets /home/<username> and the grants that reach it. New accounts
+  // are provisioned as they are created (UserController.createUser); this pass
+  // covers the accounts that were made before that existed. Server mode only -
+  // desktop has a single fixed account and no database.
+  if (process.env.MODE === ModeType.Server) {
+    const { provisionAllUserHomes } = await import('./utils/provisionUserHome')
+
+    try {
+      const homes = await provisionAllUserHomes()
+
+      if (homes.folders || homes.grants)
+        console.log(
+          `[info] provisioned ${homes.folders} user home folder(s) and ${homes.grants} grant(s) across ${homes.users} user(s)`
+        )
+    } catch (err) {
+      console.log(
+        '[warn] user home provisioning failed:',
+        err instanceof Error ? err.message : err
+      )
+    }
+  }
 
   const sasautosPath = path.join(process.driveLoc, 'sas', 'sasautos')
   if (await folderExists(sasautosPath)) {
