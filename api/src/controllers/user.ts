@@ -18,6 +18,7 @@ import { desktopUser } from '../middlewares'
 
 import User, { UserPayload } from '../model/User'
 import { sanitiseDisplayName } from '../utils/programVariables'
+import { provisionUserHome } from '../utils/provisionUserHome'
 import {
   getUserAutoExec,
   updateUserAutoExec,
@@ -286,6 +287,23 @@ const createUser = async (data: UserPayload): Promise<UserDetailsResponse> => {
 
   if (allUsersGroup) {
     await groupController.addUserToGroup(allUsersGroup.uid, savedUser.uid)
+  }
+
+  // A new user gets a home folder on the drive and the grants that reach it,
+  // so Studio opens on a program they can actually run and save. Best effort:
+  // a drive that cannot be written must not fail the account creation, so the
+  // failure is logged and the user can be provisioned by the next startup pass.
+  try {
+    await provisionUserHome({
+      _id: savedUser._id,
+      username: savedUser.username,
+      isAdmin: savedUser.isAdmin
+    })
+  } catch (err) {
+    console.log(
+      `[warn] could not provision a home folder for ${savedUser.username}:`,
+      err instanceof Error ? err.message : err
+    )
   }
 
   return {
