@@ -191,7 +191,16 @@ describe('Studio in a browser', () => {
   }, 60000)
 
   it('deletes a folder and its contents from the row context menu', async () => {
-    const row = page.locator('[role="treeitem"]:has-text("deleteMe")').first()
+    // The label, then the row that owns it. A bare
+    // '[role="treeitem"]:has-text("deleteMe")' also matches the root item,
+    // which contains every name in the tree, so .first() selected the
+    // whole-tree row and the right-click landed wherever that row's right edge
+    // happened to be - which pointed at a different folder as soon as the tree
+    // gained a row (the Studio scratch folder).
+    const row = page
+      .getByText('deleteMe', { exact: true })
+      .first()
+      .locator('xpath=ancestor::*[@role="treeitem"][1]')
     const box = await row.boundingBox()
 
     expect(box).not.toBeNull()
