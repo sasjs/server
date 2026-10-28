@@ -17,14 +17,15 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "exe": "npm run build && pkg .",
-    "copy:files": "npm run public:copy && npm run sasjsbuild:copy && npm run sas:copy && npm run web:copy",
+    "copy:files": "npm run public:copy && npm run views:copy && npm run sasjsbuild:copy && npm run sas:copy && npm run web:copy",
     "public:copy": "cpr ./public/ ./build/public/",
     "sasjsbuild:copy": "cpr ./sasjsbuild/ ./build/sasjsbuild/",
     "sas:copy": "cpr ./sas/ ./build/sas/",
     "web:copy": "rimraf web && mkdir web && cpr ../web/build/ ./web/build/",
     "compileSysInit": "ts-node ./scripts/compileSysInit.ts",
     "copySASjsCore": "ts-node ./scripts/copySASjsCore.ts",
-    "downloadMacros": "ts-node ./scripts/downloadMacros.ts"
+    "downloadMacros": "ts-node ./scripts/downloadMacros.ts",
+    "views:copy": "cpr ./src/views/ ./build/src/views/"
   },
   "bin": "./build/src/server.js",
   "pkg": {

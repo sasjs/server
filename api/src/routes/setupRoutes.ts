@@ -1,6 +1,7 @@
 import { Express } from 'express'
 
 import webRouter from './web'
+import { ddcHostRouter } from './ddcHost'
 import apiRouter from './api'
 import appStreamRouter from './appStream'
 
@@ -14,6 +15,10 @@ export const setupRoutes = (app: Express) => {
     // whatever the current router is
     appStreamRouter(req, res, next)
   })
+
+  // Registered before the web router, which serves the application for every
+  // unmatched path.
+  app.use('/', ddcHostRouter)
 
   app.use('/', webRouter)
 }

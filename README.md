@@ -188,6 +188,16 @@ MOCK_SERVERTYPE=
 # Server will automatically use subdirectory accordingly
 STATIC_MOCK_LOCATION=
 
+# Optional. Serves a page at /ddc-host that embeds an application the way SAS
+# Visual Analytics embeds data-driven content: an iframe carrying VA's sandbox
+# attribute set, plus a message posted into it. Use it to test that an embedded
+# app works inside that sandbox, which a top-level page load does not exercise.
+# Off unless set: it frames whatever URL it is given, so it is a testing tool and
+# not something to leave switched on. Query parameters: url, sandbox, message
+# (JSON), height, title - see api/src/views/ddc-host.html.
+# options: [true|false]
+DDC_HOST_ENABLED=
+
 #
 ## Additional SAS Options
 #
