@@ -3,7 +3,12 @@ import mongoose from 'mongoose'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 
-import { DatabaseType, ModeType } from '../utils'
+import {
+  DatabaseType,
+  ModeType,
+  SESSION_MAX_AGE_MS,
+  installSessionCookieMaxAge
+} from '../utils'
 
 export const configureExpressSession = (app: Express) => {
   const { MODE, DB_TYPE } = process.env
@@ -47,7 +52,7 @@ export const configureExpressSession = (app: Express) => {
       // with SESSION_SAMESITE=none. Stated explicitly rather than left to the
       // browser's own default.
       sameSite: process.env.SESSION_SAMESITE === 'none' ? 'none' : 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: SESSION_MAX_AGE_MS, // 24 hours
       domain: ALLOWED_DOMAIN?.trim() || undefined
     }
 
@@ -60,5 +65,9 @@ export const configureExpressSession = (app: Express) => {
         cookie: cookieOptions
       })
     )
+
+    // Give every session cookie express-session creates the same lifetime
+    // attributes the CSRF cookie is issued with.
+    installSessionCookieMaxAge()
   }
 }
