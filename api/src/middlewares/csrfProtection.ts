@@ -2,6 +2,7 @@ import { RequestHandler } from 'express'
 import { Request, Response } from 'express'
 import csrf from 'csrf'
 import { drainBody } from './drainBody'
+import { SESSION_MAX_AGE_MS } from '../utils'
 
 declare module 'express-session' {
   interface SessionData {
@@ -71,7 +72,10 @@ export const setCSRFCookie = (req: Request, res: Response) => {
 
   res.cookie(CSRF_COOKIE_NAME, generateCSRFToken(req), {
     httpOnly: false,
-    maxAge: 86400 * 1000,
+    // Same lifetime, and the same two attributes, as the session cookie this
+    // token is bound to. A token that outlives its session is refused on every
+    // state-changing request - see utils/sessionCookie.ts.
+    maxAge: SESSION_MAX_AGE_MS,
     sameSite: 'strict',
     path: '/',
     ...(allowedDomain ? { domain: allowedDomain } : {})
