@@ -111,6 +111,61 @@ describe('CSRF cookie lifecycle', () => {
     })
   })
 
+  describe('a refused request hands back a token that works', () => {
+    /**
+     * The case a browser hits after a restart: the XSRF cookie outlives the
+     * session it was minted for, so every state-changing request - a login
+     * first of all - is refused, and the client has no way to obtain a good
+     * token except by reloading the SPA.
+     */
+    it('re-issues the cookie so a retry succeeds without a reload', async () => {
+      const agent = request.agent(app)
+      await agent.get('/')
+
+      const refused = await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', 'a-token-from-a-session-that-is-gone')
+        .send({ username: user.username, password: user.password })
+
+      expect(refused.status).toBe(400)
+      expect(refused.text).toEqual('Invalid CSRF token!')
+
+      const freshToken = csrfCookieOf(refused)
+      expect(freshToken).toBeTruthy()
+      expect(freshToken).not.toEqual('a-token-from-a-session-that-is-gone')
+
+      // No GET / between the refusal and the retry.
+      const retry = await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', freshToken!)
+        .send({ username: user.username, password: user.password })
+        .expect(200)
+
+      expect(retry.body.loggedIn).toBe(true)
+    })
+
+    it('still refuses the token that was just rejected', async () => {
+      const agent = request.agent(app)
+      await agent.get('/')
+
+      const bad = 'a-token-from-a-session-that-is-gone'
+
+      const first = await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', bad)
+        .send({ username: user.username, password: user.password })
+      expect(first.status).toBe(400)
+
+      // Re-issuing a good token must not make the rejected one acceptable.
+      const second = await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', bad)
+        .send({ username: user.username, password: user.password })
+      expect(second.status).toBe(400)
+      expect(second.text).toEqual('Invalid CSRF token!')
+    })
+  })
+
   describe('401 responses', () => {
     it('clears the cookie when the caller is not authenticated', async () => {
       const agent = request.agent(app)

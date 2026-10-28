@@ -138,6 +138,18 @@ export const csrfProtection: RequestHandler = async (req, res, next) => {
     // before multer, so the body can still be arriving - see drainBody.
     await drainBody(req)
 
+    // Hand back a token that IS valid for the session this request arrived
+    // with. The token just presented can only ever produce this same refusal,
+    // and nothing else re-issues it on a failed POST, so without this the
+    // client is stuck until it happens to reload the SPA or the cookie's
+    // Max-Age runs out (see sasjs/server#304).
+    //
+    // Minting here cannot help an attacker: the Set-Cookie goes to the origin
+    // that made the request, a cross-site caller can neither read it nor send
+    // it as a header on a retry, and the token is bound to the session the
+    // request already carried - it confers no session the caller lacked.
+    setCSRFCookie(req, res)
+
     return res.status(400).send('Invalid CSRF token!')
   }
   next()
