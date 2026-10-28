@@ -54,12 +54,13 @@ describe('session cookie lifetime', () => {
     expect(stored.expires).toBeInstanceOf(Date)
   })
 
-  it('applies to a cookie regenerated after setup', () => {
-    // store.generate builds a fresh Cookie for a new or regenerated session,
-    // which is why the behaviour sits on the prototype.
-    const cookie = withLifetime(new Cookie())
-
-    expect(cookie.data.maxAge).toBe(86400)
+  it('covers a Cookie built after install, not just the one it ran against', () => {
+    // The reason the behaviour sits on the prototype: express-session builds a
+    // fresh Cookie for every request, and again through store.generate when a
+    // session is regenerated. The regenerated case is exercised end to end in
+    // src/routes/api/spec/sessionCookie.spec.ts, which takes the cookie from a
+    // GET /SASLogon/logout response.
+    expect(withLifetime(new Cookie()).data.maxAge).toBe(86400)
   })
 
   it('leaves a cookie with no lifetime alone', () => {
@@ -76,5 +77,38 @@ describe('session cookie lifetime', () => {
     }).not.toThrow()
 
     expect(withLifetime(new Cookie()).data.maxAge).toBe(86400)
+  })
+
+  it('refuses to install when the dependency no longer has the accessor', () => {
+    // A dependency bump that makes Cookie#data a value property must fail the
+    // build, not silently drop Max-Age. A fresh module registry is needed
+    // because the installer runs once per process.
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { Cookie: FreshCookie } = require('express-session')
+      const original = Object.getOwnPropertyDescriptor(
+        FreshCookie.prototype,
+        'data'
+      )
+
+      Object.defineProperty(FreshCookie.prototype, 'data', {
+        value: {},
+        configurable: true,
+        writable: true
+      })
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const {
+          installSessionCookieMaxAge: freshInstall
+        } = require('../sessionCookie')
+
+        expect(() => freshInstall()).toThrow(/Cookie\.prototype\.data/)
+      } finally {
+        if (original) {
+          Object.defineProperty(FreshCookie.prototype, 'data', original)
+        }
+      }
+    })
   })
 })

@@ -23,6 +23,16 @@ declare module 'express-session' {
   }
 }
 
+const SHAPE_CHANGED =
+  'express-session no longer exposes Cookie.prototype.data as a getter, so the ' +
+  'session cookie cannot be issued with Max-Age. Without it the session cookie ' +
+  'and the CSRF cookie state their lifetime differently and a client can hold a ' +
+  'token whose session has gone, which the server answers with "400 Invalid CSRF ' +
+  'token!" on every state-changing request. Re-check the compatibility note in ' +
+  'utils/sessionCookie.ts and amend installSessionCookieMaxAge() for the version ' +
+  'in use; refusing to start is deliberate, because the alternative is a silent ' +
+  'regression that only the cookie specs notice.'
+
 /**
  * The stock accessor, captured before the prototype is patched - looking it up
  * at call time would find the patched one and recurse.
@@ -32,8 +42,21 @@ const baseDataDescriptor = Object.getOwnPropertyDescriptor(
   'data'
 )
 
+/**
+ * The one thing this module cannot work without. A dependency bump that
+ * reassembles `Cookie.prototype.data` (a value property, or a different name)
+ * must fail here rather than leave Max-Age off the session cookie.
+ */
+const requireBaseDataGetter = (): ((
+  this: Cookie
+) => Record<string, unknown>) => {
+  if (!baseDataDescriptor?.get) throw new Error(SHAPE_CHANGED)
+
+  return baseDataDescriptor.get as (this: Cookie) => Record<string, unknown>
+}
+
 const readBaseData = (cookie: Cookie): Record<string, unknown> =>
-  baseDataDescriptor?.get ? baseDataDescriptor.get.call(cookie) : {}
+  requireBaseDataGetter().call(cookie)
 
 /**
  * Serialize the session cookie with `Max-Age` as well as `Expires`.
@@ -73,18 +96,25 @@ let installed = false
  * created and again when the session is regenerated (logout, and the
  * session-fixation rotation on login), after any request middleware has run.
  * Patching the prototype is the one place a route that regenerates later cannot
- * miss.
+ * miss; `src/routes/api/spec/sessionCookie.spec.ts` exercises that path through
+ * `GET /SASLogon/logout`.
  *
  * `toJSON` is left at the base shape on purpose. It is what the session store
  * persists, and a stored `maxAge` is re-applied when the session loads, which
  * would push the expiry forward on every request.
+ *
+ * Throws, rather than doing nothing, when the shape it depends on has gone -
+ * see SHAPE_CHANGED. Called once at startup, so a dependency bump is a boot
+ * failure with a readable reason instead of a silent loss of the pairing.
  */
 export const installSessionCookieMaxAge = () => {
-  if (installed || !baseDataDescriptor?.get) return
+  if (installed) return
+
+  requireBaseDataGetter()
 
   Object.defineProperty(Cookie.prototype, 'data', {
     configurable: true,
-    enumerable: baseDataDescriptor.enumerable,
+    enumerable: baseDataDescriptor?.enumerable ?? false,
     get(this: Cookie) {
       return withMaxAge(this)
     }
