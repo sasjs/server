@@ -51,7 +51,7 @@
   "dependencies": {
     "@sasjs/adapter": "4.19.1",
     "@sasjs/core": "^6.1.2",
-    "@sasjs/lint": "^4.6.1",
+    "@sasjs/lint": "^4.8.1",
     "@sasjs/utils": "^3.6.2",
     "bcryptjs": "^3.0.3",
     "connect-mongo": "^6.0.0",
