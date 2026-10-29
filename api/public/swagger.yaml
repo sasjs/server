@@ -396,7 +396,7 @@ components:
                 - 2
             type: number
         Diagnostic:
-            description: 'A diagnostic is produced by the execution of a lint rule against a file or line of text.'
+            description: "A diagnostic is produced by the execution of a lint rule against a file or line of text.\n\nBoth columns are 1-based, and `endColumnNumber` is the column of the span's LAST\ncharacter - a one-character span starts and ends on the same column. A consumer\nthat highlights `startColumnNumber` through `endColumnNumber` inclusive covers\nexactly the text the rule reports, for every rule in the set."
             properties:
                 lineNumber:
                     type: number
