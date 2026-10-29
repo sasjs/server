@@ -8,6 +8,14 @@ on:
 jobs:
   release:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write  # semantic-release creates the tag and the GitHub release
+      id-token: write  # npm trusted publishing (OIDC) and --provenance
+      # @semantic-release/github comments on the PRs and issues a release
+      # resolves. Without these two it gets a 403 AFTER the tag exists, which
+      # leaves a release with no npm entry and no release notes.
+      issues: write
+      pull-requests: write
 
     strategy:
       matrix:
@@ -32,6 +40,15 @@ jobs:
       # executables. The plugin install plus the dry run costs about forty
       # seconds, and the build steps below are skipped whenever the answer is no
       # - which is every docs or chore merge on main.
+      # Node 22 ships npm 10.x, and npm trusted publishing (OIDC) needs 11.5.1 or
+      # later - with an older CLI `npm publish` looks for a token and fails
+      # rather than exchanging the OIDC token. Same step the lint release runs.
+      - name: Update npm
+        # Floored, not floating: OIDC publishing needs 11.5.1, and a floating
+        # npm major that changes --provenance or trusted publishing would break
+        # this job with nothing in the repo to review or revert.
+        run: npm install -g npm@^11.5.1
+
       - name: Install Semantic Release and plugins
         run: |
           npm i
@@ -99,6 +116,41 @@ jobs:
           # which rate limits unauthenticated requests per source IP.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Stage the npm package from the SAME build. `files` in the staged manifest
+      # keeps the tarball to build/, web/build/, README and LICENSE, which is the
+      # layout api/src/utils/file.ts derives its roots from - see the script's
+      # header for the arithmetic.
+      - name: Stage the npm package
+        if: steps.pending.outputs.release == 'true'
+        run: node .github/scripts/stage-npm-package.mjs "${VERSION#v}" npm-package
+        env:
+          VERSION: ${{ steps.pending.outputs.version }}
+
+      - name: Check the tarball carries exactly the runtime
+        if: steps.pending.outputs.release == 'true'
+        working-directory: ./npm-package
+        run: |
+          set -euo pipefail
+          npm pack --dry-run --json > /tmp/pack.json
+          node -e "
+          const report = require('/tmp/pack.json')[0]
+          const files = report.files.map((f) => f.path)
+          const unexpected = files.filter(
+            (f) => !(f.startsWith('build/') || f.startsWith('web/build/') || f === 'README.md' || f === 'LICENSE' || f === 'package.json')
+          )
+          if (unexpected.length) {
+            console.error('unexpected files in the tarball:')
+            unexpected.forEach((f) => console.error('  ' + f))
+            process.exit(1)
+          }
+          const required = ['build/src/server.js', 'web/build/index.html']
+          const missing = required.filter((r) => !files.includes(r))
+          if (missing.length) {
+            console.error('missing from the tarball: ' + missing.join(', '))
+            process.exit(1)
+          }
+          console.log('tarball: ' + files.length + ' files, ' + report.unpackedSize + ' bytes unpacked')
+          "
       - name: Compress Executables
         if: steps.pending.outputs.release == 'true'
         working-directory: ./executables
@@ -121,6 +173,31 @@ jobs:
       - name: Release
         run: |
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} semantic-release
+
+      # Publishing after the tag exists keeps the published version and the tag in
+      # step: a publish failure then leaves a release without its npm entry, which
+      # is visible and retryable, rather than an npm version with no tag.
+      #
+      # Requires npm trusted publishing configured for @sasjs/server against this
+      # repository and this workflow file. The FIRST publish of a new name needs a
+      # token-authenticated run, because npm only offers the trusted-publisher
+      # setting once the package exists.
+      - name: Publish to npm
+        if: steps.pending.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.pending.outputs.version }}
+        run: |
+          set -euo pipefail
+          # The dist-tag decides what an unpinned `npx @sasjs/server` resolves,
+          # so a prerelease must not land on latest - that is the silent upgrade
+          # the README warns users about. `4.9.0-beta.1` publishes under `beta`.
+          V="${VERSION#v}"
+          case "$V" in
+            *-*) TAG="${V#*-}"; TAG="${TAG%%.*}" ;;
+            *) TAG=latest ;;
+          esac
+          echo "publishing $V under dist-tag $TAG"
+          npm publish ./npm-package --provenance --access public --tag "$TAG"
 
       - name: Document the checksums on the release
         env:

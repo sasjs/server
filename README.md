@@ -49,8 +49,25 @@ read the same environment variables and serve the same API.
 
 - **Standalone executable** - the zip from the releases page, with SAS and a data
   path supplied either as prompts or as `SAS_PATH` / `DATA_DIR`.
-- **Node** - `npx @sasjs/server`, or `npm install -g @sasjs/server` and run
-  `sasjs-server`. Useful where Node is already managed by the platform.
+- **Node** - `npx @sasjs/server@3.4.0`, or `npm install -g @sasjs/server` and run
+  `sasjs-server`. Useful where Node is already managed by the platform, and the
+  only channel that runs on arm64 (Apple Silicon, Graviton, a Pi), because the
+  standalone executables are built for x64 only.
+
+Both channels read the same environment variables and serve the same API, with
+two differences worth knowing before choosing the Node one:
+
+- **Pin the version.** An unpinned `npx @sasjs/server` re-resolves `latest` on
+  every run, so a restart becomes a silent upgrade. The examples above pin it.
+- **`.env` is read from the working directory.** `dotenv.config()` is relative to
+  where the process starts, so run it from the project directory you want the
+  server to own (that directory also gets the `./sasjs_root`). Under `npx` the
+  package itself lives in an evictable `~/.npm/_npx/<hash>` cache, so an `.env`
+  placed there would be lost - it belongs beside the command, not the code.
+
+The Node channel starts in desktop mode, which is the single-user mode; the
+`RUN_AS` check still refuses to run as root, so install it under the account that
+should own the SAS sessions rather than starting it with `sudo`.
 - **Embedded** - the server's pieces are also used inside other SASjs tooling,
   such as the VS Code extension, and the mock backend runs in the browser for
   front-end development without a server at all.
