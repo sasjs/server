@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Express } from 'express'
 import appPromise from './app'
 import { listen } from './listen'
