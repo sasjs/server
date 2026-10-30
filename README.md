@@ -19,55 +19,61 @@ SASjs Server is available in two modes - Desktop (without authentication) and Se
 
 ## Installation
 
-Installation can be made programmatically using command line, or by manually downloading and running the executable.
+Two channels - the npm package and the standalone executable. Both read the same
+environment variables and serve the same API.
 
-### Programmatic
+### npm
 
-Fetch the relevant package from github using `curl`, eg as follows (for linux):
+```bash
+npx @sasjs/server@3.6.2
+```
+
+Or install it once and run `sasjs-server` from then on:
+
+```bash
+npm install -g @sasjs/server
+sasjs-server
+```
+
+Requires Node 22 or later. Useful where Node is already managed by the platform,
+and the only channel that runs on arm64 (Apple Silicon, Graviton, a Pi), because
+the standalone executables are built for x64 only.
+
+Three things to know before choosing it:
+
+- **Pin the version**, as above: an unpinned `npx @sasjs/server` re-resolves
+  `latest` on every run, so a restart becomes a silent upgrade.
+- **`.env` is read from the working directory.** `dotenv.config()` is relative to
+  where the process starts, so run it from the project directory you want the
+  server to own (that directory also gets the `./sasjs_root`). Under `npx` the
+  package itself lives in an evictable `~/.npm/_npx/<hash>` cache, so an `.env`
+  placed there would be lost - it belongs beside the command, not the code.
+- **It starts in desktop mode**, the single-user mode. The `RUN_AS` check still
+  refuses to run as root, so install it under the account that should own the SAS
+  sessions rather than starting it with `sudo`.
+
+Installing the package runs no install script, so it makes no network call of its
+own.
+
+### Standalone executable
+
+Download the relevant package from the [releases](https://github.com/sasjs/server/releases)
+page, or fetch it programmatically (linux):
 
 ```bash
 curl -L https://github.com/sasjs/server/releases/latest/download/linux.zip > linux.zip
 unzip linux.zip
 ```
 
-The app can then be launched with `./api-linux` and prompts followed (if ENV vars not set).
-
-### Manual
-
-1. Download the relevant package from the [releases](https://github.com/sasjs/server/releases) page
-2. Trigger by double clicking (windows) or executing from commandline.
-
-You are presented with two prompts (if not set as ENV vars):
+Then launch `./api-linux` (on windows, double click `api-win.exe` - no
+administrative privileges are needed) and answer the two prompts, unless the ENV
+vars are set:
 
 - Location of your `sas.exe` / `sas.sh` executable
 - Path to a filesystem location for Stored Programs and temporary files
 
 ## Deployment options
 
-The server runs as a standalone executable (above) and as a Node process. Both
-read the same environment variables and serve the same API.
-
-- **Standalone executable** - the zip from the releases page, with SAS and a data
-  path supplied either as prompts or as `SAS_PATH` / `DATA_DIR`.
-- **Node** - `npx @sasjs/server@3.4.0`, or `npm install -g @sasjs/server` and run
-  `sasjs-server`. Useful where Node is already managed by the platform, and the
-  only channel that runs on arm64 (Apple Silicon, Graviton, a Pi), because the
-  standalone executables are built for x64 only.
-
-Both channels read the same environment variables and serve the same API, with
-two differences worth knowing before choosing the Node one:
-
-- **Pin the version.** An unpinned `npx @sasjs/server` re-resolves `latest` on
-  every run, so a restart becomes a silent upgrade. The examples above pin it.
-- **`.env` is read from the working directory.** `dotenv.config()` is relative to
-  where the process starts, so run it from the project directory you want the
-  server to own (that directory also gets the `./sasjs_root`). Under `npx` the
-  package itself lives in an evictable `~/.npm/_npx/<hash>` cache, so an `.env`
-  placed there would be lost - it belongs beside the command, not the code.
-
-The Node channel starts in desktop mode, which is the single-user mode; the
-`RUN_AS` check still refuses to run as root, so install it under the account that
-should own the SAS sessions rather than starting it with `sudo`.
 - **Embedded** - the server's pieces are also used inside other SASjs tooling,
   such as the VS Code extension, and the mock backend runs in the browser for
   front-end development without a server at all.
