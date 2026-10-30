@@ -59,6 +59,17 @@ jobs:
         working-directory: ./api
         run: npm ci --ignore-scripts && node ../.github/scripts/audit.mjs
 
+      - name: Audit API dependency licences and install scripts
+        # The published package installs exactly this set, on other people's
+        # machines. Fails on a licence this repository cannot redistribute under,
+        # and on any package in the production set that carries an install
+        # script: an install script runs as the installing user, with that
+        # machine's network access. @scarf/scarf's postinstall - which reported
+        # every install to scarf.sh - arrived three levels down, through
+        # swagger-ui-express; nothing in package.json named it.
+        working-directory: ./api
+        run: node ../.github/scripts/license-audit.mjs
+
       - name: Audit Web dependencies
         # Production dependencies only. The dev toolchain carries an advisory
         # that no upgrade clears: braces GHSA-vfj7-8cjw-p6xm, reached through

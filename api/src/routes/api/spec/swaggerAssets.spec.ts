@@ -1,78 +1,109 @@
-import crypto from 'crypto'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 
+import {
+  copySwaggerUiAssets,
+  swaggerUiAssets,
+  swaggerUiDistFolder,
+  swaggerUiNotices
+} from '../../../utils/swaggerUiAssets'
+
 /**
- * Guard for the Swagger UI assets the API serves from disk.
+ * Guard for the Swagger UI the API serves.
  *
- * `express.static('../public')` is mounted at the root, so a file under
- * `public/SASjsApi/` wins over the copy `swagger-ui-express` would serve from
- * `swagger-ui-dist`. The copy exists on purpose: the packaged executable bundles
- * `build/public/**` and cannot read the dependency from disk. The cost is that a
- * stale copy silently styles a newer UI.
+ * `public/SASjsApi/index.html` is the documentation page, and the assets beside
+ * it are copied from the pinned `swagger-ui-dist` devDependency by
+ * `scripts/copySwaggerUi.ts`. Nothing from that package is installed at
+ * runtime, because it depends on `@scarf/scarf`, whose postinstall reports the
+ * install to scarf.sh.
  *
- * That is what happened here. A 2021 stylesheet served beside the 5.33.0 bundle
- * collapsed every operation path to one character per line: the bundle renders
- * `.opblock-summary-path-description-wrapper`, which the older stylesheet does
- * not know about, while its own `.opblock-summary-path` rule still caps the
- * width at `calc(100% - 110px - 15rem)`. With no wrapper rule the cap resolved
- * against a container narrower than the subtraction, so the path wrapped at
- * every character.
- *
- * These tests keep the copy in step with the package that renders the DOM.
+ * Two things can therefore go wrong silently, and both are covered here: a page
+ * that points at an asset the build does not copy (a blank or unstyled UI), and
+ * a page that reaches a third party (the leak this arrangement exists to stop).
  */
 
 const apiRoot = path.resolve(__dirname, '../../../..')
-const servedCssPath = path.join(apiRoot, 'public', 'SASjsApi', 'swagger-ui.css')
+const pagePath = path.join(apiRoot, 'public', 'SASjsApi', 'index.html')
+const initPath = path.join(apiRoot, 'public', 'SASjsApi', 'swagger-ui-init.js')
 
-const distDirectory = path.dirname(
-  require.resolve('swagger-ui-dist/package.json')
-)
-const distCssPath = path.join(distDirectory, 'swagger-ui.css')
-const distVersion = require('swagger-ui-dist/package.json').version
-
-const sha256 = (buffer: Buffer) =>
-  crypto.createHash('sha256').update(buffer).digest('hex')
+const page = () => fs.readFileSync(pagePath, 'utf8')
+const init = () => fs.readFileSync(initPath, 'utf8')
 
 describe('bundled Swagger UI assets', () => {
-  it('serves the stylesheet shipped by swagger-ui-dist', () => {
-    const served = fs.readFileSync(servedCssPath)
-    const installed = fs.readFileSync(distCssPath)
+  let destination: string
 
-    if (!served.equals(installed)) {
-      throw new Error(
-        `public/SASjsApi/swagger-ui.css is out of step with swagger-ui-dist@${distVersion}.\n` +
-          `  served:    ${sha256(served)}\n` +
-          `  installed: ${sha256(installed)}\n` +
-          'The API serves the copy in public/, so a stale copy styles a newer UI. Refresh it with:\n' +
-          '  cp node_modules/swagger-ui-dist/swagger-ui.css public/SASjsApi/swagger-ui.css'
+  beforeAll(() => {
+    destination = fs.mkdtempSync(path.join(os.tmpdir(), 'sasjs-swagger-ui-'))
+    copySwaggerUiAssets(destination)
+  })
+
+  afterAll(() => {
+    fs.rmSync(destination, { recursive: true, force: true })
+  })
+
+  it('copies every asset the page loads from swagger-ui-dist', () => {
+    const distFolder = swaggerUiDistFolder()
+
+    for (const file of swaggerUiAssets) {
+      expect(fs.existsSync(path.join(destination, file))).toBe(true)
+      expect(
+        fs
+          .readFileSync(path.join(destination, file))
+          .equals(fs.readFileSync(path.join(distFolder, file)))
+      ).toBe(true)
+    }
+
+    // Apache-2.0: the licence and notice travel with the files
+    for (const file of swaggerUiNotices) {
+      expect(fs.existsSync(path.join(destination, `swagger-ui-${file}`))).toBe(
+        true
       )
     }
   })
 
-  it('styles the summary wrapper the current bundle renders', () => {
-    const css = fs.readFileSync(servedCssPath, 'utf8')
+  it('loads the page and its styles from this folder, not from a third party', () => {
+    const html = page()
 
-    // Without this rule the wrapper stays at its initial `display: block`, the
-    // path's `max-width: calc(100% - ...)` resolves against a narrow container,
-    // and every route renders one character per line.
-    expect(css).toContain('.opblock-summary-path-description-wrapper')
+    const loaded = [
+      'swagger-ui.css',
+      'swagger-ui-bundle.js',
+      'swagger-ui-standalone-preset.js',
+      'swagger-ui-init.js',
+      'favicon-32x32.png'
+    ]
+    for (const file of loaded) {
+      expect(html).toContain(`./${file}`)
+    }
+
+    const external = html.match(/(src|href)\s*=\s*["']?https?:\/\//gi) || []
+    expect(external).toEqual([])
   })
 
-  it('does not shadow the generated swagger-ui-init.js', () => {
-    // `swagger-ui-express` builds this file in memory from the options passed
-    // to `setup()` (its `swaggerInitFunction`), so it never needs to be on
-    // disk, and a checked-in copy wins over the generated one through the same
-    // static mount. That copy silently pins the Swagger UI to whatever
-    // `swaggerOptions` were in place when it was written, so edits to the
-    // route's options have no effect.
-    const initPath = path.join(
-      apiRoot,
-      'public',
-      'SASjsApi',
-      'swagger-ui-init.js'
-    )
+  it('starts Swagger UI against the local spec with no third-party validator', () => {
+    const script = init()
 
-    expect(fs.existsSync(initPath)).toBe(false)
+    expect(script).toContain("url: '/swagger.yaml'")
+    // the online validator posts the spec URL to validator.swagger.io
+    expect(script).toContain('validatorUrl: null')
+    // the API's own calls carry the session cookie and the CSRF header
+    expect(script).toContain("request.credentials = 'include'")
+    expect(script).toContain('X-XSRF-TOKEN')
+  })
+
+  it('keeps swagger-ui out of the runtime dependencies', () => {
+    // swagger-ui-dist is a devDependency: it is the source of the copied
+    // assets, and its tree carries @scarf/scarf's postinstall. Installing
+    // @sasjs/server must not run anything that calls out.
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(apiRoot, 'package.json'), 'utf8')
+    )
+    const runtime = Object.keys(manifest.dependencies || {})
+
+    expect(runtime).not.toContain('swagger-ui-express')
+    expect(runtime).not.toContain('swagger-ui-dist')
+    expect(Object.keys(manifest.devDependencies || {})).toContain(
+      'swagger-ui-dist'
+    )
   })
 })
