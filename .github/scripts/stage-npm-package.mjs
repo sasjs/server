@@ -45,6 +45,17 @@ for (const file of required) {
   }
 }
 
+// npm links `bin` to this file, so the OS runs it through its shebang. Without
+// one the entry is handed to sh and dies on its first line ("use strict: not
+// found"), so a staged package must never carry a bin without one.
+const entry = path.join(root, 'api', 'build', 'src', 'server.js')
+if (!fs.readFileSync(entry, 'utf8').startsWith('#!')) {
+  console.error(
+    `stage-npm-package: ${entry} has no shebang, so the sasjs-server executable would fail to start`
+  )
+  process.exit(1)
+}
+
 // The runtime dependencies come from the api, because the code that needs them
 // lives under build/ - Node resolves them from the package root either way. The
 // manifest is not the api's own: name, version and the file list belong to the
