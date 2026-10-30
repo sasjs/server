@@ -20,7 +20,7 @@ import { generateAccessToken, saveTokensInDB } from '../../../utils'
 import { randomBytes } from 'crypto'
 
 const deployPayload = {
-  appLoc: 'string',
+  appLoc: '/Public/example',
   streamWebFolder: 'string',
   fileTree: {
     members: [
@@ -581,7 +581,7 @@ describe('permission', () => {
       const accessToken = await generateAndSaveToken(dbUser.uid)
 
       await request(app)
-        .get('/SASjsApi/drive/deploy')
+        .post('/SASjsApi/drive/deploy')
         .auth(accessToken, { type: 'bearer' })
         .send(deployPayload)
         .expect(200)
