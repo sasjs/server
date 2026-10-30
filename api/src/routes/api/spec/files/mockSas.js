@@ -26,6 +26,17 @@ const arg = (flag) => {
 const sysin = arg('-SYSIN')
 const logPath = arg('-LOG')
 
+// The pid this process was given, in the session folder the -LOG path points
+// at. A test compares it with the pid the trigger endpoint reports, which is
+// what proves the reported value is the runtime process and not, say, a
+// wrapper's. A fixed name, so renaming the log file cannot break the test.
+if (logPath) {
+  fs.writeFileSync(
+    require('path').join(require('path').dirname(logPath), 'mockSas.pid'),
+    String(process.pid)
+  )
+}
+
 // Give up waiting for the real program after this long, so an unused
 // pre-warmed session (sasjs pools up to 3 ready sessions) doesn't linger
 // forever and keep a test process alive. Generous rather than tight: CI

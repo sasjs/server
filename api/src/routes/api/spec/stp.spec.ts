@@ -66,6 +66,14 @@ describe('stp', () => {
       principalId: dbUser.uid,
       setting: PermissionSettingForRoute.grant
     })
+
+    await permissionController.createPermission({
+      path: '/SASjsApi/stp/trigger',
+      type: PermissionType.route,
+      principalType: PrincipalType.user,
+      principalId: dbUser.uid,
+      setting: PermissionSettingForRoute.grant
+    })
   })
 
   afterAll(async () => {
@@ -478,6 +486,43 @@ describe('stp', () => {
       })
     })
   })
+
+  describe('trigger', () => {
+    const programPath = path.join(testFilesFolder, 'trigger-program')
+
+    beforeAll(async () => {
+      process.runTimes = [RunTimeType.SAS]
+
+      await createFile(
+        path.join(filesFolder, `${programPath}.sas`),
+        sampleSasProgram
+      )
+    })
+
+    beforeEach(() => {
+      jest.resetModules()
+      setupMocks()
+    })
+
+    afterEach(async () => {
+      jest.resetAllMocks()
+    })
+
+    // The response contract is sessionId plus an optional pid. Here the
+    // program is mocked, so no process is ever spawned: that is the same
+    // shape a sasviya trigger has (the program runs on the Viya server, so
+    // there is no local pid to report), and it must not hang or invent one.
+    it('returns the session id, and no pid when nothing local was spawned', async () => {
+      const response = await request(app)
+        .post(`/SASjsApi/stp/trigger?_program=${programPath}`)
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      expect(typeof response.body.sessionId).toEqual('string')
+      expect(response.body.pid).toBeUndefined()
+    }, 30000)
+  })
 })
 
 const makeRequestAndAssert = async (
@@ -521,6 +566,8 @@ const makeRequestAndAssert = async (
       expect.anything(),
       expectedRuntime,
       expect.anything(),
+      undefined,
+      // execute waits for the program, so it reports no spawn
       undefined
     )
 }

@@ -21,6 +21,10 @@ export interface ServerDetails {
   mode: string
   uptimeSeconds: number
   startedAt: string
+  /**
+   * OS process id of the server process.
+   * @isInt
+   */
   pid: number
   nodeVersion: string
   platform: string

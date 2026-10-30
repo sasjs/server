@@ -13,6 +13,7 @@ import {
 } from '../../../controllers/'
 import {
   generateAccessToken,
+  getSessionsFolder,
   saveTokensInDB,
   RunTimeType,
   sysInitCompiledPath
@@ -81,6 +82,14 @@ describe('code', () => {
       setting: PermissionSettingForRoute.grant
     })
 
+    await permissionController.createPermission({
+      path: '/SASjsApi/code/trigger',
+      type: PermissionType.route,
+      principalType: PrincipalType.user,
+      principalId: dbUser.uid,
+      setting: PermissionSettingForRoute.grant
+    })
+
     process.runTimes = [RunTimeType.SAS]
     process.sasLoc = mockSasPath
   }, 30000)
@@ -124,6 +133,57 @@ describe('code', () => {
       expect(response.text).toEqual(
         expect.stringContaining('SAS session terminated')
       )
+    }, 30000)
+  })
+
+  describe('trigger', () => {
+    // The reported pid must be the process that actually runs the code, not
+    // the server's own and not a wrapper's: mockSas.js writes its own
+    // process.pid into the session folder, and the assertion is equality with
+    // what the endpoint returned (sasjs/server#380).
+    it('returns the session id and the pid of the process running the code', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/trigger')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code: '%put hello from trigger;', runTime: 'sas' })
+        .expect(200)
+
+      expect(typeof response.body.sessionId).toEqual('string')
+      expect(typeof response.body.pid).toEqual('number')
+
+      const pidFile = path.join(
+        getSessionsFolder(),
+        response.body.sessionId,
+        'mockSas.pid'
+      )
+
+      // the mock records its pid at startup; poll briefly rather than assume
+      // it has reached the disk by the time the response is back
+      let recorded = ''
+      for (let attempt = 0; attempt < 100 && !recorded; attempt++) {
+        if (await fileExists(pidFile)) recorded = await readFile(pidFile)
+
+        if (!recorded) await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+
+      expect(recorded).not.toEqual('')
+      expect(response.body.pid).toEqual(parseInt(recorded))
+      expect(response.body.pid).not.toEqual(process.pid)
+    }, 30000)
+
+    // A wall-clock bound would not prove this: the endpoint gives up waiting
+    // for a pid after 2s, so anything under that passes either way. The pid
+    // itself is the signal - it is only present when the response came from a
+    // session whose process was already running, not from the timeout.
+    it('returns once the code is running, not when it finishes', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/trigger')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code: '%put still running;', runTime: 'sas' })
+        .expect(200)
+
+      expect(typeof response.body.sessionId).toEqual('string')
+      expect(typeof response.body.pid).toEqual('number')
     }, 30000)
   })
 

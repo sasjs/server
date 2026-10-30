@@ -31,6 +31,13 @@ interface ExecuteFileParams {
   session?: Session
   runTime: RunTimeType
   forceStringResult?: boolean
+  /**
+   * Called with the pid as soon as a local runtime process is spawned, so a
+   * trigger can report it without polling. Never called on `sasviya`, and not
+   * called for the `sas` runtime, whose process is started with the session
+   * itself.
+   */
+  onSpawn?: (pid: number) => void
 }
 
 interface ExecuteProgramParams extends Omit<ExecuteFileParams, 'programPath'> {
@@ -47,7 +54,8 @@ export class ExecutionController {
     returnJson,
     session,
     runTime,
-    forceStringResult
+    forceStringResult,
+    onSpawn
   }: ExecuteFileParams) {
     const program = await readFile(programPath)
 
@@ -59,7 +67,8 @@ export class ExecutionController {
       returnJson,
       session,
       runTime,
-      forceStringResult
+      forceStringResult,
+      onSpawn
     })
   }
 
@@ -71,7 +80,8 @@ export class ExecutionController {
     session: sessionByFileUpload,
     runTime,
     forceStringResult,
-    includePrintOutput
+    includePrintOutput,
+    onSpawn
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
     const sessionController = getSessionController(runTime)
 
@@ -105,7 +115,8 @@ export class ExecutionController {
       tokenFile,
       runTime,
       logPath,
-      otherArgs
+      otherArgs,
+      onSpawn
     )
 
     const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
