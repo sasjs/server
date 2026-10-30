@@ -1,7 +1,5 @@
 import express from 'express'
 
-import swaggerUi from 'swagger-ui-express'
-
 import {
   authenticateAccessToken,
   desktopRestrict,
@@ -57,23 +55,9 @@ router.use(
   authConfigRouter
 )
 
-router.use(
-  '/',
-  swaggerUi.serve,
-  swaggerUi.setup(undefined, {
-    swaggerOptions: {
-      url: '/swagger.yaml',
-      requestInterceptor: (request: any) => {
-        request.credentials = 'include'
-
-        const cookie = document.cookie
-        const startIndex = cookie.indexOf('XSRF-TOKEN')
-        const csrf = cookie.slice(startIndex + 11).split('; ')[0]
-        request.headers['X-XSRF-TOKEN'] = csrf
-        return request
-      }
-    }
-  })
-)
+// The API documentation page is a file in public/SASjsApi/ (index.html plus the
+// assets copied beside it at build time), served by the express.static mount in
+// app.ts. It is not a route here: the page and its assets are plain files, and
+// nothing in them is rendered per request.
 
 export default router

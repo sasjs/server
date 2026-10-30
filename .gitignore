@@ -15,3 +15,11 @@ executables/
 api/csp.config.json
 # Screenshots produced by the Studio browser test (api npm run test:e2e)
 api/src/e2e/screenshots/
+api/public/SASjsApi/swagger-ui.css
+api/public/SASjsApi/swagger-ui-bundle.js
+api/public/SASjsApi/swagger-ui-standalone-preset.js
+api/public/SASjsApi/favicon-16x16.png
+api/public/SASjsApi/favicon-32x32.png
+api/public/SASjsApi/oauth2-redirect.html
+api/public/SASjsApi/swagger-ui-LICENSE
+api/public/SASjsApi/swagger-ui-NOTICE
