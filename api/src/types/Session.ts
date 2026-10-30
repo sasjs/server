@@ -11,6 +11,14 @@ export interface Session {
   creationTimeStamp: string
   deathTimeStamp: string
   path: string
+  /**
+   * OS process id of the process running this session: the SAS binary for the
+   * `sas` runtime, or the interpreter for `js`/`py`/`r`.
+   *
+   * Absent on `sasviya`, where the program runs on the Viya server rather than
+   * locally, and before the process is spawned.
+   */
+  pid?: number
   expiresAfterMins?: { mins: number; used: boolean }
   failureReason?: string
 }

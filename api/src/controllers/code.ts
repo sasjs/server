@@ -2,13 +2,15 @@ import express from 'express'
 import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
 import { Diagnostic, formatText } from '@sasjs/lint'
 import { ExecutionController, getSessionController } from './internal'
+import { TriggerResponse } from '../types'
 import {
   getPreProgramVariables,
   getUserAutoExec,
   getDriveLintConfig,
   lintProgram,
   ModeType,
-  RunTimeType
+  RunTimeType,
+  waitForSessionPid
 } from '../utils'
 
 interface ExecuteCodePayload {
@@ -43,17 +45,12 @@ interface TriggerCodePayload {
   expiresAfterMins?: number
 }
 
-interface TriggerCodeResponse {
-  /**
-   * `sessionId` is the ID of the session and the name of the temporary folder
-   * used to store code outputs.<br><br>
-   * For SAS, this would be the location of the SASWORK folder.<br><br>
-   * `sessionId` can be used to poll session state using the
-   * GET /SASjsApi/session/{sessionId}/state endpoint.
-   * @example "20241028074744-54132-1730101664824"
-   */
-  sessionId: string
-}
+/**
+ * Response of `POST /SASjsApi/code/trigger`. The shape and its documentation
+ * live in TriggerResponse; the name is kept because generated clients are
+ * built from it.
+ */
+export interface TriggerCodeResponse extends TriggerResponse {}
 
 interface LintCodePayload {
   /**
@@ -231,19 +228,29 @@ const triggerCode = async (
   }
 
   try {
+    // the spawn reports the pid, so the response needs no polling loop
+    let reportSpawned: (pid: number | undefined) => void = () => undefined
+    const spawned = new Promise<number | undefined>((resolve) => {
+      reportSpawned = resolve
+    })
+
     // call executeProgram method of ExecutionController without awaiting
-    new ExecutionController().executeProgram({
+    const program = new ExecutionController().executeProgram({
       program: code,
       preProgramVariables: getPreProgramVariables(req),
       vars: { ...req.query, _debug: 131 },
       otherArgs: { userAutoExec },
       runTime: runTime,
       includePrintOutput: true,
-      session // session is provided
+      session, // session is provided
+      onSpawn: reportSpawned
     })
 
-    // return session id
-    return { sessionId: session.id }
+    // return session id, and the pid when the runtime has a local process
+    return {
+      sessionId: session.id,
+      pid: await waitForSessionPid(session, spawned, program, runTime)
+    }
   } catch (err: any) {
     throw {
       code: 400,

@@ -9,9 +9,18 @@ import {
   getPreProgramVariables,
   makeFilesNamesMap,
   getRunTimeAndFilePath,
-  parseDebugValue
+  parseDebugValue,
+  waitForSessionPid
 } from '../utils'
 import { MulterFile } from '../types/Upload'
+import { TriggerResponse } from '../types'
+
+/**
+ * Response of `POST /SASjsApi/stp/trigger`. The shape and its documentation
+ * live in TriggerResponse; the name is kept because generated clients are
+ * built from it.
+ */
+export interface TriggerProgramResponse extends TriggerResponse {}
 
 interface ExecutePostRequestPayload {
   /**
@@ -37,18 +46,6 @@ interface TriggerProgramPayload {
    * Query param for setting debug mode.
    */
   _debug?: number
-}
-
-interface TriggerProgramResponse {
-  /**
-   * `sessionId` is the ID of the session and the name of the temporary folder
-   * used to store program outputs.<br><br>
-   * For SAS, this would be the location of the SASWORK folder.<br><br>
-   * `sessionId` can be used to poll session state using the
-   * GET /SASjsApi/session/{sessionId}/state endpoint.
-   * @example "20241028074744-54132-1730101664824"
-   */
-  sessionId: string
 }
 
 @Security('bearerAuth')
@@ -211,17 +208,27 @@ const triggerProgram = async (
       session.expiresAfterMins = { mins: expiresAfterMins, used: false }
     }
 
+    // the spawn reports the pid, so the response needs no polling loop
+    let reportSpawned: (pid: number | undefined) => void = () => undefined
+    const spawned = new Promise<number | undefined>((resolve) => {
+      reportSpawned = resolve
+    })
+
     // call executeFile method of ExecutionController without awaiting
-    new ExecutionController().executeFile({
+    const program = new ExecutionController().executeFile({
       programPath: codePath,
       runTime,
       preProgramVariables: getPreProgramVariables(req),
       vars,
-      session
+      session,
+      onSpawn: reportSpawned
     })
 
-    // return session id
-    return { sessionId: session.id }
+    // return session id, and the pid when the runtime has a local process
+    return {
+      sessionId: session.id,
+      pid: await waitForSessionPid(session, spawned, program, runTime)
+    }
   } catch (err: any) {
     throw {
       code: 400,

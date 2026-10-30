@@ -25,7 +25,8 @@ export const processProgram = async (
   tokenFile: string,
   runTime: RunTimeType,
   logPath: string,
-  otherArgs?: any
+  otherArgs?: any,
+  onSpawn?: (pid: number) => void
 ) => {
   if (runTime === RunTimeType.SASVIYA) {
     const viyaProgram = await createViyaSASProgram(
@@ -156,14 +157,23 @@ export const processProgram = async (
     // waiting for the open event so that we can have underlying file descriptor
     await once(writeStream, 'open')
 
-    await execFilePromise(executablePath, [codePath], writeStream)
+    await execFilePromise(
+      session,
+      executablePath,
+      [codePath],
+      writeStream,
+      onSpawn
+    )
       .then(() => {
         session.state = SessionState.completed
+        // the process is gone and its pid can be recycled
+        session.pid = undefined
 
         process.logger.info('session completed', session)
       })
       .catch((err) => {
         session.state = SessionState.failed
+        session.pid = undefined
 
         session.failureReason = err.toString()
 
@@ -189,9 +199,11 @@ export const processProgram = async (
  * @returns {Promise<{ stdout: string, stderr: string }>}
  */
 const execFilePromise = (
+  session: Session,
   file: string,
   args: string[],
-  writeStream: WriteStream
+  writeStream: WriteStream,
+  onSpawn?: (pid: number) => void
 ): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
     const child = execFile(file, args, (err, stdout, stderr) => {
@@ -199,6 +211,13 @@ const execFilePromise = (
 
       resolve({ stdout, stderr })
     })
+
+    // the interpreter's pid, so a trigger response can name the process
+    if (child.pid) {
+      session.pid = child.pid
+
+      onSpawn?.(child.pid)
+    }
 
     child.stdout?.on('data', (data) => {
       writeStream.write(data)

@@ -33,8 +33,9 @@ components:
                 startedAt:
                     type: string
                 pid:
-                    type: number
-                    format: double
+                    type: integer
+                    format: int32
+                    description: 'OS process id of the server process.'
                 nodeVersion:
                     type: string
                 platform:
@@ -359,11 +360,17 @@ components:
             type: object
             additionalProperties: false
         TriggerCodeResponse:
+            description: "Response of `POST /SASjsApi/code/trigger`. The shape and its documentation\nlive in TriggerResponse; the name is kept because generated clients are\nbuilt from it."
             properties:
                 sessionId:
                     type: string
-                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store code outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
+                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store the program's outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
                     example: 20241028074744-54132-1730101664824
+                pid:
+                    type: integer
+                    format: int32
+                    description: "OS process id of the process running the program: the SAS binary for the\n`sas` runtime, or the interpreter for `js`/`py`/`r`.<br><br>\nOmitted for the `sasviya` runtime, where the program runs on the Viya\nserver and no local process exists. Also omitted if the process has not\nstarted yet, which the endpoint waits briefly for.<br><br>\nThe value identifies the process for as long as it runs: it is cleared when\nthe session finishes, because operating systems recycle pids and a stale id\ncan name an unrelated process. Use it while the session is running, and\npoll GET /SASjsApi/session/{sessionId}/state for completion rather than\nwatching the pid afterwards."
+                    example: 12345
             required:
                 - sessionId
             type: object
@@ -928,11 +935,17 @@ components:
             type: object
             additionalProperties: false
         TriggerProgramResponse:
+            description: "Response of `POST /SASjsApi/stp/trigger`. The shape and its documentation\nlive in TriggerResponse; the name is kept because generated clients are\nbuilt from it."
             properties:
                 sessionId:
                     type: string
-                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store program outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
+                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store the program's outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
                     example: 20241028074744-54132-1730101664824
+                pid:
+                    type: integer
+                    format: int32
+                    description: "OS process id of the process running the program: the SAS binary for the\n`sas` runtime, or the interpreter for `js`/`py`/`r`.<br><br>\nOmitted for the `sasviya` runtime, where the program runs on the Viya\nserver and no local process exists. Also omitted if the process has not\nstarted yet, which the endpoint waits briefly for.<br><br>\nThe value identifies the process for as long as it runs: it is cleared when\nthe session finishes, because operating systems recycle pids and a stale id\ncan name an unrelated process. Use it while the session is running, and\npoll GET /SASjsApi/session/{sessionId}/state for completion rather than\nwatching the pid afterwards."
+                    example: 12345
             required:
                 - sessionId
             type: object

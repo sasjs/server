@@ -1,6 +1,5 @@
 import path from 'path'
 import { Session, SessionState } from '../../types'
-import { promisify } from 'util'
 import { execFile } from 'child_process'
 import {
   getPackagesFolder,
@@ -17,7 +16,38 @@ import {
   readFile
 } from '@sasjs/utils'
 
-const execFilePromise = promisify(execFile)
+/**
+ * Runs the session's process and records its pid on the session.
+ *
+ * promisify(execFile) discards the ChildProcess, and a caller polling a
+ * triggered program has no other way to name the process it started - the
+ * pid is what makes the session identifiable outside the API
+ * (sasjs/server#380).
+ */
+const runSessionProcess = (
+  session: Session,
+  file: string,
+  args: string[]
+): Promise<{ stdout: string; stderr: string }> =>
+  new Promise((resolve, reject) => {
+    const child = execFile(file, args, (err, stdout, stderr) => {
+      if (err) {
+        // promisify(execFile) rejected with these attached. Nothing in the
+        // tree reads them today - the failure path uses err.toString() and the
+        // log file - so this is parity with the rejection shape this code
+        // replaced, kept so a future diagnosis finds the output where node
+        // would have put it.
+        err.stdout = stdout
+        err.stderr = stderr
+
+        return reject(err)
+      }
+
+      resolve({ stdout, stderr })
+    })
+
+    if (child.pid) session.pid = child.pid
+  })
 
 export class SessionController {
   protected sessions: Session[] = []
@@ -182,7 +212,7 @@ ${autoExecContent}`
 
     // Additional windows specific options to avoid the desktop popups.
 
-    execFilePromise(process.sasLoc!, [
+    runSessionProcess(session, process.sasLoc!, [
       '-SYSIN',
       codePath,
       '-LOG',
@@ -205,11 +235,14 @@ ${autoExecContent}`
     ])
       .then(() => {
         session.state = SessionState.completed
+        // the process is gone and its pid can be recycled
+        session.pid = undefined
 
         process.logger.info('session completed', session)
       })
       .catch((err) => {
         session.state = SessionState.failed
+        session.pid = undefined
 
         session.failureReason = err.toString()
 
