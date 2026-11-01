@@ -1,70 +1,67 @@
-import { SyntheticEvent } from 'react'
-import { LogInstance } from './'
+import type { SyntheticEvent } from 'react'
+import { parseLog } from '@sasjs/utils/logs/index.js'
+import type { LogIssue } from '@sasjs/utils/logs/index.js'
+import type { LogInstance } from './types'
 
+/** The colour a marker line is drawn in, by severity. Notes are not coloured. */
+const MARKER_COLOURS: Record<string, string> = {
+  error: 'red',
+  warning: 'green'
+}
+
+/**
+ * Wraps a line in the anchor and colour the log viewer uses to render it and to
+ * scroll to it. The `id` is `<type>_<index>`, which is what the tree entries look
+ * up when a reader clicks one.
+ */
+const markLine = (line: string, instance: LogInstance): string =>
+  `<font id="${instance.type}_${instance.id}" style="color: ${MARKER_COLOURS[instance.type]};">${line}</font>`
+
+const toInstance = (issue: LogIssue, id: number): LogInstance => ({
+  body: issue.message,
+  line: issue.line,
+  endLine: issue.endLine,
+  ...(issue.code ? { code: issue.code } : {}),
+  type: issue.severity,
+  id
+})
+
+/**
+ * Finds the errors, the warnings and the notable notes of a SAS log, and marks the
+ * lines they sit on.
+ *
+ * The parsing is `parseLog` from `@sasjs/utils`, the same function the VS Code
+ * extension uses, so a log reads the same in both: `ERROR:`/`WARNING:` with or
+ * without a message code, the colon-less form SAS also writes, wrapped lines
+ * folded into one issue, ODS HTML markup understood, and notes only from the
+ * closed notable list. This used to be a pair of regular expressions here, which
+ * missed every one of those.
+ *
+ * The returned `logLines` carry the marker wrapping, so `body` is what the log
+ * viewer renders - lines that are not issues are passed through untouched.
+ */
 export const parseErrorsAndWarnings = (log: string) => {
   const logLines = log.split('\n')
-  const errorLines: LogInstance[] = []
-  const warningLines: LogInstance[] = []
+  const issues = parseLog(log)
 
-  logLines.forEach((line: string, index: number) => {
-    // INFO: check if content in element starts with ERROR
-    if (/<.*>ERROR/gm.test(line)) {
-      const errorLine = line.substring(line.indexOf('E'), line.length - 1)
+  const collect = (severity: LogIssue['severity']): LogInstance[] =>
+    issues
+      .filter((issue) => issue.severity === severity)
+      .map((issue, id) => toInstance(issue, id))
 
-      errorLines.push({
-        body: errorLine,
-        line: index,
-        type: 'error',
-        id: errorLines.length
-      })
+  const errors = collect('error')
+  const warnings = collect('warning')
+  const notes = collect('note')
+
+  // Only errors and warnings are coloured: a log carries enough notes that
+  // colouring them too would drown the two lines that stopped the run.
+  for (const instance of [...errors, ...warnings]) {
+    if (logLines[instance.line] !== undefined) {
+      logLines[instance.line] = markLine(logLines[instance.line], instance)
     }
+  }
 
-    // INFO: check if line starts with ERROR
-    else if (/^ERROR/gm.test(line)) {
-      errorLines.push({
-        body: line,
-        line: index,
-        type: 'error',
-        id: errorLines.length
-      })
-
-      logLines[index] =
-        `<font id="error_${
-          errorLines.length - 1
-        }" style="color: red;" ref={scrollTo}>` +
-        logLines[index] +
-        '</font>'
-    }
-
-    // INFO: check if content in element starts with WARNING
-    else if (/<.*>WARNING/gm.test(line)) {
-      const warningLine = line.substring(line.indexOf('W'), line.length - 1)
-
-      warningLines.push({
-        body: warningLine,
-        line: index,
-        type: 'warning',
-        id: warningLines.length
-      })
-    }
-
-    // INFO: check if line starts with WARNING
-    else if (/^WARNING/gm.test(line)) {
-      warningLines.push({
-        body: line,
-        line: index,
-        type: 'warning',
-        id: warningLines.length
-      })
-
-      logLines[index] =
-        `<font id="warning_${warningLines.length - 1}" style="color: green;">` +
-        logLines[index] +
-        '</font>'
-    }
-  })
-
-  return { errors: errorLines, warnings: warningLines, logLines }
+  return { errors, warnings, notes, logLines }
 }
 
 export const defaultChunkSize = 20000

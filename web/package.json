@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:drivetree && npm run test:userhome && npm run test:lastfile",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:drivetree && npm run test:userhome && npm run test:lastfile && npm run test:logissues",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -17,7 +17,8 @@
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "test:userhome": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-user-home.mjs",
-    "test:lastfile": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-last-file.mjs"
+    "test:lastfile": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-last-file.mjs",
+    "test:logissues": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-log-issues.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -27,6 +28,7 @@
     "@mui/material": "9.4.0",
     "@mui/x-tree-view": "9.16.0",
     "@sasjs/sas-language": "0.2.2",
+    "@sasjs/utils": "4.3.1",
     "axios": "1.20.0",
     "monaco-editor": "0.52.2",
     "react": "19.3.0",

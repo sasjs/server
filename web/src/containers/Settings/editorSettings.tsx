@@ -52,6 +52,22 @@ const EditorSettings = () => {
           <Typography variant="caption" sx={{ marginLeft: 4 }}>
             Apply SASjs lint formatting to SAS files when saving in Studio
           </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings['log.notableNotes']}
+                onChange={(event) =>
+                  updateSetting('log.notableNotes', event.target.checked)
+                }
+              />
+            }
+            label="List notable log notes"
+          />
+          <Typography variant="caption" sx={{ marginLeft: 4 }}>
+            List the notable NOTE: lines of a SAS log beside its errors and
+            warnings - an uninitialized variable, invalid data, a format too
+            small for its value. Ordinary notes are never listed.
+          </Typography>
         </FormGroup>
       </CardContent>
     </Card>

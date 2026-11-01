@@ -15,10 +15,12 @@ export const SETTINGS_STORAGE_KEY = 'studio-settings'
  */
 export interface StudioSettings {
   'editor.formatOnSave': boolean
+  'log.notableNotes': boolean
 }
 
 export const defaultSettings: StudioSettings = {
-  'editor.formatOnSave': true
+  'editor.formatOnSave': true,
+  'log.notableNotes': true
 }
 
 /**

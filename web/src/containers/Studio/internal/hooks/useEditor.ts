@@ -185,12 +185,14 @@ const useEditor = ({
           const printOutput = resDataSplitted[2]
 
           if (selectedRunTime === RunTimeType.SAS) {
-            const { errors, warnings, logLines } = parseErrorsAndWarnings(log)
+            const { errors, warnings, notes, logLines } =
+              parseErrorsAndWarnings(log)
 
             const logObject: LogObject = {
               body: logLines.join(`\n`),
               errors,
               warnings,
+              notes,
               linesCount: logLines.length
             }
 

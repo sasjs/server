@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 
 import {
   Backdrop,
@@ -29,6 +29,7 @@ import {
   startSasLanguageService
 } from './internal/languages'
 import useEditor from './internal/hooks/useEditor'
+import { readSettings, writeSetting } from './internal/settings'
 import { RunTimeType } from '../../context/appContext'
 import { LogObject } from '../../utils'
 
@@ -135,6 +136,17 @@ const SASjsEditor = ({
   const logWithErrorsOrWarnings =
     selectedRunTime === RunTimeType.SAS && log && typeof log === 'object'
 
+  // The notable notes are listed by default and can be turned off, which is the
+  // same switch the Settings panel writes - so the button and the panel agree.
+  const [notesListed, setNotesListed] = useState(
+    () => readSettings()['log.notableNotes']
+  )
+
+  const toggleNotes = () => {
+    writeSetting('log.notableNotes', !notesListed)
+    setNotesListed(!notesListed)
+  }
+
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
@@ -178,7 +190,11 @@ const SASjsEditor = ({
                   value="log"
                   icon={
                     logWithErrorsOrWarnings ? (
-                      <LogTabWithIcons log={log as LogObject} />
+                      <LogTabWithIcons
+                        log={log as LogObject}
+                        notesListed={notesListed}
+                        onToggleNotes={toggleNotes}
+                      />
                     ) : (
                       ''
                     )
@@ -243,7 +259,11 @@ const SASjsEditor = ({
           </StyledTabPanel>
           <StyledTabPanel value="log">
             {log && (
-              <LogComponent log={log} selectedRunTime={selectedRunTime} />
+              <LogComponent
+                log={log}
+                selectedRunTime={selectedRunTime}
+                notesListed={notesListed}
+              />
             )}
           </StyledTabPanel>
           {webout && (

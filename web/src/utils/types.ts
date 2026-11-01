@@ -47,7 +47,11 @@ export interface TreeNode {
 export interface LogInstance {
   body: string
   line: number
-  type: 'error' | 'warning'
+  /** The line the message ended on, which differs from `line` when SAS wrapped it. */
+  endLine: number
+  /** SAS's own message identifier, e.g. `22-322`, where the message carries one. */
+  code?: string
+  type: 'error' | 'warning' | 'note'
   id: number
   ref?: any
 }
@@ -56,5 +60,7 @@ export interface LogObject {
   body: string
   errors?: LogInstance[]
   warnings?: LogInstance[]
+  /** The notable notes, which the reader can list or leave out. */
+  notes?: LogInstance[]
   linesCount: number
 }
