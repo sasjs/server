@@ -3,7 +3,6 @@ import sas9WebRouter from './sas9-web'
 import sasViyaWebRouter from './sasviya-web'
 import webRouter from './web'
 import { MOCK_SERVERTYPEType } from '../../utils'
-import { csrfProtection } from '../../middlewares'
 
 const router = express.Router()
 
@@ -19,7 +18,11 @@ switch (MOCK_SERVERTYPE) {
     break
   }
   default: {
-    router.use('/', csrfProtection, webRouter)
+    // The CSRF check is attached to the routes that change state (see
+    // webRouter's POSTs) rather than to the mount: a mount-level check refuses a
+    // POST to a path no route claims, answering 400 where the truth is 404
+    // (sasjs/server#495).
+    router.use('/', webRouter)
   }
 }
 
