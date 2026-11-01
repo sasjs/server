@@ -25,7 +25,7 @@ environment variables and serve the same API.
 ### npm
 
 ```bash
-npx @sasjs/server@3.6.2
+npx @sasjs/server@<version>
 ```
 
 Or install it once and run `sasjs-server` from then on:
@@ -41,8 +41,7 @@ the standalone executables are built for x64 only.
 
 Three things to know before choosing it:
 
-- **Pin the version**, as above: an unpinned `npx @sasjs/server` re-resolves
-  `latest` on every run, so a restart becomes a silent upgrade.
+- **Pin the version**, as above: `<version>` is a release from [the npm page](https://www.npmjs.com/package/@sasjs/server). An unpinned `npx @sasjs/server` re-resolves `latest` on every run, so a restart becomes a silent upgrade.
 - **`.env` is read from the working directory.** `dotenv.config()` is relative to
   where the process starts, so run it from the project directory you want the
   server to own (that directory also gets the `./sasjs_root`). Under `npx` the
@@ -415,50 +414,19 @@ LOG_LOCATION=./sasjs_root/logs
 
 ## Persisting the Session
 
-Normally the server process will stop when your terminal dies. To keep it going you can use the following suggested approaches:
+The server runs in the foreground and never detaches, so it lives exactly as long as whatever started it - a terminal, a task, a unit. Give it a supervisor for anything other than a workstation session. The full recipes (systemd, launchd, Windows Task Scheduler, WinSW/NSSM, pm2, nohup) are in [the deployment docs](https://server.sasjs.io/deployment/).
 
-1. Linux Background Job
-2. NPM package `pm2`
+The short version:
 
-### Background Job
+- **Linux and macOS**: a systemd unit with `Restart=on-failure`, or a launchd plist with `KeepAlive`. Set the working directory, because `.env` and `sasjs_root` resolve against it.
+- **Windows**: Task Scheduler at logon, or a WinSW/NSSM service. Set the working directory explicitly - a task's default is `C:\Windows\System32`.
+- **pm2**: `pm2 start sasjs-server --name sasjs-server`, then `pm2 startup` (which prints a command to run once) and `pm2 save`. Without those two a reboot starts nothing, and `pm2 startup` does nothing on Windows - use pm2-installer, Task Scheduler or a service wrapper there.
+- **`nohup ./api-linux > server.log 2>&1 &` plus `disown`**: survives the terminal and nothing else.
+- **`npx`**: a launcher, not a supervisor. It exits with the terminal, so for anything supervised install globally and hand `sasjs-server` to the supervisor.
 
-Trigger the command using NOHUP, redirecting the output commands, eg `nohup ./api-linux > server.log 2>&1 &`.
+Whichever you pick, capture stderr. The process exits 1 on a configuration error and on an unhandled rejection, and that line is the diagnosis; a console window that closes takes it with it.
 
-You can now see the job running using the `jobs` command. To ensure that it will still run when your terminal is closed, execute the `disown` command. To kill it later, use the `kill -9 <pid>` command. You can see your sessions using `top -u <userid>`. Type `c` to see the commands being run against each pid.
-
-### PM2
-
-Install the npm package [pm2](https://www.npmjs.com/package/pm2) (`npm install pm2@latest -g`) and execute, eg as follows:
-
-```bash
-export SAS_PATH=/opt/sas9/SASHome/SASFoundation/9.4/sasexe/sas
-export PORT=5001
-export SASJS_ROOT=./sasjs_root
-
-pm2 start api-linux
-```
-
-To get the logs (and some useful commands):
-
-```bash
-pm2 [list|ls|status]
-pm2 logs
-pm2 logs --lines 200
-```
-
-Managing processes:
-
-```
-pm2 restart app_name
-pm2 reload app_name
-pm2 stop app_name
-pm2 delete app_name
-```
-
-Instead of `app_name` you can pass:
-
-- `all` to act on all processes
-- `id` to act on a specific process id
+`GET /SASjsApi/info` answers without authentication and is the probe to use.
 
 ## Server Version
 
