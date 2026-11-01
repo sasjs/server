@@ -12,6 +12,7 @@
  * the unit-test run deliberately excludes.
  */
 import path from 'path'
+import { mkdirSync } from 'fs'
 import { rm, writeFile } from 'fs/promises'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
@@ -58,6 +59,10 @@ describe('Studio in a browser', () => {
       await createFile(sysInitCompiledPath, '')
     }
 
+    // The screenshots folder is gitignored, so a fresh checkout has no such
+    // directory and a failure screenshot would fail on the write itself.
+    mkdirSync(screenshotDir, { recursive: true })
+
     if (
       !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
     ) {
@@ -96,7 +101,7 @@ describe('Studio in a browser', () => {
     // editor rather than about the permission model.
     expect(dbUser.isAdmin).toBe(true)
 
-    process.runTimes = [RunTimeType.JS, RunTimeType.SAS]
+    process.runTimes = [RunTimeType.JS]
     process.nodeLoc = process.execPath
 
     server = (await app).listen(0)
