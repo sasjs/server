@@ -27,12 +27,28 @@ const describe = (reason: unknown): string => {
  *
  * The logger is the fallback rather than the primary because it also carries the
  * configured log level: a fatal error is not something to filter out.
+ *
+ * A partial write leaves the remainder for the next attempt, and `EAGAIN` - a
+ * pipe with no room right now - is retried a bounded number of times before the
+ * logger fallback, so a full pipe delays the line rather than losing it.
  */
 const writeFatal = (line: string): void => {
-  try {
-    writeSync(2, line)
-  } catch {
-    process.logger?.error(line)
+  let pending = Buffer.from(line)
+
+  for (let attempt = 0; attempt < 3 && pending.length; attempt++) {
+    try {
+      const written = writeSync(2, pending)
+
+      // a partial write leaves the remainder for the next attempt
+      pending = pending.subarray(written)
+    } catch (error: any) {
+      // EAGAIN is a pipe with no room right now, not a broken stderr
+      if (error?.code === 'EAGAIN') continue
+
+      process.logger?.error(line)
+
+      return
+    }
   }
 }
 

@@ -25,7 +25,9 @@ describe('installFatalGuards', () => {
     }) as any)
 
     writeSync.mockReset()
-    writeSync.mockImplementation(() => 0)
+    writeSync.mockImplementation(
+      ((_fd: number, buf: Buffer) => buf.length) as any
+    )
 
     dispose = installFatalGuards()
   })
@@ -39,7 +41,8 @@ describe('installFatalGuards', () => {
   const emit = (event: string, ...args: any[]) =>
     (process as any).emit(event, ...args)
 
-  const written = (call = 0): string => writeSync.mock.calls[call][1] as string
+  const written = (): string =>
+    writeSync.mock.calls.map((call) => String(call[1])).join('')
 
   it('writes the stack of an unhandled rejection to stderr and exits non-zero', () => {
     emit(
@@ -93,13 +96,60 @@ describe('installFatalGuards', () => {
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
+  it('writes the remainder after a partial write', () => {
+    let call = 0
+
+    writeSync.mockImplementation(((_fd: number, buf: Buffer) => {
+      call++
+
+      // the first attempt accepts half the line, as a nearly full pipe does
+      return call === 1 ? Math.floor(buf.length / 2) : buf.length
+    }) as any)
+
+    emit('uncaughtException', new Error('partial'), 'uncaughtException')
+
+    expect(writeSync).toHaveBeenCalledTimes(2)
+    expect(written()).toContain('fatal: uncaught exception')
+    expect(written()).toContain('partial')
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('retries EAGAIN instead of falling back to the async logger', () => {
+    const errorSpy = jest.fn()
+
+    process.logger = { error: errorSpy } as any
+
+    let call = 0
+
+    writeSync.mockImplementation(((_fd: number, buf: Buffer) => {
+      call++
+
+      if (call === 1) {
+        const busy: any = new Error('EAGAIN: resource temporarily unavailable')
+        busy.code = 'EAGAIN'
+        throw busy
+      }
+
+      return buf.length
+    }) as any)
+
+    emit('uncaughtException', new Error('pipe was full'), 'uncaughtException')
+
+    expect(writeSync).toHaveBeenCalledTimes(2)
+    expect(written()).toContain('pipe was full')
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
   it('falls back to the logger when stderr cannot be written', () => {
     const errorSpy = jest.fn()
 
     process.logger = { error: errorSpy } as any
 
     writeSync.mockImplementation(() => {
-      throw new Error('EBADF')
+      const broken: any = new Error('EBADF')
+      broken.code = 'EBADF'
+      throw broken
     })
 
     emit('uncaughtException', new Error('stderr is gone'), 'uncaughtException')
