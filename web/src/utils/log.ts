@@ -10,12 +10,18 @@ const MARKER_COLOURS: Record<string, string> = {
 }
 
 /**
- * Wraps a line in the anchor and colour the log viewer uses to render it and to
- * scroll to it. The `id` is `<type>_<index>`, which is what the tree entries look
- * up when a reader clicks one.
+ * Wraps a line in the anchor the log viewer scrolls to, and in a colour where the
+ * severity has one. The `id` is `<type>_<index>`, which is what a tree entry looks
+ * up when a reader clicks it - a note is anchored for that reason and left
+ * uncoloured, since a log carries enough notes that colouring them would drown
+ * the errors.
  */
-const markLine = (line: string, instance: LogInstance): string =>
-  `<font id="${instance.type}_${instance.id}" style="color: ${MARKER_COLOURS[instance.type]};">${line}</font>`
+const markLine = (line: string, instance: LogInstance): string => {
+  const colour = MARKER_COLOURS[instance.type]
+  const style = colour ? ` style="color: ${colour};"` : ''
+
+  return `<font id="${instance.type}_${instance.id}"${style}>${line}</font>`
+}
 
 const toInstance = (issue: LogIssue, id: number): LogInstance => ({
   body: issue.message,
@@ -53,9 +59,9 @@ export const parseErrorsAndWarnings = (log: string) => {
   const warnings = collect('warning')
   const notes = collect('note')
 
-  // Only errors and warnings are coloured: a log carries enough notes that
-  // colouring them too would drown the two lines that stopped the run.
-  for (const instance of [...errors, ...warnings]) {
+  // Every issue is anchored so its tree entry can scroll to it; only errors and
+  // warnings carry a colour.
+  for (const instance of [...errors, ...warnings, ...notes]) {
     if (logLines[instance.line] !== undefined) {
       logLines[instance.line] = markLine(logLines[instance.line], instance)
     }

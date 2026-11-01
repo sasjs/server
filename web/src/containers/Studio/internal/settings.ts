@@ -10,6 +10,22 @@
 export const SETTINGS_STORAGE_KEY = 'studio-settings'
 
 /**
+ * Listeners told when any setting is written.
+ *
+ * The store is localStorage, which React cannot observe, and more than one
+ * control writes the same key - the log tab's eye and the Settings panel's
+ * switch. Without this the two disagree until a reload.
+ */
+const listeners = new Set<() => void>()
+
+/** Registers a listener; returns the unsubscribe, as `useSyncExternalStore` expects. */
+export const subscribeToSettings = (listener: () => void): (() => void) => {
+  listeners.add(listener)
+
+  return () => void listeners.delete(listener)
+}
+
+/**
  * The settings Studio honours. Keys follow the VS Code `[section].[name]`
  * convention so the object reads like a settings.json.
  */
@@ -62,4 +78,6 @@ export const writeSetting = <K extends keyof StudioSettings>(
     SETTINGS_STORAGE_KEY,
     JSON.stringify({ ...readSettings(), [key]: value })
   )
+
+  listeners.forEach((listener) => listener())
 }

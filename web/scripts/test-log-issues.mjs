@@ -54,12 +54,19 @@ check(
   logLines[6].startsWith('<font id="error_0"') &&
     logLines[8].startsWith('<font id="error_1"')
 )
-check('the warning line is anchored', logLines[4].startsWith('<font id="warning_0"'))
+check(
+  'the warning line is anchored',
+  logLines[4].startsWith('<font id="warning_0"')
+)
 check('an error is coloured red', logLines[6].includes('color: red'))
 check('a warning is coloured green', logLines[4].includes('color: green'))
 
-check('a note is not coloured', !logLines[5].includes('<font'))
-check('a note is not anchored', !logLines[7].includes('<font'))
+check(
+  'a note is anchored, so its tree entry scrolls to it',
+  logLines[5].startsWith('<font id="note_0"') &&
+    logLines[7].startsWith('<font id="note_1"')
+)
+check('a note is not coloured', !logLines[5].includes('color:'))
 
 check('the line count is unchanged by marking', logLines.length === 10)
 check('a plain line is passed through', logLines[1] === '1    data want;')
@@ -67,9 +74,10 @@ check('a plain line is passed through', logLines[1] === '1    data want;')
 // A log with nothing to report must produce no lists at all, so the viewer shows
 // no tree rather than an empty one.
 const quiet = parseErrorsAndWarnings(
-  ['NOTE: There were 19 observations read from the data set SASHELP.CLASS.', ''].join(
-    '\n'
-  )
+  [
+    'NOTE: There were 19 observations read from the data set SASHELP.CLASS.',
+    ''
+  ].join('\n')
 )
 check('a quiet log lists no errors', quiet.errors.length === 0)
 check('a quiet log lists no warnings', quiet.warnings.length === 0)
@@ -77,7 +85,10 @@ check('a quiet log lists no notes', quiet.notes.length === 0)
 
 // An empty log is what an aborted run hands over.
 const empty = parseErrorsAndWarnings('')
-check('an empty log lists nothing', empty.errors.length === 0 && empty.logLines.length === 1)
+check(
+  'an empty log lists nothing',
+  empty.errors.length === 0 && empty.logLines.length === 1
+)
 
 if (failures.length) {
   console.error(`log issues: ${failures.length} check(s) failed`)
