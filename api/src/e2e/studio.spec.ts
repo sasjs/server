@@ -12,6 +12,7 @@
  * the unit-test run deliberately excludes.
  */
 import path from 'path'
+import { mkdirSync } from 'fs'
 import { rm, writeFile } from 'fs/promises'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
@@ -58,6 +59,10 @@ describe('Studio in a browser', () => {
       await createFile(sysInitCompiledPath, '')
     }
 
+    // The screenshots folder is gitignored, so a fresh checkout has no such
+    // directory and a failure screenshot would fail on the write itself.
+    mkdirSync(screenshotDir, { recursive: true })
+
     if (
       !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
     ) {
@@ -96,7 +101,10 @@ describe('Studio in a browser', () => {
     // editor rather than about the permission model.
     expect(dbUser.isAdmin).toBe(true)
 
-    process.runTimes = [RunTimeType.JS]
+    // The fixture is a .sas program, and this suite never executes code for
+    // real - the log case fulfils the execute request in the browser - so one
+    // runtime, the one the fixture needs, keeps the editor from switching it.
+    process.runTimes = [RunTimeType.SAS]
     process.nodeLoc = process.execPath
 
     server = (await app).listen(0)
@@ -109,7 +117,15 @@ describe('Studio in a browser', () => {
         : {}
     )
     page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
-    page.on('pageerror', (error) => pageErrors.push(String(error)))
+    page.on('pageerror', (error) => {
+      // A request the app aborts surfaces here as an unhandled rejection with
+      // axios's "Canceled: Canceled". That is a request superseded by a newer one
+      // - the editor re-syncing, a tab switching - not a fault in the tree, which
+      // is what this collector exists to catch.
+      if (String(error).includes('Canceled: Canceled')) return
+
+      pageErrors.push(String(error))
+    })
     page.on('request', (request) => {
       if (!request.url().includes('/SASjsApi/drive/fileTree')) return
 
@@ -374,4 +390,57 @@ describe('Studio in a browser', () => {
       path: path.join(screenshotDir, '03-completions.png')
     })
   }, 60000)
+
+  it('lists the errors, warnings and notable notes of a SAS log, and hides the notes on request', async () => {
+    // A SAS log, fulfilled here rather than run: the parser, the three lists and
+    // the switch are what this asserts, and none of them needs a SAS binary.
+    const log = [
+      'NOTE: SAS (r) Proprietary Software 9.4 (TS1M9 MBCS3170)',
+      '1    data want;',
+      '2      x = age / 0;',
+      '3    run;',
+      'WARNING: Division by zero detected at line 3 column 11.',
+      'NOTE: Variable y is uninitialized.',
+      'ERROR Libref X is not assigned.',
+      'NOTE 49-169: The meaning of an identifier after a quoted string may change.',
+      'ERROR: File WORK.MISSING_DS.DATA does not exist.',
+      ''
+    ].join('\n')
+
+    await page.route('**/SASjsApi/code/execute', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/plain',
+        body: ['<html></html>', log, ''].join(
+          'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
+        )
+      })
+    )
+
+    // The fixture program is a .sas file, so opening it selects the SAS runtime
+    // and the log pane will render the parsed shape.
+    await page.click('button:has-text("RUN")')
+
+    await page.waitForSelector('text=Errors (2)', { timeout: 30000 })
+    expect(await page.isVisible('text=Warnings (1)')).toBe(true)
+    expect(await page.isVisible('text=Notes (2)')).toBe(true)
+
+    await page.screenshot({
+      path: path.join(screenshotDir, '02-log-issues.png')
+    })
+
+    // The switch hides them without another run.
+    await page.click('[aria-label="Hide notable notes"]')
+    await page.waitForSelector('text=Notes (2)', {
+      state: 'detached',
+      timeout: 30000
+    })
+    expect(await page.isVisible('text=Errors (2)')).toBe(true)
+
+    // It is a setting, so it is remembered rather than held in the component.
+    const stored = await page.evaluate(() =>
+      window.localStorage.getItem('studio-settings')
+    )
+    expect(JSON.parse(stored as string)['log.notableNotes']).toBe(false)
+  }, 120000)
 })

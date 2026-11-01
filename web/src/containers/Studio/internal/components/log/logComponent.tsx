@@ -14,10 +14,12 @@ import classes from './log.module.css'
 interface LogComponentProps {
   log: LogObject | string
   selectedRunTime: RunTimeType | string
+  /** Whether the notable notes are listed. */
+  notesListed: boolean
 }
 
 const LogComponent = (props: LogComponentProps) => {
-  const { log, selectedRunTime } = props
+  const { log, selectedRunTime, notesListed } = props
   const logObject = log as LogObject
   const logChunks = splitIntoChunks(logObject?.body || '')
   const [logChunksState, setLogChunksState] = useState<boolean[]>(
@@ -108,8 +110,11 @@ const LogComponent = (props: LogComponentProps) => {
     }
   }
 
-  const hasErrorsOrWarnings =
-    logObject.errors?.length !== 0 || logObject.warnings?.length !== 0
+  const listedNotes = notesListed ? (logObject.notes ?? []) : []
+  const hasIssues =
+    (logObject.errors?.length ?? 0) > 0 ||
+    (logObject.warnings?.length ?? 0) > 0 ||
+    listedNotes.length > 0
   const logBody = typeof log === 'string' ? log : log.body
 
   return (
@@ -117,7 +122,7 @@ const LogComponent = (props: LogComponentProps) => {
       {selectedRunTime === RunTimeType.SAS && logObject.body ? (
         <div id="logWrapper" className={classes.LogWrapper}>
           <div>
-            {hasErrorsOrWarnings && (
+            {hasIssues && (
               <div className={classes.TreeContainer}>
                 <SimpleTreeView
                   slots={{ collapseIcon: ExpandMore, expandIcon: ChevronRight }}
@@ -158,6 +163,23 @@ const LogComponent = (props: LogComponentProps) => {
                             onClick={() => goToLogLine(warning, ind)}
                           />
                         ))}
+                    </TreeItem>
+                  )}
+                  {listedNotes.length !== 0 && (
+                    <TreeItem
+                      itemId="notes"
+                      label={
+                        <Typography>{`Notes (${listedNotes.length})`}</Typography>
+                      }
+                    >
+                      {listedNotes.map((note, ind) => (
+                        <TreeItem
+                          itemId={`note_${ind}`}
+                          label={<ListItemText primary={note.body} />}
+                          key={`note_${ind}`}
+                          onClick={() => goToLogLine(note, ind)}
+                        />
+                      ))}
                     </TreeItem>
                   )}
                 </SimpleTreeView>

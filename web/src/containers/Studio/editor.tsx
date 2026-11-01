@@ -31,6 +31,7 @@ import {
 import useEditor from './internal/hooks/useEditor'
 import { RunTimeType } from '../../context/appContext'
 import { LogObject } from '../../utils'
+import { useSetting } from '../../utils/hooks'
 
 // Registered at import time, so Monaco knows the language before the first
 // editor model is created.
@@ -135,6 +136,13 @@ const SASjsEditor = ({
   const logWithErrorsOrWarnings =
     selectedRunTime === RunTimeType.SAS && log && typeof log === 'object'
 
+  // The notable notes are listed by default and can be turned off. The Settings
+  // panel writes the same key, so the value comes from the store rather than from
+  // component state: either control moves both.
+  const [notesListed, setNotesListed] = useSetting('log.notableNotes')
+
+  const toggleNotes = () => setNotesListed(!notesListed)
+
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
@@ -178,7 +186,11 @@ const SASjsEditor = ({
                   value="log"
                   icon={
                     logWithErrorsOrWarnings ? (
-                      <LogTabWithIcons log={log as LogObject} />
+                      <LogTabWithIcons
+                        log={log as LogObject}
+                        notesListed={notesListed}
+                        onToggleNotes={toggleNotes}
+                      />
                     ) : (
                       ''
                     )
@@ -243,7 +255,11 @@ const SASjsEditor = ({
           </StyledTabPanel>
           <StyledTabPanel value="log">
             {log && (
-              <LogComponent log={log} selectedRunTime={selectedRunTime} />
+              <LogComponent
+                log={log}
+                selectedRunTime={selectedRunTime}
+                notesListed={notesListed}
+              />
             )}
           </StyledTabPanel>
           {webout && (

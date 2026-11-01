@@ -1,4 +1,9 @@
-import { ErrorOutlined, Warning } from '@mui/icons-material'
+import {
+  ErrorOutlined,
+  Visibility,
+  VisibilityOff,
+  Warning
+} from '@mui/icons-material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import {
   LogObject,
@@ -10,10 +15,14 @@ import classes from './log.module.css'
 
 interface LogTabProps {
   log: LogObject
+  /** Whether the notable notes are listed, and the switch that changes it. */
+  notesListed: boolean
+  onToggleNotes: () => void
 }
 
 const LogTabWithIcons = (props: LogTabProps) => {
-  const { errors, warnings, body } = props.log
+  const { errors, warnings, notes, body } = props.log
+  const { notesListed, onToggleNotes } = props
 
   return (
     <div className={classes.TabContainer}>
@@ -24,6 +33,28 @@ const LogTabWithIcons = (props: LogTabProps) => {
       {warnings && warnings.length !== 0 && (
         <Warning className={[classes.Icon, classes.GreenIcon].join(' ')} />
       )}
+      <Tooltip
+        title={notesListed ? 'Hide notable notes' : 'Show notable notes'}
+        onClick={(evt) => {
+          // The tab is a button: without this the click also switches tabs.
+          evt.stopPropagation()
+          onToggleNotes()
+        }}
+      >
+        {notesListed ? (
+          <VisibilityOff
+            fontSize="small"
+            className={classes.Icon}
+            aria-label="Hide notable notes"
+          />
+        ) : (
+          <Visibility
+            fontSize="small"
+            className={[classes.Icon, classes.GreenIcon].join(' ')}
+            aria-label="Show notable notes"
+          />
+        )}
+      </Tooltip>
       <Tooltip
         title="Download entire log"
         onClick={(evt) => {

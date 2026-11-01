@@ -20,8 +20,13 @@ globalThis.localStorage = {
   removeItem: (key) => void backing.delete(key)
 }
 
-const { SETTINGS_STORAGE_KEY, defaultSettings, readSettings, writeSetting } =
-  await import('../src/containers/Studio/internal/settings.ts')
+const {
+  SETTINGS_STORAGE_KEY,
+  defaultSettings,
+  readSettings,
+  subscribeToSettings,
+  writeSetting
+} = await import('../src/containers/Studio/internal/settings.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -75,6 +80,22 @@ check(
   'a value of the wrong type is ignored',
   settings['editor.formatOnSave'] === true
 )
+
+// Two controls can own one key - the log tab's eye and the Settings panel switch -
+// so a write has to reach every reader rather than the component that made it.
+let notified = 0
+const unsubscribe = subscribeToSettings(() => notified++)
+
+writeSetting('log.notableNotes', false)
+check('a write notifies the listeners', notified === 1)
+check(
+  'the listener reads the value that was written',
+  readSettings()['log.notableNotes'] === false
+)
+
+unsubscribe()
+writeSetting('log.notableNotes', true)
+check('an unsubscribed listener is not notified', notified === 1)
 
 if (failures.length) {
   console.error(`settings store: ${failures.length} check(s) failed`)

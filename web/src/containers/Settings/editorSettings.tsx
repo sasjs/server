@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   Card,
   CardContent,
@@ -10,11 +9,7 @@ import {
   Typography
 } from '@mui/material'
 
-import {
-  StudioSettings,
-  readSettings,
-  writeSetting
-} from '../../containers/Studio/internal/settings'
+import { useSetting } from '../../utils/hooks'
 
 /**
  * The editor section of Settings. Every entry reads from and writes to the
@@ -22,15 +17,10 @@ import {
  * consult at the moment they run.
  */
 const EditorSettings = () => {
-  const [settings, setSettings] = useState<StudioSettings>(readSettings)
-
-  const updateSetting = <K extends keyof StudioSettings>(
-    key: K,
-    value: StudioSettings[K]
-  ) => {
-    writeSetting(key, value)
-    setSettings(readSettings())
-  }
+  // Both settings are read through the store, so a change made by the log tab's
+  // eye is reflected on this panel's switch without a reload.
+  const [formatOnSave, setFormatOnSave] = useSetting('editor.formatOnSave')
+  const [listedNotes, setListedNotes] = useSetting('log.notableNotes')
 
   return (
     <Card>
@@ -41,16 +31,28 @@ const EditorSettings = () => {
           <FormControlLabel
             control={
               <Switch
-                checked={settings['editor.formatOnSave']}
-                onChange={(event) =>
-                  updateSetting('editor.formatOnSave', event.target.checked)
-                }
+                checked={formatOnSave}
+                onChange={(event) => setFormatOnSave(event.target.checked)}
               />
             }
             label="Format On Save"
           />
           <Typography variant="caption" sx={{ marginLeft: 4 }}>
             Apply SASjs lint formatting to SAS files when saving in Studio
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={listedNotes}
+                onChange={(event) => setListedNotes(event.target.checked)}
+              />
+            }
+            label="List notable log notes"
+          />
+          <Typography variant="caption" sx={{ marginLeft: 4 }}>
+            List the notable NOTE: lines of a SAS log beside its errors and
+            warnings - an uninitialized variable, invalid data, a format too
+            small for its value. Ordinary notes are never listed.
           </Typography>
         </FormGroup>
       </CardContent>
