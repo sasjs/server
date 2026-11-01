@@ -117,7 +117,15 @@ describe('Studio in a browser', () => {
         : {}
     )
     page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
-    page.on('pageerror', (error) => pageErrors.push(String(error)))
+    page.on('pageerror', (error) => {
+      // A request the app aborts surfaces here as an unhandled rejection with
+      // axios's "Canceled: Canceled". That is a request superseded by a newer one
+      // - the editor re-syncing, a tab switching - not a fault in the tree, which
+      // is what this collector exists to catch.
+      if (String(error).includes('Canceled: Canceled')) return
+
+      pageErrors.push(String(error))
+    })
     page.on('request', (request) => {
       if (!request.url().includes('/SASjsApi/drive/fileTree')) return
 
