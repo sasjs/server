@@ -12,10 +12,12 @@ import { ModeType } from '../../../utils'
  * response cannot tell a typo in the URL from a token problem, and a frontend
  * developer reading it sees a CSRF error for a URL that simply does not exist.
  *
- * Desktop mode made it worse, where the check guards nothing: authenticateToken
- * hands every request the fixed local user and a placeholder access token
- * without asking for a credential, so a token bound to the caller's session
- * protects nothing the caller could not have by asking.
+ * The check stays on in desktop mode. It is the only cross-site defence that
+ * mode has - authenticateToken hands every request the fixed local user without
+ * asking for a credential, which is exactly what makes the session-bound token
+ * load bearing: without it, any page the user's browser has open can drive a
+ * POST at the local server. Fixing the 404-versus-400 confusion does not need
+ * the check dropped, so it is kept.
  */
 describe('CSRF and routing order', () => {
   let app: Express
@@ -66,12 +68,13 @@ describe('CSRF and routing order', () => {
       expect(response.status).toBe(404)
     })
 
-    it('does not refuse a login for want of a token', async () => {
+    it('still refuses a login that carries no token', async () => {
       const response = await request(app)
         .post('/SASLogon/login')
         .send({ username: 'someone', password: 'something' })
 
-      expect(response.text).not.toContain('Invalid CSRF token!')
+      expect(response.status).toBe(400)
+      expect(response.text).toContain('Invalid CSRF token!')
     })
   })
 })
