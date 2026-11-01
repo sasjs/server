@@ -141,6 +141,25 @@ describe('installFatalGuards', () => {
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
+  it('falls back to the logger when the pipe stays full past the retries', () => {
+    const errorSpy = jest.fn()
+
+    process.logger = { error: errorSpy } as any
+
+    writeSync.mockImplementation(() => {
+      const busy: any = new Error('EAGAIN')
+      busy.code = 'EAGAIN'
+      throw busy
+    })
+
+    emit('uncaughtException', new Error('never drains'), 'uncaughtException')
+
+    expect(writeSync).toHaveBeenCalledTimes(3)
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    expect(errorSpy.mock.calls[0][0]).toContain('never drains')
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
   it('falls back to the logger when stderr cannot be written', () => {
     const errorSpy = jest.fn()
 
