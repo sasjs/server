@@ -2,7 +2,9 @@
 import { Express } from 'express'
 import appPromise from './app'
 import { listen } from './listen'
-import { resolveListeners } from './utils'
+import { installFatalGuards, resolveListeners } from './utils'
+
+installFatalGuards()
 
 appPromise.then(async (app: Express) => {
   const { config, errors, warnings } = resolveListeners(process.env)
