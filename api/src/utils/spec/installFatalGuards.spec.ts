@@ -1,19 +1,31 @@
+// writeSync on the real `fs` is a non-configurable property, so the module is
+// replaced rather than spied: the guard under test imports `writeSync` by name,
+// which the factory below swaps for a mock.
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  writeSync: jest.fn()
+}))
+
+import * as fs from 'fs'
+
 import { installFatalGuards } from '..'
 
+const writeSync = fs.writeSync as unknown as jest.Mock
+
 describe('installFatalGuards', () => {
-  const errorSpy = jest.fn()
+  const originalLogger = process.logger
+
   let exitSpy: jest.SpyInstance
   let dispose: () => void
 
   beforeEach(() => {
-    errorSpy.mockClear()
-
-    process.logger = { error: errorSpy } as any
-
     exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => {
       // node's own process.exit never returns; a mock that returns is what lets
       // the assertions below run after the call
     }) as any)
+
+    writeSync.mockReset()
+    writeSync.mockImplementation(() => 0)
 
     dispose = installFatalGuards()
   })
@@ -21,50 +33,79 @@ describe('installFatalGuards', () => {
   afterEach(() => {
     dispose()
     exitSpy.mockRestore()
+    process.logger = originalLogger
   })
 
   const emit = (event: string, ...args: any[]) =>
     (process as any).emit(event, ...args)
 
-  it('logs the stack of an unhandled rejection and exits non-zero', () => {
-    const reason = new Error('session lookup failed')
+  const written = (call = 0): string => writeSync.mock.calls[call][1] as string
 
-    emit('unhandledRejection', reason, Promise.resolve())
+  it('writes the stack of an unhandled rejection to stderr and exits non-zero', () => {
+    emit(
+      'unhandledRejection',
+      new Error('session lookup failed'),
+      Promise.resolve()
+    )
 
-    expect(errorSpy).toHaveBeenCalledTimes(1)
+    expect(writeSync).toHaveBeenCalledTimes(1)
+    expect(writeSync.mock.calls[0][0]).toBe(2)
 
-    const message = errorSpy.mock.calls[0][0] as string
-
-    expect(message).toContain('fatal: unhandled promise rejection')
-    expect(message).toContain('session lookup failed')
-    expect(message).toContain('Error: session lookup failed')
+    expect(written()).toContain('fatal: unhandled promise rejection')
+    expect(written()).toContain('session lookup failed')
+    expect(written()).toContain('Error: session lookup failed')
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
   it('exits on an uncaught exception', () => {
     emit('uncaughtException', new Error('boom'), 'uncaughtException')
 
-    const message = errorSpy.mock.calls[0][0] as string
-
-    expect(message).toContain('fatal: uncaught exception')
-    expect(message).toContain('boom')
+    expect(written()).toContain('fatal: uncaught exception')
+    expect(written()).toContain('boom')
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
   it('reports a rejection reason that is not an Error', () => {
     emit('unhandledRejection', { code: 'ECONNRESET' }, Promise.resolve())
 
-    const message = errorSpy.mock.calls[0][0] as string
-
-    expect(message).toContain('fatal: unhandled promise rejection')
-    expect(message).toContain('ECONNRESET')
+    expect(written()).toContain('fatal: unhandled promise rejection')
+    expect(written()).toContain('ECONNRESET')
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
   it('reports a string reason as it is', () => {
     emit('uncaughtException', 'something broke', 'uncaughtException')
 
-    expect(errorSpy.mock.calls[0][0]).toContain('something broke')
+    expect(written()).toContain('something broke')
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('does not need process.logger to be initialised', () => {
+    process.logger = undefined as any
+
+    emit(
+      'uncaughtException',
+      new Error('before the logger exists'),
+      'uncaughtException'
+    )
+
+    expect(written()).toContain('before the logger exists')
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('falls back to the logger when stderr cannot be written', () => {
+    const errorSpy = jest.fn()
+
+    process.logger = { error: errorSpy } as any
+
+    writeSync.mockImplementation(() => {
+      throw new Error('EBADF')
+    })
+
+    emit('uncaughtException', new Error('stderr is gone'), 'uncaughtException')
+
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    expect(errorSpy.mock.calls[0][0]).toContain('stderr is gone')
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
@@ -85,7 +126,7 @@ describe('installFatalGuards', () => {
     emit('unhandledRejection', new Error('ignored'), Promise.resolve())
     emit('uncaughtException', new Error('ignored'), 'uncaughtException')
 
-    expect(errorSpy).not.toHaveBeenCalled()
+    expect(writeSync).not.toHaveBeenCalled()
     expect(exitSpy).not.toHaveBeenCalled()
   })
 })

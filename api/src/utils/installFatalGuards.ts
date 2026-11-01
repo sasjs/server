@@ -1,3 +1,4 @@
+import { writeSync } from 'fs'
 import { inspect } from 'util'
 
 /** The stack of an Error, the value itself for a string, and an inspection otherwise. */
@@ -11,6 +12,27 @@ const describe = (reason: unknown): string => {
     return inspect(reason, { depth: 3 })
   } catch {
     return String(reason)
+  }
+}
+
+/**
+ * Writes the line synchronously to stderr.
+ *
+ * `process.logger` and the console transports reach stderr through a stream, and
+ * a stream write to a pipe is asynchronous on POSIX - which is what stderr is
+ * under journald, `pm2 logs` and a Task Scheduler output file. The `exit` that
+ * follows can therefore pre-empt the write, and the diagnosis is the one thing
+ * this path exists to deliver. `writeSync` on fd 2 has landed by the time the
+ * next statement runs.
+ *
+ * The logger is the fallback rather than the primary because it also carries the
+ * configured log level: a fatal error is not something to filter out.
+ */
+const writeFatal = (line: string): void => {
+  try {
+    writeSync(2, line)
+  } catch {
+    process.logger?.error(line)
   }
 }
 
@@ -30,6 +52,9 @@ const describe = (reason: unknown): string => {
  * a Task Scheduler output file - now gets a line that names the event as well
  * as the stack.
  *
+ * Neither handler depends on `process.logger` being set, so the guards can be
+ * installed before the app initialises.
+ *
  * @returns a function that removes the listeners again, for tests and for an
  * embedder that supplies its own.
  */
@@ -37,8 +62,8 @@ export const installFatalGuards = (): (() => void) => {
   const fatal =
     (kind: string) =>
     (reason: unknown, _promise?: Promise<unknown>): void => {
-      process.logger.error(
-        `[server] fatal: ${kind} - the process is exiting\n${describe(reason)}`
+      writeFatal(
+        `[server] fatal: ${kind} - the process is exiting\n${describe(reason)}\n`
       )
       process.exit(1)
     }
