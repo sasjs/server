@@ -101,7 +101,10 @@ describe('Studio in a browser', () => {
     // editor rather than about the permission model.
     expect(dbUser.isAdmin).toBe(true)
 
-    process.runTimes = [RunTimeType.JS]
+    // The fixture is a .sas program, and this suite never executes code for
+    // real - the log case fulfils the execute request in the browser - so one
+    // runtime, the one the fixture needs, keeps the editor from switching it.
+    process.runTimes = [RunTimeType.SAS]
     process.nodeLoc = process.execPath
 
     server = (await app).listen(0)
