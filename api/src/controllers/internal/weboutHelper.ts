@@ -196,14 +196,25 @@ module.exports = function (config) {
     )
   }
 
-  /* True once OPEN has written the body, so the generated tail does not write
-   * the _webout variable over it. */
+  /* True once OPEN has written the body, so the tail does not write the _webout
+   * variable over it. */
   webout.streamed = () => streamed
 
-  /* Reports a body the program left unfinished. It does not repair it: an
-   * unclosed object is invalid JSON, exactly as a SAS program that omits
+  /* Writes the body the program left in _webout, when it did not use webout(),
+   * and reports anything the program left unfinished. It does not repair an
+   * unclosed object: that is invalid JSON, exactly as a SAS program that omits
    * %ms_webout(CLOSE) leaves one. */
-  webout.finalise = () => {
+  webout.finalise = (body) => {
+    if (streamed) {
+      if (body)
+        console.log(
+          'webout: _webout was assigned as well as using webout() - ' +
+            'the assignment is ignored'
+        )
+    } else if (body) {
+      fs.writeFileSync(config.weboutPath, body)
+    }
+
     if (opened)
       console.log(
         "webout: webout('OPEN') was called but webout('CLOSE') was not - " +

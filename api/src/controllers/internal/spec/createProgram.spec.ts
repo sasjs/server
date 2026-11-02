@@ -407,17 +407,20 @@ _webout = 'assigned too'
       expect(headers).toEqual('content-type: text/html; charset=utf-8')
     })
 
-    it('lets the program require fs itself', async () => {
+    it('lets the program declare its own fs and webout', async () => {
       const { body, failed, stderr } = await runProgram(`
 const fs = require('fs')
-fs.writeFileSync(weboutPath, 'from the program')
+const webout = { mine: true }
+_webout = 'declared both ok'
 `)
 
-      // Before the runtime assigned fs as a global, this failed to parse with
-      // "Identifier 'fs' has already been declared" and returned no body.
+      // fs and webout are bound on globalThis, and the tail uses the reserved
+      // _sasjs_webout handle - so a program's own declarations shadow the
+      // convenience names instead of failing to parse with "Identifier ... has
+      // already been declared".
       expect(stderr).not.toContain('already been declared')
       expect(failed).toEqual(false)
-      expect(body).toEqual('from the program')
+      expect(body).toEqual('declared both ok')
     })
   })
 

@@ -53,7 +53,7 @@ const _METAUSER = _SASJS_USERNAME;
 const SASJSPROCESSMODE = 'Stored Program';
 
 /* %ms_webout() for JS - webout('OPEN'), webout('OBJ', name, rows), webout('CLOSE') */
-const webout = require('./${weboutHelperFileName}')({
+const _sasjs_webout = require('./${weboutHelperFileName}')({
   weboutPath: weboutPath,
   headersPath: _SASJS_WEBOUT_HEADERS,
   program: ${asLiteral(vars._program)},
@@ -62,11 +62,12 @@ const webout = require('./${weboutHelperFileName}')({
   userId: _SASJS_USERID,
   apiServerUrl: _SASJS_APISERVERURL
 });
+globalThis.webout = _sasjs_webout;
 `
 
-  // Assigned as a global rather than declared as a const, so a program that
-  // requires fs itself declares it in its own scope instead of colliding with
-  // the runtime's declaration and failing to parse.
+  // Both are assigned as globals rather than declared as consts, so a program
+  // that declares its own `fs` or `webout` shadows it in its own scope instead
+  // of colliding with the runtime's declaration and failing to parse.
   const requiredModules = `globalThis.fs = require('fs')`
 
   program = `
@@ -79,22 +80,10 @@ ${preProgramVarStatments}
 /* actual job code */
 ${program}
 
-/* webout() streams its own body as it is called - _webout is written here */
-if (!webout.streamed()) {
-  /* write webout file only if webout exists */
-  if (_webout) {
-    fs.writeFile(weboutPath, _webout, function (err) {
-      if (err) throw err;
-    })
-  }
-} else if (_webout) {
-  console.log(
-    'webout: _webout was assigned as well as using webout() - the assignment is ignored'
-  )
-}
-
-/* reports a body left unfinished by a missing webout('CLOSE') */
-webout.finalise()
+/* webout() streams its own body as it is called. _webout is written here, and
+   anything the program left unfinished is reported - the reserved handle is
+   used so a program that declares its own webout cannot break this. */
+_sasjs_webout.finalise(_webout)
 `
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs?.filesNamesMap) {
