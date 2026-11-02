@@ -65,11 +65,23 @@ module.exports = function (config) {
     fs.appendFileSync(config.weboutPath, text, 'utf-8')
 
   /* Every member after SYSTIME carries its own leading comma, so a caller
-   * never has to track commas between tables. */
+   * never has to track commas between tables. A value that is undefined
+   * stringifies to the text 'undefined', which would make the whole envelope
+   * unparseable, so it is written as null instead. */
   const member = (name, value) =>
-    append(',' + JSON.stringify(String(name)) + ':' + JSON.stringify(value))
+    append(
+      ',' +
+        JSON.stringify(String(name)) +
+        ':' +
+        JSON.stringify(value === undefined ? null : value)
+    )
 
   const open = () => {
+    if (closed)
+      throw new Error(
+        "webout('OPEN') cannot follow webout('CLOSE') - the body is already complete"
+      )
+
     if (opened)
       throw new Error(
         "webout('OPEN') has already been called - call webout('CLOSE') first"
@@ -136,10 +148,12 @@ module.exports = function (config) {
   }
 
   const close = () => {
+    /* Test the closed state first: after a successful CLOSE, 'opened' is false,
+     * so checking 'opened' first reports a duplicate CLOSE as a missing OPEN. */
+    if (closed) throw new Error("webout('CLOSE') has already been called")
+
     if (!opened)
       throw new Error("webout('CLOSE') requires webout('OPEN') first")
-
-    if (closed) throw new Error("webout('CLOSE') has already been called")
 
     member('_DEBUG', config.debug)
     member('_PROGRAM', config.program)
