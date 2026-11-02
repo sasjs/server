@@ -9,6 +9,7 @@ import {
   createSASProgram,
   createViyaSASProgram
 } from '..'
+import { extractHeaders } from '../../../utils'
 /**
  * The generated stored-program source is assembled by string concatenation, so
  * a caller-controlled value that is not escaped can close the literal it was
@@ -348,6 +349,24 @@ webout('OPEN')
       expect(parsed.SYSTCPIPHOSTNAME).toBeNull()
       expect(parsed.MF_GETUSER).toBeNull()
       expect(parsed._PROGRAM).toBeNull()
+    })
+
+    it('lets the program override the content type after OPEN', async () => {
+      const { body, headers, failed } = await runProgram(`
+webout('OPEN')
+webout('OBJ', 'rows', [{ a: 1 }])
+fs.appendFileSync(_SASJS_WEBOUT_HEADERS, '\\ncontent-type: text/csv\\n')
+webout('CLOSE')
+`)
+
+      expect(failed).toEqual(false)
+      expect(JSON.parse(body).rows).toEqual([{ a: 1 }])
+
+      // Execution builds the response headers through extractHeaders, which
+      // takes the LAST record it sees for a key. Asserting precedence here is
+      // what stops a change in that rule from serving every JSON body as
+      // text/html without a failing test.
+      expect(extractHeaders(headers)['content-type']).toEqual('text/csv')
     })
 
     it('reports a missing CLOSE without repairing it', async () => {
