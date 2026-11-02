@@ -139,8 +139,15 @@ export class SessionController {
         } else {
           const { expiresAfterMins } = session
 
-          // delay session destroy if expiresAfterMins present
-          if (expiresAfterMins && session.state !== SessionState.completed) {
+          // Delay the destroy when the caller asked for a retention window.
+          //
+          // The window is documented as counting from completion, so a
+          // *completed* session has to honour it - excluding that state, as an
+          // earlier version did, meant the request could never take effect: a
+          // finished session was deleted at creation + 15 minutes however long
+          // the caller asked to keep it, and a poller that followed a triggered
+          // program lost the log and the output
+          if (expiresAfterMins && !expiresAfterMins.used) {
             // calculate session death time using expiresAfterMins
             const newDeathTimeStamp =
               parseInt(session.deathTimeStamp) +

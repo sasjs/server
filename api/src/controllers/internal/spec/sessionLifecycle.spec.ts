@@ -90,6 +90,32 @@ describe('session lifecycle', () => {
     await deleteFolder(session.path)
   })
 
+  // The retention window is documented as counting from completion, and a
+  // completed session is the case a caller polls for: excluding that state, as
+  // this used to, meant the request could never take effect and the log and
+  // output of a triggered program were deleted at creation + 15 minutes
+  // however long the caller asked to keep them.
+  it('keeps a completed session for the retention window the caller asked for', async () => {
+    const session = makeSession(300, SessionState.completed)
+    session.expiresAfterMins = { mins: 0.02, used: false }
+
+    await createFile(path.join(session.path, 'log.log'), 'the only copy')
+    track(controller, session)
+
+    scheduleDestroy(controller, session)
+    await delay(900)
+
+    // past its death time, still readable
+    expect(await folderExists(session.path)).toEqual(true)
+    expect(controller.getSessionById(session.id)).toBeDefined()
+    expect(session.expiresAfterMins!.used).toEqual(true)
+
+    // and gone once the window is spent, so it is a delay and not a leak
+    await delay(2000)
+    expect(await folderExists(session.path)).toEqual(false)
+    expect(controller.getSessionById(session.id)).toBeUndefined()
+  })
+
   it('schedules destruction for every runtime, not just sas', async () => {
     // The base controller is what js, py, r and sasviya sessions use; the local
     // sas controller only overrides how a session is created.
