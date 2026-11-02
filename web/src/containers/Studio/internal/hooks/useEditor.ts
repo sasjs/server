@@ -18,7 +18,11 @@ import {
   useSnackbar,
   useStateWithCallback
 } from '../../../../utils/hooks'
-import { parseErrorsAndWarnings, LogObject } from '../../../../utils'
+import {
+  parseErrorsAndWarnings,
+  countLines,
+  LogObject
+} from '../../../../utils'
 import { lintModel } from '../lint'
 import { formatSasCode } from '../format'
 import { readSettings } from '../settings'
@@ -185,15 +189,14 @@ const useEditor = ({
           const printOutput = resDataSplitted[2]
 
           if (selectedRunTime === RunTimeType.SAS) {
-            const { errors, warnings, notes, logLines } =
-              parseErrorsAndWarnings(log)
+            const { errors, warnings, notes } = parseErrorsAndWarnings(log)
 
             const logObject: LogObject = {
-              body: logLines.join(`\n`),
+              body: log,
               errors,
               warnings,
               notes,
-              linesCount: logLines.length
+              linesCount: countLines(log)
             }
 
             setLog(logObject)

@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
 import { TreeItem } from '@mui/x-tree-view/TreeItem'
 import { ChevronRight, ExpandMore } from '@mui/icons-material'
 import { Typography } from '@mui/material'
 import { ListItemText } from '@mui/material'
-import Highlight from 'react-highlight'
 import { LogObject, defaultChunkSize } from '../../../../../utils'
 import { RunTimeType } from '../../../../../context/appContext'
 import { splitIntoChunks, LogInstance } from '../../../../../utils'
@@ -22,6 +21,16 @@ const LogComponent = (props: LogComponentProps) => {
   const { log, selectedRunTime, notesListed } = props
   const logObject = log as LogObject
   const logChunks = splitIntoChunks(logObject?.body || '')
+  // Parsed once for the whole log: the chunk views anchor the lines these
+  // issues sit on rather than re-parsing their own slice.
+  const markers = useMemo(
+    () => [
+      ...(logObject?.errors ?? []),
+      ...(logObject?.warnings ?? []),
+      ...(logObject?.notes ?? [])
+    ],
+    [logObject]
+  )
   const [logChunksState, setLogChunksState] = useState<boolean[]>(
     new Array(logChunks.length).fill(false)
   )
@@ -187,52 +196,38 @@ const LogComponent = (props: LogComponentProps) => {
             )}
           </div>
           <div className={classes.ChunksContainer}>
-            {Array.isArray(logChunks) ? (
-              logChunks.map((chunk: string, id: number) => (
-                <LogChunk
-                  id={id}
-                  text={chunk}
-                  expanded={logChunksState[id]}
-                  key={`log-chunk-${id}`}
-                  logLineCount={logObject.linesCount}
-                  scrollToLogInstance={scrollToLogInstance}
-                  updated={Date.now()}
-                  onClick={(_, chunkNumber) => {
-                    setLogChunksState((prevState) => {
-                      const newState = [...prevState]
-                      const expand = !newState[chunkNumber]
+            {logChunks.map((chunk: string, id: number) => (
+              <LogChunk
+                id={id}
+                text={chunk}
+                expanded={logChunksState[id]}
+                key={`log-chunk-${id}`}
+                logLineCount={logObject.linesCount}
+                markers={markers}
+                scrollToLogInstance={scrollToLogInstance}
+                updated={Date.now()}
+                onClick={(_, chunkNumber) => {
+                  setLogChunksState((prevState) => {
+                    const newState = [...prevState]
+                    const expand = !newState[chunkNumber]
 
-                      newState[chunkNumber] = expand
+                    newState[chunkNumber] = expand
 
-                      if (expand) {
-                        const chunkToCollapse = getChunkToAutoCollapse()
+                    if (expand) {
+                      const chunkToCollapse = getChunkToAutoCollapse()
 
-                        if (chunkToCollapse !== undefined) {
-                          newState[chunkToCollapse] = false
-                        }
+                      if (chunkToCollapse !== undefined) {
+                        newState[chunkToCollapse] = false
                       }
+                    }
 
-                      return newState
-                    })
+                    return newState
+                  })
 
-                    setScrollToLogInstance(undefined)
-                  }}
-                />
-              ))
-            ) : (
-              <Typography
-                id={`log_container`}
-                variant="h5"
-                className={[
-                  classes.expansionDescription,
-                  classes.LogContainer
-                ].join(' ')}
-              >
-                <Highlight className={'html'} innerHTML={true}>
-                  {logChunks}
-                </Highlight>
-              </Typography>
-            )}
+                  setScrollToLogInstance(undefined)
+                }}
+              />
+            ))}
           </div>
         </div>
       ) : (

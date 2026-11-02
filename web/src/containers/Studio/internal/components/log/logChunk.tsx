@@ -1,6 +1,5 @@
 import { useState, useEffect, SyntheticEvent } from 'react'
 import { Typography } from '@mui/material'
-import Highlight from 'react-highlight'
 import { ErrorOutlined, Warning } from '@mui/icons-material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -8,10 +7,9 @@ import CheckIcon from '@mui/icons-material/Check'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import {
   defaultChunkSize,
-  parseErrorsAndWarnings,
-  LogInstance,
-  clearErrorsAndWarningsHtmlWrapping,
-  download
+  buildLogSegments,
+  download,
+  LogInstance
 } from '../../../../../utils'
 import classes from './log.module.css'
 
@@ -20,19 +18,38 @@ interface LogChunkProps {
   text: string
   expanded: boolean
   logLineCount: number
+  /** Every issue in the log, anchored by the line it sits on. */
+  markers: LogInstance[]
   onClick: (evt: any, id: number) => void
   scrollToLogInstance?: LogInstance
   updated: number
 }
 
+/**
+ * One chunk of a log. The chunk is the unit of rendering: a collapsed chunk puts
+ * nothing in the document, and an expanded one carries one element per anchored
+ * issue and one text node for the lines between them, so a hundred thousand line
+ * log costs the browser elements in proportion to its errors, warnings and notes.
+ *
+ * The log text is rendered as text. It is SAS's own output and it contains
+ * markup-like content - a doxygen header's `<h4> SAS Macros </h4>`, the `<` of a
+ * comparison - which must stay visible as written rather than be parsed.
+ */
 const LogChunk = (props: LogChunkProps) => {
-  const { id, text, logLineCount } = props
+  const { id, text, logLineCount, markers } = props
   const [scrollToLogInstance, setScrollToLogInstance] = useState(
     props.scrollToLogInstance
   )
-  const rowText = clearErrorsAndWarningsHtmlWrapping(text)
   const [expanded, setExpanded] = useState(props.expanded)
   const [copied, setCopied] = useState(false)
+
+  const firstLine = id * defaultChunkSize
+  const chunkMarkers = markers.filter(
+    (marker) =>
+      marker.line >= firstLine && marker.line < firstLine + defaultChunkSize
+  )
+  const errors = chunkMarkers.filter((marker) => marker.type === 'error')
+  const warnings = chunkMarkers.filter((marker) => marker.type === 'warning')
 
   useEffect(() => {
     setExpanded(props.expanded)
@@ -61,7 +78,9 @@ const LogChunk = (props: LogChunkProps) => {
         document.querySelector(`#log_container`)
 
       if (line && logWrapper && logContainer) {
-        line.className = classes.HighlightedLine
+        // The line already carries its severity colour, so the highlight is
+        // added beside it and taken away again rather than replacing it.
+        line.classList.add(classes.HighlightedLine)
 
         line.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
@@ -74,14 +93,24 @@ const LogChunk = (props: LogChunkProps) => {
     }
   }, [expanded, scrollToLogInstance, props])
 
-  const { errors, warnings } = parseErrorsAndWarnings(text)
-
   const getLineRange = (separator = ' ... ') =>
-    `${id * defaultChunkSize}${separator}${
-      (id + 1) * defaultChunkSize < logLineCount
-        ? (id + 1) * defaultChunkSize
+    `${firstLine}${separator}${
+      firstLine + defaultChunkSize < logLineCount
+        ? firstLine + defaultChunkSize
         : logLineCount
     }`
+
+  const copy = (evt: SyntheticEvent) => {
+    evt.stopPropagation()
+
+    navigator.clipboard.writeText(text)
+
+    setCopied(true)
+
+    setTimeout(() => {
+      setCopied(false)
+    }, 1000)
+  }
 
   return (
     <div onClick={(evt) => props.onClick(evt, id)}>
@@ -94,27 +123,14 @@ const LogChunk = (props: LogChunkProps) => {
                 className={[classes.Icon, classes.GreenIcon].join(' ')}
               />
             ) : (
-              <ContentCopyIcon
-                className={classes.Icon}
-                onClick={(evt: SyntheticEvent) => {
-                  evt.stopPropagation()
-
-                  navigator.clipboard.writeText(rowText)
-
-                  setCopied(true)
-
-                  setTimeout(() => {
-                    setCopied(false)
-                  }, 1000)
-                }}
-              />
+              <ContentCopyIcon className={classes.Icon} onClick={copy} />
             )}
             <FileDownloadIcon
               onClick={(evt: SyntheticEvent) => {
-                download(evt, rowText, `.${getLineRange('-')}`)
+                download(evt, text, `.${getLineRange('-')}`)
               }}
             />
-            {errors && errors.length !== 0 && (
+            {errors.length !== 0 && (
               <ErrorOutlined
                 color="error"
                 className={classes.Icon}
@@ -123,7 +139,7 @@ const LogChunk = (props: LogChunkProps) => {
                 }}
               />
             )}
-            {warnings && warnings.length !== 0 && (
+            {warnings.length !== 0 && (
               <Warning
                 className={[classes.Icon, classes.GreenIcon].join(' ')}
                 onClick={(evt) => {
@@ -157,9 +173,34 @@ const LogChunk = (props: LogChunkProps) => {
             ' '
           )}
         >
-          <Highlight className={'html'} innerHTML={true}>
-            {expanded ? text : ''}
-          </Highlight>
+          {expanded &&
+            buildLogSegments(text, firstLine, chunkMarkers).map(
+              (segment, index) => {
+                // A block per segment: the container keeps the whitespace, and
+                // a block ends the line without a separator node per line.
+                if (!segment.marker) {
+                  return <div key={`plain_${index}`}>{segment.text}</div>
+                }
+
+                const { type, id } = segment.marker
+
+                return (
+                  <div
+                    key={`${type}_${id}`}
+                    id={`${type}_${id}`}
+                    className={
+                      type === 'error'
+                        ? classes.ErrorLine
+                        : type === 'warning'
+                          ? classes.WarningLine
+                          : undefined
+                    }
+                  >
+                    {segment.text}
+                  </div>
+                )
+              }
+            )}
         </div>
       </div>
     </div>
