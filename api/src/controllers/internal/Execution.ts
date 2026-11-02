@@ -86,7 +86,8 @@ export class ExecutionController {
     const sessionController = getSessionController(runTime)
 
     const session =
-      sessionByFileUpload ?? (await sessionController.getSession())
+      sessionByFileUpload ??
+      (await sessionController.getSession(preProgramVariables!.username))
     session.state = SessionState.running
 
     const logPath = path.join(session.path, 'log.log')

@@ -1,6 +1,7 @@
 import { RequestHandler, Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { clearCSRFCookie, csrfProtection, drainBody } from './'
+import { isPasswordChangeRoute } from './passwordChangeRoutes'
 import {
   fetchLatestAutoExec,
   ModeType,
@@ -76,19 +77,6 @@ export const authenticateAccessToken: RequestHandler = async (
     },
     process.secrets.ACCESS_TOKEN_SECRET,
     'accessToken'
-  )
-}
-
-/**
- * The only routes a password-flagged account may reach: reading its own
- * session (the SPA's session poll), changing its password, and logging out.
- */
-const isPasswordChangeRoute = (req: Request): boolean => {
-  const p = req.baseUrl + req.path
-  return (
-    p.startsWith('/SASjsApi/auth/updatePassword') ||
-    p.startsWith('/SASjsApi/session') ||
-    p.startsWith('/SASLogon/logout')
   )
 }
 

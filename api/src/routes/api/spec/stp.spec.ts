@@ -522,6 +522,30 @@ describe('stp', () => {
       expect(typeof response.body.sessionId).toEqual('string')
       expect(response.body.pid).toBeUndefined()
     }, 30000)
+
+    // A trigger used to forward only _program and _debug, so a caller passing
+    // macro variables had them dropped silently: the job ran with none of its
+    // inputs and reported success. The synchronous execute path spreads every
+    // query parameter into the session variables, and so must this one.
+    it('forwards query parameters as macro variables', async () => {
+      await request(app)
+        .post(
+          `/SASjsApi/stp/trigger?_program=${programPath}&region=emea&year=2026`
+        )
+        .auth(accessToken, { type: 'bearer' })
+        .send()
+        .expect(200)
+
+      const calls = (ProcessProgramModule.processProgram as jest.Mock).mock
+        .calls
+      const vars = calls[calls.length - 1][2]
+
+      expect(vars).toMatchObject({
+        _program: programPath,
+        region: 'emea',
+        year: '2026'
+      })
+    }, 30000)
   })
 })
 
@@ -612,7 +636,8 @@ const mockedGetSession = async () => {
     state: SessionState.pending,
     creationTimeStamp,
     deathTimeStamp,
-    path: sessionFolder
+    path: sessionFolder,
+    owner: 'testUsername'
   }
 
   return session

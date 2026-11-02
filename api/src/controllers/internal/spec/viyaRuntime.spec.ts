@@ -45,7 +45,8 @@ const makeSession = (): Session => {
       15 * 60 * 1000 -
       1000
     ).toString(),
-    path: path.join(getSessionsFolder(), sessionId)
+    path: path.join(getSessionsFolder(), sessionId),
+    owner: 'testUser'
   }
 }
 

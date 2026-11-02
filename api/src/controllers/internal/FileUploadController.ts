@@ -76,7 +76,7 @@ export class FileUploadController {
       })
     }
 
-    const session = await sessionController.getSession()
+    const session = await sessionController.getSession(req.user!.username)
     // change session state to 'running', so that it's not available for any other request
     session.state = SessionState.running
 
