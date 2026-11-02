@@ -19,6 +19,7 @@ import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
 import LogComponent from './internal/components/log/logComponent'
 import LogTabWithIcons from './internal/components/log/logTabWithIcons'
+import WebOutPreview from './internal/components/webout/weboutPreview'
 
 import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
@@ -264,9 +265,7 @@ const SASjsEditor = ({
           </StyledTabPanel>
           {webout && (
             <StyledTabPanel value="webout">
-              <div>
-                <pre>{webout}</pre>
-              </div>
+              <WebOutPreview output={webout} />
             </StyledTabPanel>
           )}
           {printOutput && (
