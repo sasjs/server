@@ -3,6 +3,13 @@ import { inspect } from 'util'
 
 const RETRY_PAUSE_MS = 5
 
+/**
+ * How long a line that only reached the logger is given to flush before the
+ * process goes. The logger writes through a stream, so an immediate exit can
+ * pre-empt it - but a wedged transport must not keep a faulted process alive.
+ */
+const FALLBACK_EXIT_MS = 150
+
 /** A synchronous sleep: `Atomics.wait` is the only blocking wait on the main thread. */
 const pauseCell = new Int32Array(new SharedArrayBuffer(4))
 
@@ -45,8 +52,11 @@ const describe = (reason: unknown): string => {
  * one message split across two sinks with different framing and filtering. A
  * pipe that stays full cannot be written to synchronously at all, and blocking
  * indefinitely on a fatal path is worse than a line that may not land.
+ *
+ * @returns whether the whole line reached fd 2 - the caller decides how to exit
+ * from that, because the logger fallback is a stream write the exit would race.
  */
-const writeFatal = (line: string): void => {
+const writeFatal = (line: string): boolean => {
   let pending = Buffer.from(line)
 
   for (let attempt = 0; attempt < 3 && pending.length; attempt++) {
@@ -61,7 +71,11 @@ const writeFatal = (line: string): void => {
     }
   }
 
-  if (pending.length) process.logger?.error(line)
+  if (!pending.length) return true
+
+  process.logger?.error(line)
+
+  return false
 }
 
 /**
@@ -69,10 +83,19 @@ const writeFatal = (line: string): void => {
  *
  * Node ends a process on an unhandled rejection or an uncaught exception and
  * prints the reason to stderr. Installing a listener replaces that default, so
- * every handler here logs first and calls `process.exit(1)` - without the exit
- * the server would carry on after a fault it cannot see the extent of, and this
+ * every handler here logs first and then ends the process - without that the
+ * server would carry on after a fault it cannot see the extent of, and this
  * process executes uploaded code, so a half-finished permission check is not a
  * state to keep serving from.
+ *
+ * How it ends depends on how the line went out. A line that reached fd 2
+ * synchronously is on the terminal already, so the exit can be immediate. A
+ * line that only reached the logger is on a stream write that an immediate exit
+ * would pre-empt - the diagnosis lost in exactly the case the fallback exists
+ * for - so the guards are removed, the exit code is set, and the exit is
+ * scheduled a moment later. Removing the listeners first means a second fault
+ * during that window falls through to Node's own handler rather than re-entering
+ * this one, and the timer is unref'd so an otherwise idle process still exits.
  *
  * The log entry is the point: a double-clicked executable closes its console
  * window with the crash, which is why a stoppage reads as "no message or
@@ -87,13 +110,30 @@ const writeFatal = (line: string): void => {
  * embedder that supplies its own.
  */
 export const installFatalGuards = (): (() => void) => {
+  const removeGuards = () => {
+    process.removeListener('unhandledRejection', onRejection)
+    process.removeListener('uncaughtException', onException)
+  }
+
   const fatal =
     (kind: string) =>
     (reason: unknown, _promise?: Promise<unknown>): void => {
-      writeFatal(
+      const delivered = writeFatal(
         `[server] fatal: ${kind} - the process is exiting\n${describe(reason)}\n`
       )
-      process.exit(1)
+
+      if (delivered) {
+        process.exit(1)
+
+        return
+      }
+
+      // the logger holds the only copy, on a stream write: give it a turn to
+      // land, and bound the wait so a wedged transport cannot keep a faulted
+      // process alive
+      removeGuards()
+      process.exitCode = 1
+      setTimeout(() => process.exit(1), FALLBACK_EXIT_MS).unref()
     }
 
   const onRejection = fatal('unhandled promise rejection')
@@ -102,8 +142,5 @@ export const installFatalGuards = (): (() => void) => {
   process.on('unhandledRejection', onRejection)
   process.on('uncaughtException', onException)
 
-  return () => {
-    process.removeListener('unhandledRejection', onRejection)
-    process.removeListener('uncaughtException', onException)
-  }
+  return removeGuards
 }

@@ -12,13 +12,19 @@ import { installFatalGuards } from '..'
 
 const writeSync = fs.writeSync as unknown as jest.Mock
 
+// bound before any test installs fake timers, which also replace hrtime: the
+// pause under test is a real Atomics.wait, so it has to be measured on a real clock
+const realHrtime = process.hrtime.bigint.bind(process.hrtime)
+
 describe('installFatalGuards', () => {
   const originalLogger = process.logger
 
   let exitSpy: jest.SpyInstance
   let dispose: () => void
+  let originalExitCode: any
 
   beforeEach(() => {
+    originalExitCode = process.exitCode
     exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => {
       // node's own process.exit never returns; a mock that returns is what lets
       // the assertions below run after the call
@@ -33,9 +39,12 @@ describe('installFatalGuards', () => {
   })
 
   afterEach(() => {
+    jest.useRealTimers()
     dispose()
     exitSpy.mockRestore()
     process.logger = originalLogger
+    // a deferred exit sets this; leaving it set would fail the whole run
+    process.exitCode = originalExitCode
   })
 
   const emit = (event: string, ...args: any[]) =>
@@ -142,6 +151,10 @@ describe('installFatalGuards', () => {
   })
 
   it('falls back to the logger when the pipe stays full past the retries', () => {
+    // fake timers so the deferred exit below is discarded rather than firing
+    // after the spy is restored and killing the worker
+    jest.useFakeTimers()
+
     const errorSpy = jest.fn()
 
     process.logger = { error: errorSpy } as any
@@ -152,19 +165,25 @@ describe('installFatalGuards', () => {
       throw busy
     })
 
-    const started = Date.now()
+    const started = realHrtime()
 
     emit('uncaughtException', new Error('never drains'), 'uncaughtException')
 
+    const elapsedMs = Number(realHrtime() - started) / 1e6
+
     expect(writeSync).toHaveBeenCalledTimes(3)
     // the attempts are spaced, so a reader on the pipe gets a chance to drain
-    expect(Date.now() - started).toBeGreaterThanOrEqual(8)
+    expect(elapsedMs).toBeGreaterThanOrEqual(8)
     expect(errorSpy).toHaveBeenCalledTimes(1)
     expect(errorSpy.mock.calls[0][0]).toContain('never drains')
-    expect(exitSpy).toHaveBeenCalledWith(1)
+    // the logger writes through a stream, so the exit waits for it instead of
+    // racing it - see the deferred-exit test below
+    expect(exitSpy).not.toHaveBeenCalled()
   })
 
   it('falls back to the logger when stderr cannot be written', () => {
+    jest.useFakeTimers()
+
     const errorSpy = jest.fn()
 
     process.logger = { error: errorSpy } as any
@@ -179,6 +198,46 @@ describe('installFatalGuards', () => {
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     expect(errorSpy.mock.calls[0][0]).toContain('stderr is gone')
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(1)
+  })
+
+  it('defers the exit when only the logger got the line, so the write can flush', () => {
+    // the race this guards: the logger writes to a stream, process.exit does not
+    // wait for it, and the diagnosis is lost in exactly the case the fallback
+    // exists for
+    jest.useFakeTimers()
+
+    const errorSpy = jest.fn()
+
+    process.logger = { error: errorSpy } as any
+
+    writeSync.mockImplementation(() => {
+      const broken: any = new Error('EBADF')
+      broken.code = 'EBADF'
+      throw broken
+    })
+
+    const rejectionListeners = process.listenerCount('unhandledRejection')
+    const exceptionListeners = process.listenerCount('uncaughtException')
+
+    emit('uncaughtException', new Error('exit must wait'), 'uncaughtException')
+
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(1)
+
+    // the guards are off before the deferred exit, so a second fault in the
+    // window falls through to node's own handler rather than re-entering this one
+    expect(process.listenerCount('unhandledRejection')).toBe(
+      rejectionListeners - 1
+    )
+    expect(process.listenerCount('uncaughtException')).toBe(
+      exceptionListeners - 1
+    )
+
+    jest.advanceTimersByTime(200)
+
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
