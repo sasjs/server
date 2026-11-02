@@ -21,6 +21,7 @@ import {
 import {
   parseErrorsAndWarnings,
   countLines,
+  isImageFile,
   LogObject
 } from '../../../../utils'
 import { lintModel } from '../lint'
@@ -58,6 +59,9 @@ const useEditor = ({
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)
   const [showDiff, setShowDiff] = useState(false)
+  // A picture opens as a URL for its own bytes: the drive endpoint needs the
+  // session, so the file is fetched as a blob rather than pointed at directly.
+  const [imageUrl, setImageUrl] = useState('')
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
 
@@ -95,6 +99,19 @@ const useEditor = ({
 
   const saveFile = useCallback(
     (filePath?: string, content?: string) => {
+      // The buffer holds text, so writing it over a picture would replace the
+      // image with an empty file. The file menu is hidden for a picture, and
+      // this keeps any other route to a save from truncating one.
+      const target = filePath ?? selectedFilePath
+
+      if (isImageFile(target)) {
+        setSnackbarMessage('A picture cannot be edited here.')
+        setSnackbarSeverity(AlertSeverityType.Warning)
+        setOpenSnackbar(true)
+
+        return
+      }
+
       setIsLoading(true)
 
       // The caller may hand in the text it just formatted; otherwise the
@@ -410,6 +427,37 @@ const useEditor = ({
       setSelectedFileExtension(
         selectedFilePath.split('.').pop()?.toLowerCase() ?? ''
       )
+
+      if (isImageFile(selectedFilePath)) {
+        // A picture is shown, not edited: its bytes become a blob URL and the
+        // editor's buffer stays empty, so nothing can save over the image.
+        setFileContent('')
+        setPrevFileContent('')
+
+        axios
+          .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`, {
+            responseType: 'blob'
+          })
+          .then((res: any) => setImageUrl(URL.createObjectURL(res.data)))
+          .catch((err) => {
+            setModalTitle('Abort')
+            setModalPayload(
+              typeof err.response?.data === 'object'
+                ? JSON.stringify(err.response.data)
+                : err.response?.data
+            )
+            setOpenModal(true)
+          })
+          .finally(() => setIsLoading(false))
+
+        setWebout('')
+        setTab('code')
+
+        return
+      }
+
+      setImageUrl('')
+
       axios
         .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`, {
           // Ask for the file as text whatever its type. axios otherwise parses
@@ -436,11 +484,19 @@ const useEditor = ({
     } else {
       const content = localStorage.getItem('fileContent') ?? ''
       setFileContent(content)
+      setImageUrl('')
     }
     setWebout('')
     setTab('code')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
+
+  // The image's bytes live until the next file is opened, and no longer.
+  useEffect(() => {
+    if (!imageUrl) return
+
+    return () => URL.revokeObjectURL(imageUrl)
+  }, [imageUrl])
 
   useEffect(() => {
     if (fileContent.length && !selectedFilePath) {
@@ -491,6 +547,7 @@ const useEditor = ({
 
   return {
     fileContent,
+    imageUrl,
     isLoading,
     log,
     openFilePathInputModal,

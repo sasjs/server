@@ -1,5 +1,6 @@
 export * from './log'
 export * from './webout'
+export * from './files'
 export * from './types'
 export * from './helper'
 export * from './authorizedRoutes'
