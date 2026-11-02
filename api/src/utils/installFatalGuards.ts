@@ -1,6 +1,13 @@
 import { writeSync } from 'fs'
 import { inspect } from 'util'
 
+const RETRY_PAUSE_MS = 5
+
+/** A synchronous sleep: `Atomics.wait` is the only blocking wait on the main thread. */
+const pauseCell = new Int32Array(new SharedArrayBuffer(4))
+
+const pause = (): string => Atomics.wait(pauseCell, 0, 0, RETRY_PAUSE_MS)
+
 /** The stack of an Error, the value itself for a string, and an inspection otherwise. */
 const describe = (reason: unknown): string => {
   if (reason instanceof Error)
@@ -28,10 +35,12 @@ const describe = (reason: unknown): string => {
  * The logger is the fallback rather than the primary because it also carries the
  * configured log level: a fatal error is not something to filter out.
  *
- * A partial write leaves the remainder for the next attempt, and `EAGAIN` - a
- * pipe with no room right now - is retried a bounded number of times. Whatever
- * the pipe has not taken by then goes to the logger, so a full pipe delays the
- * line rather than losing it.
+ * A partial write leaves the remainder for the next attempt. `EAGAIN` - a pipe
+ * with no room right now - is retried a bounded number of times, with a few
+ * milliseconds between attempts so the reader on the other end can drain it.
+ * Anything still unwritten after that goes to the logger as a best effort: a
+ * pipe that stays full cannot be written to synchronously at all, and blocking
+ * indefinitely on a fatal path is worse than a line that may not land.
  */
 const writeFatal = (line: string): void => {
   let pending = Buffer.from(line)
@@ -41,6 +50,8 @@ const writeFatal = (line: string): void => {
   }
 
   for (let attempt = 0; attempt < 3 && pending.length; attempt++) {
+    if (attempt) pause()
+
     try {
       // a partial write leaves the remainder for the next attempt
       pending = pending.subarray(writeSync(2, pending))

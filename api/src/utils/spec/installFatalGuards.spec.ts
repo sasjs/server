@@ -152,9 +152,13 @@ describe('installFatalGuards', () => {
       throw busy
     })
 
+    const started = Date.now()
+
     emit('uncaughtException', new Error('never drains'), 'uncaughtException')
 
     expect(writeSync).toHaveBeenCalledTimes(3)
+    // the attempts are spaced, so a reader on the pipe gets a chance to drain
+    expect(Date.now() - started).toBeGreaterThanOrEqual(8)
     expect(errorSpy).toHaveBeenCalledTimes(1)
     expect(errorSpy.mock.calls[0][0]).toContain('never drains')
     expect(exitSpy).toHaveBeenCalledWith(1)
