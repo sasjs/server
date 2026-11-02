@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// first, and deliberately: it installs the fatal guards as a side effect, before
+// ./app and its dependency graph initialise (see the module's own note)
+import './fatalGuards'
+
 import { Express } from 'express'
 import appPromise from './app'
 import { listen } from './listen'
