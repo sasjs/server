@@ -926,6 +926,49 @@ components:
                 - completed
                 - failed
             type: string
+        SessionStateResponse:
+            description: "Response of `GET /SASjsApi/session/{sessionId}/state`.\n\nAn object rather than the bare enum, so the shape matches the compute API a\nViya caller already polls (`{ state: 'running' }`) and a client can be written\nonce for both servers."
+            properties:
+                state:
+                    $ref: '#/components/schemas/SessionState'
+            required:
+                - state
+            type: object
+            additionalProperties: false
+        SessionSummary:
+            description: "Response of `GET /SASjsApi/session/{sessionId}`.\n\n`path` is deliberately absent: the session folder is a server filesystem\nlocation, and the artifacts a caller wants from it are served by the `log`\nand `output` endpoints instead."
+            properties:
+                sessionId:
+                    type: string
+                state:
+                    $ref: '#/components/schemas/SessionState'
+                pid:
+                    type: number
+                    format: double
+                creationTimeStamp:
+                    type: string
+                deathTimeStamp:
+                    type: string
+                failureReason:
+                    type: string
+                expiresAfterMins:
+                    properties:
+                        used:
+                            type: boolean
+                        mins:
+                            type: number
+                            format: double
+                    required:
+                        - used
+                        - mins
+                    type: object
+            required:
+                - sessionId
+                - state
+                - creationTimeStamp
+                - deathTimeStamp
+            type: object
+            additionalProperties: false
         ExecutePostRequestPayload:
             properties:
                 _program:
@@ -2384,12 +2427,89 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/SessionState'
+                                $ref: '#/components/schemas/SessionStateResponse'
                             examples:
                                 'Example 1':
-                                    value: completed
+                                    value: {state: completed}
             description: "Returns the current state of a session created by `POST /SASjsApi/code/trigger`\nor `POST /SASjsApi/stp/trigger`.\n\nThe state is one of `initialising`, `pending`, `running`, `completed` or\n`failed`. A `404` is returned when no session has that id.\n\nPolling is implemented for single-server deployments only; load-balanced and\ngrid topologies are not yet supported. If your site requires this, please\ncontact SASjs Support."
             summary: 'Get the state of a session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    '/SASjsApi/session/{sessionId}':
+        get:
+            operationId: SessionDetail
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SessionSummary'
+                            examples:
+                                'Example 1':
+                                    value: {sessionId: 20241028074744-54132-1730101664824, state: completed, pid: 12345, creationTimeStamp: '1730101664824', deathTimeStamp: '1730102564823'}
+            description: "Returns the session a triggered program is running in: its state, the OS\nprocess id while it runs, when it was created and when it is due to be\ndestroyed, why it failed when that applies, and the retention window the\ncaller asked for.\n\nA `404` is returned when no session has that id, which is also what an\nexpired session answers: the folder is gone and nothing can be read."
+            summary: 'Get a triggered session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    '/SASjsApi/session/{sessionId}/log':
+        get:
+            operationId: SessionLog
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        text/plain:
+                            schema:
+                                type: string
+            description: "Returns the log of a triggered program as plain text.\n\nThe same log the synchronous execute endpoints return in their response\nbody, which until now was the only way to obtain it: a caller that triggers\na program and polls for its state had no way to read what the program\nprinted.\n\nAn empty body means the run has not written anything yet. A `404` means the\nsession is unknown or has been destroyed, so the log is no longer available."
+            summary: 'Get the log of a triggered session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    '/SASjsApi/session/{sessionId}/output':
+        get:
+            operationId: SessionOutput
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
+            description: "Returns the `_webout` of a triggered program, with the headers the program\nset - the same bytes the synchronous execute endpoints answer with, so a\ntriggered run can be consumed exactly like a synchronous one.\n\nThe content type comes from the session's `stpsrv_header.txt` and is passed\nthrough the same header validation as the synchronous path, so a program\ncannot inject response headers through its own output.\n\nA `404` means the session is unknown or has been destroyed. An empty body\nmeans the program wrote no output."
+            summary: 'Get the output of a triggered session'
             tags:
                 - Session
             security:
