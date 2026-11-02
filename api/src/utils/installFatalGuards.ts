@@ -38,16 +38,14 @@ const describe = (reason: unknown): string => {
  * A partial write leaves the remainder for the next attempt. `EAGAIN` - a pipe
  * with no room right now - is retried a bounded number of times, with a few
  * milliseconds between attempts so the reader on the other end can drain it.
- * Anything still unwritten after that goes to the logger as a best effort: a
+ * Whatever does not land is then logged in full rather than as the tail: a torn
+ * prefix may already be on stderr, and a complete second copy reads better than
+ * one message split across two sinks with different framing and filtering. A
  * pipe that stays full cannot be written to synchronously at all, and blocking
  * indefinitely on a fatal path is worse than a line that may not land.
  */
 const writeFatal = (line: string): void => {
   let pending = Buffer.from(line)
-
-  const fallback = (remaining: Buffer): void => {
-    if (remaining.length) process.logger?.error(remaining.toString())
-  }
 
   for (let attempt = 0; attempt < 3 && pending.length; attempt++) {
     if (attempt) pause()
@@ -57,15 +55,11 @@ const writeFatal = (line: string): void => {
       pending = pending.subarray(writeSync(2, pending))
     } catch (error: any) {
       // EAGAIN is a pipe with no room right now, not a broken stderr
-      if (error?.code !== 'EAGAIN') {
-        fallback(pending)
-
-        return
-      }
+      if (error?.code !== 'EAGAIN') break
     }
   }
 
-  fallback(pending)
+  if (pending.length) process.logger?.error(line)
 }
 
 /**
