@@ -185,12 +185,14 @@ const triggerProgram = async (
   { _program, _debug, expiresAfterMins }: TriggerProgramPayload
 ): Promise<TriggerProgramResponse> => {
   try {
-    // put _program query param into vars object
-    const vars: { [key: string]: string | number } = { _program }
-
-    // if present add _debug query param to vars object
-    if (_debug) {
-      vars._debug = _debug
+    // every query parameter becomes a session variable, as it does on the
+    // synchronous execute path - a trigger that forwarded only _program and
+    // _debug silently dropped the macro variables a caller passed, so a
+    // scheduled job ran with none of its inputs
+    const vars: ExecutionVars = {
+      ...req.query,
+      _program,
+      _debug: parseDebugValue(_debug ?? req.query._debug)
     }
 
     // get code path and runTime
