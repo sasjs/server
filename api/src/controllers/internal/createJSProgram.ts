@@ -1,3 +1,5 @@
+import path from 'path'
+import { createFile } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadJSCode } from '../../utils'
 import {
@@ -6,6 +8,7 @@ import {
   reportDroppedParameterNames
 } from '../../utils/programVariables'
 import { ExecutionVars } from './'
+import { weboutHelperFileName, weboutHelperSource } from './weboutHelper'
 
 export const createJSProgram = async (
   program: string,
@@ -20,6 +23,14 @@ export const createJSProgram = async (
   const { safe, dropped } = partitionParameterNames(vars)
   reportDroppedParameterNames(dropped)
 
+  // The webout() helper lives beside the generated program and is required by
+  // it, so the program itself stays free of runtime plumbing. It is written on
+  // every execution, so a session folder can never carry a stale copy.
+  await createFile(
+    path.join(session.path, weboutHelperFileName),
+    weboutHelperSource
+  )
+
   const varStatments = safe.reduce(
     (computed: string, key: string) =>
       `${computed}const ${key} = ${asLiteral(vars[key])};\n`,
@@ -31,15 +42,32 @@ let _webout = '';
 const weboutPath = ${asLiteral(weboutPath)}; 
 const _SASJS_TOKENFILE = ${asLiteral(tokenFile)};
 const _SASJS_WEBOUT_HEADERS = ${asLiteral(headersPath)};
+const _SASJS_APISERVERURL = ${asLiteral(
+    preProgramVariables?.localServerUrl ?? preProgramVariables?.serverUrl
+  )};
 const _SASJS_USERNAME = ${asLiteral(preProgramVariables?.username)};
 const _SASJS_USERID = ${asLiteral(preProgramVariables?.userId)};
 const _SASJS_DISPLAYNAME = ${asLiteral(preProgramVariables?.displayName)};
 const _METAPERSON = _SASJS_DISPLAYNAME;
 const _METAUSER = _SASJS_USERNAME;
 const SASJSPROCESSMODE = 'Stored Program';
+
+/* %ms_webout() for JS - webout('OPEN'), webout('OBJ', name, rows), webout('CLOSE') */
+const webout = require('./${weboutHelperFileName}')({
+  weboutPath: weboutPath,
+  headersPath: _SASJS_WEBOUT_HEADERS,
+  program: ${asLiteral(vars._program)},
+  debug: ${asLiteral(vars._debug)},
+  username: _SASJS_USERNAME,
+  userId: _SASJS_USERID,
+  apiServerUrl: _SASJS_APISERVERURL
+});
 `
 
-  const requiredModules = `const fs = require('fs')`
+  // Assigned as a global rather than declared as a const, so a program that
+  // requires fs itself declares it in its own scope instead of colliding with
+  // the runtime's declaration and failing to parse.
+  const requiredModules = `globalThis.fs = require('fs')`
 
   program = `
 /* runtime vars */
@@ -51,12 +79,22 @@ ${preProgramVarStatments}
 /* actual job code */
 ${program}
 
-/* write webout file only if webout exists*/
-if (_webout) {
-  fs.writeFile(weboutPath, _webout, function (err) {
-    if (err) throw err;
-  })
+/* webout() streams its own body as it is called - _webout is written here */
+if (!webout.streamed()) {
+  /* write webout file only if webout exists */
+  if (_webout) {
+    fs.writeFile(weboutPath, _webout, function (err) {
+      if (err) throw err;
+    })
+  }
+} else if (_webout) {
+  console.log(
+    'webout: _webout was assigned as well as using webout() - the assignment is ignored'
+  )
 }
+
+/* reports a body left unfinished by a missing webout('CLOSE') */
+webout.finalise()
 `
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs?.filesNamesMap) {

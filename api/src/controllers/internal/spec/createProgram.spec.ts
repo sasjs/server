@@ -159,6 +159,186 @@ describe('generated stored-program source', () => {
     })
   })
 
+  describe('webout()', () => {
+    const weboutFilePath = () => path.join(workDir, 'webout.txt')
+    const headersFilePath = () => path.join(workDir, 'headers.txt')
+
+    /**
+     * Generates the program the server would run, writes the header file the
+     * way a session seeds it, then RUNS it - so the assertions below are about
+     * the file the response is built from, not about the generated source.
+     */
+    const runProgram = async (source: string) => {
+      const program = await createJSProgram(
+        source,
+        preProgramVariables,
+        { _program: '/Public/demo' },
+        session,
+        weboutFilePath(),
+        headersFilePath(),
+        path.join(workDir, 'token.json')
+      )
+
+      const file = path.join(workDir, 'webout-program.js')
+      writeFileSync(file, program)
+      // The JS session seeds this with no trailing newline (Session.ts).
+      writeFileSync(headersFilePath(), 'content-type: text/html; charset=utf-8')
+
+      try {
+        const stdout = execFileSync(process.execPath, [file], {
+          cwd: workDir
+        }).toString()
+
+        return {
+          stdout,
+          stderr: '',
+          failed: false,
+          body: readFileSync(weboutFilePath(), 'utf-8'),
+          headers: readFileSync(headersFilePath(), 'utf-8')
+        }
+      } catch (err: any) {
+        return {
+          stdout: (err.stdout ?? '').toString(),
+          stderr: (err.stderr ?? err.message ?? '').toString(),
+          failed: true,
+          body: existsSync(weboutFilePath())
+            ? readFileSync(weboutFilePath(), 'utf-8')
+            : '',
+          headers: readFileSync(headersFilePath(), 'utf-8')
+        }
+      }
+    }
+
+    it('streams one JSON object, with the content type set', async () => {
+      const { body, headers, failed } = await runProgram(`
+webout('OPEN')
+webout('OBJ', 'users', [{ name: 'a' }, { name: 'b' }])
+webout('ARR', 'pairs', [[1, 2], [3, 4]])
+webout('CLOSE')
+`)
+
+      expect(failed).toEqual(false)
+
+      // The line the header file already held must stay readable on its own -
+      // the helper appends, and the seed has no trailing newline.
+      expect(headers.split('\n')[0]).toEqual(
+        'content-type: text/html; charset=utf-8'
+      )
+      expect(headers).toContain('content-type: application/json')
+
+      const parsed = JSON.parse(body)
+
+      expect(parsed.users).toEqual([{ name: 'a' }, { name: 'b' }])
+      expect(parsed.pairs).toEqual([
+        [1, 2],
+        [3, 4]
+      ])
+
+      // The fields %ms_webout(CLOSE) adds, in the SAS formats a consumer reads.
+      expect(parsed.SYSDATE).toMatch(/^\d{2}[A-Z]{3}\d{4}$/)
+      expect(parsed.SYSTIME).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+      expect(parsed.MF_GETUSER).toEqual('testsuser')
+      expect(parsed.SYSUSERID).toEqual('507f1f77bcf86cd799439011')
+      expect(parsed._PROGRAM).toEqual('/Public/demo')
+      expect(parsed.SYSPROCESSMODE).toEqual('Stored Program')
+      expect(parsed.SYSTCPIPHOSTNAME).toEqual('http://localhost:5000')
+      expect(parsed.SYSCC).toEqual(0)
+      expect(parsed.END_DTTM).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    })
+
+    it('accepts the actions in any case', async () => {
+      const { body, failed } = await runProgram(`
+webout('open')
+webout('obj', 'rows', [{ a: 1 }])
+webout('close')
+`)
+
+      expect(failed).toEqual(false)
+      expect(JSON.parse(body).rows).toEqual([{ a: 1 }])
+    })
+
+    it('refuses a table before OPEN, and an unknown action', async () => {
+      const beforeOpen = await runProgram(`webout('OBJ', 'rows', [])`)
+
+      expect(beforeOpen.failed).toEqual(true)
+      expect(beforeOpen.stderr).toContain("requires webout('OPEN') first")
+
+      const unknown = await runProgram(`webout('SEND', 'rows', [])`)
+
+      expect(unknown.failed).toEqual(true)
+      expect(unknown.stderr).toContain('use OPEN, ARR, OBJ or CLOSE')
+    })
+
+    it('refuses rows of the wrong shape for the action', async () => {
+      const arr = await runProgram(`
+webout('OPEN')
+webout('ARR', 'rows', [{ a: 1 }])
+`)
+
+      expect(arr.failed).toEqual(true)
+      expect(arr.stderr).toContain("webout('ARR') takes positional rows")
+
+      const obj = await runProgram(`
+webout('OPEN')
+webout('OBJ', 'rows', [[1, 2]])
+`)
+
+      expect(obj.failed).toEqual(true)
+      expect(obj.stderr).toContain("webout('OBJ') takes rows keyed by column")
+    })
+
+    it('reports a missing CLOSE without repairing it', async () => {
+      const { body, stdout, failed } = await runProgram(`
+webout('OPEN')
+webout('OBJ', 'rows', [{ a: 1 }])
+`)
+
+      expect(failed).toEqual(false)
+      expect(stdout).toContain("webout('CLOSE') was not")
+
+      // The program owns the close - the body is what it wrote, and it is not
+      // valid JSON, exactly as a SAS program that omits %ms_webout(CLOSE).
+      expect(() => JSON.parse(body)).toThrow()
+    })
+
+    it('keeps the streamed body when _webout is also assigned', async () => {
+      const { body, stdout, failed } = await runProgram(`
+webout('OPEN')
+webout('OBJ', 'rows', [{ a: 1 }])
+webout('CLOSE')
+_webout = 'assigned too'
+`)
+
+      expect(failed).toEqual(false)
+      expect(JSON.parse(body).rows).toEqual([{ a: 1 }])
+      expect(stdout).toContain('the assignment is ignored')
+    })
+
+    it('still writes a program that only assigns _webout', async () => {
+      const { body, headers, failed } = await runProgram(
+        `_webout = '<h1>raw</h1>'`
+      )
+
+      expect(failed).toEqual(false)
+      expect(body).toEqual('<h1>raw</h1>')
+      // A raw assignment owns its own content type.
+      expect(headers).toEqual('content-type: text/html; charset=utf-8')
+    })
+
+    it('lets the program require fs itself', async () => {
+      const { body, failed, stderr } = await runProgram(`
+const fs = require('fs')
+fs.writeFileSync(weboutPath, 'from the program')
+`)
+
+      // Before the runtime assigned fs as a global, this failed to parse with
+      // "Identifier 'fs' has already been declared" and returned no body.
+      expect(stderr).not.toContain('already been declared')
+      expect(failed).toEqual(false)
+      expect(body).toEqual('from the program')
+    })
+  })
+
   describe('parameter names', () => {
     it('emits only v7 SAS names, and reports the rest', async () => {
       const warn = jest.fn()
