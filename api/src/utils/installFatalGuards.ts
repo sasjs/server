@@ -6,7 +6,9 @@ const RETRY_PAUSE_MS = 5
 /** A synchronous sleep: `Atomics.wait` is the only blocking wait on the main thread. */
 const pauseCell = new Int32Array(new SharedArrayBuffer(4))
 
-const pause = (): string => Atomics.wait(pauseCell, 0, 0, RETRY_PAUSE_MS)
+const pause = (): void => {
+  Atomics.wait(pauseCell, 0, 0, RETRY_PAUSE_MS)
+}
 
 /** The stack of an Error, the value itself for a string, and an inspection otherwise. */
 const describe = (reason: unknown): string => {
