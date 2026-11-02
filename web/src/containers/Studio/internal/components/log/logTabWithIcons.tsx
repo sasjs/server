@@ -5,11 +5,7 @@ import {
   Warning
 } from '@mui/icons-material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
-import {
-  LogObject,
-  download,
-  clearErrorsAndWarningsHtmlWrapping
-} from '../../../../../utils'
+import { LogObject, download } from '../../../../../utils'
 import Tooltip from '@mui/material/Tooltip'
 import classes from './log.module.css'
 
@@ -58,7 +54,7 @@ const LogTabWithIcons = (props: LogTabProps) => {
       <Tooltip
         title="Download entire log"
         onClick={(evt) => {
-          download(evt, clearErrorsAndWarningsHtmlWrapping(body))
+          download(evt, body)
         }}
       >
         <FileDownloadIcon

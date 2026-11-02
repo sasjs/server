@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:drivetree && npm run test:userhome && npm run test:lastfile && npm run test:logissues",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:drivetree && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:webout && npm run test:images",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -18,7 +18,9 @@
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "test:userhome": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-user-home.mjs",
     "test:lastfile": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-last-file.mjs",
-    "test:logissues": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-log-issues.mjs"
+    "test:logissues": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-log-issues.mjs",
+    "test:webout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-webout-preview.mjs",
+    "test:images": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-image-files.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -34,7 +36,6 @@
     "react": "19.3.0",
     "react-copy-to-clipboard": "5.1.1",
     "react-dom": "19.3.0",
-    "react-highlight": "0.15.0",
     "react-monaco-editor": "0.59.0",
     "react-router-dom": "7.18.4",
     "react-toastify": "11.1.0",
@@ -52,7 +53,6 @@
     "@types/react": "19.3.0",
     "@types/react-copy-to-clipboard": "5.0.7",
     "@types/react-dom": "19.3.0",
-    "@types/react-highlight": "0.12.8",
     "babel-loader": "10.1.1",
     "babel-plugin-prismjs": "2.1.0",
     "copy-webpack-plugin": "14.0.0",

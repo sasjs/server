@@ -3,26 +3,6 @@ import { parseLog } from '@sasjs/utils/logs/index.js'
 import type { LogIssue } from '@sasjs/utils/logs/index.js'
 import type { LogInstance } from './types'
 
-/** The colour a marker line is drawn in, by severity. Notes are not coloured. */
-const MARKER_COLOURS: Record<string, string> = {
-  error: 'red',
-  warning: 'green'
-}
-
-/**
- * Wraps a line in the anchor the log viewer scrolls to, and in a colour where the
- * severity has one. The `id` is `<type>_<index>`, which is what a tree entry looks
- * up when a reader clicks it - a note is anchored for that reason and left
- * uncoloured, since a log carries enough notes that colouring them would drown
- * the errors.
- */
-const markLine = (line: string, instance: LogInstance): string => {
-  const colour = MARKER_COLOURS[instance.type]
-  const style = colour ? ` style="color: ${colour};"` : ''
-
-  return `<font id="${instance.type}_${instance.id}"${style}>${line}</font>`
-}
-
 const toInstance = (issue: LogIssue, id: number): LogInstance => ({
   body: issue.message,
   line: issue.line,
@@ -33,21 +13,19 @@ const toInstance = (issue: LogIssue, id: number): LogInstance => ({
 })
 
 /**
- * Finds the errors, the warnings and the notable notes of a SAS log, and marks the
- * lines they sit on.
+ * Finds the errors, the warnings and the notable notes of a SAS log.
  *
  * The parsing is `parseLog` from `@sasjs/utils`, the same function the VS Code
  * extension uses, so a log reads the same in both: `ERROR:`/`WARNING:` with or
  * without a message code, the colon-less form SAS also writes, wrapped lines
  * folded into one issue, ODS HTML markup understood, and notes only from the
- * closed notable list. This used to be a pair of regular expressions here, which
- * missed every one of those.
+ * closed notable list.
  *
- * The returned `logLines` carry the marker wrapping, so `body` is what the log
- * viewer renders - lines that are not issues are passed through untouched.
+ * Nothing here touches the log text: the log is handed to the viewer as SAS
+ * wrote it, and the viewer anchors the lines these issues sit on. That keeps the
+ * log a log - a doxygen header's `<h4> SAS Macros </h4>` is text, not markup.
  */
 export const parseErrorsAndWarnings = (log: string) => {
-  const logLines = log.split('\n')
   const issues = parseLog(log)
 
   const collect = (severity: LogIssue['severity']): LogInstance[] =>
@@ -55,19 +33,25 @@ export const parseErrorsAndWarnings = (log: string) => {
       .filter((issue) => issue.severity === severity)
       .map((issue, id) => toInstance(issue, id))
 
-  const errors = collect('error')
-  const warnings = collect('warning')
-  const notes = collect('note')
+  return {
+    errors: collect('error'),
+    warnings: collect('warning'),
+    notes: collect('note')
+  }
+}
 
-  // Every issue is anchored so its tree entry can scroll to it; only errors and
-  // warnings carry a colour.
-  for (const instance of [...errors, ...warnings, ...notes]) {
-    if (logLines[instance.line] !== undefined) {
-      logLines[instance.line] = markLine(logLines[instance.line], instance)
-    }
+/** The number of lines in a log, without splitting it into one string per line. */
+export const countLines = (log: string) => {
+  if (log.length === 0) return 0
+
+  let lines = 0
+
+  for (let i = 0; i < log.length; i++) {
+    if (log.charCodeAt(i) === 10) lines++
   }
 
-  return { errors, warnings, notes, logLines }
+  // A log that does not end in a newline has a last line without a separator.
+  return log.charCodeAt(log.length - 1) === 10 ? lines : lines + 1
 }
 
 export const defaultChunkSize = 20000
@@ -84,26 +68,94 @@ export const isTheLastChunk = (
   return chunkNumber === chunksNumber
 }
 
+/**
+ * Cuts a log into chunks of `chunkSize` lines, keeping each chunk a substring of
+ * the log rather than an array of lines: a large log is only ever held once.
+ * Chunk `n` holds the lines from `n * chunkSize` onwards, which is how the
+ * viewer maps a scroll target back to the chunk it sits in.
+ */
 export const splitIntoChunks = (log: string, chunkSize = defaultChunkSize) => {
   if (!log) return []
 
-  const logLines: string[] = log.split(`\n`)
-
-  if (logLines.length <= chunkSize) return [log]
-
   const chunks: string[] = []
+  let chunkStart = 0
+  let line = 0
 
-  while (logLines.length) {
-    const chunk = logLines.splice(0, chunkSize)
+  for (let i = 0; i < log.length; i++) {
+    if (log.charCodeAt(i) !== 10) continue
 
-    chunks.push(chunk.join(`\n`))
+    line++
+
+    if (line % chunkSize === 0) {
+      chunks.push(log.slice(chunkStart, i))
+      chunkStart = i + 1
+    }
   }
+
+  if (chunkStart < log.length) chunks.push(log.slice(chunkStart))
 
   return chunks
 }
 
-export const clearErrorsAndWarningsHtmlWrapping = (log: string) =>
-  log.replace(/^<font[^>]*>/gm, '').replace(/<\/font>/gm, '')
+/** A run of log lines the viewer can render as one piece. */
+export interface LogSegment {
+  /** The log text exactly as SAS wrote it - never markup. */
+  text: string
+  /** The issue anchored on this segment, when the segment is the line it sits on. */
+  marker?: LogInstance
+}
+
+/**
+ * Splits a chunk into the fewest pieces that still give every anchored line its
+ * own element: the lines between two anchors share one text node, so a chunk
+ * with three notable notes is five segments, not twenty thousand. A chunk with
+ * nothing to anchor is one segment, and a long log costs the browser elements in
+ * proportion to its issues rather than to its length.
+ *
+ * `firstLine` is the line the chunk starts on, so a `marker.line` is an index
+ * into the log and not into the chunk.
+ */
+export const buildLogSegments = (
+  text: string,
+  firstLine = 0,
+  markers: LogInstance[] = []
+): LogSegment[] => {
+  const byLine = new Map<number, LogInstance>()
+
+  for (const marker of markers) {
+    const index = marker.line - firstLine
+
+    if (index < 0 || byLine.has(index)) continue
+
+    byLine.set(index, marker)
+  }
+
+  if (byLine.size === 0) return [{ text }]
+
+  const lines = text.split('\n')
+  const segments: LogSegment[] = []
+  let plainStart = 0
+
+  const flushPlain = (end: number) => {
+    if (end > plainStart) {
+      segments.push({ text: lines.slice(plainStart, end).join('\n') })
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const marker = byLine.get(i)
+
+    if (!marker) continue
+
+    flushPlain(i)
+    segments.push({ text: lines[i], marker })
+    plainStart = i + 1
+  }
+
+  flushPlain(lines.length)
+
+  return segments
+}
 
 export const download = (evt: SyntheticEvent, log: string, fileName = '') => {
   evt.stopPropagation()

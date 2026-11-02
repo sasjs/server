@@ -19,6 +19,7 @@ import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
 import LogComponent from './internal/components/log/logComponent'
 import LogTabWithIcons from './internal/components/log/logTabWithIcons'
+import WebOutPreview from './internal/components/webout/weboutPreview'
 
 import { usePrompt } from '../../utils/hooks'
 import { getLanguageFromExtension } from './internal/helper'
@@ -30,7 +31,7 @@ import {
 } from './internal/languages'
 import useEditor from './internal/hooks/useEditor'
 import { RunTimeType } from '../../context/appContext'
-import { LogObject } from '../../utils'
+import { isImageFile, LogObject } from '../../utils'
 import { useSetting } from '../../utils/hooks'
 
 // Registered at import time, so Monaco knows the language before the first
@@ -72,6 +73,7 @@ const SASjsEditor = ({
 }: SASjsEditorProps) => {
   const {
     fileContent,
+    imageUrl,
     isLoading,
     log,
     openFilePathInputModal,
@@ -143,6 +145,11 @@ const SASjsEditor = ({
 
   const toggleNotes = () => setNotesListed(!notesListed)
 
+  // A picture is a picture: the file menu is hidden for one, because its save
+  // writes the editor's buffer back to the drive and the buffer of an image is
+  // empty - saving would truncate the file.
+  const isImage = isImageFile(selectedFilePath)
+
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
@@ -153,9 +160,11 @@ const SASjsEditor = ({
       </Backdrop>
       {selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
         <Box sx={{ marginTop: '10px' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            {fileMenu}
-          </Box>
+          {!isImage && (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              {fileMenu}
+            </Box>
+          )}
           <Paper
             sx={{
               height: 'calc(100vh - 140px)',
@@ -166,7 +175,23 @@ const SASjsEditor = ({
             }}
             elevation={3}
           >
-            {monacoEditor}
+            {isImage ? (
+              imageUrl ? (
+                <Box
+                  component="img"
+                  src={imageUrl}
+                  alt={selectedFilePath.split('/').pop() ?? 'image'}
+                  sx={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    margin: '0 auto'
+                  }}
+                />
+              ) : null
+            ) : (
+              monacoEditor
+            )}
           </Paper>
         </Box>
       ) : (
@@ -264,9 +289,7 @@ const SASjsEditor = ({
           </StyledTabPanel>
           {webout && (
             <StyledTabPanel value="webout">
-              <div>
-                <pre>{webout}</pre>
-              </div>
+              <WebOutPreview output={webout} />
             </StyledTabPanel>
           )}
           {printOutput && (

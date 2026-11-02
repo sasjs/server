@@ -89,6 +89,16 @@
   background-color: #f6e30599;
 }
 
+/* The severity colours. A note is anchored but left uncoloured: a log carries
+   enough notes that colouring them would drown the errors. */
+.ErrorLine {
+  color: red;
+}
+
+.WarningLine {
+  color: green;
+}
+
 .Icon {
   font-size: 20px !important;
 }
