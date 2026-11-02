@@ -25,7 +25,8 @@ describe('ExecutionController.executeProgram', () => {
       state: SessionState.pending,
       creationTimeStamp: '0',
       deathTimeStamp: '0',
-      path: path.join(os.tmpdir(), sessionId)
+      path: path.join(os.tmpdir(), sessionId),
+      owner: 'testUser'
     }
   })
 

@@ -636,7 +636,8 @@ const mockedGetSession = async () => {
     state: SessionState.pending,
     creationTimeStamp,
     deathTimeStamp,
-    path: sessionFolder
+    path: sessionFolder,
+    owner: 'testUsername'
   }
 
   return session

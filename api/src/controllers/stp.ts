@@ -202,7 +202,7 @@ const triggerProgram = async (
     const sessionController = getSessionController(runTime)
 
     // get session
-    const session = await sessionController.getSession()
+    const session = await sessionController.getSession(req.user!.username)
 
     // add expiresAfterMins to session if provided
     if (expiresAfterMins) {

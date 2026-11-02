@@ -66,9 +66,10 @@ export class SessionController {
   @Example<SessionStateResponse>({ state: SessionState.completed })
   @Get('/:sessionId/state')
   public async sessionState(
+    @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<SessionStateResponse> {
-    return { state: sessionState(sessionId) }
+    return { state: sessionState(sessionId, request) }
   }
 
   /**
@@ -91,9 +92,10 @@ export class SessionController {
   })
   @Get('/:sessionId')
   public async sessionDetail(
+    @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<SessionSummary> {
-    const session = findSession(sessionId)
+    const session = findSession(sessionId, request)
 
     return {
       sessionId: session.id,
@@ -121,8 +123,11 @@ export class SessionController {
    */
   @Produces('text/plain')
   @Get('/:sessionId/log')
-  public async sessionLog(@Path() sessionId: string): Promise<string> {
-    const session = findSession(sessionId)
+  public async sessionLog(
+    @Request() request: express.Request,
+    @Path() sessionId: string
+  ): Promise<string> {
+    const session = findSession(sessionId, request)
 
     return readArtifact(session, 'log.log')
   }
@@ -141,12 +146,20 @@ export class SessionController {
    *
    * @summary Get the output of a triggered session
    */
+  // The body can be JSON, HTML, CSV, plain text or a binary attachment,
+  // depending on what the program wrote and the content type it set in
+  // `stpsrv_header.txt`. OpenAPI can only declare one media type for a
+  // response, and declaring `application/json` would invite a generated client
+  // to parse an HTML table or a CSV as JSON, so the declaration is the opaque
+  // one: read the `Content-Type` header of the response, which is the program's
+  // own.
+  @Produces('application/octet-stream')
   @Get('/:sessionId/output')
   public async sessionOutput(
     @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<string | Buffer> {
-    const session = findSession(sessionId)
+    const session = findSession(sessionId, request)
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
     const headersFile = await readFile(headersPath)
@@ -180,7 +193,7 @@ const session = (req: express.Request) => ({
  * expired session and one that never existed are the same thing to a caller -
  * there is nothing left to read.
  */
-const findSession = (sessionId: string): Session => {
+const findSession = (sessionId: string, request: express.Request): Session => {
   for (let runTime of process.runTimes) {
     // get session controller for each available runTime
     const sessionController = getSessionController(runTime)
@@ -188,7 +201,19 @@ const findSession = (sessionId: string): Session => {
     // get session by sessionId
     const session = sessionController.getSessionById(sessionId)
 
-    if (session) return session
+    if (!session) continue
+
+    // A session id is not a secret: it is handed to the caller that triggered
+    // the program and it is built from a timestamp plus a small random number,
+    // so it is guessable within a window. The log and the webout are readable
+    // by the session's owner and by an administrator; anyone else is told the
+    // session does not exist, because confirming it does would say that the id
+    // was right. There is no unowned session to fall back on.
+    const { username, isAdmin } = request.user ?? {}
+
+    if (session.owner !== username && !isAdmin) break
+
+    return session
   }
 
   throw {
@@ -197,8 +222,10 @@ const findSession = (sessionId: string): Session => {
   }
 }
 
-const sessionState = (sessionId: string): SessionState =>
-  findSession(sessionId).state
+const sessionState = (
+  sessionId: string,
+  request: express.Request
+): SessionState => findSession(sessionId, request).state
 
 /**
  * One of the files the execution writes into the session folder.

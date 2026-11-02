@@ -25,7 +25,8 @@ const makeSession = (deathInMs: number, state: SessionState): Session => {
     state,
     creationTimeStamp,
     deathTimeStamp: (new Date().getTime() + deathInMs).toString(),
-    path: path.join(getSessionsFolder(), sessionId)
+    path: path.join(getSessionsFolder(), sessionId),
+    owner: 'testUser'
   }
 }
 

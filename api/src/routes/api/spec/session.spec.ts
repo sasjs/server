@@ -12,8 +12,13 @@ import { getSessionController } from '../../../controllers/internal'
 import {
   generateAccessToken,
   saveTokensInDB,
-  RunTimeType
+  RunTimeType,
+  getSessionsFolder,
+  generateUniqueFileName,
+  getFilesFolder
 } from '../../../utils/'
+import { SASSessionController } from '../../../controllers/internal/Session'
+import * as ProcessProgramModule from '../../../controllers/internal/processProgram'
 import { Session, SessionState } from '../../../types/Session'
 
 const clientId = 'someclientID'
@@ -25,6 +30,27 @@ const clientId = 'someclientID'
  * synchronous execute endpoints, so a triggered run left them in a folder
  * nothing could read.
  */
+/**
+ * Waits for a value the server sets asynchronously, up to a deadline.
+ *
+ * Used where the write is made by a promise nobody awaits - a fixed sleep would
+ * be a guess about how long it takes on a loaded runner.
+ */
+const waitFor = async <T>(
+  read: () => T | undefined,
+  timeoutMs = 5000
+): Promise<T | undefined> => {
+  const deadline = Date.now() + timeoutMs
+  let value = read()
+
+  while (value === undefined && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    value = read()
+  }
+
+  return value
+}
+
 describe('Session artifacts', () => {
   let app: Express
   let con: Mongoose
@@ -39,7 +65,16 @@ describe('Session artifacts', () => {
     isActive: true
   }
 
+  const plainUser = {
+    displayName: 'Plain User',
+    username: 'plainUsername',
+    password: 'userPassword',
+    isAdmin: false,
+    isActive: true
+  }
+
   let token: string
+  let plainToken: string
   let sessionRoot: string
   // a counter as well as a timestamp: generateTimestamp() is millisecond
   // resolution, so two sessions registered in the same millisecond share an id
@@ -60,6 +95,9 @@ describe('Session artifacts', () => {
       creationTimeStamp: sessionId.split('-').pop() as string,
       deathTimeStamp: (new Date().getTime() + 60_000).toString(),
       path: sessionPath,
+      // every session has an owner; the admin owns the fixtures unless a case
+      // says otherwise
+      owner: admin.username,
       ...overrides
     }
 
@@ -89,12 +127,21 @@ describe('Session artifacts', () => {
 
     await controller.createUser(admin)
 
+    await controller.createUser(plainUser)
+
     const user = await controller.getUserByUsername(
       { user: { isAdmin: false } } as any,
       admin.username
     )
     token = generateAccessToken({ clientId, userId: user.uid })
     await saveTokensInDB(user.uid, clientId, token, 'refreshToken')
+
+    const plain = await controller.getUserByUsername(
+      { user: { isAdmin: false } } as any,
+      plainUser.username
+    )
+    plainToken = generateAccessToken({ clientId, userId: plain.uid })
+    await saveTokensInDB(plain.uid, clientId, plainToken, 'refreshToken')
 
     // the endpoints search every runtime the process declares, and in test
     // mode setProcessVariables returns before it reads RUN_TIMES, so the suite
@@ -136,6 +183,145 @@ describe('Session artifacts', () => {
         .expect(404)
 
       expect(res.body.message).toContain('not-a-session')
+    })
+  })
+
+  describe('a triggered program records its owner', () => {
+    // The specs above hand the owner to the fixture, so none of them exercises
+    // `session.owner = preProgramVariables.username`. If that line stopped
+    // firing - a trigger that arrived without a username, say - every session
+    // would stay unowned, every read would be unrestricted, and the rest of the
+    // suite would still be green.
+    beforeAll(async () => {
+      await createFile(
+        path.join(getFilesFolder(), 'owned-trigger.sas'),
+        'data _null; run;'
+      )
+
+      // registered on the controller as a real session would be, so the
+      // lookup the endpoints use finds the same object the execute path wrote
+      // the owner to
+      jest
+        .spyOn(SASSessionController.prototype, 'getSession')
+        .mockImplementation(async function (
+          this: SASSessionController,
+          username: string
+        ) {
+          const sessionId = generateUniqueFileName(generateTimestamp())
+          const session = {
+            id: sessionId,
+            state: SessionState.pending,
+            creationTimeStamp: sessionId.split('-').pop() as string,
+            deathTimeStamp: (new Date().getTime() + 60_000).toString(),
+            path: path.join(getSessionsFolder(), sessionId),
+            owner: username
+          }
+
+          ;(this as any).sessions.push(session)
+
+          return session
+        })
+
+      jest
+        .spyOn(ProcessProgramModule, 'processProgram')
+        .mockImplementation(() => Promise.resolve())
+    })
+
+    afterAll(() => jest.restoreAllMocks())
+
+    it('records the caller, and refuses a different user', async () => {
+      const triggered = await request(app)
+        .post('/SASjsApi/stp/trigger?_program=/owned-trigger.sas')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200)
+
+      const sessionId = triggered.body.sessionId
+
+      // The trigger returns as soon as the session exists, and the program runs
+      // unawaited, so the owner is written a tick or two later. Poll for it
+      // rather than sleeping a fixed time: a loaded runner can take longer than
+      // any constant chosen here.
+      const owner = await waitFor(
+        () =>
+          getSessionController(RunTimeType.SAS).getSessionById(sessionId)?.owner
+      )
+
+      expect(owner).toEqual(admin.username)
+
+      // and the rule holds from there: a non-admin caller gets 404
+      await request(app)
+        .get(`/SASjsApi/session/${sessionId}/log`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(404)
+    })
+  })
+
+  describe('ownership', () => {
+    // a session id is not a secret: it goes to the caller that triggered the
+    // program, and it is a timestamp plus a small random number, so it is
+    // guessable within a window
+    it('lets the owner read the log and the output', async () => {
+      const session = await registerSession(
+        { owner: plainUser.username },
+        { log: 'mine', webout: 'my output' }
+      )
+
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}/log`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(200)
+
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}/output`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(200)
+    })
+
+    it('tells another user the session does not exist', async () => {
+      const session = await registerSession(
+        { owner: 'someoneElse' },
+        { log: 'not yours', webout: 'not yours' }
+      )
+
+      // 404 rather than 403: confirming the id would confirm the guess
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}/log`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(404)
+
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}/output`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(404)
+
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(404)
+    })
+
+    it('lets an administrator read any session', async () => {
+      const session = await registerSession(
+        { owner: 'someoneElse' },
+        { log: 'support case' }
+      )
+
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}/log`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+    })
+
+    it('refuses a session whose owner is someone else, even when unset', async () => {
+      // there is no fallback: an owner that does not match is a 404, so a
+      // missing owner cannot open a session up
+      const session = await registerSession({ owner: '' }, { log: 'orphan' })
+
+      await request(app)
+        .get(`/SASjsApi/session/${session.id}/log`)
+        .set('Authorization', `Bearer ${plainToken}`)
+        .expect(404)
     })
   })
 

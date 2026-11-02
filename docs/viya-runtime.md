@@ -54,7 +54,13 @@ data work.result; x = 42; run;
 
 ## Triggering a long-running job
 
-`POST /SASjsApi/stp/trigger` and `POST /SASjsApi/code/trigger` return as soon as the session exists - the response carries the `sessionId`, and the program keeps running. Poll `GET /SASjsApi/session/{sessionId}/state` until it reads `completed` or `failed`, then read the session's `webout.txt` and `log.log` from the session folder.
+`POST /SASjsApi/stp/trigger` and `POST /SASjsApi/code/trigger` return as soon as the session exists - the response carries the `sessionId`, and the program keeps running. Poll `GET /SASjsApi/session/{sessionId}/state` until its `state` reads `completed` or `failed`, then fetch what the run produced:
+
+- `GET /SASjsApi/session/{sessionId}/log` is the program's log as plain text. An empty body means it has not written anything yet; a `404` means the session is gone, which is the difference a poller needs.
+- `GET /SASjsApi/session/{sessionId}/output` is its `_webout`, with the content type the program set.
+- `GET /SASjsApi/session/{sessionId}` describes the session: state, `pid` while it runs, timestamps, `failureReason`, and the retention window.
+
+The state is an object rather than a bare string, the shape a Viya caller already polls. Every session belongs to the user that created it, recorded when the session is made, and the log, the output and the details are served to that user or to an administrator; anyone else gets a `404`, because a session id is guessable and confirming one would confirm the guess. In desktop mode the single fixed local user owns every session. The artifacts survive completion for the window requested with `expiresAfterMins` (15 minutes from creation if none was asked for).
 
 That is the shape a long Viya job needs: measured on a 12-second program on the `js` runtime, the trigger call returned in 64 ms and the state moved `running` to `completed` at 13 seconds. A synchronous call to the same program waited the full 3.1 seconds.
 

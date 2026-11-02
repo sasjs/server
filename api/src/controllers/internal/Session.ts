@@ -57,7 +57,7 @@ export class SessionController {
       (session: Session) => session.state === SessionState.pending
     )
 
-  protected async createSession(): Promise<Session> {
+  protected async createSession(username: string): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
     const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
@@ -74,7 +74,8 @@ export class SessionController {
       state: SessionState.pending,
       creationTimeStamp,
       deathTimeStamp,
-      path: sessionFolder
+      path: sessionFolder,
+      owner: username
     }
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')
@@ -90,14 +91,19 @@ export class SessionController {
     return session
   }
 
-  public async getSession() {
+  public async getSession(username: string) {
     const readySessions = this.getReadySessions()
 
     const session = readySessions.length
       ? readySessions[0]
-      : await this.createSession()
+      : await this.createSession(username)
 
-    if (readySessions.length < 3) this.createSession()
+    // a pending session has never run anything, so handing it to this caller
+    // makes this caller its owner; the pool is a warm start, not a transfer of
+    // one user's session to another
+    session.owner = username
+
+    if (readySessions.length < 3) this.createSession(username)
 
     return session
   }
@@ -169,7 +175,7 @@ export class SessionController {
 }
 
 export class SASSessionController extends SessionController {
-  protected async createSession(): Promise<Session> {
+  protected async createSession(username: string): Promise<Session> {
     const sessionId = generateUniqueFileName(generateTimestamp())
     const sessionFolder = path.join(getSessionsFolder(), sessionId)
 
@@ -186,7 +192,8 @@ export class SASSessionController extends SessionController {
       state: SessionState.initialising,
       creationTimeStamp,
       deathTimeStamp,
-      path: sessionFolder
+      path: sessionFolder,
+      owner: username
     }
 
     const headersPath = path.join(session.path, 'stpsrv_header.txt')

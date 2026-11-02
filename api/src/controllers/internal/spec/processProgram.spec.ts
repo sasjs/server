@@ -33,7 +33,8 @@ const makeSession = (): Session => {
     state: SessionState.running,
     creationTimeStamp,
     deathTimeStamp,
-    path: sessionFolder
+    path: sessionFolder,
+    owner: 'testUser'
   }
 }
 

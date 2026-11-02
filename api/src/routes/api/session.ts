@@ -23,7 +23,7 @@ sessionRouter.get('/:sessionId/state', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.sessionState(params.sessionId)
+    const response = await controller.sessionState(req, params.sessionId)
 
     res.status(200)
     res.send(response)
@@ -41,7 +41,7 @@ sessionRouter.get('/:sessionId', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.sessionDetail(params.sessionId)
+    const response = await controller.sessionDetail(req, params.sessionId)
 
     res.status(200).send(response)
   } catch (err: any) {
@@ -58,7 +58,7 @@ sessionRouter.get('/:sessionId/log', async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
-    const response = await controller.sessionLog(params.sessionId)
+    const response = await controller.sessionLog(req, params.sessionId)
 
     res.status(200).type('text/plain').send(response)
   } catch (err: any) {

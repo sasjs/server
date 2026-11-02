@@ -8,6 +8,7 @@ const makeSession = (pid?: number): Session => ({
   creationTimeStamp: '0',
   deathTimeStamp: '0',
   path: '/tmp/session-1',
+  owner: 'testUser',
   pid
 })
 

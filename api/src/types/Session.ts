@@ -36,6 +36,15 @@ export interface SessionSummary {
 export interface Session {
   id: string
   state: SessionState
+  /**
+   * The username the session belongs to, set when the session is created.
+   *
+   * A session id is not a secret - it is handed to the caller that triggered the
+   * program, and it is built from a timestamp plus a small random number - so
+   * the artifact endpoints check this before serving a log or a webout. Every
+   * session has an owner: there is no unowned session to fall back on.
+   */
+  owner: string
   creationTimeStamp: string
   deathTimeStamp: string
   path: string
