@@ -24,6 +24,8 @@ environment variables and serve the same API.
 
 ### npm
 
+Run the latest release without installing it:
+
 ```bash
 npx @sasjs/server
 ```
@@ -41,7 +43,11 @@ the standalone executables are built for x64 only.
 
 Three things to know before choosing it:
 
-- **Pin the version for a deployment**: without a tag, `npx` takes the latest release, and an untagged `npx @sasjs/server` re-resolves `latest` on every run, so a restart becomes a silent upgrade. Pin the release you have tested - they are listed on [the npm page](https://www.npmjs.com/package/@sasjs/server).
+- **Pin the version for a deployment.** The command above resolves `latest` on
+  every run, so a restart becomes a silent upgrade. Install a specific release
+  instead - they are listed on
+  [the npm page](https://www.npmjs.com/package/@sasjs/server) - so the release
+  you tested is the one that runs.
 - **`.env` is read from the working directory.** `dotenv.config()` is relative to
   where the process starts, so run it from the project directory you want the
   server to own (that directory also gets the `./sasjs_root`). Under `npx` the
