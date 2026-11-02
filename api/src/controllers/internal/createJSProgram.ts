@@ -1,5 +1,4 @@
-import path from 'path'
-import { createFile } from '@sasjs/utils'
+import { getWeboutPrelude, weboutFinaliseStatement } from '@sasjs/utils'
 import { PreProgramVars, Session } from '../../types'
 import { generateFileUploadJSCode } from '../../utils'
 import {
@@ -8,7 +7,6 @@ import {
   reportDroppedParameterNames
 } from '../../utils/programVariables'
 import { ExecutionVars } from './'
-import { weboutHelperFileName, weboutHelperSource } from './weboutHelper'
 
 export const createJSProgram = async (
   program: string,
@@ -23,19 +21,29 @@ export const createJSProgram = async (
   const { safe, dropped } = partitionParameterNames(vars)
   reportDroppedParameterNames(dropped)
 
-  // The webout() helper lives beside the generated program and is required by
-  // it, so the program itself stays free of runtime plumbing. It is written on
-  // every execution, so a session folder can never carry a stale copy.
-  await createFile(
-    path.join(session.path, weboutHelperFileName),
-    weboutHelperSource
-  )
-
   const varStatments = safe.reduce(
     (computed: string, key: string) =>
       `${computed}const ${key} = ${asLiteral(vars[key])};\n`,
     ''
   )
+
+  // webout() is generated into the program rather than required from a file,
+  // which is how sasjs compile delivers the macros a SAS service declares: the
+  // program is self-contained, and the session log shows exactly what ran. The
+  // block is shared with the CLI's mock runtime, which cannot resolve a module
+  // at all - @sasjs/utils owns the one copy.
+  const weboutPrelude = getWeboutPrelude({
+    weboutPath,
+    headersPath,
+    program: String(vars._program ?? ''),
+    debug: String(vars._debug ?? ''),
+    username: preProgramVariables?.username ?? '',
+    userId: preProgramVariables?.userId ?? '',
+    apiServerUrl:
+      preProgramVariables?.localServerUrl ??
+      preProgramVariables?.serverUrl ??
+      ''
+  })
 
   const preProgramVarStatments = `
 let _webout = '';
@@ -52,17 +60,7 @@ const _METAPERSON = _SASJS_DISPLAYNAME;
 const _METAUSER = _SASJS_USERNAME;
 const SASJSPROCESSMODE = 'Stored Program';
 
-/* %ms_webout() for JS - webout('OPEN'), webout('OBJ', name, rows), webout('CLOSE') */
-const _sasjs_webout = require('./${weboutHelperFileName}')({
-  weboutPath: weboutPath,
-  headersPath: _SASJS_WEBOUT_HEADERS,
-  program: ${asLiteral(vars._program)},
-  debug: ${asLiteral(vars._debug)},
-  username: _SASJS_USERNAME,
-  userId: _SASJS_USERID,
-  apiServerUrl: _SASJS_APISERVERURL
-});
-globalThis.webout = _sasjs_webout;
+${weboutPrelude}
 `
 
   // Both are assigned as globals rather than declared as consts, so a program
@@ -83,7 +81,7 @@ ${program}
 /* webout() streams its own body as it is called. _webout is written here, and
    anything the program left unfinished is reported - the reserved handle is
    used so a program that declares its own webout cannot break this. */
-_sasjs_webout.finalise(_webout)
+${weboutFinaliseStatement}
 `
   // if no files are uploaded filesNamesMap will be undefined
   if (otherArgs?.filesNamesMap) {

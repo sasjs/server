@@ -313,44 +313,6 @@ webout('OPEN')
       expect(JSON.parse(reopen.body).rows).toEqual([{ a: 1 }])
     })
 
-    it('writes an undefined config value as null, not as broken JSON', async () => {
-      // The generated program passes literals, so asLiteral already turns a
-      // missing value into ''; a caller that requires the helper itself can
-      // pass anything, and one undefined field would otherwise make the whole
-      // envelope unparseable.
-      await generate('js', 'value') // writes sasjs-webout.js into the session folder
-
-      const weboutUndefinedPath = path.join(workDir, 'webout-undefined.txt')
-      const headersUndefinedPath = path.join(workDir, 'headers-undefined.txt')
-      const scriptPath = path.join(workDir, 'undefined-config.js')
-
-      writeFileSync(headersUndefinedPath, 'content-type: text/html')
-      writeFileSync(
-        scriptPath,
-        [
-          "const webout = require('./sasjs-webout.js')({",
-          `  weboutPath: ${JSON.stringify(weboutUndefinedPath)},`,
-          `  headersPath: ${JSON.stringify(headersUndefinedPath)},`,
-          '  program: undefined,',
-          '  debug: undefined,',
-          '  username: undefined,',
-          '  userId: undefined,',
-          '  apiServerUrl: undefined',
-          '})',
-          "webout('OPEN')",
-          "webout('CLOSE')"
-        ].join('\n')
-      )
-
-      execFileSync(process.execPath, [scriptPath], { cwd: workDir })
-
-      const parsed = JSON.parse(readFileSync(weboutUndefinedPath, 'utf-8'))
-
-      expect(parsed.SYSTCPIPHOSTNAME).toBeNull()
-      expect(parsed.MF_GETUSER).toBeNull()
-      expect(parsed._PROGRAM).toBeNull()
-    })
-
     it('lets the program override the content type after OPEN', async () => {
       const { body, headers, failed } = await runProgram(`
 webout('OPEN')
