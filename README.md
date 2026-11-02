@@ -25,7 +25,7 @@ environment variables and serve the same API.
 ### npm
 
 ```bash
-npx @sasjs/server@3.7.1
+npx @sasjs/server
 ```
 
 Or install it once and run `sasjs-server` from then on:
@@ -41,7 +41,7 @@ the standalone executables are built for x64 only.
 
 Three things to know before choosing it:
 
-- **Pin the version**, as above: 3.7.1 is the current release at the time of writing, so check [the npm page](https://www.npmjs.com/package/@sasjs/server) and keep the pin at a release you have tested. An unpinned `npx @sasjs/server` re-resolves `latest` on every run, so a restart becomes a silent upgrade.
+- **Pin the version for a deployment**: without a tag, `npx` takes the latest release, and an untagged `npx @sasjs/server` re-resolves `latest` on every run, so a restart becomes a silent upgrade. Pin the release you have tested - they are listed on [the npm page](https://www.npmjs.com/package/@sasjs/server).
 - **`.env` is read from the working directory.** `dotenv.config()` is relative to
   where the process starts, so run it from the project directory you want the
   server to own (that directory also gets the `./sasjs_root`). Under `npx` the
