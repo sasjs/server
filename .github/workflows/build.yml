@@ -396,6 +396,33 @@ jobs:
           jq -e '.marker == "js-ok"' /tmp/js.json
           jq -e '.marker == "py-ok"' /tmp/py.json
 
+      # The webout() helper is how a JS program sets the content type and the
+      # envelope: the header is part of the response contract, and the system
+      # block is what a consumer reads MF_GETUSER from.
+      - name: Execute a JS stored program that uses webout()
+        run: |
+          set -eu
+          API=http://127.0.0.1:5000
+          TOKEN=$(cat /tmp/token)
+
+          printf '%s\n' \
+            "webout('OPEN')" \
+            "webout('OBJ', 'users', [{name: 'ann'}, {name: 'bob'}])" \
+            "webout('CLOSE')" > /tmp/hello-webout.js
+
+          curl -sf -X POST "$API/SASjsApi/drive/file?_filePath=/Public/hello-webout.js" \
+            -H "Authorization: Bearer $TOKEN" -F "file=@/tmp/hello-webout.js"
+
+          curl -s -D /tmp/hello-webout.headers \
+            "$API/SASjsApi/stp/execute?_program=/Public/hello-webout.js" \
+            -H "Authorization: Bearer $TOKEN" > /tmp/hello-webout.json
+
+          echo "hello-webout.js -> $(cat /tmp/hello-webout.json)"
+
+          grep -qi '^content-type: application/json' /tmp/hello-webout.headers
+          jq -e '.users == [{name:"ann"},{name:"bob"}]' /tmp/hello-webout.json
+          jq -e '.MF_GETUSER == "admin"' /tmp/hello-webout.json
+
       # The sign-in path calls the global fetch, which pkg binaries targeting
       # node16 did not have; this is the step that catches that class of break.
       - name: Assert the OIDC sign-in route redirects to the provider
