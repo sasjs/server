@@ -641,5 +641,16 @@ describe('Studio in a browser', () => {
     await page.waitForTimeout(300)
 
     expect(await shown()).toContain('KEYBOARDPASTE')
+
+    // A key down is the same takeover, and it arrives before the paste the key
+    // produces: right press, Escape, Ctrl+V, with no click in between.
+    await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
+    await page.waitForTimeout(200)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Shift')
+    await paste('KEYONLYPASTE')
+    await page.waitForTimeout(300)
+
+    expect(await shown()).toContain('KEYONLYPASTE')
   }, 120000)
 })
