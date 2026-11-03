@@ -112,6 +112,7 @@ const SASjsEditor = ({
       showDiff={showDiff}
       setShowDiff={setShowDiff}
       isDirty={isDirty}
+      selectedFilePath={selectedFilePath}
       setOpenFilePathInputModal={setOpenFilePathInputModal}
       saveFile={saveBuffer}
     />

@@ -8,9 +8,11 @@
  * the editor pasting by itself.
  *
  * A press of a secondary button on the text area arms the guard, and the paste
- * that follows within the window is dropped. A left press does not arm it, so
- * Ctrl+V straight after clicking into the code still pastes, and a Paste chosen
- * from the editor's own menu - which renders outside this node - is untouched.
+ * that follows within the window is dropped. Anything the user does that is not
+ * a mouse gesture disarms it again - a left press, or a key down - so the
+ * keyboard is never suppressed: right-click, then click into the buffer, or
+ * right-click, then Ctrl+V, both paste. A Paste chosen from the editor's own
+ * menu renders outside this node and never arms the guard at all.
  */
 
 /** How long a secondary press can lead to a paste before the press is stale. */
@@ -23,7 +25,15 @@ export const guardMousePaste = (node: HTMLElement): (() => void) => {
   let armedAt: number | null = null
 
   const arm = (event: MouseEvent) => {
-    if (event.button !== 0) armedAt = Date.now()
+    // A left press is the user taking over: whatever the previous gesture
+    // armed is stale, and the next paste is theirs to make.
+    armedAt = event.button === 0 ? null : Date.now()
+  }
+
+  // A key down is the same takeover, and it arrives BEFORE the paste the key
+  // produces - so Ctrl+V straight after a right click is not suppressed.
+  const disarm = () => {
+    armedAt = null
   }
 
   const dropPaste = (event: Event) => {
@@ -39,10 +49,12 @@ export const guardMousePaste = (node: HTMLElement): (() => void) => {
   }
 
   node.addEventListener('mousedown', arm, true)
+  node.addEventListener('keydown', disarm, true)
   node.addEventListener('paste', dropPaste, true)
 
   return () => {
     node.removeEventListener('mousedown', arm, true)
+    node.removeEventListener('keydown', disarm, true)
     node.removeEventListener('paste', dropPaste, true)
   }
 }

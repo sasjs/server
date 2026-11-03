@@ -531,9 +531,10 @@ describe('Studio in a browser', () => {
       { timeout: 30000 }
     )
 
-    const saveButton = () => page.locator('button[aria-label="Save"]')
-    const dirtyButton = () =>
+    const saveButton = () =>
       page.locator('button[aria-label="Save (unsaved changes)"]')
+    const idleButton = () =>
+      page.locator('button[aria-label="Nothing to save"]')
 
     // The dot itself: MUI keeps the badge in the DOM and scales it away when it
     // is invisible, so its measured size is what says whether it shows.
@@ -552,7 +553,10 @@ describe('Studio in a browser', () => {
         }
       })
 
-    expect(await saveButton().count()).toBe(1)
+    // Nothing to write, so the disk is disabled rather than doing nothing
+    // silently when clicked.
+    expect(await idleButton().count()).toBe(1)
+    expect(await idleButton().isDisabled()).toBe(true)
     expect((await dot())?.width ?? 0).toBe(0)
 
     await page.click('.monaco-editor')
@@ -561,7 +565,8 @@ describe('Studio in a browser', () => {
 
     // The dot appears, and it is the palette's blue rather than the theme's
     // primary, which is black.
-    expect(await dirtyButton().count()).toBe(1)
+    expect(await saveButton().count()).toBe(1)
+    expect(await saveButton().isDisabled()).toBe(false)
     await page.waitForTimeout(500)
 
     const painted = await dot()
@@ -574,12 +579,12 @@ describe('Studio in a browser', () => {
     })
 
     // Saving writes the buffer and takes the dot away.
-    await dirtyButton().click()
+    await saveButton().click()
     await page.waitForSelector('text=File saved!', { timeout: 30000 })
     await page.waitForTimeout(500)
 
-    expect(await saveButton().count()).toBe(1)
-    await page.waitForTimeout(500)
+    expect(await idleButton().count()).toBe(1)
+    expect(await idleButton().isDisabled()).toBe(true)
     expect((await dot())?.width ?? 0).toBe(0)
     const onDrive = await readFile(
       path.join(driveLocation, 'files', SAVE_FILE_NAME),
@@ -588,7 +593,7 @@ describe('Studio in a browser', () => {
     expect(onDrive).not.toBe(SAVE_FILE_CONTENT)
   }, 120000)
 
-  it('drops a paste that a mouse gesture produced, and keeps the keyboard paste', async () => {
+  it('drops a paste that follows a right click, and takes an ordinary paste', async () => {
     // A paste as the browser delivers it, into the editor's input element.
     const paste = (text: string) =>
       page.evaluate((text) => {
@@ -613,24 +618,27 @@ describe('Studio in a browser', () => {
     await page.keyboard.press('Control+End')
 
     const beforeGesture = await shown()
-
-    // A right press, then the paste the browser can follow it with: the editor
-    // ignores it, which is what stops text appearing from a right click.
     const box = (await page.locator('.monaco-editor').boundingBox())!
+
+    // A right press followed by the paste the browser can send it - with NO
+    // key in between, which is what makes this the gesture and not the user.
+    // The editor ignores it, so text cannot appear from a right click.
     await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
     await paste('MOUSEPASTE')
     await page.waitForTimeout(300)
 
     expect(await shown()).toBe(beforeGesture)
 
+    // What the guard must never swallow is an ordinary paste. Escape closes the
+    // menu and is itself a key down, so this case does not isolate WHICH
+    // disarm did the work - the two arms of that (a left press, a key down) are
+    // asserted directly in web/scripts/test-mouse-paste-guard.mjs, where no
+    // menu and no Escape stand between the gesture and the paste.
     await page.keyboard.press('Escape')
-
-    // The keyboard is a deliberate paste, and still works: a left press into
-    // the code does not arm the guard.
     await page.mouse.click(box.x + 200, box.y + 40)
-    await paste('KEYBOARDPASTE')
+    await paste('USERPASTE')
     await page.waitForTimeout(300)
 
-    expect(await shown()).toContain('KEYBOARDPASTE')
+    expect(await shown()).toContain('USERPASTE')
   }, 120000)
 })

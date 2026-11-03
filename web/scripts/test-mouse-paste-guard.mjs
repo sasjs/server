@@ -35,6 +35,7 @@ const stubNode = () => {
       }
     },
     press: (button) => listeners.get('mousedown')({ button }),
+    key: () => listeners.get('keydown')({ key: 'Control' }),
     paste: () => {
       const event = {
         cancelled: false,
@@ -101,6 +102,30 @@ check('a left press leaves the paste alone', () => {
   assert.equal(stub.paste().cancelled, false)
 })
 
+check('a left press disarms a guard a right press armed', () => {
+  const stub = stubNode()
+  guardMousePaste(stub.node)
+
+  // Right-click the code, then click into the buffer and press Ctrl+V inside
+  // the window: the user's paste, not the gesture's.
+  stub.press(2)
+  stub.press(0)
+
+  assert.equal(stub.paste().cancelled, false)
+})
+
+check('a key down disarms a guard a right press armed', () => {
+  const stub = stubNode()
+  guardMousePaste(stub.node)
+
+  // Right-click to look at the menu, then Ctrl+V: the key down arrives before
+  // the paste it produces, so the keyboard is never suppressed.
+  stub.press(2)
+  stub.key()
+
+  assert.equal(stub.paste().cancelled, false)
+})
+
 check('a press older than the window leaves the paste alone', () => {
   const stub = stubNode()
   guardMousePaste(stub.node)
@@ -121,13 +146,14 @@ check('one press arms one paste', () => {
   assert.equal(stub.paste().cancelled, false)
 })
 
-check('the release detaches both listeners', () => {
+check('the release detaches every listener', () => {
   const stub = stubNode()
   const release = guardMousePaste(stub.node)
 
   release()
 
   assert.equal(stub.listeners.has('mousedown'), false)
+  assert.equal(stub.listeners.has('keydown'), false)
   assert.equal(stub.listeners.has('paste'), false)
 })
 
