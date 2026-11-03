@@ -1,4 +1,5 @@
 import path from 'path'
+import { readFileSync } from 'fs'
 import { Session, SessionState } from '../../types'
 import { execFile } from 'child_process'
 import {
@@ -47,7 +48,10 @@ const runSessionProcess = (
       resolve({ stdout, stderr })
     })
 
-    if (child.pid) session.pid = child.pid
+    if (child.pid) {
+      session.pid = child.pid
+      session.pidStartedAt = readProcessStartTime(child.pid)
+    }
   })
 
 /**
@@ -58,18 +62,31 @@ const EXIT_POLL_MS = 50
 /**
  * How long a session gets to finish by itself when the server is shutting down.
  *
- * The whole stop is bounded by three budgets: this one, the kill grace below, and
- * the listener close in `listen.ts` (5s) - 9 seconds in the worst case. That is
+ * The whole stop is bounded by three budgets: this one, the two below, and the
+ * listener close in `listen.ts` (5s) - 9 seconds in the worst case. That is
  * deliberately under the 10 second timeout the deployment docs tell a supervisor
  * to allow, because a supervisor's SIGKILL cannot be caught: hitting it would
  * orphan the very processes this is here to end.
+ *
+ * The three are summed, not nested: each phase gets its own slice, so a session
+ * that ignores SIGTERM cannot borrow the time reserved for confirming the SIGKILL.
  */
-export const DRAIN_GRACE_MS = 2500
+export interface DrainBudget {
+  /** Time the session gets to finish on its own. */
+  graceMs: number
+  /** Time it gets after SIGTERM. */
+  sigtermMs: number
+  /** Time it gets after SIGKILL, which is also the longest the process can take
+   * to be reaped and so the only way to know the folder is safe to remove. */
+  sigkillMs: number
+}
 
-/**
- * How long a signalled session gets before the signal is escalated to SIGKILL.
- */
-const DRAIN_KILL_GRACE_MS = 1500
+/** 2000 + 1000 + 1000: the 4 second drain half of the 9 second stop budget. */
+export const DEFAULT_DRAIN_BUDGET: DrainBudget = {
+  graceMs: 2000,
+  sigtermMs: 1000,
+  sigkillMs: 1000
+}
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -90,6 +107,40 @@ export const isProcessAlive = (pid?: number): boolean => {
     return true
   } catch (error: any) {
     return error?.code !== 'ESRCH'
+  }
+}
+
+/**
+ * The time a process started, as the OS reports it, or `undefined` where the
+ * platform does not expose it.
+ *
+ * A pid alone cannot tell a live session's process from an unrelated one that
+ * reused the number, and both `process.kill(pid, 0)` and a real signal act on
+ * whatever holds the pid now. The start time (field 22 of `/proc/<pid>/stat`,
+ * clock ticks since boot) never repeats for a given pid, so recording it when the
+ * process is spawned makes the pair an identity.
+ *
+ * Read from `/proc`, which exists on Linux and not on macOS or Windows - there
+ * `undefined` means "no identity to compare", and the caller falls back to the
+ * pid, which is what it had before.
+ */
+export const readProcessStartTime = (pid?: number): string | undefined => {
+  if (!pid) return undefined
+
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
+
+    // field 2 (`comm`) is parenthesised and may itself contain spaces or
+    // parentheses, so the fields after it are counted from the last ')'
+    const fields = stat
+      .slice(stat.lastIndexOf(')') + 2)
+      .trim()
+      .split(' ')
+
+    // the slice starts at field 3, so starttime - field 22 - is index 19
+    return fields[19]
+  } catch {
+    return undefined
   }
 }
 
@@ -252,7 +303,9 @@ export class SessionController {
    * Sessions are drained in parallel: a pool of three would otherwise take three
    * graces in a row, which no supervisor's kill timeout is sized for.
    */
-  public async drain(graceMs = DRAIN_GRACE_MS): Promise<void> {
+  public async drain(
+    budget: DrainBudget = DEFAULT_DRAIN_BUDGET
+  ): Promise<void> {
     if (!this.sessions.length) return
 
     process.logger?.info(
@@ -261,16 +314,29 @@ export class SessionController {
     )
 
     await Promise.all(
-      this.sessions.map((session) => this.drainSession(session, graceMs))
+      this.sessions.map((session) => this.drainSession(session, budget))
     )
   }
 
   protected async drainSession(
     session: Session,
-    graceMs: number
+    budget: DrainBudget
   ): Promise<void> {
-    if (!(await this.waitForProcessExit(session, graceMs)))
-      await this.terminate(session)
+    if (!(await this.waitForProcessExit(session, budget.graceMs))) {
+      const gone = await this.terminate(session, budget)
+
+      // A process that survived SIGTERM *and* SIGKILL is stuck in uninterruptible
+      // I/O. Its folder is where it is still writing, so removing it would
+      // recreate the `Failed to open .../code.sas` failure this change exists to
+      // prevent - on a rarer path, but for the same reason. Leave it: the operator
+      // clears it once the process is gone.
+      if (!gone)
+        return process.logger?.error(
+          'session did not stop, so its folder was left in place',
+          session.id,
+          session.pid
+        )
+    }
 
     // The process is gone, so the folder can go too. Leaving it would leak one
     // directory per session per restart - the destroy timer that would have
@@ -287,6 +353,29 @@ export class SessionController {
   }
 
   /**
+   * Whether the process this session recorded is still the one running.
+   *
+   * A pid is only unique while its process lives. After it exits the number is
+   * free for reuse, and `process.kill(pid, 0)` - or a signal - cannot tell the
+   * difference, so a drain that trusted it could wait for, and then kill, an
+   * unrelated process: another session's interpreter, or whatever the supervisor
+   * started. The process start time does not repeat, so it is recorded when the
+   * process is spawned and compared here.
+   *
+   * Where the platform does not expose it, `pidStartedAt` is unset and the pid is
+   * the best identity available - the pre-existing behaviour, not a new hole.
+   */
+  protected isSessionProcess(session: Session): boolean {
+    if (!isProcessAlive(session.pid)) return false
+
+    const startedAt = readProcessStartTime(session.pid)
+
+    if (!startedAt || !session.pidStartedAt) return true
+
+    return startedAt === session.pidStartedAt
+  }
+
+  /**
    * Resolves true once the session's process has gone, false if it is still
    * running when the deadline passes.
    *
@@ -299,13 +388,11 @@ export class SessionController {
     session: Session,
     timeoutMs: number
   ): Promise<boolean> {
-    const { pid } = session
-
-    if (!pid) return true
+    if (!session.pid) return true
 
     const deadline = new Date().getTime() + timeoutMs
 
-    while (isProcessAlive(pid)) {
+    while (this.isSessionProcess(session)) {
       if (new Date().getTime() >= deadline) return false
 
       await delay(EXIT_POLL_MS)
@@ -315,7 +402,8 @@ export class SessionController {
   }
 
   /**
-   * Signals a session that did not finish in time, escalating to SIGKILL.
+   * Signals a session that did not finish in time, escalating to SIGKILL, and
+   * reports whether the process is gone.
    *
    * SIGTERM comes first because it is the only signal a process can act on: a
    * SAS session mid-program still runs its termination phase and closes its log,
@@ -324,10 +412,17 @@ export class SessionController {
    * rather than hoping. On Windows both signals end the process, which is what
    * the fallback would do anyway.
    */
-  protected async terminate(session: Session): Promise<void> {
+  protected async terminate(
+    session: Session,
+    budget: DrainBudget
+  ): Promise<boolean> {
     const { pid } = session
 
-    if (!pid) return
+    if (!pid) return true
+
+    // the pid is re-checked here: between the wait above and this line the
+    // process can exit and the number be handed to something else
+    if (!this.isSessionProcess(session)) return true
 
     session.terminatedByShutdown = true
 
@@ -339,13 +434,13 @@ export class SessionController {
 
     this.signal(pid, 'SIGTERM')
 
-    if (await this.waitForProcessExit(session, DRAIN_KILL_GRACE_MS)) return
+    if (await this.waitForProcessExit(session, budget.sigtermMs)) return true
 
     process.logger?.warn('session ignored SIGTERM, killing', session.id, pid)
 
     this.signal(pid, 'SIGKILL')
 
-    await this.waitForProcessExit(session, DRAIN_KILL_GRACE_MS)
+    return this.waitForProcessExit(session, budget.sigkillMs)
   }
 
   private signal(pid: number, signal: NodeJS.Signals) {
@@ -441,12 +536,14 @@ ${autoExecContent}`
         session.state = SessionState.completed
         // the process is gone and its pid can be recycled
         session.pid = undefined
+        session.pidStartedAt = undefined
 
         process.logger.info('session completed', session)
       })
       .catch((err) => {
         session.state = SessionState.failed
         session.pid = undefined
+        session.pidStartedAt = undefined
 
         session.failureReason = err.toString()
 
@@ -506,12 +603,12 @@ ${autoExecContent}`
    */
   protected async drainSession(
     session: Session,
-    graceMs: number
+    budget: DrainBudget
   ): Promise<void> {
     if (session.state === SessionState.pending && session.pid)
       await this.requestSessionEnd(session)
 
-    await super.drainSession(session, graceMs)
+    await super.drainSession(session, budget)
   }
 
   /**

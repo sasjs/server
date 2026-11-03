@@ -11,6 +11,7 @@ import {
 } from '@sasjs/utils'
 import {
   isProcessAlive,
+  readProcessStartTime,
   SessionController,
   SASSessionController
 } from '../Session'
@@ -26,7 +27,17 @@ import { getSessionsFolder, generateUniqueFileName } from '../../../utils'
  * because the behaviour under test is what happens to a live process and when its
  * folder may be removed.
  */
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+/** A drain budget whose phases can be shortened, so the specs stay quick. */
+const budget = (graceMs = 100, sigtermMs = 1000, sigkillMs = 1000) => ({
+  graceMs,
+  sigtermMs,
+  sigkillMs
+})
+
+// `/proc` is Linux only, and the pid-identity check depends on it - on macOS and
+// Windows there is nothing to compare, so that spec would assert the opposite of
+// the documented fallback.
+const itOnLinux = readProcessStartTime(process.pid) ? it : it.skip
 
 const makeSession = (state: SessionState): Session => {
   const sessionId = generateUniqueFileName(generateTimestamp())
@@ -110,7 +121,7 @@ describe('session drain', () => {
     await createFile(path.join(session.path, 'log.log'), 'finished')
     track(controller, session)
 
-    await controller.drain(1000)
+    await controller.drain(budget(1000))
 
     expect(await folderExists(session.path)).toEqual(false)
     expect(controller.getSessionById(session.id)).toBeUndefined()
@@ -126,7 +137,7 @@ describe('session drain', () => {
       await createFile(path.join(session.path, 'log.log'), 'still running')
       track(controller, session)
 
-      await controller.drain(2000)
+      await controller.drain(budget(2000))
 
       // the run finished on its own, so nothing had to be signalled...
       expect(process.logger.warn).not.toHaveBeenCalled()
@@ -151,7 +162,7 @@ describe('session drain', () => {
       await createFile(path.join(session.path, 'log.log'), 'runaway')
       track(controller, session)
 
-      await controller.drain(100)
+      await controller.drain(budget())
 
       // SIGTERM was ignored, so the escalation ran and the process is really gone
       expect(isProcessAlive(session.pid)).toEqual(false)
@@ -193,10 +204,10 @@ describe('session drain', () => {
 
       const started = new Date().getTime()
 
-      await controller.drain(100)
+      await controller.drain(budget(100, 800, 800))
 
       // two graces in sequence would be 2x the deadline; parallel is one
-      expect(new Date().getTime() - started).toBeLessThan(3500)
+      expect(new Date().getTime() - started).toBeLessThan(2500)
 
       for (const session of sessions) {
         expect(isProcessAlive(session.pid)).toEqual(false)
@@ -208,9 +219,67 @@ describe('session drain', () => {
   })
 
   it('does nothing when it holds no sessions', async () => {
-    await controller.drain(100)
+    await controller.drain(budget())
 
     expect(process.logger.info).not.toHaveBeenCalled()
+  })
+
+  // A pid is only unique while its process lives. If the OS has handed the number
+  // to something else, signalling it would hit an unrelated process - another
+  // session's interpreter, or the supervisor's own child.
+  itOnLinux(
+    'does not signal a pid that another process has taken over',
+    async () => {
+      const child = await spawnStubbornProcess()
+
+      try {
+        const session = makeSession(SessionState.running)
+        session.pid = child.pid
+        // a start time that cannot belong to this child, i.e. the pid was reused
+        session.pidStartedAt = '0'
+
+        await createFile(path.join(session.path, 'log.log'), 'not ours')
+        track(controller, session)
+
+        await controller.drain(budget(100, 500, 500))
+
+        // nothing was sent: the process is still up, and no signal was logged
+        expect(isProcessAlive(child.pid)).toEqual(true)
+        expect(process.logger.warn).not.toHaveBeenCalled()
+
+        // and the folder goes, because no live process of ours owns it
+        expect(await folderExists(session.path)).toEqual(false)
+      } finally {
+        await stopProcess(child)
+      }
+    }
+  )
+
+  // The process survives SIGTERM *and* SIGKILL only when it is stuck in
+  // uninterruptible I/O, which cannot be simulated portably - so the contract of
+  // the branch is asserted: whatever terminate() reports decides the folder.
+  it('leaves the folder in place when the process survives both signals', async () => {
+    const session = makeSession(SessionState.running)
+    session.pid = 4242
+
+    await createFile(path.join(session.path, 'log.log'), 'stuck in i/o')
+    track(controller, session)
+
+    jest.spyOn(controller as any, 'waitForProcessExit').mockResolvedValue(false)
+    jest.spyOn(controller as any, 'terminate').mockResolvedValue(false)
+
+    await controller.drain()
+
+    // the folder is where the session is still writing: removing it is the very
+    // crash sasjs/server#162 reports
+    expect(await folderExists(session.path)).toEqual(true)
+    expect(process.logger.error).toHaveBeenCalledWith(
+      'session did not stop, so its folder was left in place',
+      session.id,
+      session.pid
+    )
+
+    await deleteFolder(session.path)
   })
 })
 
@@ -268,7 +337,7 @@ describe('draining a SAS session', () => {
 
       // the child does not react to the program, so the signal is what ends it -
       // the point here is that it was asked first
-      await controller.drain(100)
+      await controller.drain(budget(100, 500, 500))
 
       expect(requestEnd).toHaveBeenCalledWith(session)
       expect(isProcessAlive(session.pid)).toEqual(false)
@@ -290,7 +359,7 @@ describe('draining a SAS session', () => {
 
       const requestEnd = jest.spyOn(controller as any, 'requestSessionEnd')
 
-      await controller.drain(100)
+      await controller.drain(budget(100, 500, 500))
 
       expect(requestEnd).not.toHaveBeenCalled()
       expect(isProcessAlive(session.pid)).toEqual(false)

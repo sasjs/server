@@ -65,9 +65,18 @@ appPromise.then(async (app: Express) => {
     // exit that leaves one behind keeps a SAS licence seat (and the folder it is
     // writing to) busy until its own idle ceiling expires - up to 15 minutes per
     // pooled session, on every restart.
-    await drainSessions()
-
-    process.exit(0)
+    try {
+      await drainSessions()
+    } catch (error: any) {
+      process.logger.error(
+        '[server] draining sessions failed',
+        error?.message ?? error
+      )
+    } finally {
+      // whatever the drain did, the stop is over: leaving the process up for the
+      // supervisor to SIGKILL would orphan exactly what the drain just ended
+      process.exit(0)
+    }
   }
 
   process.on('SIGINT', () => stop('SIGINT'))

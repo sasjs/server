@@ -440,8 +440,9 @@ Whichever you pick, capture stderr. The process exits 1 on a configuration error
 
 `SIGTERM` and `SIGINT` stop the server in two stages.
 Listeners stop accepting first, and in-flight requests get up to 5 seconds to finish.
-Then every session the server is holding is ended: a SAS session waiting for work is handed an `endsas;` program so SAS terminates itself, and a session that is still running gets 2.5 seconds to finish before it is signalled (SIGTERM, then SIGKILL after another 1.5 seconds).
-A session's folder is removed only after its process has gone.
+Then every session the server is holding is ended: a SAS session waiting for work is handed an `endsas;` program so SAS terminates itself, and a session that is still running gets 2 seconds to finish, then SIGTERM with 1 second, then SIGKILL with 1 second.
+The three phases are added, not nested, so no phase can borrow another's time.
+A session's folder is removed only after its process has gone - if a process survives both signals (uninterruptible I/O), the folder is left in place and an error is logged, because that folder is where the process is still writing.
 
 The worst case is therefore 9 seconds - 5 for the listener close plus 4 for the drain - so give a supervisor **10 seconds** before it escalates.
 That gap is deliberate: a supervisor's `SIGKILL` cannot be caught, so a shutdown cut short at that point would orphan the very processes this ends, and a SAS session left behind keeps a licence seat busy until its own 15 minute idle ceiling expires.
