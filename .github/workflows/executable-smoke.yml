@@ -1,0 +1,92 @@
+name: Executable Smoke Test
+
+# The packaged executables run on the small-icu Node that `pkg` embeds, which is
+# a different runtime from the one every other job uses - `build.yml` boots
+# `node build/src/server.js` on the runner's full-icu Node, where a logging or
+# startup regression in the packaged shape cannot show up at all. v3.10.0,
+# v3.11.0 and v3.11.1 therefore shipped binaries that died on their first log
+# line while every unit and integration job stayed green.
+#
+# Each runner builds its OWN platform target and starts it: a cross-built binary
+# cannot be executed here, so this is the only job that runs the Windows and
+# macOS artefacts anywhere.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: node24-linux-x64
+            output: ../executables/api-linux
+            name: api-linux
+          - os: windows-latest
+            target: node24-win-x64
+            output: ../executables/api-win.exe
+            name: api-win.exe
+          # The target is x64 and the runner image is arm64, so the binary runs
+          # under Rosetta 2 - which is the only way to execute the macOS
+          # artefact anywhere in CI. Its absence would fail the boot step rather
+          # than pass silently.
+          - os: macos-latest
+            target: node24-macos-x64
+            output: ../executables/api-macos
+            name: api-macos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js lts/*
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Dependencies WEB
+        working-directory: ./web
+        run: npm ci
+
+      - name: Build WEB
+        working-directory: ./web
+        run: npm run build
+
+      - name: Install Dependencies API
+        working-directory: ./api
+        run: npm ci
+
+      - name: Build API
+        working-directory: ./api
+        run: npm run build
+        env:
+          # The api build lists the SAS_PACKAGES macros over the GitHub API,
+          # which rate limits unauthenticated requests per source IP.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # One target on purpose: this runner can execute only its own platform's
+      # binary, so building the others would add minutes and prove nothing.
+      # `--output` is explicit because pkg omits the platform suffix when a
+      # single target is named, whereas the release ships api-linux, api-macos
+      # and api-win.exe. `--no-install` keeps the pin: pkg resolves from the
+      # lockfile's devDependency, and a missing one fails instead of fetching
+      # whatever the registry serves today.
+      - name: Build the ${{ matrix.target }} executable
+        working-directory: ./api
+        run: npx --no-install pkg . --targets ${{ matrix.target }} --output ${{ matrix.output }}
+
+      - name: Boot the executable
+        run: node .github/scripts/smoke-executable.mjs executables/${{ matrix.name }}
