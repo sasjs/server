@@ -43,7 +43,7 @@ jobs:
       # This job never pushes to main: semantic-release creates the tag and the
       # release through the API.
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # semantic-release needs the full history plus the existing tags.
           fetch-depth: 0
