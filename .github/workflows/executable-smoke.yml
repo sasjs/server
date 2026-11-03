@@ -8,8 +8,8 @@ name: Executable Smoke Test
 # line while every unit and integration job stayed green.
 #
 # Each runner builds its OWN platform target and starts it: a cross-built binary
-# cannot be executed here, so this is the only job that runs the Windows
-# artefact anywhere.
+# cannot be executed here, so this is the only job that runs the Windows and
+# macOS artefacts anywhere.
 on:
   pull_request:
   workflow_dispatch:
@@ -39,6 +39,14 @@ jobs:
             target: node24-win-x64
             output: ../executables/api-win.exe
             name: api-win.exe
+          # The target is x64 and the runner image is arm64, so the binary runs
+          # under Rosetta 2 - which is the only way to execute the macOS
+          # artefact anywhere in CI. Its absence would fail the boot step rather
+          # than pass silently.
+          - os: macos-latest
+            target: node24-macos-x64
+            output: ../executables/api-macos
+            name: api-macos
 
     steps:
       - name: Checkout
@@ -70,13 +78,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # One target on purpose: this runner can execute only its own platform's
-      # binary, so building the other two would add minutes and prove nothing.
+      # binary, so building the others would add minutes and prove nothing.
       # `--output` is explicit because pkg omits the platform suffix when a
       # single target is named, whereas the release ships api-linux, api-macos
-      # and api-win.exe.
+      # and api-win.exe. `--no-install` keeps the pin: pkg resolves from the
+      # lockfile's devDependency, and a missing one fails instead of fetching
+      # whatever the registry serves today.
       - name: Build the ${{ matrix.target }} executable
         working-directory: ./api
-        run: npx pkg . --targets ${{ matrix.target }} --output ${{ matrix.output }}
+        run: npx --no-install pkg . --targets ${{ matrix.target }} --output ${{ matrix.output }}
 
       - name: Boot the executable
         run: node .github/scripts/smoke-executable.mjs executables/${{ matrix.name }}
