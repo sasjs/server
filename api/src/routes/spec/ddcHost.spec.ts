@@ -60,6 +60,18 @@ describe('ddc host', () => {
     expect(res.text).toContain('allow-popups-to-escape-sandbox')
   })
 
+  it('describes the delivery timings it supports', async () => {
+    process.env.DDC_HOST_ENABLED = 'true'
+
+    const res = await request(app).get('/ddc-host')
+
+    // A single post on load reaches the app after it has bootstrapped, which is
+    // the one window that cannot reproduce a report refresh: the deferred
+    // initial load reads only what the app's earliest listener captured.
+    expect(res.text).toContain('timing=early')
+    expect(res.text).toContain('timing=both')
+  })
+
   it('serves its script as its own file, because the CSP refuses inline', async () => {
     process.env.DDC_HOST_ENABLED = 'true'
 
@@ -73,7 +85,7 @@ describe('ddc host', () => {
     expect(script.status).toBe(200)
     expect(script.headers['content-type']).toContain('javascript')
     expect(script.text).toContain('postMessage')
-    expect(script.text).toContain('frameLoaded = true')
+    expect(script.text).toContain('startEarlyReplay')
   })
 
   it('does not serve its script when disabled', async () => {
@@ -82,7 +94,7 @@ describe('ddc host', () => {
     const res = await request(app).get('/ddc-host.js')
 
     expect(res.status).toBe(404)
-    expect(res.text).not.toContain('frameLoaded = true')
+    expect(res.text).not.toContain('startEarlyReplay')
   })
 
   it('is not served from the static folder', async () => {

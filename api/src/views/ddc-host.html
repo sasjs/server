@@ -104,7 +104,8 @@
       content: in an iframe with VA's sandbox attribute set, then posts a
       message into it. Use it to check that an embedded app works inside that
       sandbox - a case that is not covered when the app is opened as a top-level
-      page.
+      page. Add <code>timing=early</code> (or <code>timing=both</code>) to
+      deliver the message before the app bootstraps, as a report refresh does.
     </p>
 
     <fieldset>
@@ -158,6 +159,5 @@
     <div id="log"></div>
 
     <script src="/ddc-host.js"></script>
-
   </body>
 </html>
