@@ -7,6 +7,27 @@ import { Express } from 'express'
 import appPromise from './app'
 import { listen } from './listen'
 import { resolveListeners } from './utils'
+import { SessionController } from './controllers/internal'
+
+/**
+ * Ends every session the server is holding, so a stop does not orphan their
+ * processes.
+ *
+ * Controllers are created lazily, on the first request for their runtime, so one
+ * that was never used has no session pool and nothing to stop. `sasviya` sessions
+ * run on the Viya server and are not represented here at all.
+ *
+ * Both are drained together rather than in turn: three pooled SAS sessions must
+ * not cost three graces.
+ */
+const drainSessions = async () => {
+  const controllers = [
+    process.sessionController,
+    process.sasSessionController
+  ].filter(Boolean) as SessionController[]
+
+  await Promise.all(controllers.map((controller) => controller.drain()))
+}
 
 appPromise.then(async (app: Express) => {
   const { config, errors, warnings } = resolveListeners(process.env)
@@ -39,6 +60,12 @@ appPromise.then(async (app: Express) => {
 
     // waits for in-flight requests, with a ceiling of its own
     await listeners.close()
+
+    // then the work those requests started. A session is a child process, and an
+    // exit that leaves one behind keeps a SAS licence seat (and the folder it is
+    // writing to) busy until its own idle ceiling expires - up to 15 minutes per
+    // pooled session, on every restart.
+    await drainSessions()
 
     process.exit(0)
   }

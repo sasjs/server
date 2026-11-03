@@ -13,6 +13,7 @@ import {
   createFile,
   fileExists,
   generateTimestamp,
+  moveFile,
   readFile
 } from '@sasjs/utils'
 
@@ -49,8 +50,67 @@ const runSessionProcess = (
     if (child.pid) session.pid = child.pid
   })
 
+/**
+ * How often a live process is re-checked while it is being waited for.
+ */
+const EXIT_POLL_MS = 50
+
+/**
+ * How long a session gets to finish by itself when the server is shutting down.
+ *
+ * The whole stop is bounded by three budgets: this one, the kill grace below, and
+ * the listener close in `listen.ts` (5s) - 9 seconds in the worst case. That is
+ * deliberately under the 10 second timeout the deployment docs tell a supervisor
+ * to allow, because a supervisor's SIGKILL cannot be caught: hitting it would
+ * orphan the very processes this is here to end.
+ */
+export const DRAIN_GRACE_MS = 2500
+
+/**
+ * How long a signalled session gets before the signal is escalated to SIGKILL.
+ */
+const DRAIN_KILL_GRACE_MS = 1500
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Whether an OS process is still running.
+ *
+ * Signal 0 is the probe: it runs the existence and permission checks without
+ * delivering anything. `ESRCH` is the only answer that means "gone" - `EPERM`
+ * means the process is there and belongs to somebody else, so it counts as
+ * alive. `pid` is optional because `sasviya` sessions never have one.
+ */
+export const isProcessAlive = (pid?: number): boolean => {
+  if (!pid) return false
+
+  try {
+    process.kill(pid, 0)
+
+    return true
+  } catch (error: any) {
+    return error?.code !== 'ESRCH'
+  }
+}
+
 export class SessionController {
   protected sessions: Session[] = []
+
+  /**
+   * Whether anything is still using this session.
+   *
+   * `state` on its own is not enough to decide that a session's folder can be
+   * removed. The destroy timer can fire in the window between a process being
+   * spawned and its state moving off `pending`, and deleting the folder in that
+   * window is what produced the `Failed to open .../code.sas` crash reported in
+   * sasjs/server#162: the process was still running, and its SYSIN had been
+   * taken away underneath it.
+   *
+   * The process is the fact; the state is bookkeeping. So a live pid keeps the
+   * session alive whatever the state says.
+   */
+  protected isSessionActive = (session: Session): boolean =>
+    session.state === SessionState.running || isProcessAlive(session.pid)
 
   protected getReadySessions = (): Session[] =>
     this.sessions.filter(
@@ -124,9 +184,10 @@ export class SessionController {
 
   /**
    * Removes the session once it is no longer needed, so a deployment does not
-   * accumulate session folders. A session still running when its death time
-   * arrives is given another 10 minutes; `expiresAfterMins`, when the caller
-   * set it, delays the destroy that many minutes past completion.
+   * accumulate session folders. A session still in use when its death time
+   * arrives - running, or with a process that is still alive whatever the state
+   * says - is given another 10 minutes; `expiresAfterMins`, when the caller set
+   * it, delays the destroy that many minutes past completion.
    *
    * Every runtime schedules this, not just the local SAS one - a triggered
    * program on any runtime would otherwise leave its folder behind forever and
@@ -135,7 +196,7 @@ export class SessionController {
   protected scheduleSessionDestroy(session: Session) {
     setTimeout(
       async () => {
-        if (session.state === SessionState.running) {
+        if (this.isSessionActive(session)) {
           // adding 10 more minutes
           const newDeathTimeStamp =
             parseInt(session.deathTimeStamp) + 10 * 60 * 1000
@@ -171,6 +232,135 @@ export class SessionController {
       },
       parseInt(session.deathTimeStamp) - new Date().getTime() - 100
     )
+  }
+
+  /**
+   * Ends the sessions this controller owns.
+   *
+   * A session *is* an OS process: for the local `sas` runtime it is a pooled SAS
+   * process parked in its autoexec loop waiting for a SYSIN, and for every other
+   * runtime it is the interpreter running the program. Until this existed,
+   * nothing in the tree stopped one, so exiting the server orphaned them: a SAS
+   * process kept running - and kept a licence seat - until its own 15 minute idle
+   * ceiling expired, once per pooled session per restart.
+   *
+   * Each session gets `graceMs` to finish by itself, is signalled if it does not,
+   * and is killed if it ignores the signal. Its folder is removed only once its
+   * process is gone, so a shutdown cannot reproduce the `Failed to open
+   * .../code.sas` crash of sasjs/server#162.
+   *
+   * Sessions are drained in parallel: a pool of three would otherwise take three
+   * graces in a row, which no supervisor's kill timeout is sized for.
+   */
+  public async drain(graceMs = DRAIN_GRACE_MS): Promise<void> {
+    if (!this.sessions.length) return
+
+    process.logger?.info(
+      `[server] ending ${this.sessions.length} session(s)`,
+      this.sessions.map((session) => session.id).join(', ')
+    )
+
+    await Promise.all(
+      this.sessions.map((session) => this.drainSession(session, graceMs))
+    )
+  }
+
+  protected async drainSession(
+    session: Session,
+    graceMs: number
+  ): Promise<void> {
+    if (!(await this.waitForProcessExit(session, graceMs)))
+      await this.terminate(session)
+
+    // The process is gone, so the folder can go too. Leaving it would leak one
+    // directory per session per restart - the destroy timer that would have
+    // removed it lives in the process that is exiting.
+    try {
+      await this.deleteSession(session)
+    } catch (error: any) {
+      process.logger?.error(
+        'session folder could not be removed on shutdown',
+        session.id,
+        error?.message ?? error
+      )
+    }
+  }
+
+  /**
+   * Resolves true once the session's process has gone, false if it is still
+   * running when the deadline passes.
+   *
+   * Polled on the pid rather than awaited on the process: `execFile`'s child
+   * lives inside `runSessionProcess`'s closure, and `session.pid` is the only
+   * handle on it that the rest of the controller shares. A session without a pid
+   * (`sasviya`, or one that never spawned) has no local process to wait for.
+   */
+  protected async waitForProcessExit(
+    session: Session,
+    timeoutMs: number
+  ): Promise<boolean> {
+    const { pid } = session
+
+    if (!pid) return true
+
+    const deadline = new Date().getTime() + timeoutMs
+
+    while (isProcessAlive(pid)) {
+      if (new Date().getTime() >= deadline) return false
+
+      await delay(EXIT_POLL_MS)
+    }
+
+    return true
+  }
+
+  /**
+   * Signals a session that did not finish in time, escalating to SIGKILL.
+   *
+   * SIGTERM comes first because it is the only signal a process can act on: a
+   * SAS session mid-program still runs its termination phase and closes its log,
+   * where SIGKILL leaves a truncated one. It is not a guarantee - a runaway DATA
+   * step can sit in a tight loop for a long time - so the escalation exists
+   * rather than hoping. On Windows both signals end the process, which is what
+   * the fallback would do anyway.
+   */
+  protected async terminate(session: Session): Promise<void> {
+    const { pid } = session
+
+    if (!pid) return
+
+    session.terminatedByShutdown = true
+
+    process.logger?.warn(
+      'session did not finish before shutdown, terminating',
+      session.id,
+      pid
+    )
+
+    this.signal(pid, 'SIGTERM')
+
+    if (await this.waitForProcessExit(session, DRAIN_KILL_GRACE_MS)) return
+
+    process.logger?.warn('session ignored SIGTERM, killing', session.id, pid)
+
+    this.signal(pid, 'SIGKILL')
+
+    await this.waitForProcessExit(session, DRAIN_KILL_GRACE_MS)
+  }
+
+  private signal(pid: number, signal: NodeJS.Signals) {
+    try {
+      process.kill(pid, signal)
+    } catch (error: any) {
+      // ESRCH means it exited between the probe and the signal, which is the
+      // outcome this is trying to produce; anything else is worth a line
+      if (error?.code !== 'ESRCH')
+        process.logger?.error(
+          `could not send ${signal} to the session process`,
+          pid,
+          error?.message ?? error
+        )
+    }
   }
 }
 
@@ -260,6 +450,10 @@ ${autoExecContent}`
 
         session.failureReason = err.toString()
 
+        // A session the shutdown signalled is not a crash (sasjs/server#162)
+        if (session.terminatedByShutdown)
+          return process.logger.info('session ended by shutdown', session.id)
+
         process.logger.error(
           'session crashed',
           session.id,
@@ -295,6 +489,59 @@ ${autoExecContent}`
       session.state = SessionState.pending
     }
   }
+
+  /**
+   * Ends a waiting SAS session by handing it the program it is waiting for.
+   *
+   * A pending session is not idle: it is a SAS process parked in the autoexec
+   * loop, polling for a SYSIN to appear. Killing it leaves whatever SAS had
+   * buffered in the log and no termination, so the shutdown writes the file it is
+   * watching instead and lets SAS end the run itself - the same mechanism
+   * `processProgram` uses to start a program, which is what makes this the
+   * graceful path rather than a trick.
+   *
+   * Only `pending` is woken. An `initialising` session still has the dummy SYSIN
+   * in place, and the autoexec deletes that file before it starts watching, so a
+   * program written now would be thrown away; those fall through to the signal.
+   */
+  protected async drainSession(
+    session: Session,
+    graceMs: number
+  ): Promise<void> {
+    if (session.state === SessionState.pending && session.pid)
+      await this.requestSessionEnd(session)
+
+    await super.drainSession(session, graceMs)
+  }
+
+  /**
+   * Writes an `endsas;` program into the session's SYSIN.
+   *
+   * Create-then-rename, exactly as a real program is written: SAS stops waiting
+   * the moment the file exists and starts reading it, so a partly written file
+   * would be executed as a partly written program.
+   *
+   * `endsas;` rather than the `%put` in sasjs/server#162: SYSIN is a file, so
+   * reaching EOF would end the session too, but `endsas;` does not depend on that
+   * and terminates at a statement boundary. The `%put` is kept as a marker so the
+   * session's log says why it ended.
+   */
+  private async requestSessionEnd(session: Session) {
+    const codePath = path.join(session.path, 'code.sas')
+
+    try {
+      await createFile(`${codePath}.shutdown`, shutdownProgram)
+      await moveFile(`${codePath}.shutdown`, codePath)
+    } catch (error: any) {
+      // the folder can already be gone if a destroy raced the shutdown; there is
+      // nothing to wake in that case, and the signal below still applies
+      process.logger?.warn(
+        'could not ask the session to end, terminating it instead',
+        session.id,
+        error?.message ?? error
+      )
+    }
+  }
 }
 
 export const getSessionController = (
@@ -312,6 +559,18 @@ export const getSessionController = (
 
   return process.sessionController
 }
+
+/**
+ * The program a waiting session is handed when the server is shutting down.
+ *
+ * It runs as ordinary SYSIN, so it appears in the session's log like any other
+ * program - which is the point: the log says the session ended because the server
+ * did, rather than stopping mid-step.
+ */
+const shutdownProgram = `/* SASjs Server is shutting down */
+%put NOTE: SASjs Server is shutting down - ending this session;
+endsas;
+`
 
 const autoExecContent = `
 data _null_;

@@ -56,6 +56,14 @@ export interface Session {
    * locally, and before the process is spawned.
    */
   pid?: number
+  /**
+   * Set when the shutdown ended this session on purpose.
+   *
+   * The process then exits non-zero because it was signalled, and reporting that
+   * as "session crashed" is exactly the misleading log line sasjs/server#162 is
+   * about - so the exit handlers check this before they call it a crash.
+   */
+  terminatedByShutdown?: boolean
   expiresAfterMins?: { mins: number; used: boolean }
   failureReason?: string
 }

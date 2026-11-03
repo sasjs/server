@@ -1,5 +1,6 @@
 import path from 'path'
 import os from 'os'
+import { spawn, ChildProcess } from 'child_process'
 import {
   createFile,
   deleteFolder,
@@ -37,6 +38,25 @@ const track = (controller: SessionController, session: Session) =>
   (controller as any).sessions.push(session)
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * A process that stays alive until it is stopped, so a session can be given a
+ * pid that genuinely resolves - `process.pid` (the jest worker) would prove
+ * nothing about a *session's* process.
+ */
+const spawnLiveProcess = (): ChildProcess =>
+  spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+    stdio: 'ignore'
+  })
+
+const stopProcess = (child: ChildProcess): Promise<void> =>
+  new Promise((resolve) => {
+    if (child.exitCode !== null || child.signalCode !== null) return resolve()
+
+    child.once('exit', () => resolve())
+
+    child.kill('SIGKILL')
+  })
 
 describe('session lifecycle', () => {
   let controller: SessionController
@@ -131,5 +151,56 @@ describe('session lifecycle', () => {
     )
 
     await deleteFolder(session.path)
+  })
+
+  // sasjs/server#162: a session whose folder is deleted while its process is
+  // still running crashes with `Failed to open .../code.sas`, because the SYSIN
+  // it is waiting for is taken away underneath it. The state is not a reliable
+  // answer here - the destroy can fire while a session is still `pending` - so a
+  // live process has to keep the session alive on its own.
+  it('keeps a session whose process is still alive, whatever its state says', async () => {
+    const child = spawnLiveProcess()
+
+    try {
+      const session = makeSession(300, SessionState.pending)
+      session.pid = child.pid
+
+      await createFile(path.join(session.path, 'log.log'), 'running')
+      track(controller, session)
+
+      const originalDeathTimeStamp = session.deathTimeStamp
+
+      scheduleDestroy(controller, session)
+      await delay(900)
+
+      expect(await folderExists(session.path)).toEqual(true)
+      expect(controller.getSessionById(session.id)).toBeDefined()
+      expect(parseInt(session.deathTimeStamp)).toBeGreaterThan(
+        parseInt(originalDeathTimeStamp)
+      )
+
+      await deleteFolder(session.path)
+    } finally {
+      await stopProcess(child)
+    }
+  })
+
+  it('destroys a session whose process has exited, even with a pid recorded', async () => {
+    const child = spawnLiveProcess()
+    const pid = child.pid
+
+    await stopProcess(child)
+
+    const session = makeSession(300, SessionState.pending)
+    session.pid = pid
+
+    await createFile(path.join(session.path, 'log.log'), 'finished')
+    track(controller, session)
+
+    scheduleDestroy(controller, session)
+    await delay(900)
+
+    expect(await folderExists(session.path)).toEqual(false)
+    expect(controller.getSessionById(session.id)).toBeUndefined()
   })
 })
