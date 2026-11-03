@@ -57,6 +57,16 @@ export interface Session {
    */
   pid?: number
   /**
+   * The time the process behind `pid` started, as the OS reports it.
+   *
+   * A pid is only unique while its process lives, so on its own it cannot tell
+   * this session's process from an unrelated one that reused the number. Recorded
+   * when the process is spawned and compared before the shutdown waits on it or
+   * signals it; absent where the platform does not expose it (`/proc` is Linux),
+   * in which case the pid is the best identity there is.
+   */
+  pidStartedAt?: string
+  /**
    * Set when the shutdown ended this session on purpose.
    *
    * The process then exits non-zero because it was signalled, and reporting that

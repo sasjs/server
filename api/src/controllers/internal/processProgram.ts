@@ -12,7 +12,8 @@ import {
   createPythonProgram,
   createRProgram,
   createViyaSASProgram,
-  executeViyaProgram
+  executeViyaProgram,
+  readProcessStartTime
 } from './'
 
 export const processProgram = async (
@@ -168,12 +169,14 @@ export const processProgram = async (
         session.state = SessionState.completed
         // the process is gone and its pid can be recycled
         session.pid = undefined
+        session.pidStartedAt = undefined
 
         process.logger.info('session completed', session)
       })
       .catch((err) => {
         session.state = SessionState.failed
         session.pid = undefined
+        session.pidStartedAt = undefined
 
         session.failureReason = err.toString()
 
@@ -220,6 +223,7 @@ const execFilePromise = (
     // the interpreter's pid, so a trigger response can name the process
     if (child.pid) {
       session.pid = child.pid
+      session.pidStartedAt = readProcessStartTime(child.pid)
 
       onSpawn?.(child.pid)
     }
