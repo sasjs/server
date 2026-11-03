@@ -61,7 +61,10 @@ const env = {
   // mode reads it before it listens.
   NODE_PATH: process.execPath,
   SASJS_ROOT: path.join(workDir, 'sasjs_root'),
-  HTTP_PORT: String(port)
+  HTTP_PORT: String(port),
+  // /ddc-host is a testing tool and 404s unless asked for; the asset check
+  // below is about what the snapshot carries, so it has to be reachable.
+  DDC_HOST_ENABLED: 'true'
 }
 
 // A leftover value from the caller would make the server validate a shape this
@@ -124,6 +127,44 @@ const finish = (lines) => {
   }, 2_000).unref()
 }
 
+/**
+ * The routes whose files are read from disk per request rather than compiled in.
+ *
+ * `pkg` only carries what `pkg.assets` lists, so a view that is served out of
+ * `build/src/views/` is present in a source checkout and in the npm tarball and
+ * absent from the snapshot - and no unit test can see the difference, because
+ * they read the file straight from the source tree. That is how v3.12.0 and
+ * v3.12.1 shipped with `/ddc-host` answering 500.
+ */
+const checkServedViews = async () => {
+  try {
+    const page = await fetch(
+      `${baseUrl}/ddc-host?url=about%3Ablank&message=%7B%7D&timing=early`,
+      { signal: AbortSignal.timeout(5_000) }
+    )
+    const body = await page.text()
+
+    if (!page.ok)
+      fail(
+        `the executable answered ${page.status} for /ddc-host: ${body.trim()}`
+      )
+    if (!body.includes('timing'))
+      fail('/ddc-host answered 200 but the page has no timing wiring in it')
+
+    const script = await fetch(`${baseUrl}/ddc-host.js`, {
+      signal: AbortSignal.timeout(5_000)
+    })
+    if (!script.ok)
+      fail(`the executable answered ${script.status} for /ddc-host.js`)
+  } catch (error) {
+    // fail() exits, so reaching here means the request itself threw - a page
+    // that cannot be fetched is as broken as one that 500s.
+    fail(`could not fetch /ddc-host from the executable: ${error.message}`)
+  }
+
+  console.log('the executable served /ddc-host and /ddc-host.js')
+}
+
 const deadline = Date.now() + READY_TIMEOUT_MS
 
 while (Date.now() < deadline) {
@@ -146,6 +187,7 @@ while (Date.now() < deadline) {
           )}`
         )
 
+      await checkServedViews()
       finish(output.slice(-TAIL_LINES))
       break
     }
