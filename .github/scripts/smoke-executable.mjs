@@ -89,6 +89,11 @@ child.stderr.on('data', record)
 
 let exited = null
 
+// Set only by `finish()`. The tail check below reads it rather than the clock:
+// an answer that arrives on the last poll leaves the child alive, so a deadline
+// comparison there would report a healthy binary as a timeout.
+let passed = false
+
 child.on('exit', (code, signal) => {
   exited = { code, signal }
 })
@@ -106,6 +111,8 @@ const fail = (reason) => {
 }
 
 const finish = (lines) => {
+  passed = true
+
   console.log(`the executable answered ${baseUrl}/SASjsApi/info`)
   console.log(lines.join('\n'))
   child.kill('SIGTERM')
@@ -149,5 +156,4 @@ while (Date.now() < deadline) {
   await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
 }
 
-if (!exited && Date.now() >= deadline)
-  fail(`no answer on ${baseUrl}/SASjsApi/info after ${READY_TIMEOUT_MS / 1000}s`)
+if (!passed) fail(`no answer on ${baseUrl}/SASjsApi/info after ${READY_TIMEOUT_MS / 1000}s`)
