@@ -148,14 +148,34 @@ const checkServedViews = async () => {
       fail(
         `the executable answered ${page.status} for /ddc-host: ${body.trim()}`
       )
-    if (!body.includes('timing'))
-      fail('/ddc-host answered 200 but the page has no timing wiring in it')
+
+    // The tag the page needs, and the marker the unit spec pins
+    // (routes/spec/ddcHost.spec.ts). Not a substring like "timing": the help text
+    // names `timing=early` in prose, so a check for that word passed off the
+    // documentation while the script tag itself could have been missing - and an
+    // edit to the paragraph failed the smoke test for no reason.
+    if (!body.includes('<script src="/ddc-host.js">'))
+      fail('/ddc-host answered 200 but the page does not load /ddc-host.js')
 
     const script = await fetch(`${baseUrl}/ddc-host.js`, {
       signal: AbortSignal.timeout(5_000)
     })
+    const scriptBody = await script.text()
+
     if (!script.ok)
       fail(`the executable answered ${script.status} for /ddc-host.js`)
+
+    // A status is not enough: an asset that ships empty or truncated - the exact
+    // failure this check exists for - still answers 200. Assert the content the
+    // page needs, the type it is served as, and a floor on its size.
+    const contentType = script.headers.get('content-type') ?? ''
+
+    if (!contentType.includes('javascript'))
+      fail(`/ddc-host.js was served as ${contentType || '(no content type)'}`)
+    if (!scriptBody.includes('startEarlyReplay'))
+      fail('/ddc-host.js answered 200 but does not contain startEarlyReplay')
+    if (scriptBody.length < 1_000)
+      fail(`/ddc-host.js answered 200 with only ${scriptBody.length} bytes`)
   } catch (error) {
     // fail() exits, so reaching here means the request itself threw - a page
     // that cannot be fetched is as broken as one that 500s.
