@@ -20,6 +20,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+# read-only by default; the release job asks for the writes it needs, and a job block replaces this one rather than adding to it
+permissions: read-all
+
 jobs:
   release:
     runs-on: ubuntu-22.04
@@ -40,13 +43,13 @@ jobs:
       # This job never pushes to main: semantic-release creates the tag and the
       # release through the API.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # semantic-release needs the full history plus the existing tags.
           fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node-version }}
 
