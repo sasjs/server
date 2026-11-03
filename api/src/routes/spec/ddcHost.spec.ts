@@ -58,7 +58,43 @@ describe('ddc host', () => {
     expect(res.text).toContain('allow-same-origin')
     expect(res.text).toContain('allow-scripts')
     expect(res.text).toContain('allow-popups-to-escape-sandbox')
-    expect(res.text).toContain('postMessage')
+  })
+
+  it('describes the delivery timings it supports', async () => {
+    process.env.DDC_HOST_ENABLED = 'true'
+
+    const res = await request(app).get('/ddc-host')
+
+    // A single post on load reaches the app after it has bootstrapped, which is
+    // the one window that cannot reproduce a report refresh: the deferred
+    // initial load reads only what the app's earliest listener captured.
+    expect(res.text).toContain('timing=early')
+    expect(res.text).toContain('timing=both')
+  })
+
+  it('serves its script as its own file, because the CSP refuses inline', async () => {
+    process.env.DDC_HOST_ENABLED = 'true'
+
+    const page = await request(app).get('/ddc-host')
+    const script = await request(app).get('/ddc-host.js')
+
+    // 'script-src self' is the default policy, so the page cannot carry an
+    // inline script: it would render, the frame stays empty, and the failure
+    // looks like a broken app rather than a blocked page.
+    expect(page.text).toContain('<script src="/ddc-host.js">')
+    expect(script.status).toBe(200)
+    expect(script.headers['content-type']).toContain('javascript')
+    expect(script.text).toContain('postMessage')
+    expect(script.text).toContain('startEarlyReplay')
+  })
+
+  it('does not serve its script when disabled', async () => {
+    delete process.env.DDC_HOST_ENABLED
+
+    const res = await request(app).get('/ddc-host.js')
+
+    expect(res.status).toBe(404)
+    expect(res.text).not.toContain('startEarlyReplay')
   })
 
   it('is not served from the static folder', async () => {

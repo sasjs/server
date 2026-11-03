@@ -14,16 +14,21 @@ import path from 'path'
  * is opened as a top-level document - so a regression in the sandboxed case only
  * shows up in a real report.
  *
- * GET /ddc-host?url=<app url>[&sandbox=...][&message=<json>][&height=600][&title=...]
+ * GET /ddc-host?url=<app url>[&sandbox=...][&message=<json>][&timing=...][&height=600][&title=...]
  *
- * The page is kept in src/views rather than public/ so that it is only reachable
- * through this route: an endpoint that frames an arbitrary URL is a testing
- * tool, and should not be available on a production server unless asked for.
- * Enable with DDC_HOST_ENABLED=true.
+ * The page and its script are kept in src/views rather than public/ so that they
+ * are only reachable through these routes: an endpoint that frames an arbitrary
+ * URL is a testing tool, and should not be available on a production server
+ * unless asked for. Enable with DDC_HOST_ENABLED=true.
  *
+ * The script is a separate file because the server's CSP allows scripts from
+ * 'self' only, so an inline script on this page is refused by the browser. The
+ * page keeps working without it (it renders, the frame stays empty), which is
+ * what makes that a silent failure worth avoiding.
  */
 
 const PAGE_PATH = path.join(__dirname, '../views/ddc-host.html')
+const SCRIPT_PATH = path.join(__dirname, '../views/ddc-host.js')
 
 const ddcHostRouter = express.Router()
 
@@ -32,20 +37,31 @@ const isEnabled = () =>
     (process.env.DDC_HOST_ENABLED || '').trim().toLowerCase()
   )
 
-ddcHostRouter.get('/ddc-host', (_req, res) => {
-  if (!isEnabled()) {
-    // 404 rather than 403: a disabled testing tool should not announce itself.
-    return res.status(404).send('Not found')
+/** Serves one of the host page's own files, or 404 when the tool is off. */
+const serveFile =
+  (filePath: string, contentType: string) =>
+  (_req: express.Request, res: express.Response) => {
+    if (!isEnabled()) {
+      // 404 rather than 403: a disabled testing tool should not announce itself.
+      return res.status(404).send('Not found')
+    }
+
+    let content: string
+    try {
+      content = fs.readFileSync(filePath, 'utf8')
+    } catch (err: any) {
+      return res
+        .status(500)
+        .send('Could not read the host page: ' + err.message)
+    }
+
+    return res.type(contentType).send(content)
   }
 
-  let page: string
-  try {
-    page = fs.readFileSync(PAGE_PATH, 'utf8')
-  } catch (err: any) {
-    return res.status(500).send('Could not read the host page: ' + err.message)
-  }
+ddcHostRouter.get('/ddc-host', serveFile(PAGE_PATH, 'html'))
+ddcHostRouter.get(
+  '/ddc-host.js',
+  serveFile(SCRIPT_PATH, 'application/javascript')
+)
 
-  return res.type('html').send(page)
-})
-
-export { ddcHostRouter, PAGE_PATH }
+export { ddcHostRouter, PAGE_PATH, SCRIPT_PATH }

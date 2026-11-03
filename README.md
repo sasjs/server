@@ -220,9 +220,13 @@ STATIC_MOCK_LOCATION=
 # Visual Analytics embeds data-driven content: an iframe carrying VA's sandbox
 # attribute set, plus a message posted into it. Use it to test that an embedded
 # app works inside that sandbox, which a top-level page load does not exercise.
+# `timing=early` (or `both`) delivers the message repeatedly from the moment the
+# frame is created, so a copy lands after the app's earliest message listener
+# exists and before it bootstraps - the window a VA report refresh exercises.
 # Off unless set: it frames whatever URL it is given, so it is a testing tool and
 # not something to leave switched on. Query parameters: url, sandbox, message
-# (JSON), height, title - see api/src/views/ddc-host.html.
+# (JSON), timing [load|early|both], interval, height, title - see
+# api/src/views/ddc-host.html.
 # options: [true|false]
 DDC_HOST_ENABLED=
 
