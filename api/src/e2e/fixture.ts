@@ -25,3 +25,23 @@ export const PROGRAM = [
 ].join('\n')
 
 export const TRAILING_SPACE_LINE = 6
+
+/** A program of its own, so a test that saves does not rewrite the shared one. */
+export const SAVE_FILE_NAME = 'save-me.sas'
+export const SAVE_FILE_CONTENT = 'data _null_;\n  x = 1;\nrun;\n'
+
+/** A JSON file kept on one line, as a generated config usually is. */
+export const JSON_FILE_NAME = 'settings.json'
+export const MINIFIED_JSON = '{"editor":{"tabSize":2},"runTimes":["sas","js"]}'
+
+/** A JSON file written with its own indent, which the editor must not touch. */
+export const INDENTED_JSON_NAME = 'formatted.json'
+export const INDENTED_JSON = [
+  '{',
+  '    "name": "formatted",',
+  '    "items": [',
+  '        1,',
+  '        2',
+  '    ]',
+  '}'
+].join('\n')

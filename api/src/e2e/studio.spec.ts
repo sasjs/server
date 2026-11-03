@@ -13,13 +13,22 @@
  */
 import path from 'path'
 import { mkdirSync } from 'fs'
-import { rm, writeFile } from 'fs/promises'
+import { readFile, rm, writeFile } from 'fs/promises'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, chromium, Page } from 'playwright'
 import { createFile, createFolder, fileExists } from '@sasjs/utils'
-import { PROGRAM_NAME, TRAILING_SPACE_LINE } from './fixture'
+import {
+  INDENTED_JSON,
+  INDENTED_JSON_NAME,
+  JSON_FILE_NAME,
+  MINIFIED_JSON,
+  PROGRAM_NAME,
+  SAVE_FILE_CONTENT,
+  SAVE_FILE_NAME,
+  TRAILING_SPACE_LINE
+} from './fixture'
 import { UserController } from '../controllers/'
 import { RunTimeType, getWebBuildFolder, sysInitCompiledPath } from '../utils/'
 
@@ -74,6 +83,25 @@ describe('Studio in a browser', () => {
     // setupEnv.ts points the working directory at a throwaway tree, so the
     // drive the app resolves under NODE_ENV=test holds this suite's fixture.
     driveLocation = process.env.DRIVE_LOCATION!
+
+    // A program of its own, for the tests that save what they typed.
+    await createFile(
+      path.join(driveLocation, 'files', SAVE_FILE_NAME),
+      SAVE_FILE_CONTENT
+    )
+
+    // A JSON file kept on one line, which is how a generated config arrives.
+    await createFile(
+      path.join(driveLocation, 'files', JSON_FILE_NAME),
+      MINIFIED_JSON
+    )
+
+    // ...and one that carries its own indent, which is not the editor's to
+    // change.
+    await createFile(
+      path.join(driveLocation, 'files', INDENTED_JSON_NAME),
+      INDENTED_JSON
+    )
 
     // A folder that has not been opened, so the lazy load can be observed.
     await createFolder(path.join(driveLocation, 'files', 'e2eFolder'))
@@ -442,5 +470,167 @@ describe('Studio in a browser', () => {
       window.localStorage.getItem('studio-settings')
     )
     expect(JSON.parse(stored as string)['log.notableNotes']).toBe(false)
+  }, 120000)
+  it('opens a one-line JSON file indented, and leaves the drive file alone', async () => {
+    await page.click(`text=${JSON_FILE_NAME}`)
+    await page.waitForFunction(
+      () => document.querySelectorAll('.view-lines .view-line').length > 1,
+      { timeout: 30000 }
+    )
+    await page.waitForTimeout(1000)
+
+    // Monaco renders a space in the text layer as a non-breaking space, so the
+    // text is normalised before it is read as the file's content.
+    const shown = await page.evaluate(() =>
+      (document.querySelector('.view-lines') as HTMLElement).innerText.replace(
+        /\u00a0/g,
+        ' '
+      )
+    )
+
+    // Indented, one member per line, rather than the stored single line.
+    expect(shown.split('\n').length).toBeGreaterThan(1)
+    expect(shown).toContain('"tabSize": 2')
+    expect(shown).toContain('"runTimes": [')
+
+    // Opening a file is not saving it: the drive holds what it held.
+    expect(
+      await readFile(path.join(driveLocation, 'files', JSON_FILE_NAME), 'utf8')
+    ).toBe(MINIFIED_JSON)
+
+    await page.screenshot({
+      path: path.join(screenshotDir, '05-json-indented.png')
+    })
+
+    // The buffer opens clean, because nothing has been changed yet.
+    expect(
+      await page.locator('button[aria-label="Save (unsaved changes)"]').count()
+    ).toBe(0)
+
+    // A file that already carries its own indent is shown as it is stored -
+    // reformatting it would rewrite whitespace the author chose.
+    await page.click(`text=${INDENTED_JSON_NAME}`)
+    await page.waitForFunction(
+      () => document.querySelectorAll('.view-lines .view-line').length > 3,
+      { timeout: 30000 }
+    )
+    await page.waitForTimeout(1000)
+
+    const asStored = await page.evaluate(() =>
+      (document.querySelector('.view-lines') as HTMLElement).innerText
+        .replace(/\u00a0/g, ' ')
+        .trimEnd()
+    )
+    expect(asStored).toBe(INDENTED_JSON)
+  }, 60000)
+
+  it('shows a disk that carries a blue dot while the buffer holds unsaved edits', async () => {
+    await page.click(`text=${SAVE_FILE_NAME}`)
+    await page.waitForFunction(
+      () => document.querySelectorAll('.view-lines .view-line').length > 2,
+      { timeout: 30000 }
+    )
+
+    const saveButton = () => page.locator('button[aria-label="Save"]')
+    const dirtyButton = () =>
+      page.locator('button[aria-label="Save (unsaved changes)"]')
+
+    // The dot itself: MUI keeps the badge in the DOM and scales it away when it
+    // is invisible, so its measured size is what says whether it shows.
+    const dot = () =>
+      page.evaluate(() => {
+        const badge = document.querySelector('.MuiBadge-dot') as HTMLElement
+
+        if (!badge) return null
+
+        const box = badge.getBoundingClientRect()
+
+        return {
+          width: box.width,
+          height: box.height,
+          colour: getComputedStyle(badge).backgroundColor
+        }
+      })
+
+    expect(await saveButton().count()).toBe(1)
+    expect((await dot())?.width ?? 0).toBe(0)
+
+    await page.click('.monaco-editor')
+    await page.keyboard.press('Control+End')
+    await page.keyboard.type('x')
+
+    // The dot appears, and it is the palette's blue rather than the theme's
+    // primary, which is black.
+    expect(await dirtyButton().count()).toBe(1)
+    await page.waitForTimeout(500)
+
+    const painted = await dot()
+    expect(painted?.width).toBeGreaterThan(0)
+    expect(painted?.height).toBeGreaterThan(0)
+    expect(painted?.colour).toBe('rgb(30, 136, 229)')
+
+    await page.screenshot({
+      path: path.join(screenshotDir, '04-save-dot.png')
+    })
+
+    // Saving writes the buffer and takes the dot away.
+    await dirtyButton().click()
+    await page.waitForSelector('text=File saved!', { timeout: 30000 })
+    await page.waitForTimeout(500)
+
+    expect(await saveButton().count()).toBe(1)
+    await page.waitForTimeout(500)
+    expect((await dot())?.width ?? 0).toBe(0)
+    const onDrive = await readFile(
+      path.join(driveLocation, 'files', SAVE_FILE_NAME),
+      'utf8'
+    )
+    expect(onDrive).not.toBe(SAVE_FILE_CONTENT)
+  }, 120000)
+
+  it('drops a paste that a mouse gesture produced, and keeps the keyboard paste', async () => {
+    // A paste as the browser delivers it, into the editor's input element.
+    const paste = (text: string) =>
+      page.evaluate((text) => {
+        const data = new DataTransfer()
+        data.setData('text/plain', text)
+
+        document.querySelector('.monaco-editor textarea')!.dispatchEvent(
+          new ClipboardEvent('paste', {
+            clipboardData: data,
+            bubbles: true,
+            cancelable: true
+          })
+        )
+      }, text)
+
+    const shown = () =>
+      page.evaluate(
+        () => (document.querySelector('.view-lines') as HTMLElement).innerText
+      )
+
+    await page.click('.monaco-editor')
+    await page.keyboard.press('Control+End')
+
+    const beforeGesture = await shown()
+
+    // A right press, then the paste the browser can follow it with: the editor
+    // ignores it, which is what stops text appearing from a right click.
+    const box = (await page.locator('.monaco-editor').boundingBox())!
+    await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
+    await paste('MOUSEPASTE')
+    await page.waitForTimeout(300)
+
+    expect(await shown()).toBe(beforeGesture)
+
+    await page.keyboard.press('Escape')
+
+    // The keyboard is a deliberate paste, and still works: a left press into
+    // the code does not arm the guard.
+    await page.mouse.click(box.x + 200, box.y + 40)
+    await paste('KEYBOARDPASTE')
+    await page.waitForTimeout(300)
+
+    expect(await shown()).toContain('KEYBOARDPASTE')
   }, 120000)
 })

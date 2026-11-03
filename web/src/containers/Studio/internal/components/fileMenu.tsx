@@ -1,25 +1,60 @@
 import React, { useState } from 'react'
 
-import { Button, IconButton, Menu, MenuItem, Tooltip } from '@mui/material'
+import {
+  Badge,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip
+} from '@mui/material'
 
 import { MoreVert, Save, SaveAs, Difference, Edit } from '@mui/icons-material'
 
 type FileMenuProps = {
   showDiff: boolean
   setShowDiff: React.Dispatch<React.SetStateAction<boolean>>
-  prevFileContent: string
-  currentFileContent: string
-  selectedFilePath: string
+  isDirty: boolean
   setOpenFilePathInputModal: React.Dispatch<React.SetStateAction<boolean>>
   saveFile: () => void
+}
+
+/**
+ * The editor's save control.
+ *
+ * The disk is always there, so saving is one click rather than a menu away, and
+ * the dot on it is the state of the buffer: present while the file holds edits
+ * that are not on the drive yet, gone once they are. The dot is blue rather
+ * than the theme's primary, which is black, and it carries the same news to a
+ * screen reader through the button's label.
+ */
+const SaveButton = ({
+  isDirty,
+  saveFile
+}: Pick<FileMenuProps, 'isDirty' | 'saveFile'>) => {
+  const label = isDirty ? 'Save (unsaved changes)' : 'Save'
+
+  return (
+    <Tooltip title={label}>
+      <Badge
+        color="info"
+        variant="dot"
+        invisible={!isDirty}
+        overlap="circular"
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <IconButton aria-label={label} onClick={saveFile}>
+          <Save />
+        </IconButton>
+      </Badge>
+    </Tooltip>
+  )
 }
 
 const FileMenu = ({
   showDiff,
   setShowDiff,
-  prevFileContent,
-  currentFileContent,
-  selectedFilePath,
+  isDirty,
   setOpenFilePathInputModal,
   saveFile
 }: FileMenuProps) => {
@@ -44,13 +79,9 @@ const FileMenu = ({
     setOpenFilePathInputModal(true)
   }
 
-  const handleSaveBtnClick = () => {
-    setAnchorEl(null)
-    saveFile()
-  }
-
   return (
     <>
+      <SaveButton isDirty={isDirty} saveFile={saveFile} />
       <Tooltip title="Save File Menu">
         <IconButton onClick={handleMenu}>
           <MoreVert />
@@ -79,19 +110,6 @@ const FileMenu = ({
             startIcon={showDiff ? <Edit /> : <Difference />}
           >
             {showDiff ? 'Edit' : 'Diff'}
-          </Button>
-        </MenuItem>
-        <MenuItem sx={{ justifyContent: 'center' }}>
-          <Button
-            onClick={handleSaveBtnClick}
-            variant="contained"
-            color="primary"
-            startIcon={<Save />}
-            disabled={
-              !selectedFilePath || prevFileContent === currentFileContent
-            }
-          >
-            Save
           </Button>
         </MenuItem>
         <MenuItem sx={{ justifyContent: 'center' }}>

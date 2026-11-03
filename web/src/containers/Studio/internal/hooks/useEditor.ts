@@ -26,6 +26,8 @@ import {
 } from '../../../../utils'
 import { lintModel } from '../lint'
 import { formatSasCode } from '../format'
+import { prettyJson } from '../pretty'
+import { guardMousePaste } from '../mousePasteGuard'
 import { readSettings } from '../settings'
 
 const SASJS_LOGS_SEPARATOR =
@@ -64,10 +66,19 @@ const useEditor = ({
   const [imageUrl, setImageUrl] = useState('')
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
+  // Detaches the mouse-paste guard from the editor that was unmounted, so a
+  // remount (the diff view toggling) does not leave a listener behind.
+  const releaseMousePasteGuard = useRef<(() => void) | null>(null)
 
   const handleEditorDidMount: EditorDidMount = (editor) => {
     editorRef.current = editor
     editor.focus()
+
+    releaseMousePasteGuard.current?.()
+
+    const node = editor.getDomNode()
+    if (node) releaseMousePasteGuard.current = guardMousePaste(node)
+
     editor.addAction({
       // An unique identifier of the contributed action.
       id: 'show-difference',
@@ -320,6 +331,30 @@ const useEditor = ({
     [isSasBuffer, selectedFilePath]
   )
 
+  /**
+   * Saves the buffer the way Ctrl+S does: the text is formatted first when the
+   * setting asks for it, and the model's own text is what gets written, because
+   * React's copy of the buffer lags a formatting edit by one render.
+   */
+  const saveBuffer = useCallback(async () => {
+    if (!selectedFilePath) {
+      setOpenFilePathInputModal(true)
+
+      return
+    }
+
+    const editor = editorRef.current
+    const content =
+      editor && readSettings()['editor.formatOnSave']
+        ? await formatBuffer(editor)
+        : undefined
+
+    const text = content ?? editor?.getModel()?.getValue()
+
+    if (text !== undefined && prevFileContent !== text)
+      saveFile(undefined, text)
+  }, [selectedFilePath, formatBuffer, prevFileContent, saveFile])
+
   useEffect(() => {
     const saveFileAction = editorRef.current?.addAction({
       // An unique identifier of the contributed action.
@@ -335,22 +370,7 @@ const useEditor = ({
 
       // Method that will be executed when the action is triggered.
       // @param editor The editor instance is passed in as a convenience
-      run: async (ed) => {
-        if (!selectedFilePath) return setOpenFilePathInputModal(true)
-
-        // Format on save is a setting, so a user who prefers the buffer as
-        // typed keeps it. The formatted text is handed to the save directly:
-        // the model already holds it, but React's copy of the buffer lags
-        // the edit by one render.
-        const content = readSettings()['editor.formatOnSave']
-          ? await formatBuffer(ed)
-          : undefined
-
-        const modelValue = editorRef.current?.getModel()?.getValue()
-        const text = content ?? modelValue
-
-        if (prevFileContent !== text) return saveFile(undefined, text)
-      }
+      run: () => void saveBuffer()
     })
 
     const formatAction = editorRef.current?.addAction({
@@ -406,12 +426,17 @@ const useEditor = ({
     prevFileContent,
     selectedFilePath,
     saveFile,
+    saveBuffer,
     runCode,
     formatBuffer,
     setOpenSnackbar,
     setSnackbarMessage,
     setSnackbarSeverity
   ])
+
+  // The guard listens on the editor's own DOM node, which the unmount removes
+  // anyway; detaching keeps a stale listener from holding the node alive.
+  useEffect(() => () => releaseMousePasteGuard.current?.(), [])
 
   useEffect(() => {
     setRunTimes(Object.values(appContext.runTimes))
@@ -463,11 +488,20 @@ const useEditor = ({
           // Ask for the file as text whatever its type. axios otherwise parses
           // a JSON file into an object, and stringifying that back minifies it,
           // so a prettified file on the drive opened in the editor with its
-          // formatting stripped. The editor shows the file as it is stored.
+          // formatting stripped. The whitespace below is the file's own; only a
+          // minified JSON file is re-indented for display.
           responseType: 'text'
         })
         .then((res: any) => {
-          const content = res.data
+          // A JSON file is usually stored minified, which is one long line in
+          // the editor. It opens indented instead, and indented is what it
+          // holds, so the buffer starts clean and the drive keeps the file it
+          // has until the user saves.
+          const content =
+            selectedFilePath.split('.').pop()?.toLowerCase() === 'json'
+              ? prettyJson(res.data)
+              : res.data
+
           setPrevFileContent(content)
           setFileContent(content)
         })
@@ -482,7 +516,11 @@ const useEditor = ({
         })
         .finally(() => setIsLoading(false))
     } else {
+      // A buffer with no file behind it is restored from local storage, and
+      // that restored text is its baseline: the dot on the save icon means
+      // edits made in this session, not the absence of a file on the drive.
       const content = localStorage.getItem('fileContent') ?? ''
+      setPrevFileContent(content)
       setFileContent(content)
       setImageUrl('')
     }
@@ -565,6 +603,7 @@ const useEditor = ({
     handleFilePathInput,
     handleRunBtnClick,
     handleTabChange,
+    saveBuffer,
     saveFile,
     setShowDiff,
     setOpenFilePathInputModal,
