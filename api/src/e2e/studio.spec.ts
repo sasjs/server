@@ -531,9 +531,10 @@ describe('Studio in a browser', () => {
       { timeout: 30000 }
     )
 
-    const saveButton = () => page.locator('button[aria-label="Save"]')
-    const dirtyButton = () =>
+    const saveButton = () =>
       page.locator('button[aria-label="Save (unsaved changes)"]')
+    const idleButton = () =>
+      page.locator('button[aria-label="Nothing to save"]')
 
     // The dot itself: MUI keeps the badge in the DOM and scales it away when it
     // is invisible, so its measured size is what says whether it shows.
@@ -552,7 +553,10 @@ describe('Studio in a browser', () => {
         }
       })
 
-    expect(await saveButton().count()).toBe(1)
+    // Nothing to write, so the disk is disabled rather than doing nothing
+    // silently when clicked.
+    expect(await idleButton().count()).toBe(1)
+    expect(await idleButton().isDisabled()).toBe(true)
     expect((await dot())?.width ?? 0).toBe(0)
 
     await page.click('.monaco-editor')
@@ -561,7 +565,8 @@ describe('Studio in a browser', () => {
 
     // The dot appears, and it is the palette's blue rather than the theme's
     // primary, which is black.
-    expect(await dirtyButton().count()).toBe(1)
+    expect(await saveButton().count()).toBe(1)
+    expect(await saveButton().isDisabled()).toBe(false)
     await page.waitForTimeout(500)
 
     const painted = await dot()
@@ -574,12 +579,12 @@ describe('Studio in a browser', () => {
     })
 
     // Saving writes the buffer and takes the dot away.
-    await dirtyButton().click()
+    await saveButton().click()
     await page.waitForSelector('text=File saved!', { timeout: 30000 })
     await page.waitForTimeout(500)
 
-    expect(await saveButton().count()).toBe(1)
-    await page.waitForTimeout(500)
+    expect(await idleButton().count()).toBe(1)
+    expect(await idleButton().isDisabled()).toBe(true)
     expect((await dot())?.width ?? 0).toBe(0)
     const onDrive = await readFile(
       path.join(driveLocation, 'files', SAVE_FILE_NAME),
@@ -625,8 +630,12 @@ describe('Studio in a browser', () => {
 
     await page.keyboard.press('Escape')
 
-    // The keyboard is a deliberate paste, and still works: a left press into
-    // the code does not arm the guard.
+    // The keyboard is a deliberate paste, and still works. Clicking into the
+    // buffer after the right press is the user taking over, so the guard the
+    // right press armed is spent by the left press, not by the paste.
+    await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
+    await page.waitForTimeout(200)
+    await page.keyboard.press('Escape')
     await page.mouse.click(box.x + 200, box.y + 40)
     await paste('KEYBOARDPASTE')
     await page.waitForTimeout(300)

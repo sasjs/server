@@ -101,6 +101,18 @@ check('a left press leaves the paste alone', () => {
   assert.equal(stub.paste().cancelled, false)
 })
 
+check('a left press disarms a guard a right press armed', () => {
+  const stub = stubNode()
+  guardMousePaste(stub.node)
+
+  // Right-click the code, then click into the buffer and press Ctrl+V inside
+  // the window: the user's paste, not the gesture's.
+  stub.press(2)
+  stub.press(0)
+
+  assert.equal(stub.paste().cancelled, false)
+})
+
 check('a press older than the window leaves the paste alone', () => {
   const stub = stubNode()
   guardMousePaste(stub.node)

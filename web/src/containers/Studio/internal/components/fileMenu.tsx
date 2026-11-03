@@ -15,6 +15,7 @@ type FileMenuProps = {
   showDiff: boolean
   setShowDiff: React.Dispatch<React.SetStateAction<boolean>>
   isDirty: boolean
+  selectedFilePath: string
   setOpenFilePathInputModal: React.Dispatch<React.SetStateAction<boolean>>
   saveFile: () => void
 }
@@ -27,26 +28,39 @@ type FileMenuProps = {
  * that are not on the drive yet, gone once they are. The dot is blue rather
  * than the theme's primary, which is black, and it carries the same news to a
  * screen reader through the button's label.
+ *
+ * The disk is disabled when a file matches what the drive holds, because a
+ * click on it would write nothing and say nothing. A buffer with no file behind
+ * it stays enabled: saving one asks for a path.
  */
 const SaveButton = ({
   isDirty,
+  selectedFilePath,
   saveFile
-}: Pick<FileMenuProps, 'isDirty' | 'saveFile'>) => {
-  const label = isDirty ? 'Save (unsaved changes)' : 'Save'
+}: Pick<FileMenuProps, 'isDirty' | 'selectedFilePath' | 'saveFile'>) => {
+  const canSave = !selectedFilePath || isDirty
+  const label = !canSave
+    ? 'Nothing to save'
+    : isDirty
+      ? 'Save (unsaved changes)'
+      : 'Save'
 
   return (
     <Tooltip title={label}>
-      <Badge
-        color="info"
-        variant="dot"
-        invisible={!isDirty}
-        overlap="circular"
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <IconButton aria-label={label} onClick={saveFile}>
-          <Save />
-        </IconButton>
-      </Badge>
+      {/* A disabled button swallows the pointer events its tooltip needs. */}
+      <span>
+        <Badge
+          color="info"
+          variant="dot"
+          invisible={!isDirty}
+          overlap="circular"
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <IconButton aria-label={label} onClick={saveFile} disabled={!canSave}>
+            <Save />
+          </IconButton>
+        </Badge>
+      </span>
     </Tooltip>
   )
 }
@@ -55,6 +69,7 @@ const FileMenu = ({
   showDiff,
   setShowDiff,
   isDirty,
+  selectedFilePath,
   setOpenFilePathInputModal,
   saveFile
 }: FileMenuProps) => {
@@ -81,7 +96,11 @@ const FileMenu = ({
 
   return (
     <>
-      <SaveButton isDirty={isDirty} saveFile={saveFile} />
+      <SaveButton
+        isDirty={isDirty}
+        selectedFilePath={selectedFilePath}
+        saveFile={saveFile}
+      />
       <Tooltip title="Save File Menu">
         <IconButton onClick={handleMenu}>
           <MoreVert />

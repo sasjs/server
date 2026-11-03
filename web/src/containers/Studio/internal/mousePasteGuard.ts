@@ -8,9 +8,10 @@
  * the editor pasting by itself.
  *
  * A press of a secondary button on the text area arms the guard, and the paste
- * that follows within the window is dropped. A left press does not arm it, so
- * Ctrl+V straight after clicking into the code still pastes, and a Paste chosen
- * from the editor's own menu - which renders outside this node - is untouched.
+ * that follows within the window is dropped. A left press disarms it again, so
+ * right-click on the code followed by a click into the buffer and Ctrl+V still
+ * pastes - that is the user's own paste, not the gesture's. A Paste chosen from
+ * the editor's own menu renders outside this node and never arms the guard.
  */
 
 /** How long a secondary press can lead to a paste before the press is stale. */
@@ -23,7 +24,9 @@ export const guardMousePaste = (node: HTMLElement): (() => void) => {
   let armedAt: number | null = null
 
   const arm = (event: MouseEvent) => {
-    if (event.button !== 0) armedAt = Date.now()
+    // A left press is the user taking over: whatever the previous gesture
+    // armed is stale, and the next paste is theirs to make.
+    armedAt = event.button === 0 ? null : Date.now()
   }
 
   const dropPaste = (event: Event) => {
