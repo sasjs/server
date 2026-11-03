@@ -208,12 +208,18 @@ export const processProgram = async (
  * a chatty stored program lost its output at the same few thousand lines
  * whatever it was printing. Nothing reads the buffers, so nothing is buffered.
  *
+ * The log is the only buffer. `pipe` pauses the child's streams while the
+ * write stream's internal buffer is full, so a program that outruns the log
+ * disk slows down instead of queueing the whole run in memory, and an error
+ * writing the log ends the run rather than reaching the process as an
+ * unhandled `'error'`.
+ *
  * @param file - The name or path of the executable file to run.
  * @param args - List of arguments.
  * @param writeStream - The child's stdout and stderr are written to it.
  *
- * @returns - Resolves when the child exits with code 0, and rejects with the
- * error `execFile` would have produced otherwise.
+ * @returns - Resolves when the child exits with code 0, and rejects when it
+ * exits non-zero, fails to start, or its output cannot be logged.
  */
 const runInterpreter = (
   session: Session,
@@ -222,8 +228,21 @@ const runInterpreter = (
   writeStream: WriteStream,
   onSpawn?: (pid: number) => void
 ): Promise<void> => {
+  /** How much of a failed command's stderr travels in the error message. */
+  const STDERR_TAIL_LIMIT = 2000
+
   return new Promise((resolve, reject) => {
     const child = spawn(file, args)
+
+    let settled = false
+    const settle = (err?: Error) => {
+      if (settled) return
+
+      settled = true
+
+      if (err) reject(err)
+      else resolve()
+    }
 
     // the interpreter's pid, so a trigger response can name the process
     if (child.pid) {
@@ -233,30 +252,54 @@ const runInterpreter = (
       onSpawn?.(child.pid)
     }
 
-    child.stdout?.on('data', (data) => {
-      writeStream.write(data)
+    // The log is the record of the run, so a log that cannot be written ends
+    // it: the interpreter has nowhere to put its output. Keeping a listener on
+    // the stream also means a full disk fails this session instead of reaching
+    // the process as an unhandled 'error'.
+    writeStream.on('error', (err) => {
+      child.kill()
+
+      if (settled) {
+        process.logger?.error(
+          'session log write failed',
+          session.id,
+          err.message
+        )
+
+        return
+      }
+
+      settle(new Error(`Failed to write the session log: ${err.message}`))
     })
 
-    child.stderr?.on('data', (data) => {
-      writeStream.write(data)
+    child.stdout?.pipe(writeStream, { end: false })
+    child.stderr?.pipe(writeStream, { end: false })
+
+    // `execFile` put the failed command's stderr in the error message, and
+    // callers read that text through `session.failureReason`. The log holds all
+    // of it, so only the tail is kept here - enough to say why the run ended,
+    // without holding a chatty program's stderr a second time.
+    let stderrTail = ''
+    child.stderr?.on('data', (data: Buffer) => {
+      stderrTail = (stderrTail + data.toString()).slice(-STDERR_TAIL_LIMIT)
     })
 
     // A child that never started (a missing interpreter, a permission denied)
     // reports here rather than through an exit code.
-    child.on('error', (err) => reject(err))
+    child.on('error', (err) => settle(err))
 
     child.on('close', (code, signal) => {
-      if (code === 0) return resolve()
+      if (code === 0) return settle()
 
-      // The shape execFile reports: the failure is the exit status, and the
-      // caller turns `err.toString()` into the session's failureReason.
+      const detail = stderrTail.trim()
+
       const err = new Error(
-        `Command failed: ${file} ${args.join(' ')}`
+        `Command failed: ${file} ${args.join(' ')}${detail ? `\n${detail}` : ''}`
       ) as Error & { code?: number | null; signal?: string | null }
       err.code = code
       err.signal = signal
 
-      reject(err)
+      settle(err)
     })
   })
 }

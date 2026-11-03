@@ -10,7 +10,7 @@
  *
  * The SAS and Viya runtimes are covered by processProgram.spec.ts.
  */
-import { mkdtempSync } from 'fs'
+import { existsSync, mkdtempSync } from 'fs'
 import { readFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import path from 'path'
@@ -119,6 +119,28 @@ describe('processProgram (js runtime)', () => {
 
     expect(session.state).toBe(SessionState.failed)
     expect(session.failureReason).toContain('Command failed')
+    // The reason travels to API consumers, and execFile used to put the failed
+    // command's stderr in it.
+    expect(session.failureReason).toContain('boom')
     expect(log).toContain('before the throw')
   }, 60000)
+
+  // A log that cannot be written: /dev/full is a Linux device that accepts an
+  // open and answers every write with ENOSPC.
+  const itOnLinux = existsSync('/dev/full') ? it : it.skip
+
+  itOnLinux(
+    'fails the session, rather than the process, when the log cannot be written',
+    async () => {
+      const program = `for (let i = 0; i < 5000; i++) console.log('line ' + i)`
+
+      logPath = '/dev/full'
+
+      await expect(run(program)).resolves.toBeUndefined()
+
+      expect(session.state).toBe(SessionState.failed)
+      expect(session.failureReason).toContain('Failed to write the session log')
+    },
+    60000
+  )
 })
