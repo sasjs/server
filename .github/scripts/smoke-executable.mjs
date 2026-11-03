@@ -61,7 +61,10 @@ const env = {
   // mode reads it before it listens.
   NODE_PATH: process.execPath,
   SASJS_ROOT: path.join(workDir, 'sasjs_root'),
-  HTTP_PORT: String(port)
+  HTTP_PORT: String(port),
+  // /ddc-host is a testing tool and 404s unless asked for; the asset check
+  // below is about what the snapshot carries, so it has to be reachable.
+  DDC_HOST_ENABLED: 'true'
 }
 
 // A leftover value from the caller would make the server validate a shape this
@@ -124,6 +127,64 @@ const finish = (lines) => {
   }, 2_000).unref()
 }
 
+/**
+ * The routes whose files are read from disk per request rather than compiled in.
+ *
+ * `pkg` only carries what `pkg.assets` lists, so a view that is served out of
+ * `build/src/views/` is present in a source checkout and in the npm tarball and
+ * absent from the snapshot - and no unit test can see the difference, because
+ * they read the file straight from the source tree. That is how v3.12.0 and
+ * v3.12.1 shipped with `/ddc-host` answering 500.
+ */
+const checkServedViews = async () => {
+  try {
+    const page = await fetch(
+      `${baseUrl}/ddc-host?url=about%3Ablank&message=%7B%7D&timing=early`,
+      { signal: AbortSignal.timeout(5_000) }
+    )
+    const body = await page.text()
+
+    if (!page.ok)
+      fail(
+        `the executable answered ${page.status} for /ddc-host: ${body.trim()}`
+      )
+
+    // The tag the page needs, and the marker the unit spec pins
+    // (routes/spec/ddcHost.spec.ts). Not a substring like "timing": the help text
+    // names `timing=early` in prose, so a check for that word passed off the
+    // documentation while the script tag itself could have been missing - and an
+    // edit to the paragraph failed the smoke test for no reason.
+    if (!body.includes('<script src="/ddc-host.js">'))
+      fail('/ddc-host answered 200 but the page does not load /ddc-host.js')
+
+    const script = await fetch(`${baseUrl}/ddc-host.js`, {
+      signal: AbortSignal.timeout(5_000)
+    })
+    const scriptBody = await script.text()
+
+    if (!script.ok)
+      fail(`the executable answered ${script.status} for /ddc-host.js`)
+
+    // A status is not enough: an asset that ships empty or truncated - the exact
+    // failure this check exists for - still answers 200. Assert the content the
+    // page needs, the type it is served as, and a floor on its size.
+    const contentType = script.headers.get('content-type') ?? ''
+
+    if (!contentType.includes('javascript'))
+      fail(`/ddc-host.js was served as ${contentType || '(no content type)'}`)
+    if (!scriptBody.includes('startEarlyReplay'))
+      fail('/ddc-host.js answered 200 but does not contain startEarlyReplay')
+    if (scriptBody.length < 1_000)
+      fail(`/ddc-host.js answered 200 with only ${scriptBody.length} bytes`)
+  } catch (error) {
+    // fail() exits, so reaching here means the request itself threw - a page
+    // that cannot be fetched is as broken as one that 500s.
+    fail(`could not fetch /ddc-host from the executable: ${error.message}`)
+  }
+
+  console.log('the executable served /ddc-host and /ddc-host.js')
+}
+
 const deadline = Date.now() + READY_TIMEOUT_MS
 
 while (Date.now() < deadline) {
@@ -146,6 +207,7 @@ while (Date.now() < deadline) {
           )}`
         )
 
+      await checkServedViews()
       finish(output.slice(-TAIL_LINES))
       break
     }

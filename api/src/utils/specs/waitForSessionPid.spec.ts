@@ -91,7 +91,11 @@ describe('waitForSessionPid', () => {
     )
 
     expect(pid).toBeUndefined()
-    expect(Date.now() - started).toBeGreaterThanOrEqual(100)
+    // Node compares timer deadlines against a truncated clock, so a 100ms timer
+    // can resolve a millisecond under the value it was given - CI failed this at
+    // 99ms. The assertion is about waiting for the timeout rather than returning
+    // immediately, so it carries that tolerance instead of the exact number.
+    expect(Date.now() - started).toBeGreaterThanOrEqual(90)
   })
 
   // The program promise is observed before the early returns, so a rejection
