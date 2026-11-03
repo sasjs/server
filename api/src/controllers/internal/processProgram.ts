@@ -1,6 +1,6 @@
 import path from 'path'
 import { WriteStream, createWriteStream } from 'fs'
-import { execFile } from 'child_process'
+import { spawn } from 'child_process'
 import { once } from 'stream'
 import { createFile, moveFile } from '@sasjs/utils'
 import { PreProgramVars, Session, SessionState } from '../../types'
@@ -158,7 +158,7 @@ export const processProgram = async (
     // waiting for the open event so that we can have underlying file descriptor
     await once(writeStream, 'open')
 
-    await execFilePromise(
+    await runInterpreter(
       session,
       executablePath,
       [codePath],
@@ -198,27 +198,32 @@ export const processProgram = async (
 }
 
 /**
- * Promisified child_process.execFile
+ * Runs an interpreter with the session's streams attached.
+ *
+ * `spawn` rather than `execFile`, because the output is already being written
+ * to the session log as it arrives: `execFile`'s callback buffers a second copy
+ * of stdout and stderr in memory, and once a program writes more than its
+ * default 1 MiB `maxBuffer` Node kills the interpreter. The log then ends
+ * mid-program and the session is marked crashed, on a run that was working -
+ * a chatty stored program lost its output at the same few thousand lines
+ * whatever it was printing. Nothing reads the buffers, so nothing is buffered.
  *
  * @param file - The name or path of the executable file to run.
- * @param args - List of string arguments.
- * @param writeStream - Child process stdout and stderr will be piped to it.
+ * @param args - List of arguments.
+ * @param writeStream - The child's stdout and stderr are written to it.
  *
- * @returns {Promise<{ stdout: string, stderr: string }>}
+ * @returns - Resolves when the child exits with code 0, and rejects with the
+ * error `execFile` would have produced otherwise.
  */
-const execFilePromise = (
+const runInterpreter = (
   session: Session,
   file: string,
   args: string[],
   writeStream: WriteStream,
   onSpawn?: (pid: number) => void
-): Promise<{ stdout: string; stderr: string }> => {
+): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const child = execFile(file, args, (err, stdout, stderr) => {
-      if (err) reject(err)
-
-      resolve({ stdout, stderr })
-    })
+    const child = spawn(file, args)
 
     // the interpreter's pid, so a trigger response can name the process
     if (child.pid) {
@@ -234,6 +239,24 @@ const execFilePromise = (
 
     child.stderr?.on('data', (data) => {
       writeStream.write(data)
+    })
+
+    // A child that never started (a missing interpreter, a permission denied)
+    // reports here rather than through an exit code.
+    child.on('error', (err) => reject(err))
+
+    child.on('close', (code, signal) => {
+      if (code === 0) return resolve()
+
+      // The shape execFile reports: the failure is the exit status, and the
+      // caller turns `err.toString()` into the session's failureReason.
+      const err = new Error(
+        `Command failed: ${file} ${args.join(' ')}`
+      ) as Error & { code?: number | null; signal?: string | null }
+      err.code = code
+      err.signal = signal
+
+      reject(err)
     })
   })
 }
