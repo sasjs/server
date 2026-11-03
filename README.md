@@ -1,3 +1,5 @@
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sasjs/server/badge)](https://scorecard.dev/viewer/?uri=github.com/sasjs/server)
+
 # SASjs Server
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
