@@ -91,7 +91,7 @@ const SASjsEditor = ({
     handleFilePathInput,
     handleRunBtnClick,
     handleTabChange,
-    saveFile,
+    saveBuffer,
     setShowDiff,
     setOpenFilePathInputModal,
     setFileContent,
@@ -103,15 +103,17 @@ const SASjsEditor = ({
     prevFileContent !== fileContent && !!selectedFilePath
   )
 
+  // The dot on the save icon is the same news the unsaved-changes prompt
+  // guards: the buffer holds edits the drive does not.
+  const isDirty = prevFileContent !== fileContent
+
   const fileMenu = (
     <FileMenu
       showDiff={showDiff}
       setShowDiff={setShowDiff}
-      prevFileContent={prevFileContent}
-      currentFileContent={fileContent}
-      selectedFilePath={selectedFilePath}
+      isDirty={isDirty}
       setOpenFilePathInputModal={setOpenFilePathInputModal}
-      saveFile={saveFile}
+      saveFile={saveBuffer}
     />
   )
 
