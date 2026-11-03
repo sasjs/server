@@ -593,7 +593,7 @@ describe('Studio in a browser', () => {
     expect(onDrive).not.toBe(SAVE_FILE_CONTENT)
   }, 120000)
 
-  it('drops a paste that a mouse gesture produced, and keeps the keyboard paste', async () => {
+  it('drops a paste that follows a right click, and takes an ordinary paste', async () => {
     // A paste as the browser delivers it, into the editor's input element.
     const paste = (text: string) =>
       page.evaluate((text) => {
@@ -618,39 +618,27 @@ describe('Studio in a browser', () => {
     await page.keyboard.press('Control+End')
 
     const beforeGesture = await shown()
-
-    // A right press, then the paste the browser can follow it with: the editor
-    // ignores it, which is what stops text appearing from a right click.
     const box = (await page.locator('.monaco-editor').boundingBox())!
+
+    // A right press followed by the paste the browser can send it - with NO
+    // key in between, which is what makes this the gesture and not the user.
+    // The editor ignores it, so text cannot appear from a right click.
     await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
     await paste('MOUSEPASTE')
     await page.waitForTimeout(300)
 
     expect(await shown()).toBe(beforeGesture)
 
-    await page.keyboard.press('Escape')
-
-    // The keyboard is a deliberate paste, and still works. Clicking into the
-    // buffer after the right press is the user taking over, so the guard the
-    // right press armed is spent by the left press, not by the paste.
-    await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
-    await page.waitForTimeout(200)
+    // What the guard must never swallow is an ordinary paste. Escape closes the
+    // menu and is itself a key down, so this case does not isolate WHICH
+    // disarm did the work - the two arms of that (a left press, a key down) are
+    // asserted directly in web/scripts/test-mouse-paste-guard.mjs, where no
+    // menu and no Escape stand between the gesture and the paste.
     await page.keyboard.press('Escape')
     await page.mouse.click(box.x + 200, box.y + 40)
-    await paste('KEYBOARDPASTE')
+    await paste('USERPASTE')
     await page.waitForTimeout(300)
 
-    expect(await shown()).toContain('KEYBOARDPASTE')
-
-    // A key down is the same takeover, and it arrives before the paste the key
-    // produces: right press, Escape, Ctrl+V, with no click in between.
-    await page.mouse.click(box.x + 200, box.y + 40, { button: 'right' })
-    await page.waitForTimeout(200)
-    await page.keyboard.press('Escape')
-    await page.keyboard.press('Shift')
-    await paste('KEYONLYPASTE')
-    await page.waitForTimeout(300)
-
-    expect(await shown()).toContain('KEYONLYPASTE')
+    expect(await shown()).toContain('USERPASTE')
   }, 120000)
 })
