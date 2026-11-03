@@ -81,21 +81,30 @@ const LogComponent = (props: LogComponentProps) => {
 
       return newState
     })
-
-    setTimeout(() => {
-      scrollToTheBottom()
-    }, 100)
   }, [])
 
-  // INFO: scroll to the bottom of the log
-  const scrollToTheBottom = () => {
+  /**
+   * Opening the log puts the reader at its top, where the summary sits.
+   *
+   * The summary tree - errors, warnings and notes with their counts - is the
+   * first thing a reader wants, and it is a few lines tall. This component used
+   * to jump to the end of the log a moment after mounting, and it mounts at the
+   * moment the log tab opens after a run, so the summary was scrolled past
+   * before it could be read: the reader landed at the end of the log with the
+   * counts above the fold, and the only way back was to scroll up by hand. The
+   * summary scrolling out of view when the reader scrolls is fine - what was
+   * not fine was starting there.
+   *
+   * Keyed on the log rather than on mount: a new run replaces it, and the new
+   * log opens at its own summary instead of at the position the previous one
+   * had been left at.
+   */
+  useEffect(() => {
     const logWrapper: HTMLDivElement | null =
       document.querySelector(`#logWrapper`)
 
-    if (logWrapper) {
-      logWrapper.scrollTop = logWrapper.scrollHeight
-    }
-  }
+    if (logWrapper) logWrapper.scrollTop = 0
+  }, [logObject])
 
   const getChunkToAutoCollapse = () => {
     const openedChunks = logChunksState
