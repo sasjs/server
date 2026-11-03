@@ -5,6 +5,21 @@ on:
     branches:
       - main
 
+# One release at a time. Without this, two merges minutes apart start two
+# release runs: the first builds and publishes, the second creates its tag and
+# GitHub release and then fails at `npm publish` because the version is already
+# taken - so the tag names a commit whose build never reached npm, and the npm
+# entry carries the other run's build (sasjs/server#520).
+#
+# Queued rather than cancelled: a run that is mid-publish must never be torn
+# down, and a run that waits reads the commits that arrived while it waited, so
+# nothing is left unreleased. GitHub keeps one run per group, so a third merge
+# replaces the waiting one - and that run still covers the commit it replaced,
+# because it sees the same history.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-22.04
