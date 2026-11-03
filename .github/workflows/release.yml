@@ -116,6 +116,15 @@ jobs:
           # which rate limits unauthenticated requests per source IP.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # The packaged binary is the only artefact this release ships that runs on
+      # the small-icu Node `pkg` embeds, and nothing else in CI ever starts one.
+      # Booting the exact file that is about to be zipped is seconds of work and
+      # is the check that v3.10.0, v3.11.0 and v3.11.1 went out without - each of
+      # them unable to write its first log line.
+      - name: Smoke test the linux executable
+        if: steps.pending.outputs.release == 'true'
+        run: node .github/scripts/smoke-executable.mjs executables/api-linux
+
       # Stage the npm package from the SAME build. `files` in the staged manifest
       # keeps the tarball to build/, web/build/, README and LICENSE, which is the
       # layout api/src/utils/file.ts derives its roots from - see the script's

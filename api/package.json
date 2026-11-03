@@ -56,6 +56,7 @@
     "@sasjs/utils": "^4.4.0",
     "bcryptjs": "^3.0.3",
     "connect-mongo": "^6.0.0",
+    "consola": "3.4.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "csrf": "^3.1.0",
