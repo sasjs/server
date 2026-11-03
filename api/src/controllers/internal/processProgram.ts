@@ -177,6 +177,11 @@ export const processProgram = async (
 
         session.failureReason = err.toString()
 
+        // A run the shutdown ended on purpose is not a crash: the interpreter
+        // exits non-zero because it was signalled (sasjs/server#162)
+        if (session.terminatedByShutdown)
+          return process.logger.info('session ended by shutdown', session.id)
+
         process.logger.error(
           'session crashed',
           session.id,

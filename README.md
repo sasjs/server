@@ -432,6 +432,21 @@ The short version:
 
 Whichever you pick, capture stderr. The process exits 1 on a configuration error and on an unhandled rejection, and that line is the diagnosis; a console window that closes takes it with it.
 
+### Stopping the server
+
+`SIGTERM` and `SIGINT` stop the server in two stages.
+Listeners stop accepting first, and in-flight requests get up to 5 seconds to finish.
+Then every session the server is holding is ended: a SAS session waiting for work is handed an `endsas;` program so SAS terminates itself, and a session that is still running gets 2.5 seconds to finish before it is signalled (SIGTERM, then SIGKILL after another 1.5 seconds).
+A session's folder is removed only after its process has gone.
+
+The worst case is therefore 9 seconds - 5 for the listener close plus 4 for the drain - so give a supervisor **10 seconds** before it escalates.
+That gap is deliberate: a supervisor's `SIGKILL` cannot be caught, so a shutdown cut short at that point would orphan the very processes this ends, and a SAS session left behind keeps a licence seat busy until its own 15 minute idle ceiling expires.
+A stop with nothing in flight is far quicker than the ceiling; measure one before raising the value:
+
+- **pm2** waits 1600ms by default, which is shorter than the listener close alone: set `kill_timeout: 10000` in the ecosystem file, or start with `--kill-timeout 10000`.
+- **docker** waits 10 seconds by default, which is already the right value: `--stop-timeout 10` (or `stop_grace_period: 10s` in a compose file) makes it explicit.
+- **systemd** waits 90 seconds by default, so a unit needs no change; `TimeoutStopSec=10` is still worth setting explicitly.
+
 `GET /SASjsApi/info` answers without authentication and is the probe to use.
 
 ## Server Version
