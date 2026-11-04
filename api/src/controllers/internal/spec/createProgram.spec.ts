@@ -291,15 +291,17 @@ webout('CLOSE')
       ])
 
       // The fields %ms_webout(CLOSE) adds, in the SAS formats a consumer reads.
-      expect(parsed.SYSDATE).toMatch(/^\d{2}[A-Z]{3}\d{4}$/)
-      expect(parsed.SYSTIME).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+      expect(parsed.SYSDATE).toMatch(/^\d{2}[A-Z]{3}\d{2}$/)
+      expect(parsed.SYSTIME).toMatch(/^\d{2}:\d{2}$/)
       expect(parsed.MF_GETUSER).toEqual('testsuser')
       expect(parsed.SYSUSERID).toEqual('507f1f77bcf86cd799439011')
       expect(parsed._PROGRAM).toEqual('/Public/demo')
       expect(parsed.SYSPROCESSMODE).toEqual('Stored Program')
       expect(parsed.SYSTCPIPHOSTNAME).toEqual('http://localhost:5000')
-      expect(parsed.SYSCC).toEqual(0)
-      expect(parsed.END_DTTM).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+      expect(parsed.SYSCC).toEqual('0')
+      expect(parsed.END_DTTM).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/
+      )
     })
 
     it('carries showmeta beside the table, as %ms_webout(showmeta=YES) does', async () => {
