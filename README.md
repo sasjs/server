@@ -206,6 +206,19 @@ HTTPS_BIND_ADDRESS=
 # API_SERVER_URL=https://sasjs.internal.example.com
 API_SERVER_URL=
 
+# Optional. The site this server reports to programs as SYSSITE.
+#
+# SAS has SYSSITE as a global macro variable, so a SAS service reads the site it
+# runs on without being told anything; a JS stored program has no such variable,
+# and takes it from here instead. It matters as soon as a service compares
+# something against the site - Data Controller checks a licence key against
+# SYSSITE, and on a JS runtime that check sees whatever this reports.
+#
+# Unset, every program reports the default site 123 (the SASjs demo estate). Set
+# it when the applications on this server are licensed for a particular site.
+# SITE_ID=123
+SITE_ID=
+
 # options: [sas9|sasviya]
 # If not present, mocking function is disabled
 MOCK_SERVERTYPE=
