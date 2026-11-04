@@ -215,9 +215,10 @@ API_SERVER_URL=
 # SYSSITE, and on a JS runtime that check sees whatever this reports.
 #
 # Unset, every program reports the default site 123 (the SASjs demo estate). Set
-# it when the applications on this server are licensed for a particular site.
+# it when the applications on this server are licensed for a particular site -
+# uncomment the line below to do that. Leave it commented rather than blank: an
+# empty value is treated as unset, but a commented line says what it means.
 # SITE_ID=123
-SITE_ID=
 
 # options: [sas9|sasviya]
 # If not present, mocking function is disabled

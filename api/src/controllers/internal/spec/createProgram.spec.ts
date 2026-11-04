@@ -146,6 +146,18 @@ describe('generated stored-program source', () => {
       const body = await runWithSite('SITE1')
       expect(body.SYSSITE).toEqual('SITE1')
     })
+
+    it('treats an empty or blank SITE_ID as not configured', async () => {
+      // dotenv turns a bare `SITE_ID=` in a .env file into an empty string, and
+      // the documented default has to survive that - a server whose site silently
+      // became '' would fail the licence check the README's own note describes.
+      expect((await runWithSite('')).SYSSITE).toEqual('123')
+      expect((await runWithSite('   ')).SYSSITE).toEqual('123')
+    })
+
+    it('trims a configured site', async () => {
+      expect((await runWithSite(' SITE1 ')).SYSSITE).toEqual('SITE1')
+    })
   })
 
   describe('R', () => {
