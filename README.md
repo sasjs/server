@@ -1,11 +1,8 @@
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sasjs/server/badge)](https://scorecard.dev/viewer/?uri=github.com/sasjs/server)
-
 # SASjs Server
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/sasjs/server/badge)](https://scorecard.dev/viewer/?uri=github.com/sasjs/server)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-
 [![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
-
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 SASjs Server provides a NodeJS wrapper for calling the SAS binary executable. It can be installed on an actual SAS server, or locally on your desktop. It provides:
