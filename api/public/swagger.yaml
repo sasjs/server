@@ -1499,8 +1499,12 @@ paths:
         get:
             operationId: GetFile
             responses:
-                '204':
-                    description: 'No content'
+                '200':
+                    description: 'The contents of the file'
+                '400':
+                    description: 'Can''t get file outside drive'
+                '404':
+                    description: 'File doesn''t exist'
             description: "Returns the content of a file within SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the file\ndoes not exist. A `.sas` file is served as `text/plain`."
             summary: 'Get a file from SASjs Drive'
             tags:
@@ -1530,6 +1534,8 @@ paths:
                                 required:
                                     - status
                                 type: object
+                '404':
+                    description: 'File doesn''t exist'
             description: "Deletes a file from SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the file\ndoes not exist."
             summary: 'Delete a file from SASjs Drive'
             tags:
@@ -1558,15 +1564,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success}
-                '403':
+                '409':
                     description: 'File already exists'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/FileFolderResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'File request failed.'}
             description: "Uploads a new file into SASjs Drive, creating any missing parent folders.\n\nThe destination is given either as the `_filePath` query parameter or as the\n`filePath` form field; one of the two is required. A `400` is returned for a\npath outside the drive and a `409` when a file already exists at that path\n(use `PATCH /SASjsApi/drive/file` to replace one)."
             summary: 'Create a file in SASjs Drive'
             tags:
@@ -1609,15 +1608,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success}
-                '403':
+                '404':
                     description: 'File doesn''t exist'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/FileFolderResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'File request failed.'}
             description: "Replaces the content of an existing file in SASjs Drive.\n\nThe destination is given either as the `_filePath` query parameter or as the\n`filePath` form field; one of the two is required. A `400` is returned for a\npath outside the drive and a `404` when no file exists at that path."
             summary: 'Replace a file in SASjs Drive'
             tags:
@@ -1693,6 +1685,8 @@ paths:
                                 required:
                                     - status
                                 type: object
+                '404':
+                    description: 'Folder doesn''t exist'
             description: "Deletes a folder, and everything inside it, from SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the\nfolder does not exist."
             summary: 'Delete a folder from SASjs Drive'
             tags:
@@ -1723,13 +1717,6 @@ paths:
                                     value: {status: success}
                 '409':
                     description: 'Folder already exists'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/FileFolderResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'Add folder request failed.'}
             description: "Creates an empty folder in SASjs Drive, including any missing parent\nfolders.\n\nA `400` is returned for a path outside the drive and a `409` when the folder\nalready exists."
             summary: 'Create a folder in SASjs Drive'
             tags:
@@ -1757,15 +1744,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: success}
+                '404':
+                    description: 'No file/folder found for provided path'
                 '409':
-                    description: 'Folder already exists'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/FileFolderResponse'
-                            examples:
-                                'Example 1':
-                                    value: {status: failure, message: 'rename request failed.'}
+                    description: 'Something already exists at the new path'
             description: "Moves a file or folder within SASjs Drive to a new path.\n\nBoth `oldPath` and `newPath` must be inside the drive. A `404` is returned\nwhen nothing exists at `oldPath`, and a `409` when something already exists\nat `newPath`."
             summary: 'Rename or move a file or folder in SASjs Drive'
             tags:
