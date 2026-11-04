@@ -54,7 +54,7 @@
     "@sasjs/adapter": "4.19.1",
     "@sasjs/core": "^6.1.2",
     "@sasjs/lint": "^4.8.1",
-    "@sasjs/utils": "^4.4.0",
+    "@sasjs/utils": "^4.6.0",
     "bcryptjs": "^3.0.3",
     "connect-mongo": "^6.0.0",
     "consola": "3.4.2",
