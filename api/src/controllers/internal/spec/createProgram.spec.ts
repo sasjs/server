@@ -247,6 +247,31 @@ webout('CLOSE')
       expect(parsed.END_DTTM).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     })
 
+    it('carries showmeta beside the table, as %ms_webout(showmeta=YES) does', async () => {
+      // The JS stored programs that port a SAS service send the column metadata
+      // SAS builds from the dictionary tables; the prelude has to carry it, and
+      // an older @sasjs/utils ignores the options argument without saying so.
+      const { body, failed } = await runProgram(`
+const meta = { vars: {
+  ID: { format: 'best.', label: 'Id', length: 8, type: 'num' }
+} }
+webout('OPEN')
+webout('OBJ', 'Users', [{ ID: 1 }, { ID: 2 }], { showmeta: meta, maxobs: 1 })
+webout('CLOSE')
+`)
+
+      expect(failed).toEqual(false)
+
+      const parsed = JSON.parse(body)
+
+      // maxobs first: the rows are the ones the caller bounded
+      expect(parsed.Users).toEqual([{ ID: 1 }])
+      // %mp_jsonout writes the metadata beside the table, under $ and lower-cased
+      expect(parsed.$users).toEqual({
+        vars: { ID: { format: 'best.', label: 'Id', length: 8, type: 'num' } }
+      })
+    })
+
     it('accepts the actions in any case', async () => {
       const { body, failed } = await runProgram(`
 webout('open')
