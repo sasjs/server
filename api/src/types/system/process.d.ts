@@ -8,6 +8,8 @@ declare namespace NodeJS {
     sasjsRoot: string
     logsLoc: string
     logsUUID: string
+    /** Present only in an executable built by pkg. */
+    pkg?: unknown
     sessionController?: import('../../controllers/internal').SessionController
     sasSessionController?: import('../../controllers/internal').SASSessionController
     appStreamConfig: import('../').AppStreamConfig

@@ -15,8 +15,7 @@ SASjs Server is available in two modes - Desktop (without authentication) and Se
 
 ## Installation
 
-Two channels - the npm package and the standalone executable. Both read the same
-environment variables and serve the same API.
+Two channels - the npm package and the standalone executable. Both read the same environment variables and serve the same API.
 
 ### npm
 
