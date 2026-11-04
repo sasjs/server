@@ -9,6 +9,7 @@ import {
   Post,
   Body,
   Response,
+  SuccessResponse,
   Query,
   Get,
   Patch,
@@ -154,6 +155,9 @@ export class DriveController {
    * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file"
    */
+  @SuccessResponse('200', 'The contents of the file')
+  @Response(400, `Can't get file outside drive`)
+  @Response(404, `File doesn't exist`)
   @Get('/file')
   public async getFile(
     @Request() request: express.Request,
@@ -188,6 +192,7 @@ export class DriveController {
    * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file"
    */
+  @Response(404, `File doesn't exist`)
   @Delete('/file')
   public async deleteFile(@Query() _filePath: string) {
     return deleteFile(_filePath)
@@ -203,6 +208,7 @@ export class DriveController {
    * @param _folderPath Location of the folder within the drive
    * @example _folderPath "/Public/somefolder/"
    */
+  @Response(404, `Folder doesn't exist`)
   @Delete('/folder')
   public async deleteFolder(@Query() _folderPath: string) {
     return deleteFolder(_folderPath)
@@ -223,10 +229,10 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
-  @Response<FileFolderResponse>(403, 'File already exists', {
-    status: 'failure',
-    message: 'File request failed.'
-  })
+  // 409, not the 403 this said before: saveFile throws code 409, and the body is
+  // the message in plain text (`res.status(code).send(err.message)`), so there is
+  // no JSON example to document
+  @Response(409, 'File already exists')
   @Post('/file')
   public async saveFile(
     @UploadedFile() file: Express.Multer.File,
@@ -248,10 +254,7 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
-  @Response<FileFolderResponse>(409, 'Folder already exists', {
-    status: 'failure',
-    message: 'Add folder request failed.'
-  })
+  @Response(409, 'Folder already exists')
   @Post('/folder')
   public async addFolder(
     @Body() body: AddFolderPayload
@@ -274,10 +277,9 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
-  @Response<FileFolderResponse>(403, `File doesn't exist`, {
-    status: 'failure',
-    message: 'File request failed.'
-  })
+  // 404, not the 403 this said before: updateFile throws code 404, with the
+  // message as a plain text body
+  @Response(404, `File doesn't exist`)
   @Patch('/file')
   public async updateFile(
     @UploadedFile() file: Express.Multer.File,
@@ -299,10 +301,8 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
-  @Response<FileFolderResponse>(409, 'Folder already exists', {
-    status: 'failure',
-    message: 'rename request failed.'
-  })
+  @Response(409, 'Something already exists at the new path')
+  @Response(404, 'No file/folder found for provided path')
   @Post('/rename')
   public async rename(
     @Body() body: RenamePayload
