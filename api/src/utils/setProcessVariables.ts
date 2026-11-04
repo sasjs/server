@@ -6,7 +6,14 @@ import {
   fileExists
 } from '@sasjs/utils'
 import dotenv from 'dotenv'
-import { connectDB, getDesktopFields, ModeType, RunTimeType, SECRETS } from '.'
+import {
+  connectDB,
+  configurePkgCache,
+  getDesktopFields,
+  ModeType,
+  RunTimeType,
+  SECRETS
+} from '.'
 
 export const setProcessVariables = async () => {
   const { execPath } = process
@@ -69,6 +76,11 @@ export const setProcessVariables = async () => {
 
   process.sasjsRoot = getRealPath(absPath)
 
+  // pkg extracts the assets it serves from its snapshot into a cache directory
+  // of its own choosing, and leaves it behind when this server exits - so point
+  // it at a folder this instance owns inside the data root (sasjs/server#523).
+  const pkgCacheFolder = configurePkgCache()
+
   const { DRIVE_LOCATION } = process.env
   const absDrivePath = getAbsolutePath(
     DRIVE_LOCATION ?? path.join(process.sasjsRoot, 'drive'),
@@ -94,4 +106,6 @@ export const setProcessVariables = async () => {
   process.logger.info('sasDrive: ', process.driveLoc)
   process.logger.info('sasLogs: ', process.logsLoc)
   process.logger.info('runTimes: ', process.runTimes)
+
+  if (pkgCacheFolder) process.logger.info('pkg cache: ', pkgCacheFolder)
 }

@@ -53,6 +53,14 @@ const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sasjs-smoke-'))
 const port = await freePort()
 const baseUrl = `http://127.0.0.1:${port}`
 
+// pkg's default cache, in the home directory. Captured before the executable
+// starts so a folder left by an earlier run on the runner is not read as this
+// one's (sasjs/server#523).
+const homeCacheDir = path.join(os.homedir(), '.cache', 'pkg')
+const homeCacheBefore = new Set(
+  fs.existsSync(homeCacheDir) ? fs.readdirSync(homeCacheDir) : []
+)
+
 const env = {
   ...process.env,
   MODE: 'desktop',
@@ -185,8 +193,60 @@ const checkServedViews = async () => {
   console.log('the executable served /ddc-host and /ddc-host.js')
 }
 
-const deadline = Date.now() + READY_TIMEOUT_MS
+/**
+ * Where pkg unpacks the assets it serves (sasjs/server#523).
+ *
+ * pkg extracts a snapshot file the first time the executable asks for it, into
+ * whatever `PKG_NATIVE_CACHE_PATH` names AT THAT MOMENT - so this is the check
+ * that the redirect from `setProcessVariables` happens before anything reads a
+ * snapshot file. A source checkout and the npm package run no pkg prelude at
+ * all, which is why no unit test can see this.
+ */
+const checkPkgCache = () => {
+  const tmpFolder = path.join(env.SASJS_ROOT, 'tmp')
+  const folders = fs.existsSync(tmpFolder)
+    ? fs.readdirSync(tmpFolder).filter((entry) => entry.startsWith('pkg-cache-'))
+    : []
 
+  if (folders.length !== 1)
+    fail(
+      `expected one pkg cache folder under ${tmpFolder}, found ${folders.length}`
+    )
+
+  const countFiles = (folder) => {
+    let total = 0
+
+    for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
+      if (entry.isDirectory()) total += countFiles(path.join(folder, entry.name))
+      else if (entry.isFile()) total += 1
+    }
+
+    return total
+  }
+
+  const files = countFiles(path.join(tmpFolder, folders[0]))
+
+  // An empty folder means the assets came from somewhere else - the redirect
+  // happened but nothing was unpacked into it.
+  if (files === 0)
+    fail(`the pkg cache folder ${folders[0]} is empty`)
+
+  const homeCacheNow = new Set(
+    fs.existsSync(homeCacheDir) ? fs.readdirSync(homeCacheDir) : []
+  )
+  const leaked = [...homeCacheNow].filter((entry) => !homeCacheBefore.has(entry))
+
+  if (leaked.length > 0)
+    fail(
+      `the executable unpacked into the home cache instead: ${leaked.join(', ')}`
+    )
+
+  console.log(
+    `the executable unpacked ${files} file(s) into ${path.join(tmpFolder, folders[0])}, not ${homeCacheDir}`
+  )
+}
+
+const deadline = Date.now() + READY_TIMEOUT_MS
 while (Date.now() < deadline) {
   if (exited) fail(`the executable exited before it was ready (${JSON.stringify(exited)})`)
 
@@ -208,6 +268,7 @@ while (Date.now() < deadline) {
         )
 
       await checkServedViews()
+      checkPkgCache()
       finish(output.slice(-TAIL_LINES))
       break
     }
