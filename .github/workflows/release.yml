@@ -70,7 +70,10 @@ jobs:
       - name: Install Semantic Release and plugins
         run: |
           npm i
-          npm i -g semantic-release
+          # pinned, not floating: the scorecard reads an unpinned global install as an
+          # unpinned dependency, and a semantic-release major that changed the plugin
+          # contract would break this job with nothing in the repository to revert
+          npm i -g semantic-release@25.0.9
 
       - name: Is a release pending?
         id: pending
