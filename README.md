@@ -15,8 +15,7 @@ SASjs Server is available in two modes - Desktop (without authentication) and Se
 
 ## Installation
 
-Two channels - the npm package and the standalone executable. Both read the same
-environment variables and serve the same API.
+Two channels - the npm package and the standalone executable. Both read the same environment variables and serve the same API.
 
 ### npm
 
@@ -72,15 +71,6 @@ vars are set:
 
 - Location of your `sas.exe` / `sas.sh` executable
 - Path to a filesystem location for Stored Programs and temporary files
-
-The executable reads its bundled files from a snapshot inside the binary and
-unpacks the ones it serves at runtime. That unpacked copy lives in a `tmp`
-folder inside `SASJS_ROOT` and is removed when the process exits, so nothing
-accumulates in the service account's home directory; a folder left by a process
-that was killed outright is removed by a later start once it is a day old. pkg's
-own `PKG_NATIVE_CACHE_PATH` overrides the location if you need it elsewhere.
-(pkg unpacks native addons before this server's code runs, so `~/.cache/pkg` can
-still appear if a native addon is ever bundled - none are today.)
 
 ## Deployment options
 
@@ -158,8 +148,6 @@ R_PATH=/usr/bin/Rscript
 
 # Path to working directory
 # This location is for SAS WORK, staged files, DRIVE, configuration etc
-# A standalone executable also unpacks the assets it serves into a ./tmp
-# folder here, and removes it on exit.
 SASJS_ROOT=./sasjs_root
 
 
