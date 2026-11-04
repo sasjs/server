@@ -42,7 +42,11 @@ export const createJSProgram = async (
     apiServerUrl:
       preProgramVariables?.localServerUrl ??
       preProgramVariables?.serverUrl ??
-      ''
+      '',
+    // SAS reports the site as a global macro variable; a JS program has none, so
+    // the site comes from this server's config. Unset, the prelude's default
+    // (123, the SASjs demo site) applies.
+    siteId: process.env.SITE_ID
   })
 
   const preProgramVarStatments = `

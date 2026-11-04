@@ -105,6 +105,49 @@ describe('generated stored-program source', () => {
     })
   })
 
+  describe('the site the program reports', () => {
+    /** Generate and run one program, returning the body it wrote. */
+    const runWithSite = async (siteId: string | undefined) => {
+      const before = process.env.SITE_ID
+      if (siteId === undefined) delete process.env.SITE_ID
+      else process.env.SITE_ID = siteId
+
+      const weboutPath = path.join(workDir, 'webout-site.json')
+
+      try {
+        const program = await createJSProgram(
+          "webout('OPEN')\nwebout('CLOSE')",
+          preProgramVariables,
+          {} as any,
+          session,
+          weboutPath,
+          path.join(workDir, 'headers-site.json'),
+          path.join(workDir, 'token-site.json')
+        )
+        const file = path.join(workDir, 'program-site.js')
+        writeFileSync(file, program)
+        execFileSync(process.execPath, [file], { cwd: workDir })
+        return JSON.parse(readFileSync(weboutPath, 'utf-8'))
+      } finally {
+        if (before === undefined) delete process.env.SITE_ID
+        else process.env.SITE_ID = before
+      }
+    }
+
+    it('defaults to the SASjs demo site when none is configured', async () => {
+      // SAS has SYSSITE as a global macro variable, so a program can check the
+      // site it runs on without being told anything. Without one configured, a
+      // JS program has to answer the same way.
+      const body = await runWithSite(undefined)
+      expect(body.SYSSITE).toEqual('123')
+    })
+
+    it('reports the configured site', async () => {
+      const body = await runWithSite('SITE1')
+      expect(body.SYSSITE).toEqual('SITE1')
+    })
+  })
+
   describe('R', () => {
     it('emits the value as a single quoted literal', async () => {
       const program = await generate(
