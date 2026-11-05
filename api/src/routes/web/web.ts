@@ -18,22 +18,10 @@ import {
   isAuthProviderEnabled,
   AuthProviderType
 } from '../../utils'
+import { sendRefusal } from '../refusal'
 
 const webRouter = express.Router()
 const controller = new WebController()
-
-/**
- * A refusal as the client reads it: the status the controller chose, and the
- * message as plain text. The document states these statuses, so they are fixed
- * where the refusal is decided rather than inferred from the shape of the
- * thrown value.
- */
-const sendRefusal = (res: express.Response, err: any) => {
-  const status = err?.status ?? err?.code ?? 500
-  return res
-    .status(status)
-    .send(err instanceof Error ? err.message : String(err?.message ?? err))
-}
 
 webRouter.get('/', async (req, res) => {
   let response

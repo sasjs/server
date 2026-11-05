@@ -1,4 +1,4 @@
-import express, { Response } from 'express'
+import express from 'express'
 
 import { AuthController } from '../../controllers/'
 
@@ -9,28 +9,10 @@ import {
 
 import { tokenValidation, updatePasswordValidation } from '../../utils'
 import { InfoJWT } from '../../types'
+import { sendRefusal } from '../refusal'
 
 const authRouter = express.Router()
 const controller = new AuthController()
-
-/**
- * A refusal as the client reads it: the status the controller chose, and the
- * message as plain text.
- *
- * Every refusal on this router is an `HttpError`, so the status travels with the
- * error rather than being decided here - the document states it, the corpus pins
- * it, and a route that answered something else would be the difference. An
- * unexpected error is a `500`: a joi message or a stack is not something a
- * client can act on.
- */
-const sendRefusal = (res: Response, error: any) => {
-  const status = error?.status ?? error?.code ?? 500
-  return res
-    .status(status)
-    .send(
-      error instanceof Error ? error.message : String(error?.message ?? error)
-    )
-}
 
 authRouter.patch(
   '/updatePassword',

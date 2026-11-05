@@ -63,7 +63,7 @@ export class WebController {
     'The credentials are not valid, or password sign-in is disabled for local accounts'
   )
   @Response(429, 'Too many failed attempts for this account')
-  @Response(500, 'The identity provider failed while verifying the credentials')
+  @Response(500, 'An unexpected error occurred while signing in')
   @Post('/SASLogon/login')
   public async login(
     @Request() req: express.Request,
@@ -173,14 +173,14 @@ const login = async (
       // never compared: there is no credential here to attack. Accounts that
       // authenticate through LDAP keep working, and provider accounts sign in
       // through the provider.
-      throw errors.localLoginDisabled
+      throw errors.localLoginDisabled()
     } else {
       validPass = user.comparePassword(password)
     }
   }
 
-  if (!user) throw errors.userNotFound
-  if (!validPass) throw errors.invalidPassword
+  if (!user) throw errors.userNotFound()
+  if (!validPass) throw errors.invalidPassword()
 
   req.session.loggedIn = true
   req.session.user = {
@@ -258,9 +258,9 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
   delete req.session.oidc
 
   if (!pending || !query.state || !safeEqual(query.state, pending.state))
-    throw errors.oidcInvalidState
+    throw errors.oidcInvalidState()
 
-  if (!query.code) throw errors.oidcMissingCode
+  if (!query.code) throw errors.oidcMissingCode()
 
   const client = await OIDCClient.init()
 
@@ -282,7 +282,7 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
     // so they are logged rather than returned. A failed verification is an
     // authentication failure, not a server fault.
     process.logger?.error(`OIDC sign-in failed: ${(error as Error).message}`)
-    throw errors.oidcVerificationFailed
+    throw errors.oidcVerificationFailed()
   }
 
   const { user } = await resolveOidcUser(
@@ -411,25 +411,31 @@ interface AuthorizeResponse {
   code: string
 }
 
+/**
+ * Each refusal is built where it is thrown, so the stack names the request that
+ * refused rather than this module's evaluation: one shared instance per entry
+ * would carry the module's stack on every request that threw it.
+ */
 const errors = {
-  invalidPassword: new HttpError(401, 'Invalid Password.'),
-  userNotFound: new HttpError(401, 'Username is not found.'),
-  localLoginDisabled: new HttpError(
-    401,
-    'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
-  ),
-  oidcInvalidState: new HttpError(
-    401,
-    'Invalid or expired OpenID Connect sign-in. Please start the sign-in again.'
-  ),
-  oidcMissingCode: new HttpError(
-    400,
-    'The OpenID Connect callback did not include an authorization code.'
-  ),
-  oidcVerificationFailed: new HttpError(
-    401,
-    'OpenID Connect sign-in failed. Please try again.'
-  ),
+  invalidPassword: () => new HttpError(401, 'Invalid Password.'),
+  userNotFound: () => new HttpError(401, 'Username is not found.'),
+  localLoginDisabled: () =>
+    new HttpError(
+      401,
+      'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
+    ),
+  oidcInvalidState: () =>
+    new HttpError(
+      401,
+      'Invalid or expired OpenID Connect sign-in. Please start the sign-in again.'
+    ),
+  oidcMissingCode: () =>
+    new HttpError(
+      400,
+      'The OpenID Connect callback did not include an authorization code.'
+    ),
+  oidcVerificationFailed: () =>
+    new HttpError(401, 'OpenID Connect sign-in failed. Please try again.'),
   oidcProviderError: (error: string) =>
     new HttpError(
       401,

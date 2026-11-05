@@ -1,0 +1,61 @@
+/**
+ * The refusal renderer: the status a controller chose, and the body a client
+ * reads.
+ *
+ * These are the edges a review found: a Node system error carries a STRING
+ * `code`, and passing it to `res.status()` throws inside the catch block, which
+ * turns a refusal into a thrown error. And a 5xx must not send the internal
+ * message, which the 4xx contract does require.
+ */
+import { sendRefusal } from '../../refusal'
+import { HttpError } from '../../../utils/httpError'
+
+const response = () => {
+  const calls: { status?: number; body?: unknown } = {}
+  const res: any = {
+    status(status: number) {
+      calls.status = status
+      return res
+    },
+    send(body: unknown) {
+      calls.body = body
+      return res
+    }
+  }
+  return { res, calls }
+}
+
+describe('sendRefusal', () => {
+  it('sends the status and message of an HttpError', () => {
+    const { res, calls } = response()
+
+    sendRefusal(res, new HttpError(401, 'Invalid Password.'))
+
+    expect(calls).toEqual({ status: 401, body: 'Invalid Password.' })
+  })
+
+  it('treats a numeric code in the 4xx range as the status', () => {
+    const { res, calls } = response()
+
+    sendRefusal(res, { code: 403, message: 'Invalid clientId.' })
+
+    expect(calls).toEqual({ status: 403, body: 'Invalid clientId.' })
+  })
+
+  it('does not pass a string code to res.status', () => {
+    // Node system errors carry code: 'ENOENT'; res.status('ENOENT') throws
+    const { res, calls } = response()
+
+    expect(() => sendRefusal(res, { code: 'ENOENT', message: 'no such file' }))
+      .not.toThrow()
+    expect(calls).toEqual({ status: 500, body: 'Internal Server Error' })
+  })
+
+  it('sends a fixed body for a 5xx, not the internal message', () => {
+    const { res, calls } = response()
+
+    sendRefusal(res, new Error('connect ECONNREFUSED 10.0.0.1:27017'))
+
+    expect(calls).toEqual({ status: 500, body: 'Internal Server Error' })
+  })
+})
