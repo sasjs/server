@@ -1,6 +1,6 @@
 import path from 'path'
 import express from 'express'
-import { Request, Route, Tags, Post, Body, Get, Example } from 'tsoa'
+import { Request, Route, Tags, Post, Body, Get, Example, Response } from 'tsoa'
 import { randomBytes, timingSafeEqual } from 'crypto'
 
 import User from '../model/User'
@@ -18,6 +18,10 @@ import {
 } from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
+// Imported from its own module rather than the barrel: the barrel reaches the
+// controllers back through isPublicRoute, so a class read off it at module
+// evaluation is still an unset binding.
+import { HttpError } from '../utils/httpError'
 
 @Route('/')
 @Tags('Web')
@@ -43,11 +47,28 @@ export class WebController {
    *
    * @summary Sign in with a username and password
    */
+  @Example<LoginResponse>({
+    loggedIn: true,
+    user: {
+      uid: 'userIdString',
+      username: 'johnusername',
+      displayName: 'John',
+      isAdmin: false,
+      needsToUpdatePassword: false
+    }
+  })
+  @Response(400, 'The request body is missing `username` or `password`')
+  @Response(
+    401,
+    'The credentials are not valid, or password sign-in is disabled for local accounts'
+  )
+  @Response(429, 'Too many failed attempts for this account')
+  @Response(500, 'The identity provider failed while verifying the credentials')
   @Post('/SASLogon/login')
   public async login(
     @Request() req: express.Request,
     @Body() body: LoginPayload
-  ) {
+  ): Promise<LoginResponse> {
     return login(req, body)
   }
 
@@ -63,6 +84,12 @@ export class WebController {
   @Example<AuthorizeResponse>({
     code: 'someRandomCryptoString'
   })
+  @Response(
+    400,
+    'The request body is missing `clientId`, or the CSRF token is missing or invalid'
+  )
+  @Response(401, 'No signed-in session')
+  @Response(403, 'The client id is unknown')
   @Post('/SASLogon/authorize')
   public async authorize(
     @Request() req: express.Request,
@@ -82,6 +109,7 @@ export class WebController {
    *
    * @summary Sign out
    */
+  @Response(500, 'The session store failed to replace the session')
   @Get('/SASLogon/logout')
   public async logout(@Request() req: express.Request) {
     return new Promise((resolve, reject) => {
@@ -125,7 +153,7 @@ const home = async () => {
 const login = async (
   req: express.Request,
   { username, password }: LoginPayload
-) => {
+): Promise<LoginResponse> => {
   // Authenticate User
   const user = await User.findOne({ username })
 
@@ -324,10 +352,10 @@ const authorize = async (
   clientId: string
 ): Promise<AuthorizeResponse> => {
   const userId = req.session.user?.userId
-  if (!userId) throw new Error('Invalid userId.')
+  if (!userId) throw new HttpError(401, 'Invalid userId.')
 
   const client = await Client.findOne({ clientId })
-  if (!client) throw new Error('Invalid clientId.')
+  if (!client) throw new HttpError(403, 'Invalid clientId.')
 
   // generate authorization code against clientId
   const userInfo: InfoJWT = {
@@ -341,6 +369,17 @@ const authorize = async (
   )
 
   return { code }
+}
+
+export interface LoginResponse {
+  loggedIn: boolean
+  user: {
+    uid: string
+    username: string
+    displayName: string
+    isAdmin: boolean
+    needsToUpdatePassword: boolean
+  }
 }
 
 interface LoginPayload {
@@ -373,38 +412,29 @@ interface AuthorizeResponse {
 }
 
 const errors = {
-  invalidPassword: {
-    code: 401,
-    message: 'Invalid Password.'
-  },
-  userNotFound: {
-    code: 401,
-    message: 'Username is not found.'
-  },
-  localLoginDisabled: {
-    code: 401,
-    message:
-      'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
-  },
-  oidcInvalidState: {
-    code: 401,
-    message:
-      'Invalid or expired OpenID Connect sign-in. Please start the sign-in again.'
-  },
-  oidcMissingCode: {
-    code: 400,
-    message:
-      'The OpenID Connect callback did not include an authorization code.'
-  },
-  oidcVerificationFailed: {
-    code: 401,
-    message: 'OpenID Connect sign-in failed. Please try again.'
-  },
-  oidcProviderError: (error: string) => ({
-    code: 401,
-    message:
+  invalidPassword: new HttpError(401, 'Invalid Password.'),
+  userNotFound: new HttpError(401, 'Username is not found.'),
+  localLoginDisabled: new HttpError(
+    401,
+    'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
+  ),
+  oidcInvalidState: new HttpError(
+    401,
+    'Invalid or expired OpenID Connect sign-in. Please start the sign-in again.'
+  ),
+  oidcMissingCode: new HttpError(
+    400,
+    'The OpenID Connect callback did not include an authorization code.'
+  ),
+  oidcVerificationFailed: new HttpError(
+    401,
+    'OpenID Connect sign-in failed. Please try again.'
+  ),
+  oidcProviderError: (error: string) =>
+    new HttpError(
+      401,
       error === 'access_denied'
         ? 'Sign-in was cancelled at the identity provider.'
         : 'The identity provider refused the sign-in request.'
-  })
+    )
 }

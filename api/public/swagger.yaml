@@ -993,6 +993,34 @@ components:
                 - sessionId
             type: object
             additionalProperties: false
+        LoginResponse:
+            properties:
+                loggedIn:
+                    type: boolean
+                user:
+                    properties:
+                        needsToUpdatePassword:
+                            type: boolean
+                        isAdmin:
+                            type: boolean
+                        displayName:
+                            type: string
+                        username:
+                            type: string
+                        uid:
+                            type: string
+                    required:
+                        - needsToUpdatePassword
+                        - isAdmin
+                        - displayName
+                        - username
+                        - uid
+                    type: object
+            required:
+                - loggedIn
+                - user
+            type: object
+            additionalProperties: false
         LoginPayload:
             properties:
                 username:
@@ -1136,6 +1164,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
+                '400':
+                    description: 'The request body is missing `clientId` or `code`'
+                '401':
+                    description: 'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown'
             description: "Exchanges an authorization code for a token pair.\n\nThe code is single-use, short-lived, and is issued by\n`POST /SASLogon/authorize` to a caller that already holds a session. This\nendpoint requires no authentication of its own: the code is the credential."
             summary: 'Exchange an authorization code for tokens'
             tags:
@@ -1161,6 +1193,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
+                '401':
+                    description: 'The refresh token is missing, invalid or expired, or the client id is unknown'
             description: "Issues a new access and refresh token pair for the caller identified by the\nbearer token. The previous pair is replaced."
             summary: 'Refresh the access and refresh tokens'
             tags:
@@ -1175,6 +1209,8 @@ paths:
             responses:
                 '204':
                     description: 'No content'
+                '401':
+                    description: 'No valid access token was supplied'
             description: 'Revokes the access and refresh tokens of the caller and returns no content.'
             summary: 'Revoke the current tokens'
             tags:
@@ -1189,6 +1225,16 @@ paths:
             responses:
                 '204':
                     description: 'No content'
+                '400':
+                    description: 'The request body is missing `currentPassword` or `newPassword`'
+                '401':
+                    description: 'No valid access token was supplied'
+                '403':
+                    description: 'The current password is incorrect'
+                '404':
+                    description: 'The authenticated user no longer exists'
+                '405':
+                    description: 'The account authenticates through an external provider, which holds its password'
             description: "Changes the password of the authenticated user.\n\nThe current password must be supplied and must match. The request is refused\nwith `405` for an account that authenticates through an external provider\n(LDAP or OpenID Connect), whose password is not held here."
             summary: 'Change the current user''s password'
             tags:
@@ -2408,6 +2454,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}
+                '401':
+                    description: 'No valid access token or session was supplied'
             description: "Returns the properties of the authenticated user as held in the session:\ntheir id, username, display name, whether they are an administrator, and\nwhether they still have to change their password."
             summary: 'Get the current session'
             tags:
@@ -2659,13 +2707,18 @@ paths:
                     content:
                         application/json:
                             schema:
-                                properties:
-                                    user: {properties: {needsToUpdatePassword: {type: boolean}, isAdmin: {type: boolean}, displayName: {type: string}, username: {type: string}, uid: {type: string}}, required: [needsToUpdatePassword, isAdmin, displayName, username, uid], type: object}
-                                    loggedIn: {type: boolean}
-                                required:
-                                    - user
-                                    - loggedIn
-                                type: object
+                                $ref: '#/components/schemas/LoginResponse'
+                            examples:
+                                'Example 1':
+                                    value: {loggedIn: true, user: {uid: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}}
+                '400':
+                    description: 'The request body is missing `username` or `password`'
+                '401':
+                    description: 'The credentials are not valid, or password sign-in is disabled for local accounts'
+                '429':
+                    description: 'Too many failed attempts for this account'
+                '500':
+                    description: 'The identity provider failed while verifying the credentials'
             description: "Signs a user in with a username and password and starts a session.\n\nCredentials are checked against the local database or, for an account that\nauthenticates through LDAP, against the directory. A `401` is returned for\nunknown credentials, and also when password sign-in for local accounts is\ndisabled on the server."
             summary: 'Sign in with a username and password'
             tags:
@@ -2691,6 +2744,12 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {code: someRandomCryptoString}
+                '400':
+                    description: 'The request body is missing `clientId`, or the CSRF token is missing or invalid'
+                '401':
+                    description: 'No signed-in session'
+                '403':
+                    description: 'The client id is unknown'
             description: "Issues a short-lived, single-use authorization code for the signed-in user\nand the given client.\n\nThe code is exchanged for tokens at `POST /SASjsApi/auth/token`. A session\nis required; an unknown client id is rejected."
             summary: 'Issue an authorization code'
             tags:
@@ -2712,6 +2771,8 @@ paths:
                     content:
                         application/json:
                             schema: {}
+                '500':
+                    description: 'The session store failed to replace the session'
             description: "Ends the session held in the request cookie.\n\nThe session is REPLACED rather than destroyed: the browser keeps its\ncookies across a logout, so the route hands back a CSRF token bound to the\nnew session (see routes/web/web.ts). Destroying instead leaves the old\ntoken in place, bound to a session the server no longer has, and the next\nlogin is refused with `Invalid CSRF token!` (sasjs/server#304)."
             summary: 'Sign out'
             tags:

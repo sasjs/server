@@ -172,7 +172,7 @@ describe('web', () => {
         })
         .expect(403)
 
-      expect(res.text).toEqual('Error: Invalid clientId.')
+      expect(res.text).toEqual('Invalid clientId.')
       expect(res.body).toEqual({})
     })
   })
