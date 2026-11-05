@@ -2719,7 +2719,7 @@ paths:
                     description: 'Too many failed attempts for this account'
                 '500':
                     description: 'An unexpected error occurred while signing in'
-            description: "Signs a user in with a username and password and starts a session.\n\nCredentials are checked against the local database or, for an account that\nauthenticates through LDAP, against the directory. A `401` is returned for\nunknown credentials, and also when password sign-in for local accounts is\ndisabled on the server."
+            description: "Signs a user in with a username and password and starts a session.\n\nCredentials are checked against the local database or, for an account that\nauthenticates through LDAP, against the directory. A `401` is returned for\nunknown credentials, and also when password sign-in for local accounts is\ndisabled on the server.\n\nA `429` - the account is locked after repeated failures - carries a\n`Retry-After` header in seconds, so a client can show a countdown without\nparsing the message."
             summary: 'Sign in with a username and password'
             tags:
                 - Web

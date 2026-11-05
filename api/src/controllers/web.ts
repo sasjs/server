@@ -45,6 +45,10 @@ export class WebController {
    * unknown credentials, and also when password sign-in for local accounts is
    * disabled on the server.
    *
+   * A `429` - the account is locked after repeated failures - carries a
+   * `Retry-After` header in seconds, so a client can show a countdown without
+   * parsing the message.
+   *
    * @summary Sign in with a username and password
    */
   @Example<LoginResponse>({

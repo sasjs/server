@@ -52,6 +52,23 @@ describe('sendRefusal', () => {
     expect(calls).toEqual({ status: 500, body: 'Internal Server Error' })
   })
 
+  it('does not pass a non-HTTP status field to res.status', () => {
+    // a driver's own status field is not an HTTP status
+    const { res, calls } = response()
+
+    expect(() =>
+      sendRefusal(res, { status: 0, message: 'not a status' })
+    ).not.toThrow()
+    expect(calls).toEqual({ status: 500, body: 'Internal Server Error' })
+
+    const ok = response()
+    sendRefusal(ok.res, {
+      status: 200,
+      message: 'a success where a refusal was expected'
+    })
+    expect(ok.calls).toEqual({ status: 500, body: 'Internal Server Error' })
+  })
+
   it('sends a fixed body for a 5xx, not the internal message', () => {
     const { res, calls } = response()
 
