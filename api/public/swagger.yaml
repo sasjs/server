@@ -1764,7 +1764,7 @@ paths:
                     description: 'No file/folder found for provided path'
                 '409':
                     description: 'Something already exists at the new path'
-            description: "Moves a file or folder within SASjs Drive to a new path.\n\nBoth `oldPath` and `newPath` must be inside the drive: a `400` is returned\nwhen either of them climbs out of it. A `404` is returned when nothing exists\nat `oldPath`, and a `409` when something already exists at `newPath`."
+            description: "Moves a file or folder within SASjs Drive to a new path.\n\nBoth `oldPath` and `newPath` must be inside the drive: a `400` is returned\nwhen either of them climbs out of it. A `404` is returned when nothing\nexists at `oldPath`, and a `409` when something already exists at `newPath`.\nA file may not be renamed into a name with a blocked extension, and a\nfolder may not be moved inside itself: both answer `400`."
             summary: 'Rename or move a file or folder in SASjs Drive'
             tags:
                 - Drive

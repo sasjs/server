@@ -1045,7 +1045,7 @@ describe('drive', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual(`File extension '.exe' not acceptable.`)
+        expect(res.text).toEqual('Invalid file extension')
         expect(res.body).toEqual({})
       })
 
@@ -1203,7 +1203,7 @@ describe('drive', () => {
           .attach('file', fileToAttachPath)
           .expect(400)
 
-        expect(res.text).toEqual(`File extension '.exe' not acceptable.`)
+        expect(res.text).toEqual('Invalid file extension')
         expect(res.body).toEqual({})
       })
 

@@ -30,12 +30,12 @@ const fileFilter: Options['fileFilter'] = (
   file: Express.Multer.File,
   callback: FileFilterCallback
 ) => {
-  const fileExtension = path.extname(file.originalname)
   const shouldBlockUpload = blockFileRegex.test(file.originalname)
   if (shouldBlockUpload) {
-    return callback(
-      new Error(`File extension '${fileExtension}' not acceptable.`)
-    )
+    // The drive's one extension refusal, in the wording every drive route
+    // uses: the path rule in @sasjs/api answers 'Invalid file extension', and
+    // an upload whose own name carries the extension is the same refusal.
+    return callback(new Error('Invalid file extension'))
   }
 
   const uploadFileSize = parseInt(req.headers['content-length'] ?? '')
