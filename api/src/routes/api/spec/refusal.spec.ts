@@ -46,8 +46,9 @@ describe('sendRefusal', () => {
     // Node system errors carry code: 'ENOENT'; res.status('ENOENT') throws
     const { res, calls } = response()
 
-    expect(() => sendRefusal(res, { code: 'ENOENT', message: 'no such file' }))
-      .not.toThrow()
+    expect(() =>
+      sendRefusal(res, { code: 'ENOENT', message: 'no such file' })
+    ).not.toThrow()
     expect(calls).toEqual({ status: 500, body: 'Internal Server Error' })
   })
 
