@@ -7,6 +7,7 @@ import {
   generateSpec,
   validateSpecConfig
 } from 'tsoa'
+import { addDocumentedHeaders } from '../../../../scripts/documentResponseHeaders'
 
 /**
  * Guard for the generated API documentation (sasjs/server#376).
@@ -65,9 +66,13 @@ const generate = async (yaml: boolean): Promise<string> => {
     'utf8'
   )
 
+  // `npm run swagger` runs this over the same output: tsoa cannot state a
+  // response header, so the step that does is part of what "generated" means
+  const document = yaml ? addDocumentedHeaders(output) : output
+
   fs.rmSync(outputDirectory, { recursive: true, force: true })
 
-  return output
+  return document
 }
 
 const operations = (spec: Spec): { label: string; op: Operation }[] => {

@@ -34,12 +34,14 @@ describe('sendRefusal', () => {
     expect(calls).toEqual({ status: 401, body: 'Invalid Password.' })
   })
 
-  it('treats a numeric code in the 4xx range as the status', () => {
+  it('renders only an HttpError as a client refusal', () => {
+    // a plain object carrying a 4xx is some other library's error, not a
+    // decision this API made: its message must not reach the caller
     const { res, calls } = response()
 
     sendRefusal(res, { code: 403, message: 'Invalid clientId.' })
 
-    expect(calls).toEqual({ status: 403, body: 'Invalid clientId.' })
+    expect(calls).toEqual({ status: 500, body: 'Internal Server Error' })
   })
 
   it('does not pass a string code to res.status', () => {

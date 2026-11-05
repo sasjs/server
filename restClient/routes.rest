@@ -43,7 +43,7 @@ Content-Type: application/json
 }
 
 ###
-DELETE http://localhost:5000/SASjsApi/auth/logout
+POST http://localhost:5000/SASjsApi/auth/logout
 
 ###
 GET http://localhost:5000/SASjsApi/session
