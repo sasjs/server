@@ -177,6 +177,8 @@ export class DriveController {
    * @param _folderPath Location of the folder within the drive
    * @example _folderPath "/Public/somefolder"
    */
+  @Response(400, `Can't get folder outside drive`)
+  @Response(404, `Folder doesn't exist`)
   @Get('/folder')
   public async getFolder(@Query() _folderPath?: string) {
     return getFolder(_folderPath)
@@ -192,6 +194,7 @@ export class DriveController {
    * @param _filePath Location of the file within the drive
    * @example _filePath "/Public/somefolder/some.file"
    */
+  @Response(400, `Can't delete file outside drive`)
   @Response(404, `File doesn't exist`)
   @Delete('/file')
   public async deleteFile(@Query() _filePath: string) {
@@ -208,6 +211,7 @@ export class DriveController {
    * @param _folderPath Location of the folder within the drive
    * @example _folderPath "/Public/somefolder/"
    */
+  @Response(400, `Can't delete folder outside drive`)
   @Response(404, `Folder doesn't exist`)
   @Delete('/folder')
   public async deleteFolder(@Query() _folderPath: string) {
@@ -232,6 +236,7 @@ export class DriveController {
   // 409, not the 403 this said before: saveFile throws code 409, and the body is
   // the message in plain text (`res.status(code).send(err.message)`), so there is
   // no JSON example to document
+  @Response(400, `Can't put file outside drive`)
   @Response(409, 'File already exists')
   @Post('/file')
   public async saveFile(
@@ -254,6 +259,7 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
+  @Response(400, `Can't put folder outside drive`)
   @Response(409, 'Folder already exists')
   @Post('/folder')
   public async addFolder(
@@ -279,6 +285,7 @@ export class DriveController {
   })
   // 404, not the 403 this said before: updateFile throws code 404, with the
   // message as a plain text body
+  @Response(400, `Can't modify file outside drive`)
   @Response(404, `File doesn't exist`)
   @Patch('/file')
   public async updateFile(
@@ -292,15 +299,16 @@ export class DriveController {
   /**
    * Moves a file or folder within SASjs Drive to a new path.
    *
-   * Both `oldPath` and `newPath` must be inside the drive. A `404` is returned
-   * when nothing exists at `oldPath`, and a `409` when something already exists
-   * at `newPath`.
+   * Both `oldPath` and `newPath` must be inside the drive: a `400` is returned
+   * when either of them climbs out of it. A `404` is returned when nothing exists
+   * at `oldPath`, and a `409` when something already exists at `newPath`.
    *
    * @summary Rename or move a file or folder in SASjs Drive
    */
   @Example<FileFolderResponse>({
     status: 'success'
   })
+  @Response(400, `Can't rename outside drive`)
   @Response(409, 'Something already exists at the new path')
   @Response(404, 'No file/folder found for provided path')
   @Post('/rename')
