@@ -1,4 +1,5 @@
 import path from 'path'
+import fs from 'fs'
 import express, { Express } from 'express'
 import {
   Security,
@@ -18,23 +19,19 @@ import {
   Delete,
   Hidden
 } from 'tsoa'
+import { deleteFile, FileTree, isFileTree } from '@sasjs/utils'
 import {
-  fileExists,
-  moveFile,
-  createFolder,
-  deleteFile as deleteFileOnSystem,
-  deleteFolder as deleteFolderOnSystem,
-  folderExists,
-  listFilesInFolder,
-  listSubFoldersInFolder,
-  isFolder,
-  FileTree,
-  isFileTree
-} from '@sasjs/utils'
+  createDriveService,
+  hasBlockedExtension,
+  isApiError,
+  isRoot,
+  normaliseDrivePath
+} from '@sasjs/api'
 import { createFileTree, ExecutionController, getTreeExample } from './internal'
+import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
-import { getFilesFolder, resolveWithinDrive } from '../utils'
+import { resolveWithinDrive } from '../utils'
 
 interface DeployPayload {
   appLoc: string
@@ -92,19 +89,72 @@ const successDeployResponse: DeployResponse = {
   status: 'success',
   message: 'Files deployed successfully to @sasjs/server.'
 }
+
 const invalidDeployFormatResponse: DeployResponse = {
   status: 'failure',
   message: 'Provided not supported data format.',
   example: fileTreeExample
 }
+
 const execDeployErrorResponse: DeployResponse = {
   status: 'failure',
   message: 'Deployment failed!'
 }
 
-@Security('bearerAuth')
+/**
+ * The drive's rules, from the package both hosts share.
+ *
+ * The statuses, the messages, the order of the checks and the path rules -
+ * including the blocked extensions and a rename that would move a folder into
+ * itself - are @sasjs/api's, exercised by the conformance corpus both this
+ * server and the browser build run. The store is node's fs behind the drive
+ * root. The routes catch the package's ApiError and render it the way every
+ * drive route renders a refusal.
+ *
+ * Built on first use rather than at import time: the controller sits in the
+ * module cycle through the internal barrel, and an import order that
+ * evaluates this file before the store has finished would capture an
+ * unresolved binding.
+ */
+const driveService = (() => {
+  let service: ReturnType<typeof createDriveService>
+  return () => (service ??= createDriveService(nodeDriveStore()))
+})()
+
+/**
+ * The package's refusals carry `status`; the routes' catch reads `code`. This
+ * turns one into the other with the status WORD the code means - the same
+ * words every other refusal in this file carries - and keeps the message,
+ * which is what a client reads. The original error is preserved as the
+ * cause, so a log that walks it keeps the package's stack.
+ */
+const statusWord = (code: number): string =>
+  code === 400
+    ? 'Bad Request'
+    : code === 404
+      ? 'Not Found'
+      : code === 409
+        ? 'Conflict'
+        : 'Error'
+
+const answer = async <T>(call: Promise<T>): Promise<T> => {
+  try {
+    return await call
+  } catch (error) {
+    if (isApiError(error)) {
+      const refusal: any = new Error(error.message)
+      refusal.code = error.status
+      refusal.status = statusWord(error.status)
+      refusal.cause = error
+      throw refusal
+    }
+    throw error
+  }
+}
+
 @Route('SASjsApi/drive')
 @Tags('Drive')
+@Security('bearerAuth')
 export class DriveController {
   /**
    * Creates or updates files within SASjs Drive from a JSON file tree.
@@ -163,7 +213,30 @@ export class DriveController {
     @Request() request: express.Request,
     @Query() _filePath: string
   ) {
-    return getFile(request, _filePath)
+    // The package's own path rules decide, the same composition its service
+    // applies to every file operation: a path whose normalisation leaves the
+    // drive, or whose name carries a blocked extension, is refused here with
+    // the wording the conformance corpus pins. The rules run without reading
+    // a byte, so the transport can stream the file rather than hold it.
+    const drivePath = normaliseDrivePath(_filePath)
+    if (drivePath === null || isRoot(drivePath))
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: `Can't get file outside drive.`
+      }
+    if (hasBlockedExtension(drivePath))
+      throw {
+        code: 400,
+        status: 'Bad Request',
+        message: 'Invalid file extension'
+      }
+
+    const store = nodeDriveStore()
+    if (!(await store.exists(_filePath)))
+      throw { code: 404, status: 'Not Found', message: `File doesn't exist.` }
+    const stats = await store.stat(_filePath)
+    streamDriveFile(request, _filePath, resolveDrivePath(_filePath), stats.size)
   }
 
   /**
@@ -181,7 +254,8 @@ export class DriveController {
   @Response(404, `Folder doesn't exist`)
   @Get('/folder')
   public async getFolder(@Query() _folderPath?: string) {
-    return getFolder(_folderPath)
+    const { files, folders } = await answer(driveService().list(_folderPath))
+    return { files, folders }
   }
 
   /**
@@ -198,7 +272,11 @@ export class DriveController {
   @Response(404, `File doesn't exist`)
   @Delete('/file')
   public async deleteFile(@Query() _filePath: string) {
-    return deleteFile(_filePath)
+    const { status } = await answer(driveService().remove(_filePath))
+    // widened to string: the document describes the field as a plain string,
+    // and the literal type is the package's, not the route's
+    const widened: string = status
+    return { status: widened }
   }
 
   /**
@@ -215,7 +293,11 @@ export class DriveController {
   @Response(404, `Folder doesn't exist`)
   @Delete('/folder')
   public async deleteFolder(@Query() _folderPath: string) {
-    return deleteFolder(_folderPath)
+    const { status } = await answer(driveService().rmdir(_folderPath))
+    // widened to string: the document describes the field as a plain string,
+    // and the literal type is the package's, not the route's
+    const widened: string = status
+    return { status: widened }
   }
 
   /**
@@ -233,9 +315,6 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
-  // 409, not the 403 this said before: saveFile throws code 409, and the body is
-  // the message in plain text (`res.status(code).send(err.message)`), so there is
-  // no JSON example to document
   @Response(400, `Can't put file outside drive`)
   @Response(409, 'File already exists')
   @Post('/file')
@@ -244,7 +323,8 @@ export class DriveController {
     @Query() _filePath?: string,
     @FormField() filePath?: string
   ): Promise<FileFolderResponse> {
-    return saveFile((_filePath ?? filePath)!, file)
+    const contents = await readFileFromUpload(file)
+    return answer(driveService().save((_filePath ?? filePath)!, contents))
   }
 
   /**
@@ -265,7 +345,7 @@ export class DriveController {
   public async addFolder(
     @Body() body: AddFolderPayload
   ): Promise<FileFolderResponse> {
-    return addFolder(body.folderPath)
+    return answer(driveService().mkdir(body.folderPath))
   }
 
   /**
@@ -283,8 +363,6 @@ export class DriveController {
   @Example<FileFolderResponse>({
     status: 'success'
   })
-  // 404, not the 403 this said before: updateFile throws code 404, with the
-  // message as a plain text body
   @Response(400, `Can't modify file outside drive`)
   @Response(404, `File doesn't exist`)
   @Patch('/file')
@@ -293,15 +371,18 @@ export class DriveController {
     @Query() _filePath?: string,
     @FormField() filePath?: string
   ): Promise<FileFolderResponse> {
-    return updateFile((_filePath ?? filePath)!, file)
+    const contents = await readFileFromUpload(file)
+    return answer(driveService().update((_filePath ?? filePath)!, contents))
   }
 
   /**
    * Moves a file or folder within SASjs Drive to a new path.
    *
    * Both `oldPath` and `newPath` must be inside the drive: a `400` is returned
-   * when either of them climbs out of it. A `404` is returned when nothing exists
-   * at `oldPath`, and a `409` when something already exists at `newPath`.
+   * when either of them climbs out of it. A `404` is returned when nothing
+   * exists at `oldPath`, and a `409` when something already exists at `newPath`.
+   * A file may not be renamed into a name with a blocked extension, and a
+   * folder may not be moved inside itself: both answer `400`.
    *
    * @summary Rename or move a file or folder in SASjs Drive
    */
@@ -315,7 +396,7 @@ export class DriveController {
   public async rename(
     @Body() body: RenamePayload
   ): Promise<FileFolderResponse> {
-    return rename(body.oldPath, body.newPath)
+    return answer(driveService().rename(body.oldPath, body.newPath))
   }
 
   /**
@@ -340,6 +421,57 @@ export class DriveController {
     @Query() _folderPath?: string
   ): Promise<GetFileTreeResponse> {
     return getFileTree(_folderPath)
+  }
+}
+
+/**
+ * An upload's bytes, and the upload folder kept clean. Multer has already
+ * written the file to its upload folder; the drive takes the bytes from there
+ * and the temp file is removed once they are read - on every path, not only
+ * the failure path the route handles. A second removal (the route's own, on
+ * failure) is tolerated: deleteFile is fs-extra's remove, which treats a
+ * missing file as success.
+ */
+/**
+ * Streams a drive file to the client: the type comes from a small ALLOWLIST
+ * of extensions, everything else answering application/octet-stream - an
+ * executable type (text/html, image/svg+xml) for caller-supplied bytes on
+ * the API origin is the stored-XSS shape the fileTree route guards against,
+ * and a drive file has no reason to render in a browser. sendFile derived
+ * the type from the extension and would have answered text/html for
+ * x.html; the drive does not. The bytes themselves stream, the way this
+ * route always served them.
+ */
+const streamDriveFile = (
+  request: express.Request,
+  filePath: string,
+  resolved: string,
+  size: number
+) => {
+  const TEXT_TYPES: { [extension: string]: string } = {
+    '.sas': 'text/plain',
+    '.txt': 'text/plain',
+    '.md': 'text/plain',
+    '.csv': 'text/csv',
+    '.json': 'application/json'
+  }
+  const extension = path.extname(filePath).toLowerCase()
+  request.res?.type(TEXT_TYPES[extension] ?? 'application/octet-stream')
+
+  request.res?.setHeader('X-Content-Type-Options', 'nosniff')
+  request.res?.setHeader('Content-Length', String(size))
+
+  request.res?.sendFile(resolved)
+}
+
+const readFileFromUpload = async (file: Express.Multer.File) => {
+  try {
+    return await fs.promises.readFile(file.path)
+  } finally {
+    // removed whether the read succeeded or threw: an upload that fails its
+    // read must not leave the temp file behind either. The route's failure
+    // path may remove it again; deleteFile treats a missing file as success.
+    await deleteFile(file.path)
   }
 }
 
@@ -375,233 +507,4 @@ const deploy = async (data: DeployPayload) => {
   })
 
   return successDeployResponse
-}
-
-const getFile = async (req: express.Request, filePath: string) => {
-  const filePathFull = resolveWithinDrive(filePath)
-
-  if (!filePathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Can't get file outside drive.`
-    }
-
-  if (!(await fileExists(filePathFull)))
-    throw {
-      code: 404,
-      status: 'Not Found',
-      message: `File doesn't exist.`
-    }
-
-  const extension = path.extname(filePathFull).toLowerCase()
-  if (extension === '.sas') {
-    req.res?.setHeader('Content-type', 'text/plain')
-  }
-
-  req.res?.sendFile(path.resolve(filePathFull), { dotfiles: 'allow' })
-}
-
-const getFolder = async (folderPath?: string) => {
-  const driveFilesPath = getFilesFolder()
-
-  if (folderPath) {
-    const folderPathFull = resolveWithinDrive(folderPath)
-
-    if (!folderPathFull)
-      throw {
-        code: 400,
-        status: 'Bad Request',
-        message: `Can't get folder outside drive.`
-      }
-
-    if (!(await folderExists(folderPathFull)))
-      throw {
-        code: 404,
-        status: 'Not Found',
-        message: `Folder doesn't exist.`
-      }
-
-    if (!(await isFolder(folderPathFull)))
-      throw {
-        code: 400,
-        status: 'Bad Request',
-        message: 'Not a Folder.'
-      }
-
-    const files: string[] = await listFilesInFolder(folderPathFull)
-    const folders: string[] = await listSubFoldersInFolder(folderPathFull)
-    return { files, folders }
-  }
-
-  const files: string[] = await listFilesInFolder(driveFilesPath)
-  const folders: string[] = await listSubFoldersInFolder(driveFilesPath)
-  return { files, folders }
-}
-
-const deleteFile = async (filePath: string) => {
-  const filePathFull = resolveWithinDrive(filePath)
-
-  if (!filePathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Can't delete file outside drive.`
-    }
-
-  if (!(await fileExists(filePathFull)))
-    throw {
-      code: 404,
-      status: 'Not Found',
-      message: `File doesn't exist.`
-    }
-
-  await deleteFileOnSystem(filePathFull)
-
-  return { status: 'success' }
-}
-
-const deleteFolder = async (folderPath: string) => {
-  const folderPathFull = resolveWithinDrive(folderPath)
-
-  if (!folderPathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Can't delete folder outside drive.`
-    }
-
-  if (!(await folderExists(folderPathFull)))
-    throw {
-      code: 404,
-      status: 'Not Found',
-      message: `Folder doesn't exist.`
-    }
-
-  await deleteFolderOnSystem(folderPathFull)
-
-  return { status: 'success' }
-}
-
-const saveFile = async (
-  filePath: string,
-  multerFile: Express.Multer.File
-): Promise<GetFileResponse> => {
-  const filePathFull = resolveWithinDrive(filePath)
-
-  if (!filePathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Can't put file outside drive.`
-    }
-
-  if (await fileExists(filePathFull))
-    throw {
-      code: 409,
-      status: 'Conflict',
-      message: 'File already exists.'
-    }
-
-  const folderPath = path.dirname(filePathFull)
-  await createFolder(folderPath)
-  await moveFile(multerFile.path, filePathFull)
-
-  return { status: 'success' }
-}
-
-const addFolder = async (folderPath: string): Promise<FileFolderResponse> => {
-  const folderPathFull = resolveWithinDrive(folderPath)
-
-  if (!folderPathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Can't put folder outside drive.`
-    }
-
-  if (await folderExists(folderPathFull))
-    throw {
-      code: 409,
-      status: 'Conflict',
-      message: 'Folder already exists.'
-    }
-
-  await createFolder(folderPathFull)
-
-  return { status: 'success' }
-}
-
-const rename = async (
-  oldPath: string,
-  newPath: string
-): Promise<FileFolderResponse> => {
-  const oldPathFull = resolveWithinDrive(oldPath)
-  const newPathFull = resolveWithinDrive(newPath)
-
-  if (!oldPathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Old path can't be outside of drive.`
-    }
-
-  if (!newPathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `New path can't be outside of drive.`
-    }
-
-  if (await isFolder(oldPathFull)) {
-    if (await folderExists(newPathFull))
-      throw {
-        code: 409,
-        status: 'Conflict',
-        message: 'Folder with new name already exists.'
-      }
-    else moveFile(oldPathFull, newPathFull)
-
-    return { status: 'success' }
-  } else if (await fileExists(oldPathFull)) {
-    if (await fileExists(newPathFull))
-      throw {
-        code: 409,
-        status: 'Conflict',
-        message: 'File with new name already exists.'
-      }
-    else moveFile(oldPathFull, newPathFull)
-    return { status: 'success' }
-  }
-
-  throw {
-    code: 404,
-    status: 'Not Found',
-    message: 'No file/folder found for provided path.'
-  }
-}
-
-const updateFile = async (
-  filePath: string,
-  multerFile: Express.Multer.File
-): Promise<GetFileResponse> => {
-  const filePathFull = resolveWithinDrive(filePath)
-
-  if (!filePathFull)
-    throw {
-      code: 400,
-      status: 'Bad Request',
-      message: `Can't modify file outside drive.`
-    }
-
-  if (!(await fileExists(filePathFull)))
-    throw {
-      code: 404,
-      status: 'Not Found',
-      message: `File doesn't exist.`
-    }
-
-  await moveFile(multerFile.path, filePathFull)
-
-  return { status: 'success' }
 }
