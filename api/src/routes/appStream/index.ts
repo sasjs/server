@@ -272,6 +272,33 @@ export const unpublishAppStream = (
     return true
   })
 
+/**
+ * The first path segment, percent-decoded.
+ *
+ * `req.path` is the raw, still-encoded pathname (`/My%20App/`), while the app's
+ * name is the string it was published under (`My App`). Comparing the two
+ * directly meant a name that needs encoding was publishable and unreachable: the
+ * lookup missed and the request fell through to the "no App Stream" page. A name
+ * with a space, an accent or a `+` is an ordinary thing for a deployer to type,
+ * so the segment is decoded before it is used as a key.
+ *
+ * Only the KEY is decoded. The remainder of the path stays as it arrived,
+ * because it becomes `req.url` for `express.static`, which decodes and contains
+ * it under its own rules - decoding it here would hand a `..` segment to a
+ * handler that expects to do that itself.
+ *
+ * A malformed escape (`%E0%A4%A`) throws in `decodeURIComponent`; that is a
+ * request no app can be named after, so the raw segment is used and the lookup
+ * misses as it did before.
+ */
+const appStreamKey = (segment: string): string => {
+  try {
+    return decodeURIComponent(segment)
+  } catch (_) {
+    return segment
+  }
+}
+
 // Express 5 (path-to-regexp v8) requires wildcard segments to be named;
 // a bare `*` throws at router registration time. The name is unused here
 // because the handler reads `req.path` directly.
@@ -286,7 +313,7 @@ router.get(
       // navigating to same url with slash at start
       return res.redirect(301, `${reqPath}/`)
 
-    const appStream = reqPath.split('/')[0]
+    const appStream = appStreamKey(reqPath.split('/')[0])
     const appStreamFilesPath = appStreams[appStream]
     if (appStreamFilesPath) {
       // resourcePath is without appStream base path
