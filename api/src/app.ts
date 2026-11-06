@@ -6,6 +6,7 @@ import dotenv from 'dotenv'
 import {
   copySASjsCore,
   createWeboutSasFile,
+  DEPLOY_PAYLOAD_BYTES,
   getFilesFolder,
   getPackagesFolder,
   getWebBuildFolder,
@@ -83,6 +84,17 @@ export default setProcessVariables().then(async () => {
    ***********************************/
   configureExpressSession(app)
 
+  // The deploy cap is stated in DECODED bytes and its tree travels as JSON, in
+  // which file contents are base64 - 4/3 of what they write - so a tree at the
+  // cap is up to ~134MB on the wire. That parser is mounted for the deploy
+  // routes ONLY: everything else keeps the global limit below, because a
+  // request body is buffered before authentication and no other route needs the
+  // headroom. Matching on the folder also covers /drive/deploy/upload, whose
+  // body is multipart and which express.json therefore ignores.
+  app.use(
+    '/SASjsApi/drive/deploy',
+    express.json({ limit: DEPLOY_PAYLOAD_BYTES })
+  )
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
 

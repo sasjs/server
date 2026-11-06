@@ -1481,6 +1481,15 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Provided not supported data format.'}
+                '413':
+                    description: 'File tree exceeds the deploy limit'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'}
                 '500':
                     description: 'Execution Error'
                     content:
@@ -1490,7 +1499,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: "Creates or updates files within SASjs Drive from a JSON file tree.\n\n`appLoc` is the folder within the drive to deploy into, and `fileTree` is a\nnested description of the folders, services and files to write. `appLoc`\ncannot point outside the drive. A `400` is returned for a payload that is\nnot a valid file tree, and a `500` when writing fails."
+            description: "Creates or updates files within SASjs Drive from a JSON file tree.\n\n`appLoc` is the folder within the drive to deploy into, and `fileTree` is a\nnested description of the folders, services and files to write. `appLoc`\ncannot point outside the drive. A `400` is returned for a payload that is\nnot a valid file tree, and a `500` when writing fails.\n\nA `413` is returned for a tree the deploy cap refuses - more than 10,000\nentries, more than 100 MB decoded in total, or a single file over 20 MB -\nnaming the limit and the figure reached. The tree is measured before\nanything is written, so a refused deploy leaves the drive untouched. The\nsame limits apply to `POST /SASjsApi/drive/deploy/upload`, after the\narchive is expanded."
             summary: 'Deploy a file tree to SASjs Drive'
             tags:
                 - Drive
@@ -1560,6 +1569,15 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Provided not supported data format.'}
+                '413':
+                    description: 'File tree exceeds the deploy limit'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'}
                 '500':
                     description: 'Execution Error'
                     content:
@@ -1569,7 +1587,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: "Creates or updates files within SASjs Drive from an uploaded JSON file.\n\nThe file may be plain JSON or a zip holding a single JSON file of the same\nname (for example `deploy.json.zip` for `deploy.json`); any other member of\nthe archive is ignored. The payload has the same shape as\n`POST /SASjsApi/drive/deploy`."
+            description: "Creates or updates files within SASjs Drive from an uploaded JSON file.\n\nThe file may be plain JSON or a zip holding a single JSON file of the same\nname (for example `deploy.json.zip` for `deploy.json`); any other member of\nthe archive is ignored. The payload has the same shape as\n`POST /SASjsApi/drive/deploy`, and the same `413` applies once the archive\nis expanded: the cap is measured on the tree, not on the bytes uploaded."
             summary: 'Deploy an uploaded file to SASjs Drive'
             tags:
                 - Drive
