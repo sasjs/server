@@ -100,6 +100,13 @@ export class CodeController {
    * 4. Logs UUID - the same identifier closing the log section
    * 5. Print - the SAS listing, present only for the `sas` runtime
    *
+   * The log can contain the UUID itself: a program's source is echoed into its
+   * log, so the literal appears wherever sasjs/core's `ms_runstp` or
+   * `ms_testservice` is part of the submitted code, and a service that calls
+   * another puts the nested response in it. The UUID marks the boundaries of
+   * the log, not a fixed number of parts - everything between the first and the
+   * last occurrence is the log.
+   *
    * This endpoint waits for the program to finish. To start a program and poll
    * for its result instead, use `POST /SASjsApi/code/trigger`. See
    * https://server.sasjs.io/ for the available runtimes.
