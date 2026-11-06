@@ -497,25 +497,33 @@ describe('Studio in a browser', () => {
       })
     )
 
-    // The previous case left the run's log on screen; RUN lives on the code tab.
-    await page.click('[role="tab"]:has-text("Code")')
-    await page.click('button:has-text("RUN")')
+    // The response is mocked for this case only: an unrouted handler would
+    // answer the execute call of every later test with this body.
+    try {
+      // The previous case left the run's log on screen; RUN lives on the code tab.
+      await page.click('[role="tab"]:has-text("Code")')
+      await page.click('button:has-text("RUN")')
 
-    await page.waitForSelector('text=ROWS AFTER THE NESTED LOG', {
-      timeout: 30000
-    })
-    expect(await page.isVisible('text=the end of the run')).toBe(true)
-    expect(await page.isVisible('text=the service said')).toBe(true)
+      await page.waitForSelector('text=ROWS AFTER THE NESTED LOG', {
+        timeout: 30000
+      })
+      expect(await page.isVisible('text=the end of the run')).toBe(true)
+      expect(await page.isVisible('text=the service said')).toBe(true)
 
-    // The run's page is offered beside the log, as before.
-    await page.click('[role="tab"]:has-text("Webout")')
-    await page.waitForSelector('iframe[title="webout preview"]', {
-      timeout: 30000
-    })
+      // The run's page is offered beside the log, as before.
+      await page.click('[role="tab"]:has-text("Webout")')
+      await page.waitForSelector('iframe[title="webout preview"]', {
+        timeout: 30000
+      })
 
-    await page.screenshot({
-      path: path.join(screenshotDir, '04-log-with-nested-separator.png')
-    })
+      await page.screenshot({
+        path: path.join(screenshotDir, '04-log-with-nested-separator.png')
+      })
+    } finally {
+      // Removes the handler this case installed AND the one the log-issues case
+      // left behind, so no mock outlives the run that needed it.
+      await page.unroute('**/SASjsApi/code/execute')
+    }
   }, 120000)
 
   it('opens a one-line JSON file indented, and leaves the drive file alone', async () => {
