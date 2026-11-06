@@ -19,7 +19,7 @@ import {
   Delete,
   Hidden
 } from 'tsoa'
-import { deleteFile, FileTree, isFileTree } from '@sasjs/utils'
+import { deleteFile, FileTree } from '@sasjs/utils'
 import {
   createDriveService,
   hasBlockedExtension,
@@ -27,11 +27,11 @@ import {
   isRoot,
   normaliseDrivePath
 } from '@sasjs/api'
-import { createFileTree, ExecutionController, getTreeExample } from './internal'
+import { ExecutionController, getTreeExample } from './internal'
 import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
-import { checkDeployTree, HttpError, resolveWithinDrive } from '../utils'
+import { HttpError } from '../utils'
 import { unpublishAppStream } from '../routes/appStream'
 
 interface DeployPayload {
@@ -99,18 +99,6 @@ const successDeployResponse: DeployResponse = {
   message: 'Files deployed successfully to @sasjs/server.'
 }
 
-/**
- * The refusal a malformed deploy earns.
- *
- * The tree example the decorators carry below belongs to the document only: a
- * client that sent a bad payload does not need a fixture tree echoed back, and
- * the document states the message alone.
- */
-const invalidDeployFormatBody: DeployResponse = {
-  status: 'failure',
-  message: 'Provided not supported data format.'
-}
-
 const execDeployErrorResponse: DeployResponse = {
   status: 'failure',
   message: 'Deployment failed!'
@@ -163,6 +151,27 @@ const answer = async <T>(call: Promise<T>): Promise<T> => {
       refusal.cause = error
       throw refusal
     }
+    throw error
+  }
+}
+
+/**
+ * The deploy routes' counterpart of `answer`.
+ *
+ * The package refuses with an `ApiError` carrying `status` and, for these two
+ * routes, the `body` they send - an envelope, where the file routes send the
+ * message as text. The route's catch reads `code` and sends the rest, so this
+ * turns one into the other and leaves every other error alone.
+ */
+const answered = async <T>(call: Promise<T>): Promise<T> => {
+  try {
+    return await call
+  } catch (error) {
+    if (isApiError(error))
+      throw {
+        code: error.status,
+        ...(error.body ?? { status: 'failure', message: error.message })
+      }
     throw error
   }
 }
@@ -575,38 +584,12 @@ const getFileTree = (folderPath?: string) => {
 }
 
 const deploy = async (data: DeployPayload) => {
-  if (!isFileTree(data.fileTree)) {
-    throw { code: 400, ...invalidDeployFormatBody }
-  }
-
-  // appLoc is caller-supplied and every segment must stay a single path
-  // segment: joined naively, '../' in a segment would make the deployment
-  // root climb out of the drive (an arbitrary-file-write primitive).
-  const appLocParts = data.appLoc.replace(/^\/+/, '').split('/')
-
-  const appLocPath = resolveWithinDrive(data.appLoc)
-
-  // A caller error, not a server one: answered with the deploy routes' own
-  // envelope and a 400, rather than escaping as an Error the app's handler turns
-  // into `500 Something broke!`.
-  if (!appLocPath) {
-    throw {
-      code: 400,
-      status: 'failure',
-      message: 'appLoc cannot be outside drive.'
-    }
-  }
-
-  // Measured and validated before a single byte is written, so a refused tree -
-  // too big, or carrying a name that would escape the deployment root - leaves
-  // the drive exactly as it was.
-  const refusal = checkDeployTree(data.fileTree.members)
-
-  if (refusal) throw refusal
-
-  await createFileTree(data.fileTree.members, appLocParts).catch((err) => {
-    throw { code: 500, ...execDeployErrorResponse, ...err }
-  })
+  // The tree's shape, the appLoc's containment, the cap and the member names are
+  // @sasjs/api's - it refuses all four with this route's own envelope, and it
+  // writes nothing until each has passed, so a refused deploy leaves the drive
+  // as it was. The store is node's fs behind the drive root, the same one every
+  // other drive route uses.
+  await answered(driveService().deploy(data.appLoc, data.fileTree))
 
   return successDeployResponse
 }

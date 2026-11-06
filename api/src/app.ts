@@ -6,7 +6,6 @@ import dotenv from 'dotenv'
 import {
   copySASjsCore,
   createWeboutSasFile,
-  DEPLOY_PAYLOAD_BYTES,
   getFilesFolder,
   getPackagesFolder,
   getWebBuildFolder,
@@ -26,6 +25,7 @@ import {
   configureLogger,
   configureSecurity
 } from './app-modules'
+import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 import { setCSRFCookie } from './middlewares'
 import { folderExists } from '@sasjs/utils'
 

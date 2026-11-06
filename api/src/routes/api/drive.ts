@@ -3,11 +3,11 @@ import { deleteFile, readFile } from '@sasjs/utils'
 
 import { publishAppStream } from '../appStream'
 
+import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 import { multerSingle } from '../../middlewares/multer'
 import { sendRefusal } from '../refusal'
 import { DriveController } from '../../controllers/'
 import {
-  DEPLOY_PAYLOAD_BYTES,
   deployValidation,
   extractJSONFromZip,
   extractName,

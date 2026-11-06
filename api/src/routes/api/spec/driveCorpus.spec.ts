@@ -92,7 +92,8 @@ describe('drive conformance corpus', () => {
       '/SASjsApi/drive/file',
       '/SASjsApi/drive/folder',
       '/SASjsApi/drive/rename',
-      '/SASjsApi/drive/fileTree'
+      '/SASjsApi/drive/fileTree',
+      '/SASjsApi/drive/deploy'
     ]) {
       await permissionController.createPermission({
         ...permission,
@@ -153,7 +154,13 @@ describe('drive conformance corpus', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff')
   })
 
-  it.each(DRIVE_CORPUS)('$id', async (testCase) => {
+  // A case that needs a failing store cannot be replayed over HTTP: this host's
+  // drive is node's fs, and a request has no way to make it refuse a write. The
+  // package's own suite pins the `500` body; here the case is left out rather
+  // than turned into a test of the filesystem.
+  const replayable = DRIVE_CORPUS.filter((testCase) => !testCase.unwritable)
+
+  it.each(replayable)('$id', async (testCase) => {
     const want = testCase.expect
     await seedDrive(testCase)
     const requestPath = queryOf(testCase)
@@ -202,7 +209,12 @@ describe('drive conformance corpus', () => {
     expect(res.statusCode).toBe(want.status)
 
     if (want.error !== undefined) {
-      expect(res.text).toBe(want.error)
+      // The drive's file routes answer the message as text; the deploy routes
+      // answer an envelope, so there the message travels in the body and the
+      // body assertion below compares the rest of it.
+      if (want.body !== undefined)
+        expect((res.body as any)?.message).toBe(want.error)
+      else expect(res.text).toBe(want.error)
     }
 
     const wantContents = want.contents

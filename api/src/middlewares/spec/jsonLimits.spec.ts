@@ -15,7 +15,7 @@
  */
 import express from 'express'
 import request from 'supertest'
-import { DEPLOY_PAYLOAD_BYTES } from '../../utils/deployLimits'
+import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 
 const app = express()
 

@@ -182,6 +182,33 @@ describe('drive', () => {
       }
     }
 
+    it('should refuse a file tree over the deploy cap, before writing anything', async () => {
+      // the cap is @sasjs/api's; this proves the route renders its refusal as
+      // the document states it, and that nothing reached the drive
+      const members = Array.from({ length: 10001 }, (_, at) => ({
+        name: `f${at}.txt`,
+        type: 'file',
+        code: ''
+      }))
+
+      const res = await request(app)
+        .post('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ appLoc: '/Public/over-the-cap', fileTree: { members } })
+
+      expect(res.statusCode).toEqual(413)
+      expect(res.body).toEqual({
+        status: 'failure',
+        message:
+          'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'
+      })
+      expect(
+        await folderExists(
+          path.join(tmpFolder, 'drive', 'files', 'Public', 'over-the-cap')
+        )
+      ).toBe(false)
+    })
+
     it('should refuse an appLoc that resolves outside the drive', async () => {
       const res = await request(app)
         .post('/SASjsApi/drive/deploy')
