@@ -1,5 +1,6 @@
 import express from 'express'
 import {
+  Response,
   Security,
   Route,
   Tags,
@@ -116,6 +117,8 @@ export class PermissionController {
       }
     }
   ])
+  @Response(401, 'Admin account required, or no grant on the route')
+  @Response(404, 'User not found.')
   @Get('/')
   public async getAllPermissions(
     @Request() request: express.Request
@@ -145,6 +148,16 @@ export class PermissionController {
       isAdmin: false
     }
   })
+  @Response(401, 'Admin account required')
+  @Response(404, 'User not found. / Group not found.')
+  @Response(
+    400,
+    'Can not add permission for admin user. / Invalid principal type. Valid types are user or group.'
+  )
+  @Response(
+    409,
+    'Permission already exists with provided Path, Type and User. / Permission already exists with provided Path, Type and Group.'
+  )
   @Post('/')
   public async createPermission(
     @Body() body: RegisterPermissionPayload
@@ -173,6 +186,8 @@ export class PermissionController {
       isAdmin: false
     }
   })
+  @Response(401, 'Admin account required')
+  @Response(404, 'Permission not found.')
   @Patch('{uid}')
   public async updatePermission(
     @Path() uid: string,
@@ -189,6 +204,8 @@ export class PermissionController {
    * @param uid The permission's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
+  @Response(401, 'Admin account required')
+  @Response(404, 'Permission not found.')
   @Delete('{uid}')
   public async deletePermission(@Path() uid: string) {
     return deletePermission(uid)

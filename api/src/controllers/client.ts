@@ -1,4 +1,4 @@
-import { Security, Route, Tags, Example, Post, Body, Get } from 'tsoa'
+import { Security, Route, Tags, Example, Response, Post, Body, Get } from 'tsoa'
 
 import Client, {
   ClientPayload,
@@ -25,6 +25,8 @@ export class ClientController {
     accessTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY,
     refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
   })
+  @Response(401, 'Admin account required')
+  @Response(403, 'Client ID already exists.')
   @Post('/')
   public async createClient(
     @Body() body: ClientPayload
@@ -52,6 +54,7 @@ export class ClientController {
       refreshTokenExpiration: NUMBER_OF_SECONDS_IN_A_DAY * 30
     }
   ])
+  @Response(401, 'Admin account required')
   @Get('/')
   public async getAllClients(): Promise<ClientPayload[]> {
     return getAllClients()

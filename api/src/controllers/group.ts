@@ -1,4 +1,5 @@
 import {
+  Response,
   Security,
   Route,
   Tags,
@@ -71,6 +72,8 @@ export class GroupController {
     isActive: true,
     users: []
   })
+  @Response(401, 'Admin account required')
+  @Response(409, 'Group name already exists.')
   @Post('/')
   public async createGroup(
     @Body() body: GroupPayload
@@ -88,6 +91,7 @@ export class GroupController {
    * @param name The group's name
    * @example name "dcgroup"
    */
+  @Response(404, 'Group not found.')
   @Get('by/groupname/{name}')
   public async getGroupByName(
     @Path() name: string
@@ -105,6 +109,7 @@ export class GroupController {
    * @param uid The group's identifier
    * @example uid "12ByteString"
    */
+  @Response(404, 'Group not found.')
   @Get('{uid}')
   public async getGroup(@Path() uid: string): Promise<GroupDetailsResponse> {
     return getGroup({ _id: uid })
@@ -129,6 +134,13 @@ export class GroupController {
     isActive: true,
     users: []
   })
+  @Response(401, 'Admin account required')
+  @Response(404, 'Group not found. / User not found.')
+  @Response(400, "Can't add/remove user to 'public' group.")
+  @Response(
+    405,
+    "Can't add/remove user to group created by external auth provider."
+  )
   @Post('{groupUid}/{userUid}')
   public async addUserToGroup(
     @Path() groupUid: string,
@@ -156,6 +168,13 @@ export class GroupController {
     isActive: true,
     users: []
   })
+  @Response(401, 'Admin account required')
+  @Response(404, 'Group not found. / User not found.')
+  @Response(400, "Can't add/remove user to 'public' group.")
+  @Response(
+    405,
+    "Can't add/remove user to group created by external auth provider."
+  )
   @Delete('{groupUid}/{userUid}')
   public async removeUserFromGroup(
     @Path() groupUid: string,
@@ -172,6 +191,8 @@ export class GroupController {
    * @param uid The group's identifier
    * @example uid "12ByteString"
    */
+  @Response(401, 'Admin account required')
+  @Response(404, 'Group not found.')
   @Delete('{uid}')
   public async deleteGroup(@Path() uid: string) {
     const group = await Group.findOne({ _id: uid })

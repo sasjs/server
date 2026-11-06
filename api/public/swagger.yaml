@@ -1323,6 +1323,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
+                '401':
+                    description: 'Admin account required'
+                '403':
+                    description: 'Client ID already exists.'
             description: "Registers a new OAuth client that SASjs applications can authenticate with.\n\nA client is identified by `clientId` and `clientSecret`. The two optional\nfields set token lifetimes in seconds; when omitted, the defaults of 86400\n(one day) for the access token and 2592000 (30 days) for the refresh token\napply. Admin only."
             summary: 'Create a client'
             tags:
@@ -1351,6 +1355,8 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{clientId: someClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}, {clientId: someOtherClientID, clientSecret: someOtherRandomCryptoString, accessTokenExpiration: 86400}]
+                '401':
+                    description: 'Admin account required'
             description: "Returns every registered client with its id, secret and token lifetimes.\nAdmin only."
             summary: 'List all clients'
             tags:
@@ -1932,6 +1938,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                '401':
+                    description: 'Admin account required'
+                '409':
+                    description: 'Username already exists.'
             description: "Creates a user from a display name, username, password and the `isAdmin`\nand `isActive` flags.\n\nA `409` is returned when the username already exists. Admin only. The new\nuser is added to the all-users group."
             summary: 'Create a user'
             tags:
@@ -1956,6 +1966,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UserDetailsResponse'
+                '401':
+                    description: Unauthorized
+                '404':
+                    description: 'User is not found.'
             description: "Returns a user's properties - display name, username, active and admin\nflags and group memberships - looked up by username.\n\nThe `autoExec` code is returned only to an administrator or to the user\nthemselves; for anyone else it is omitted."
             summary: 'Get a user by username'
             tags:
@@ -1984,6 +1998,14 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Unable to find user with <username>'
+                '405':
+                    description: 'Can not update username of user that is created by an external auth provider. / Can not update display name of user that is created by an external auth provider.'
+                '409':
+                    description: 'Username already exists.'
             description: "Updates a user's display name, username, password and `isAdmin` and\n`isActive` flags, looked up by username.\n\nCan be performed by an administrator or by the user themselves. A `409` is\nreturned when the new username is already taken, and a `405` when changing\nthe username or display name of an account managed by an external auth\nprovider."
             summary: 'Update a user by username'
             tags:
@@ -2011,6 +2033,10 @@ paths:
             responses:
                 '204':
                     description: 'No content'
+                '401':
+                    description: 'Admin account required, or invalid password'
+                '404':
+                    description: 'User is not found.'
             description: "Deletes a user, looked up by username.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match."
             summary: 'Delete a user by username'
             tags:
@@ -2046,6 +2072,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UserDetailsResponse'
+                '401':
+                    description: Unauthorized
+                '404':
+                    description: 'User is not found.'
             description: "Returns a user's properties - display name, username, active and admin\nflags and group memberships - looked up by identifier.\n\nThe `autoExec` code is returned only to an administrator or to the user\nthemselves; for anyone else it is omitted."
             summary: 'Get a user by id'
             tags:
@@ -2074,6 +2104,14 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Unable to find user with <id>'
+                '405':
+                    description: 'Can not update username of user that is created by an external auth provider. / Can not update display name of user that is created by an external auth provider.'
+                '409':
+                    description: 'Username already exists.'
             description: "Updates a user's display name, username, password and `isAdmin` and\n`isActive` flags, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves. A `409` is\nreturned when the new username is already taken, and a `405` when changing\nthe username or display name of an account managed by an external auth\nprovider."
             summary: 'Update a user by id'
             tags:
@@ -2101,6 +2139,10 @@ paths:
             responses:
                 '204':
                     description: 'No content'
+                '401':
+                    description: 'Admin account required, or invalid password'
+                '404':
+                    description: 'User is not found.'
             description: "Deletes a user, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match."
             summary: 'Delete a user by id'
             tags:
@@ -2161,6 +2203,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                '401':
+                    description: 'Admin account required'
+                '409':
+                    description: 'Group name already exists.'
             description: "Creates a new group. A `409` is returned when a group of that name already\nexists. Admin only."
             summary: 'Create a group'
             tags:
@@ -2185,6 +2231,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
+                '404':
+                    description: 'Group not found.'
             description: "Returns a group and its members, looked up by name.\n\nAvailable to any authenticated user. A `404` is returned when no group has\nthat name."
             summary: 'Get a group by name'
             tags:
@@ -2211,6 +2259,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GroupDetailsResponse'
+                '404':
+                    description: 'Group not found.'
             description: "Returns a group and its members, looked up by identifier.\n\nAvailable to any authenticated user. A `404` is returned when no group has\nthat identifier."
             summary: 'Get a group by id'
             tags:
@@ -2236,6 +2286,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/DeleteResult'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Group not found.'
             description: "Deletes a group. Admin only. A `404` is returned when no group has that\nidentifier."
             summary: 'Delete a group'
             tags:
@@ -2265,6 +2319,14 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                '400':
+                    description: 'Can''t add/remove user to ''public'' group.'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Group not found. / User not found.'
+                '405':
+                    description: 'Can''t add/remove user to group created by external auth provider.'
             description: "Adds a user to a group and returns the updated group.\n\nAdmin only. Refused with `400` for the reserved `public` group and with\n`405` when the group or the user is managed by an external auth provider."
             summary: 'Add a user to a group'
             tags:
@@ -2301,6 +2363,14 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                '400':
+                    description: 'Can''t add/remove user to ''public'' group.'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Group not found. / User not found.'
+                '405':
+                    description: 'Can''t add/remove user to group created by external auth provider.'
             description: "Removes a user from a group and returns the updated group.\n\nAdmin only. Refused with `400` for the reserved `public` group and with\n`405` when the group or the user is managed by an external auth provider."
             summary: 'Remove a user from a group'
             tags:
@@ -2399,6 +2469,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: [{uid: permissionId1String, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: user1-id, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {uid: permissionId2String, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: {uid: group1-id, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
+                '401':
+                    description: 'Admin account required, or no grant on the route'
+                '404':
+                    description: 'User not found.'
             description: "Returns the permission rules that apply to the authenticated user: the\nrules assigned to them directly and the rules assigned to any group they\nbelong to. An administrator receives every rule."
             summary: 'List the permission rules for the current user'
             tags:
@@ -2419,6 +2493,14 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+                '400':
+                    description: 'Can not add permission for admin user. / Invalid principal type. Valid types are user or group.'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'User not found. / Group not found.'
+                '409':
+                    description: 'Permission already exists with provided Path, Type and User. / Permission already exists with provided Path, Type and Group.'
             description: "Creates a permission rule granting or denying access to a route for a user\nor a group.\n\n`principalType` selects a user or a group and `principalId` is that\nprincipal's identifier. A `409` is returned when an identical rule already\nexists, and a `400` when the principal is an administrator. Admin only."
             summary: 'Create a permission rule'
             tags:
@@ -2446,6 +2528,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Permission not found.'
             description: "Changes whether an existing permission rule grants or denies access.\n\nAdmin only. A `404` is returned when no rule has that identifier."
             summary: 'Update a permission rule'
             tags:
@@ -2473,6 +2559,10 @@ paths:
             responses:
                 '204':
                     description: 'No content'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Permission not found.'
             description: "Deletes a permission rule. Admin only. A `404` is returned when no rule has\nthat identifier."
             summary: 'Delete a permission rule'
             tags:
