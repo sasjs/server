@@ -14,7 +14,7 @@ export const loadAppStreamConfig = async () => {
   for (const [streamServiceName, entry] of Object.entries(appStreamConfig)) {
     const { appLoc, streamWebFolder, streamLogo } = entry
 
-    publishAppStream(
+    await publishAppStream(
       appLoc,
       streamWebFolder,
       streamServiceName,
@@ -58,7 +58,16 @@ export const writeStoredAppStreamConfig = async (config: AppStreamConfig) => {
   await createFile(getAppStreamConfigPath(), JSON.stringify(config, null, 2))
 }
 
-export const addEntryToAppStreamConfig = (
+/**
+ * Records an entry in the in-memory registry, and in the file when asked.
+ *
+ * `async` because the write is awaited: the previous version fired `createFile`
+ * off and returned, so a caller could observe a publish as complete while the
+ * file was still empty or half written - which is exactly what a spec doing
+ * publish-then-read caught, and what a restart in that window loses. The write
+ * is what makes a publish survive, so it is part of the publish.
+ */
+export const addEntryToAppStreamConfig = async (
   streamServiceName: string,
   appLoc: string,
   streamWebFolder: string,
@@ -71,23 +80,7 @@ export const addEntryToAppStreamConfig = (
       streamWebFolder,
       streamLogo
     }
-    if (addEntryToFile) saveAppStreamConfig()
-  }
-}
-
-/**
- * Removes an entry from the in-memory registry and writes that view to the file.
- *
- * Only correct for an entry that is IN memory: the write replaces the file with
- * `process.appStreamConfig`, so an entry that boot dropped because its deployment
- * folder had gone is purged by the same write. Unpublishing therefore edits the
- * stored registry directly (`unpublishAppStream` in routes/appStream) instead of
- * calling this.
- */
-export const removeEntryFromAppStreamConfig = (streamServiceName: string) => {
-  if (streamServiceName) {
-    delete process.appStreamConfig[streamServiceName]
-    saveAppStreamConfig()
+    if (addEntryToFile) await saveAppStreamConfig()
   }
 }
 
@@ -99,7 +92,13 @@ const saveAppStreamConfig = async () => {
       appStreamConfigPath,
       JSON.stringify(process.appStreamConfig, null, 2)
     )
-  } catch (_) {}
+  } catch (error) {
+    // a registry that cannot be written is an entry that disappears at the next
+    // restart, so it is logged rather than swallowed
+    process.logger?.error?.(
+      `Failed to save the App Stream config: ${(error as Error)?.message ?? error}`
+    )
+  }
 }
 
 const isValidAppStreamConfig = (config: any) => {

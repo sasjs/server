@@ -130,7 +130,7 @@ export const publishAppStream = async (
 
     appStreams[streamServiceName] = pathToDeployment
 
-    addEntryToAppStreamConfig(
+    await addEntryToAppStreamConfig(
       streamServiceName,
       appLoc,
       streamWebFolder,
