@@ -1,5 +1,6 @@
 import express from 'express'
 import {
+  Response,
   Security,
   Route,
   Tags,
@@ -97,6 +98,8 @@ export class UserController {
     isAdmin: false,
     isActive: true
   })
+  @Response(401, 'Admin account required')
+  @Response(409, 'Username already exists.')
   @Post('/')
   public async createUser(
     @Body() body: UserPayload
@@ -115,6 +118,8 @@ export class UserController {
    * @param username The User's username
    * @example username "johnSnow01"
    */
+  @Response(401, 'Unauthorized')
+  @Response(404, 'User is not found.')
   @Get('by/username/{username}')
   public async getUserByUsername(
     @Request() req: express.Request,
@@ -140,6 +145,8 @@ export class UserController {
    * @param uid The user's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
+  @Response(401, 'Unauthorized')
+  @Response(404, 'User is not found.')
   @Get('{uid}')
   public async getUser(
     @Request() req: express.Request,
@@ -174,6 +181,13 @@ export class UserController {
     isAdmin: false,
     isActive: true
   })
+  @Response(401, 'Admin account required')
+  @Response(404, 'Unable to find user with <username>')
+  @Response(
+    405,
+    'Can not update username of user that is created by an external auth provider. / Can not update display name of user that is created by an external auth provider.'
+  )
+  @Response(409, 'Username already exists.')
   @Patch('by/username/{username}')
   public async updateUserByUsername(
     @Path() username: string,
@@ -207,6 +221,13 @@ export class UserController {
     isAdmin: false,
     isActive: true
   })
+  @Response(401, 'Admin account required')
+  @Response(404, 'Unable to find user with <id>')
+  @Response(
+    405,
+    'Can not update username of user that is created by an external auth provider. / Can not update display name of user that is created by an external auth provider.'
+  )
+  @Response(409, 'Username already exists.')
   @Patch('{uid}')
   public async updateUser(
     @Path() uid: string,
@@ -231,6 +252,8 @@ export class UserController {
    * @param username The User's username
    * @example username "johnSnow01"
    */
+  @Response(401, 'Admin account required, or invalid password')
+  @Response(404, 'User is not found.')
   @Delete('by/username/{username}')
   public async deleteUserByUsername(
     @Path() username: string,
@@ -251,6 +274,8 @@ export class UserController {
    * @param uid The user's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
+  @Response(401, 'Admin account required, or invalid password')
+  @Response(404, 'User is not found.')
   @Delete('{uid}')
   public async deleteUser(
     @Path() uid: string,
