@@ -8,6 +8,9 @@ import {
   filterGrantedRoutes,
   getFilesFolder,
   ModeType,
+  mutateRegistry,
+  readStoredAppStreamConfig,
+  writeStoredAppStreamConfig,
   resolveWithinDrive,
   resolveListeners,
   isSafePathSegment
@@ -128,7 +131,7 @@ export const publishAppStream = async (
 
     appStreams[streamServiceName] = pathToDeployment
 
-    addEntryToAppStreamConfig(
+    await addEntryToAppStreamConfig(
       streamServiceName,
       appLoc,
       streamWebFolder,
@@ -170,6 +173,104 @@ export const publishAppStream = async (
   }
   return {}
 }
+
+/**
+ * Stops advertising a published app, and stops serving it.
+ *
+ * Publishing does two things, and this undoes both: it writes an entry to the
+ * registry that the landing page, its HTML index and `/AppStream/apps.json` are
+ * all built from, and it points `appStreams` - the map the handler below serves
+ * `/AppStream/<name>` out of - at the deployment's folder. Removing the entry
+ * alone would leave an app reachable at a URL that nothing advertises, which is
+ * the state that is hardest to reason about: it answers, and no listing offers
+ * it.
+ *
+ * The pair is checked, not just the name. A name that has been republished for a
+ * different `appLoc` is a different app, so a caller asking to unpublish the
+ * older one must not take the newer one down; a pair that matches no entry
+ * answers `false`, which the route renders as a 404 - the same answer as a name
+ * the registry never held.
+ *
+ * The drive content is left alone: deleting the folder is `DELETE
+ * /SASjsApi/drive/folder`. Publishing wrote the registry entry and nothing else,
+ * so that is what unpublishing removes - there is no permission rule to withdraw,
+ * because publishing does not create one. The per-app routes
+ * (`getAuthorizedRoutes`) are read from this same registry, so the name drops out
+ * of a caller's route inventory as soon as the entry goes.
+ *
+ * The entry is looked for in the stored registry as well as in memory, because
+ * those differ: boot records an entry only when its deployment folder still
+ * exists, so an app whose folder was deleted out from under the server is in the
+ * file and not in `process.appStreamConfig`. Those are the entries a stale
+ * listing is made of, and before this route they had no removal at all.
+ */
+export const unpublishAppStream = (
+  streamServiceName: string,
+  appLoc: string
+): Promise<boolean> =>
+  // queued with publishing: both are whole-file writes over the same registry,
+  // and interleaved they discard each other (see mutateRegistry)
+  mutateRegistry(async () => {
+    const stored = await readStoredAppStreamConfig()
+
+    // the file is the durable record, so it is consulted as well as memory: an
+    // entry whose deployment folder went missing is dropped from memory at boot
+    // and lives only on disk - and those are exactly the entries a stale listing
+    // is made of, so they are the ones most in need of removal.
+    const resolved = (path?: string) =>
+      path ? resolveWithinDrive(path) : undefined
+
+    // compared on the resolved path, not the raw string: `/Public/app/x` and
+    // `/Public/app/x/` are one folder, and a caller deleting an app with the
+    // spelling it published is entitled to a match either way. Case is NOT
+    // folded - the drive is a case-sensitive filesystem, so two spellings are
+    // two folders there.
+    const matches = (entry?: { appLoc: string }) => {
+      const entryPath = resolved(entry?.appLoc)
+      const givenPath = resolved(appLoc)
+
+      return !!entryPath && !!givenPath && entryPath === givenPath
+    }
+
+    const inFile = matches(stored[streamServiceName])
+    const inMemory = matches(process.appStreamConfig?.[streamServiceName])
+
+    if (!inFile && !inMemory) return false
+
+    // Each view is edited only for the entry that matched in it. A name the file
+    // still holds for one appLoc while memory holds it for another is the
+    // republished-under-the-same-name case: removing the older entry must not
+    // take the newer app down with it.
+    const next = { ...stored }
+
+    if (inFile) delete next[streamServiceName]
+
+    if (inMemory) {
+      delete (process.appStreamConfig as AppStreamConfig)[streamServiceName]
+
+      // served from the name, so the route stops answering in the same breath
+      delete appStreams[streamServiceName]
+    }
+
+    if (inFile) {
+      // Written from the stored view, not from memory: writing memory here would
+      // also purge every other entry whose deployment has gone. A name that is
+      // still live in memory after the deletes above is a newer app the file has
+      // not caught up with, and it keeps its place.
+      const live = process.appStreamConfig?.[streamServiceName]
+      if (live) next[streamServiceName] = live
+
+      await writeStoredAppStreamConfig(next)
+    } else if (inMemory) {
+      // the file did not hold the entry, so the in-memory view is the one that
+      // changed
+      await writeStoredAppStreamConfig(
+        process.appStreamConfig as AppStreamConfig
+      )
+    }
+
+    return true
+  })
 
 // Express 5 (path-to-regexp v8) requires wildcard segments to be named;
 // a bare `*` throws at router registration time. The name is unused here

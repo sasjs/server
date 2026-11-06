@@ -31,12 +31,21 @@ import { createFileTree, ExecutionController, getTreeExample } from './internal'
 import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
-import { resolveWithinDrive } from '../utils'
+import { HttpError, resolveWithinDrive } from '../utils'
+import { unpublishAppStream } from '../routes/appStream'
 
 interface DeployPayload {
   appLoc: string
   streamWebFolder?: string
   fileTree: FileTree
+}
+
+/** The pair an unpublish names - see `DELETE /SASjsApi/drive/deploy`. */
+interface UnpublishPayload {
+  /** The folder the app was published from; `/Public/app/myservice` */
+  appLoc: string
+  /** The name the app is advertised and served under */
+  streamServiceName: string
 }
 
 interface DeployResponse {
@@ -193,6 +202,53 @@ export class DriveController {
     @Query() @Hidden() body?: DeployPayload // Hidden decorator has be optional
   ): Promise<DeployResponse> {
     return deploy(body!)
+  }
+
+  /**
+   * Removes a published app stream entry.
+   *
+   * The entry stops being advertised - the landing page, its HTML index and
+   * `/AppStream/apps.json` are all built from the one registry - and stops being
+   * served on `/AppStream/<streamServiceName>`, because the name leaves the route
+   * inventory as well.
+   *
+   * `appLoc` and `streamServiceName` are both required: a name that has been
+   * republished for a different folder is a different app, so the pair is what
+   * identifies the entry, and a pair matching none answers `404`. A missing field
+   * answers `400`.
+   *
+   * The drive content is left alone. Deleting the folder is `DELETE
+   * /SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and
+   * publishing created no permission rule, so there is none to withdraw: a caller
+   * needs the same `/SASjsApi/drive/deploy` grant this route already requires.
+   *
+   * An entry whose deployment folder has already gone is removable too, which is
+   * the case a stale listing is made of: the registry file is consulted as well as
+   * the in-memory view, and only the named entry is dropped.
+   *
+   * @summary Remove an app stream entry
+   */
+  @Response<FileFolderResponse>(400, 'Invalid Format', {
+    status: 'failure',
+    message: 'Unpublishing failed!'
+  })
+  @Response(404, 'No such app stream entry')
+  @Delete('/deploy')
+  public async unpublish(
+    @Body() body: UnpublishPayload
+  ): Promise<FileFolderResponse> {
+    // guarded here as well as in the route's validation: this method is the one
+    // implementation of the operation, so a caller reaching it directly gets the
+    // same refusal rather than a TypeError on an absent payload
+    if (!body?.streamServiceName)
+      throw new HttpError(400, '"streamServiceName" is required')
+
+    if (!body?.appLoc) throw new HttpError(400, '"appLoc" is required')
+
+    if (!(await unpublishAppStream(body.streamServiceName, body.appLoc)))
+      throw new HttpError(404, 'No such app stream entry.')
+
+    return { status: 'success' }
   }
 
   /**

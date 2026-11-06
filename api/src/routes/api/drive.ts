@@ -4,6 +4,7 @@ import { deleteFile, readFile } from '@sasjs/utils'
 import { publishAppStream } from '../appStream'
 
 import { multerSingle } from '../../middlewares/multer'
+import { sendRefusal } from '../refusal'
 import { DriveController } from '../../controllers/'
 import {
   deployValidation,
@@ -16,7 +17,8 @@ import {
   folderParamValidation,
   HttpError,
   isZipFile,
-  renameBodyValidation
+  renameBodyValidation,
+  unpublishValidation
 } from '../../utils'
 
 const controller = new DriveController()
@@ -114,6 +116,29 @@ driveRouter.post(
     }
   }
 )
+
+/**
+ * Removes a published app stream entry, so it stops being advertised and stops
+ * being served. Both fields are required: `appLoc` is what tells a name that has
+ * been republished elsewhere from the entry the caller means to remove. The drive
+ * content is untouched - that is `DELETE /SASjsApi/drive/folder` - so this route
+ * cannot destroy a deployment. The permission gate is the one already on
+ * `/SASjsApi/drive/deploy` for publishing: rules are per path, not per method.
+ */
+driveRouter.delete('/deploy', async (req, res) => {
+  const { error, value: body } = unpublishValidation(req.body || {})
+
+  if (error) return res.status(400).send(error.details[0].message)
+
+  try {
+    // the controller owns the removal, the way every other drive route delegates
+    // its work: one implementation, so the documented operation and the answered
+    // one cannot drift, and the status it refuses with is decided in one place
+    res.send(await controller.unpublish(body))
+  } catch (err: any) {
+    sendRefusal(res, err)
+  }
+})
 
 driveRouter.get('/file', async (req, res) => {
   const { error: errQ, value: query } = fileParamValidation(req.query)
