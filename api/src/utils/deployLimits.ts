@@ -38,11 +38,33 @@ export const DEPLOY_LIMITS: DeployLimits = {
   fileBytes: 20 * 1024 * 1024
 }
 
+/**
+ * The largest a deploy tree can be on the wire, which is what the transport has
+ * to admit.
+ *
+ * The cap is stated in DECODED bytes; a deploy travels as JSON in which a file
+ * member's contents are base64 - 4/3 of what they write - and a service's are
+ * escaped text (~1.04). So a tree at `totalBytes` reaches the parser at up to
+ * ~134MB, and the parser has to allow that or it refuses first, with its own
+ * shape, and the cap it was meant to enforce is never consulted. 140MB leaves
+ * room for the tree's JSON scaffolding.
+ *
+ * Only the deploy routes use it: everywhere else keeps the 100MB limit, because
+ * a request body is buffered before authentication and no other route needs the
+ * headroom.
+ */
+export const DEPLOY_PAYLOAD_BYTES = 140 * 1024 * 1024
+
 export interface DeployMeasurements {
   entries: number
   totalBytes: number
   /** The largest single member, by decoded size, with its path in the tree. */
   largest: { path: string; bytes: number }
+}
+
+/** What a walk accumulates: the measurements, and the first unsafe name. */
+interface DeployWalk extends DeployMeasurements {
+  nameRefusal?: DeployRefusal
 }
 
 /** The refusal a deploy earns, in the shape the drive deploy routes render. */
@@ -79,30 +101,36 @@ const describeSize = (bytes: number) =>
     ? `${bytes} bytes`
     : `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MB`
 
+/** A walk's starting point, so both entry points count the same way. */
+const emptyWalk = (): DeployWalk => ({
+  entries: 0,
+  totalBytes: 0,
+  largest: { path: '', bytes: 0 }
+})
+
 /**
- * Walks a tree, counting it and checking every name on the way.
+ * Walks a tree, counting it and noting the first unsafe name.
  *
  * Recursive because the tree is: the deepest member counts towards the same
  * totals as the shallowest, and the largest member keeps its path so a refusal
- * names the file the reader has to shrink. A name refusal is RETURNED rather
- * than thrown - the caller is a validator, and the first problem found is its
- * answer.
+ * names the file the reader has to shrink.
+ *
+ * A name problem is RECORDED rather than returned, so the walk always finishes:
+ * a caller that only wants the numbers gets the size of the whole tree, and the
+ * validator decides whether the name matters. Returning early would report a
+ * truncated tree as if it were the real one.
  */
-const walk = (
-  members: TreeMember[],
-  parentPath: string,
-  acc: DeployMeasurements
-): DeployRefusal | null => {
+const walk = (members: TreeMember[], parentPath: string, acc: DeployWalk) => {
   for (const member of members) {
     const name = memberName(member)
     const memberPath = parentPath ? `${parentPath}/${name}` : name
 
     // Every member name becomes a path SEGMENT under the deployment root. A
-    // name carrying '/', '\' or '..' is a traversal attempt, and it is checked
-    // here rather than during the write so a hostile tree writes nothing at
-    // all - the same promise the cap makes.
-    if (!isSafePathSegment(name))
-      return {
+    // name carrying '/', '\' or '..' is a traversal attempt, and the validator
+    // refuses it before the write so a hostile tree writes nothing at all - the
+    // same promise the cap makes.
+    if (!isSafePathSegment(name) && !acc.nameRefusal)
+      acc.nameRefusal = {
         code: 400,
         status: 'failure',
         message: `Invalid member name: '${name}'. Member names must be single path segments (no '/', '\\', '..').`
@@ -111,9 +139,7 @@ const walk = (
     acc.entries++
 
     if (member.type === MemberType.folder) {
-      const nested = walk(member.members, memberPath, acc)
-
-      if (nested) return nested
+      walk(member.members, memberPath, acc)
 
       continue
     }
@@ -124,28 +150,30 @@ const walk = (
 
     if (bytes > acc.largest.bytes) acc.largest = { path: memberPath, bytes }
   }
-
-  return null
 }
 
 /**
  * Measures a tree without touching the drive.
  *
- * Throws away the name refusal: a caller that only wants the numbers (a spec, a
- * diagnostic) is not validating anything. `checkDeployTree` is the validator.
+ * Every member is counted, whatever its name: this answers "how big is this
+ * tree", and a caller that also needs the names checked is `checkDeployTree`.
+ * The two are separate so a tree with one unsafe name still reports its true
+ * size rather than the prefix before the bad name.
  */
 export const measureDeployTree = (
   members: TreeMember[]
 ): DeployMeasurements => {
-  const acc: DeployMeasurements = {
-    entries: 0,
-    totalBytes: 0,
-    largest: { path: '', bytes: 0 }
-  }
+  const acc = emptyWalk()
 
   walk(members, '', acc)
 
-  return acc
+  // The walk's own bookkeeping - the first unsafe name - is not a measurement:
+  // `checkDeployTree` is where a name matters.
+  return {
+    entries: acc.entries,
+    totalBytes: acc.totalBytes,
+    largest: acc.largest
+  }
 }
 
 /**
@@ -155,6 +183,10 @@ export const measureDeployTree = (
  * total, single file - so a tree breaching two of them is refused for the same
  * one every time, which is what lets a caller key on the message and a test pin
  * it.
+ *
+ * The whole tree is measured before any of that: a refusal that reported the
+ * size of a tree up to its first bad name would be a worse answer than no
+ * refusal at all.
  *
  * The body is the deploy routes' own shape (`{status:'failure', message}`), not
  * the plain-text message the drive's CRUD routes send: these two routes answer
@@ -166,17 +198,11 @@ export const checkDeployTree = (
   members: TreeMember[],
   limits: DeployLimits = DEPLOY_LIMITS
 ): DeployRefusal | null => {
-  const acc: DeployMeasurements = {
-    entries: 0,
-    totalBytes: 0,
-    largest: { path: '', bytes: 0 }
-  }
+  const measured = emptyWalk()
 
-  const refused = walk(members, '', acc)
+  walk(members, '', measured)
 
-  if (refused) return refused
-
-  const measured = acc
+  if (measured.nameRefusal) return measured.nameRefusal
 
   if (measured.entries > limits.entries)
     return {

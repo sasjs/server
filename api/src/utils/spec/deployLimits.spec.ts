@@ -166,6 +166,26 @@ describe('the deploy cap', () => {
     })
   })
 
+  it('measures the whole tree even when a name is unsafe', () => {
+    // the walk records a bad name instead of stopping at it: a caller asking
+    // "how big is this tree" must not be told the size of the prefix before the
+    // first hostile member
+    const tree = [
+      service('ok', 'xxxx'),
+      folder('nested', [file('a.bin', 10), service('../escape', 'yy')]),
+      file('b.bin', 5)
+    ]
+
+    expect(measureDeployTree(tree)).toEqual({
+      entries: 5,
+      totalBytes: 21,
+      largest: { path: 'nested/a.bin', bytes: 10 }
+    })
+
+    // ...and the validator still refuses the name, before it judges the size
+    expect(checkDeployTree(tree, limits)?.code).toBe(400)
+  })
+
   it('accepts a dotted name that is not a traversal', () => {
     // '..config' begins with two dots and is a legitimate entry - the check is
     // on the segment, not on the prefix

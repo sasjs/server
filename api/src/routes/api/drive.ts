@@ -7,6 +7,7 @@ import { multerSingle } from '../../middlewares/multer'
 import { sendRefusal } from '../refusal'
 import { DriveController } from '../../controllers/'
 import {
+  DEPLOY_PAYLOAD_BYTES,
   deployValidation,
   extractJSONFromZip,
   extractName,
@@ -54,7 +55,11 @@ driveRouter.post('/deploy', async (req, res) => {
 
 driveRouter.post(
   '/deploy/upload',
-  (...arg) => multerSingle('file', arg),
+  // The deploy ceiling, not the drive's: an archive or a JSON file carrying a
+  // tree at DEPLOY_LIMITS.totalBytes is up to ~134MB (base64 is 4/3), so the
+  // transport admits the largest encoding the cap allows and the cap is what
+  // refuses. The CRUD routes keep the smaller default.
+  (...arg) => multerSingle('file', arg, DEPLOY_PAYLOAD_BYTES),
   async (req, res) => {
     if (!req.file) return res.status(400).send('"file" is not present.')
 
