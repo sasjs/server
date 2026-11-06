@@ -143,6 +143,19 @@ export const deployValidation = (data: any): Joi.ValidationResult =>
     fileTree: Joi.any().required()
   }).validate(data)
 
+/**
+ * The pair that unpublishing names: the registry is keyed by
+ * `streamServiceName`, and `appLoc` is required because a name republished for a
+ * different folder is a different app. Both are validated here so a request that
+ * names neither answers with the field it is missing rather than reaching the
+ * registry and 404ing.
+ */
+export const unpublishValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    appLoc: Joi.string().pattern(/^\//).required().min(2),
+    streamServiceName: Joi.string().required()
+  }).validate(data)
+
 const filePathSchema = Joi.string()
   .custom((value, helpers) => {
     if (blockFileRegex.test(value)) return helpers.error('string.pattern.base')

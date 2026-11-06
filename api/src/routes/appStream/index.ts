@@ -8,6 +8,7 @@ import {
   filterGrantedRoutes,
   getFilesFolder,
   ModeType,
+  removeEntryFromAppStreamConfig,
   resolveWithinDrive,
   resolveListeners,
   isSafePathSegment
@@ -169,6 +170,45 @@ export const publishAppStream = async (
     return { streamServiceName }
   }
   return {}
+}
+
+/**
+ * Stops advertising a published app, and stops serving it.
+ *
+ * Publishing does two things, and this undoes both: it writes an entry to the
+ * registry that the landing page, its HTML index and `/AppStream/apps.json` are
+ * all built from, and it points `appStreams` - the map the handler below serves
+ * `/AppStream/<name>` out of - at the deployment's folder. Removing the entry
+ * alone would leave an app reachable at a URL that nothing advertises, which is
+ * the state that is hardest to reason about: it answers, and no listing offers
+ * it.
+ *
+ * The pair is checked, not just the name. A name that has been republished for a
+ * different `appLoc` is a different app, so a caller asking to unpublish the
+ * older one must not take the newer one down; a pair that matches no entry
+ * answers `false`, which the route renders as a 404 - the same answer as a name
+ * the registry never held.
+ *
+ * The drive content is left alone: deleting the folder is `DELETE
+ * /SASjsApi/drive/folder`. Publishing wrote the registry entry and nothing else,
+ * so that is what unpublishing removes - there is no permission rule to withdraw,
+ * because publishing does not create one. The per-app routes
+ * (`getAuthorizedRoutes`) are read from this same registry, so the name drops out
+ * of a caller's route inventory as soon as the entry goes.
+ */
+export const unpublishAppStream = (
+  streamServiceName: string,
+  appLoc: string
+): boolean => {
+  const entry = process.appStreamConfig?.[streamServiceName]
+
+  if (!entry || entry.appLoc !== appLoc) return false
+
+  delete appStreams[streamServiceName]
+
+  removeEntryFromAppStreamConfig(streamServiceName)
+
+  return true
 }
 
 // Express 5 (path-to-regexp v8) requires wildcard segments to be named;

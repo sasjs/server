@@ -570,6 +570,20 @@ components:
                 - status
             type: object
             additionalProperties: false
+        UnpublishPayload:
+            description: 'The pair an unpublish names - see `DELETE /SASjsApi/drive/deploy`.'
+            properties:
+                appLoc:
+                    type: string
+                    description: 'The folder the app was published from; `/Public/app/myservice`'
+                streamServiceName:
+                    type: string
+                    description: 'The name the app is advertised and served under'
+            required:
+                - appLoc
+                - streamServiceName
+            type: object
+            additionalProperties: false
         AddFolderPayload:
             properties:
                 folderPath:
@@ -1490,6 +1504,40 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/DeployPayload'
+        delete:
+            operationId: Unpublish
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                '400':
+                    description: 'Invalid Format'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Unpublishing failed!'}
+                '404':
+                    description: 'No such app stream entry'
+            description: "Removes a published app stream entry.\n\nThe entry stops being advertised - the landing page, its HTML index and\n`/AppStream/apps.json` are all built from the one registry - and stops being\nserved on `/AppStream/<streamServiceName>`, because the name leaves the route\ninventory as well.\n\n`appLoc` and `streamServiceName` are both required: a name that has been\nrepublished for a different folder is a different app, so the pair is what\nidentifies the entry, and a pair matching none answers `404`. A missing field\nanswers `400`.\n\nThe drive content is left alone. Deleting the folder is `DELETE\n/SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and\npublishing created no permission rule, so there is none to withdraw: a caller\nneeds the same `/SASjsApi/drive/deploy` grant this route already requires."
+            summary: 'Remove an app stream entry'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UnpublishPayload'
     /SASjsApi/drive/deploy/upload:
         post:
             operationId: DeployUpload
