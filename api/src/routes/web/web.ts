@@ -18,6 +18,7 @@ import {
   isAuthProviderEnabled,
   AuthProviderType
 } from '../../utils'
+import { sendRefusal } from '../refusal'
 
 const webRouter = express.Router()
 const controller = new WebController()
@@ -48,6 +49,9 @@ webRouter.post(
 
     const lockoutRemaining = getLoginLockoutRemaining(body.username)
     if (lockoutRemaining > 0) {
+      // The seconds are the machine-readable form of the same answer: a client
+      // that shows a countdown should not have to parse the message.
+      res.setHeader('Retry-After', String(lockoutRemaining))
       return res
         .status(429)
         .send(
@@ -67,11 +71,7 @@ webRouter.post(
       // usernames, and responding identically to both keeps the lockout
       // from leaking which name exists.
       recordLoginFailure(body.username)
-      if (err instanceof Error) {
-        res.status(500).send(err.toString())
-      } else {
-        res.status(err.code).send(err.message)
-      }
+      sendRefusal(res, err)
     }
   }
 )
@@ -89,7 +89,7 @@ webRouter.post(
       const response = await controller.authorize(req, body)
       res.send(response)
     } catch (err: any) {
-      res.status(403).send(err.toString())
+      sendRefusal(res, err)
     }
   }
 )
@@ -107,7 +107,7 @@ webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
 
     res.status(200).send('OK!')
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    sendRefusal(res, err)
   }
 })
 
@@ -130,9 +130,7 @@ const oidcOnly: express.RequestHandler = (req, res, next) => {
 const sendOidcError = (res: express.Response, err: any) => {
   res.type('text/plain')
 
-  if (err instanceof Error) return res.status(500).send(err.toString())
-
-  return res.status(err.code ?? 500).send(err.message ?? 'Sign-in failed.')
+  sendRefusal(res, err)
 }
 
 webRouter.get(

@@ -19,4 +19,4 @@ Content-Type: application/json
 }
 
 ### Perform logout to deactivate access token instantly
-DELETE http://localhost:5000/SASjsApi/auth/logout
+POST http://localhost:5000/SASjsApi/auth/logout

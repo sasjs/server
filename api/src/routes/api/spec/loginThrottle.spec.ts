@@ -79,6 +79,9 @@ describe('login throttle', () => {
     const res = await wrongPassword(agent, csrfToken, user.username)
     expect(res.status).toBe(429)
     expect(res.text).toContain('Too Many Failed Attempts')
+    // The same answer in machine-readable form: the countdown the message
+    // spells out, in seconds, so a client does not have to parse the sentence.
+    expect(res.headers['retry-after']).toMatch(/^\d+$/)
   })
 
   it('does not lock a different username', async () => {

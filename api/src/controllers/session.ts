@@ -8,7 +8,8 @@ import {
   Example,
   Get,
   Path,
-  Produces
+  Produces,
+  Response
 } from 'tsoa'
 import { readFile } from 'fs/promises'
 import { UserResponse } from './user'
@@ -43,6 +44,7 @@ export class SessionController {
     isAdmin: false,
     needsToUpdatePassword: false
   })
+  @Response(401, 'No valid access token or session was supplied')
   @Get('/')
   public async session(
     @Request() request: express.Request

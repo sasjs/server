@@ -10,7 +10,7 @@
     "start": "NODE_ENV=development node --watch -r ts-node/register ./src/server.ts",
     "start:prod": "node ./build/src/server.js",
     "build": "npm run initial && rimraf build && tsc && npm run copy:files",
-    "swagger": "tsoa spec",
+    "swagger": "tsoa spec && ts-node ./scripts/documentResponseHeaders.ts",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath ./.git-hooks",
     "test": "mkdir -p tmp && mkdir -p ../web/build && jest --silent --coverage",
     "test:e2e": "mkdir -p tmp && jest --config jest.e2e.config.js --runInBand",

@@ -87,7 +87,7 @@ sequenceDiagram
     AuthCtrl-->>Browser: 200 { accessToken, refreshToken }
 
     Note over Browser,Sess: Logout
-    Browser->>AuthCtrl: DELETE /SASjsApi/auth/logout (bearer clients)
+    Browser->>AuthCtrl: POST /SASjsApi/auth/logout (bearer clients)
     AuthCtrl->>DB: removeTokensInDB() - clears this clientId's<br/>entry from User.tokens (utils/removeTokensInDB.ts, controllers/auth.ts:152-153)
     AuthCtrl-->>Browser: 204
     Browser->>Web: GET /SASLogon/logout (session/browser clients)

@@ -1,6 +1,6 @@
 import path from 'path'
 import express from 'express'
-import { Request, Route, Tags, Post, Body, Get, Example } from 'tsoa'
+import { Request, Route, Tags, Post, Body, Get, Example, Response } from 'tsoa'
 import { randomBytes, timingSafeEqual } from 'crypto'
 
 import User from '../model/User'
@@ -18,6 +18,10 @@ import {
 } from '../utils'
 import { InfoJWT } from '../types'
 import { AuthController } from './auth'
+// Imported from its own module rather than the barrel: the barrel reaches the
+// controllers back through isPublicRoute, so a class read off it at module
+// evaluation is still an unset binding.
+import { HttpError } from '../utils/httpError'
 
 @Route('/')
 @Tags('Web')
@@ -41,13 +45,34 @@ export class WebController {
    * unknown credentials, and also when password sign-in for local accounts is
    * disabled on the server.
    *
+   * A `429` - the account is locked after repeated failures - carries a
+   * `Retry-After` header in seconds, so a client can show a countdown without
+   * parsing the message.
+   *
    * @summary Sign in with a username and password
    */
+  @Example<LoginResponse>({
+    loggedIn: true,
+    user: {
+      uid: 'userIdString',
+      username: 'johnusername',
+      displayName: 'John',
+      isAdmin: false,
+      needsToUpdatePassword: false
+    }
+  })
+  @Response(400, 'The request body is missing `username` or `password`')
+  @Response(
+    401,
+    'The credentials are not valid, or password sign-in is disabled for local accounts'
+  )
+  @Response(429, 'Too many failed attempts for this account')
+  @Response(500, 'An unexpected error occurred while signing in')
   @Post('/SASLogon/login')
   public async login(
     @Request() req: express.Request,
     @Body() body: LoginPayload
-  ) {
+  ): Promise<LoginResponse> {
     return login(req, body)
   }
 
@@ -63,6 +88,12 @@ export class WebController {
   @Example<AuthorizeResponse>({
     code: 'someRandomCryptoString'
   })
+  @Response(
+    400,
+    'The request body is missing `clientId`, or the CSRF token is missing or invalid'
+  )
+  @Response(401, 'No signed-in session')
+  @Response(403, 'The client id is unknown')
   @Post('/SASLogon/authorize')
   public async authorize(
     @Request() req: express.Request,
@@ -82,6 +113,7 @@ export class WebController {
    *
    * @summary Sign out
    */
+  @Response(500, 'The session store failed to replace the session')
   @Get('/SASLogon/logout')
   public async logout(@Request() req: express.Request) {
     return new Promise((resolve, reject) => {
@@ -125,7 +157,7 @@ const home = async () => {
 const login = async (
   req: express.Request,
   { username, password }: LoginPayload
-) => {
+): Promise<LoginResponse> => {
   // Authenticate User
   const user = await User.findOne({ username })
 
@@ -145,14 +177,14 @@ const login = async (
       // never compared: there is no credential here to attack. Accounts that
       // authenticate through LDAP keep working, and provider accounts sign in
       // through the provider.
-      throw errors.localLoginDisabled
+      throw errors.localLoginDisabled()
     } else {
       validPass = user.comparePassword(password)
     }
   }
 
-  if (!user) throw errors.userNotFound
-  if (!validPass) throw errors.invalidPassword
+  if (!user) throw errors.userNotFound()
+  if (!validPass) throw errors.invalidPassword()
 
   req.session.loggedIn = true
   req.session.user = {
@@ -230,9 +262,9 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
   delete req.session.oidc
 
   if (!pending || !query.state || !safeEqual(query.state, pending.state))
-    throw errors.oidcInvalidState
+    throw errors.oidcInvalidState()
 
-  if (!query.code) throw errors.oidcMissingCode
+  if (!query.code) throw errors.oidcMissingCode()
 
   const client = await OIDCClient.init()
 
@@ -254,7 +286,7 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
     // so they are logged rather than returned. A failed verification is an
     // authentication failure, not a server fault.
     process.logger?.error(`OIDC sign-in failed: ${(error as Error).message}`)
-    throw errors.oidcVerificationFailed
+    throw errors.oidcVerificationFailed()
   }
 
   const { user } = await resolveOidcUser(
@@ -324,10 +356,10 @@ const authorize = async (
   clientId: string
 ): Promise<AuthorizeResponse> => {
   const userId = req.session.user?.userId
-  if (!userId) throw new Error('Invalid userId.')
+  if (!userId) throw new HttpError(401, 'Invalid userId.')
 
   const client = await Client.findOne({ clientId })
-  if (!client) throw new Error('Invalid clientId.')
+  if (!client) throw new HttpError(403, 'Invalid clientId.')
 
   // generate authorization code against clientId
   const userInfo: InfoJWT = {
@@ -341,6 +373,17 @@ const authorize = async (
   )
 
   return { code }
+}
+
+export interface LoginResponse {
+  loggedIn: boolean
+  user: {
+    uid: string
+    username: string
+    displayName: string
+    isAdmin: boolean
+    needsToUpdatePassword: boolean
+  }
 }
 
 interface LoginPayload {
@@ -372,39 +415,36 @@ interface AuthorizeResponse {
   code: string
 }
 
+/**
+ * Each refusal is built where it is thrown, so the stack names the request that
+ * refused rather than this module's evaluation: one shared instance per entry
+ * would carry the module's stack on every request that threw it.
+ */
 const errors = {
-  invalidPassword: {
-    code: 401,
-    message: 'Invalid Password.'
-  },
-  userNotFound: {
-    code: 401,
-    message: 'Username is not found.'
-  },
-  localLoginDisabled: {
-    code: 401,
-    message:
+  invalidPassword: () => new HttpError(401, 'Invalid Password.'),
+  userNotFound: () => new HttpError(401, 'Username is not found.'),
+  localLoginDisabled: () =>
+    new HttpError(
+      401,
       'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
-  },
-  oidcInvalidState: {
-    code: 401,
-    message:
+    ),
+  oidcInvalidState: () =>
+    new HttpError(
+      401,
       'Invalid or expired OpenID Connect sign-in. Please start the sign-in again.'
-  },
-  oidcMissingCode: {
-    code: 400,
-    message:
+    ),
+  oidcMissingCode: () =>
+    new HttpError(
+      400,
       'The OpenID Connect callback did not include an authorization code.'
-  },
-  oidcVerificationFailed: {
-    code: 401,
-    message: 'OpenID Connect sign-in failed. Please try again.'
-  },
-  oidcProviderError: (error: string) => ({
-    code: 401,
-    message:
+    ),
+  oidcVerificationFailed: () =>
+    new HttpError(401, 'OpenID Connect sign-in failed. Please try again.'),
+  oidcProviderError: (error: string) =>
+    new HttpError(
+      401,
       error === 'access_denied'
         ? 'Sign-in was cancelled at the identity provider.'
         : 'The identity provider refused the sign-in request.'
-  })
+    )
 }

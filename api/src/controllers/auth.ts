@@ -9,7 +9,8 @@ import {
   Request,
   Body,
   Query,
-  Hidden
+  Hidden,
+  Response
 } from 'tsoa'
 import jwt from 'jsonwebtoken'
 import { InfoJWT } from '../types'
@@ -20,6 +21,7 @@ import {
   removeTokensInDB,
   saveTokensInDB
 } from '../utils'
+import { HttpError } from '../utils/httpError'
 import Client from '../model/Client'
 import User from '../model/User'
 
@@ -50,6 +52,11 @@ export class AuthController {
     accessToken: 'someRandomCryptoString',
     refreshToken: 'someRandomCryptoString'
   })
+  @Response(400, 'The request body is missing `clientId` or `code`')
+  @Response(
+    401,
+    'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown'
+  )
   @Post('/token')
   public async token(@Body() body: TokenPayload): Promise<TokenResponse> {
     return token(body)
@@ -65,6 +72,10 @@ export class AuthController {
     accessToken: 'someRandomCryptoString',
     refreshToken: 'someRandomCryptoString'
   })
+  @Response(
+    401,
+    'The refresh token is missing, invalid or expired, or the client id is unknown'
+  )
   @Security('bearerAuth')
   @Post('/refresh')
   public async refresh(
@@ -78,6 +89,7 @@ export class AuthController {
    *
    * @summary Revoke the current tokens
    */
+  @Response(401, 'No valid access token was supplied')
   @Security('bearerAuth')
   @Post('/logout')
   public async logout(@Query() @Hidden() data?: InfoJWT) {
@@ -93,6 +105,17 @@ export class AuthController {
    *
    * @summary Change the current user's password
    */
+  @Response(
+    400,
+    'The request body is missing `currentPassword` or `newPassword`'
+  )
+  @Response(401, 'No valid access token was supplied')
+  @Response(403, 'The current password is incorrect')
+  @Response(404, 'The authenticated user no longer exists')
+  @Response(
+    405,
+    'The account authenticates through an external provider, which holds its password'
+  )
   @Security('bearerAuth')
   @Patch('updatePassword')
   public async updatePassword(
@@ -107,10 +130,10 @@ const token = async (data: any): Promise<TokenResponse> => {
   const { clientId, code } = data
 
   const userInfo = await verifyAuthCode(clientId, code)
-  if (!userInfo) throw new Error('Invalid Auth Code')
+  if (!userInfo) throw new HttpError(401, 'Invalid Auth Code')
 
   if (AuthController.authCodes[userInfo.userId][clientId] !== code)
-    throw new Error('Invalid Auth Code')
+    throw new HttpError(401, 'Invalid Auth Code')
 
   AuthController.deleteCode(userInfo.userId, clientId)
 
@@ -134,7 +157,7 @@ const token = async (data: any): Promise<TokenResponse> => {
   // held a valid session - see verifyAuthCode below and web.ts's authorize()).
   const client = await Client.findOne({ clientId })
 
-  if (!client) throw new Error('Invalid clientId.')
+  if (!client) throw new HttpError(401, 'Invalid clientId.')
 
   const accessToken = generateAccessToken(
     userInfo,
@@ -152,7 +175,7 @@ const token = async (data: any): Promise<TokenResponse> => {
 
 const refresh = async (userInfo: InfoJWT): Promise<TokenResponse> => {
   const client = await Client.findOne({ clientId: userInfo.clientId })
-  if (!client) throw new Error('Invalid clientId.')
+  if (!client) throw new HttpError(401, 'Invalid clientId.')
 
   const accessToken = generateAccessToken(
     userInfo,
@@ -185,26 +208,16 @@ const updatePassword = async (
   const userId = req.user?.userId
   const dbUser = await User.findOne({ _id: userId })
 
-  if (!dbUser)
-    throw {
-      code: 404,
-      message: `User not found!`
-    }
+  if (!dbUser) throw new HttpError(404, 'User not found!')
 
-  if (dbUser?.authProvider) {
-    throw {
-      code: 405,
-      message:
-        'Can not update password of user that is created by an external auth provider.'
-    }
-  }
+  if (dbUser?.authProvider)
+    throw new HttpError(
+      405,
+      'Can not update password of user that is created by an external auth provider.'
+    )
 
   const validPass = dbUser.comparePassword(currentPassword)
-  if (!validPass)
-    throw {
-      code: 403,
-      message: `Invalid current password!`
-    }
+  if (!validPass) throw new HttpError(403, 'Invalid current password!')
 
   dbUser.password = User.hashPassword(newPassword)
   dbUser.needsToUpdatePassword = false

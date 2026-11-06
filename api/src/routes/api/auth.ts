@@ -9,6 +9,7 @@ import {
 
 import { tokenValidation, updatePasswordValidation } from '../../utils'
 import { InfoJWT } from '../../types'
+import { sendRefusal } from '../refusal'
 
 const authRouter = express.Router()
 const controller = new AuthController()
@@ -24,7 +25,7 @@ authRouter.patch(
       await controller.updatePassword(req, body)
       res.sendStatus(204)
     } catch (err: any) {
-      res.status(err.code).send(err.message)
+      sendRefusal(res, err)
     }
   }
 )
@@ -38,7 +39,7 @@ authRouter.post('/token', async (req, res) => {
 
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    sendRefusal(res, err)
   }
 })
 
@@ -53,11 +54,14 @@ authRouter.post('/refresh', authenticateRefreshToken, async (req, res) => {
 
     res.send(response)
   } catch (err: any) {
-    res.status(403).send(err.toString())
+    sendRefusal(res, err)
   }
 })
 
-authRouter.delete('/logout', authenticateAccessToken, async (req, res) => {
+// The documented method: the operation is a POST in the OpenAPI document and in
+// the controller it describes. The router is what tells a client what to call,
+// so it is the router that follows the document.
+authRouter.post('/logout', authenticateAccessToken, async (req, res) => {
   const userInfo: InfoJWT = {
     userId: req.user!.userId!,
     clientId: req.user!.clientId!

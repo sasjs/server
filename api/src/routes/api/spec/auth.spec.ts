@@ -112,19 +112,38 @@ describe('auth', () => {
       expect(res.body).toEqual({})
     })
 
-    it('should respond with Forbidden if code is invalid', async () => {
+    it('should respond with Unauthorized if code is invalid', async () => {
       const res = await request(app)
         .post('/SASjsApi/auth/token')
         .send({
           clientId,
           code: 'InvalidCode'
         })
-        .expect(403)
+        .expect(401)
 
-      expect(res.body).toEqual({})
+      expect(res.text).toEqual('Invalid Auth Code')
     })
 
-    it('should respond with Forbidden if clientId is invalid', async () => {
+    it('should respond with Unauthorized when the code is valid but its client is gone', async () => {
+      // The code names a client that has since been deleted: the exchange has
+      // nothing to read its token lifetimes from, so it refuses with the same
+      // status as a bad code rather than answering a pair with defaults.
+      const issuedFor = 'someRemovedClient'
+      const code = AuthController.saveCode(
+        userInfo.userId,
+        issuedFor,
+        generateAuthCode({ clientId: issuedFor, userId: userInfo.userId })
+      )
+
+      const res = await request(app)
+        .post('/SASjsApi/auth/token')
+        .send({ clientId: issuedFor, code })
+        .expect(401)
+
+      expect(res.text).toEqual('Invalid clientId.')
+    })
+
+    it('should respond with Unauthorized if clientId is unknown', async () => {
       const code = AuthController.saveCode(
         userInfo.userId,
         userInfo.clientId,
@@ -137,9 +156,9 @@ describe('auth', () => {
           clientId: 'WrongClientID',
           code
         })
-        .expect(403)
+        .expect(401)
 
-      expect(res.body).toEqual({})
+      expect(res.text).toEqual('Invalid Auth Code')
     })
   })
 
@@ -227,7 +246,7 @@ describe('auth', () => {
 
     it('should respond no content and remove access/refresh tokens from DB', async () => {
       const res = await request(app)
-        .delete('/SASjsApi/auth/logout')
+        .post('/SASjsApi/auth/logout')
         .auth(accessToken, { type: 'bearer' })
         .send()
         .expect(204)
