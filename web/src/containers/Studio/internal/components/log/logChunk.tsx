@@ -7,8 +7,8 @@ import CheckIcon from '@mui/icons-material/Check'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import {
   defaultChunkSize,
-  buildLogSegments,
   download,
+  logLines,
   LogInstance
 } from '../../../../../utils'
 import classes from './log.module.css'
@@ -50,6 +50,8 @@ const LogChunk = (props: LogChunkProps) => {
   )
   const errors = chunkMarkers.filter((marker) => marker.type === 'error')
   const warnings = chunkMarkers.filter((marker) => marker.type === 'warning')
+  // One row per line, with its number and any issue anchored on it.
+  const rows = logLines(text, firstLine, chunkMarkers)
 
   useEffect(() => {
     setExpanded(props.expanded)
@@ -74,15 +76,24 @@ const LogChunk = (props: LogChunkProps) => {
       const line = document.getElementById(`${type}_${id}`)
       const logWrapper: HTMLDivElement | null =
         document.querySelector(`#logWrapper`)
-      const logContainer: HTMLHeadElement | null =
-        document.querySelector(`#log_container`)
 
-      if (line && logWrapper && logContainer) {
+      if (line && logWrapper) {
         // The line already carries its severity colour, so the highlight is
         // added beside it and taken away again rather than replacing it.
         line.classList.add(classes.HighlightedLine)
 
-        line.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        // Vertical only, by arithmetic rather than scrollIntoView: that call
+        // also makes the element horizontally visible, and a log line wider
+        // than the pane (a path, a long token) then slides the whole log right
+        // so the start of every line goes out of view - which is the opposite
+        // of what a click on an issue is for. The horizontal position is put
+        // back for the same reason: the target line is reached by scrolling
+        // down, never by scrolling sideways.
+        const wrapperTop = logWrapper.getBoundingClientRect().top
+        const lineTop = line.getBoundingClientRect().top
+
+        logWrapper.scrollTop += lineTop - wrapperTop - 8
+        logWrapper.scrollLeft = 0
 
         setTimeout(() => {
           line.classList.remove(classes.HighlightedLine)
@@ -174,33 +185,31 @@ const LogChunk = (props: LogChunkProps) => {
           )}
         >
           {expanded &&
-            buildLogSegments(text, firstLine, chunkMarkers).map(
-              (segment, index) => {
-                // A block per segment: the container keeps the whitespace, and
-                // a block ends the line without a separator node per line.
-                if (!segment.marker) {
-                  return <div key={`plain_${index}`}>{segment.text}</div>
+            rows.map((row) => (
+              <div
+                key={row.number}
+                id={
+                  row.marker ? `${row.marker.type}_${row.marker.id}` : undefined
                 }
-
-                const { type, id } = segment.marker
-
-                return (
-                  <div
-                    key={`${type}_${id}`}
-                    id={`${type}_${id}`}
-                    className={
-                      type === 'error'
-                        ? classes.ErrorLine
-                        : type === 'warning'
-                          ? classes.WarningLine
-                          : undefined
-                    }
-                  >
-                    {segment.text}
-                  </div>
-                )
-              }
-            )}
+                className={classes.LogLine}
+                data-line-number={row.number}
+              >
+                <span className={classes.LineNumber} aria-hidden="true">
+                  {row.number}
+                </span>
+                <span
+                  className={
+                    row.marker?.type === 'error'
+                      ? classes.ErrorLine
+                      : row.marker?.type === 'warning'
+                        ? classes.WarningLine
+                        : classes.LineText
+                  }
+                >
+                  {row.text}
+                </span>
+              </div>
+            ))}
         </div>
       </div>
     </div>

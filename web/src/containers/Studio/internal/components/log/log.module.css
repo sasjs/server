@@ -42,10 +42,38 @@
   min-height: 50px;
   padding: 10px;
   box-sizing: border-box;
-  white-space: pre-wrap;
   font-family: Monaco, Courier, monospace;
   position: relative;
   width: 100%;
+  /* A log line can be longer than the pane and carry tokens with no spaces
+     (a path, a dataset name), so it wraps rather than widening the container:
+     nothing here scrolls sideways. */
+  overflow-wrap: anywhere;
+}
+
+/* One row per log line: the number, then the text. */
+.LogLine {
+  display: flex;
+  gap: 10px;
+  min-height: 1.25em;
+  line-height: 1.25em;
+}
+
+.LineNumber {
+  /* A gutter that never takes part in a selection: the copy button copies the
+     log itself, and a hand selection that picked up the numbers would be text
+     the reader then has to strip. */
+  flex: 0 0 auto;
+  min-width: 4ch;
+  text-align: right;
+  color: #8a8a8a;
+  user-select: none;
+}
+
+.LineText {
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .expansionDescription {
@@ -60,6 +88,9 @@
 
 .LogWrapper {
   overflow-y: auto;
+  /* Stated rather than computed: with one axis `auto` the other becomes `auto`
+     too, and the log must not be a horizontal scroll container at all. */
+  overflow-x: hidden;
   max-height: calc(100vh - 130px);
 }
 
@@ -93,10 +124,16 @@
    enough notes that colouring them would drown the errors. */
 .ErrorLine {
   color: red;
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .WarningLine {
   color: green;
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .Icon {
