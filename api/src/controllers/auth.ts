@@ -53,9 +53,11 @@ export class AuthController {
     refreshToken: 'someRandomCryptoString'
   })
   @Response(400, 'The request body is missing `clientId` or `code`')
+  // 401 rather than authorize's 403 for an unknown client id: this route needs no
+  // credential of its own, so an unknown client is an authentication failure.
   @Response(
     401,
-    'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown'
+    'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown. This route is unauthenticated, so an unknown client id is a `401` here where `POST /SASLogon/authorize` (which requires a session) answers `403`'
   )
   @Post('/token')
   public async token(@Body() body: TokenPayload): Promise<TokenResponse> {

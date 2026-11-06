@@ -34,6 +34,16 @@ export interface UserResponse {
   isAdmin: boolean
 }
 
+// One named shape rather than the same five properties inlined in LoginResponse,
+// so the two cannot drift and the nested object carries the same
+// `additionalProperties: false` its parents do. `needsToUpdatePassword` is
+// required here because a signed-in session always knows it; the GET /session
+// answer leaves it optional for a caller the password policy does not apply to.
+/** The signed-in caller, as the session reports them. */
+export interface SessionUserResponse extends UserResponse {
+  needsToUpdatePassword: boolean
+}
+
 export interface UserDetailsResponse extends UserResponse {
   isActive: boolean
   autoExec?: string

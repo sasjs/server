@@ -1,5 +1,6 @@
 import path from 'path'
 import express from 'express'
+import { SessionUserResponse } from './user'
 import { Request, Route, Tags, Post, Body, Get, Example, Response } from 'tsoa'
 import { randomBytes, timingSafeEqual } from 'crypto'
 
@@ -93,7 +94,14 @@ export class WebController {
     'The request body is missing `clientId`, or the CSRF token is missing or invalid'
   )
   @Response(401, 'No signed-in session')
-  @Response(403, 'The client id is unknown')
+  // 403 where POST /SASjsApi/auth/token answers 401 for the same condition: this
+  // route requires a signed-in session, so the caller IS authenticated and the
+  // unknown client is a permission problem, not a missing credential. Stated on
+  // both so a client author does not have to read the two as an inconsistency.
+  @Response(
+    403,
+    'The client id is unknown. This route runs under a signed-in session, so the caller is authenticated and an unknown client is refused as forbidden; the unauthenticated `POST /SASjsApi/auth/token` answers `401` for the same condition'
+  )
   @Post('/SASLogon/authorize')
   public async authorize(
     @Request() req: express.Request,
@@ -377,13 +385,7 @@ const authorize = async (
 
 export interface LoginResponse {
   loggedIn: boolean
-  user: {
-    uid: string
-    username: string
-    displayName: string
-    isAdmin: boolean
-    needsToUpdatePassword: boolean
-  }
+  user: SessionUserResponse
 }
 
 interface LoginPayload {
