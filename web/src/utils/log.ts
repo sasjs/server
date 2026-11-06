@@ -54,7 +54,15 @@ export const countLines = (log: string) => {
   return log.charCodeAt(log.length - 1) === 10 ? lines : lines + 1
 }
 
-export const defaultChunkSize = 20000
+/**
+ * Lines per log chunk.
+ *
+ * An expanded chunk renders one row per line, because a reader wants the line
+ * numbers a SAS log refers to and a click on an issue has to land on a line.
+ * Rows cost elements, so the chunk is the ceiling: at most two chunks are open,
+ * and a 100,000-line log is therefore 2,000 rows at worst rather than 100,000.
+ */
+export const defaultChunkSize = 1000
 
 export const isTheLastChunk = (
   lineCount: number,
@@ -97,64 +105,47 @@ export const splitIntoChunks = (log: string, chunkSize = defaultChunkSize) => {
   return chunks
 }
 
-/** A run of log lines the viewer can render as one piece. */
-export interface LogSegment {
-  /** The log text exactly as SAS wrote it - never markup. */
+/** One rendered line of a log: its number, its text, and any issue on it. */
+export interface LogLineRow {
+  /** 1-based, which is how a SAS log is counted and read off an error message. */
+  number: number
+  /** The line exactly as SAS wrote it - never markup. */
   text: string
-  /** The issue anchored on this segment, when the segment is the line it sits on. */
+  /** The issue anchored on this line, when one sits here. */
   marker?: LogInstance
 }
 
 /**
- * Splits a chunk into the fewest pieces that still give every anchored line its
- * own element: the lines between two anchors share one text node, so a chunk
- * with three notable notes is five segments, not twenty thousand. A chunk with
- * nothing to anchor is one segment, and a long log costs the browser elements in
- * proportion to its issues rather than to its length.
+ * One row per line of a chunk, with the issue anchored on the line it names.
  *
- * `firstLine` is the line the chunk starts on, so a `marker.line` is an index
- * into the log and not into the chunk.
+ * Rows are what the viewer renders, because a reader wants the line numbers a
+ * SAS log refers to and a click on an issue has to land on a line. `firstLine`
+ * is the chunk's first line as an index into the whole log, so `marker.line`
+ * (also an index) is matched inside the chunk rather than assumed to be local.
+ *
+ * Kept out of the component so the numbering and anchoring can be asserted
+ * without a browser - see `scripts/test-log-issues.mjs`.
  */
-export const buildLogSegments = (
+export const logLines = (
   text: string,
   firstLine = 0,
   markers: LogInstance[] = []
-): LogSegment[] => {
-  const byLine = new Map<number, LogInstance>()
+): LogLineRow[] => {
+  const byIndex = new Map<number, LogInstance>()
 
   for (const marker of markers) {
     const index = marker.line - firstLine
 
-    if (index < 0 || byLine.has(index)) continue
+    if (index < 0 || byIndex.has(index)) continue
 
-    byLine.set(index, marker)
+    byIndex.set(index, marker)
   }
 
-  if (byLine.size === 0) return [{ text }]
-
-  const lines = text.split('\n')
-  const segments: LogSegment[] = []
-  let plainStart = 0
-
-  const flushPlain = (end: number) => {
-    if (end > plainStart) {
-      segments.push({ text: lines.slice(plainStart, end).join('\n') })
-    }
-  }
-
-  for (let i = 0; i < lines.length; i++) {
-    const marker = byLine.get(i)
-
-    if (!marker) continue
-
-    flushPlain(i)
-    segments.push({ text: lines[i], marker })
-    plainStart = i + 1
-  }
-
-  flushPlain(lines.length)
-
-  return segments
+  return text.split('\n').map((line, index) => ({
+    number: firstLine + index + 1,
+    text: line,
+    ...(byIndex.get(index) ? { marker: byIndex.get(index) } : {})
+  }))
 }
 
 export const download = (evt: SyntheticEvent, log: string, fileName = '') => {

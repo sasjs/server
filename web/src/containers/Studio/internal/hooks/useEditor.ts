@@ -211,8 +211,12 @@ const useEditor = ({
           // INFO: the order of payload parts is set in @sasjs/server/api/src/controllers/internal/Execution.ts
           const { webout, log, printOutput } = parseExecutionResponse(res.data)
 
+          let hasErrors = false
+
           if (selectedRunTime === RunTimeType.SAS) {
             const { errors, warnings, notes } = parseErrorsAndWarnings(log)
+
+            hasErrors = errors.length > 0
 
             const logObject: LogObject = {
               body: log,
@@ -229,7 +233,21 @@ const useEditor = ({
 
           setWebout(webout)
           setPrintOutput(printOutput)
-          setTab('log')
+
+          // Where a successful run leaves the reader: an error is the one thing
+          // to read first, so the log wins when there is one; with none, the
+          // output the program produced is what the run was for, and the webout
+          // is the page it wrote - print output only when there is no page. A
+          // run with neither lands on the log, which is all it had.
+          setTab(
+            hasErrors
+              ? 'log'
+              : webout
+                ? 'webout'
+                : printOutput
+                  ? 'printOutput'
+                  : 'log'
+          )
 
           // Scroll to bottom of log
           const logElement = document.getElementById('log')

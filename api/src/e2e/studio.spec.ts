@@ -422,6 +422,13 @@ describe('Studio in a browser', () => {
   it('lists the errors, warnings and notable notes of a SAS log, and hides the notes on request', async () => {
     // A SAS log, fulfilled here rather than run: the parser, the three lists and
     // the switch are what this asserts, and none of them needs a SAS binary.
+    // One line is longer than any pane, and carries no space to break at: a log
+    // like this is what used to make the log a horizontal scroll container, so
+    // clicking an issue slid it sideways and hid the start of every line.
+    const longPath = `/Public/app/very/long/folder/name/${'segment/'.repeat(
+      20
+    )}program.sas`
+
     const log = [
       'NOTE: SAS (r) Proprietary Software 9.4 (TS1M9 MBCS3170)',
       '1    data want;',
@@ -432,6 +439,7 @@ describe('Studio in a browser', () => {
       'ERROR Libref X is not assigned.',
       'NOTE 49-169: The meaning of an identifier after a quoted string may change.',
       'ERROR: File WORK.MISSING_DS.DATA does not exist.',
+      `NOTE: the long path is ${longPath}`,
       ''
     ].join('\n')
 
@@ -452,6 +460,53 @@ describe('Studio in a browser', () => {
     await page.waitForSelector('text=Errors (2)', { timeout: 30000 })
     expect(await page.isVisible('text=Warnings (1)')).toBe(true)
     expect(await page.isVisible('text=Notes (2)')).toBe(true)
+
+    // A run with an error lands on the log: the error is the thing to read.
+    // The panel is only visible when its tab is the selected one.
+    expect(await page.isVisible('#logWrapper')).toBe(true)
+
+    // The gutter: every rendered row is numbered, and the first row of the log
+    // is line 1 rather than line 0.
+    const firstRow = await page.textContent('[data-line-number="1"]')
+    expect(firstRow?.trim()).toBe(
+      '1NOTE: SAS (r) Proprietary Software 9.4 (TS1M9 MBCS3170)'
+    )
+    expect(await page.locator('[data-line-number]').count()).toBeGreaterThan(5)
+
+    // A long line wraps instead of widening the pane, so the log is not a
+    // horizontal scroll container at all.
+    const overflow = await page.evaluate(() => {
+      const wrapper = document.querySelector('#logWrapper') as HTMLElement
+      return wrapper.scrollWidth - wrapper.clientWidth
+    })
+    expect(overflow).toBeLessThanOrEqual(1)
+
+    // Clicking an issue reaches its line by scrolling DOWN. The old
+    // scrollIntoView also made the line horizontally visible, which slid the
+    // whole log right and put the start of every line out of view.
+    await page.click('text=Errors (2)')
+    await page.click(
+      '[role="treeitem"]:has-text("File WORK.MISSING_DS.DATA does not exist.")'
+    )
+    await page.waitForTimeout(600)
+
+    const afterClick = await page.evaluate(() => {
+      const wrapper = document.querySelector('#logWrapper') as HTMLElement
+      const line = document.getElementById('error_1') as HTMLElement
+      const box = wrapper.getBoundingClientRect()
+      const lineBox = line.getBoundingClientRect()
+
+      return {
+        left: wrapper.scrollLeft,
+        // the issue's line is scrolled INTO the pane...
+        inView: lineBox.top >= box.top - 1 && lineBox.top <= box.bottom,
+        // ...and the start of it is still at the left edge
+        atLeftEdge: lineBox.left >= box.left - 1
+      }
+    })
+    expect(afterClick.left).toBe(0)
+    expect(afterClick.inView).toBe(true)
+    expect(afterClick.atLeftEdge).toBe(true)
 
     await page.screenshot({
       path: path.join(screenshotDir, '02-log-issues.png')
@@ -504,17 +559,25 @@ describe('Studio in a browser', () => {
       await page.click('[role="tab"]:has-text("Code")')
       await page.click('button:has-text("RUN")')
 
+      // No error in this log and a page in the reply, so the run opens on the
+      // page it wrote rather than on the log: the log is where an error is.
+      await page.waitForSelector('iframe[title="webout preview"]', {
+        timeout: 30000
+      })
+      expect(await page.isVisible('iframe[title="webout preview"]')).toBe(true)
+
+      // The whole log is a click away, and it is whole - the separator inside it
+      // did not cut it short. The tab is clicked near its label: its centre
+      // carries the notes switch and the download icon, and those stop the click
+      // from reaching the tab.
+      await page
+        .locator('[role="tab"]:has-text("log")')
+        .click({ position: { x: 8, y: 8 } })
       await page.waitForSelector('text=ROWS AFTER THE NESTED LOG', {
         timeout: 30000
       })
       expect(await page.isVisible('text=the end of the run')).toBe(true)
       expect(await page.isVisible('text=the service said')).toBe(true)
-
-      // The run's page is offered beside the log, as before.
-      await page.click('[role="tab"]:has-text("Webout")')
-      await page.waitForSelector('iframe[title="webout preview"]', {
-        timeout: 30000
-      })
 
       await page.screenshot({
         path: path.join(screenshotDir, '04-log-with-nested-separator.png')
@@ -522,6 +585,42 @@ describe('Studio in a browser', () => {
     } finally {
       // Removes the handler this case installed AND the one the log-issues case
       // left behind, so no mock outlives the run that needed it.
+      await page.unroute('**/SASjsApi/code/execute')
+    }
+  }, 120000)
+
+  it('opens a clean run on the webout, ahead of the print output', async () => {
+    const separator = 'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
+    const webout = '<html><body><h1>clean run page</h1></body></html>'
+    const log = ['NOTE: the run finished with nothing to report', ''].join('\n')
+    const printOutput = 'The SAS System\nObs  x\n1  1\n'
+
+    await page.route('**/SASjsApi/code/execute', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/plain',
+        // Execution.ts assembles: webout, the log framed by the separator, then
+        // the print output.
+        body: [webout, separator, log, separator, printOutput].join('\n')
+      })
+    )
+
+    try {
+      await page.click('[role="tab"]:has-text("Code")')
+      await page.click('button:has-text("RUN")')
+
+      // Both outputs exist and neither the log nor the error list is why the run
+      // happened: the page the program wrote is what the reader is shown.
+      await page.waitForSelector('iframe[title="webout preview"]', {
+        timeout: 30000
+      })
+      expect(await page.isVisible('iframe[title="webout preview"]')).toBe(true)
+
+      // The print output is offered beside it and still carries its own panel.
+      await page.click('[role="tab"]:has-text("print")')
+      await page.waitForSelector('text=The SAS System', { timeout: 30000 })
+      expect(await page.isVisible('text=The SAS System')).toBe(true)
+    } finally {
       await page.unroute('**/SASjsApi/code/execute')
     }
   }, 120000)
