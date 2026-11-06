@@ -99,10 +99,16 @@ const successDeployResponse: DeployResponse = {
   message: 'Files deployed successfully to @sasjs/server.'
 }
 
-const invalidDeployFormatResponse: DeployResponse = {
+/**
+ * The refusal a malformed deploy earns.
+ *
+ * The tree example the decorators carry below belongs to the document only: a
+ * client that sent a bad payload does not need a fixture tree echoed back, and
+ * the document states the message alone.
+ */
+const invalidDeployFormatBody: DeployResponse = {
   status: 'failure',
-  message: 'Provided not supported data format.',
-  example: fileTreeExample
+  message: 'Provided not supported data format.'
 }
 
 const execDeployErrorResponse: DeployResponse = {
@@ -183,7 +189,11 @@ export class DriveController {
    * @summary Deploy a file tree to SASjs Drive
    */
   @Example<DeployResponse>(successDeployResponse)
-  @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
+  @Response<DeployResponse>(400, 'Invalid Format', {
+    status: 'failure',
+    message: 'Provided not supported data format.',
+    example: fileTreeExample
+  })
   @Response<DeployResponse>(413, 'File tree exceeds the deploy limit', {
     status: 'failure',
     message:
@@ -207,7 +217,11 @@ export class DriveController {
    * @summary Deploy an uploaded file to SASjs Drive
    */
   @Example<DeployResponse>(successDeployResponse)
-  @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
+  @Response<DeployResponse>(400, 'Invalid Format', {
+    status: 'failure',
+    message: 'Provided not supported data format.',
+    example: fileTreeExample
+  })
   @Response<DeployResponse>(413, 'File tree exceeds the deploy limit', {
     status: 'failure',
     message:
@@ -562,7 +576,7 @@ const getFileTree = (folderPath?: string) => {
 
 const deploy = async (data: DeployPayload) => {
   if (!isFileTree(data.fileTree)) {
-    throw { code: 400, ...invalidDeployFormatResponse }
+    throw { code: 400, ...invalidDeployFormatBody }
   }
 
   // appLoc is caller-supplied and every segment must stay a single path
@@ -572,8 +586,15 @@ const deploy = async (data: DeployPayload) => {
 
   const appLocPath = resolveWithinDrive(data.appLoc)
 
+  // A caller error, not a server one: answered with the deploy routes' own
+  // envelope and a 400, rather than escaping as an Error the app's handler turns
+  // into `500 Something broke!`.
   if (!appLocPath) {
-    throw new Error('appLoc cannot be outside drive.')
+    throw {
+      code: 400,
+      status: 'failure',
+      message: 'appLoc cannot be outside drive.'
+    }
   }
 
   // Measured and validated before a single byte is written, so a refused tree -
