@@ -4,6 +4,7 @@ import { AuthProviderType } from './verifyEnvVariables'
 import { OIDCIdentity } from './oidcClient'
 import { syncOidcGroups } from './oidcGroupSync'
 import { sanitiseDisplayName } from './programVariables'
+import { HttpError } from './httpError'
 
 /**
  * sasjs usernames are constrained to lowercase alphanumerics, 3-16 characters
@@ -55,16 +56,11 @@ export const groupPolicyFor = (groups: string[]): GroupPolicy => {
 }
 
 /**
- * Thrown in the shape the route layer already understands: a non-Error object
- * carrying `code` and `message` becomes that status and body (see the catch in
- * routes/web/web.ts). Consistent with how `login` reports its failures.
+ * A provider refusal, thrown as the same `HttpError` the login path throws: it
+ * is this API's own decision, so the route layer answers its status and body
+ * and a library error carrying its own `code` can never be mistaken for one.
  */
-export interface OidcUserError {
-  code: number
-  message: string
-}
-
-const refuse = (message: string): OidcUserError => ({ code: 403, message })
+const refuse = (message: string): HttpError => new HttpError(403, message)
 
 export interface OidcUserResolution {
   user: IUser
