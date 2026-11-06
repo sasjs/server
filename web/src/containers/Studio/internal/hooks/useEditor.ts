@@ -22,16 +22,14 @@ import {
   parseErrorsAndWarnings,
   countLines,
   isImageFile,
-  LogObject
+  LogObject,
+  parseExecutionResponse
 } from '../../../../utils'
 import { lintModel } from '../lint'
 import { formatSasCode } from '../format'
 import { prettyJson } from '../pretty'
 import { guardMousePaste } from '../mousePasteGuard'
 import { readSettings } from '../settings'
-
-const SASJS_LOGS_SEPARATOR =
-  'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
 
 type UseEditorParams = {
   selectedFilePath: string
@@ -211,10 +209,7 @@ const useEditor = ({
         })
         .then((res: { data: string }) => {
           // INFO: the order of payload parts is set in @sasjs/server/api/src/controllers/internal/Execution.ts
-          const resDataSplitted = res.data.split(SASJS_LOGS_SEPARATOR)
-          const webout = resDataSplitted[0]
-          const log = resDataSplitted[1]
-          const printOutput = resDataSplitted[2]
+          const { webout, log, printOutput } = parseExecutionResponse(res.data)
 
           if (selectedRunTime === RunTimeType.SAS) {
             const { errors, warnings, notes } = parseErrorsAndWarnings(log)

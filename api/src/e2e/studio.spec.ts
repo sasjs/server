@@ -471,6 +471,61 @@ describe('Studio in a browser', () => {
     )
     expect(JSON.parse(stored as string)['log.notableNotes']).toBe(false)
   }, 120000)
+  it('keeps a log whole when the log itself holds the log separator, and shows the webout it came with', async () => {
+    // A nested response - or a program whose source is echoed into its log, as
+    // every compiled sasjs/core service is - puts the server's own separator
+    // inside the log. Parsing to the FIRST occurrence cuts the log there, which
+    // reads as a run that stopped mid-program (sasjs/server: the Studio showed
+    // 2,022 of a 5,607 line log for such a program).
+    const separator = 'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
+    const webout = '<html><body><h1>webout page</h1></body></html>'
+    const log = [
+      'NOTE: the service said',
+      `%let matchstr=${separator};`,
+      'NOTE: ROWS AFTER THE NESTED LOG',
+      'NOTE: the end of the run',
+      ''
+    ].join('\n')
+
+    await page.route('**/SASjsApi/code/execute', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/plain',
+        // The shape Execution.ts assembles: webout, the log framed by the
+        // separator, joined with newlines.
+        body: [webout, separator, log, separator].join('\n')
+      })
+    )
+
+    // The response is mocked for this case only: an unrouted handler would
+    // answer the execute call of every later test with this body.
+    try {
+      // The previous case left the run's log on screen; RUN lives on the code tab.
+      await page.click('[role="tab"]:has-text("Code")')
+      await page.click('button:has-text("RUN")')
+
+      await page.waitForSelector('text=ROWS AFTER THE NESTED LOG', {
+        timeout: 30000
+      })
+      expect(await page.isVisible('text=the end of the run')).toBe(true)
+      expect(await page.isVisible('text=the service said')).toBe(true)
+
+      // The run's page is offered beside the log, as before.
+      await page.click('[role="tab"]:has-text("Webout")')
+      await page.waitForSelector('iframe[title="webout preview"]', {
+        timeout: 30000
+      })
+
+      await page.screenshot({
+        path: path.join(screenshotDir, '04-log-with-nested-separator.png')
+      })
+    } finally {
+      // Removes the handler this case installed AND the one the log-issues case
+      // left behind, so no mock outlives the run that needed it.
+      await page.unroute('**/SASjsApi/code/execute')
+    }
+  }, 120000)
+
   it('opens a one-line JSON file indented, and leaves the drive file alone', async () => {
     await page.click(`text=${JSON_FILE_NAME}`)
     await page.waitForFunction(
