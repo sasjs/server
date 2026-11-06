@@ -6,6 +6,8 @@ node_modules/
 sas/
 sasjs_root/
 tmp/
+# leftovers from a spec run that died before its afterAll cleanup
+api/tmp-*/
 build/
 sasjsbuild/
 sasjscore/

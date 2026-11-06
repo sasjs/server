@@ -3,7 +3,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
-import { deleteFolder, fileExists, readFile } from '@sasjs/utils'
+import { createFolder, deleteFolder, fileExists, readFile } from '@sasjs/utils'
 import * as fileUtilModules from '../../utils/file'
 
 const tmpFolder = path.join(process.cwd(), `tmp-unpublish-${Date.now()}`)
@@ -27,8 +27,12 @@ import {
   UserController
 } from '../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../utils'
+import { DriveController } from '../../controllers/'
 import { getAppStreamConfigPath } from '../../utils/file'
-import { writeStoredAppStreamConfig } from '../../utils/appStreamConfig'
+import {
+  mutateRegistry,
+  writeStoredAppStreamConfig
+} from '../../utils/appStreamConfig'
 
 const clientId = 'someclientID'
 
@@ -292,7 +296,103 @@ describe('App Stream unpublish', () => {
     expect(Object.keys(await registryOnDisk())).toEqual(['Stale'])
   })
 
-  it('should answer 400 when the payload names no stream', async () => {
+  it('should match an appLoc written with a trailing slash', async () => {
+    await publish(streamServiceName)
+
+    // `/Public/app/torrents` and `/Public/app/torrents/` are one folder, so the
+    // pair matches on the resolved path rather than on the raw string
+    await unpublish({ appLoc: `${appLoc}/`, streamServiceName }).expect(200)
+
+    expect(Object.keys(await registryOnDisk())).not.toContain(streamServiceName)
+  })
+
+  it('should not take down a newer app that holds the same name', async () => {
+    await publish(streamServiceName)
+
+    // The file still holds the older appLoc for this name while memory holds a
+    // newer one - the republished-under-the-same-name case. Removing the older
+    // entry must leave the newer app serving, and on disk.
+    const newer = '/Public/app/torrents2'
+    await createFolder(
+      path.join(
+        tmpFolder,
+        'drive',
+        'files',
+        'Public',
+        'app',
+        'torrents2',
+        'services',
+        'web'
+      )
+    )
+    ;(process.appStreamConfig as Record<string, unknown>)[streamServiceName] = {
+      appLoc: newer,
+      streamWebFolder: 'web'
+    }
+    await writeStoredAppStreamConfig({
+      ...(await registryOnDisk()),
+      [streamServiceName]: { appLoc, streamWebFolder: 'web' }
+    })
+
+    await unpublish({ appLoc, streamServiceName }).expect(200)
+
+    expect(await listedApps()).toContain(streamServiceName)
+    expect((await registryOnDisk())[streamServiceName].appLoc).toBe(newer)
+  })
+
+  it('should leave the registry consistent when a publish runs alongside a removal', async () => {
+    await publish(streamServiceName)
+
+    // Both are whole-file writes over one registry, so the end state has to be
+    // `removed` and `published`, not one or the other. The ordering that makes
+    // that safe is pinned by the queue test below; this case is the integration
+    // half - two real requests, both persisted.
+    const racing = 'Racer'
+    const publishing = request(app)
+      .post('/SASjsApi/drive/deploy')
+      .auth(adminToken, { type: 'bearer' })
+      .send({
+        appLoc: '/Public/app/racer',
+        streamServiceName: racing,
+        streamWebFolder: 'web',
+        fileTree: {
+          members: [
+            {
+              name: 'services',
+              type: 'folder',
+              members: [
+                {
+                  name: 'web',
+                  type: 'folder',
+                  members: [
+                    {
+                      name: 'index.html',
+                      type: 'file',
+                      code: Buffer.from('<html>racer</html>').toString('base64')
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+    const removing = unpublish({ appLoc, streamServiceName })
+
+    const [published, removed] = await Promise.all([publishing, removing])
+
+    expect(published.status).toBe(200)
+    expect(removed.status).toBe(200)
+
+    // the entry that was removed is gone from the file, and the one published
+    // alongside it is durable
+    const stored = await registryOnDisk()
+    expect(Object.keys(stored)).not.toContain(streamServiceName)
+    expect(Object.keys(stored)).toContain(racing)
+  })
+
+  it('should answer 400 for a payload that names no stream', async () => {
     const res = await unpublish({ appLoc }).expect(400)
 
     expect(res.text).toBe('"streamServiceName" is required')
@@ -324,5 +424,35 @@ describe('App Stream unpublish', () => {
     await unpublish({ appLoc, streamServiceName }, userToken).expect(200)
 
     expect(await listedApps()).not.toContain(streamServiceName)
+  })
+
+  it('should run registry mutations one at a time', async () => {
+    // The queue is the whole fix for the read-modify-write race: a publish that
+    // lands between a removal's read and write would otherwise be written away.
+    // Asserted directly, because two HTTP requests in a test serialise
+    // themselves by timing and pass against the unfixed code - this fails unless
+    // the mutations really are queued.
+    const order: string[] = []
+
+    const mutation = (tag: string) =>
+      mutateRegistry(async () => {
+        order.push(`${tag}:start`)
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        order.push(`${tag}:end`)
+      })
+
+    await Promise.all([mutation('a'), mutation('b')])
+
+    expect(order).toEqual(['a:start', 'a:end', 'b:start', 'b:end'])
+  })
+
+  it('should refuse a direct call with no payload rather than throwing', async () => {
+    // the method is the one implementation of the operation, so a caller reaching
+    // it without the route's validation gets the same 400, not a TypeError
+    const controller = new DriveController()
+
+    await expect(controller.unpublish(undefined as any)).rejects.toMatchObject({
+      status: 400
+    })
   })
 })

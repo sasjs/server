@@ -59,6 +59,31 @@ export const writeStoredAppStreamConfig = async (config: AppStreamConfig) => {
 }
 
 /**
+ * Registry mutations are serialised, one at a time.
+ *
+ * The registry is a whole-file read-modify-write: `unpublishAppStream` reads the
+ * stored entries, deletes one and writes the file back, while a publish writes
+ * the in-memory registry over the same file. Interleaved, the loser's change is
+ * silently discarded - a publish that lands between the unpublish's read and
+ * write is replaced by the pre-publish snapshot, so the entry survives in memory
+ * and disappears from the file (and therefore at the next restart); the other
+ * order resurrects an entry that was just unpublished.
+ *
+ * One queue for every mutation removes the interleaving without a lock library.
+ * Reads (`loadAppStreamConfig`) are not queued: they only observe.
+ */
+let mutations: Promise<unknown> = Promise.resolve()
+
+export const mutateRegistry = <T>(work: () => Promise<T>): Promise<T> => {
+  // `then(work, work)`: a failed mutation must not poison the queue for the next
+  const run = mutations.then(work, work)
+
+  mutations = run.catch(() => undefined)
+
+  return run
+}
+
+/**
  * Records an entry in the in-memory registry, and in the file when asked.
  *
  * `async` because the write is awaited: the previous version fired `createFile`
@@ -66,23 +91,26 @@ export const writeStoredAppStreamConfig = async (config: AppStreamConfig) => {
  * file was still empty or half written - which is exactly what a spec doing
  * publish-then-read caught, and what a restart in that window loses. The write
  * is what makes a publish survive, so it is part of the publish.
+ *
+ * Queued as a whole, memory set included: see `mutateRegistry`.
  */
-export const addEntryToAppStreamConfig = async (
+export const addEntryToAppStreamConfig = (
   streamServiceName: string,
   appLoc: string,
   streamWebFolder: string,
   streamLogo?: string,
   addEntryToFile: boolean = true
-) => {
-  if (streamServiceName && appLoc && streamWebFolder) {
-    process.appStreamConfig[streamServiceName] = {
-      appLoc,
-      streamWebFolder,
-      streamLogo
+) =>
+  mutateRegistry(async () => {
+    if (streamServiceName && appLoc && streamWebFolder) {
+      process.appStreamConfig[streamServiceName] = {
+        appLoc,
+        streamWebFolder,
+        streamLogo
+      }
+      if (addEntryToFile) await saveAppStreamConfig()
     }
-    if (addEntryToFile) await saveAppStreamConfig()
-  }
-}
+  })
 
 const saveAppStreamConfig = async () => {
   const appStreamConfigPath = getAppStreamConfigPath()

@@ -237,6 +237,14 @@ export class DriveController {
   public async unpublish(
     @Body() body: UnpublishPayload
   ): Promise<FileFolderResponse> {
+    // guarded here as well as in the route's validation: this method is the one
+    // implementation of the operation, so a caller reaching it directly gets the
+    // same refusal rather than a TypeError on an absent payload
+    if (!body?.streamServiceName)
+      throw new HttpError(400, '"streamServiceName" is required')
+
+    if (!body?.appLoc) throw new HttpError(400, '"appLoc" is required')
+
     if (!(await unpublishAppStream(body.streamServiceName, body.appLoc)))
       throw new HttpError(404, 'No such app stream entry.')
 

@@ -1,9 +1,10 @@
 import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
 
-import { publishAppStream, unpublishAppStream } from '../appStream'
+import { publishAppStream } from '../appStream'
 
 import { multerSingle } from '../../middlewares/multer'
+import { sendRefusal } from '../refusal'
 import { DriveController } from '../../controllers/'
 import {
   deployValidation,
@@ -129,10 +130,14 @@ driveRouter.delete('/deploy', async (req, res) => {
 
   if (error) return res.status(400).send(error.details[0].message)
 
-  if (!(await unpublishAppStream(body.streamServiceName, body.appLoc)))
-    return res.status(404).send('No such app stream entry.')
-
-  res.send({ status: 'success' })
+  try {
+    // the controller owns the removal, the way every other drive route delegates
+    // its work: one implementation, so the documented operation and the answered
+    // one cannot drift, and the status it refuses with is decided in one place
+    res.send(await controller.unpublish(body))
+  } catch (err: any) {
+    sendRefusal(res, err)
+  }
 })
 
 driveRouter.get('/file', async (req, res) => {

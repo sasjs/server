@@ -8,6 +8,7 @@ import {
   filterGrantedRoutes,
   getFilesFolder,
   ModeType,
+  mutateRegistry,
   readStoredAppStreamConfig,
   writeStoredAppStreamConfig,
   resolveWithinDrive,
@@ -203,40 +204,73 @@ export const publishAppStream = async (
  * file and not in `process.appStreamConfig`. Those are the entries a stale
  * listing is made of, and before this route they had no removal at all.
  */
-export const unpublishAppStream = async (
+export const unpublishAppStream = (
   streamServiceName: string,
   appLoc: string
-): Promise<boolean> => {
-  const stored = await readStoredAppStreamConfig()
+): Promise<boolean> =>
+  // queued with publishing: both are whole-file writes over the same registry,
+  // and interleaved they discard each other (see mutateRegistry)
+  mutateRegistry(async () => {
+    const stored = await readStoredAppStreamConfig()
 
-  // the file is the durable record, so it is consulted as well as memory: an
-  // entry whose deployment folder went missing is dropped from memory at boot and
-  // lives only on disk - and those are exactly the entries a stale listing is
-  // made of, so they are the ones most in need of removal.
-  const matches = (entry?: { appLoc: string }) =>
-    !!entry && entry.appLoc === appLoc
+    // the file is the durable record, so it is consulted as well as memory: an
+    // entry whose deployment folder went missing is dropped from memory at boot
+    // and lives only on disk - and those are exactly the entries a stale listing
+    // is made of, so they are the ones most in need of removal.
+    const resolved = (path?: string) =>
+      path ? resolveWithinDrive(path) : undefined
 
-  const inFile = matches(stored[streamServiceName])
-  const inMemory = matches(process.appStreamConfig?.[streamServiceName])
+    // compared on the resolved path, not the raw string: `/Public/app/x` and
+    // `/Public/app/x/` are one folder, and a caller deleting an app with the
+    // spelling it published is entitled to a match either way. Case is NOT
+    // folded - the drive is a case-sensitive filesystem, so two spellings are
+    // two folders there.
+    const matches = (entry?: { appLoc: string }) => {
+      const entryPath = resolved(entry?.appLoc)
+      const givenPath = resolved(appLoc)
 
-  if (!inFile && !inMemory) return false
+      return !!entryPath && !!givenPath && entryPath === givenPath
+    }
 
-  if (inFile) {
-    // written from the stored view, not from memory: writing memory here would
-    // also purge every other entry whose deployment has gone
-    delete stored[streamServiceName]
-    await writeStoredAppStreamConfig(stored)
-  } else {
-    delete (process.appStreamConfig as AppStreamConfig)[streamServiceName]
-    await writeStoredAppStreamConfig(process.appStreamConfig as AppStreamConfig)
-  }
+    const inFile = matches(stored[streamServiceName])
+    const inMemory = matches(process.appStreamConfig?.[streamServiceName])
 
-  if (process.appStreamConfig) delete process.appStreamConfig[streamServiceName]
+    if (!inFile && !inMemory) return false
 
-  delete appStreams[streamServiceName]
+    // Each view is edited only for the entry that matched in it. A name the file
+    // still holds for one appLoc while memory holds it for another is the
+    // republished-under-the-same-name case: removing the older entry must not
+    // take the newer app down with it.
+    const next = { ...stored }
 
-  return true
-}
+    if (inFile) delete next[streamServiceName]
+
+    if (inMemory) {
+      delete (process.appStreamConfig as AppStreamConfig)[streamServiceName]
+
+      // served from the name, so the route stops answering in the same breath
+      delete appStreams[streamServiceName]
+    }
+
+    if (inFile) {
+      // Written from the stored view, not from memory: writing memory here would
+      // also purge every other entry whose deployment has gone. A name that is
+      // still live in memory after the deletes above is a newer app the file has
+      // not caught up with, and it keeps its place.
+      const live = process.appStreamConfig?.[streamServiceName]
+      if (live) next[streamServiceName] = live
+
+      await writeStoredAppStreamConfig(next)
+    } else if (inMemory) {
+      // the file did not hold the entry, so the in-memory view is the one that
+      // changed
+      await writeStoredAppStreamConfig(
+        process.appStreamConfig as AppStreamConfig
+      )
+    }
+
+    return true
+  })
 
 // Express 5 (path-to-regexp v8) requires wildcard segments to be named;
 // a bare `*` throws at router registration time. The name is unused here
