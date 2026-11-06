@@ -177,11 +177,25 @@ describe('drive', () => {
       } else {
         expect(res.body).toEqual({
           status: 'failure',
-          message: 'Provided not supported data format.',
-          example: getTreeExample()
+          message: 'Provided not supported data format.'
         })
       }
     }
+
+    it('should refuse an appLoc that resolves outside the drive', async () => {
+      const res = await request(app)
+        .post('/SASjsApi/drive/deploy')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ appLoc: '/../outside', fileTree: getTreeExample() })
+
+      // a caller error answers the route's own envelope, not the app's
+      // `500 Something broke!`
+      expect(res.statusCode).toEqual(400)
+      expect(res.body).toEqual({
+        status: 'failure',
+        message: 'appLoc cannot be outside drive.'
+      })
+    })
 
     it('should respond with payload example if valid payload was not provided', async () => {
       await shouldFailAssertion(null)
