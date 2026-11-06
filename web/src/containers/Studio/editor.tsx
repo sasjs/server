@@ -17,6 +17,7 @@ import { TabContext, TabList, TabPanel } from '@mui/lab'
 import FilePathInputModal from '../../components/filePathInputModal'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
+import { defineEditorTheme, SASJS_EDITOR_THEME } from './internal/editorTheme'
 import LogComponent from './internal/components/log/logComponent'
 import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 import WebOutPreview from './internal/components/webout/weboutPreview'
@@ -64,6 +65,10 @@ type SASjsEditorProps = {
   tab: string
   setTab: Dispatch<SetStateAction<string>>
 }
+
+// Before the first editor mounts, and once: the marker underlines are a theme
+// colour, and Monaco's default themes leave them unset.
+defineEditorTheme()
 
 const SASjsEditor = ({
   selectedFilePath,
@@ -121,6 +126,12 @@ const SASjsEditor = ({
   const monacoEditor = showDiff ? (
     <MonacoDiffEditor
       height="98%"
+      // The four marker underlines are a theme colour, so the theme is named
+      // rather than left to the wrapper's default: `react-monaco-editor` runs
+      // `monaco.editor.setTheme(theme)` in an effect on mount, and its `theme`
+      // prop defaults to null, so a theme defined ahead of the editor is
+      // replaced with the default as soon as the editor mounts.
+      theme={SASJS_EDITOR_THEME}
       language={getLanguageFromExtension(selectedFileExtension)}
       original={prevFileContent}
       value={fileContent}
@@ -130,6 +141,7 @@ const SASjsEditor = ({
   ) : (
     <Editor
       height="98%"
+      theme={SASJS_EDITOR_THEME}
       language={getLanguageFromExtension(selectedFileExtension)}
       value={fileContent}
       editorDidMount={handleEditorDidMount}

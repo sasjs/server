@@ -378,6 +378,28 @@ describe('Studio in a browser', () => {
 
     expect(result.marked).toEqual([TRAILING_SPACE_LINE])
 
+    // The element existing is not the same as the reader seeing anything:
+    // Monaco's default themes leave `editorWarning.border` null, so the
+    // squiggle element was in the DOM and drew nothing. Assert the underline a
+    // reader is meant to see, in the colour the theme sets.
+    const border = await page.evaluate(() => {
+      const squiggle = document.querySelector('.squiggly-warning')
+
+      if (!squiggle) return null
+
+      const style = getComputedStyle(squiggle)
+
+      return {
+        style: style.borderBottomStyle,
+        width: style.borderBottomWidth,
+        color: style.borderBottomColor
+      }
+    })
+
+    expect(border?.style).toBe('double')
+    expect(border?.width).not.toBe('0px')
+    expect(border?.color).not.toBe('rgba(0, 0, 0, 0)')
+
     // A squiggle over a single trailing space is a few pixels wide, so the
     // evidence is captured through CDP, which can magnify a clip.
     const cdp = await page.context().newCDPSession(page)
