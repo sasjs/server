@@ -222,6 +222,10 @@ export class DriveController {
    * publishing created no permission rule, so there is none to withdraw: a caller
    * needs the same `/SASjsApi/drive/deploy` grant this route already requires.
    *
+   * An entry whose deployment folder has already gone is removable too, which is
+   * the case a stale listing is made of: the registry file is consulted as well as
+   * the in-memory view, and only the named entry is dropped.
+   *
    * @summary Remove an app stream entry
    */
   @Response<FileFolderResponse>(400, 'Invalid Format', {
@@ -233,7 +237,7 @@ export class DriveController {
   public async unpublish(
     @Body() body: UnpublishPayload
   ): Promise<FileFolderResponse> {
-    if (!unpublishAppStream(body.streamServiceName, body.appLoc))
+    if (!(await unpublishAppStream(body.streamServiceName, body.appLoc)))
       throw new HttpError(404, 'No such app stream entry.')
 
     return { status: 'success' }

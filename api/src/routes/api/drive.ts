@@ -129,7 +129,7 @@ driveRouter.delete('/deploy', async (req, res) => {
 
   if (error) return res.status(400).send(error.details[0].message)
 
-  if (!unpublishAppStream(body.streamServiceName, body.appLoc))
+  if (!(await unpublishAppStream(body.streamServiceName, body.appLoc)))
     return res.status(404).send('No such app stream entry.')
 
   res.send({ status: 'success' })

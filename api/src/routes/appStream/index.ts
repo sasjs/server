@@ -8,7 +8,8 @@ import {
   filterGrantedRoutes,
   getFilesFolder,
   ModeType,
-  removeEntryFromAppStreamConfig,
+  readStoredAppStreamConfig,
+  writeStoredAppStreamConfig,
   resolveWithinDrive,
   resolveListeners,
   isSafePathSegment
@@ -195,18 +196,44 @@ export const publishAppStream = async (
  * because publishing does not create one. The per-app routes
  * (`getAuthorizedRoutes`) are read from this same registry, so the name drops out
  * of a caller's route inventory as soon as the entry goes.
+ *
+ * The entry is looked for in the stored registry as well as in memory, because
+ * those differ: boot records an entry only when its deployment folder still
+ * exists, so an app whose folder was deleted out from under the server is in the
+ * file and not in `process.appStreamConfig`. Those are the entries a stale
+ * listing is made of, and before this route they had no removal at all.
  */
-export const unpublishAppStream = (
+export const unpublishAppStream = async (
   streamServiceName: string,
   appLoc: string
-): boolean => {
-  const entry = process.appStreamConfig?.[streamServiceName]
+): Promise<boolean> => {
+  const stored = await readStoredAppStreamConfig()
 
-  if (!entry || entry.appLoc !== appLoc) return false
+  // the file is the durable record, so it is consulted as well as memory: an
+  // entry whose deployment folder went missing is dropped from memory at boot and
+  // lives only on disk - and those are exactly the entries a stale listing is
+  // made of, so they are the ones most in need of removal.
+  const matches = (entry?: { appLoc: string }) =>
+    !!entry && entry.appLoc === appLoc
+
+  const inFile = matches(stored[streamServiceName])
+  const inMemory = matches(process.appStreamConfig?.[streamServiceName])
+
+  if (!inFile && !inMemory) return false
+
+  if (inFile) {
+    // written from the stored view, not from memory: writing memory here would
+    // also purge every other entry whose deployment has gone
+    delete stored[streamServiceName]
+    await writeStoredAppStreamConfig(stored)
+  } else {
+    delete (process.appStreamConfig as AppStreamConfig)[streamServiceName]
+    await writeStoredAppStreamConfig(process.appStreamConfig as AppStreamConfig)
+  }
+
+  if (process.appStreamConfig) delete process.appStreamConfig[streamServiceName]
 
   delete appStreams[streamServiceName]
-
-  removeEntryFromAppStreamConfig(streamServiceName)
 
   return true
 }

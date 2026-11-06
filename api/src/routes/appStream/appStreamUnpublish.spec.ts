@@ -28,6 +28,7 @@ import {
 } from '../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../utils'
 import { getAppStreamConfigPath } from '../../utils/file'
+import { writeStoredAppStreamConfig } from '../../utils/appStreamConfig'
 
 const clientId = 'someclientID'
 
@@ -254,6 +255,41 @@ describe('App Stream unpublish', () => {
 
     await unpublish({ appLoc, streamServiceName }).expect(200)
     await unpublish({ appLoc, streamServiceName }).expect(404)
+  })
+
+  it('should remove an entry whose deployment folder has gone', async () => {
+    await publish(streamServiceName)
+
+    // What boot does with an entry whose folder no longer exists: the registry
+    // file still holds it, memory does not - so the listing never shows it and,
+    // before this route, nothing could remove it.
+    delete (process.appStreamConfig as Record<string, unknown>)[
+      streamServiceName
+    ]
+
+    expect(Object.keys(await registryOnDisk())).toContain(streamServiceName)
+    expect(await listedApps()).not.toContain(streamServiceName)
+
+    await unpublish({ appLoc, streamServiceName }).expect(200)
+
+    expect(Object.keys(await registryOnDisk())).not.toContain(streamServiceName)
+  })
+
+  it('should leave other stale entries alone', async () => {
+    await publish(streamServiceName)
+
+    // a second entry that boot would also have dropped
+    const stale = {
+      ...(await registryOnDisk()),
+      Stale: { appLoc: '/Public/app/stale', streamWebFolder: 'web' }
+    }
+    await writeStoredAppStreamConfig(stale)
+
+    await unpublish({ appLoc, streamServiceName }).expect(200)
+
+    // the write is the stored view minus one, not memory: removing an app must
+    // not silently garbage-collect the rest of the registry
+    expect(Object.keys(await registryOnDisk())).toEqual(['Stale'])
   })
 
   it('should answer 400 when the payload names no stream', async () => {
