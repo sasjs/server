@@ -40,6 +40,11 @@ const withoutTrailingNewline = (text: string) =>
  * The newline at each boundary belongs to the framing, not to the output, so it
  * is dropped: each part is the text the program produced.
  *
+ * A webout or listing that carried the literal itself would move the boundary: a
+ * program that echoes another framed response into `_webout` can put one there.
+ * Nothing the server emits does, and `@sasjs/adapter` takes the first chunk as
+ * the webout in exactly the same way.
+ *
  * A body with no separator at all is a webout on its own - the shape a run
  * without `_debug` returns - so it is taken whole.
  *
