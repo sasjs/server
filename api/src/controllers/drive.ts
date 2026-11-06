@@ -437,7 +437,10 @@ export class DriveController {
     status: 'success'
   })
   @Response(400, `Can't put folder outside drive`)
-  @Response(409, 'Folder already exists')
+  @Response(
+    409,
+    'Folder already exists. The body is that message as plain text.'
+  )
   @Post('/folder')
   public async addFolder(
     @Body() body: AddFolderPayload
@@ -487,7 +490,10 @@ export class DriveController {
     status: 'success'
   })
   @Response(400, `Can't rename outside drive`)
-  @Response(409, 'Something already exists at the new path')
+  @Response(
+    409,
+    'Something already exists at the new path. The body is that message as plain text.'
+  )
   @Response(404, 'No file/folder found for provided path')
   @Post('/rename')
   public async rename(

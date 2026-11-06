@@ -1007,29 +1007,33 @@ components:
                 - sessionId
             type: object
             additionalProperties: false
+        SessionUserResponse:
+            description: 'The signed-in caller, as the session reports them.'
+            properties:
+                uid:
+                    type: string
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+                needsToUpdatePassword:
+                    type: boolean
+            required:
+                - uid
+                - username
+                - displayName
+                - isAdmin
+                - needsToUpdatePassword
+            type: object
+            additionalProperties: false
         LoginResponse:
             properties:
                 loggedIn:
                     type: boolean
                 user:
-                    properties:
-                        needsToUpdatePassword:
-                            type: boolean
-                        isAdmin:
-                            type: boolean
-                        displayName:
-                            type: string
-                        username:
-                            type: string
-                        uid:
-                            type: string
-                    required:
-                        - needsToUpdatePassword
-                        - isAdmin
-                        - displayName
-                        - username
-                        - uid
-                    type: object
+                    $ref: '#/components/schemas/SessionUserResponse'
             required:
                 - loggedIn
                 - user
@@ -1181,7 +1185,7 @@ paths:
                 '400':
                     description: 'The request body is missing `clientId` or `code`'
                 '401':
-                    description: 'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown'
+                    description: 'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown. This route is unauthenticated, so an unknown client id is a `401` here where `POST /SASLogon/authorize` (which requires a session) answers `403`'
             description: "Exchanges an authorization code for a token pair.\n\nThe code is single-use, short-lived, and is issued by\n`POST /SASLogon/authorize` to a caller that already holds a session. This\nendpoint requires no authentication of its own: the code is the credential."
             summary: 'Exchange an authorization code for tokens'
             tags:
@@ -1842,7 +1846,7 @@ paths:
                 '400':
                     description: 'Can''t put folder outside drive'
                 '409':
-                    description: 'Folder already exists'
+                    description: 'Folder already exists. The body is that message as plain text.'
             description: "Creates an empty folder in SASjs Drive, including any missing parent\nfolders.\n\nA `400` is returned for a path outside the drive and a `409` when the folder\nalready exists."
             summary: 'Create a folder in SASjs Drive'
             tags:
@@ -1875,7 +1879,7 @@ paths:
                 '404':
                     description: 'No file/folder found for provided path'
                 '409':
-                    description: 'Something already exists at the new path'
+                    description: 'Something already exists at the new path. The body is that message as plain text.'
             description: "Moves a file or folder within SASjs Drive to a new path.\n\nBoth `oldPath` and `newPath` must be inside the drive: a `400` is returned\nwhen either of them climbs out of it. A `404` is returned when nothing\nexists at `oldPath`, and a `409` when something already exists at `newPath`.\nA file may not be renamed into a name with a blocked extension, and a\nfolder may not be moved inside itself: both answer `400`."
             summary: 'Rename or move a file or folder in SASjs Drive'
             tags:
@@ -2820,7 +2824,7 @@ paths:
                 '401':
                     description: 'No signed-in session'
                 '403':
-                    description: 'The client id is unknown'
+                    description: 'The client id is unknown. This route runs under a signed-in session, so the caller is authenticated and an unknown client is refused as forbidden; the unauthenticated `POST /SASjsApi/auth/token` answers `401` for the same condition'
             description: "Issues a short-lived, single-use authorization code for the signed-in user\nand the given client.\n\nThe code is exchanged for tokens at `POST /SASjsApi/auth/token`. A session\nis required; an unknown client id is rejected."
             summary: 'Issue an authorization code'
             tags:
