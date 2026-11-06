@@ -31,7 +31,7 @@ import { createFileTree, ExecutionController, getTreeExample } from './internal'
 import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
-import { HttpError, resolveWithinDrive } from '../utils'
+import { checkDeployTree, HttpError, resolveWithinDrive } from '../utils'
 import { unpublishAppStream } from '../routes/appStream'
 
 interface DeployPayload {
@@ -173,10 +173,22 @@ export class DriveController {
    * cannot point outside the drive. A `400` is returned for a payload that is
    * not a valid file tree, and a `500` when writing fails.
    *
+   * A `413` is returned for a tree the deploy cap refuses - more than 10,000
+   * entries, more than 100 MB decoded in total, or a single file over 20 MB -
+   * naming the limit and the figure reached. The tree is measured before
+   * anything is written, so a refused deploy leaves the drive untouched. The
+   * same limits apply to `POST /SASjsApi/drive/deploy/upload`, after the
+   * archive is expanded.
+   *
    * @summary Deploy a file tree to SASjs Drive
    */
   @Example<DeployResponse>(successDeployResponse)
   @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
+  @Response<DeployResponse>(413, 'File tree exceeds the deploy limit', {
+    status: 'failure',
+    message:
+      'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'
+  })
   @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
   @Post('/deploy')
   public async deploy(@Body() body: DeployPayload): Promise<DeployResponse> {
@@ -189,12 +201,18 @@ export class DriveController {
    * The file may be plain JSON or a zip holding a single JSON file of the same
    * name (for example `deploy.json.zip` for `deploy.json`); any other member of
    * the archive is ignored. The payload has the same shape as
-   * `POST /SASjsApi/drive/deploy`.
+   * `POST /SASjsApi/drive/deploy`, and the same `413` applies once the archive
+   * is expanded: the cap is measured on the tree, not on the bytes uploaded.
    *
    * @summary Deploy an uploaded file to SASjs Drive
    */
   @Example<DeployResponse>(successDeployResponse)
   @Response<DeployResponse>(400, 'Invalid Format', invalidDeployFormatResponse)
+  @Response<DeployResponse>(413, 'File tree exceeds the deploy limit', {
+    status: 'failure',
+    message:
+      'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'
+  })
   @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
   @Post('/deploy/upload')
   public async deployUpload(
@@ -557,6 +575,13 @@ const deploy = async (data: DeployPayload) => {
   if (!appLocPath) {
     throw new Error('appLoc cannot be outside drive.')
   }
+
+  // Measured and validated before a single byte is written, so a refused tree -
+  // too big, or carrying a name that would escape the deployment root - leaves
+  // the drive exactly as it was.
+  const refusal = checkDeployTree(data.fileTree.members)
+
+  if (refusal) throw refusal
 
   await createFileTree(data.fileTree.members, appLocParts).catch((err) => {
     throw { code: 500, ...execDeployErrorResponse, ...err }

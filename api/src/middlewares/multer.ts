@@ -4,7 +4,12 @@ import multer, { FileFilterCallback, Options } from 'multer'
 import { blockFileRegex, getUploadsFolder } from '../utils'
 
 const fieldNameSize = 300
-const fileSize = 104857600 // 100 MB
+// 140MB, not 100: the deploy cap is stated in DECODED bytes, and an uploaded
+// tree arrives either as plain JSON (up to ~134MB for a tree at the cap, base64
+// being 4/3) or as a zip of it. The transport admits the largest encoding the
+// cap allows, so the cap is what refuses. See DEPLOY_LIMITS in
+// utils/deployLimits.ts.
+const fileSize = 140 * 1024 * 1024
 
 const storage = multer.diskStorage({
   destination: getUploadsFolder(),

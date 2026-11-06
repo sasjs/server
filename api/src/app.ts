@@ -83,7 +83,13 @@ export default setProcessVariables().then(async () => {
    ***********************************/
   configureExpressSession(app)
 
-  app.use(express.json({ limit: '100mb' }))
+  // 140MB, not 100: the deploy cap is stated in DECODED bytes, and the deploy
+  // tree travels as JSON. A file member's contents are base64 (4/3 of the bytes
+  // it writes) and a service's are escaped text (~1.04), so a tree at the 100MB
+  // cap is up to ~134MB on the wire. The parser has to admit that or it refuses
+  // first, with its own shape, and the cap it was meant to enforce is never
+  // consulted. See DEPLOY_LIMITS in utils/deployLimits.ts.
+  app.use(express.json({ limit: '140mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
 
   // NOTE: no urlencoded body parser here. The only consumer of
