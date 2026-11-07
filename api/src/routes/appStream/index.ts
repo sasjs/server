@@ -204,10 +204,7 @@ export const publishAppStream = async (
  * file and not in `process.appStreamConfig`. Those are the entries a stale
  * listing is made of, and before this route they had no removal at all.
  */
-export const unpublishAppStream = (
-  streamServiceName: string,
-  appLoc: string
-): Promise<boolean> =>
+export const unpublishAppStream = (appLoc: string): Promise<boolean> =>
   // queued with publishing: both are whole-file writes over the same registry,
   // and interleaved they discard each other (see mutateRegistry)
   mutateRegistry(async () => {
@@ -232,38 +229,39 @@ export const unpublishAppStream = (
       return !!entryPath && !!givenPath && entryPath === givenPath
     }
 
-    const inFile = matches(stored[streamServiceName])
-    const inMemory = matches(process.appStreamConfig?.[streamServiceName])
+    // The folder is the identity. An app is one thing to deploy and one thing
+    // to remove, and its name is a label on it - so the entry published at this
+    // folder is found whatever it is currently called, and a client that renamed
+    // its stream can still remove it.
+    const keyAt = (config?: AppStreamConfig) =>
+      Object.entries(config ?? {}).find(([, entry]) => matches(entry))?.[0]
 
-    if (!inFile && !inMemory) return false
+    const fileKey = keyAt(stored)
+    const memoryKey = keyAt(process.appStreamConfig as AppStreamConfig)
 
-    // Each view is edited only for the entry that matched in it. A name the file
-    // still holds for one appLoc while memory holds it for another is the
-    // republished-under-the-same-name case: removing the older entry must not
-    // take the newer app down with it.
+    if (!fileKey && !memoryKey) return false
+
     const next = { ...stored }
 
-    if (inFile) delete next[streamServiceName]
+    if (fileKey) delete next[fileKey]
 
-    if (inMemory) {
-      delete (process.appStreamConfig as AppStreamConfig)[streamServiceName]
+    if (memoryKey) {
+      delete (process.appStreamConfig as AppStreamConfig)[memoryKey]
 
       // served from the name, so the route stops answering in the same breath
-      delete appStreams[streamServiceName]
+      delete appStreams[memoryKey]
     }
 
-    if (inFile) {
+    if (fileKey) {
       // Written from the stored view, not from memory: writing memory here would
-      // also purge every other entry whose deployment has gone. A name that is
-      // still live in memory after the deletes above is a newer app the file has
-      // not caught up with, and it keeps its place.
-      const live = process.appStreamConfig?.[streamServiceName]
-      if (live) next[streamServiceName] = live
+      // also purge every other entry whose deployment has gone. A name still live
+      // in memory for a *different* folder is another app that happens to hold
+      // that name, and it keeps its place in the file.
+      const live = (process.appStreamConfig as AppStreamConfig)[fileKey]
+      if (live) next[fileKey] = live
 
       await writeStoredAppStreamConfig(next)
-    } else if (inMemory) {
-      // the file did not hold the entry, so the in-memory view is the one that
-      // changed
+    } else {
       await writeStoredAppStreamConfig(
         process.appStreamConfig as AppStreamConfig
       )
