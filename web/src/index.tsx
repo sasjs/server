@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import AppContextProvider from './context/appContext'
+import { apiBaseUrl } from './utils/apiBaseUrl'
 
 import axios from 'axios'
 
@@ -23,18 +24,12 @@ if (legacyRoute.startsWith('#/')) {
   )
 }
 
-const NODE_ENV = process.env.NODE_ENV
-const PORT_API = process.env.PORT_API
 // The interface's screens are real paths now, so the base URL is the origin and
-// not the origin plus the current path - the path is the route.
-const baseUrl =
-  NODE_ENV === 'development'
-    ? `http://localhost:${PORT_API ?? 5000}`
-    : window.location.origin
-
+// not the origin plus the current path - the path is the route. apiBaseUrl is
+// the one place that decides it, in development and in a deployment.
 axios.defaults = Object.assign(axios.defaults, {
   withCredentials: true,
-  baseURL: baseUrl
+  baseURL: apiBaseUrl
 })
 
 const container = document.getElementById('root') as HTMLElement

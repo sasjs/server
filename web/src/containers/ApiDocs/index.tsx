@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Box, IconButton, Tooltip, Typography } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
 
-import { apiBaseUrl } from '../../utils'
 import { useColorMode } from '../../utils/hooks'
 
 /** The header's dense toolbar, which this pane sits below. */
@@ -18,12 +17,14 @@ const TITLE_BAR_HEIGHT = 40
  * makes following a link to the API stay in the application, and Back returns to
  * the previous screen the way it does anywhere else.
  *
- * The frame is same-origin, which the default Content-Security-Policy
- * (`default-src 'self'`) and `frame-ancestors 'self'` both allow, so no policy
+ * The path is relative, so the frame is same-origin with the page that carries
+ * it: in a deployment the API serves the app, and `npm start` proxies the path
+ * (webpack.dev.ts). That is what the API's own headers require - helmet sends
+ * X-Frame-Options: SAMEORIGIN and `frame-ancestors 'self'` - and no policy
  * change is needed to host it.
  */
 const ApiDocs = () => {
-  const src = `${apiBaseUrl}/SASjsApi`
+  const src = '/SASjsApi/'
   const [colorMode] = useColorMode()
   const frameRef = useRef<HTMLIFrameElement>(null)
 
