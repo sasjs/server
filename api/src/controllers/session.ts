@@ -28,7 +28,8 @@ import {
   SessionStateResponse,
   SessionSummary
 } from '../types'
-import { extractHeaders } from '../utils'
+import { extractHeaders, ModeType } from '../utils'
+import { desktopUser } from '../middlewares/desktop'
 import User from '../model/User'
 
 interface SessionResponse extends UserResponse {
@@ -61,6 +62,21 @@ const subjectOf = (request: express.Request) => {
  */
 const directory: CallerDirectory = {
   async userById(uid) {
+    // Desktop mode has one fixed user and no database behind it. Its id is a
+    // sentinel (`12345`), not an ObjectId, so the guard below would answer "no
+    // such account" and every session route would refuse the only caller there
+    // is - which is what adopting this port did until the spec covered it.
+    if (process.env.MODE === ModeType.Desktop && uid === desktopUser.userId)
+      return {
+        uid: desktopUser.userId,
+        username: desktopUser.username,
+        displayName: desktopUser.displayName,
+        isAdmin: true,
+        isActive: true,
+        needsToUpdatePassword: false,
+        groups: []
+      }
+
     // a caller-supplied identifier reaches this from a token, and mongoose
     // throws a CastError on anything that is not an ObjectId - which a token
     // signed by someone else can carry. "No such account" is the answer.
