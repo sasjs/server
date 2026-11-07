@@ -1,5 +1,5 @@
 .ChunkHeader {
-  color: #444;
+  color: var(--mui-palette-text-primary);
   cursor: pointer;
   padding: 18px;
   width: 100%;
@@ -25,7 +25,7 @@
 }
 
 .ChunkBody {
-  background-color: white;
+  background-color: var(--mui-palette-background-paper);
   overflow: hidden;
 }
 
@@ -36,8 +36,8 @@
 }
 
 .LogContainer {
-  background-color: #fbfbfb;
-  border: 1px solid #e2e2e2;
+  background-color: var(--mui-palette-background-default);
+  border: 1px solid var(--mui-palette-divider);
   border-radius: 3px;
   min-height: 50px;
   padding: 10px;
@@ -66,7 +66,7 @@
   flex: 0 0 auto;
   min-width: 4ch;
   text-align: right;
-  color: #8a8a8a;
+  color: var(--mui-palette-text-secondary);
   user-select: none;
 }
 
@@ -100,7 +100,7 @@
 }
 
 .TreeContainer {
-  background-color: white;
+  background-color: var(--mui-palette-background-paper);
   padding-top: 10px;
   padding-bottom: 10px;
 }
@@ -116,21 +116,27 @@
   margin-left: 20px;
 }
 
+/* The brand yellow at 40%: `color-mix` keeps the highlight translucent in
+   both schemes, so the log text under it stays readable. */
 .HighlightedLine {
-  background-color: #f6e30599;
+  background-color: color-mix(
+    in srgb,
+    var(--mui-palette-secondary-main) 40%,
+    transparent
+  );
 }
 
 /* The severity colours. A note is anchored but left uncoloured: a log carries
    enough notes that colouring them would drown the errors. */
 .ErrorLine {
-  color: red;
+  color: var(--mui-palette-error-main);
   flex: 1 1 auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .WarningLine {
-  color: green;
+  color: var(--mui-palette-success-main);
   flex: 1 1 auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -141,5 +147,5 @@
 }
 
 .GreenIcon {
-  color: green;
+  color: var(--mui-palette-success-main);
 }
