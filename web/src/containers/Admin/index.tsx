@@ -21,6 +21,7 @@ import {
 
 import axios from 'axios'
 
+import AppStreamAccess from './appStreamAccess'
 import PublishApp from './publishApp'
 
 /**
@@ -294,6 +295,13 @@ const Admin = () => {
           Publish an app
         </Typography>
         <PublishApp />
+      </Paper>
+
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+          App Stream access
+        </Typography>
+        <AppStreamAccess />
       </Paper>
 
       {isLoading && !diagnostics && (

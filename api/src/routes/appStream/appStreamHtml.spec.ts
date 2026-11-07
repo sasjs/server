@@ -28,4 +28,11 @@ describe('appStreamHtml', () => {
   it('declares the fallback logo for the stream script to use', () => {
     expect(html).toContain('data-fallback="/sasjs-logo.svg"')
   })
+
+  it('offers no way to publish an app', () => {
+    // Publishing moved to Administration in the web interface. The page stays
+    // the path apps are served from, not a place to upload one.
+    expect(html).not.toMatch(/Upload New App/i)
+    expect(html).not.toMatch(/type="file"/i)
+  })
 })
