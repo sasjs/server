@@ -313,7 +313,10 @@ const appStreamKey = (segment: string): string => {
  * to first contentful paint with no caching, 3.1MB and 2.8s with the two
  * headers this sets.
  */
-export const appStreamCacheHeaders = (res: Response, filePath: string): void => {
+export const appStreamCacheHeaders = (
+  res: Response,
+  filePath: string
+): void => {
   // Angular's own naming, and anything else that embeds a content hash: the
   // extension follows a run of hex digits. `assets/config.json` does not match,
   // which is the point - it can change under the same name.
