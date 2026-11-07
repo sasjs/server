@@ -20,6 +20,7 @@ import {
   rememberLastFile
 } from '../../utils/lastFile'
 import { AppContext } from '../../context/appContext'
+import { useSetting } from '../../utils/hooks'
 
 import SideBar from './sideBar'
 import SASjsEditor from './editor'
@@ -31,6 +32,12 @@ const Studio = () => {
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
   const [expanded, setExpanded] = useState<string[]>([ROOT_PATH])
   const [tab, setTab] = useState('code')
+
+  // Remembered, because it is about the user's screen: someone on a laptop
+  // collapses the explorer for editor width and expects it to stay collapsed.
+  const [sideBarCollapsed, setSideBarCollapsed] = useSetting(
+    'workbench.sideBarCollapsed'
+  )
 
   // One default-file resolution per Studio session: a re-render or a tab
   // switch must not re-create the program or fight the user's open file.
@@ -338,20 +345,24 @@ const Studio = () => {
       {/* The explorer is part of the screen, not part of the Code tab: a run
           switches the right-hand pane to the log, and hiding the tree with it
           took the file list away exactly when the user needed it. */}
-      <SideBar
-        selectedFilePath={selectedFilePath}
-        directoryData={directoryData}
-        expanded={expanded}
-        onExpandedChange={handleExpandedChange}
-        handleSelect={handleSelect}
-        removeFileFromTree={removeFileFromTree}
-        refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
-      />
+      {!sideBarCollapsed && (
+        <SideBar
+          selectedFilePath={selectedFilePath}
+          directoryData={directoryData}
+          expanded={expanded}
+          onExpandedChange={handleExpandedChange}
+          handleSelect={handleSelect}
+          removeFileFromTree={removeFileFromTree}
+          refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
+        />
+      )}
       <SASjsEditor
         selectedFilePath={selectedFilePath}
         setSelectedFilePath={handleSelect}
         tab={tab}
         setTab={setTab}
+        sideBarCollapsed={sideBarCollapsed}
+        onToggleSideBar={() => setSideBarCollapsed(!sideBarCollapsed)}
       />
     </Box>
   )

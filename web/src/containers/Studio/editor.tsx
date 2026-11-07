@@ -4,11 +4,13 @@ import {
   Backdrop,
   Box,
   CircularProgress,
+  IconButton,
   Paper,
   Tab,
   Tooltip,
   Typography
 } from '@mui/material'
+import { Menu, MenuOpen } from '@mui/icons-material'
 import { styled } from '@mui/material/styles'
 
 import Editor, { MonacoDiffEditor } from 'react-monaco-editor'
@@ -18,6 +20,7 @@ import FilePathInputModal from '../../components/filePathInputModal'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
 import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
+import LintIssues from './internal/components/lint/lintIssues'
 import LogComponent from './internal/components/log/logComponent'
 import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 import WebOutPreview from './internal/components/webout/weboutPreview'
@@ -64,6 +67,9 @@ type SASjsEditorProps = {
   setSelectedFilePath: (filePath: string, refreshSideBar?: boolean) => void
   tab: string
   setTab: Dispatch<SetStateAction<string>>
+  /** Whether the drive explorer is hidden, for the toggle's icon and label. */
+  sideBarCollapsed: boolean
+  onToggleSideBar: () => void
 }
 
 // Before the first editor mounts, and once: both schemes are defined here, and
@@ -74,13 +80,17 @@ const SASjsEditor = ({
   selectedFilePath,
   setSelectedFilePath,
   tab,
-  setTab
+  setTab,
+  sideBarCollapsed,
+  onToggleSideBar
 }: SASjsEditorProps) => {
   const [colorMode] = useColorMode()
 
   const {
     fileContent,
     imageUrl,
+    lintMarkers,
+    revealLine,
     isLoading,
     log,
     openFilePathInputModal,
@@ -220,80 +230,115 @@ const SASjsEditor = ({
               bgcolor: 'background.paper'
             }}
           >
-            <TabList onChange={handleTabChange} centered>
-              <StyledTab label="Code" value="code" />
-              {log && (
-                <StyledTab
-                  label={logWithErrorsOrWarnings ? '' : 'log'}
-                  value="log"
-                  icon={
-                    logWithErrorsOrWarnings ? (
-                      <LogTabWithIcons
-                        log={log as LogObject}
-                        notesListed={notesListed}
-                        onToggleNotes={toggleNotes}
-                      />
-                    ) : (
-                      ''
-                    )
+            <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>
+              <Tooltip
+                title={
+                  sideBarCollapsed
+                    ? 'Show the drive explorer'
+                    : 'Hide the drive explorer'
+                }
+              >
+                <IconButton
+                  size="small"
+                  onClick={onToggleSideBar}
+                  aria-label={
+                    sideBarCollapsed
+                      ? 'Show the drive explorer'
+                      : 'Hide the drive explorer'
                   }
-                  onClick={() => {
-                    const logWrapper = document.querySelector(`#logWrapper`)
+                >
+                  {sideBarCollapsed ? <MenuOpen /> : <Menu />}
+                </IconButton>
+              </Tooltip>
+              <TabList onChange={handleTabChange} centered sx={{ flexGrow: 1 }}>
+                <StyledTab label="Code" value="code" />
+                {log && (
+                  <StyledTab
+                    label={logWithErrorsOrWarnings ? '' : 'log'}
+                    value="log"
+                    icon={
+                      logWithErrorsOrWarnings ? (
+                        <LogTabWithIcons
+                          log={log as LogObject}
+                          notesListed={notesListed}
+                          onToggleNotes={toggleNotes}
+                        />
+                      ) : (
+                        ''
+                      )
+                    }
+                    onClick={() => {
+                      const logWrapper = document.querySelector(`#logWrapper`)
 
-                    if (logWrapper) logWrapper.scrollTop = 0
-                  }}
-                />
-              )}
-              {webout && (
-                <StyledTab
-                  label={
-                    <Tooltip title="Displays content from the _webout fileref">
-                      <Typography>Webout</Typography>
-                    </Tooltip>
-                  }
-                  value="webout"
-                />
-              )}
-              {printOutput && <StyledTab label="print" value="printOutput" />}
-            </TabList>
+                      if (logWrapper) logWrapper.scrollTop = 0
+                    }}
+                  />
+                )}
+                {webout && (
+                  <StyledTab
+                    label={
+                      <Tooltip title="Displays content from the _webout fileref">
+                        <Typography>Webout</Typography>
+                      </Tooltip>
+                    }
+                    value="webout"
+                  />
+                )}
+                {printOutput && <StyledTab label="print" value="printOutput" />}
+              </TabList>
+            </Box>
           </Box>
 
           <StyledTabPanel sx={{ paddingBottom: 0 }} value="code">
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <RunMenu
-                fileContent={fileContent}
-                prevFileContent={prevFileContent}
-                selectedFilePath={selectedFilePath}
-                selectedRunTime={selectedRunTime}
-                runTimes={runTimes}
-                handleChangeRunTime={handleChangeRunTime}
-                handleRunBtnClick={handleRunBtnClick}
-              />
-              {fileMenu}
-            </Box>
-            <Paper
+            {/* One column that fills the viewport: the menu row and the lint
+                panel take what they need, and the editor takes the rest. With a
+                fixed height on the paper, a lint panel would push the page into
+                a scroll of its own. */}
+            <Box
               sx={{
-                height: 'calc(100vh - 170px)',
-                padding: '10px',
-                overflow: 'auto',
-                position: 'relative'
+                display: 'flex',
+                flexDirection: 'column',
+                height: 'calc(100vh - 170px)'
               }}
-              elevation={3}
             >
-              {monacoEditor}
-              <p
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: -10,
-                  textAlign: 'center',
-                  fontSize: '13px'
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <RunMenu
+                  fileContent={fileContent}
+                  prevFileContent={prevFileContent}
+                  selectedFilePath={selectedFilePath}
+                  selectedRunTime={selectedRunTime}
+                  runTimes={runTimes}
+                  handleChangeRunTime={handleChangeRunTime}
+                  handleRunBtnClick={handleRunBtnClick}
+                />
+                {fileMenu}
+              </Box>
+              <LintIssues markers={lintMarkers} onSelectLine={revealLine} />
+              <Paper
+                sx={{
+                  flexGrow: 1,
+                  minHeight: 0,
+                  padding: '10px',
+                  overflow: 'auto',
+                  position: 'relative'
                 }}
+                elevation={3}
               >
-                Press CTRL + ENTER to run code
-              </p>
-            </Paper>
+                {monacoEditor}
+                <p
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: -10,
+                    textAlign: 'center',
+                    fontSize: '13px'
+                  }}
+                >
+                  Press CTRL + ENTER to run code
+                </p>
+              </Paper>
+            </Box>
           </StyledTabPanel>
           <StyledTabPanel value="log">
             {log && (

@@ -64,6 +64,16 @@ const useEditor = ({
   // session, so the file is fetched as a blob rather than pointed at directly.
   const [imageUrl, setImageUrl] = useState('')
 
+  /**
+   * What the last lint found, for the Code tab's issue list.
+   *
+   * The markers themselves, so the list is a view of the same set Monaco paints
+   * with - never a second lint that could disagree with the squiggles.
+   */
+  const [lintMarkers, setLintMarkers] = useState<monaco.editor.IMarkerData[]>(
+    []
+  )
+
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   // Detaches the mouse-paste guard from the editor that was unmounted, so a
   // remount (the diff view toggling) does not leave a listener behind.
@@ -185,6 +195,22 @@ const useEditor = ({
   const handleTabChange = (_e: any, newValue: string) => {
     setTab(newValue)
   }
+
+  /**
+   * Moves the cursor to a line and scrolls it into view.
+   *
+   * The log's issue list and the Code tab's lint list both jump this way, so a
+   * finding is one click from the text it is about.
+   */
+  const revealLine = useCallback((lineNumber: number) => {
+    const editor = editorRef.current
+
+    if (!editor) return
+
+    editor.revealLineInCenter(lineNumber)
+    editor.setPosition({ lineNumber, column: 1 })
+    editor.focus()
+  }, [])
 
   const handleRunBtnClick = () =>
     runCode(getSelection(editorRef.current as any) || fileContent)
@@ -591,10 +617,22 @@ const useEditor = ({
         editorRef.current?.getModel() ?? null,
         code,
         filePath || undefined
-      )
+      ).then(setLintMarkers)
     },
     [selectedRunTime]
   )
+
+  /**
+   * Re-measures the editor when the lint panel appears or disappears.
+   *
+   * Monaco caches its container's size and only re-measures on a window
+   * resize, so a panel opening above the editor leaves it drawing at the old
+   * height - taller than the space it now has. The panel's presence is the one
+   * thing that changes the editor's container without a window resize.
+   */
+  useEffect(() => {
+    editorRef.current?.layout()
+  }, [lintMarkers.length === 0])
 
   useEffect(() => {
     // Linting the buffer on a delay keeps a request off the keystroke path,
@@ -607,6 +645,8 @@ const useEditor = ({
   return {
     fileContent,
     imageUrl,
+    lintMarkers,
+    revealLine,
     isLoading,
     log,
     openFilePathInputModal,

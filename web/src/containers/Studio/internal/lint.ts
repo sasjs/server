@@ -19,14 +19,22 @@ export const lintModel = async (
   model: monaco.editor.ITextModel | null,
   code: string,
   filePath?: string
-): Promise<void> => {
-  if (!model) return
+): Promise<monaco.editor.IMarkerData[]> => {
+  if (!model) return []
 
   try {
-    const { data } = await axios.post('/SASjsApi/code/lint', { code, filePath })
+    const markers = toMarkers(
+      (await axios.post('/SASjsApi/code/lint', { code, filePath })).data
+    )
 
-    monaco.editor.setModelMarkers(model, LINT_MARKER_OWNER, toMarkers(data))
+    monaco.editor.setModelMarkers(model, LINT_MARKER_OWNER, markers)
+
+    // Returned as well as applied: the Code tab lists exactly what Monaco was
+    // given, so the panel and the squiggles cannot disagree.
+    return markers
   } catch {
     monaco.editor.setModelMarkers(model, LINT_MARKER_OWNER, [])
+
+    return []
   }
 }

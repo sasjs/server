@@ -41,6 +41,18 @@ check(
   'format on save defaults to on',
   defaultSettings['editor.formatOnSave'] === true
 )
+// the explorer is shown until the user hides it, and the choice is remembered
+check(
+  'the drive explorer is expanded by default',
+  defaultSettings['workbench.sideBarCollapsed'] === false
+)
+
+writeSetting('workbench.sideBarCollapsed', true)
+check(
+  'a collapsed explorer survives a read',
+  readSettings()['workbench.sideBarCollapsed'] === true
+)
+writeSetting('workbench.sideBarCollapsed', false)
 
 let settings = readSettings()
 check(
