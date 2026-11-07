@@ -12,6 +12,7 @@ import {
 import {
   deleteFolder,
   createFile,
+  createFolder,
   fileExists,
   generateTimestamp,
   moveFile,
@@ -500,6 +501,17 @@ ${compiledSystemInitContent}
 ${autoExecContent}`
     await createFile(autoExecPath, contentForAutoExec)
 
+    // Each session gets its own SASUSER. SAS copies the SASUSER profile into WORK
+    // at startup, and a shared, unwritable one makes that copy fail or race -
+    // which is the "Unable to copy SASUSER registry to WORK registry" warning.
+    // A writable folder per session lets the copy succeed, so the warning never
+    // appears, and it keeps the writes a program legitimately makes to SASUSER
+    // (proc template without STORE=, options sasmstore=sasuser, proc format
+    // library=sasuser) working. Those writes stay inside this session: the folder
+    // is deleted with the rest of it.
+    const sasuserPath = path.join(session.path, 'sasuser')
+    await createFolder(sasuserPath)
+
     // create empty code.sas as SAS will not start without a SYSIN
     const codePath = path.join(session.path, 'code.sas')
     await createFile(codePath, '')
@@ -630,17 +642,18 @@ ${autoExecContent}`
  *
  * Split out of the launch so the flags can be asserted without spawning
  * anything: they are not cosmetic. Besides the dialogs a desktop SAS would open,
- * `-RSASUSER` answers a warning every session opens with when SASUSER is not
- * writable -
+ * `-SASUSER` points SASUSER at the session's own folder. SAS copies the SASUSER
+ * profile into WORK at startup; with one shared SASUSER the copy fails or races
+ * once several sessions are pooled, and the log opens with
  *
  *   WARNING: Unable to copy SASUSER registry to WORK registry.
  *
- * SAS copies the SASUSER profile into WORK at startup, and a server pools
- * several sessions against one SASUSER, so the copy fails or races. Opening
- * SASUSER read-only stops the copy being attempted, and the warning with it; the
- * session loses the customizations the warning already said it would not see.
+ * A writable folder per session makes the copy succeed and keeps the writes a
+ * program makes to SASUSER working - `-RSASUSER` would silence the warning by
+ * making those writes fail, which is the worse trade. The folder is deleted with
+ * the session, so customisations do not survive it.
  *
- * Not a Windows flag: the same warning is reported on Linux, where a read-only
+ * Not a Windows concern: the warning is reported on Linux too, where a read-only
  * home or a shared SASUSER produces it. Only the dialog-suppressing options are
  * gated on `sas.exe`.
  */
@@ -669,7 +682,8 @@ export const buildSessionArgs = (
     isWindows ? '-noterminal' : '',
     isWindows ? '-nostatuswin' : '',
     isWindows ? '-NOPRNGETLIST' : '',
-    '-RSASUSER',
+    '-SASUSER',
+    path.join(session.path, 'sasuser'),
     isWindows ? '-SASINITIALFOLDER' : '',
     isWindows ? session.path : ''
   ]
