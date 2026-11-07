@@ -63,6 +63,26 @@ const synchroniseWithLDAP = async () => {
   process.logger.info('Syncing LDAP with internal DB')
 
   const permissions = await Permission.get({})
+
+  // The import deletes and re-creates the LDAP accounts and groups, so their
+  // identifiers do not survive it: a rule written back from an identifier read
+  // here would name a document that no longer exists, and a grant would quietly
+  // stop granting. The principal's NAME is what survives, so capture it first.
+  const principalNames = new Map<string, { user?: string; group?: string }>()
+  for (const permission of permissions) {
+    const user = permission.user
+      ? await User.findOne({ _id: permission.user })
+      : undefined
+    const group = permission.group
+      ? await Group.findOne({ _id: permission.group })
+      : undefined
+
+    principalNames.set(String(permission.uid), {
+      user: user?.username,
+      group: group?.name
+    })
+  }
+
   await Permission.deleteMany()
   await User.deleteMany({ authProvider: AuthProviderType.LDAP })
   await Group.deleteMany({ authProvider: AuthProviderType.LDAP })
@@ -158,11 +178,14 @@ const synchroniseWithLDAP = async () => {
       setting: permission.setting
     })
 
-    if (permission.user) {
-      const dbUser = await User.findOne({ username: permission.user.username })
+    // resolved by name, because the identifiers above were replaced by the import
+    const names = principalNames.get(String(permission.uid)) || {}
+
+    if (names.user) {
+      const dbUser = await User.findOne({ username: names.user })
       if (dbUser) newPermission.user = dbUser._id
-    } else if (permission.group) {
-      const dbGroup = await Group.findOne({ name: permission.group.name })
+    } else if (names.group) {
+      const dbGroup = await Group.findOne({ name: names.group })
       if (dbGroup) newPermission.group = dbGroup._id
     }
     await newPermission.save()

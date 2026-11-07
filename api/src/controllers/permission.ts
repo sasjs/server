@@ -18,8 +18,6 @@ import {
 import Permission from '../model/Permission'
 import User from '../model/User'
 import Group from '../model/Group'
-import { UserResponse } from './user'
-import { GroupDetailsResponse } from './group'
 
 export enum PermissionType {
   route = 'Route'
@@ -37,7 +35,12 @@ export enum PermissionSettingForRoute {
 
 interface RegisterPermissionPayload {
   /**
-   * Name of affected resource
+   * The route the rule applies to.
+   *
+   * One of the routes that can be granted - the list is what
+   * `GET /SASjsApi/info/authorizedRoutes` answers, and a rule for anything else
+   * is refused with `400`.
+   *
    * @example "/SASjsApi/code/execute"
    */
   path: string
@@ -76,9 +79,32 @@ export interface PermissionDetailsResponse {
   path: string
   type: string
   setting: string
-  user?: UserResponse
-  group?: GroupDetailsResponse
+  /** The identifier of the account the rule is assigned to, when it is a user's. */
+  user?: string
+  /** The identifier of the group the rule is assigned to, when it is a group's. */
+  group?: string
 }
+
+/**
+ * A rule as the routes report one.
+ *
+ * The principal is the identifier rather than the account: a rule is a row with
+ * foreign keys, and a host on anything but mongodb can produce the identifier
+ * without a join. Serialising the populated document also sent a group's whole
+ * membership back with every rule that granted it.
+ */
+const permissionResponse = (permission: any): PermissionDetailsResponse => ({
+  uid: String(permission.uid),
+  path: permission.path,
+  type: permission.type,
+  setting: permission.setting,
+  ...(permission.user ? { user: identifierOf(permission.user) } : {}),
+  ...(permission.group ? { group: identifierOf(permission.group) } : {})
+})
+
+/** A document, a populated document or an ObjectId, all reduced to one string. */
+const identifierOf = (value: any): string =>
+  String(value?._id ?? value?.uid ?? value)
 
 @Security('bearerAuth')
 @Route('SASjsApi/permission')
@@ -97,25 +123,14 @@ export class PermissionController {
       path: '/SASjsApi/code/execute',
       type: 'Route',
       setting: 'Grant',
-      user: {
-        uid: 'user1-id',
-        username: 'johnSnow01',
-        displayName: 'John Snow',
-        isAdmin: false
-      }
+      user: 'user1-id'
     },
     {
       uid: 'permissionId2String',
       path: '/SASjsApi/code/execute',
       type: 'Route',
       setting: 'Grant',
-      group: {
-        uid: 'group1-id',
-        name: 'DCGroup',
-        description: 'This group represents Data Controller Users',
-        isActive: true,
-        users: []
-      }
+      group: 'group1-id'
     }
   ])
   @Response(401, 'Admin account required, or no grant on the route')
@@ -142,12 +157,7 @@ export class PermissionController {
     path: '/SASjsApi/code/execute',
     type: 'Route',
     setting: 'Grant',
-    user: {
-      uid: 'userIdString',
-      username: 'johnSnow01',
-      displayName: 'John Snow',
-      isAdmin: false
-    }
+    user: 'userIdString'
   })
   @Response(401, 'Admin account required')
   @Response(404, 'User not found. / Group not found.')
@@ -180,12 +190,7 @@ export class PermissionController {
     path: '/SASjsApi/code/execute',
     type: 'Route',
     setting: 'Grant',
-    user: {
-      uid: 'userIdString',
-      username: 'johnSnow01',
-      displayName: 'John Snow',
-      isAdmin: false
-    }
+    user: 'userIdString'
   })
   @Response(401, 'Admin account required')
   @Response(404, 'Permission not found.')
@@ -219,7 +224,7 @@ const getAllPermissions = async (
 ): Promise<PermissionDetailsResponse[]> => {
   const { user } = req
 
-  if (user?.isAdmin) return await Permission.get({})
+  if (user?.isAdmin) return (await Permission.get({})).map(permissionResponse)
   else {
     const permissions: PermissionDetailsResponse[] = []
 
@@ -237,7 +242,7 @@ const getAllPermissions = async (
       permissions.push(...(await Permission.get({ group })))
     }
 
-    return permissions
+    return permissions.map(permissionResponse)
   }
 }
 
@@ -253,9 +258,6 @@ const createPermission = async ({
     type,
     setting
   })
-
-  let user: UserResponse | undefined
-  let group: GroupDetailsResponse | undefined
 
   switch (principalType) {
     case PrincipalType.user: {
@@ -290,12 +292,7 @@ const createPermission = async ({
 
       permission.user = userInDB._id
 
-      user = {
-        uid: userInDB.uid,
-        username: userInDB.username,
-        displayName: userInDB.displayName,
-        isAdmin: userInDB.isAdmin
-      }
+      permission.user = userInDB._id
       break
     }
     case PrincipalType.group: {
@@ -322,19 +319,6 @@ const createPermission = async ({
 
       permission.group = groupInDB._id
 
-      await groupInDB.populate({
-        path: 'users',
-        select: 'uid username displayName isAdmin',
-        options: { limit: 15 }
-      })
-
-      group = {
-        uid: groupInDB.uid,
-        name: groupInDB.name,
-        description: groupInDB.description,
-        isActive: groupInDB.isActive,
-        users: groupInDB.users as unknown as UserResponse[]
-      }
       break
     }
     default:
@@ -347,14 +331,7 @@ const createPermission = async ({
 
   const savedPermission = await permission.save()
 
-  return {
-    uid: savedPermission.uid,
-    path: savedPermission.path,
-    type: savedPermission.type,
-    setting: savedPermission.setting,
-    user,
-    group
-  }
+  return permissionResponse(savedPermission)
 }
 
 const updatePermission = async (
@@ -367,13 +344,9 @@ const updatePermission = async (
     { _id: uid },
     { setting },
     { new: true }
-  )
-    .select('uid path type setting')
-    .populate({ path: 'user', select: 'uid username displayName isAdmin' })
-    .populate({
-      path: 'group',
-      select: 'uid name description'
-    })) as unknown as PermissionDetailsResponse
+  ).select(
+    'uid path type setting user group'
+  )) as unknown as PermissionDetailsResponse
   if (!updatedPermission)
     throw {
       code: 404,
@@ -381,7 +354,7 @@ const updatePermission = async (
       message: 'Permission not found.'
     }
 
-  return updatedPermission
+  return permissionResponse(updatedPermission)
 }
 
 const deletePermission = async (uid: string) => {

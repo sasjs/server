@@ -220,8 +220,28 @@ describe('record conformance corpus', () => {
     const body = testCase.request.body
     if (!body) return undefined
     if (body.principalId === undefined) return body
-    return { ...body, principalId: id(body.principalId) }
+
+    // A case about a principal type that is neither user nor group is not about
+    // the identifier's shape. This host validates the shape first and refuses it
+    // with 400 as well, so the case would measure the wrong refusal; give it an
+    // identifier of the right shape and the type is what answers.
+    const type = (body as any).principalType
+    const invalidType =
+      type !== undefined && type !== 'user' && type !== 'group'
+
+    return {
+      ...body,
+      principalId: invalidType ? ABSENT_ID : id(body.principalId)
+    }
   }
+
+  /** A list of documents, ordered by uid so the comparison is about content. */
+  const byUid = (value: any) =>
+    Array.isArray(value)
+      ? [...value].sort((a: any, b: any) =>
+          String(a.uid).localeCompare(String(b.uid))
+        )
+      : value
 
   /** Identifiers this host minted become the fixture's names, for comparison. */
   const inFixtureNames = (value: any): any => {
@@ -243,56 +263,7 @@ describe('record conformance corpus', () => {
     return value
   }
 
-  /**
-   * The cases this host cannot satisfy yet, each with the difference named. The
-   * corpus found these on its first run, which is the point of running it: every
-   * one is a place where the package's answer and this server's answer differ, so
-   * a client written against one is wrong against the other.
-   *
-   * None is a flake and none is excused by "known difference". Each is a decision
-   * about which side moves, and the decision belongs in the document, so they are
-   * collected in sasjs/api#26 until it is taken.
-   */
-
-  /**
-   * The cases that still disagree, each with the difference named. They are the
-   * residue of a first run, and every one is a decision about which side moves -
-   * recorded in sasjs/api#26 rather than excused here.
-   *
-   * The earlier count was larger: seeding the collections directly instead of
-   * through the controllers left the corpus measuring the seed (a group's members
-   * never reached the user, a rule's principal was stored without the hook that
-   * maintains the reverse index). Seeding through the API removed all of those.
-   */
-  const KNOWN_DIVERGENCES: Record<string, string> = {
-    'list-permissions-as-admin':
-      'this route serialises mongoose documents with user/group populated; the corpus pins that populated shape, and a host without populate cannot answer it. sasjs/api#26 decided flat identifiers both can produce.',
-    'list-permissions-as-user':
-      'same shape, and the non-admin meaning differs: this route answers the rules assigned to the caller plus their groups, the corpus pins the caller-assigned rules alone.',
-    'create-permission-user':
-      "`path` is validated against a fixed list of routes (src/utils/validation.ts), and /SASjsApi/code/lint is not in it, so the rule is refused with 400. sasjs/api#26 decided the list becomes the document's enum.",
-    'create-permission-group': 'the same `path` enum.',
-    'create-permission-invalid-principal-type':
-      'the same `path` enum, which answers before the principal type is examined.',
-    'create-permission-admin-principal': 'the same `path` enum.',
-    'create-permission-missing-principal': 'the same `path` enum.',
-    'create-permission-duplicate-group': 'the same `path` enum.',
-    'delete-user-by-username-wrong-password':
-      'a supplied password is validated to be at least six characters (400), where the corpus asks for 401 Invalid password.; sasjs/api#26 decided the minimum is stated in the document.'
-  }
-
-  // A reason is read by whoever next has to decide, so a key that names no case
-  // is a stale excuse rather than documentation.
-  it('every documented divergence names a case in the corpus', () => {
-    const ids = RECORD_CORPUS.map((testCase) => testCase.id)
-    for (const key of Object.keys(KNOWN_DIVERGENCES)) expect(ids).toContain(key)
-  })
-
-  const replayable = RECORD_CORPUS.filter(
-    (testCase) => !KNOWN_DIVERGENCES[testCase.id]
-  )
-
-  it.each(replayable)('$id', async (testCase) => {
+  it.each(RECORD_CORPUS)('$id', async (testCase) => {
     await seed(testCase.identity || DEFAULT_IDENTITY)
 
     const want = testCase.expect
@@ -317,6 +288,8 @@ describe('record conformance corpus', () => {
 
     if (typeof want.body === 'string') expect(res.text).toBe(want.body)
     else if (want.body !== undefined)
-      expect(inFixtureNames(res.body)).toEqual(want.body)
+      // a list of rules has no defined order, and this host answers in the order
+      // they were inserted; the case is about which rules, not their sequence
+      expect(byUid(inFixtureNames(res.body))).toEqual(byUid(want.body))
   })
 })

@@ -79,18 +79,12 @@ permissionSchema.virtual('uid').get(function () {
 permissionSchema.static('get', async function (getBy: GetPermissionBy): Promise<
   PermissionDetailsResponse[]
 > {
-  return (await this.find(getBy)
-    .select('uid path type setting')
-    .populate({ path: 'user', select: 'uid username displayName isAdmin' })
-    .populate({
-      path: 'group',
-      select: 'uid name description',
-      populate: {
-        path: 'users',
-        select: 'uid username displayName isAdmin',
-        options: { limit: 15 }
-      }
-    })) as unknown as PermissionDetailsResponse[]
+  // No populate: a rule carries its principal's identifier, which every store
+  // can answer, and serialising the whole account also sent a group's membership
+  // back with every rule that granted it.
+  return (await this.find(getBy).select(
+    'uid path type setting user group'
+  )) as unknown as PermissionDetailsResponse[]
 })
 
 export const Permission: IPermissionModel = model<
