@@ -35,19 +35,6 @@ import { generateAccessToken, saveTokensInDB } from '../../../utils'
  * for the same account, so a case that signs in as an administrator really is
  * one.
  */
-/**
- * Cases this host answers differently, and why.
- *
- * `authorized-routes` - the package's case follows the document, which states a
- * `200` for any authenticated caller. This server gates the same path with
- * `verifyAdmin` (`src/routes/api/info.ts`), because the inventory of routes a
- * caller may reach is reconnaissance before sign-in. That is a deliberate
- * divergence, not drift, and it is already visible in
- * `documentRefusals.baseline.json`; the corpus needs the same note until the
- * document states the gate or the gate is dropped.
- */
-const DIVERGENT = new Set(['authorized-routes'])
-
 describe('record conformance corpus', () => {
   let app: Express
   let con: Mongoose
@@ -276,37 +263,33 @@ describe('record conformance corpus', () => {
     return value
   }
 
-  it.each(RECORD_CORPUS.filter((testCase) => !DIVERGENT.has(testCase.id)))(
-    '$id',
-    async (testCase) => {
-      await seed(testCase.identity || DEFAULT_IDENTITY)
+  it.each(RECORD_CORPUS)('$id', async (testCase) => {
+    await seed(testCase.identity || DEFAULT_IDENTITY)
 
-      const want = testCase.expect
-      const method = testCase.route.split(' ')[0].toLowerCase()
-      let call = (request(app) as any)[method](pathOf(testCase))
+    const want = testCase.expect
+    const method = testCase.route.split(' ')[0].toLowerCase()
+    let call = (request(app) as any)[method](pathOf(testCase))
 
-      const body = bodyOf(testCase)
-      if (body !== undefined) call = call.send(body)
+    const body = bodyOf(testCase)
+    if (body !== undefined) call = call.send(body)
 
-      const token = testCase.request.token
-        ? tokens.get(testCase.request.token)
-        : undefined
-      if (token) call = call.auth(token, { type: 'bearer' })
+    const token = testCase.request.token
+      ? tokens.get(testCase.request.token)
+      : undefined
+    if (token) call = call.auth(token, { type: 'bearer' })
 
-      const res = await call
+    const res = await call
 
-      expect(res.statusCode).toBe(want.status)
+    expect(res.statusCode).toBe(want.status)
 
-      // a message the package answers as its body travels as the response text
-      // here, because this host's routes send it themselves
-      if (want.error !== undefined)
-        expect(fixtureName(res.text)).toBe(want.error)
+    // a message the package answers as its body travels as the response text
+    // here, because this host's routes send it themselves
+    if (want.error !== undefined) expect(fixtureName(res.text)).toBe(want.error)
 
-      if (typeof want.body === 'string') expect(res.text).toBe(want.body)
-      else if (want.body !== undefined)
-        // a list of rules has no defined order, and this host answers in the order
-        // they were inserted; the case is about which rules, not their sequence
-        expect(byUid(inFixtureNames(res.body))).toEqual(byUid(want.body))
-    }
-  )
+    if (typeof want.body === 'string') expect(res.text).toBe(want.body)
+    else if (want.body !== undefined)
+      // a list of rules has no defined order, and this host answers in the order
+      // they were inserted; the case is about which rules, not their sequence
+      expect(byUid(inFixtureNames(res.body))).toEqual(byUid(want.body))
+  })
 })
