@@ -118,7 +118,12 @@ describe('session conformance corpus', () => {
         owner: usernames.get(RESTRICTED.userId) as string,
         state: SessionState.running,
         pid: 4243,
-        creationTimeStamp: '2026-11-07T09:05:00.000Z'
+        creationTimeStamp: '2026-11-07T09:05:00.000Z',
+        // the document requires both stamps and this host writes the death
+        // stamp at creation (creation + its lifetime), so a running session
+        // carries the moment it is due to be destroyed - the fixture value is
+        // the same instant, so the corpus case pins what a real run answers
+        deathTimeStamp: '2026-11-07T09:20:00.000Z'
       },
       {
         log: 'NOTE: session started\n',
@@ -149,16 +154,11 @@ describe('session conformance corpus', () => {
       id,
       state: SessionState.completed,
       creationTimeStamp: id,
-      // a session that has not finished has no death stamp, and the document
-      // omits the property rather than sending null
-      deathTimeStamp: '',
+      deathTimeStamp: id,
       path: sessionPath,
       owner: '',
       ...overrides
     }
-
-    if (!('deathTimeStamp' in overrides))
-      delete (session as Partial<Session>).deathTimeStamp
 
     await createFile(path.join(sessionPath, 'log.log'), artifacts.log)
     await createFile(path.join(sessionPath, 'webout.txt'), artifacts.webout)
