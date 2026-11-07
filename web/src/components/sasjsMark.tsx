@@ -1,10 +1,11 @@
 /**
- * The mark's rendered size. The tree reserves a column this wide on every row,
- * so a name keeps one straight left edge whether or not the entry is a
- * program. 18px is measured, not chosen: at 16px the mark's strokes merge into
- * a blob.
+ * The tree's icon column, and the size every icon in it is drawn at.
+ *
+ * The column is reserved on every row, so a name keeps one straight left edge
+ * whatever sits beside it. 18px is measured, not chosen: at 16px the mark's
+ * strokes merge into a blob, and the row is 22px.
  */
-export const SASJS_MARK_SIZE = 18
+export const FILE_ICON_SIZE = 18
 
 /**
  * The SASjs mark, for a `.sas` file in the drive tree.
@@ -19,7 +20,7 @@ export const SASJS_MARK_SIZE = 18
  * themed: it is an icon, not a status colour, and it is `aria-hidden` because
  * the file's name is right beside it.
  */
-const SasjsMark = ({ size = SASJS_MARK_SIZE }: { size?: number }) => (
+const SasjsMark = ({ size = FILE_ICON_SIZE }: { size?: number }) => (
   <svg
     width={size}
     height={size}
