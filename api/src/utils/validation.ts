@@ -8,7 +8,10 @@ import { getAuthorizedRoutes } from './getAuthorizedRoutes'
 
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
-const groupnameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
+// A group's name is client data: it is stored and answered as it was given.
+// Usernames stay folded, because they are an account's login handle; a group
+// name is a label, and folding it changes what a user sees.
+const groupnameSchema = Joi.string().alphanum().min(3).max(16)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i
 
