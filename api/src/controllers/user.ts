@@ -247,7 +247,9 @@ export class UserController {
    *
    * Can be performed by an administrator or by the user themselves; anyone else
    * must supply the account password in the body, and a `401` is returned when
-   * it does not match.
+   * it does not match. A supplied password must be at least six characters - the
+   * minimum an account's own password has - and a shorter one is a `400` before
+   * it is compared.
    *
    * @summary Delete a user by username
    * @param username The User's username
@@ -270,7 +272,9 @@ export class UserController {
    *
    * Can be performed by an administrator or by the user themselves; anyone else
    * must supply the account password in the body, and a `401` is returned when
-   * it does not match.
+   * it does not match. A supplied password must be at least six characters - the
+   * minimum an account's own password has - and a shorter one is a `400` before
+   * it is compared.
    *
    * @summary Delete a user by id
    * @param uid The user's identifier

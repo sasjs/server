@@ -124,9 +124,10 @@ export const registerPermissionValidation = (data: any): Joi.ValidationResult =>
     setting: Joi.string()
       .required()
       .valid(...Object.values(PermissionSettingForRoute)),
-    principalType: Joi.string()
-      .required()
-      .valid(...Object.values(PrincipalType)),
+    // not restricted here: the controller answers an unknown type with its own
+    // 400, and a Joi enum in front of it gave clients a second message for the
+    // same mistake
+    principalType: Joi.string().required(),
     principalId: Joi.string().length(24).hex().required()
   }).validate(data)
 

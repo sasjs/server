@@ -111,7 +111,8 @@ describe('permission', () => {
       expect(res.body.path).toEqual(permission.path)
       expect(res.body.type).toEqual(permission.type)
       expect(res.body.setting).toEqual(permission.setting)
-      expect(res.body.user).toBeTruthy()
+      // the principal is an identifier, not the account it names
+      expect(res.body.user).toBe(dbUser.uid)
     })
 
     it('should respond with new permission when principalType is group', async () => {
@@ -131,7 +132,7 @@ describe('permission', () => {
       expect(res.body.path).toEqual(permission.path)
       expect(res.body.type).toEqual(permission.type)
       expect(res.body.setting).toEqual(permission.setting)
-      expect(res.body.group).toBeTruthy()
+      expect(res.body.group).toBe(dbGroup.uid)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {
@@ -260,11 +261,17 @@ describe('permission', () => {
         .auth(adminAccessToken, { type: 'bearer' })
         .send({
           ...permission,
-          principalType: 'invalid'
+          principalType: 'invalid',
+          // an identifier of the right shape, so the principal type is what the
+          // request is refused for rather than a missing field
+          principalId: dbUser.uid
         })
         .expect(400)
 
-      expect(res.text).toEqual('"principalType" must be one of [user, group]')
+      // the controller's message: Joi no longer answers this one
+      expect(res.text).toEqual(
+        'Invalid principal type. Valid types are user or group.'
+      )
       expect(res.body).toEqual({})
     })
 
@@ -407,7 +414,7 @@ describe('permission', () => {
         .expect(200)
 
       expect(res.body.setting).toEqual('Deny')
-      expect(res.body.group.uid).toEqual(dbGroup.uid)
+      expect(res.body.group).toEqual(dbGroup.uid)
     })
 
     it('should respond with Unauthorized if access token is not present', async () => {

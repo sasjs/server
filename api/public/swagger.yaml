@@ -850,9 +850,11 @@ components:
                 setting:
                     type: string
                 user:
-                    $ref: '#/components/schemas/UserResponse'
+                    type: string
+                    description: 'The identifier of the account the rule is assigned to, when it is a user''s.'
                 group:
-                    $ref: '#/components/schemas/GroupDetailsResponse'
+                    type: string
+                    description: 'The identifier of the group the rule is assigned to, when it is a group''s.'
             required:
                 - uid
                 - path
@@ -878,7 +880,7 @@ components:
             properties:
                 path:
                     type: string
-                    description: 'Name of affected resource'
+                    description: "The route the rule applies to.\n\nOne of the routes that can be granted - the list is what\n`GET /SASjsApi/info/authorizedRoutes` answers, and a rule for anything else\nis refused with `400`."
                     example: /SASjsApi/code/execute
                 type:
                     $ref: '#/components/schemas/PermissionType'
@@ -2059,7 +2061,7 @@ paths:
                     description: 'Admin account required, or invalid password'
                 '404':
                     description: 'User is not found.'
-            description: "Deletes a user, looked up by username.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match."
+            description: "Deletes a user, looked up by username.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match. A supplied password must be at least six characters - the\nminimum an account's own password has - and a shorter one is a `400` before\nit is compared."
             summary: 'Delete a user by username'
             tags:
                 - User
@@ -2165,7 +2167,7 @@ paths:
                     description: 'Admin account required, or invalid password'
                 '404':
                     description: 'User is not found.'
-            description: "Deletes a user, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match."
+            description: "Deletes a user, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match. A supplied password must be at least six characters - the\nminimum an account's own password has - and a shorter one is a `400` before\nit is compared."
             summary: 'Delete a user by id'
             tags:
                 - User
@@ -2490,7 +2492,7 @@ paths:
                                 type: array
                             examples:
                                 'Example 1':
-                                    value: [{uid: permissionId1String, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: user1-id, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}, {uid: permissionId2String, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: {uid: group1-id, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}}]
+                                    value: [{uid: permissionId1String, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: user1-id}, {uid: permissionId2String, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: group1-id}]
                 '401':
                     description: 'Admin account required, or no grant on the route'
                 '404':
@@ -2514,7 +2516,7 @@ paths:
                                 $ref: '#/components/schemas/PermissionDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: userIdString}
                 '400':
                     description: 'Can not add permission for admin user. / Invalid principal type. Valid types are user or group.'
                 '401':
@@ -2549,7 +2551,7 @@ paths:
                                 $ref: '#/components/schemas/PermissionDetailsResponse'
                             examples:
                                 'Example 1':
-                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: {uid: userIdString, username: johnSnow01, displayName: 'John Snow', isAdmin: false}}
+                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: userIdString}
                 '401':
                     description: 'Admin account required'
                 '404':
