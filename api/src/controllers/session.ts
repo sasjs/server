@@ -66,6 +66,8 @@ export class SessionController {
    * @summary Get the state of a session
    */
   @Example<SessionStateResponse>({ state: SessionState.completed })
+  @Response(401, 'No valid access token or session was supplied')
+  @Response(404, 'Session with the given ID was not found.')
   @Get('/:sessionId/state')
   public async sessionState(
     @Request() request: express.Request,
@@ -92,6 +94,8 @@ export class SessionController {
     creationTimeStamp: '1730101664824',
     deathTimeStamp: '1730102564823'
   })
+  @Response(401, 'No valid access token or session was supplied')
+  @Response(404, 'Session with the given ID was not found.')
   @Get('/:sessionId')
   public async sessionDetail(
     @Request() request: express.Request,
@@ -124,6 +128,8 @@ export class SessionController {
    * @summary Get the log of a triggered session
    */
   @Produces('text/plain')
+  @Response(401, 'No valid access token or session was supplied')
+  @Response(404, 'Session with the given ID was not found.')
   @Get('/:sessionId/log')
   public async sessionLog(
     @Request() request: express.Request,
@@ -156,6 +162,8 @@ export class SessionController {
   // one: read the `Content-Type` header of the response, which is the program's
   // own.
   @Produces('application/octet-stream')
+  @Response(401, 'No valid access token or session was supplied')
+  @Response(404, 'Session with the given ID was not found.')
   @Get('/:sessionId/output')
   public async sessionOutput(
     @Request() request: express.Request,
