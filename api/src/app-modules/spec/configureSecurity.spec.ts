@@ -132,6 +132,52 @@ describe('configureSecurity', () => {
     expect(Object.keys(example).sort()).toEqual(Object.keys(defaults).sort())
   })
 
+  it('should keep the README examples in step with the defaults', async () => {
+    // The README carries the same JSON twice more, as commented examples, and
+    // that copy is the one that has drifted: it omitted `blob:` after the
+    // default gained it, in the very example offered for the inline-script apps
+    // that draw a drive image. Parsing the blocks is what keeps it honest.
+    const readme = await readFile(
+      path.join(__dirname, '../../../../README.md'),
+      'utf8'
+    )
+
+    const blocks: Record<string, string[]>[] = []
+    let current: string[] | null = null
+
+    for (const line of readme.split('\n')) {
+      const trimmed = line.trim()
+
+      if (trimmed === '# {') {
+        current = []
+        continue
+      }
+
+      if (current && trimmed === '# }') {
+        // the braces are the lines the parse skipped, so put them back: the
+        // block is a JSON object written across comment lines
+        blocks.push(JSON.parse(`{${current.join('\n')}}`))
+        current = null
+        continue
+      }
+
+      if (current) current.push(line.replace(/^#\s?/, ''))
+    }
+
+    expect(blocks.length).toBeGreaterThan(1)
+
+    const defaults = getEnvCSPDirectives(undefined) as Record<string, string[]>
+
+    // the first block is offered as the defaults themselves
+    expect(blocks[0]).toEqual(defaults)
+
+    // and every block keeps the img-src the default policy allows: the one
+    // directive a loosened policy has no reason to change
+    for (const block of blocks) {
+      expect(block['img-src']).toEqual(defaults['img-src'])
+    }
+  })
+
   it('should drop upgrade-insecure-requests when only a plain listener runs', async () => {
     process.env.HTTP_PORT = '5000'
 
