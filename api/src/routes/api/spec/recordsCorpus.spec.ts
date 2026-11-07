@@ -6,6 +6,12 @@ import { DEFAULT_IDENTITY, RECORD_CORPUS } from '@sasjs/api'
 import type { CorpusCase, IdentityFixture } from '@sasjs/api'
 
 import appPromise from '../../../app'
+import {
+  ClientController,
+  GroupController,
+  PermissionController,
+  UserController
+} from '../../../controllers'
 import User from '../../../model/User'
 import Group from '../../../model/Group'
 import Permission from '../../../model/Permission'
@@ -65,51 +71,82 @@ describe('record conformance corpus', () => {
     tokens = new Map()
     byUsername = new Map()
 
+    // Seeded through this server's own controllers, not through the models: the
+    // hooks behind them maintain the other half of a relationship (a group's
+    // members appear on the user too), and a seed that wrote the collections
+    // directly would leave a case measuring the seed rather than the API.
+    const users = new UserController()
+    const groups = new GroupController()
+    const rules = new PermissionController()
+    const clients = new ClientController()
+
     for (const user of fixture.users) {
-      const created = await User.create({
+      const created = await users.createUser({
         username: user.username,
         displayName: user.displayName,
-        // the model stores a hash and takes it from here, the way the controller
-        password: User.hashPassword(user.password),
+        password: user.password,
         isAdmin: user.isAdmin,
         isActive: user.isActive,
-        needsToUpdatePassword: user.needsToUpdatePassword,
-        autoExec: user.autoExec ?? '',
-        ...(user.authProvider ? { authProvider: user.authProvider } : {})
+        autoExec: user.autoExec
       })
 
-      ids.set(user.uid, String(created._id))
-      byUsername.set(user.username, String(created._id))
+      ids.set(user.uid, created.uid)
+      byUsername.set(user.username, created.uid)
+
+      // the two fields no route sets: an external provider owns the account, and
+      // the flag is what a password change clears
+      if (user.authProvider || user.needsToUpdatePassword)
+        await User.updateOne(
+          { _id: created.uid },
+          {
+            ...(user.authProvider ? { authProvider: user.authProvider } : {}),
+            ...(user.needsToUpdatePassword
+              ? { needsToUpdatePassword: true }
+              : {})
+          }
+        )
     }
 
     for (const group of fixture.groups) {
-      const created = await Group.create({
-        // the controller lowercases a group name before it stores it, so a
-        // seed that kept the fixture's case would answer differently from a
-        // group created through the API
-        name: group.name.toLowerCase(),
+      const created = await groups.createGroup({
+        name: group.name,
         description: group.description,
-        isActive: group.isActive,
-        users: group.users.map((username) => byUsername.get(username)),
-        ...(group.authProvider ? { authProvider: group.authProvider } : {})
+        isActive: group.isActive
       })
 
-      ids.set(group.uid, String(created._id))
+      ids.set(group.uid, created.uid)
+
+      if (group.authProvider)
+        await Group.updateOne(
+          { _id: created.uid },
+          { authProvider: group.authProvider }
+        )
+
+      for (const username of group.users)
+        await groups.addUserToGroup(
+          created.uid,
+          byUsername.get(username) as string
+        )
     }
 
     for (const rule of fixture.permissions) {
-      const created = await Permission.create({
+      const created = await rules.createPermission({
         path: rule.path,
-        type: rule.type,
-        setting: rule.setting,
-        ...(rule.user ? { user: byUsername.get(rule.user) } : {}),
-        ...(rule.group ? { group: ids.get(rule.group) } : {})
+        type: rule.type as any,
+        setting: rule.setting as any,
+        principalType: (rule.user ? 'user' : 'group') as any,
+        // the fixture names a rule's user by identifier where its interface
+        // documents a username, so both are accepted here
+        principalId: (rule.user
+          ? byUsername.get(rule.user) || ids.get(rule.user)
+          : ids.get(rule.group as string)) as string
       })
 
-      ids.set(rule.uid, String(created._id))
+      ids.set(rule.uid, created.uid as string)
     }
 
-    for (const client of fixture.clients) await Client.create({ ...client })
+    for (const client of fixture.clients)
+      await clients.createClient({ ...client })
 
     for (const token of fixture.tokens || []) {
       const userId = byUsername.get(token.username)
@@ -216,29 +253,36 @@ describe('record conformance corpus', () => {
    * about which side moves, and the decision belongs in the document, so they are
    * collected in sasjs/api#26 until it is taken.
    */
+
+  /**
+   * The cases that still disagree, each with the difference named. They are the
+   * residue of a first run, and every one is a decision about which side moves -
+   * recorded in sasjs/api#26 rather than excused here.
+   *
+   * The earlier count was larger: seeding the collections directly instead of
+   * through the controllers left the corpus measuring the seed (a group's members
+   * never reached the user, a rule's principal was stored without the hook that
+   * maintains the reverse index). Seeding through the API removed all of those.
+   */
   const KNOWN_DIVERGENCES: Record<string, string> = {
-    'list-groups':
-      "this API stores a group name lowercased ('dcgroup') and answers what it stored, while the corpus pins the name it was created with ('DCGroup'). Either the route preserves case or names are lowercased everywhere.",
     'list-permissions-as-admin':
-      'the route serialises mongoose documents, so a rule carries the populated user or group object; the corpus pins the flat identifier every host can answer.',
+      'this route serialises mongoose documents with user/group populated; the corpus pins that populated shape, and a host without populate cannot answer it. sasjs/api#26 decided flat identifiers both can produce.',
     'list-permissions-as-user':
-      'the same shape difference, plus an empty list: the route answers the rules assigned to the caller, where the corpus expects the rules a group the caller belongs to grants.',
+      'same shape, and the non-admin meaning differs: this route answers the rules assigned to the caller plus their groups, the corpus pins the caller-assigned rules alone.',
     'create-permission-user':
-      '`path` is validated against a fixed list of routes (the Joi enum in src/utils/validation.ts), so a rule for /SASjsApi/info is refused with 400. The document states the field is a free string.',
+      "`path` is validated against a fixed list of routes (src/utils/validation.ts), and /SASjsApi/code/lint is not in it, so the rule is refused with 400. sasjs/api#26 decided the list becomes the document's enum.",
     'create-permission-group': 'the same `path` enum.',
     'create-permission-invalid-principal-type':
       'the same `path` enum, which answers before the principal type is examined.',
     'create-permission-admin-principal': 'the same `path` enum.',
     'create-permission-missing-principal': 'the same `path` enum.',
     'create-permission-duplicate-group': 'the same `path` enum.',
-    'create-permission-duplicate':
-      "the duplicate check counts the rule's setting, so the same path and principal with a different setting is created rather than refused with 409; the corpus treats path, type and principal as the identity of a rule.",
     'delete-user-by-username-wrong-password':
-      'this API validates that a supplied password is at least six characters (400), where the corpus asks for the wrong-password answer (401 Invalid password.) - the document states no minimum length.'
+      'a supplied password is validated to be at least six characters (400), where the corpus asks for 401 Invalid password.; sasjs/api#26 decided the minimum is stated in the document.'
   }
 
-  // A case's reason is read by whoever next has to decide, so a key that names no
-  // case is a stale excuse rather than documentation.
+  // A reason is read by whoever next has to decide, so a key that names no case
+  // is a stale excuse rather than documentation.
   it('every documented divergence names a case in the corpus', () => {
     const ids = RECORD_CORPUS.map((testCase) => testCase.id)
     for (const key of Object.keys(KNOWN_DIVERGENCES)) expect(ids).toContain(key)
