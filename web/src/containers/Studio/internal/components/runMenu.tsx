@@ -11,6 +11,8 @@ import {
 
 import { RocketLaunch } from '@mui/icons-material'
 
+import { useColorMode } from '../../../../utils/hooks'
+
 type RunMenuProps = {
   selectedFilePath: string
   fileContent: string
@@ -30,6 +32,10 @@ const RunMenu = ({
   handleChangeRunTime,
   handleRunBtnClick
 }: RunMenuProps) => {
+  // The running figure is a silhouette: black on the light scheme, white on the
+  // dark one, where a black line on a #1E1E1E paper is a smudge.
+  const [colorMode] = useColorMode()
+
   const launchProgram = () => {
     // The current path is the interface's route, not a base for the API.
     const baseUrl = window.location.origin
@@ -53,7 +59,11 @@ const RunMenu = ({
             alt=""
             draggable="false"
             style={{ width: '25px' }}
-            src="/running-sas.png"
+            src={
+              colorMode === 'dark'
+                ? '/running-sas-white.png'
+                : '/running-sas.png'
+            }
           ></img>
           <span style={{ fontSize: '12px' }}>RUN</span>
         </Button>
