@@ -13,7 +13,8 @@ import {
   Delete,
   Body,
   Hidden,
-  Request
+  Request,
+  SuccessResponse
 } from 'tsoa'
 import { desktopUser } from '../middlewares'
 
@@ -252,6 +253,7 @@ export class UserController {
    * @param username The User's username
    * @example username "johnSnow01"
    */
+  @SuccessResponse('200', 'Account Deleted!')
   @Response(401, 'Admin account required, or invalid password')
   @Response(404, 'User is not found.')
   @Delete('by/username/{username}')
@@ -274,6 +276,7 @@ export class UserController {
    * @param uid The user's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
+  @SuccessResponse('200', 'Account Deleted!')
   @Response(401, 'Admin account required, or invalid password')
   @Response(404, 'User is not found.')
   @Delete('{uid}')

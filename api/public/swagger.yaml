@@ -2053,8 +2053,8 @@ paths:
         delete:
             operationId: DeleteUserByUsername
             responses:
-                '204':
-                    description: 'No content'
+                '200':
+                    description: 'Account Deleted!'
                 '401':
                     description: 'Admin account required, or invalid password'
                 '404':
@@ -2159,8 +2159,8 @@ paths:
         delete:
             operationId: DeleteUser
             responses:
-                '204':
-                    description: 'No content'
+                '200':
+                    description: 'Account Deleted!'
                 '401':
                     description: 'Admin account required, or invalid password'
                 '404':
@@ -2579,8 +2579,8 @@ paths:
         delete:
             operationId: DeletePermission
             responses:
-                '204':
-                    description: 'No content'
+                '200':
+                    description: 'Permission Deleted!'
                 '401':
                     description: 'Admin account required'
                 '404':

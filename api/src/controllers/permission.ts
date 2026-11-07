@@ -11,7 +11,8 @@ import {
   Patch,
   Delete,
   Body,
-  Request
+  Request,
+  SuccessResponse
 } from 'tsoa'
 
 import Permission from '../model/Permission'
@@ -204,6 +205,7 @@ export class PermissionController {
    * @param uid The permission's identifier
    * @example uid "507f1f77bcf86cd799439011"
    */
+  @SuccessResponse('200', 'Permission Deleted!')
   @Response(401, 'Admin account required')
   @Response(404, 'Permission not found.')
   @Delete('{uid}')
