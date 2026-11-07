@@ -8,7 +8,7 @@ import Grid from '@mui/material/Grid'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
-import { OpenInNew, Settings } from '@mui/icons-material'
+import { Settings } from '@mui/icons-material'
 
 import { AppContext } from '../context/appContext'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../utils'
@@ -159,7 +159,7 @@ const Home = () => {
             title="API Explorer"
             subtitle="Browse the REST API"
             logo="/sasjs-logo.svg"
-            href="/SASjsApi"
+            to="/SASjsApiDocs"
           />
         </Grid>
         {apps.map((app) => (
@@ -183,9 +183,8 @@ const Home = () => {
       <Box sx={{ mt: 4, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Settings fontSize="small" />
         <Typography variant="body2" color="text.secondary">
-          Settings and the API documentation are in the account menu.
+          Settings and the server documentation are in the account menu.
         </Typography>
-        <OpenInNew fontSize="small" />
       </Box>
     </Box>
   )

@@ -195,7 +195,12 @@ export default setProcessVariables().then(async () => {
     // Express matches the mounted routers case-insensitively, so the refusal
     // has to be case-insensitive too - otherwise /sasjsapi/unknown falls past
     // the API router and is answered with the app shell.
-    const reserved = ['/sasjsapi', '/appstream', '/saslogon']
+    //
+    // The API's own documentation page is at the exact path /SASjsApi, which
+    // express.static answers before this runs, so the prefix here ends in a
+    // slash: the app's own screen at /SASjsApiDocs is a route like
+    // /SASjsStudio, while every path below the API mount stays a 404.
+    const reserved = ['/sasjsapi/', '/appstream', '/saslogon']
     const requestPath = req.path.toLowerCase()
     if (reserved.some((prefix) => requestPath.startsWith(prefix)))
       return res.status(404).send('Not Found')

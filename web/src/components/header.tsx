@@ -27,12 +27,7 @@ import { STUDIO_ROUTE } from '../utils'
 import { oppositePreference } from '../utils/colorScheme'
 import { useColorMode } from '../utils/hooks'
 
-const NODE_ENV = process.env.NODE_ENV
-const PORT_API = process.env.PORT_API
-const baseUrl =
-  NODE_ENV === 'development' ? `http://localhost:${PORT_API ?? 5000}` : ''
-
-const validTabs = ['/', '/SASjsDrive', '/SASjsStudio']
+const validTabs = ['/', '/SASjsDrive', '/SASjsStudio', '/SASjsApiDocs']
 
 const Header = (props: any) => {
   const navigate = useNavigate()
@@ -123,22 +118,25 @@ const Header = (props: any) => {
                 component={Link}
               />
             )}
+            {/* A real tab, not a button beside them: the API documentation is a
+                screen of the app like the others, so it is styled like them and
+                navigates the router rather than a browser window. */}
+            <Tab
+              label="API"
+              value="/SASjsApiDocs"
+              to="/SASjsApiDocs"
+              component={Link}
+            />
           </Tabs>
-          <Button
-            href={`${baseUrl}/SASjsApi`}
-            target="_blank"
-            rel="noreferrer"
-            variant="contained"
-            color="primary"
-            size="large"
-            endIcon={<OpenInNew />}
-          >
-            API
-          </Button>
         </Box>
 
         <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-          <IconButton size="large" onClick={handleOpenNavMenu} color="inherit">
+          <IconButton
+            size="large"
+            onClick={handleOpenNavMenu}
+            color="inherit"
+            aria-label="Open the navigation menu"
+          >
             <MenuIcon />
           </IconButton>
 
@@ -185,6 +183,18 @@ const Header = (props: any) => {
                 </Button>
               </MenuItem>
             )}
+
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
+                component={Link}
+                to="/SASjsApiDocs"
+                onClick={handleCloseNavMenu}
+                variant="contained"
+                color="primary"
+              >
+                API
+              </Button>
+            </MenuItem>
           </Menu>
         </Box>
 
