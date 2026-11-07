@@ -564,7 +564,13 @@ const streamDriveFile = (
   request.res?.setHeader('X-Content-Type-Options', 'nosniff')
   request.res?.setHeader('Content-Length', String(size))
 
-  request.res?.sendFile(resolved)
+  // `sendFile` refuses a dotfile unless told otherwise: its `dotfiles` option
+  // defaults to 'ignore', which answers 404 through the error handler - a 500
+  // to the caller - so every file whose name starts with a dot was unreadable,
+  // including the `.sasjslint` this server seeds at the drive root for Studio
+  // to open. The drive root is not a web root and this route picks its own
+  // Content-Type, so a dot in the name carries no special meaning here.
+  request.res?.sendFile(resolved, { dotfiles: 'allow' })
 }
 
 const readFileFromUpload = async (file: Express.Multer.File) => {

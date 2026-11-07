@@ -10,7 +10,8 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { isImageFile, IMAGE_EXTENSIONS } = await import('../src/utils/files.ts')
+const { asImageBlob, imageContentTypeFor, isImageFile, IMAGE_EXTENSIONS } =
+  await import('../src/utils/files.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -47,6 +48,58 @@ check(
 check(
   'every listed extension is recognised',
   IMAGE_EXTENSIONS.every((extension) => isImageFile(`file.${extension}`))
+)
+
+// The drive serves every non-text file as application/octet-stream, and Chrome
+// will not draw an SVG typed that way inside `<img>`. The blob is re-typed from
+// the path before it becomes an object URL.
+check(
+  'an svg is declared as image/svg+xml, not octet-stream',
+  imageContentTypeFor('/icons/logo.svg') === 'image/svg+xml'
+)
+check(
+  'a png is declared as image/png',
+  imageContentTypeFor('/charts/sales.png') === 'image/png'
+)
+check(
+  'a jpeg and a jpg share one type',
+  imageContentTypeFor('a.jpeg') === imageContentTypeFor('b.jpg') &&
+    imageContentTypeFor('a.jpeg') === 'image/jpeg'
+)
+check(
+  'the extension case does not change the type',
+  imageContentTypeFor('/charts/SALES.PNG') === 'image/png'
+)
+check(
+  'every previewable extension has a type of its own',
+  IMAGE_EXTENSIONS.every(
+    (extension) =>
+      imageContentTypeFor(`f.${extension}`) !== 'application/octet-stream'
+  )
+)
+
+// A real Blob: the bytes are re-wrapped, not copied into a new buffer, and the
+// type is the only thing that changes.
+const bytes = new Blob([new Uint8Array([1, 2, 3, 4])], {
+  type: 'application/octet-stream'
+})
+const retyped = asImageBlob(bytes, '/icons/logo.svg')
+
+check(
+  'asImageBlob sets the type the browser needs',
+  retyped.type === 'image/svg+xml'
+)
+check(
+  'asImageBlob keeps the bytes and their length',
+  retyped.size === bytes.size
+)
+
+const alreadyTyped = new Blob([new Uint8Array([1, 2, 3])], {
+  type: 'image/png'
+})
+check(
+  'asImageBlob leaves a correctly typed blob alone',
+  asImageBlob(alreadyTyped, '/charts/sales.png') === alreadyTyped
 )
 
 if (failures.length) {

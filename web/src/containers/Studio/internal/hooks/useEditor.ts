@@ -19,9 +19,10 @@ import {
   useStateWithCallback
 } from '../../../../utils/hooks'
 import {
-  parseErrorsAndWarnings,
+  asImageBlob,
   countLines,
   isImageFile,
+  parseErrorsAndWarnings,
   LogObject,
   parseExecutionResponse
 } from '../../../../utils'
@@ -476,7 +477,14 @@ const useEditor = ({
           .get(`/SASjsApi/drive/file?_filePath=${selectedFilePath}`, {
             responseType: 'blob'
           })
-          .then((res: any) => setImageUrl(URL.createObjectURL(res.data)))
+          // the drive types every non-text file as octet-stream, which
+          // `<img>` will not draw an SVG from: the blob is re-typed from the
+          // file's own extension before it becomes an object URL
+          .then((res: any) =>
+            setImageUrl(
+              URL.createObjectURL(asImageBlob(res.data, selectedFilePath))
+            )
+          )
           .catch((err) => {
             setModalTitle('Abort')
             setModalPayload(

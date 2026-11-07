@@ -1286,6 +1286,27 @@ describe('drive', () => {
         expect(res.text).toEqual(fileToCopyContent)
       })
 
+      it('should serve a dotfile, the seeded .sasjslint included', async () => {
+        // The drive root carries the `.sasjslint` rules file the server seeds
+        // for Studio, and its name starts with a dot. `sendFile` refuses those
+        // by default, which answered 500 rather than the file.
+        const res = await request(app)
+          .get('/SASjsApi/drive/file')
+          .auth(accessToken, { type: 'bearer' })
+          .query({ _filePath: '/.sasjslint' })
+
+        expect(res.statusCode).toEqual(200)
+        // every non-text extension is answered as octet-stream, so the body
+        // arrives as a Buffer rather than `res.text`
+        expect(res.headers['content-type']).toContain(
+          'application/octet-stream'
+        )
+        // the seeded file is the package's flat rule map, one key per rule
+        expect(JSON.parse(res.body.toString())).toEqual(
+          expect.objectContaining({ noTrailingSpaces: expect.any(Boolean) })
+        )
+      })
+
       it('should respond with Unauthorized if access token is not present', async () => {
         const res = await request(app).get('/SASjsApi/drive/file').expect(401)
 
