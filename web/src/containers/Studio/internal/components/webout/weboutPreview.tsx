@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { isHtmlOutput, prettyJsonOutput } from '../../../../../utils'
 
@@ -42,7 +42,13 @@ const textPane = (withToggle: boolean) => ({
 const WebOutPreview = (props: WebOutPreviewProps) => {
   const { output } = props
   const isPage = isHtmlOutput(output)
-  const pretty = isPage ? null : prettyJsonOutput(output)
+  // Parsed once per webout: a `%webout()` document is routinely megabytes, and
+  // the parse would otherwise run again on every toggle click and every parent
+  // re-render while this tab is open.
+  const pretty = useMemo(
+    () => (isPage ? null : prettyJsonOutput(output)),
+    [isPage, output]
+  )
   const [showSource, setShowSource] = useState(false)
 
   const hasToggle = isPage || pretty !== null

@@ -103,6 +103,19 @@ check(
   prettyJsonOutput('{}')?.replace(/\s/g, '') === '{}'
 )
 
+// Indenting is a re-serialisation, and a parse is lossy at the edges - which
+// is why RAW stays one click away. Pinned so the docs cannot drift from the
+// behaviour.
+const lossy = prettyJsonOutput('{"big":9007199254740993,"exp":1e999,"neg":-0}')
+check(
+  'the formatted view rounds an integer past MAX_SAFE_INTEGER',
+  lossy !== null && lossy.includes('9007199254740992')
+)
+check(
+  'the formatted view turns an out-of-range exponent into null',
+  lossy !== null && /"exp": null/.test(lossy)
+)
+
 if (failures.length) {
   console.error(`webout preview: ${failures.length} check(s) failed`)
   for (const failure of failures) console.error(`  - ${failure}`)

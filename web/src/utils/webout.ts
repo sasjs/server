@@ -37,10 +37,10 @@ export const parseJsonOutput = (output: string): unknown | null => {
 /**
  * The webout indented for reading, or `null` when it is not JSON.
  *
- * The text is re-emitted from the parsed document, so what a reader sees is the
- * same data rather than a re-serialisation of a lossy parse: a number past
- * `Number.MAX_SAFE_INTEGER` still reads wrong, which is why the RAW view stays
- * one click away and is the truth of what the program wrote.
+ * This is a re-serialisation of a parse, and a parse is lossy at the edges:
+ * `9007199254740993` comes back as `9007199254740992`, `1e999` as `null`, `-0`
+ * as `0`. The RAW view is therefore the truth of what the program wrote, and
+ * this one exists to make a document readable - never to stand in for the bytes.
  */
 export const prettyJsonOutput = (output: string): string | null => {
   const parsed = parseJsonOutput(output)
