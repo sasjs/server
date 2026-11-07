@@ -1,4 +1,4 @@
-import { Route, Tags, Example, Get, Request, Security } from 'tsoa'
+import { Route, Tags, Example, Get, Request, Response, Security } from 'tsoa'
 import express from 'express'
 import User from '../model/User'
 import {
@@ -96,11 +96,16 @@ export class InfoController {
    * permissions dialog in the web interface uses this list to populate its
    * choices.
    *
+   * The inventory is for the administration dialog, and it is **admin-only**:
+   * the routes a caller may reach are reconnaissance before sign-in, so the
+   * middleware refuses anyone else with a `401` before this method runs.
+   *
    * @summary List the routes that accept permissions
    */
   @Example<AuthorizedRoutesResponse>({
     paths: ['/AppStream', '/SASjsApi/stp/execute']
   })
+  @Response(401, 'Administrator access is required')
   @Get('/authorizedRoutes')
   public authorizedRoutes(): AuthorizedRoutesResponse {
     const response = {
