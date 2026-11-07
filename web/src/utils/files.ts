@@ -29,3 +29,43 @@ export const isImageFile = (filePath: string) => {
 
   return IMAGE_EXTENSIONS.includes(extension)
 }
+
+/** The media type each previewable format is declared as. */
+const IMAGE_CONTENT_TYPES: { [extension: string]: string } = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  ico: 'image/x-icon',
+  avif: 'image/avif',
+  svg: 'image/svg+xml'
+}
+
+/**
+ * The media type a picture's bytes are handed to the browser as.
+ *
+ * The drive answers any non-text file as `application/octet-stream`, and Chrome
+ * refuses an SVG declared that way inside `<img>` - measured, where a PNG typed
+ * the same way is sniffed and does render. Re-typing the blob from the file's
+ * own extension makes every preview independent of the drive's conservative
+ * Content-Type. The object URL is what the page loads, so the API origin itself
+ * still never answers `image/svg+xml`, which is the type that would let an
+ * uploaded SVG run script on it.
+ */
+export const imageContentTypeFor = (filePath: string) =>
+  IMAGE_CONTENT_TYPES[filePath.split('.').pop()?.toLowerCase() ?? ''] ??
+  'application/octet-stream'
+
+/**
+ * A fetched picture's bytes as a blob the browser will draw.
+ *
+ * `slice` is how a Blob's type is changed: it re-wraps the same bytes, so no
+ * copy of the picture is decoded and re-encoded on the way to `<img>`.
+ */
+export const asImageBlob = (data: Blob, filePath: string) => {
+  const type = imageContentTypeFor(filePath)
+
+  return data.type === type ? data : data.slice(0, data.size, type)
+}
