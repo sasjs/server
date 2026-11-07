@@ -113,6 +113,11 @@ export class CodeController {
    *
    * @summary Execute code and return its output
    */
+  @Response(
+    400,
+    'Invalid request: the payload is invalid, or the program could not be run'
+  )
+  @Response(401, 'Unauthorized')
   @Post('/execute')
   public async executeCode(
     @Request() request: express.Request,
@@ -132,6 +137,11 @@ export class CodeController {
    *
    * @summary Trigger code and return a session ID
    */
+  @Response(
+    400,
+    'Invalid request: the payload is invalid, or the program could not be run'
+  )
+  @Response(401, 'Unauthorized')
   @Post('/trigger')
   public async triggerCode(
     @Request() request: express.Request,

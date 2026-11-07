@@ -1383,6 +1383,10 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
             description: "Runs the supplied code on the requested runtime and returns its output.\n\nThe response body is assembled from the parts the program produced, joined\nwith newlines and separated by a UUID that marks the boundaries of the log:\n\n1. Webout - the `_webout` content, omitted when the program writes none\n2. Logs UUID - the server's identifier opening the log section\n3. Log - the program log\n4. Logs UUID - the same identifier closing the log section\n5. Print - the SAS listing, present only for the `sas` runtime\n\nThe log can contain the UUID itself: a program's source is echoed into its\nlog, so the literal appears wherever sasjs/core's `ms_runstp` or\n`ms_testservice` is part of the submitted code, and a service that calls\nanother puts the nested response in it. The UUID marks the boundaries of\nthe log, not a fixed number of parts - everything between the first and the\nlast occurrence is the log.\n\nThis endpoint waits for the program to finish. To start a program and poll\nfor its result instead, use `POST /SASjsApi/code/trigger`. See\nhttps://server.sasjs.io/ for the available runtimes."
             summary: 'Execute code and return its output'
             tags:
@@ -1407,6 +1411,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TriggerCodeResponse'
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
             description: "Starts the supplied code on the requested runtime and returns immediately,\nwithout waiting for it to finish.\n\nThe response carries the `sessionId` of the session running the code. Poll\n`GET /SASjsApi/session/{sessionId}/state` for its state, or set\n`expiresAfterMins` to have the session destroyed that many minutes after it\ncompletes. See https://server.sasjs.io/ for the available runtimes."
             summary: 'Trigger code and return a session ID'
             tags:
@@ -2768,6 +2776,10 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
             description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter. Any other query\nparameter is passed to the program as a session variable, and files may be\nuploaded as form fields. When `_debug` is set, the session log is appended\nto the response body. See https://server.sasjs.io/storedprograms."
             summary: 'Execute a stored program'
             tags:
@@ -2804,6 +2816,10 @@ paths:
                                 anyOf:
                                     - {type: string}
                                     - {type: string, format: byte}
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
             description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter or by\n`_program` in the body. Other body fields and query parameters are passed to\nthe program as session variables, and files may be uploaded as form fields.\nSee https://server.sasjs.io/storedprograms."
             summary: 'Execute a stored program'
             tags:
@@ -2836,6 +2852,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TriggerProgramResponse'
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
             description: "Starts a stored program and returns immediately, without waiting for it to\nfinish.\n\nThe response carries the `sessionId` of the session running the program.\nPoll `GET /SASjsApi/session/{sessionId}/state` for its state, or set\n`expiresAfterMins` to have the session destroyed that many minutes after it\ncompletes."
             summary: 'Trigger a stored program and return a session ID'
             tags:
