@@ -2459,7 +2459,9 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {paths: [/AppStream, /SASjsApi/stp/execute]}
-            description: "Returns every route to which a permission rule can be applied. The\npermissions dialog in the web interface uses this list to populate its\nchoices."
+                '401':
+                    description: 'Administrator access is required'
+            description: "Returns every route to which a permission rule can be applied. The\npermissions dialog in the web interface uses this list to populate its\nchoices.\n\nThe inventory is for the administration dialog, and it is **admin-only**:\nthe routes a caller may reach are reconnaissance before sign-in, so the\nmiddleware refuses anyone else with a `401` before this method runs."
             summary: 'List the routes that accept permissions'
             tags:
                 - Info

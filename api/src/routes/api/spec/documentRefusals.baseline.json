@@ -17,7 +17,6 @@
   "get /SASjsApi/group/by/groupname/{name} 401",
   "get /SASjsApi/group/{uid} 401",
   "get /SASjsApi/info 401",
-  "get /SASjsApi/info/authorizedRoutes 401",
   "get /SASjsApi/info/myAuthorizedRoutes 401",
   "get /SASjsApi/stp/execute 401",
   "get /SASjsApi/user 401",
