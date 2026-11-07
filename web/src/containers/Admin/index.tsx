@@ -21,6 +21,8 @@ import {
 
 import axios from 'axios'
 
+import PublishApp from './publishApp'
+
 /**
  * Administration: what the server is running, what it is using, and what it has
  * been logging. Read-only - every value comes from GET /SASjsApi/admin/*, which
@@ -283,6 +285,16 @@ const Admin = () => {
           {String(error)}
         </Alert>
       )}
+
+      {/* The one write on this screen. Publishing an app is an administrative
+          action, and the App Stream page it used to sit on is no longer a
+          destination users are sent to - the home screen lists the apps. */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+          Publish an app
+        </Typography>
+        <PublishApp />
+      </Paper>
 
       {isLoading && !diagnostics && (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>

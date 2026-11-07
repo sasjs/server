@@ -47,6 +47,9 @@ const AppTile = (props: {
         gap: 1,
         height: 160,
         p: 2,
+        // Rounded rather than rectangular: the grid reads as tiles people tap
+        // rather than as panels, and 16px matches the rest of the app's corners.
+        borderRadius: '16px',
         textAlign: 'center',
         textDecoration: 'none',
         color: 'inherit',

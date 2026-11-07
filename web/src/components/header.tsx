@@ -23,7 +23,7 @@ import {
 
 import Username from './username'
 import { AppContext } from '../context/appContext'
-import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../utils'
+import { STUDIO_ROUTE } from '../utils'
 import { oppositePreference } from '../utils/colorScheme'
 import { useColorMode } from '../utils/hooks'
 
@@ -57,11 +57,6 @@ const Header = (props: any) => {
   const nextMode = oppositePreference(colorMode)
 
   const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
-
-  // The App Stream landing page is always visible to a signed-in caller, so the
-  // server reports it for everyone. The button follows that answer rather than
-  // assuming it; it is the TILES inside that get filtered.
-  const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget)
@@ -129,19 +124,6 @@ const Header = (props: any) => {
               />
             )}
           </Tabs>
-          {canUseAppStream && (
-            <Button
-              href={`${baseUrl}/AppStream`}
-              target="_blank"
-              rel="noreferrer"
-              variant="contained"
-              color="primary"
-              size="large"
-              endIcon={<OpenInNew />}
-            >
-              Apps
-            </Button>
-          )}
         </Box>
 
         <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -189,22 +171,6 @@ const Header = (props: any) => {
                   color="primary"
                 >
                   Studio
-                </Button>
-              </MenuItem>
-            )}
-
-            {canUseAppStream && (
-              <MenuItem sx={{ justifyContent: 'center' }}>
-                <Button
-                  href={`${baseUrl}/AppStream`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={handleCloseNavMenu}
-                  variant="contained"
-                  color="primary"
-                  endIcon={<OpenInNew />}
-                >
-                  Apps
                 </Button>
               </MenuItem>
             )}
