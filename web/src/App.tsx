@@ -9,6 +9,7 @@ import Header from './components/header'
 import Home from './components/home'
 import Studio from './containers/Studio'
 import Settings from './containers/Settings'
+import ApiDocs from './containers/ApiDocs'
 import UpdatePassword from './components/updatePassword'
 
 import { AppContext } from './context/appContext'
@@ -84,6 +85,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/SASjsStudio" element={studioElement} />
+        <Route path="/SASjsApiDocs" element={<ApiDocs />} />
         <Route path="/SASjsSettings" element={<Settings />} />
         <Route path="/SASjsLogon" element={<AuthCode />} />
         {/* The server answers any unmatched path with the app shell, so a

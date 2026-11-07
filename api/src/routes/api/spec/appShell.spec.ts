@@ -63,6 +63,28 @@ describe('the app shell catch-all', () => {
     expect(String(res.headers['set-cookie'])).toContain('XSRF-TOKEN')
   })
 
+  it("should serve the shell for the app's API documentation screen", async () => {
+    // /SASjsApiDocs is the app's own route - it frames the API's static page at
+    // /SASjsApi - so it is a screen like /SASjsStudio, not an API path.
+    const res = await request(app)
+      .get('/SASjsApiDocs')
+      .set('Accept', 'text/html')
+      .expect(200)
+
+    expect(res.text).toEqual(SHELL)
+  })
+
+  it('should keep an unknown path below the API mount a 404', async () => {
+    // The refusal is narrowed to the mount's subpaths so the app route above can
+    // exist; an API path still never turns into the shell.
+    const res = await request(app)
+      .get('/SASjsApi/unknown')
+      .set('Accept', 'text/html')
+      .expect(404)
+
+    expect(res.text).toEqual('Not Found')
+  })
+
   it('should refuse a reserved prefix whatever its case', async () => {
     // Express matches the mounted routers case-insensitively, so the refusal
     // has to be case-insensitive as well or /saslogon/unknown becomes the shell.
