@@ -2777,7 +2777,7 @@ paths:
                                     - {type: string}
                                     - {type: string, format: byte}
                 '400':
-                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                    description: 'Invalid request: the query parameters are invalid, or the program could not be run'
                 '401':
                     description: Unauthorized
             description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter. Any other query\nparameter is passed to the program as a session variable, and files may be\nuploaded as form fields. When `_debug` is set, the session log is appended\nto the response body. See https://server.sasjs.io/storedprograms."

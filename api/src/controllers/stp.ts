@@ -76,9 +76,11 @@ export class STPController {
    * @example _program "/Projects/myApp/some/program"
    * @example _debug 131
    */
+  // no body on this one: the 400 is the query schema ("_program" is required,
+  // "_debug" must be a number) or a failure while running, never a payload
   @Response(
     400,
-    'Invalid request: the payload is invalid, or the program could not be run'
+    'Invalid request: the query parameters are invalid, or the program could not be run'
   )
   @Response(401, 'Unauthorized')
   @Get('/execute')
