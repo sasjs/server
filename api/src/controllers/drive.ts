@@ -253,10 +253,13 @@ export class DriveController {
    * served on `/AppStream/<streamServiceName>`, because the name leaves the route
    * inventory as well.
    *
-   * `appLoc` and `streamServiceName` are both required: a name that has been
-   * republished for a different folder is a different app, so the pair is what
-   * identifies the entry, and a pair matching none answers `404`. A missing field
-   * answers `400`.
+   * `appLoc` and `streamServiceName` are both required - a caller that names a
+   * stream but not the folder has not said what to remove - but the **folder is
+   * what identifies the app**: an app is one thing to deploy and one thing to
+   * remove, and its name is a label on it. A folder may hold two apps only as a
+   * special case, and they are still one thing to load or delete. So a name that
+   * has since been changed does not turn a correct removal into a `404`; a folder
+   * with nothing published at it answers `404`, and a missing field answers `400`.
    *
    * The drive content is left alone. Deleting the folder is `DELETE
    * /SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and
@@ -273,7 +276,7 @@ export class DriveController {
     status: 'failure',
     message: 'Unpublishing failed!'
   })
-  @Response(404, 'No such app stream entry')
+  @Response(404, 'No app is published at that folder')
   @Delete('/deploy')
   public async unpublish(
     @Body() body: UnpublishPayload
@@ -286,8 +289,8 @@ export class DriveController {
 
     if (!body?.appLoc) throw new HttpError(400, '"appLoc" is required')
 
-    if (!(await unpublishAppStream(body.streamServiceName, body.appLoc)))
-      throw new HttpError(404, 'No such app stream entry.')
+    if (!(await unpublishAppStream(body.appLoc)))
+      throw new HttpError(404, 'No app is published at that folder.')
 
     return { status: 'success' }
   }

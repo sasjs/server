@@ -235,7 +235,7 @@ describe('App Stream unpublish', () => {
       streamServiceName: 'Nothing'
     }).expect(404)
 
-    expect(res.text).toBe('No such app stream entry.')
+    expect(res.text).toBe('No app is published at that folder.')
   })
 
   it('should answer 404, and leave the entry, when the appLoc does not match', async () => {
@@ -248,7 +248,7 @@ describe('App Stream unpublish', () => {
       streamServiceName
     }).expect(404)
 
-    expect(res.text).toBe('No such app stream entry.')
+    expect(res.text).toBe('No app is published at that folder.')
     expect(await listedApps()).toContain(streamServiceName)
 
     await unpublish({ appLoc, streamServiceName }).expect(200)
