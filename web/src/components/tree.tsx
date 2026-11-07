@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
-import { Menu, MenuItem, Typography } from '@mui/material'
+import { Box, Menu, MenuItem, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
 import { TreeItem } from '@mui/x-tree-view/TreeItem'
 
+import SasjsMark, { SASJS_MARK_SIZE } from './sasjsMark'
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
-import { LOADING_SUFFIX, childrenOf } from '../utils/driveTree'
+import { LOADING_SUFFIX, childrenOf, isSasFile } from '../utils/driveTree'
 import { TreeNode } from '../utils/types'
 
 interface Props {
@@ -144,7 +145,25 @@ const TreeView = ({
       // used to do nothing at all.
       onContextMenu={(event) => openContextMenu(event, nodes)}
       label={
-        <Typography onClick={() => handleItemClick(nodes)}>
+        <Typography
+          onClick={() => handleItemClick(nodes)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            // the mark is 18px and the row is 22px: centre the icon on the
+            // name rather than letting it set the line box's height
+            lineHeight: 1.4
+          }}
+        >
+          {isSasFile(nodes) && <SasjsMark />}
+          {/* The mark's column is reserved on EVERY row, folders included: the
+              tree gives a folder an expand chevron, not an icon slot, so
+              reserving only for files would start a subfolder's name at the
+              label edge while its siblings start one column in. */}
+          {!isSasFile(nodes) && (
+            <Box sx={{ width: SASJS_MARK_SIZE, flex: '0 0 auto' }} />
+          )}
           {nodes.name}
         </Typography>
       }

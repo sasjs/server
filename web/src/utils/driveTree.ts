@@ -85,6 +85,15 @@ export const expandedDescendantsOf = (
     .sort((a, b) => a.split('/').length - b.split('/').length)
 }
 
+/**
+ * A program, as opposed to a data file or a folder: only these carry the SASjs
+ * mark in the tree, so the icon says "this is a program" rather than
+ * decorating every row. Mirrors the extension's icon theme, which maps the one
+ * extension `.sas`.
+ */
+export const isSasFile = (node: TreeNode) =>
+  !node.isFolder && /\.sas$/i.test(node.name)
+
 /** The children to render under one node. */
 export const childrenOf = (nodes: TreeNode): TreeNode[] => {
   if (nodes.children.length) return nodes.children
