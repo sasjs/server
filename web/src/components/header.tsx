@@ -13,11 +13,19 @@ import {
   IconButton,
   Typography
 } from '@mui/material'
-import { OpenInNew, Settings, Menu as MenuIcon } from '@mui/icons-material'
+import {
+  DarkMode,
+  LightMode,
+  Menu as MenuIcon,
+  OpenInNew,
+  Settings
+} from '@mui/icons-material'
 
 import Username from './username'
 import { AppContext } from '../context/appContext'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../utils'
+import { oppositePreference } from '../utils/colorScheme'
+import { useColorMode } from '../utils/hooks'
 
 const NODE_ENV = process.env.NODE_ENV
 const PORT_API = process.env.PORT_API
@@ -42,6 +50,12 @@ const Header = (props: any) => {
   // Running ad hoc code is permissioned, so the editor is offered only to a
   // caller the server admits. App.tsx guards the route as well: hiding the tab
   // alone would leave the URL as a way in.
+  // The switch flips an explicit choice, so it writes `light` or `dark` rather
+  // than toggling `system`: pressing it twice returns to where it started,
+  // whatever the OS is doing.
+  const [colorMode, setColorMode] = useColorMode()
+  const nextMode = oppositePreference(colorMode)
+
   const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
 
   // The App Stream landing page is always visible to a signed-in caller, so the
@@ -222,6 +236,14 @@ const Header = (props: any) => {
             justifyContent: 'flex-end'
           }}
         >
+          <IconButton
+            color="inherit"
+            onClick={() => setColorMode(nextMode)}
+            aria-label={`Switch to the ${nextMode} theme`}
+            title={`Switch to the ${nextMode} theme`}
+          >
+            {colorMode === 'dark' ? <LightMode /> : <DarkMode />}
+          </IconButton>
           <Username
             username={appContext.displayName || appContext.username}
             onClickHandler={handleOpenUserMenu}

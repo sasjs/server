@@ -6,6 +6,7 @@
  * settings, where every entry is `[section].[name]`. Adding a setting is a
  * matter of adding a key here and giving it a default.
  */
+import type { ColorThemePreference } from '../../../utils/colorScheme'
 
 export const SETTINGS_STORAGE_KEY = 'studio-settings'
 
@@ -32,11 +33,18 @@ export const subscribeToSettings = (listener: () => void): (() => void) => {
 export interface StudioSettings {
   'editor.formatOnSave': boolean
   'log.notableNotes': boolean
+  /**
+   * The colour scheme. `system` follows the OS and is the default, so an
+   * install nobody has touched looks like the rest of the desktop; a stored
+   * `light` or `dark` is a choice the user made here and wins over the OS.
+   */
+  'workbench.colorTheme': ColorThemePreference
 }
 
 export const defaultSettings: StudioSettings = {
   'editor.formatOnSave': true,
-  'log.notableNotes': true
+  'log.notableNotes': true,
+  'workbench.colorTheme': 'system'
 }
 
 /**
