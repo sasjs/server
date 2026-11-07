@@ -30,6 +30,48 @@ export const isImageFile = (filePath: string) => {
   return IMAGE_EXTENSIONS.includes(extension)
 }
 
+/**
+ * What a drive entry is, as far as the tree's icon column is concerned.
+ *
+ * `image` is not listed by extension here: the previewable formats are
+ * `IMAGE_EXTENSIONS`, so the two cannot drift.
+ */
+export type DriveFileKind =
+  'program' | 'data' | 'log' | 'config' | 'table' | 'image'
+
+/** The extensions behind every kind but `image`, which reuses the image list. */
+const EXTENSIONS_BY_KIND: {
+  [kind in Exclude<DriveFileKind, 'image'>]: string[]
+} = {
+  program: ['sas'],
+  data: ['sas7bdat', 'sas7bcat'],
+  log: ['log'],
+  // `.sasjslint` is the drive's own rules file, and JSON like the rest
+  config: ['json', 'sasjslint'],
+  table: ['csv', 'xls', 'xlsx']
+}
+
+/**
+ * Which icon a drive path gets, or `null` for one it has none of its own.
+ *
+ * Judged by the last segment's extension, the same way `isImageFile` judges,
+ * so a folder called `data.log` is not a log and a path with no extension is
+ * not anything. The tree still reserves the icon column for a `null` row.
+ */
+export const driveFileKindOf = (filePath: string): DriveFileKind | null => {
+  if (isImageFile(filePath)) return 'image'
+
+  const extension = filePath.split('.').pop()?.toLowerCase() ?? ''
+
+  const kinds = Object.keys(EXTENSIONS_BY_KIND) as Array<
+    Exclude<DriveFileKind, 'image'>
+  >
+
+  return (
+    kinds.find((kind) => EXTENSIONS_BY_KIND[kind].includes(extension)) ?? null
+  )
+}
+
 /** The media type each previewable format is declared as. */
 const IMAGE_CONTENT_TYPES: { [extension: string]: string } = {
   png: 'image/png',

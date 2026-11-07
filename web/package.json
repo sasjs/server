@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:mousepaste && npm run test:drivetree && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:images",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:images",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -23,7 +23,8 @@
     "test:logissues": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-log-issues.mjs",
     "test:response": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-execution-response.mjs",
     "test:webout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-webout-preview.mjs",
-    "test:images": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-image-files.mjs"
+    "test:images": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-image-files.mjs",
+    "test:filetypes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-file-types.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -18,7 +18,6 @@ const {
   childrenOf,
   expandedDescendantsOf,
   graftLevel,
-  isSasFile,
   parentPathOf
 } = await import('../src/utils/driveTree.ts')
 
@@ -142,23 +141,6 @@ check('expandedDescendantsOf of the root is every other open folder', () => {
 
 check('expandedDescendantsOf of a leaf folder is empty', () => {
   assert.deepEqual(expandedDescendantsOf(['', '/a'], '/a'), [])
-})
-
-check('isSasFile marks a .sas program whatever its extension case', () => {
-  assert.equal(isSasFile(node('a.sas', '/a.sas', false)), true)
-  assert.equal(isSasFile(node('A.SAS', '/A.SAS', false)), true)
-  assert.equal(isSasFile(node('a.Sas', '/a.Sas', false)), true)
-})
-
-check('isSasFile rejects the drive\'s other file types', () => {
-  assert.equal(isSasFile(node('a.sas7bdat', '/a.sas7bdat', false)), false)
-  assert.equal(isSasFile(node('a.log', '/a.log', false)), false)
-  assert.equal(isSasFile(node('a.sas.bak', '/a.sas.bak', false)), false)
-  assert.equal(isSasFile(node('asas', '/asas', false)), false)
-})
-
-check('isSasFile never marks a folder, even one named like a program', () => {
-  assert.equal(isSasFile(node('a.sas', '/a.sas', true)), false)
 })
 
 console.log(`\n${checks} checks passed`)
