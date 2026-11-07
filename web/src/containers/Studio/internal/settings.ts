@@ -39,12 +39,19 @@ export interface StudioSettings {
    * `light` or `dark` is a choice the user made here and wins over the OS.
    */
   'workbench.colorTheme': ColorThemePreference
+  /**
+   * Whether the drive explorer is hidden. Persisted because the answer is about
+   * the user's screen, not about this file: someone on a laptop hides it to get
+   * the editor width back and expects it to stay hidden.
+   */
+  'workbench.sideBarCollapsed': boolean
 }
 
 export const defaultSettings: StudioSettings = {
   'editor.formatOnSave': true,
   'log.notableNotes': true,
-  'workbench.colorTheme': 'system'
+  'workbench.colorTheme': 'system',
+  'workbench.sideBarCollapsed': false
 }
 
 /**
