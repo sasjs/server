@@ -1,5 +1,15 @@
 import express from 'express'
-import { Request, Security, Route, Tags, Post, Body, Get, Query } from 'tsoa'
+import {
+  Request,
+  Security,
+  Route,
+  Tags,
+  Post,
+  Body,
+  Get,
+  Query,
+  Response
+} from 'tsoa'
 import {
   ExecutionController,
   ExecutionVars,
@@ -66,6 +76,13 @@ export class STPController {
    * @example _program "/Projects/myApp/some/program"
    * @example _debug 131
    */
+  // no body on this one: the 400 is the query schema ("_program" is required,
+  // "_debug" must be a number) or a failure while running, never a payload
+  @Response(
+    400,
+    'Invalid request: the query parameters are invalid, or the program could not be run'
+  )
+  @Response(401, 'Unauthorized')
   @Get('/execute')
   public async executeGetRequest(
     @Request() request: express.Request,
@@ -95,6 +112,11 @@ export class STPController {
    * @param _program Location of code in SASjs Drive
    * @example _program "/Projects/myApp/some/program"
    */
+  @Response(
+    400,
+    'Invalid request: the payload is invalid, or the program could not be run'
+  )
+  @Response(401, 'Unauthorized')
   @Post('/execute')
   public async executePostRequest(
     @Request() request: express.Request,
@@ -132,6 +154,11 @@ export class STPController {
    * @example _debug 131
    * @example expiresAfterMins 15
    */
+  @Response(
+    400,
+    'Invalid request: the payload is invalid, or the program could not be run'
+  )
+  @Response(401, 'Unauthorized')
   @Post('/trigger')
   public async triggerProgram(
     @Request() request: express.Request,
