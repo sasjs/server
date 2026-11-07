@@ -12,6 +12,14 @@ import {
   Response
 } from 'tsoa'
 import { readFile } from 'fs/promises'
+import { Types } from 'mongoose'
+import { createSessionService, isApiError } from '@sasjs/api'
+import type {
+  CallerDirectory,
+  SessionArtifact,
+  SessionHost,
+  SessionSummary as ApiSessionSummary
+} from '@sasjs/api'
 import { UserResponse } from './user'
 import { getSessionController } from './internal'
 import {
@@ -20,12 +28,196 @@ import {
   SessionStateResponse,
   SessionSummary
 } from '../types'
-import { extractHeaders } from '../utils'
+import { extractHeaders, ModeType } from '../utils'
+import { desktopUser } from '../middlewares/desktop'
+import User from '../model/User'
 
 interface SessionResponse extends UserResponse {
   needsToUpdatePassword?: boolean
 }
 
+/**
+ * The caller, as the package's service states one.
+ *
+ * Everything the session routes decide about a caller - whether the account is
+ * active, whether it is an administrator, whether the session is theirs - is
+ * resolved against this, so the routes do not pass a role.
+ */
+const subjectOf = (request: express.Request) => {
+  const user = request.user
+  if (!user) return undefined
+
+  return { userId: user.userId, clientId: user.clientId }
+}
+
+/**
+ * The account directory the session service reads.
+ *
+ * One method, because one is all it calls - who the caller is, whether the
+ * account is still active, whether it is an administrator - so this is four
+ * lines over the `User` model rather than an `IdentityStore` adapter with twenty
+ * unimplemented methods. `groups` is populated from the document rather than
+ * left empty: a directory that answered `[]` for a user who is in groups would
+ * be a lie the next reader inherits.
+ */
+const directory: CallerDirectory = {
+  async userById(uid) {
+    // Desktop mode has one fixed user and no database behind it. Its id is a
+    // sentinel (`12345`), not an ObjectId, so the guard below would answer "no
+    // such account" and every session route would refuse the only caller there
+    // is - which is what adopting this port did until the spec covered it.
+    if (process.env.MODE === ModeType.Desktop && uid === desktopUser.userId)
+      return {
+        uid: desktopUser.userId,
+        username: desktopUser.username,
+        displayName: desktopUser.displayName,
+        isAdmin: true,
+        isActive: true,
+        needsToUpdatePassword: false,
+        groups: []
+      }
+
+    // a caller-supplied identifier reaches this from a token, and mongoose
+    // throws a CastError on anything that is not an ObjectId - which a token
+    // signed by someone else can carry. "No such account" is the answer.
+    if (!Types.ObjectId.isValid(uid)) return undefined
+
+    const user = await User.findById(uid)
+    if (!user) return undefined
+
+    return {
+      uid: user.uid,
+      username: user.username,
+      displayName: user.displayName,
+      isAdmin: user.isAdmin,
+      isActive: user.isActive,
+      needsToUpdatePassword: user.needsToUpdatePassword,
+      autoExec: user.autoExec,
+      groups: user.groups.map((group) => group.toString())
+    }
+  }
+}
+
+/**
+ * The session a run time is holding, if any.
+ *
+ * Sessions are kept per runtime, so a caller that only knows an id has to ask
+ * each controller in turn. An expired session and one that never existed are the
+ * same thing to a caller - there is nothing left to read - so both are
+ * `undefined`, which the service turns into its `404`.
+ */
+const findSession = (sessionId: string): Session | undefined => {
+  for (const runTime of process.runTimes) {
+    const session = getSessionController(runTime).getSessionById(sessionId)
+    if (session) return session
+  }
+
+  return undefined
+}
+
+/**
+ * One of the files the execution writes into the session folder.
+ *
+ * A missing file is an empty string rather than an error: the session exists,
+ * the run simply has not produced that artifact yet, and a poller should be able
+ * to tell "nothing written" from "session gone" without inventing a status.
+ */
+const readArtifact = (session: Session, fileName: string): Promise<string> =>
+  readFile(path.join(session.path, fileName))
+    .then((content) => content.toString())
+    .catch(() => '')
+
+/** A session as the document describes one - the folder it lives in is not part of it. */
+const summaryOf = (session: Session): ApiSessionSummary => ({
+  sessionId: session.id,
+  state: session.state,
+  pid: session.pid,
+  creationTimeStamp: session.creationTimeStamp,
+  deathTimeStamp: session.deathTimeStamp,
+  failureReason: session.failureReason,
+  expiresAfterMins: session.expiresAfterMins
+})
+
+/**
+ * The host's sessions, over the run times this process holds.
+ *
+ * Built per request because the output route has to apply the program's own
+ * response headers to *this* response: reading `stpsrv_header.txt` and passing
+ * the validated headers on is transport work, and it stays here rather than in
+ * the package - which is why the port answers contents and a content type, not a
+ * prepared response.
+ */
+const hostFor = (request: express.Request): SessionHost => ({
+  async session(sessionId) {
+    const session = findSession(sessionId)
+    if (!session) return undefined
+
+    return { owner: session.owner, summary: summaryOf(session) }
+  },
+
+  async state(sessionId) {
+    const session = findSession(sessionId)
+    if (!session) return undefined
+
+    return { state: session.state }
+  },
+
+  async log(sessionId) {
+    const session = findSession(sessionId)
+    if (!session) return undefined
+
+    return readArtifact(session, 'log.log')
+  },
+
+  async output(sessionId) {
+    const session = findSession(sessionId)
+    if (!session) return undefined
+
+    const headers = extractHeaders(
+      await readArtifact(session, 'stpsrv_header.txt')
+    )
+
+    // the synchronous execute path answers the same headers, and both go
+    // through the same extraction so a program cannot inject one
+    ;(request as any).sasHeaders = headers
+    request.res?.header(headers)
+
+    const webout = await readFile(path.join(session.path, 'webout.txt')).catch(
+      () => undefined
+    )
+
+    return { contents: webout ?? '', contentType: headers['content-type'] }
+  }
+})
+
+/** The four routes' decisions, over this host's sessions. */
+const serviceFor = (request: express.Request) =>
+  createSessionService(directory, hostFor(request))
+
+/**
+ * A refusal as these routes have always rendered one.
+ *
+ * `code` is what the router reads to choose the status, and the remaining object
+ * is the body a client keys on (`{ message }`). The package's `ApiError` is the
+ * same decision under another name, so it is translated rather than re-decided;
+ * anything else keeps its own shape and becomes whatever the server's error
+ * handler makes of a host bug - never a 404 the API appears to have chosen.
+ */
+const asRefusal = (error: unknown): never => {
+  if (isApiError(error)) throw { code: error.status, message: error.message }
+
+  throw error
+}
+
+/**
+ * The four session routes, as `@sasjs/api` decides them.
+ *
+ * The package owns what these routes answer - the `404` that hides a foreign
+ * session as readily as a missing one, the wording, and the owner rule (the uid
+ * first, because our records carry the username, which the package accepts as
+ * the fallback). What is left here is the host's half: finding the session in
+ * whichever run time holds it, and reading the files it wrote.
+ */
 @Security('bearerAuth')
 @Route('SASjsApi/session')
 @Tags('Session')
@@ -73,7 +265,16 @@ export class SessionController {
     @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<SessionStateResponse> {
-    return { state: sessionState(sessionId, request) }
+    try {
+      const state = await serviceFor(request).state(
+        subjectOf(request),
+        sessionId
+      )
+
+      return state as unknown as SessionStateResponse
+    } catch (error) {
+      return asRefusal(error)
+    }
   }
 
   /**
@@ -101,16 +302,28 @@ export class SessionController {
     @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<SessionSummary> {
-    const session = findSession(sessionId, request)
+    try {
+      const summary = await serviceFor(request).summary(
+        subjectOf(request),
+        sessionId
+      )
 
-    return {
-      sessionId: session.id,
-      state: session.state,
-      pid: session.pid,
-      creationTimeStamp: session.creationTimeStamp,
-      deathTimeStamp: session.deathTimeStamp,
-      failureReason: session.failureReason,
-      expiresAfterMins: session.expiresAfterMins
+      // The package types these as it can know them - `state` is a string
+      // because a host's vocabulary is its own, and the stamps are optional
+      // because a session that has not finished has no death stamp yet. This
+      // host's vocabulary is the enum the document names, and its records carry
+      // both stamps from the moment the session is created.
+      return {
+        sessionId: summary.sessionId,
+        state: summary.state as SessionState,
+        pid: summary.pid,
+        creationTimeStamp: summary.creationTimeStamp as string,
+        deathTimeStamp: summary.deathTimeStamp as string,
+        failureReason: summary.failureReason,
+        expiresAfterMins: summary.expiresAfterMins
+      }
+    } catch (error) {
+      return asRefusal(error)
     }
   }
 
@@ -135,9 +348,11 @@ export class SessionController {
     @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<string> {
-    const session = findSession(sessionId, request)
-
-    return readArtifact(session, 'log.log')
+    try {
+      return await serviceFor(request).log(subjectOf(request), sessionId)
+    } catch (error) {
+      return asRefusal(error)
+    }
   }
 
   /**
@@ -169,21 +384,20 @@ export class SessionController {
     @Request() request: express.Request,
     @Path() sessionId: string
   ): Promise<string | Buffer> {
-    const session = findSession(sessionId, request)
+    try {
+      const artifact: SessionArtifact = await serviceFor(request).output(
+        subjectOf(request),
+        sessionId
+      )
 
-    const headersPath = path.join(session.path, 'stpsrv_header.txt')
-    const headersFile = await readFile(headersPath)
-      .then((content) => content.toString())
-      .catch(() => '')
-
-    const headers = extractHeaders(headersFile)
-    ;(request as any).sasHeaders = headers
-    request.res?.header(headers)
-
-    const weboutPath = path.join(session.path, 'webout.txt')
-    const webout = await readFile(weboutPath).catch(() => undefined)
-
-    return webout ?? ''
+      // the route answers a Buffer with the session's own headers, so bytes stay
+      // bytes here: converting them to text would corrupt a binary attachment
+      return typeof artifact.contents === 'string'
+        ? artifact.contents
+        : Buffer.from(artifact.contents)
+    } catch (error) {
+      return asRefusal(error)
+    }
   }
 }
 
@@ -194,57 +408,3 @@ const session = (req: express.Request) => ({
   isAdmin: req.user!.isAdmin,
   needsToUpdatePassword: req.user!.needsToUpdatePassword
 })
-
-/**
- * The session with this id, from whichever runtime is holding it.
- *
- * Sessions are kept per runtime, so a caller that only knows an id has to ask
- * each controller in turn. Not found is a `404` rather than an empty answer: an
- * expired session and one that never existed are the same thing to a caller -
- * there is nothing left to read.
- */
-const findSession = (sessionId: string, request: express.Request): Session => {
-  for (let runTime of process.runTimes) {
-    // get session controller for each available runTime
-    const sessionController = getSessionController(runTime)
-
-    // get session by sessionId
-    const session = sessionController.getSessionById(sessionId)
-
-    if (!session) continue
-
-    // A session id is not a secret: it is handed to the caller that triggered
-    // the program and it is built from a timestamp plus a small random number,
-    // so it is guessable within a window. The log and the webout are readable
-    // by the session's owner and by an administrator; anyone else is told the
-    // session does not exist, because confirming it does would say that the id
-    // was right. There is no unowned session to fall back on.
-    const { username, isAdmin } = request.user ?? {}
-
-    if (session.owner !== username && !isAdmin) break
-
-    return session
-  }
-
-  throw {
-    code: 404,
-    message: `Session with ID '${sessionId}' was not found.`
-  }
-}
-
-const sessionState = (
-  sessionId: string,
-  request: express.Request
-): SessionState => findSession(sessionId, request).state
-
-/**
- * One of the files the execution writes into the session folder.
- *
- * A missing file is an empty string rather than an error: the session exists,
- * the run simply has not produced that artifact yet, and a poller should be able
- * to tell "nothing written" from "session gone" without inventing a status.
- */
-const readArtifact = (session: Session, fileName: string): Promise<string> =>
-  readFile(path.join(session.path, fileName))
-    .then((content) => content.toString())
-    .catch(() => '')
