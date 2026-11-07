@@ -2,6 +2,7 @@ import { Route, Tags, Example, Get, Request, Response, Security } from 'tsoa'
 import express from 'express'
 import User from '../model/User'
 import {
+  formatBuildInfo,
   getAuthorizedRoutes,
   getAuthProviders,
   getGrantedRoutes,
@@ -42,6 +43,14 @@ export interface InfoResponse {
    * the login screen must not offer a form the server refuses to accept.
    */
   localLoginEnabled: boolean
+  /**
+   * What produced this build, as `v3.2.2 (4a26a3d)` - the release tag and the
+   * commit, from buildInfo.generated.ts. Public for the same reason as the rest
+   * of this response: the interface stamps it in the corner of every screen,
+   * the login screen included, so a support report names the build it came from
+   * without anyone having to sign in first.
+   */
+  version: string
 }
 
 @Route('SASjsApi/info')
@@ -50,8 +59,9 @@ export class InfoController {
   /**
    * Returns public information about this server instance: the mode it runs in
    * (`server` or `desktop`), its CORS setting, the ports its listeners serve on, the
-   * available runtimes, the configured external authentication providers, and
-   * whether password sign-in for local accounts is enabled.
+   * available runtimes, the configured external authentication providers,
+   * whether password sign-in for local accounts is enabled, and the release
+   * that produced the running build.
    *
    * This endpoint requires no authentication: the login screen reads it to
    * decide which sign-in methods to offer.
@@ -66,7 +76,8 @@ export class InfoController {
     runTimes: ['sas', 'js'],
     authProviders: [],
     oidcProviderName: 'OpenID Connect',
-    localLoginEnabled: true
+    localLoginEnabled: true,
+    version: 'v3.2.2 (4a26a3d)'
   })
   @Get('/')
   public info(): InfoResponse {
@@ -82,7 +93,8 @@ export class InfoController {
       httpsPort: listeners.config?.httpsPort || null,
       runTimes: process.runTimes,
       authProviders,
-      localLoginEnabled: isLocalLoginEnabled()
+      localLoginEnabled: isLocalLoginEnabled(),
+      version: formatBuildInfo()
     }
 
     if (authProviders.includes('oidc'))

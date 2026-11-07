@@ -39,9 +39,19 @@ describe('CSRF cookie lifecycle', () => {
   const cookiesOf = (res: request.Response): string[] =>
     (res.headers['set-cookie'] as unknown as string[]) || []
 
-  /** The token the response hands the browser, if it hands one over. */
+  /**
+   * The token the response hands the browser, if it hands one over.
+   *
+   * A refusal answers with two XSRF-TOKEN cookies - one that clears the token
+   * that was presented, then the fresh one - so the token a browser keeps is
+   * the last non-empty value, not the first cookie in the header.
+   */
   const csrfCookieOf = (res: request.Response): string | undefined =>
-    /XSRF-TOKEN=([^;]*)/.exec(cookiesOf(res).join(';'))?.[1]
+    cookiesOf(res)
+      .filter((cookie) => cookie.startsWith('XSRF-TOKEN='))
+      .map((cookie) => /XSRF-TOKEN=([^;]*)/.exec(cookie)?.[1] ?? '')
+      .filter((value) => value.length > 0)
+      .pop()
 
   beforeAll(async () => {
     app = await appPromise
@@ -133,6 +143,14 @@ describe('CSRF cookie lifecycle', () => {
       const freshToken = csrfCookieOf(refused)
       expect(freshToken).toBeTruthy()
       expect(freshToken).not.toEqual('a-token-from-a-session-that-is-gone')
+
+      // The stale value is cleared in the same response, so a jar that echoes
+      // it is corrected rather than left holding two cookies of one name - the
+      // case where adding a good token beside a bad one changes nothing.
+      expect(
+        cookiesOf(refused).filter((cookie) => /^XSRF-TOKEN=;/.test(cookie))
+          .length
+      ).toBeGreaterThan(0)
 
       // No GET / between the refusal and the retry.
       const retry = await agent

@@ -11,6 +11,7 @@ import Studio from './containers/Studio'
 import Settings from './containers/Settings'
 import ApiDocs from './containers/ApiDocs'
 import UpdatePassword from './components/updatePassword'
+import BuildStamp from './components/buildStamp'
 
 import { AppContext } from './context/appContext'
 import AuthCode from './containers/AuthCode'
@@ -103,6 +104,7 @@ function App() {
           sits in a white document */}
       <CssBaseline />
       {content}
+      <BuildStamp />
     </ThemeProvider>
   )
 }
