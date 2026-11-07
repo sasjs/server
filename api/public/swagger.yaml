@@ -1433,6 +1433,10 @@ paths:
                                 items:
                                     $ref: '#/components/schemas/Diagnostic'
                                 type: array
+                '400':
+                    description: '"code" is required / "code" must be a string / "code" is not allowed to be empty'
+                '401':
+                    description: Unauthorized
             description: "Lints the supplied SAS code and returns the diagnostics.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can lint its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nWhen the request names the file's drive path, the rules come from the\nnearest `.sasjslint` at or above that file's folder, so each folder in\nthe drive tree can carry its own rules; a request without a path lints\nagainst the drive-root rules file. Diagnostics describe the submitted\ntext only; no other file is read."
             summary: 'Lint SAS code and return the diagnostics'
             tags:
@@ -1457,6 +1461,10 @@ paths:
                         application/json:
                             schema:
                                 type: string
+                '400':
+                    description: '"code" is required / "code" must be a string / "code" is not allowed to be empty'
+                '401':
+                    description: Unauthorized
             description: "Formats the supplied SAS code and returns the formatted text.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can format its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nWhen the request names the file's drive path, the rules come from the\nnearest `.sasjslint` at or above that file's folder, so each folder in\nthe drive tree can carry its own rules; a request without a path formats\nagainst the drive-root rules file. Formatting only rewrites the submitted\ntext; no other file is read or written."
             summary: 'Format SAS code and return the formatted text'
             tags:

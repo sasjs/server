@@ -1,5 +1,5 @@
 import express from 'express'
-import { Request, Security, Route, Tags, Post, Body } from 'tsoa'
+import { Request, Response, Security, Route, Tags, Post, Body } from 'tsoa'
 import { Diagnostic, formatText } from '@sasjs/lint'
 import { ExecutionController, getSessionController } from './internal'
 import { TriggerResponse } from '../types'
@@ -155,6 +155,11 @@ export class CodeController {
    *
    * @summary Lint SAS code and return the diagnostics
    */
+  @Response(
+    400,
+    '"code" is required / "code" must be a string / "code" is not allowed to be empty'
+  )
+  @Response(401, 'Unauthorized')
   @Post('/lint')
   public async lintCode(@Body() body: LintCodePayload): Promise<Diagnostic[]> {
     return lintProgram(body.code, await getDriveLintConfig(body.filePath))
@@ -175,6 +180,11 @@ export class CodeController {
    *
    * @summary Format SAS code and return the formatted text
    */
+  @Response(
+    400,
+    '"code" is required / "code" must be a string / "code" is not allowed to be empty'
+  )
+  @Response(401, 'Unauthorized')
   @Post('/format')
   public async formatCode(@Body() body: FormatCodePayload): Promise<string> {
     return formatText(body.code, await getDriveLintConfig(body.filePath))
