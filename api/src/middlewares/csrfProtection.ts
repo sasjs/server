@@ -103,12 +103,21 @@ export const setCSRFCookie = (req: Request, res: Response) => {
 export const clearCSRFCookie = (res: Response) => {
   const allowedDomain = process.env.ALLOWED_DOMAIN?.trim()
 
-  res.clearCookie(CSRF_COOKIE_NAME, {
+  const attributes = {
     httpOnly: false,
-    sameSite: 'strict',
-    path: '/',
-    ...(allowedDomain ? { domain: allowedDomain } : {})
-  })
+    sameSite: 'strict' as const,
+    path: '/'
+  }
+
+  // Both forms, deliberately. A browser keys a cookie on name, domain and
+  // path, so the domain-scoped cookie this server writes and a host-only one
+  // left behind by a deployment that ran without ALLOWED_DOMAIN are two
+  // entries, not one - and a clear that names only one of them leaves the
+  // other in place, holding a token that can never verify.
+  res.clearCookie(CSRF_COOKIE_NAME, attributes)
+
+  if (allowedDomain)
+    res.clearCookie(CSRF_COOKIE_NAME, { ...attributes, domain: allowedDomain })
 }
 
 export const csrfProtection: RequestHandler = async (req, res, next) => {
@@ -138,16 +147,19 @@ export const csrfProtection: RequestHandler = async (req, res, next) => {
     // before multer, so the body can still be arriving - see drainBody.
     await drainBody(req)
 
-    // Hand back a token that IS valid for the session this request arrived
-    // with. The token just presented can only ever produce this same refusal,
-    // and nothing else re-issues it on a failed POST, so without this the
-    // client is stuck until it happens to reload the SPA or the cookie's
-    // Max-Age runs out (see sasjs/server#304).
+    // Drop the token that was just presented, then hand back one that IS valid
+    // for the session this request arrived with. Clearing comes first because
+    // the rejected token can only ever produce this same refusal: a browser
+    // holding it (or a second, stale XSRF-TOKEN cookie beside the fresh one)
+    // keeps echoing the old value, so a token that is merely added leaves the
+    // sign-in permanently refused until the cookie's Max-Age runs out - the
+    // lockout sasjs/server#304 reported.
     //
     // Minting here cannot help an attacker: the Set-Cookie goes to the origin
     // that made the request, a cross-site caller can neither read it nor send
     // it as a header on a retry, and the token is bound to the session the
     // request already carried - it confers no session the caller lacked.
+    clearCSRFCookie(res)
     setCSRFCookie(req, res)
 
     return res.status(400).send('Invalid CSRF token!')

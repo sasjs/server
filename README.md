@@ -466,6 +466,11 @@ A stop with nothing in flight is far quicker than the ceiling; measure one befor
 
 ## Server Version
 
+`GET /SASjsApi/info` reports the release that produced the running build in `version`, as `v3.2.2 (4a26a3d)` - the tag and the commit - and the interface stamps that value in the corner of every screen, the login screen included, so a screenshot names the build it came from.
+The value comes from `buildInfo.generated.ts`, which the build writes from the release tag (`SASJS_SERVER_VERSION` when the release workflow sets it) or from `git describe`; a build made by hand reports `dev`.
+
+## Initial Credentials
+
 The following credentials can be used for the initial connection to SASjs/server. It is highly recommended to change these on first use.
 
 - CLIENTID: `clientID1`

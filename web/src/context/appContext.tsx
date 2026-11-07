@@ -52,6 +52,14 @@ interface AppContextProps {
    */
   localLoginEnabled: boolean
   /**
+   * The release that produced the running server, as `v3.2.2 (4a26a3d)`, from
+   * the same /SASjsApi/info response. Shown as a version stamp on every
+   * screen, so a screenshot or a support report names the build without anyone
+   * having to find it - empty until the answer arrives, and empty against a
+   * server old enough not to report it.
+   */
+  version: string
+  /**
    * The routes this caller may use, from
    * `GET /SASjsApi/info/myAuthorizedRoutes`. Empty until the answer arrives,
    * and empty for a caller the server grants nothing - which is what keeps the
@@ -86,6 +94,7 @@ export const AppContext = createContext<AppContextProps>({
   runTimes: [],
   authProviders: [],
   localLoginEnabled: true,
+  version: '',
   authorizedRoutes: [],
   authorizedRoutesLoaded: false,
   isAuthorizedFor: () => false
@@ -147,6 +156,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
   // Defaults to true so a server that does not report the flag keeps the
   // password form rather than hiding the only way in.
   const [localLoginEnabled, setLocalLoginEnabled] = useState(true)
+  const [version, setVersion] = useState('')
   const [authorizedRoutes, setAuthorizedRoutes] = useState<string[]>([])
   const [authorizedRoutesLoaded, setAuthorizedRoutesLoaded] = useState(false)
 
@@ -205,6 +215,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         setAuthProviders(data.authProviders ?? [])
         setOidcProviderName(data.oidcProviderName)
         setLocalLoginEnabled(data.localLoginEnabled !== false)
+        setVersion(typeof data.version === 'string' ? data.version : '')
       })
       .catch(() => {})
   }, [])
@@ -263,6 +274,7 @@ const AppContextProvider = (props: { children: ReactNode }) => {
         authProviders,
         oidcProviderName,
         localLoginEnabled,
+        version,
         authorizedRoutes,
         authorizedRoutesLoaded,
         isAuthorizedFor,

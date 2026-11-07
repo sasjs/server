@@ -14,8 +14,37 @@ import {
 } from '@mui/material'
 import { AppContext } from '../context/appContext'
 
-const login = async (payload: { username: string; password: string }) =>
+/**
+ * The refusal the CSRF middleware sends when the token in the browser does not
+ * verify. It answers with a fresh token as a cookie, so the request that
+ * follows it succeeds - see `login`.
+ */
+const isCsrfRefusal = (error: any): boolean =>
+  typeof error?.response?.data === 'string' &&
+  error.response.data.includes('Invalid CSRF token')
+
+const postLogin = (payload: { username: string; password: string }) =>
   axios.post('/SASLogon/login', payload).then((res) => res.data)
+
+/**
+ * Signs in, retrying once when the CSRF token is refused.
+ *
+ * The token lives in a cookie and is read by axios at request time, so the
+ * retry picks up the one the refusal itself handed back. Without it a browser
+ * still holding a stale XSRF-TOKEN - one left by an earlier deployment, or a
+ * host-only copy beside the domain-scoped one - echoes that value on every
+ * attempt and the sign-in never recovers however often the user presses
+ * Submit.
+ */
+const login = async (payload: { username: string; password: string }) => {
+  try {
+    return await postLogin(payload)
+  } catch (error) {
+    if (!isCsrfRefusal(error)) throw error
+
+    return await postLogin(payload)
+  }
+}
 
 /**
  * Hands the browser to the server-side OIDC flow. A full navigation rather

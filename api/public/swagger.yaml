@@ -819,6 +819,9 @@ components:
                 localLoginEnabled:
                     type: boolean
                     description: "Whether password sign-in for local (database) accounts is switched on,\nfrom LOCAL_LOGIN_ENABLED. Public for the same reason as authProviders:\nthe login screen must not offer a form the server refuses to accept."
+                version:
+                    type: string
+                    description: "What produced this build, as `v3.2.2 (4a26a3d)` - the release tag and the\ncommit, from buildInfo.generated.ts. Public for the same reason as the rest\nof this response: the interface stamps it in the corner of every screen,\nthe login screen included, so a support report names the build it came from\nwithout anyone having to sign in first."
             required:
                 - mode
                 - cors
@@ -827,6 +830,7 @@ components:
                 - runTimes
                 - authProviders
                 - localLoginEnabled
+                - version
             type: object
             additionalProperties: false
         AuthorizedRoutesResponse:
@@ -2447,8 +2451,8 @@ paths:
                                 $ref: '#/components/schemas/InfoResponse'
                             examples:
                                 'Example 1':
-                                    value: {mode: desktop, cors: enable, httpPort: 5000, httpsPort: 443, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true}
-            description: "Returns public information about this server instance: the mode it runs in\n(`server` or `desktop`), its CORS setting, the ports its listeners serve on, the\navailable runtimes, the configured external authentication providers, and\nwhether password sign-in for local accounts is enabled.\n\nThis endpoint requires no authentication: the login screen reads it to\ndecide which sign-in methods to offer."
+                                    value: {mode: desktop, cors: enable, httpPort: 5000, httpsPort: 443, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true, version: 'v3.2.2 (4a26a3d)'}
+            description: "Returns public information about this server instance: the mode it runs in\n(`server` or `desktop`), its CORS setting, the ports its listeners serve on, the\navailable runtimes, the configured external authentication providers,\nwhether password sign-in for local accounts is enabled, and the release\nthat produced the running build.\n\nThis endpoint requires no authentication: the login screen reads it to\ndecide which sign-in methods to offer."
             summary: 'Get public server information'
             tags:
                 - Info
