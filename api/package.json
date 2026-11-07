@@ -108,7 +108,8 @@
     "swagger-ui-dist": "5.34.1",
     "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "yaml": "2.9.1"
   },
   "overrides": {
     "follow-redirects": "1.16.2",
