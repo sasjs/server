@@ -511,27 +511,11 @@ ${autoExecContent}`
 
     // Additional windows specific options to avoid the desktop popups.
 
-    runSessionProcess(session, process.sasLoc!, [
-      '-SYSIN',
-      codePath,
-      '-LOG',
-      path.join(session.path, 'log.log'),
-      '-PRINT',
-      path.join(session.path, 'output.lst'),
-      '-WORK',
-      session.path,
-      '-AUTOEXEC',
-      autoExecPath,
-      process.sasLoc!.endsWith('sas.exe') ? '-nologo' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-nosplash' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-icon' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-nodms' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-noterminal' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-nostatuswin' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-NOPRNGETLIST' : '',
-      process.sasLoc!.endsWith('sas.exe') ? '-SASINITIALFOLDER' : '',
-      process.sasLoc!.endsWith('sas.exe') ? session.path : ''
-    ])
+    runSessionProcess(
+      session,
+      process.sasLoc!,
+      buildSessionArgs(process.sasLoc!, session, autoExecPath)
+    )
       .then(() => {
         session.state = SessionState.completed
         // the process is gone and its pid can be recycled
@@ -639,6 +623,56 @@ ${autoExecContent}`
       )
     }
   }
+}
+
+/**
+ * The command line one SAS session is started with.
+ *
+ * Split out of the launch so the flags can be asserted without spawning
+ * anything: they are not cosmetic. Besides the dialogs a desktop SAS would open,
+ * `-RSASUSER` answers a warning every session opens with when SASUSER is not
+ * writable -
+ *
+ *   WARNING: Unable to copy SASUSER registry to WORK registry.
+ *
+ * SAS copies the SASUSER profile into WORK at startup, and a server pools
+ * several sessions against one SASUSER, so the copy fails or races. Opening
+ * SASUSER read-only stops the copy being attempted, and the warning with it; the
+ * session loses the customizations the warning already said it would not see.
+ *
+ * Not a Windows flag: the same warning is reported on Linux, where a read-only
+ * home or a shared SASUSER produces it. Only the dialog-suppressing options are
+ * gated on `sas.exe`.
+ */
+export const buildSessionArgs = (
+  sasLoc: string,
+  session: Session,
+  autoExecPath: string
+): string[] => {
+  const isWindows = sasLoc.endsWith('sas.exe')
+
+  return [
+    '-SYSIN',
+    path.join(session.path, 'code.sas'),
+    '-LOG',
+    path.join(session.path, 'log.log'),
+    '-PRINT',
+    path.join(session.path, 'output.lst'),
+    '-WORK',
+    session.path,
+    '-AUTOEXEC',
+    autoExecPath,
+    isWindows ? '-nologo' : '',
+    isWindows ? '-nosplash' : '',
+    isWindows ? '-icon' : '',
+    isWindows ? '-nodms' : '',
+    isWindows ? '-noterminal' : '',
+    isWindows ? '-nostatuswin' : '',
+    isWindows ? '-NOPRNGETLIST' : '',
+    '-RSASUSER',
+    isWindows ? '-SASINITIALFOLDER' : '',
+    isWindows ? session.path : ''
+  ]
 }
 
 export const getSessionController = (
