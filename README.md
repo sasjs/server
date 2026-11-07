@@ -361,16 +361,17 @@ HELMET_COEP=
 # on the server that needs inline scripts (many Angular and Data Controller
 # builds inject them) loosens the policy with its own config file.
 #
-# Example config:
+# Example config (the defaults, with `blob:` so the Studio can draw a drive
+# image - it previews one through an object URL):
 # {
-#   "img-src": ["'self'", "data:"],
+#   "img-src": ["'self'", "data:", "blob:"],
 #   "script-src": ["'self'"],
 #   "script-src-attr": ["'none'"]
 # }
 #
 # Loosened config for an app that requires inline scripts:
 # {
-#   "img-src": ["'self'", "data:"],
+#   "img-src": ["'self'", "data:", "blob:"],
 #   "script-src": ["'self'", "'unsafe-inline'"],
 #   "script-src-attr": ["'self'", "'unsafe-inline'"]
 # }
