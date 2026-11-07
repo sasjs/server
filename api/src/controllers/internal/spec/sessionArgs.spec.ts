@@ -4,16 +4,17 @@ import { buildSessionArgs } from '../Session'
 import { Session } from '../../../types'
 
 /**
- * `-RSASUSER` is a correctness fix, not a cosmetic one: it is what stops every
- * session opening with
+ * The session's own SASUSER is a correctness fix, not a cosmetic one: it is what
+ * stops every session opening with
  *
  *   WARNING: Unable to copy SASUSER registry to WORK registry.
  *
- * A server pools several sessions against one SASUSER, so the copy into WORK
- * fails or races and the log is noisy from line one. The warning is reported on
- * Linux as well as Windows (a read-only home or a shared SASUSER produces it),
- * so the flag goes on both command lines; only the dialog-suppressing flags stay
- * gated on the Windows binary.
+ * SAS copies the SASUSER profile into WORK at startup, so one shared SASUSER
+ * fails or races across pooled sessions. A writable folder per session lets the
+ * copy succeed - unlike `-RSASUSER`, which silences the warning by making the
+ * writes a program makes to SASUSER fail. The warning is reported on Linux as
+ * well as Windows, so the flag goes on both command lines; only the
+ * dialog-suppressing flags stay gated on the Windows binary.
  */
 const session = { path: path.join('/tmp', 'session') } as unknown as Session
 
@@ -29,11 +30,17 @@ describe('buildSessionArgs', () => {
     '/tmp/session/autoexec.sas'
   )
 
-  it('should open SASUSER read-only on every host, so the registry copy is not attempted', () => {
-    expect(windows).toContain('-RSASUSER')
-    // the warning is reported on Linux too: a read-only home, or a pooled server
-    // sharing one SASUSER
-    expect(unix).toContain('-RSASUSER')
+  it('should point SASUSER at the session folder on every host', () => {
+    for (const args of [windows, unix]) {
+      const i = args.indexOf('-SASUSER')
+      expect(i).toBeGreaterThan(-1)
+      expect(args[i + 1]).toEqual(path.join('/tmp', 'session', 'sasuser'))
+    }
+  })
+
+  it('should not make SASUSER read-only, which would break writes to it', () => {
+    expect(windows).not.toContain('-RSASUSER')
+    expect(unix).not.toContain('-RSASUSER')
   })
 
   it('should still carry the session paths on both', () => {
