@@ -16,8 +16,13 @@ import fs from 'fs'
 export const getEnvCSPDirectives = (
   HELMET_CSP_CONFIG_PATH: string | undefined
 ) => {
+  // `blob:` is load-bearing: the Studio previews a drive image by fetching it
+  // and handing the page an object URL, and without it the browser refuses to
+  // draw any picture - the pane is simply empty. A blob: URL is minted by the
+  // page itself and carries no remote origin, so allowing it adds no way to
+  // fetch content the policy otherwise refuses.
   let cspConfigJson = {
-    'img-src': ["'self'", 'data:'],
+    'img-src': ["'self'", 'data:', 'blob:'],
     'script-src': ["'self'"],
     'script-src-attr': ["'none'"]
   }

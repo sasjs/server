@@ -1,6 +1,10 @@
 import express, { Express } from 'express'
 import request from 'supertest'
+import { readFile } from 'fs/promises'
+import path from 'path'
+
 import { configureSecurity } from '../configureSecurity'
+import { getEnvCSPDirectives } from '../../utils/parseHelmetConfig'
 
 /**
  * One express app serves both listeners, so the CSP decision has to follow the
@@ -87,6 +91,45 @@ describe('configureSecurity', () => {
     expect(policy).toContain("script-src 'self'")
     // each directive stays its own, semicolon separated
     expect(policy.split(';').filter(Boolean).length).toBeGreaterThan(1)
+  })
+
+  it('should let the page draw a drive image from an object URL', async () => {
+    // The Studio previews a picture by creating a blob: URL; a policy without
+    // it leaves the pane empty with a console violation and nothing else
+    process.env.HTTP_PORT = '5000'
+    process.env.HELMET_CSP_CONFIG_PATH = ''
+
+    const policy = cspOf(await request(buildApp()).get('/probe'))
+    const imgSrc = policy
+      .split(';')
+      .map((directive) => directive.trim())
+      .find((directive) => directive.startsWith('img-src'))
+
+    expect(imgSrc).toBeDefined()
+    expect(imgSrc).toContain('blob:')
+    // the two it already allowed stay allowed
+    expect(imgSrc).toContain("'self'")
+    expect(imgSrc).toContain('data:')
+  })
+
+  it('should keep the example config in step with the defaults', async () => {
+    // An operator builds a policy from this file, and a config file replaces
+    // the defaults wholesale - so a directive missing here silently undoes a
+    // default rather than adding to it.
+    const example = JSON.parse(
+      await readFile(
+        path.join(__dirname, '../../../csp.config.example.json'),
+        'utf8'
+      )
+    )
+    const defaults = getEnvCSPDirectives(undefined) as Record<string, string[]>
+
+    for (const [directive, value] of Object.entries(example)) {
+      expect(defaults[directive]).toEqual(value)
+    }
+
+    // and the example covers the directives the defaults set
+    expect(Object.keys(example).sort()).toEqual(Object.keys(defaults).sort())
   })
 
   it('should drop upgrade-insecure-requests when only a plain listener runs', async () => {
