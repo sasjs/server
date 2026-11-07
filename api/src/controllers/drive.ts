@@ -32,7 +32,11 @@ import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
 import { HttpError } from '../utils'
-import { unpublishAppStream } from '../routes/appStream'
+import { unpublishAppStream as unpublishFromRegistry } from '../routes/appStream'
+import {
+  unpublishAppStream as unpublish,
+  type AppStreamRegistry
+} from '@sasjs/api'
 
 interface DeployPayload {
   appLoc: string
@@ -281,18 +285,23 @@ export class DriveController {
   public async unpublish(
     @Body() body: UnpublishPayload
   ): Promise<FileFolderResponse> {
-    // guarded here as well as in the route's validation: this method is the one
-    // implementation of the operation, so a caller reaching it directly gets the
-    // same refusal rather than a TypeError on an absent payload
-    if (!body?.streamServiceName)
-      throw new HttpError(400, '"streamServiceName" is required')
+    // The decisions are the package's - both body values required, the folder as
+    // the identity, and the 404 when nothing is published there - so a mock, a
+    // worker and this server cannot drift apart. What stays here is the port: the
+    // package cannot know this host's registry.
+    const registry: AppStreamRegistry = {
+      unpublish: (appLoc) => unpublishFromRegistry(appLoc)
+    }
 
-    if (!body?.appLoc) throw new HttpError(400, '"appLoc" is required')
+    try {
+      return await unpublish(registry, body)
+    } catch (error) {
+      // an ApiError is a decision the package made and the caller should see; a
+      // second error type escaping this method would reach the client as a 500
+      if (isApiError(error)) throw new HttpError(error.status, error.message)
 
-    if (!(await unpublishAppStream(body.appLoc)))
-      throw new HttpError(404, 'No app is published at that folder.')
-
-    return { status: 'success' }
+      throw error
+    }
   }
 
   /**
