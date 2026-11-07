@@ -17,7 +17,7 @@ import { TabContext, TabList, TabPanel } from '@mui/lab'
 import FilePathInputModal from '../../components/filePathInputModal'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
-import { defineEditorTheme, SASJS_EDITOR_THEME } from './internal/editorTheme'
+import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
 import LogComponent from './internal/components/log/logComponent'
 import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 import WebOutPreview from './internal/components/webout/weboutPreview'
@@ -33,7 +33,7 @@ import {
 import useEditor from './internal/hooks/useEditor'
 import { RunTimeType } from '../../context/appContext'
 import { isImageFile, LogObject } from '../../utils'
-import { useSetting } from '../../utils/hooks'
+import { useColorMode, useSetting } from '../../utils/hooks'
 
 // Registered at import time, so Monaco knows the language before the first
 // editor model is created.
@@ -51,11 +51,11 @@ const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
 }))
 
-const StyledTab = styled(Tab)(() => ({
+const StyledTab = styled(Tab)(({ theme }) => ({
   fontSize: '1rem',
-  color: 'gray',
+  color: theme.palette.text.secondary,
   '&.Mui-selected': {
-    color: 'black'
+    color: theme.palette.text.primary
   }
 }))
 
@@ -66,9 +66,9 @@ type SASjsEditorProps = {
   setTab: Dispatch<SetStateAction<string>>
 }
 
-// Before the first editor mounts, and once: the marker underlines are a theme
-// colour, and Monaco's default themes leave them unset.
-defineEditorTheme()
+// Before the first editor mounts, and once: both schemes are defined here, and
+// the editor names the one matching the app's colour mode.
+defineEditorThemes()
 
 const SASjsEditor = ({
   selectedFilePath,
@@ -76,6 +76,8 @@ const SASjsEditor = ({
   tab,
   setTab
 }: SASjsEditorProps) => {
+  const [colorMode] = useColorMode()
+
   const {
     fileContent,
     imageUrl,
@@ -131,7 +133,7 @@ const SASjsEditor = ({
       // `monaco.editor.setTheme(theme)` in an effect on mount, and its `theme`
       // prop defaults to null, so a theme defined ahead of the editor is
       // replaced with the default as soon as the editor mounts.
-      theme={SASJS_EDITOR_THEME}
+      theme={editorThemeFor(colorMode)}
       language={getLanguageFromExtension(selectedFileExtension)}
       original={prevFileContent}
       value={fileContent}
@@ -141,7 +143,7 @@ const SASjsEditor = ({
   ) : (
     <Editor
       height="98%"
-      theme={SASJS_EDITOR_THEME}
+      theme={editorThemeFor(colorMode)}
       language={getLanguageFromExtension(selectedFileExtension)}
       value={fileContent}
       editorDidMount={handleEditorDidMount}
@@ -215,7 +217,7 @@ const SASjsEditor = ({
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
-              background: 'white'
+              bgcolor: 'background.paper'
             }}
           >
             <TabList onChange={handleTabChange} centered>

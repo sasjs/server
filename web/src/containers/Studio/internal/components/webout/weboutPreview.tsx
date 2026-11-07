@@ -32,8 +32,9 @@ const WebOutPreview = (props: WebOutPreviewProps) => {
         p: 1,
         height: 'calc(100vh - 250px)',
         overflow: 'auto',
-        background: '#fbfbfb',
-        border: '1px solid #e2e2e2',
+        bgcolor: 'background.default',
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 1,
         fontSize: 13
       }}
@@ -69,9 +70,10 @@ const WebOutPreview = (props: WebOutPreviewProps) => {
           sx={{
             width: '100%',
             height: 'calc(100vh - 290px)',
-            border: '1px solid #e2e2e2',
+            border: '1px solid',
+            borderColor: 'divider',
             borderRadius: 1,
-            background: 'white'
+            bgcolor: 'background.paper'
           }}
         />
       )}

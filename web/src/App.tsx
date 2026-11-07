@@ -1,6 +1,7 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom'
-import { ThemeProvider } from '@mui/material/styles'
+import { ThemeProvider, useColorScheme } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
 import { theme } from './theme'
 
 import Login from './components/login'
@@ -14,6 +15,26 @@ import { AppContext } from './context/appContext'
 import AuthCode from './containers/AuthCode'
 import { ToastContainer } from 'react-toastify'
 import { STUDIO_ROUTE } from './utils'
+import { useColorMode } from './utils/hooks'
+
+/**
+ * Keeps MUI's colour scheme in step with the stored preference.
+ *
+ * One theme carries both schemes and MUI applies the one it is told to, so the
+ * app's setting has to be pushed into it rather than used to build a theme.
+ * `useColorScheme` reads the provider's context, which is why this sits inside
+ * it; it renders nothing.
+ */
+const ColorSchemeSync = () => {
+  const [mode] = useColorMode()
+  const { mode: applied, setMode } = useColorScheme()
+
+  useEffect(() => {
+    if (applied !== mode) setMode(mode)
+  }, [applied, mode, setMode])
+
+  return null
+}
 
 function App() {
   const appContext = useContext(AppContext)
@@ -40,48 +61,46 @@ function App() {
     )
   })()
 
-  if (!appContext.loggedIn) {
-    return (
-      <ThemeProvider theme={theme}>
-        <BrowserRouter>
-          <Header />
-          <Routes>
-            <Route path="*" element={<Login />} />
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    )
-  }
-
-  if (appContext.needsToUpdatePassword) {
-    return (
-      <ThemeProvider theme={theme}>
-        <BrowserRouter>
-          <Header />
-          <Routes>
-            <Route path="*" element={<UpdatePassword />} />
-          </Routes>
-          <ToastContainer />
-        </BrowserRouter>
-      </ThemeProvider>
-    )
-  }
+  // One provider, one scheme sync, one baseline for every route: the three
+  // branches below differ only in which screen they show.
+  const content = !appContext.loggedIn ? (
+    <BrowserRouter>
+      <Header />
+      <Routes>
+        <Route path="*" element={<Login />} />
+      </Routes>
+    </BrowserRouter>
+  ) : appContext.needsToUpdatePassword ? (
+    <BrowserRouter>
+      <Header />
+      <Routes>
+        <Route path="*" element={<UpdatePassword />} />
+      </Routes>
+      <ToastContainer />
+    </BrowserRouter>
+  ) : (
+    <BrowserRouter>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/SASjsStudio" element={studioElement} />
+        <Route path="/SASjsSettings" element={<Settings />} />
+        <Route path="/SASjsLogon" element={<AuthCode />} />
+        {/* The server answers any unmatched path with the app shell, so a
+            mistyped URL would otherwise render an empty screen. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ToastContainer />
+    </BrowserRouter>
+  )
 
   return (
-    <ThemeProvider theme={theme}>
-      <BrowserRouter>
-        <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/SASjsStudio" element={studioElement} />
-          <Route path="/SASjsSettings" element={<Settings />} />
-          <Route path="/SASjsLogon" element={<AuthCode />} />
-          {/* The server answers any unmatched path with the app shell, so a
-              mistyped URL would otherwise render an empty screen. */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        <ToastContainer />
-      </BrowserRouter>
+    <ThemeProvider theme={theme} noSsr>
+      <ColorSchemeSync />
+      {/* the page around the app must take the scheme too, or a dark screen
+          sits in a white document */}
+      <CssBaseline />
+      {content}
     </ThemeProvider>
   )
 }

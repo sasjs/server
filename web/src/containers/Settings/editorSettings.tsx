@@ -3,8 +3,12 @@ import {
   CardContent,
   CardHeader,
   Divider,
+  FormControl,
   FormControlLabel,
   FormGroup,
+  InputLabel,
+  MenuItem,
+  Select,
   Switch,
   Typography
 } from '@mui/material'
@@ -21,6 +25,9 @@ const EditorSettings = () => {
   // eye is reflected on this panel's switch without a reload.
   const [formatOnSave, setFormatOnSave] = useSetting('editor.formatOnSave')
   const [listedNotes, setListedNotes] = useSetting('log.notableNotes')
+  // The header's sun/moon button only ever writes `light` or `dark`, so this is
+  // the way back to following the desktop.
+  const [colorTheme, setColorTheme] = useSetting('workbench.colorTheme')
 
   return (
     <Card>
@@ -55,6 +62,29 @@ const EditorSettings = () => {
             small for its value. Ordinary notes are never listed.
           </Typography>
         </FormGroup>
+      </CardContent>
+      <Divider />
+      <CardHeader title="Appearance" />
+      <CardContent>
+        <FormControl sx={{ minWidth: 220 }}>
+          <InputLabel id="color-theme-label">Colour theme</InputLabel>
+          <Select
+            labelId="color-theme-label"
+            label="Colour theme"
+            value={colorTheme}
+            onChange={(event) =>
+              setColorTheme(event.target.value as 'system' | 'light' | 'dark')
+            }
+          >
+            <MenuItem value="system">Follow the desktop</MenuItem>
+            <MenuItem value="light">Light</MenuItem>
+            <MenuItem value="dark">Dark</MenuItem>
+          </Select>
+        </FormControl>
+        <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+          The sun or moon in the header switches between light and dark at any
+          time; this keeps the choice, or hands it back to the desktop.
+        </Typography>
       </CardContent>
     </Card>
   )
