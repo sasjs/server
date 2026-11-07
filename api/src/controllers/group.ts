@@ -216,7 +216,11 @@ const createGroup = async ({
   isActive
 }: GroupPayload): Promise<GroupDetailsResponse> => {
   // Checking if user is already in the database
-  const groupnameExist = await Group.findOne({ name })
+  // Case-insensitively: the name is stored as given now, and two groups that a
+  // reader cannot tell apart would be two groups with the same label.
+  const groupnameExist = await Group.findOne({
+    name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')
+  })
   if (groupnameExist)
     throw {
       code: 409,
