@@ -124,6 +124,17 @@ const Header = (props: any) => {
               />
             )}
           </Tabs>
+          <Button
+            href={`${baseUrl}/SASjsApi`}
+            target="_blank"
+            rel="noreferrer"
+            variant="contained"
+            color="primary"
+            size="large"
+            endIcon={<OpenInNew />}
+          >
+            API
+          </Button>
         </Box>
 
         <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -265,19 +276,6 @@ const Header = (props: any) => {
                 endIcon={<OpenInNew />}
               >
                 Docs
-              </Button>
-            </MenuItem>
-            <MenuItem sx={{ justifyContent: 'center' }}>
-              <Button
-                href={`${baseUrl}/SASjsApi`}
-                target="_blank"
-                rel="noreferrer"
-                variant="contained"
-                color="primary"
-                size="large"
-                endIcon={<OpenInNew />}
-              >
-                API
               </Button>
             </MenuItem>
             {appContext.loggedIn && (

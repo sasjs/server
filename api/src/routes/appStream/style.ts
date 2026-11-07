@@ -30,18 +30,6 @@ export const style = `<style>
   margin-bottom: 10px;
   border-radius: 10px;
 }
-#uploadButton {
-  border: 0
-}
-
-#uploadButton:focus {
-  outline: 0
-}
-
-#uploadMessage {
-  position: relative;
-  bottom: -5px;
-}
 
 header {
   transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;

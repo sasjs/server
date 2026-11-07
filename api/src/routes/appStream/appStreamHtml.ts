@@ -42,16 +42,7 @@ export const appStreamHtml = (appStreamConfig: AppStreamConfig) => `
             )
           )
           .join('')}
-
-        <a class="app" title="Upload build.json">
-          <input id="fileId" type="file" hidden />
-          <button id="uploadButton" style="margin-bottom: 5px; cursor: pointer">
-            <img src="/plus.png" />
-          </button>
-          <span id="uploadMessage">Upload New App</span>
-        </a>
     </div>
-    <script src="/axios.min.js"></script>
     <script src="/app-streams-script.js"></script>
   </body>
 </html>`
