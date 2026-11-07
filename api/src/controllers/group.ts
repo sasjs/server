@@ -14,6 +14,7 @@ import {
 import Group, { GroupPayload, PUBLIC_GROUP_NAME } from '../model/Group'
 import User from '../model/User'
 import { GetUserBy, UserResponse } from './user'
+import { groupNamePattern } from '../utils/groupNamePattern'
 
 export interface GroupResponse {
   uid: string
@@ -28,7 +29,8 @@ export interface GroupDetailsResponse extends GroupResponse {
 
 interface GetGroupBy {
   _id?: string
-  name?: string
+  /** A pattern when the question is "the group with this label" - see groupNamePattern. */
+  name?: string | RegExp
 }
 
 enum GroupAction {
@@ -96,7 +98,8 @@ export class GroupController {
   public async getGroupByName(
     @Path() name: string
   ): Promise<GroupDetailsResponse> {
-    return getGroup({ name })
+    // the same rule as creation: a name is found whatever case was typed
+    return getGroup({ name: groupNamePattern(name) })
   }
 
   /**
@@ -216,7 +219,9 @@ const createGroup = async ({
   isActive
 }: GroupPayload): Promise<GroupDetailsResponse> => {
   // Checking if user is already in the database
-  const groupnameExist = await Group.findOne({ name })
+  // Case-insensitively: the name is stored as given, and two names that a reader
+  // cannot tell apart are one label - see groupNamePattern.
+  const groupnameExist = await Group.findOne({ name: groupNamePattern(name) })
   if (groupnameExist)
     throw {
       code: 409,
