@@ -89,6 +89,25 @@ describe('configureSecurity', () => {
     expect(policy.split(';').filter(Boolean).length).toBeGreaterThan(1)
   })
 
+  it('should let the page draw a drive image from an object URL', async () => {
+    // The Studio previews a picture by creating a blob: URL; a policy without
+    // it leaves the pane empty with a console violation and nothing else
+    process.env.HTTP_PORT = '5000'
+    process.env.HELMET_CSP_CONFIG_PATH = ''
+
+    const policy = cspOf(await request(buildApp()).get('/probe'))
+    const imgSrc = policy
+      .split(';')
+      .map((directive) => directive.trim())
+      .find((directive) => directive.startsWith('img-src'))
+
+    expect(imgSrc).toBeDefined()
+    expect(imgSrc).toContain('blob:')
+    // the two it already allowed stay allowed
+    expect(imgSrc).toContain("'self'")
+    expect(imgSrc).toContain('data:')
+  })
+
   it('should drop upgrade-insecure-requests when only a plain listener runs', async () => {
     process.env.HTTP_PORT = '5000'
 
