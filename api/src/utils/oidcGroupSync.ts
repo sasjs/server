@@ -1,6 +1,7 @@
 import Group, { PUBLIC_GROUP_NAME } from '../model/Group'
 import { IUserDocument } from '../model/User'
 import { AuthProviderType } from './verifyEnvVariables'
+import { groupNamePattern } from './groupNamePattern'
 
 /**
  * The provider's groups in the form the local database stores them: trimmed,
@@ -64,12 +65,14 @@ export const syncOidcGroups = async (
 
   for (const name of names) {
     let group = await Group.findOne({
-      name,
+      name: groupNamePattern(name),
       authProvider: AuthProviderType.OIDC
     })
 
     if (!group) {
-      const nameTaken = await Group.findOne({ name })
+      // the same rule the API applies: a provider group whose name a reader
+      // cannot tell from a local group's is a clash, not a second group
+      const nameTaken = await Group.findOne({ name: groupNamePattern(name) })
 
       if (nameTaken) {
         result.skipped.push(name)

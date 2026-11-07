@@ -345,6 +345,21 @@ describe('group', () => {
         expect(res.body.users).toEqual([])
       })
 
+      it('should find a group whatever case the name is typed in', async () => {
+        // creation keeps the case it was given, and the lookup folds it: one
+        // rule for "this label", not one on write and another on read
+        const name = 'CaseGroup' + Date.now().toString().slice(-4)
+        await groupController.createGroup({ ...group, name })
+
+        const res = await request(app)
+          .get(`/SASjsApi/group/by/groupname/${name.toUpperCase()}`)
+          .auth(adminAccessToken, { type: 'bearer' })
+          .send()
+          .expect(200)
+
+        expect(res.body.name).toEqual(name)
+      })
+
       it('should respond with Unauthorized if access token is not present', async () => {
         const res = await request(app)
           .get('/SASjsApi/group/by/groupname/dcgroup')

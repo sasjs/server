@@ -122,6 +122,20 @@ describe('oidcGroupSync', () => {
       expect(group?.users).toHaveLength(0)
     })
 
+    it('should treat a name that differs only in case as the local group it resembles', async () => {
+      const user = await createUser()
+
+      await Group.create({ name: 'sasjs-users', description: 'local group' })
+
+      const result = await syncOidcGroups(user, ['SASJS-Users'])
+
+      // one label to a reader: the provider group is the local group's clash,
+      // not a second group with the same name in different case
+      expect(result.skipped).toEqual(['SASJS-Users'])
+      expect(await groupNamesFor(user)).toEqual([])
+      expect(await Group.countDocuments({})).toBe(1)
+    })
+
     it('should leave a group it does not own alone', async () => {
       const user = await createUser()
 
