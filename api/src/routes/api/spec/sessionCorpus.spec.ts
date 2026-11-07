@@ -192,20 +192,7 @@ describe('session conformance corpus', () => {
           .set('Authorization', `Bearer ${tokens.get(subject.userId)}`)
       : request(app).get(url)
 
-  /**
-   * A case the package states from its own mock rather than from the document.
-   *
-   * `session-state-own` pins `{ state, pid, lineCount }`, while the document's
-   * `SessionStateResponse` is `{ state }` with `additionalProperties: false` and
-   * this server answers exactly that. The package corrects the case in
-   * sasjs/api#47; until the release carrying it is the one pinned here, running
-   * the case would fail on a divergence that is already fixed upstream. It is
-   * named rather than deleted so the exclusion has an expiry: when the pin
-   * moves, this set is empty and the case runs.
-   */
-  const DIVERGENT = new Set(['session-state-own'])
-
-  const cases = SESSION_CORPUS.filter((testCase) => !DIVERGENT.has(testCase.id))
+  const cases = SESSION_CORPUS
 
   it.each(cases)('$id: $description', async (testCase) => {
     const response = await asUser(pathOf(testCase), testCase.request.subject)
