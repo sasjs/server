@@ -27,7 +27,7 @@
  *   node scripts/check-external-calls.mjs --site site --origin https://server.sasjs.io
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -71,6 +71,17 @@ const walk = (dir) =>
     const full = path.join(dir, name)
     return statSync(full).isDirectory() ? walk(full) : [full]
   })
+
+// A missing directory is a build that has not run or wrote somewhere else -
+// MkDocs resolves `-d` against the config file, which is how a publish job once
+// built into docs/site-docs and then scanned a path that did not exist.
+if (!existsSync(siteDir)) {
+  console.error(
+    `No built site at ${siteDir}.\n` +
+      'Build it first: node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml'
+  )
+  process.exit(1)
+}
 
 const files = walk(siteDir)
 const html = files.filter((file) => file.endsWith('.html'))
