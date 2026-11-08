@@ -23,6 +23,7 @@ import { DeleteSweep, InsertDriveFileOutlined } from '@mui/icons-material'
 import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
+import { ApiHost, apiHost } from '../../utils/host'
 import {
   RecentApp,
   RecentFile,
@@ -120,19 +121,8 @@ const Home = () => {
   const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
   const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
 
-  /**
-   * Whether this page is served by a browser host rather than by the server.
-   *
-   * A mock is a static site whose `/SASjsApi` answers come from a service
-   * worker, so the worker controlling this page is the fact that tells them
-   * apart - the info route cannot, because the browser host reports the same
-   * mode and run times a desktop server does.
-   */
-  const [browserHost] = useState(
-    () =>
-      typeof navigator !== 'undefined' &&
-      Boolean(navigator.serviceWorker?.controller)
-  )
+  /** Where this page's API answers come from - the host states it. */
+  const [host] = useState<ApiHost>(apiHost)
 
   useEffect(() => {
     if (!canUseAppStream) {
@@ -207,14 +197,31 @@ const Home = () => {
       <Typography variant="h5" gutterBottom>
         Welcome{appContext.displayName ? `, ${appContext.displayName}` : ''}
       </Typography>
+      {host === 'browser' ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          You are looking at{' '}
+          <strong>SASjs Server running in this browser</strong> - there is no
+          server behind this page. A service worker answers every API call, the
+          drive is a snapshot built into the site, the programs that run are
+          JavaScript, and the sign-in is a seeded demo identity. Every screen
+          here - this dashboard, <strong>Studio</strong>, the API explorer,{' '}
+          <strong>Docs</strong> and the apps - is the real interface, running
+          against a host of its own.
+        </Typography>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          You are talking to <strong>SASjs Server on this host</strong>. The API
+          answers from the server process, the drive is its filesystem, programs
+          run in the run times it reports, and your sign-in is this server's own
+          account. <strong>Studio</strong> runs ad hoc code and{' '}
+          <strong>Apps</strong> lists everything published here that you can
+          open.
+        </Typography>
+      )}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        This is your SASjs Server workspace. <strong>Studio</strong> runs ad hoc
-        code, <strong>Apps</strong> lists everything published to this instance
-        that you can open, and this page remembers what you opened on this
-        browser.
         {previousSignIn
-          ? ` You last signed in here ${previousSignIn}.`
-          : ' This is your first sign-in on this browser.'}
+          ? `You last signed in here ${previousSignIn}.`
+          : 'This is your first sign-in on this browser.'}
       </Typography>
 
       <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -231,7 +238,9 @@ const Home = () => {
                 </Grid>
                 <Grid size={{ xs: 6 }}>
                   <Fact label="Served by">
-                    {browserHost ? 'Browser host (mock)' : 'SASjs Server'}
+                    {host === 'browser'
+                      ? 'A service worker in this page'
+                      : 'The server process'}
                   </Fact>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
