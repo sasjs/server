@@ -1121,6 +1121,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {build: {version: v3.2.2, gitHash: 4a26a3d, buildDate: '2026-10-27T19:41:38.000Z'}, server: {mode: server, uptimeSeconds: 3600, startedAt: '2026-10-27T20:00:00.000Z', pid: 1462058, nodeVersion: v22.11.0, platform: 'linux 5.14.0', arch: x64, cpuCount: 8, cpuModel: 'Intel(R) Xeon(R) CPU', loadAverage: [0.08, 0.11, 0.15], runTimes: [sas], sasjsRoot: /home/sasjssrv/sasjs_root}, memory: {rssBytes: 214302720, heapTotalBytes: 41943040, heapUsedBytes: 31457280, externalBytes: 12582912, systemTotalBytes: 66571993088, systemFreeBytes: 61203283968}, filesystem: {path: /home/sasjssrv/sasjs_root, totalBytes: 468151435264, freeBytes: 114890375168, usedBytes: 353261060096, usedPercent: 75.5}, folders: [{label: sessions, path: /home/sasjssrv/sasjs_root/sessions, exists: true, bytes: 346341376, files: 2411, truncated: false}], logs: {folder: /home/sasjssrv/sasjs_root/logs, fileCount: 42, totalBytes: 43008000, newestFile: 20261027210826.log, newestModified: '2026-10-27T21:09:41.000Z'}}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '500':
+                    description: 'The diagnostics could not be read'
             description: "Reports what this server is running and how it is using the machine:\nthe release tag and commit the binary was built from, process uptime and\nmemory, the free space on the filesystem holding SASJS_ROOT, and the size\nof each folder underneath it.\n\nFolder sizes are best-effort: a subfolder that cannot be read contributes\nan `error` field, and a walk that stops at the entry cap is marked\n`truncated`, rather than the whole answer failing."
             summary: 'Diagnostics: version, uptime, memory, disk usage'
             tags:
@@ -1142,6 +1146,10 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {files: [{name: 20261027210826.log, sizeBytes: 2979977, modified: '2026-10-27T21:09:41.000Z'}]}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '500':
+                    description: 'The log folder could not be listed'
             description: "Lists the access logs the server has written, newest first, with their\nsizes - so an operator can see at a glance whether the log folder is\ngrowing and which file to read."
             summary: 'List the server''s log files'
             tags:
@@ -1163,6 +1171,14 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {fileName: 20261027210826.log, lines: 200, bytesRead: 65536, truncated: true, content: '::ffff:127.0.0.1 - - [27/Oct/2026:21:09:41 +0000] "GET /SASjsApi/info HTTP/1.1" 200 118'}
+                '400':
+                    description: 'Invalid log file name.'
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '404':
+                    description: 'Log file not found.'
+                '500':
+                    description: 'The log file could not be read'
             description: "Returns the end of one log file.\n\n`fileName` must be a bare file name ending in `.log`; anything that could\nresolve outside the log folder is refused with `400`, and a name that does\nnot exist inside it with `404`. The read starts near the end of the file,\nso a large log costs a bounded read rather than a full one, and\n`truncated` says whether earlier lines exist."
             summary: 'Read the tail of a log file'
             tags:
@@ -1297,6 +1313,12 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron', LDAP_BIND_PASSWORD_SET: true}}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '403':
+                    description: 'Not Allowed while in Desktop Mode.'
+                '500':
+                    description: 'The provider configuration could not be read'
             description: "Returns the non-secret configuration of each enabled authentication\nprovider, for display in the administration interface.\n\nSecrets are never echoed: for each provider the response reports only\nwhether its bind password or client secret is set (`LDAP_BIND_PASSWORD_SET`,\n`OIDC_CLIENT_SECRET_SET`). Admin only."
             summary: 'Get the configured authentication providers'
             tags:
@@ -1324,6 +1346,12 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {userCount: 5, groupCount: 3}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '403':
+                    description: 'Not Allowed while in Desktop Mode.'
+                '500':
+                    description: 'The directory could not be synchronised'
             description: "Imports the users and groups of the configured LDAP directory into the\ninternal database and returns the number imported.\n\nUsers and groups that already exist are left untouched. Admin only."
             summary: 'Import users and groups from LDAP'
             tags:

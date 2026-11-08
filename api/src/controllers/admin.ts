@@ -1,4 +1,13 @@
-import { Route, Tags, Example, Get, Path, Query, Security } from 'tsoa'
+import {
+  Route,
+  Tags,
+  Example,
+  Get,
+  Path,
+  Query,
+  Response,
+  Security
+} from 'tsoa'
 import {
   BuildInfo,
   DEFAULT_LOG_LINES,
@@ -134,6 +143,11 @@ export class AdminController {
       newestModified: '2026-10-27T21:09:41.000Z'
     }
   })
+  @Response(
+    401,
+    'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+  )
+  @Response(500, 'The diagnostics could not be read')
   @Security('bearerAuth')
   @Get('/diagnostics')
   public async diagnostics(): Promise<DiagnosticsResponse> {
@@ -185,6 +199,11 @@ export class AdminController {
       }
     ]
   })
+  @Response(
+    401,
+    'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+  )
+  @Response(500, 'The log folder could not be listed')
   @Security('bearerAuth')
   @Get('/logs')
   public async logs(): Promise<LogFilesResponse> {
@@ -212,6 +231,13 @@ export class AdminController {
     content:
       '::ffff:127.0.0.1 - - [27/Oct/2026:21:09:41 +0000] "GET /SASjsApi/info HTTP/1.1" 200 118'
   })
+  @Response(400, 'Invalid log file name.')
+  @Response(
+    401,
+    'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+  )
+  @Response(404, 'Log file not found.')
+  @Response(500, 'The log file could not be read')
   @Security('bearerAuth')
   @Get('/logs/{fileName}')
   public async logTail(
