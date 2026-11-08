@@ -46,7 +46,11 @@ jobs:
         # --strict fails the run on a broken page link or anchor, so a dead link
         # cannot be deployed. The output goes to its own directory: the copy that
         # ships inside the build belongs to the release job.
-        run: node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml -d site-docs
+        # Relative to the CONFIG file, not the working directory: MkDocs resolves
+        # `site_dir` and `-d` against `docs/`, so `-d site-docs` wrote
+        # docs/site-docs and the check below looked in a directory that was
+        # never created.
+        run: node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml -d ../site-docs
 
       - name: Check the site is self-contained
         run: node docs/scripts/check-external-calls.mjs --site site-docs
