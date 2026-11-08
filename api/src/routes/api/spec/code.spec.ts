@@ -210,17 +210,17 @@ describe('code', () => {
       })
     })
 
-    it('reports the missing header, not the macros it cannot declare', async () => {
+    it('does not report an undeclared macro in a file with no header', async () => {
       // The behaviour @sasjs/lint 5.0.1 brings, pinned where the route reports
-      // it. A file with no Doxygen header has no `<h4> SAS Macros </h4>` section
+      // it: a file with no Doxygen header has no `<h4> SAS Macros </h4>` section
       // for a declaration to be written into, so an undeclared macro in it is
-      // not reported: `sasjs lint fix` could never resolve that finding.
+      // not reported - `sasjs lint fix` could never resolve that finding. 5.0.0
+      // does report it for this text.
       //
-      // The trailing space is the control - it proves the linter ran on this
-      // text, so an empty answer cannot pass the case. The drive's .sasjslint
-      // turns `hasDoxygenHeader` off, so the missing header is not the
-      // diagnostic to assert here; the undeclared-macro one is, and 5.0.0
-      // answers this request with it.
+      // The trailing space is the control: it proves the linter ran, so an empty
+      // answer cannot pass. The header diagnostic is not asserted because the
+      // drive's .sasjslint turns `hasDoxygenHeader` off (api/src/utils/lintConfig.ts),
+      // so this route never emits it.
       const response = await request(app)
         .post('/SASjsApi/code/lint')
         .auth(accessToken, { type: 'bearer' })
