@@ -80,7 +80,8 @@ describe('App Stream listing as JSON', () => {
       Mario: {
         appLoc: '/Public/app/mario',
         streamWebFolder: 'web',
-        streamLogo: 'logo.png'
+        streamLogo: 'logo.png',
+        publishedAt: '2026-11-01T09:30:00.000Z'
       },
       Sonic: {
         appLoc: '/Public/app/sonic',
@@ -134,7 +135,10 @@ describe('App Stream listing as JSON', () => {
         // URL under the app's stream path - the same way the landing page
         // resolves it. Rendered raw it would resolve against the interface root.
         logo: '/AppStream/Mario/logo.png',
-        url: '/AppStream/Mario/'
+        url: '/AppStream/Mario/',
+        // The registry records when the bundle was last published; an entry
+        // seeded without one answers null, which the next case covers.
+        publishedAt: '2026-11-01T09:30:00.000Z'
       }
     ])
   })

@@ -37,6 +37,8 @@ interface StreamedApp {
   appLoc: string
   logo: string | null
   url: string
+  /** When the bundle was last published, or null for an older registry. */
+  publishedAt: string | null
 }
 
 /** An app as the screen renders it, whichever view is showing. */
@@ -46,6 +48,8 @@ interface AppEntry {
   logo: string | null
   to?: string
   href?: string
+  /** The server's publish date, where the bundle has one. */
+  publishedAt?: string | null
 }
 
 const defaultAppLogo = '/sasjs-logo.svg'
@@ -147,9 +151,24 @@ const Apps = () => {
       title: app.name,
       subtitle: app.appLoc,
       logo: app.logo ?? defaultAppLogo,
-      href: app.url
+      href: app.url,
+      publishedAt: app.publishedAt
     }))
   ]
+
+  /** The publish date, as a reader reads it - or nothing when there is none. */
+  const published = (entry: AppEntry): string => {
+    if (!entry.publishedAt) return ''
+
+    const when = new Date(entry.publishedAt)
+    if (isNaN(when.getTime())) return ''
+
+    return `published ${when.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })}`
+  }
 
   /** The app's last open on this browser, if this browser has one. */
   const lastOpened = (entry: AppEntry): string => {
@@ -256,7 +275,7 @@ const Apps = () => {
               </ListItemIcon>
               <ListItemText
                 primary={entry.title}
-                secondary={[entry.subtitle, lastOpened(entry)]
+                secondary={[entry.subtitle, published(entry), lastOpened(entry)]
                   .filter(Boolean)
                   .join(' - ')}
                 slotProps={{
