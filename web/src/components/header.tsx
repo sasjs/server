@@ -127,6 +127,12 @@ const Header = (props: any) => {
               to="/SASjsApiDocs"
               component={Link}
             />
+            <Tab
+              label="Docs"
+              value="/SASjsDocs"
+              to="/SASjsDocs"
+              component={Link}
+            />
           </Tabs>
         </Box>
 
@@ -193,6 +199,18 @@ const Header = (props: any) => {
                 color="primary"
               >
                 API
+              </Button>
+            </MenuItem>
+
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
+                component={Link}
+                to="/SASjsDocs"
+                onClick={handleCloseNavMenu}
+                variant="contained"
+                color="primary"
+              >
+                Docs
               </Button>
             </MenuItem>
           </Menu>
