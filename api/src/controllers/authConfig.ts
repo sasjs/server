@@ -1,5 +1,5 @@
 import express from 'express'
-import { Security, Route, Tags, Get, Post, Example } from 'tsoa'
+import { Security, Route, Tags, Get, Post, Example, Response } from 'tsoa'
 
 import {
   LDAPClient,
@@ -36,6 +36,12 @@ export class AuthConfigController {
       LDAP_BIND_PASSWORD_SET: true
     }
   })
+  @Response(
+    401,
+    'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+  )
+  @Response(403, 'Not Allowed while in Desktop Mode.')
+  @Response(500, 'The provider configuration could not be read')
   @Get('/')
   public getDetail() {
     return getAuthConfigDetail()
@@ -53,6 +59,12 @@ export class AuthConfigController {
     userCount: 5,
     groupCount: 3
   })
+  @Response(
+    401,
+    'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+  )
+  @Response(403, 'Not Allowed while in Desktop Mode.')
+  @Response(500, 'The directory could not be synchronised')
   @Post('/synchroniseWithLDAP')
   public async synchroniseWithLDAP() {
     return synchroniseWithLDAP()
