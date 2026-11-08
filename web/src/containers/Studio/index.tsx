@@ -19,6 +19,7 @@ import {
   recallLastFile,
   rememberLastFile
 } from '../../utils/lastFile'
+import { rememberRecentFile } from '../../utils/recent'
 import { AppContext } from '../../context/appContext'
 import { useSetting } from '../../utils/hooks'
 
@@ -67,7 +68,12 @@ const Studio = () => {
     // can arrive two ways: from the tree (handleSelect) or from the URL (a
     // deep link, a reload, the back button). Both land here, so this is the
     // one place that remembers it.
-    if (fromUrl && username) rememberLastFile(username, fromUrl)
+    if (fromUrl && username) {
+      rememberLastFile(username, fromUrl)
+      // The dashboard's "recently opened files" reads this list. Recorded here
+      // because every open lands here - a tree click, a deep link, a reload.
+      rememberRecentFile(username, fromUrl)
+    }
   }, [searchParams, username])
 
   /**

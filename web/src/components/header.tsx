@@ -27,7 +27,17 @@ import { STUDIO_ROUTE } from '../utils'
 import { oppositePreference } from '../utils/colorScheme'
 import { useColorMode } from '../utils/hooks'
 
-const validTabs = ['/', '/SASjsDrive', '/SASjsStudio', '/SASjsApiDocs']
+// Every route that has a tab. A path missing here still renders its screen -
+// the tab underline just falls back to Home, which is what a reader sees as a
+// broken tab, so this list and the Tabs below must move together.
+const validTabs = [
+  '/',
+  '/SASjsApps',
+  '/SASjsDrive',
+  '/SASjsStudio',
+  '/SASjsApiDocs',
+  '/SASjsDocs'
+]
 
 const Header = (props: any) => {
   const navigate = useNavigate()
@@ -110,6 +120,12 @@ const Header = (props: any) => {
             onChange={handleTabChange}
           >
             <Tab label="Home" value="/" to="/" component={Link} />
+            <Tab
+              label="Apps"
+              value="/SASjsApps"
+              to="/SASjsApps"
+              component={Link}
+            />
             {canUseStudio && (
               <Tab
                 label="Studio"
@@ -173,6 +189,18 @@ const Header = (props: any) => {
                 color="primary"
               >
                 Home
+              </Button>
+            </MenuItem>
+
+            <MenuItem sx={{ justifyContent: 'center' }}>
+              <Button
+                component={Link}
+                to="/SASjsApps"
+                onClick={handleCloseNavMenu}
+                variant="contained"
+                color="primary"
+              >
+                Apps
               </Button>
             </MenuItem>
 

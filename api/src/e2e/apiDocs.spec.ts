@@ -131,8 +131,9 @@ describe('API screen with a policy that refuses the frame', () => {
 
     expect(text).toContain('Content-Security-Policy')
     expect(await page.locator('iframe').count()).toBe(0)
-    // The toolbar's icon carries "Open the API documentation in a new tab" as
-    // its label, so the name has to match exactly to find the pane's button.
+    // The pane's own title bar is gone - the tab names the screen, and a second
+    // header under the app bar was noise - so the only way out to the page is
+    // the button in this refusal: exactly one link carries that name.
     expect(
       await page
         .getByRole('link', { name: 'Open the API documentation', exact: true })
