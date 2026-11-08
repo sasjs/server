@@ -7,16 +7,33 @@ import {
   getAuthProviders,
   getGrantedRoutes,
   isLocalLoginEnabled,
-  ModeType,
   resolveListeners
 } from '../utils'
+// The two enums this response states, imported from the module that defines
+// them rather than through the barrel: `../utils/index` reaches these
+// controllers through `isPublicRoute`, and a cycle leaves the enum undefined at
+// decorator evaluation time, which fails the whole app at load.
+import { CorsType, ModeType } from '../utils/verifyEnvVariables'
 export interface AuthorizedRoutesResponse {
   paths: string[]
 }
 
 export interface InfoResponse {
-  mode: string
-  cors: string
+  /**
+   * Which mode this server runs in, from `MODE` - and the two words it may be.
+   * Typed as the enum rather than `string` so the published document states the
+   * enum: a client comparing `mode`, or a host validating this answer, is
+   * entitled to know that the value is one of two rather than any text. The
+   * values are already constrained to these members by `verifyEnvVariables`,
+   * which refuses the process at startup on anything else.
+   */
+  mode: ModeType
+  /**
+   * The CORS setting, from `CORS` - `enable` or `disable`, as the middleware
+   * reads it. Same reasoning as `mode`: the value is an enum at runtime, so it
+   * is stated as one rather than described in prose.
+   */
+  cors: CorsType
   /**
    * Port the plain HTTP listener serves on, or null when it is disabled.
    */
@@ -69,8 +86,8 @@ export class InfoController {
    * @summary Get public server information
    */
   @Example<InfoResponse>({
-    mode: 'desktop',
-    cors: 'enable',
+    mode: ModeType.Desktop,
+    cors: CorsType.ENABLED,
     httpPort: 5000,
     httpsPort: 443,
     runTimes: ['sas', 'js'],
@@ -85,10 +102,14 @@ export class InfoController {
     const listeners = resolveListeners(process.env)
 
     const response: InfoResponse = {
-      mode: process.env.MODE ?? 'desktop',
+      // both are constrained to their enum members by verifyEnvVariables, which
+      // has already run by the time a request reaches here
+      mode: (process.env.MODE as ModeType) ?? ModeType.Desktop,
       cors:
-        process.env.CORS ||
-        (process.env.MODE === 'server' ? 'disable' : 'enable'),
+        (process.env.CORS as CorsType) ||
+        (process.env.MODE === ModeType.Server
+          ? CorsType.DISABLED
+          : CorsType.ENABLED),
       httpPort: listeners.config?.httpPort || null,
       httpsPort: listeners.config?.httpsPort || null,
       runTimes: process.runTimes,

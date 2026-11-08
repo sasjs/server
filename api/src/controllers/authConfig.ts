@@ -50,8 +50,8 @@ export class AuthConfigController {
    * @summary Import users and groups from LDAP
    */
   @Example({
-    users: 5,
-    groups: 3
+    userCount: 5,
+    groupCount: 3
   })
   @Post('/synchroniseWithLDAP')
   public async synchroniseWithLDAP() {
