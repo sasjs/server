@@ -73,6 +73,7 @@ const Docs = () => {
     <FramedPane
       src={src}
       title="SASjs Server documentation"
+      themeSync="material"
       openLabel="Open the documentation"
       blockedHeading="The documentation cannot be shown here"
       refusalHelp={

@@ -21,7 +21,7 @@ const ApiDocs = () => (
     title="SASjs Server API documentation"
     openLabel="Open the API documentation"
     blockedHeading="The API documentation cannot be shown here"
-    syncColorMode
+    themeSync="swagger-ui"
     refusalHelp={
       <>
         This server's Content-Security-Policy refuses to frame its own

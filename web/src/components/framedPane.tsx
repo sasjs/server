@@ -41,12 +41,17 @@ export interface FramedPaneProps {
   /** What the reader is told when the page never arrives. */
   unavailableHelp: ReactNode
   /**
-   * Tell the framed document the app's colour scheme on load. True for pages
-   * that carry both schemes and switch on a class (Swagger UI does); the docs
-   * site follows the operating system's preference on its own, so it is off
-   * there.
+   * How the framed document takes the app's colour scheme.
+   *
+   *   - `swagger-ui`: Swagger carries both schemes and switches on
+   *     `html.dark-mode`, which is toggled here.
+   *   - `material`: the MkDocs site resolves its own palette in its own script,
+   *     before this pane can see the document - so the mode is posted to the
+   *     page (which the docs' head script listens for) as well as written into
+   *     Material's palette state for the next page.
+   *   - `none`: the page follows the operating system on its own.
    */
-  syncColorMode?: boolean
+  themeSync?: 'swagger-ui' | 'material' | 'none'
 }
 
 /**
@@ -73,7 +78,7 @@ const FramedPane = ({
   blockedHeading,
   refusalHelp,
   unavailableHelp,
-  syncColorMode = false
+  themeSync = 'none'
 }: FramedPaneProps) => {
   const [colorMode] = useColorMode()
   const [blocked, setBlocked] = useState<BlockedReason | null>(null)
@@ -82,20 +87,56 @@ const FramedPane = ({
   const loadedRef = useRef(false)
 
   /**
-   * Swagger UI carries both schemes and switches on `html.dark-mode`, which its
-   * own preset sets from the operating system's preference. The app has a
-   * preference of its own, so the frame is told which one to draw: the frame is
-   * same-origin, so its document is readable, and one that is not (a deployment
-   * that serves the docs from elsewhere) is left as the server sent it.
+   * The app has a colour scheme of its own, and a framed page that follows the
+   * operating system's instead puts a light page in a dark shell.
+   *
+   * The frame is same-origin, so its document is readable and its storage is
+   * shared. A deployment that serves the page from elsewhere gives neither, and
+   * is left as the server sent it rather than raising.
    */
   const applyColorMode = useCallback(() => {
-    if (!syncColorMode) return
+    if (themeSync === 'none') return
 
-    const doc = frameRef.current?.contentDocument
+    const frame = frameRef.current
+    const doc = frame?.contentDocument
+
     if (!doc) return
 
-    doc.documentElement.classList.toggle('dark-mode', colorMode === 'dark')
-  }, [colorMode, syncColorMode])
+    if (themeSync === 'swagger-ui') {
+      doc.documentElement.classList.toggle('dark-mode', colorMode === 'dark')
+
+      return
+    }
+
+    const palette = {
+      index: colorMode === 'dark' ? 1 : 0,
+      color: {
+        scheme: colorMode === 'dark' ? 'slate' : 'default',
+        primary: colorMode === 'dark' ? 'black' : 'white',
+        accent: 'amber'
+      }
+    }
+
+    try {
+      frame?.contentWindow?.localStorage.setItem(
+        '__palette',
+        JSON.stringify(palette)
+      )
+    } catch (error) {
+      // storage can be refused; the attributes below still switch this page
+    }
+
+    doc.body?.setAttribute('data-md-color-scheme', palette.color.scheme)
+    doc.body?.setAttribute('data-md-color-primary', palette.color.primary)
+    doc.body?.setAttribute('data-md-color-accent', palette.color.accent)
+
+    // The docs' own script decides its first paint from the app's setting, so a
+    // scheme switched while the page is open has to be announced.
+    frame?.contentWindow?.postMessage(
+      { type: 'sasjs-theme', mode: colorMode },
+      window.location.origin
+    )
+  }, [colorMode, themeSync])
 
   /**
    * The frame's own load event, which is the one signal that the page arrived.
