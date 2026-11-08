@@ -1,29 +1,28 @@
-import { useContext, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import axios from 'axios'
 import {
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  Chip,
+  Divider,
   Grid,
-  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Tooltip,
+  Stack,
   Typography
 } from '@mui/material'
-import {
-  DeleteSweep,
-  InsertDriveFileOutlined,
-  RestoreFromTrash
-} from '@mui/icons-material'
+import { DeleteSweep, InsertDriveFileOutlined } from '@mui/icons-material'
 
 import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
+import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
 import {
   RecentApp,
   RecentFile,
@@ -50,8 +49,7 @@ const describeWhen = (iso: string): string => {
   )
   const days = Math.floor((midnight.getTime() - then.getTime()) / 86400000)
 
-  if (days < 0) return `today at ${time}`
-  if (days === 0) return `yesterday at ${time}`
+  if (days < 1) return `today at ${time}`
   if (days === 1) return `yesterday at ${time}`
 
   return then.toLocaleDateString(undefined, {
@@ -61,20 +59,43 @@ const describeWhen = (iso: string): string => {
   })
 }
 
+/** One label/value pair in the server card. */
+const Fact = (props: { label: string; children: React.ReactNode }) => (
+  <Box sx={{ minWidth: 0 }}>
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      component="div"
+      sx={{ display: 'block' }}
+    >
+      {props.label}
+    </Typography>
+    <Typography
+      variant="body2"
+      noWrap
+      title={typeof props.children === 'string' ? props.children : undefined}
+    >
+      {props.children}
+    </Typography>
+  </Box>
+)
+
 /**
- * The dashboard: who you are, when you were last here, and what you were doing.
+ * The dashboard: what this instance is, who you are, and what you were doing.
  *
- * Apps live on their own tab now - a grid that grows with the deployment belongs
- * on a screen of its own - so the landing page answers the question a returning
- * reader actually has: where was I? The two lists are this browser's memory of
- * this user, per username, and they are clearable: a shared browser is a normal
- * way to use this app.
+ * Apps live on their own tab - a grid that grows with the deployment belongs on
+ * a screen of its own - so the landing page answers the questions a returning
+ * reader actually has: what am I looking at, where was I, and what is on this
+ * server. The two lists are this browser's memory of this user, per username,
+ * and they are clearable: a shared browser is a normal way to use this app.
  */
 const Home = () => {
   const appContext = useContext(AppContext)
   const username = appContext.username
 
   const [historyVersion, setHistoryVersion] = useState(0)
+  const [appsAvailable, setAppsAvailable] = useState<number | null>(null)
+  const [filesInHome, setFilesInHome] = useState<number | null>(null)
 
   const apps = useMemo<RecentApp[]>(
     () => recallRecentApps(username),
@@ -96,37 +117,163 @@ const Home = () => {
   // single value written at login would always read "now".
   const previousSignIn = signIns[1] ? describeWhen(signIns[1]) : ''
 
+  const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
+  const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
+
+  /**
+   * Whether this page is served by a browser host rather than by the server.
+   *
+   * A mock is a static site whose `/SASjsApi` answers come from a service
+   * worker, so the worker controlling this page is the fact that tells them
+   * apart - the info route cannot, because the browser host reports the same
+   * mode and run times a desktop server does.
+   */
+  const [browserHost] = useState(
+    () =>
+      typeof navigator !== 'undefined' &&
+      Boolean(navigator.serviceWorker?.controller)
+  )
+
+  useEffect(() => {
+    if (!canUseAppStream) {
+      setAppsAvailable(canUseStudio ? 2 : 1)
+      return
+    }
+
+    let cancelled = false
+
+    axios
+      .get('/AppStream/apps.json')
+      .then((res) => {
+        if (cancelled) return
+        const streamed = Array.isArray(res.data?.apps)
+          ? res.data.apps.length
+          : 0
+        setAppsAvailable(streamed + (canUseStudio ? 2 : 1))
+      })
+      .catch(() => {
+        if (!cancelled) setAppsAvailable(canUseStudio ? 2 : 1)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [canUseAppStream, canUseStudio])
+
+  useEffect(() => {
+    if (!username) return
+
+    let cancelled = false
+
+    // One readdir of the caller's own home: enough to say how much is there
+    // without walking a drive that can hold anything.
+    axios
+      .get(
+        `/SASjsApi/drive/fileTree?_folderPath=${encodeURIComponent(
+          `/home/${username}`
+        )}`
+      )
+      .then((res) => {
+        if (cancelled) return
+        const tree = res.data?.tree
+        const children = Array.isArray(tree?.children) ? tree.children : []
+        setFilesInHome(
+          children.filter((child: { isFolder?: boolean }) => !child.isFolder)
+            .length
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setFilesInHome(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [username])
+
   const clearHistory = () => {
     clearDashboardHistory(username)
     setHistoryVersion((version) => version + 1)
   }
+
+  const runTimes = appContext.runTimes.length
+    ? appContext.runTimes
+        .map((runTime) => String(runTime).toUpperCase())
+        .join(', ')
+    : 'none reported'
 
   return (
     <Box className="container" sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
         Welcome{appContext.displayName ? `, ${appContext.displayName}` : ''}
       </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        This is your SASjs Server workspace. <strong>Studio</strong> runs ad hoc
+        code, <strong>Apps</strong> lists everything published to this instance
+        that you can open, and this page remembers what you opened on this
+        browser.
         {previousSignIn
-          ? `You last signed in on this browser ${previousSignIn}.`
-          : 'This is your first sign-in on this browser.'}
+          ? ` You last signed in here ${previousSignIn}.`
+          : ' This is your first sign-in on this browser.'}
       </Typography>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-        <Tooltip title="Clear this browser's dashboard history">
-          <IconButton
-            size="small"
-            onClick={clearHistory}
-            aria-label="Clear this browser's dashboard history"
-          >
-            <DeleteSweep fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
+          <Card variant="outlined" sx={{ height: '100%', overflow: 'hidden' }}>
+            <CardHeader
+              title="This instance"
+              titleTypographyProps={{ variant: 'subtitle1' }}
+            />
+            <CardContent sx={{ pt: 0 }}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6 }}>
+                  <Fact label="Mode">{appContext.mode}</Fact>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Fact label="Served by">
+                    {browserHost ? 'Browser host (mock)' : 'SASjs Server'}
+                  </Fact>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Fact label="Run times">{runTimes}</Fact>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Fact label="Version">{appContext.version || 'dev'}</Fact>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Fact label="Apps in reach">
+                    {appsAvailable === null ? '-' : appsAvailable}
+                  </Fact>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Fact label={`Files in /home/${username}`}>
+                    {filesInHome === null ? '-' : filesInHome}
+                  </Fact>
+                </Grid>
+              </Grid>
+              <Divider sx={{ my: 1.5 }} />
+              <Stack
+                direction="row"
+                spacing={0.5}
+                useFlexGap
+                sx={{ flexWrap: 'wrap', maxWidth: '100%' }}
+              >
+                {appContext.isAdmin && (
+                  <Chip size="small" label="Administrator" />
+                )}
+                {appContext.authProviders.length > 0 && (
+                  <Chip
+                    size="small"
+                    label={appContext.authProviders.join(', ')}
+                  />
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card variant="outlined">
+        <Grid size={{ xs: 12, md: 6 }} sx={{ minWidth: 0 }}>
+          <Card variant="outlined" sx={{ height: '100%', overflow: 'hidden' }}>
             <CardHeader
               title="Recently used apps"
               titleTypographyProps={{ variant: 'subtitle1' }}
@@ -138,6 +285,7 @@ const Home = () => {
                     <Grid
                       size={{ xs: 4 }}
                       key={app.href ?? app.to ?? app.title}
+                      sx={{ minWidth: 0 }}
                     >
                       <AppTile
                         title={app.title}
@@ -157,51 +305,49 @@ const Home = () => {
             </CardContent>
           </Card>
         </Grid>
-
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card variant="outlined">
-            <CardHeader
-              title="Recently opened files"
-              titleTypographyProps={{ variant: 'subtitle1' }}
-            />
-            <CardContent sx={{ pt: 0 }}>
-              {files.length ? (
-                <List dense disablePadding>
-                  {files.map((file) => (
-                    <ListItemButton
-                      key={file.path}
-                      component={Link}
-                      to={`/SASjsStudio?filePath=${encodeURIComponent(file.path)}`}
-                      sx={{ borderRadius: 1 }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 32 }}>
-                        <InsertDriveFileOutlined fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={file.path}
-                        secondary={describeWhen(file.at)}
-                        slotProps={{
-                          primary: {
-                            variant: 'body2',
-                            noWrap: true,
-                            title: file.path
-                          }
-                        }}
-                      />
-                    </ListItemButton>
-                  ))}
-                </List>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Files you open in Studio appear here.
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
       </Grid>
 
-      <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+      <Card variant="outlined" sx={{ mb: 2, overflow: 'hidden' }}>
+        <CardHeader
+          title="Recently opened files"
+          titleTypographyProps={{ variant: 'subtitle1' }}
+        />
+        <CardContent sx={{ pt: 0 }}>
+          {files.length ? (
+            <List dense disablePadding sx={{ maxWidth: '100%' }}>
+              {files.map((file) => (
+                <ListItemButton
+                  key={file.path}
+                  component={Link}
+                  to={`/SASjsStudio?filePath=${encodeURIComponent(file.path)}`}
+                  sx={{ borderRadius: 1, minWidth: 0 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <InsertDriveFileOutlined fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={file.path}
+                    secondary={describeWhen(file.at)}
+                    slotProps={{
+                      primary: {
+                        variant: 'body2',
+                        noWrap: true,
+                        title: file.path
+                      }
+                    }}
+                  />
+                </ListItemButton>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Files you open in Studio appear here.
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <Button
           component={Link}
           to="/SASjsApps"
@@ -213,8 +359,9 @@ const Home = () => {
         {apps.length + files.length > 0 && (
           <Button
             size="small"
-            startIcon={<RestoreFromTrash />}
+            startIcon={<DeleteSweep />}
             onClick={clearHistory}
+            aria-label="Clear this browser's dashboard history"
           >
             Clear history
           </Button>

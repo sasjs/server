@@ -37,6 +37,11 @@ const AppTile = (props: {
         gap: 1,
         height: compact ? 112 : 160,
         p: 2,
+        // A tile is a fixed box: a long app name or appLoc must end in an
+        // ellipsis inside it rather than run over the tile beside it.
+        overflow: 'hidden',
+        width: '100%',
+        minWidth: 0,
         // Rounded rather than rectangular: the grid reads as tiles people tap
         // rather than as panels, and 16px matches the rest of the app's corners.
         borderRadius: '16px',
@@ -50,7 +55,11 @@ const AppTile = (props: {
         <img
           src={logo}
           alt=""
-          style={{ maxHeight: compact ? 40 : 64, maxWidth: '100%' }}
+          style={{
+            maxHeight: compact ? 40 : 64,
+            maxWidth: '100%',
+            objectFit: 'contain'
+          }}
           onError={(e) => {
             const img = e.currentTarget
             if (img.src.endsWith(defaultAppLogo)) return
@@ -58,9 +67,22 @@ const AppTile = (props: {
           }}
         />
       )}
-      <Typography variant="subtitle1">{title}</Typography>
+      <Typography
+        variant="subtitle1"
+        noWrap
+        title={title}
+        sx={{ maxWidth: '100%' }}
+      >
+        {title}
+      </Typography>
       {subtitle && (
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          noWrap
+          title={subtitle}
+          sx={{ maxWidth: '100%' }}
+        >
           {subtitle}
         </Typography>
       )}
