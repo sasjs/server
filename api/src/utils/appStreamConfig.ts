@@ -106,7 +106,10 @@ export const addEntryToAppStreamConfig = (
       process.appStreamConfig[streamServiceName] = {
         appLoc,
         streamWebFolder,
-        streamLogo
+        streamLogo,
+        // The entry is the publish, so this is when the bundle was last
+        // replaced; a republish moves it.
+        publishedAt: new Date().toISOString()
       }
       if (addEntryToFile) await saveAppStreamConfig()
     }

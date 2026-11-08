@@ -88,7 +88,11 @@ router.get('/apps.json', authenticateAccessToken, async (req, res) => {
       // asset inside the app, so it is addressed relative to the app's stream
       // path. The landing page resolves the same value the same way.
       logo: entry.streamLogo ? `/AppStream/${name}/${entry.streamLogo}` : null,
-      url: `/AppStream/${name}/`
+      url: `/AppStream/${name}/`,
+      // When the bundle was last published, or null for a registry written
+      // before the registry recorded one - the interface shows the date it
+      // has rather than inventing one.
+      publishedAt: entry.publishedAt ?? null
     }))
   })
 })
