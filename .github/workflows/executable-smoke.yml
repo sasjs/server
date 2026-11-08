@@ -33,10 +33,14 @@ jobs:
         include:
           - os: ubuntu-22.04
             target: node24-linux-x64
+            platform: linux
+            arch: x64
             output: ../executables/api-linux
             name: api-linux
           - os: windows-latest
             target: node24-win-x64
+            platform: win
+            arch: x64
             output: ../executables/api-win.exe
             name: api-win.exe
           # The target is x64 and the runner image is arm64, so the binary runs
@@ -45,6 +49,8 @@ jobs:
           # than pass silently.
           - os: macos-latest
             target: node24-macos-x64
+            platform: macos
+            arch: x64
             output: ../executables/api-macos
             name: api-macos
 
@@ -67,6 +73,69 @@ jobs:
       - name: Install Dependencies API
         working-directory: ./api
         run: npm ci
+
+      # `pkg` downloads a base Node binary and, when that download fails, BUILDS
+      # Node from source - a twenty-five minute detour that cannot succeed on
+      # this image, where deps/ada/ada.h calls a constexpr std::string member
+      # that gcc 12 does not provide. So a 504 from the release CDN reads as a
+      # compiler error in this repository: on 2026-11-08 every executable job
+      # failed that way at once, with `504: Gateway Time-out` three lines above
+      # the `ada.h` errors. The binary is fetched here instead - retried, cached
+      # between runs, and with an error that names the real cause.
+      #
+      # The runner stays on ubuntu-22.04 deliberately: the binary it produces
+      # carries that glibc forward, and moving to 24.04 would drop every host
+      # older than it (RHEL 9 ships glibc 2.34). The base binary is the thing to
+      # make reliable, not the image.
+      - name: Restore the pkg base binary
+        id: pkg-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pkg-cache
+          key: pkg-cache-${{ runner.os }}-${{ matrix.platform }}-${{ hashFiles('api/package-lock.json') }}
+
+      - name: Fetch the pkg base binary
+        shell: bash
+        working-directory: ./api
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          # Each attempt is bounded: a 504 from the CDN can take minutes to come
+          # back, and the point of this step is to fail quickly and say why. Node
+          # runs the call rather than `timeout(1)`, which is absent on macOS.
+          fetch() {
+            node -e '
+              const { spawnSync } = require("child_process")
+              const args = ["--no-install", "pkg-fetch", "--node-range", "node24",
+                            "--platform", process.argv[1], "--arch", process.argv[2]]
+              const result = spawnSync("npx", args, {
+                stdio: "inherit",
+                timeout: 90000,
+                shell: process.platform === "win32"
+              })
+              process.exit(result.status === null ? 1 : result.status)
+            ' "$1" "$2"
+          }
+          for attempt in 1 2 3; do
+            if fetch "$PLATFORM" "$ARCH"; then
+              echo "base binary ready for $PLATFORM-$ARCH"
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "attempt $attempt failed; waiting $((attempt * 15))s"
+              sleep $((attempt * 15))
+            fi
+          done
+          echo "::error::pkg-fetch could not download the base Node binary after 3 attempts. This is the GitHub release CDN, not a change in this branch; the same download answers 504 from outside CI when it happens."
+          exit 1
+
+      - name: Save the pkg base binary
+        if: success() && steps.pkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pkg-cache
+          key: ${{ steps.pkg-cache.outputs.cache-primary-key }}
 
       - name: Build API
         working-directory: ./api

@@ -122,6 +122,59 @@ jobs:
         working-directory: ./api
         run: npm ci
 
+      # Same reason as the smoke workflow: `pkg` builds Node from source when its
+      # base-binary download fails, and that build cannot compile on this image
+      # (`deps/ada/ada.h` needs a newer libstdc++ than gcc 12). A 504 from the
+      # release CDN then surfaces as a compiler error here. This job cross-builds
+      # all three platforms, so all three base binaries are fetched up front,
+      # retried and cached between runs.
+      - name: Restore the pkg base binaries
+        if: steps.pending.outputs.release == 'true'
+        id: pkg-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pkg-cache
+          key: pkg-cache-${{ runner.os }}-release-${{ hashFiles('api/package-lock.json') }}
+
+      - name: Fetch the pkg base binaries
+        if: steps.pending.outputs.release == 'true'
+        shell: bash
+        working-directory: ./api
+        run: |
+          # Each attempt is bounded: a 504 from the CDN can take minutes to come
+          # back, and the point of this step is to fail quickly and say why. Node
+          # runs the call rather than `timeout(1)`, which is absent on macOS.
+          fetch() {
+            node -e '
+              const { spawnSync } = require("child_process")
+              const args = ["--no-install", "pkg-fetch", "--node-range", "node24",
+                            "--platform", process.argv[1], "--arch", "x64"]
+              const result = spawnSync("npx", args, { stdio: "inherit", timeout: 90000 })
+              process.exit(result.status === null ? 1 : result.status)
+            ' "$1"
+          }
+          for platform in linux win macos; do
+            for attempt in 1 2 3; do
+              if fetch "$platform"; then
+                echo "base binary ready for $platform-x64"
+                break
+              fi
+              if [ "$attempt" = 3 ]; then
+                echo "::error::pkg-fetch could not download the base Node binary for $platform-x64 after 3 attempts. This is the GitHub release CDN, not a change in this branch."
+                exit 1
+              fi
+              echo "attempt $attempt failed for $platform; waiting $((attempt * 15))s"
+              sleep $((attempt * 15))
+            done
+          done
+
+      - name: Save the pkg base binaries
+        if: success() && steps.pending.outputs.release == 'true' && steps.pkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pkg-cache
+          key: ${{ steps.pkg-cache.outputs.cache-primary-key }}
+
       - name: Build Executables
         if: steps.pending.outputs.release == 'true'
         working-directory: ./api

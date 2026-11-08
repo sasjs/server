@@ -1,5 +1,6 @@
 {
   "img-src": ["'self'", "data:", "blob:"],
+  "frame-src": ["'self'"],
   "script-src": ["'self'"],
   "script-src-attr": ["'none'"]
 }

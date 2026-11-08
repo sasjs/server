@@ -13,7 +13,8 @@ describe('getEnvCSPDirectives', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'csp-'))
     process.logger = {
-      error: jest.fn()
+      error: jest.fn(),
+      info: jest.fn()
     } as any
   })
 
@@ -72,5 +73,69 @@ describe('getEnvCSPDirectives', () => {
     )
 
     expect(directives['script-src']).toEqual(["'self'"])
+  })
+
+  /**
+   * The app frames the server's own documentation page, so the policy has to
+   * permit that origin by name rather than by falling back to `default-src`.
+   */
+  it("permits the app's own frames by default", () => {
+    expect(getEnvCSPDirectives(undefined)['frame-src']).toEqual(["'self'"])
+  })
+
+  /**
+   * A file layers over the defaults instead of replacing them. Replacing them
+   * drops whatever the file does not mention, and the two directives the server
+   * itself depends on go first: `img-src` with `blob:` (the Studio's image
+   * preview) and `frame-src` with `'self'` (the API screen).
+   */
+  it('keeps the defaults a config file leaves out', () => {
+    const configPath = path.join(tmpDir, 'csp.config.json')
+
+    fs.writeFileSync(configPath, JSON.stringify({ 'script-src': ["'self'"] }))
+
+    const directives = getEnvCSPDirectives(
+      path.relative(process.cwd(), configPath)
+    )
+
+    expect(directives['img-src']).toEqual(["'self'", 'data:', 'blob:'])
+    expect(directives['frame-src']).toEqual(["'self'"])
+  })
+
+  /**
+   * The deployment that reported the blank API screen: a `default-src` of
+   * `'all'`, which is not a CSP keyword, so a frame with nothing more specific
+   * to fall back to is refused. Naming `frame-src` keeps the app's own frame
+   * out of that fallback.
+   */
+  it('keeps the frame directive when a file narrows default-src', () => {
+    const configPath = path.join(tmpDir, 'csp.config.json')
+
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ 'default-src': ["'all'"], 'img-src': ["'self'"] })
+    )
+
+    const directives = getEnvCSPDirectives(
+      path.relative(process.cwd(), configPath)
+    )
+
+    expect(directives['default-src']).toEqual(["'all'"])
+    expect(directives['frame-src']).toEqual(["'self'"])
+  })
+
+  it('still lets a file state its own frame directive', () => {
+    const configPath = path.join(tmpDir, 'csp.config.json')
+
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ 'frame-src': ["'self'", 'https://example.com'] })
+    )
+
+    const directives = getEnvCSPDirectives(
+      path.relative(process.cwd(), configPath)
+    )
+
+    expect(directives['frame-src']).toEqual(["'self'", 'https://example.com'])
   })
 })
