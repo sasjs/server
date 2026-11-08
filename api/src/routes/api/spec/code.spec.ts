@@ -210,6 +210,35 @@ describe('code', () => {
       })
     })
 
+    it('reports the missing header, not the macros it cannot declare', async () => {
+      // The behaviour @sasjs/lint 5.0.1 brings, pinned where the route reports
+      // it. A file with no Doxygen header has no `<h4> SAS Macros </h4>` section
+      // for a declaration to be written into, so an undeclared macro in it is
+      // not reported: `sasjs lint fix` could never resolve that finding.
+      //
+      // The trailing space is the control - it proves the linter ran on this
+      // text, so an empty answer cannot pass the case. The drive's .sasjslint
+      // turns `hasDoxygenHeader` off, so the missing header is not the
+      // diagnostic to assert here; the undeclared-macro one is, and 5.0.0
+      // answers this request with it.
+      const response = await request(app)
+        .post('/SASjsApi/code/lint')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code: 'data _null_;\n  %mylog(x=1);\n  x = 1; \nrun;' })
+        .expect(200)
+
+      const messages = (response.body as { message: string }[]).map(
+        (diagnostic) => diagnostic.message
+      )
+
+      expect(messages).toContain('Line contains trailing spaces')
+      expect(
+        messages.some((message) =>
+          message.startsWith("Macro 'mylog' is not declared")
+        )
+      ).toEqual(false)
+    })
+
     it('applies the .sasjslint nearest the named file, walking up the drive', async () => {
       const driveFiles = process.driveLoc
         ? path.join(process.driveLoc, 'files')
