@@ -15,6 +15,13 @@ export interface UserPayload {
   displayName: string
   /**
    * Username for user
+   *
+   * Lowercased and stored that way, 3 to 16 characters, letters and digits only
+   * (`utils/validation.ts`). A name outside that is refused with a `400` before
+   * the account is looked at, so a client can validate the field itself.
+   * @minLength 3
+   * @maxLength 16
+   * @pattern ^[a-z0-9]+$
    * @example "johnSnow01"
    */
   username: string
