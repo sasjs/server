@@ -40,7 +40,11 @@ export class AuthConfigController {
   @Response(403, 'Not Allowed while in Desktop Mode.')
   @Response(500, 'The provider configuration could not be read')
   @Get('/')
-  public getDetail(): Promise<AuthConfigResponse> {
+  // tsoa cannot emit a schema for a declaration it cannot see (the response type
+  // lives in `@sasjs/api`), and this route's document is `{}` for that reason -
+  // so the signature stays untyped here rather than failing the spec build. The
+  // shape is the package's `AuthConfigResponse`, asserted by its own spec.
+  public getDetail(): Promise<any> {
     return getAuthConfigDetail()
   }
 

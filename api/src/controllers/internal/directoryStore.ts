@@ -19,6 +19,12 @@ import User, { IUserDocument } from '../../model/User'
  * the same reason.
  */
 
+// `Group` populates its `users` on save and `User` may populate its `groups`, so
+// an element is either an ObjectId or a document. `String(document)` gives the
+// inspected document, not its id - read `_id` first.
+const idOf = (value: any): string =>
+  String(value && value._id ? value._id : value)
+
 const userRecord = (user: IUserDocument): IdentityUserRecord => ({
   uid: user.uid,
   username: user.username,
@@ -26,7 +32,7 @@ const userRecord = (user: IUserDocument): IdentityUserRecord => ({
   isAdmin: user.isAdmin,
   isActive: user.isActive,
   needsToUpdatePassword: user.needsToUpdatePassword,
-  groups: (user.groups || []).map(String),
+  groups: (user.groups || []).map(idOf),
   ...(user.authProvider ? { authProvider: user.authProvider } : {})
 })
 
@@ -35,7 +41,7 @@ const groupRecord = (group: IGroupDocument): IdentityGroupRecord => ({
   name: group.name,
   description: group.description,
   isActive: group.isActive,
-  users: group.users.map(String),
+  users: group.users.map(idOf),
   ...(group.authProvider ? { authProvider: group.authProvider } : {})
 })
 
