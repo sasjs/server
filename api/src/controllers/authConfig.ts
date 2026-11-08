@@ -1,17 +1,14 @@
-import express from 'express'
 import { Security, Route, Tags, Get, Post, Example, Response } from 'tsoa'
-
 import {
-  LDAPClient,
-  LDAPUser,
-  LDAPGroup,
-  AuthProviderType,
-  isAuthProviderEnabled
-} from '../utils'
-import { randomBytes } from 'crypto'
-import User from '../model/User'
-import Group from '../model/Group'
-import Permission from '../model/Permission'
+  createAuthConfigService,
+  createDirectoryService,
+  type AuthConfig,
+  type AuthConfigResponse,
+  type DirectorySource
+} from '@sasjs/api'
+
+import { LDAPClient, AuthProviderType, isAuthProviderEnabled } from '../utils'
+import { mongoDirectoryStore } from './internal/directoryStore'
 
 @Security('bearerAuth')
 @Route('SASjsApi/authConfig')
@@ -43,7 +40,11 @@ export class AuthConfigController {
   @Response(403, 'Not Allowed while in Desktop Mode.')
   @Response(500, 'The provider configuration could not be read')
   @Get('/')
-  public getDetail() {
+  // tsoa cannot emit a schema for a declaration it cannot see (the response type
+  // lives in `@sasjs/api`), and this route's document is `{}` for that reason -
+  // so the signature stays untyped here rather than failing the spec build. The
+  // shape is the package's `AuthConfigResponse`, asserted by its own spec.
+  public getDetail(): Promise<any> {
     return getAuthConfigDetail()
   }
 
@@ -66,205 +67,126 @@ export class AuthConfigController {
   @Response(403, 'Not Allowed while in Desktop Mode.')
   @Response(500, 'The directory could not be synchronised')
   @Post('/synchroniseWithLDAP')
-  public async synchroniseWithLDAP() {
+  public async synchroniseWithLDAP(): Promise<{
+    userCount: number
+    groupCount: number
+  }> {
     return synchroniseWithLDAP()
   }
 }
 
-const synchroniseWithLDAP = async () => {
-  process.logger.info('Syncing LDAP with internal DB')
+/**
+ * The provider blocks this host was started with, in the package's own shape.
+ *
+ * Values are the environment's, so a provider that is not enabled is `undefined`
+ * rather than an empty block; the secret is a boolean, never the value.
+ */
+const ldapProvider = (): AuthConfig['ldap'] => {
+  if (!isAuthProviderEnabled(AuthProviderType.LDAP)) return undefined
 
-  const permissions = await Permission.get({})
-
-  // The import deletes and re-creates the LDAP accounts and groups, so their
-  // identifiers do not survive it: a rule written back from an identifier read
-  // here would name a document that no longer exists, and a grant would quietly
-  // stop granting. The principal's NAME is what survives, so capture it first.
-  const principalNames = new Map<string, { user?: string; group?: string }>()
-  for (const permission of permissions) {
-    const user = permission.user
-      ? await User.findOne({ _id: permission.user })
-      : undefined
-    const group = permission.group
-      ? await Group.findOne({ _id: permission.group })
-      : undefined
-
-    principalNames.set(String(permission.uid), {
-      user: user?.username,
-      group: group?.name
-    })
-  }
-
-  await Permission.deleteMany()
-  await User.deleteMany({ authProvider: AuthProviderType.LDAP })
-  await Group.deleteMany({ authProvider: AuthProviderType.LDAP })
-
-  const ldapClient = await LDAPClient.init()
-
-  process.logger.info('fetching LDAP users')
-  const users = await ldapClient.getAllLDAPUsers()
-
-  process.logger.info('inserting LDAP users to DB')
-
-  const existingUsers: string[] = []
-  const importedUsers: LDAPUser[] = []
-
-  for (const user of users) {
-    const usernameExists = await User.findOne({ username: user.username })
-    if (usernameExists) {
-      existingUsers.push(user.username)
-      continue
-    }
-
-    const hashPassword = User.hashPassword(randomBytes(64).toString('hex'))
-
-    await User.create({
-      displayName: user.displayName,
-      username: user.username,
-      password: hashPassword,
-      authProvider: AuthProviderType.LDAP,
-      needsToUpdatePassword: false
-    })
-
-    importedUsers.push(user)
-  }
-
-  if (existingUsers.length > 0) {
-    process.logger.info(
-      'Failed to insert following users as they already exist in DB:'
-    )
-    existingUsers.forEach((user) => process.logger.log(`* ${user}`))
-  }
-
-  process.logger.info('fetching LDAP groups')
-  const groups = await ldapClient.getAllLDAPGroups()
-
-  process.logger.info('inserting LDAP groups to DB')
-
-  const existingGroups: string[] = []
-  const importedGroups: LDAPGroup[] = []
-
-  for (const group of groups) {
-    const groupExists = await Group.findOne({ name: group.name })
-    if (groupExists) {
-      existingGroups.push(group.name)
-      continue
-    }
-
-    await Group.create({
-      name: group.name,
-      authProvider: AuthProviderType.LDAP
-    })
-
-    importedGroups.push(group)
-  }
-
-  if (existingGroups.length > 0) {
-    process.logger.info(
-      'Failed to insert following groups as they already exist in DB:'
-    )
-    existingGroups.forEach((group) => process.logger.log(`* ${group}`))
-  }
-
-  process.logger.info('associating users and groups')
-
-  for (const group of importedGroups) {
-    const dbGroup = await Group.findOne({ name: group.name })
-    if (dbGroup) {
-      for (const member of group.members) {
-        const user = importedUsers.find((user) => user.uid === member)
-        if (user) {
-          const dbUser = await User.findOne({ username: user.username })
-          if (dbUser) await dbGroup.addUser(dbUser)
-        }
-      }
-    }
-  }
-
-  process.logger.info('setting permissions')
-
-  for (const permission of permissions) {
-    const newPermission = new Permission({
-      path: permission.path,
-      type: permission.type,
-      setting: permission.setting
-    })
-
-    // resolved by name, because the identifiers above were replaced by the import
-    const names = principalNames.get(String(permission.uid)) || {}
-
-    if (names.user) {
-      const dbUser = await User.findOne({ username: names.user })
-      if (dbUser) newPermission.user = dbUser._id
-    } else if (names.group) {
-      const dbGroup = await Group.findOne({ name: names.group })
-      if (dbGroup) newPermission.group = dbGroup._id
-    }
-    await newPermission.save()
-  }
-
-  process.logger.info('LDAP synchronization completed!')
+  const {
+    LDAP_URL,
+    LDAP_BIND_DN,
+    LDAP_BIND_PASSWORD,
+    LDAP_USERS_BASE_DN,
+    LDAP_GROUPS_BASE_DN
+  } = process.env
 
   return {
-    userCount: importedUsers.length,
-    groupCount: importedGroups.length
+    url: LDAP_URL ?? '',
+    bindDn: LDAP_BIND_DN ?? '',
+    usersBaseDn: LDAP_USERS_BASE_DN ?? '',
+    groupsBaseDn: LDAP_GROUPS_BASE_DN ?? '',
+    bindPasswordSet: !!LDAP_BIND_PASSWORD
   }
 }
 
-const getAuthConfigDetail = () => {
-  const returnObj: any = {}
+const oidcProvider = (): AuthConfig['oidc'] => {
+  if (!isAuthProviderEnabled(AuthProviderType.OIDC)) return undefined
 
-  if (isAuthProviderEnabled(AuthProviderType.LDAP)) {
-    const {
-      LDAP_URL,
-      LDAP_BIND_DN,
-      LDAP_BIND_PASSWORD,
-      LDAP_USERS_BASE_DN,
-      LDAP_GROUPS_BASE_DN
-    } = process.env
+  const {
+    OIDC_PROVIDER_NAME,
+    OIDC_ISSUER_URL,
+    OIDC_CLIENT_ID,
+    OIDC_CLIENT_SECRET,
+    OIDC_REDIRECT_URI,
+    OIDC_SCOPE,
+    OIDC_SIGNING_ALG,
+    OIDC_USERNAME_CLAIM,
+    OIDC_JIT_PROVISION
+  } = process.env
 
-    // Secrets are write-only: LDAP_BIND_PASSWORD is read from the environment
-    // and used, but never echoed back. This endpoint is admin-only and served
-    // over GET, so returning it would leak the directory bind credential into
-    // the response body, the SPA's state, the browser cache and any proxy or
-    // access log in the path. LDAP_BIND_PASSWORD_SET reports only whether a
-    // value is configured, which is all the UI needs.
-    returnObj.ldap = {
-      LDAP_URL: LDAP_URL ?? '',
-      LDAP_BIND_DN: LDAP_BIND_DN ?? '',
-      LDAP_USERS_BASE_DN: LDAP_USERS_BASE_DN ?? '',
-      LDAP_GROUPS_BASE_DN: LDAP_GROUPS_BASE_DN ?? '',
-      LDAP_BIND_PASSWORD_SET: !!LDAP_BIND_PASSWORD
-    }
+  return {
+    providerName: OIDC_PROVIDER_NAME ?? '',
+    issuerUrl: OIDC_ISSUER_URL ?? '',
+    clientId: OIDC_CLIENT_ID ?? '',
+    redirectUri: OIDC_REDIRECT_URI ?? '',
+    scope: OIDC_SCOPE ?? '',
+    signingAlg: OIDC_SIGNING_ALG ?? '',
+    usernameClaim: OIDC_USERNAME_CLAIM ?? '',
+    jitProvision: OIDC_JIT_PROVISION ?? '',
+    clientSecretSet: !!OIDC_CLIENT_SECRET
+  }
+}
+
+/**
+ * The rendered configuration. The redaction rule - secrets never echoed, only
+ * whether one is set - and the environment key names are `@sasjs/api`'s, so the
+ * administration page and a mock host read one answer.
+ */
+const getAuthConfigDetail = (): Promise<AuthConfigResponse> => {
+  const ldap = ldapProvider()
+  const oidc = oidcProvider()
+
+  return createAuthConfigService(() => ({
+    ...(ldap ? { ldap } : {}),
+    ...(oidc ? { oidc } : {})
+  })).authConfig()
+}
+
+/**
+ * The import itself.
+ *
+ * The package owns the rules: a user or group that already exists is left alone,
+ * what it creates is stamped with the provider, membership travels from the
+ * directory's group list (which names members by directory uid, mapped here to
+ * the username the API keys on), and a directory answer that names one account
+ * twice is refused before anything is written.
+ *
+ * This replaces a delete-and-reimport that also rebuilt every permission rule:
+ * with nothing deleted, a rule keeps the identifier it already names, so the sync
+ * is no longer destructive and the route does what its description says.
+ */
+const synchroniseWithLDAP = async () => {
+  process.logger.info('Syncing LDAP with internal DB')
+
+  const client = await LDAPClient.init()
+  const users = await client.getAllLDAPUsers()
+  const groups = await client.getAllLDAPGroups()
+
+  const usernameByUid = new Map(users.map((user) => [user.uid, user.username]))
+
+  const source: DirectorySource = {
+    users: async () => users,
+    groups: async () =>
+      groups.map((group) => ({
+        name: group.name,
+        // a member the directory names but did not return as a user is skipped
+        // by the import, which is the package's rule for an unknown account
+        members: group.members
+          .map((uid) => usernameByUid.get(uid))
+          .filter((username): username is string => !!username)
+      }))
   }
 
-  if (isAuthProviderEnabled(AuthProviderType.OIDC)) {
-    const {
-      OIDC_PROVIDER_NAME,
-      OIDC_ISSUER_URL,
-      OIDC_CLIENT_ID,
-      OIDC_CLIENT_SECRET,
-      OIDC_REDIRECT_URI,
-      OIDC_SCOPE,
-      OIDC_SIGNING_ALG,
-      OIDC_USERNAME_CLAIM,
-      OIDC_JIT_PROVISION
-    } = process.env
+  const result = await createDirectoryService(
+    mongoDirectoryStore(),
+    source
+  ).synchronise()
 
-    // Same write-only rule as the LDAP block above - OIDC_CLIENT_SECRET is
-    // read from the environment and used, but never echoed back.
-    returnObj.oidc = {
-      OIDC_PROVIDER_NAME: OIDC_PROVIDER_NAME ?? '',
-      OIDC_ISSUER_URL: OIDC_ISSUER_URL ?? '',
-      OIDC_CLIENT_ID: OIDC_CLIENT_ID ?? '',
-      OIDC_REDIRECT_URI: OIDC_REDIRECT_URI ?? '',
-      OIDC_SCOPE: OIDC_SCOPE ?? '',
-      OIDC_SIGNING_ALG: OIDC_SIGNING_ALG ?? '',
-      OIDC_USERNAME_CLAIM: OIDC_USERNAME_CLAIM ?? '',
-      OIDC_JIT_PROVISION: OIDC_JIT_PROVISION ?? '',
-      OIDC_CLIENT_SECRET_SET: !!OIDC_CLIENT_SECRET
-    }
-  }
+  process.logger.info(
+    `LDAP sync imported ${result.userCount} user(s) and ${result.groupCount} group(s)`
+  )
 
-  return returnObj
+  return result
 }

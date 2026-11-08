@@ -5,7 +5,10 @@ const authConfigRouter = express.Router()
 authConfigRouter.get('/', async (req, res) => {
   const controller = new AuthConfigController()
   try {
-    const response = controller.getDetail()
+    // awaited: the controller answers a promise, and `res.send(promise)`
+    // serialises to `{}` - which is exactly the empty body an administrator
+    // would have seen
+    const response = await controller.getDetail()
     res.send(response)
   } catch (err: any) {
     res.status(500).send(err.toString())
