@@ -92,6 +92,8 @@ const ApiDocs = () => {
   useEffect(() => {
     const docsUrl = new URL(src, window.location.href)
 
+    let timer: number | undefined
+
     /**
      * Only this pane's frame. `securitypolicyviolation` is raised on the
      * document for every frame in the app, so matching the directive alone
@@ -115,6 +117,10 @@ const ApiDocs = () => {
       )
         return
 
+      // The refusal is the better diagnosis, and a refused frame is exactly
+      // the one that never fires a load event - so the backstop must not be
+      // left armed to overwrite this ten seconds later.
+      window.clearTimeout(timer)
       setBlocked('refused')
     }
 
@@ -123,7 +129,7 @@ const ApiDocs = () => {
     // The backstop for a refusal that raises no event - an X-Frame-Options
     // mismatch raises none - and for a page that never arrives. The frame
     // reports its own load, so a slow proxy is not mistaken for a refusal.
-    const timer = window.setTimeout(() => {
+    timer = window.setTimeout(() => {
       if (!loadedRef.current) setBlocked('unavailable')
     }, FRAME_TIMEOUT_MS)
 

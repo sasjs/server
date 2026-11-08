@@ -139,6 +139,16 @@ describe('API screen with a policy that refuses the frame', () => {
         .count()
     ).toBe(1)
 
+    // The diagnosis must survive the backstop. A refused frame never fires a
+    // load event, so an armed timer would replace this text with "did not load"
+    // ten seconds later - and the reader here is the one who can fix the policy.
+    await page.waitForTimeout(12000)
+
+    const afterBackstop = await pane.first().innerText()
+
+    expect(afterBackstop).toContain('Content-Security-Policy')
+    expect(afterBackstop).not.toContain('did not load')
+
     await page.close()
   }, 120000)
 })
