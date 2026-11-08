@@ -6,8 +6,10 @@ export interface UserPayload {
   /**
    * Display name for user
    *
-   * At least six characters: `utils/validation.ts` refuses a shorter one with a
-   * `400`, so the document states the bound a client can check for itself.
+   * At least six characters after leading and trailing blanks are trimmed:
+   * `utils/validation.ts` trims before it applies the bound, because the value is
+   * trimmed again before it is stored - a name of nothing but blanks would
+   * otherwise pass validation and fail at the store with a `500`.
    *
    * @minLength 6
    * @example "John Snow"
@@ -16,12 +18,17 @@ export interface UserPayload {
   /**
    * Username for user
    *
-   * Lowercased and stored that way, 3 to 16 characters, letters and digits only
-   * (`utils/validation.ts`). A name outside that is refused with a `400` before
-   * the account is looked at, so a client can validate the field itself.
+   * Three to sixteen letters and digits. Case is not part of the rule: the name
+   * is folded to lower case before it is validated and stored, so `JohnSnow01` is
+   * accepted and kept as `johnsnow01` - the example below is that input, not a
+   * value the pattern would refuse.
+   *
+   * A name outside the rule is refused with a `400` before the account is looked
+   * at (`utils/validation.ts`), so a client can check the field itself.
+   *
    * @minLength 3
    * @maxLength 16
-   * @pattern ^[a-z0-9]+$
+   * @pattern ^[A-Za-z0-9]+$
    * @example "johnSnow01"
    */
   username: string

@@ -769,16 +769,16 @@ components:
             properties:
                 displayName:
                     type: string
-                    description: "Display name for user\n\nAt least six characters: `utils/validation.ts` refuses a shorter one with a\n`400`, so the document states the bound a client can check for itself."
+                    description: "Display name for user\n\nAt least six characters after leading and trailing blanks are trimmed:\n`utils/validation.ts` trims before it applies the bound, because the value is\ntrimmed again before it is stored - a name of nothing but blanks would\notherwise pass validation and fail at the store with a `500`."
                     example: 'John Snow'
                     minLength: 6
                 username:
                     type: string
-                    description: "Username for user\n\nLowercased and stored that way, 3 to 16 characters, letters and digits only\n(`utils/validation.ts`). A name outside that is refused with a `400` before\nthe account is looked at, so a client can validate the field itself."
+                    description: "Username for user\n\nThree to sixteen letters and digits. Case is not part of the rule: the name\nis folded to lower case before it is validated and stored, so `JohnSnow01` is\naccepted and kept as `johnsnow01` - the example below is that input, not a\nvalue the pattern would refuse.\n\nA name outside the rule is refused with a `400` before the account is looked\nat (`utils/validation.ts`), so a client can check the field itself."
                     example: johnSnow01
                     minLength: 3
                     maxLength: 16
-                    pattern: '^[a-z0-9]+$'
+                    pattern: '^[A-Za-z0-9]+$'
                 password:
                     type: string
                     description: "Password for user\n\nSix characters at least, and 1024 at most - the schema in\n`utils/validation.ts`. The minimum matters to a client: a shorter password is\na `400` before the account is looked at, not an authentication failure."
@@ -1272,7 +1272,6 @@ paths:
                     name: lines
                     required: false
                     schema:
-                        default: 200
                         format: double
                         type: number
     /SASjsApi/auth/token:

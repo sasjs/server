@@ -6,6 +6,9 @@ import {
 } from '../controllers/permission'
 import { getAuthorizedRoutes } from './getAuthorizedRoutes'
 
+// `.lowercase()` folds before `.alphanum()` validates, so the schema accepts
+// `JohnSnow01` and stores `johnsnow01` - the published pattern says letters and
+// digits for that reason, and the description carries the folding.
 const usernameSchema = Joi.string().lowercase().alphanum().min(3).max(16)
 const passwordSchema = Joi.string().min(6).max(1024)
 // A group's name is client data: it is stored and answered as it was given.
@@ -62,7 +65,7 @@ export const getGroupValidation = (data: any): Joi.ValidationResult =>
 
 export const registerUserValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    displayName: Joi.string().min(6).required(),
+    displayName: Joi.string().trim().min(6).required(),
     username: usernameSchema.required(),
     password: passwordSchema.required(),
     isAdmin: Joi.boolean(),
@@ -87,7 +90,7 @@ export const updateUserValidation = (
   isAdmin: boolean = false
 ): Joi.ValidationResult => {
   const validationChecks: any = {
-    displayName: Joi.string().min(6),
+    displayName: Joi.string().trim().min(6),
     username: usernameSchema,
     password: passwordSchema,
     autoExec: Joi.string().allow('')

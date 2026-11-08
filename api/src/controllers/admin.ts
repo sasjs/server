@@ -8,6 +8,7 @@ import {
   Response,
   Security
 } from 'tsoa'
+import { createAdminService, isApiError, type AdminReports } from '@sasjs/api'
 import {
   BuildInfo,
   DEFAULT_LOG_LINES,
@@ -15,16 +16,25 @@ import {
   FolderUsage,
   LogFileInfo,
   LogFolderSummary,
-  LogTail,
-  getBuildInfo,
-  getFilesystemUsage,
-  getLogFolderSummary,
-  getProcessMetrics,
-  getReportedFolders,
-  getSasjsRootFolder,
-  listLogFiles,
-  readLogTail
+  LogTail
 } from '../utils'
+import { adminReports } from './internal/adminReports'
+
+/**
+ * The package refuses with an `ApiError` carrying `status`, because that is what
+ * both hosts share; this router answers `{ code, message }`, which is what
+ * `sendError` reads. Translate at the boundary rather than teaching `sendError`
+ * a second vocabulary - the drive and session controllers do the same.
+ */
+const through = async <T>(work: () => Promise<T>): Promise<T> => {
+  try {
+    return await work()
+  } catch (error) {
+    if (isApiError(error)) throw { code: error.status, message: error.message }
+
+    throw error
+  }
+}
 
 export interface ServerDetails {
   mode: string
@@ -78,6 +88,13 @@ export interface LogFilesResponse {
 @Route('SASjsApi/admin')
 @Tags('Admin')
 export class AdminController {
+  /**
+   * The reports are injectable so a spec can hand the service a report that is
+   * missing a field - which is the only way to prove the package's normalisers
+   * still guard the host, rather than the host's own typing doing it.
+   */
+  constructor(private readonly reports: AdminReports = adminReports()) {}
+
   /**
    * Reports what this server is running and how it is using the machine:
    * the release tag and commit the binary was built from, process uptime and
@@ -151,36 +168,14 @@ export class AdminController {
   @Security('bearerAuth')
   @Get('/diagnostics')
   public async diagnostics(): Promise<DiagnosticsResponse> {
-    const metrics = getProcessMetrics()
-    const sasjsRoot = getSasjsRootFolder()
+    // the readings are this host's; the checking of them is the package's, so a
+    // host that cannot read its filesystem states `null` and a host that cannot
+    // read anything refuses the request instead of rendering a page of zeroes
+    const answer = await through(() =>
+      createAdminService(this.reports).diagnostics()
+    )
 
-    return {
-      build: getBuildInfo(),
-      server: {
-        mode: process.env.MODE ?? 'desktop',
-        uptimeSeconds: metrics.uptimeSeconds,
-        startedAt: metrics.startedAt,
-        pid: metrics.pid,
-        nodeVersion: metrics.nodeVersion,
-        platform: metrics.platform,
-        arch: metrics.arch,
-        cpuCount: metrics.cpuCount,
-        cpuModel: metrics.cpuModel,
-        loadAverage: metrics.loadAverage,
-        // Not set when the process is bootstrapped in test mode, where
-        // setProcessVariables returns before it reads RUN_TIMES.
-        runTimes: process.runTimes ?? [],
-        sasjsRoot: sasjsRoot ?? ''
-      },
-      memory: {
-        ...metrics.processMemory,
-        systemTotalBytes: metrics.systemMemory.totalBytes,
-        systemFreeBytes: metrics.systemMemory.freeBytes
-      },
-      filesystem: await getFilesystemUsage(sasjsRoot),
-      folders: await getReportedFolders(),
-      logs: await getLogFolderSummary()
-    }
+    return answer as DiagnosticsResponse
   }
 
   /**
@@ -207,7 +202,9 @@ export class AdminController {
   @Security('bearerAuth')
   @Get('/logs')
   public async logs(): Promise<LogFilesResponse> {
-    return { files: await listLogFiles() }
+    return {
+      files: await through(() => createAdminService(this.reports).logs())
+    }
   }
 
   /**
@@ -242,8 +239,19 @@ export class AdminController {
   @Get('/logs/{fileName}')
   public async logTail(
     @Path() fileName: string,
-    @Query() lines: number = DEFAULT_LOG_LINES
+    // optional rather than defaulted: the package applies the documented default
+    // and the ceiling, and a default here would mean its `logLines()` never sees
+    // an absent value - so this host would be the one deciding both
+    @Query() lines?: number
   ): Promise<LogTail> {
-    return readLogTail(fileName, lines)
+    // the name rule, the `lines` default and ceiling, and the unknown-name answer
+    // are the package's; the host supplies readings, not rules
+    return through(
+      () =>
+        createAdminService(this.reports).logTail(
+          fileName,
+          lines
+        ) as Promise<LogTail>
+    )
   }
 }
