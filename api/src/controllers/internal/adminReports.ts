@@ -55,5 +55,19 @@ export const adminReports = (): AdminReports => ({
 
   logs: () => listLogFiles(),
 
-  logTail: (fileName, lines) => readLogTail(fileName, lines)
+  // the port answers `undefined` for a file that is not there, and the package
+  // turns that into the `404` - so the refusal a client sees is the documented
+  // one. `readLogTail` throws instead, which is the shape its other callers want,
+  // so the translation belongs here. A name that resolves outside the folder is
+  // refused by `resolveLogFile` with its own code and is rethrown: the host knows
+  // things this port does not (a symlink, an unreadable folder).
+  logTail: async (fileName, lines) => {
+    try {
+      return await readLogTail(fileName, lines)
+    } catch (error: any) {
+      if (error?.code === 404) return undefined
+
+      throw error
+    }
+  }
 })

@@ -8,7 +8,7 @@ import {
   Response,
   Security
 } from 'tsoa'
-import { createAdminService, isApiError } from '@sasjs/api'
+import { createAdminService, isApiError, type AdminReports } from '@sasjs/api'
 import {
   BuildInfo,
   DEFAULT_LOG_LINES,
@@ -89,6 +89,13 @@ export interface LogFilesResponse {
 @Tags('Admin')
 export class AdminController {
   /**
+   * The reports are injectable so a spec can hand the service a report that is
+   * missing a field - which is the only way to prove the package's normalisers
+   * still guard the host, rather than the host's own typing doing it.
+   */
+  constructor(private readonly reports: AdminReports = adminReports()) {}
+
+  /**
    * Reports what this server is running and how it is using the machine:
    * the release tag and commit the binary was built from, process uptime and
    * memory, the free space on the filesystem holding SASJS_ROOT, and the size
@@ -165,7 +172,7 @@ export class AdminController {
     // host that cannot read its filesystem states `null` and a host that cannot
     // read anything refuses the request instead of rendering a page of zeroes
     const answer = await through(() =>
-      createAdminService(adminReports()).diagnostics()
+      createAdminService(this.reports).diagnostics()
     )
 
     return answer as DiagnosticsResponse
@@ -196,7 +203,7 @@ export class AdminController {
   @Get('/logs')
   public async logs(): Promise<LogFilesResponse> {
     return {
-      files: await through(() => createAdminService(adminReports()).logs())
+      files: await through(() => createAdminService(this.reports).logs())
     }
   }
 
@@ -232,13 +239,16 @@ export class AdminController {
   @Get('/logs/{fileName}')
   public async logTail(
     @Path() fileName: string,
-    @Query() lines: number = DEFAULT_LOG_LINES
+    // optional rather than defaulted: the package applies the documented default
+    // and the ceiling, and a default here would mean its `logLines()` never sees
+    // an absent value - so this host would be the one deciding both
+    @Query() lines?: number
   ): Promise<LogTail> {
-    // the name rule, the `lines` ceiling and the unknown-name answer are the
-    // package's, so this host cannot drift from the documented contract
+    // the name rule, the `lines` default and ceiling, and the unknown-name answer
+    // are the package's; the host supplies readings, not rules
     return through(
       () =>
-        createAdminService(adminReports()).logTail(
+        createAdminService(this.reports).logTail(
           fileName,
           lines
         ) as Promise<LogTail>
