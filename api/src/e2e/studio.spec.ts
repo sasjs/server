@@ -822,4 +822,70 @@ describe('Studio in a browser', () => {
 
     expect(await shown()).toContain('USERPASTE')
   }, 120000)
+
+  /**
+   * The one path that made Studio flash the default program.
+   *
+   * Entering Studio asks the drive whether the remembered file is still there.
+   * Any failure used to read as "gone", so the check going wrong - a refusal, a
+   * timeout, a 5xx - opened /home/<user>/program.sas over the file the user was
+   * last writing. Only a 404 is the drive saying the file is gone; here the
+   * check is refused, and the remembered file must still open.
+   */
+  it('opens the remembered file when the drive cannot be asked whether it is there', async () => {
+    const rememberedPath = `/${PROGRAM_NAME}`
+    const asked: string[] = []
+
+    page.on('request', (request) => {
+      if (!request.url().includes('/SASjsApi/drive/file?')) return
+
+      const askedFor = new URL(request.url()).searchParams.get('_filePath')
+      if (askedFor) asked.push(askedFor)
+    })
+
+    // Open the program by URL, which is what remembers it. The editor states the
+    // open as the URL's `filePath`, so that is what tells us it landed.
+    await page.goto(
+      `${baseUrl()}/SASjsStudio?filePath=${encodeURIComponent(rememberedPath)}`
+    )
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('/studio-test.sas'),
+      { timeout: 30000 }
+    )
+    await page.waitForTimeout(1500)
+
+    // The next drive-file read is the check. Refuse it, the way a proxy or a
+    // restarting server would.
+    let refused = 0
+    const check = '**/SASjsApi/drive/file?**'
+
+    await page.route(check, async (route) => {
+      if (refused === 0) {
+        refused += 1
+        await route.fulfill({ status: 500, body: 'the drive could not answer' })
+        return
+      }
+
+      await route.continue()
+    })
+
+    asked.length = 0
+
+    // Back out to the dashboard and re-enter Studio through the tab: the way
+    // the report described it, and the way a user gets there.
+    await page.goto(baseUrl())
+    await page.waitForSelector('text=Recently used apps', { timeout: 30000 })
+    await page.click('[role="tab"]:has-text("STUDIO")')
+
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('/studio-test.sas'),
+      { timeout: 30000 }
+    )
+
+    expect(refused).toBe(1)
+    // The default program was never opened, and never asked for.
+    expect(asked.some((path) => path.includes('program.sas'))).toBe(false)
+
+    await page.unroute(check)
+  }, 120000)
 })

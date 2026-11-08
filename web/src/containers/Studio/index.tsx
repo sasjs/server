@@ -219,8 +219,13 @@ const Studio = () => {
    * Save needed a modal before anything could be written, and the explorer
    * showed nothing - a file with no home. Studio now resolves one:
    *
-   *   1. the file the user was last in, if the drive still has it;
+   *   1. the file the user was last in, unless the drive says it is gone;
    *   2. otherwise their default program, /home/<username>/program.sas.
+   *
+   * "The drive says it is gone" means a 404 and nothing else: a check that could
+   * not be answered - a refusal, a timeout, a 5xx - is not a deletion, and
+   * treating it as one opened the default program over the file the user was
+   * last writing.
    *
    * The default program is only ever CREATED. The drive refuses a second POST
    * for an existing file with 409 and that is treated as success, so reopening
@@ -246,25 +251,44 @@ const Studio = () => {
 
     defaultFileRequested.current = true
 
-    /** Whether the drive still has this file. A lost grant reads the same. */
-    const isOnDrive = async (filePath: string): Promise<boolean> => {
+    let cancelled = false
+
+    /**
+     * Whether the drive still has this file.
+     *
+     * Three answers, not two. A `404` is the drive saying the file is gone; a
+     * refusal, a timeout or a `500` is a question that went unanswered. Reading
+     * the second as the first is what opened the default program over the file
+     * the user was last writing - a flash of `program.sas` and then the file
+     * they wanted, on the visits where the check happened to fail.
+     */
+    const presenceOf = async (
+      filePath: string
+    ): Promise<'present' | 'absent' | 'unknown'> => {
       try {
         await axios.get('/SASjsApi/drive/file', {
           params: { _filePath: filePath }
         })
-        return true
-      } catch {
-        return false
+        return 'present'
+      } catch (error: any) {
+        return error?.response?.status === 404 ? 'absent' : 'unknown'
       }
     }
 
     const resolveDefaultFile = async (): Promise<string> => {
       const remembered = recallLastFile(username)
 
-      if (remembered && (await isOnDrive(remembered))) return remembered
+      if (remembered) {
+        const presence = await presenceOf(remembered)
 
-      // Gone since it was remembered (deleted, moved, renamed).
-      if (remembered) forgetLastFile(username)
+        // An unanswered check opens the remembered file anyway: the editor's
+        // own read will say what is wrong, and it says it about a path the
+        // user recognises rather than about a program they did not ask for.
+        if (presence === 'present' || presence === 'unknown') return remembered
+
+        // Gone since it was remembered (deleted, moved, renamed).
+        forgetLastFile(username)
+      }
 
       const filePath = homeFilePathFor(username)
 
@@ -285,10 +309,22 @@ const Studio = () => {
       // pointing the editor at the file: the deep-link walk can only open the
       // ancestors of a path whose top level is already in the tree.
       .then(async (filePath) => {
+        if (cancelled) return
+
         await fetchFolder(ROOT_PATH, true)
+
+        if (cancelled) return
+
         handleSelect(filePath)
       })
       .catch((err) => console.log(err))
+
+    // A resolution that finishes after the component has gone - or after another
+    // one has opened a file - must not move the editor: that is the same switch
+    // by a second route.
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath, username, searchParams])
 
