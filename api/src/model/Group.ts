@@ -8,6 +8,13 @@ export const PUBLIC_GROUP_NAME = 'public'
 export interface GroupPayload {
   /**
    * Name of the group
+   *
+   * Unlike a username this is a label, so it is stored as it was given - but
+   * the same 3-to-16 alphanumeric rule applies and a name outside it is refused
+   * with a `400` (`utils/validation.ts`).
+   * @minLength 3
+   * @maxLength 16
+   * @pattern ^[A-Za-z0-9]+$
    * @example "DCGroup"
    */
   name: string
