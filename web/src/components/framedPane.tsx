@@ -1,12 +1,11 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material'
+import { Box, Button, Typography } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
 
 import { useColorMode } from '../utils/hooks'
 
 /** The header's dense toolbar, which this pane sits below. */
 const HEADER_HEIGHT = 48
-const TITLE_BAR_HEIGHT = 40
 
 /**
  * How long the frame is given before an empty pane is read as a refusal.
@@ -31,8 +30,6 @@ export type BlockedReason = 'refused' | 'unavailable'
 export interface FramedPaneProps {
   /** Same-origin path of the document to show. */
   src: string
-  /** The heading in the pane's own title bar. */
-  heading: string
   /** The iframe's accessible name. */
   title: string
   /** Label of the button offered when the frame cannot be drawn. */
@@ -71,7 +68,6 @@ export interface FramedPaneProps {
  */
 const FramedPane = ({
   src,
-  heading,
   title,
   openLabel,
   blockedHeading,
@@ -178,35 +174,6 @@ const FramedPane = ({
         flexDirection: 'column'
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          height: TITLE_BAR_HEIGHT,
-          px: 2,
-          borderBottom: 1,
-          borderColor: 'divider'
-        }}
-      >
-        <Typography variant="subtitle2">{heading}</Typography>
-        <Box sx={{ flexGrow: 1 }} />
-        {/* The toolbar's icon names the tab it opens, so it stays distinct
-            from the button in the fallback below - two links with one
-            accessible name are one control to a reader and two to a locator. */}
-        <Tooltip title={`${openLabel} in a new tab`}>
-          <IconButton
-            size="small"
-            href={src}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${openLabel} in a new tab`}
-          >
-            <OpenInNew fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
       {blocked ? (
         <Box sx={{ p: 3, maxWidth: 640 }}>
           <Typography variant="subtitle1" gutterBottom>

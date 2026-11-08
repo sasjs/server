@@ -6,7 +6,8 @@ import { theme } from './theme'
 
 import Login from './components/login'
 import Header from './components/header'
-import Home from './components/home'
+import Home from './containers/Home'
+import Apps from './containers/Apps'
 import Studio from './containers/Studio'
 import Settings from './containers/Settings'
 import ApiDocs from './containers/ApiDocs'
@@ -86,6 +87,7 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/SASjsApps" element={<Apps />} />
         <Route path="/SASjsStudio" element={studioElement} />
         <Route path="/SASjsApiDocs" element={<ApiDocs />} />
         <Route path="/SASjsDocs" element={<Docs />} />

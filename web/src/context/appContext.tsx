@@ -9,6 +9,8 @@ import React, {
 } from 'react'
 import axios from 'axios'
 
+import { rememberSignIn } from '../utils/recent'
+
 export enum ModeType {
   Server = 'server',
   Desktop = 'desktop'
@@ -229,6 +231,29 @@ const AppContextProvider = (props: { children: ReactNode }) => {
    * permissioned entries, which is the safe direction: the alternative is
    * offering an entry that answers 401.
    */
+  /**
+   * Records a sign-in once per browser tab session.
+   *
+   * The list keeps this and the previous entry, and the dashboard shows the
+   * previous one - a single value written at login would always read "now".
+   * sessionStorage rather than a state flag so a reload counts as the same
+   * session and does not push an entry every time the page is refreshed.
+   */
+  useEffect(() => {
+    if (!loggedIn || !username) return
+
+    const flag = `sasjs-signin-recorded:${username.trim().toLowerCase()}`
+
+    try {
+      if (sessionStorage.getItem(flag)) return
+      sessionStorage.setItem(flag, '1')
+    } catch {
+      // Storage unavailable: record it anyway, a duplicate entry is harmless.
+    }
+
+    rememberSignIn(username)
+  }, [loggedIn, username])
+
   useEffect(() => {
     if (!loggedIn) {
       setAuthorizedRoutes([])

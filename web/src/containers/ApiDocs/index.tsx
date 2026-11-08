@@ -18,7 +18,6 @@ import FramedPane from '../../components/framedPane'
 const ApiDocs = () => (
   <FramedPane
     src="/SASjsApi/"
-    heading="API Explorer"
     title="SASjs Server API documentation"
     openLabel="Open the API documentation"
     blockedHeading="The API documentation cannot be shown here"
