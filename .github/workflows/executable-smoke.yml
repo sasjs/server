@@ -122,8 +122,10 @@ jobs:
               echo "base binary ready for $PLATFORM-$ARCH"
               exit 0
             fi
-            echo "attempt $attempt failed; waiting $((attempt * 15))s"
-            sleep $((attempt * 15))
+            if [ "$attempt" -lt 3 ]; then
+              echo "attempt $attempt failed; waiting $((attempt * 15))s"
+              sleep $((attempt * 15))
+            fi
           done
           echo "::error::pkg-fetch could not download the base Node binary after 3 attempts. This is the GitHub release CDN, not a change in this branch; the same download answers 504 from outside CI when it happens."
           exit 1
