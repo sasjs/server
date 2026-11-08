@@ -22,7 +22,7 @@ import { DeleteSweep, InsertDriveFileOutlined } from '@mui/icons-material'
 
 import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
-import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
+import { APP_STREAM_ROUTE } from '../../utils'
 import { ApiHost, apiHost } from '../../utils/host'
 import {
   RecentApp,
@@ -118,15 +118,18 @@ const Home = () => {
   // single value written at login would always read "now".
   const previousSignIn = signIns[1] ? describeWhen(signIns[1]) : ''
 
-  const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
   const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
 
   /** Where this page's API answers come from - the host states it. */
   const [host] = useState<ApiHost>(apiHost)
 
   useEffect(() => {
+    // The count is of apps PUBLISHED to this deployment. Studio and the API
+    // explorer are tabs in the header on every screen, not entries in this
+    // list, so counting them here would advertise something the Apps tab no
+    // longer shows.
     if (!canUseAppStream) {
-      setAppsAvailable(canUseStudio ? 2 : 1)
+      setAppsAvailable(0)
       return
     }
 
@@ -136,19 +139,18 @@ const Home = () => {
       .get('/AppStream/apps.json')
       .then((res) => {
         if (cancelled) return
-        const streamed = Array.isArray(res.data?.apps)
-          ? res.data.apps.length
-          : 0
-        setAppsAvailable(streamed + (canUseStudio ? 2 : 1))
+        setAppsAvailable(
+          Array.isArray(res.data?.apps) ? res.data.apps.length : 0
+        )
       })
       .catch(() => {
-        if (!cancelled) setAppsAvailable(canUseStudio ? 2 : 1)
+        if (!cancelled) setAppsAvailable(0)
       })
 
     return () => {
       cancelled = true
     }
-  }, [canUseAppStream, canUseStudio])
+  }, [canUseAppStream])
 
   useEffect(() => {
     if (!username) return
@@ -250,7 +252,7 @@ const Home = () => {
                   <Fact label="Version">{appContext.version || 'dev'}</Fact>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
-                  <Fact label="Apps in reach">
+                  <Fact label="Apps published">
                     {appsAvailable === null ? '-' : appsAvailable}
                   </Fact>
                 </Grid>
