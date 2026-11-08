@@ -1,16 +1,21 @@
 /**
- * Browser test of the API screen's refusal backstop.
+ * Browser test of the API screen's backstop, and of the wording it shows.
  *
  * The pane reads `securitypolicyviolation` for the precise case - a frame-src
- * refusal names the frame it refused - but not every refusal raises one: an
+ * refusal names the frame it refused - but not every case raises one: an
  * X-Frame-Options mismatch is enforced silently, and a page that never arrives
- * raises nothing at all. Both leave the frame on about:blank, so the pane also
- * has a timeout, and this spec is what keeps that timeout honest: the frame's
- * request is fulfilled with `X-Frame-Options: DENY`, the frame is refused with
- * no CSP event, and the pane must still say why after the backstop fires.
+ * raises nothing at all. Both leave the frame on about:blank, so the pane has a
+ * timeout as well.
+ *
+ * This spec drives the second case: the docs request is accepted and never
+ * answered, so there is neither a load event nor a CSP violation, and the pane
+ * must say the page did not load - NOT that the policy refuses it, which is the
+ * remedy for the case this one is not. (`X-Frame-Options: DENY` on a fulfilled
+ * response was the obvious way to drive it and does not work in this harness:
+ * the browser loads the fulfilled document and the frame reports a load.)
  *
  * The other half - a frame-src refusal - is apiDocs.spec.ts, which drives it
- * through HELMET_CSP_CONFIG_PATH.
+ * through HELMET_CSP_CONFIG_PATH and asserts the policy wording.
  */
 import path from 'path'
 import { mkdirSync } from 'fs'
@@ -39,7 +44,7 @@ const user = {
 
 const NEW_PASSWORD = 'newpass123'
 
-describe('API screen when the frame is refused without a CSP event', () => {
+describe('API screen when the docs page never loads', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let server: ReturnType<Express['listen']>
@@ -147,6 +152,16 @@ describe('API screen when the frame is refused without a CSP event', () => {
       'text=The API documentation cannot be shown here',
       { timeout: BACKSTOP_WAIT_MS }
     )
+
+    const paneText = await page
+      .locator('text=The API documentation cannot be shown here')
+      .locator('..')
+      .innerText()
+
+    // The cause decides the remedy: this is not a policy refusal, so the pane
+    // must not send the reader to `frame-src`.
+    expect(paneText).toContain('did not load')
+    expect(paneText).not.toContain('Content-Security-Policy')
 
     expect(docsRequests.length).toBe(1)
     expect(pendingRoute).toBe(1)

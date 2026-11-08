@@ -18,6 +18,17 @@ const TITLE_BAR_HEIGHT = 40
 const FRAME_TIMEOUT_MS = 10000
 
 /**
+ * Why the pane has nothing to draw.
+ *
+ * The two causes need different remedies, so the state carries the cause rather
+ * than a boolean: `refused` is a Content-Security-Policy decision, which the
+ * operator can change, and `unavailable` is the page not arriving at all - a
+ * slow first request, a proxy, or a framing header of its own - where telling
+ * them to edit the policy sends them to the wrong place.
+ */
+type BlockedReason = 'refused' | 'unavailable'
+
+/**
  * The REST API's documentation, inside the app.
  *
  * Swagger UI at /SASjsApi is a static page served by the API - it carries its
@@ -44,7 +55,7 @@ const FRAME_TIMEOUT_MS = 10000
 const ApiDocs = () => {
   const src = '/SASjsApi/'
   const [colorMode] = useColorMode()
-  const [blocked, setBlocked] = useState(false)
+  const [blocked, setBlocked] = useState<BlockedReason | null>(null)
   const frameRef = useRef<HTMLIFrameElement>(null)
   /** Set by the frame's own load event; read by the refusal backstop. */
   const loadedRef = useRef(false)
@@ -104,7 +115,7 @@ const ApiDocs = () => {
       )
         return
 
-      setBlocked(true)
+      setBlocked('refused')
     }
 
     document.addEventListener('securitypolicyviolation', onViolation)
@@ -113,7 +124,7 @@ const ApiDocs = () => {
     // mismatch raises none - and for a page that never arrives. The frame
     // reports its own load, so a slow proxy is not mistaken for a refusal.
     const timer = window.setTimeout(() => {
-      if (!loadedRef.current) setBlocked(true)
+      if (!loadedRef.current) setBlocked('unavailable')
     }, FRAME_TIMEOUT_MS)
 
     return () => {
@@ -165,15 +176,24 @@ const ApiDocs = () => {
           <Typography variant="subtitle1" gutterBottom>
             The API documentation cannot be shown here
           </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            This server's Content-Security-Policy refuses to frame its own
-            documentation page, so the screen has nothing to draw. The page
-            itself is served normally - it opens in a new tab - and an
-            administrator can allow it by adding
-            <code> frame-src 'self' </code>
-            to the policy, or by removing HELMET_CSP_CONFIG_PATH so the server's
-            own defaults apply.
-          </Typography>
+          {blocked === 'refused' ? (
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              This server's Content-Security-Policy refuses to frame its own
+              documentation page, so the screen has nothing to draw. The page
+              itself is served normally - it opens in a new tab - and an
+              administrator can allow it by adding
+              <code> frame-src 'self' </code>
+              to the policy, or by removing HELMET_CSP_CONFIG_PATH so the
+              server's own defaults apply.
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              The documentation page did not load in time. The policy allows
+              this frame, so the cause is elsewhere: a slow first request, a
+              proxy in front of the server, or a header of its own that refuses
+              framing. The page still opens in a new tab.
+            </Typography>
+          )}
           <Button
             variant="outlined"
             size="small"
