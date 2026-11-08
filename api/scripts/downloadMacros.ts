@@ -35,22 +35,34 @@ const describe = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error)
 }
 
+/**
+ * The listing, retried; then the files it names.
+ *
+ * The two phases are reported apart on purpose: a failure to LIST and a failure
+ * to download one named macro are different problems, and the second one is not
+ * a rate limit whatever the first one's message says.
+ */
 export const downloadMacros = async () => {
   console.info(`Downloading macros from ${listUrl}`)
 
-  let lastError: unknown
+  let files: unknown[] = []
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const res = await axios.get(listUrl, { headers: githubApiHeaders() })
 
-      await downloadFiles(res.data)
+      files = res.data
 
-      return
+      break
     } catch (error) {
-      lastError = error
+      const reached = attempt
 
-      if (!isRetryable(error) || attempt === attempts) break
+      if (!isRetryable(error) || attempt === attempts)
+        throw new Error(
+          `Failed to list the SAS_PACKAGES macros at ${listUrl} after ${reached} attempt(s): ${describe(
+            error
+          )}.`
+        )
 
       const wait = attempt * 5
 
@@ -60,14 +72,10 @@ export const downloadMacros = async () => {
     }
   }
 
-  throw new Error(
-    `Failed to list the SAS_PACKAGES macros at ${listUrl} after ${attempts} attempt(s): ${describe(
-      lastError
-    )}.`
-  )
+  await downloadFiles(files)
 }
 
-const downloadFiles = async function (fileList: any) {
+const downloadFiles = async function (fileList: any[]) {
   for (const file of fileList) {
     const downloader = new Downloader({
       url: file.download_url,
@@ -75,7 +83,16 @@ const downloadFiles = async function (fileList: any) {
       fileName: file.path.replace(/^SPF\/Macros/, ''),
       cloneFiles: false
     })
-    await downloader.download()
+
+    try {
+      await downloader.download()
+    } catch (error) {
+      throw new Error(
+        `Failed to download the SAS macro ${file.path} from ${file.download_url}: ${
+          error instanceof Error ? error.message : String(error)
+        }.`
+      )
+    }
   }
 
   const fileNames = await listFilesInFolder(sasJSCoreMacros)
