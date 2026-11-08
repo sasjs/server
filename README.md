@@ -389,6 +389,32 @@ HELMET_COEP=
 # }
 HELMET_CSP_CONFIG_PATH=./csp.config.json
 
+# The policy actually sent, when no config file is set: helmet's own defaults in
+# the order helmet writes them, with the directives this server adds. The
+# comment beside a line says why the server states it rather than inheriting it.
+#
+#   default-src 'self'
+#   base-uri 'self'
+#   font-src 'self' https: data:
+#   form-action 'self'
+#   frame-ancestors 'self'
+#   img-src 'self' data: blob:      blob: - the Studio draws a drive image from
+#                                   an object URL it mints itself
+#   object-src 'none'
+#   script-src 'self'               no 'unsafe-inline', so a <script> injected
+#                                   into a page cannot run
+#   script-src-attr 'none'          no inline event handlers, for the same reason
+#   style-src 'self' https: 'unsafe-inline'
+#   upgrade-insecure-requests       dropped when the request arrived on the plain
+#                                   HTTP listener, where rewriting subresources
+#                                   to https:// would break them
+#   frame-src 'self'                the API screen frames the server's own
+#                                   documentation page
+#
+# `style-src` keeps `'unsafe-inline'` because MUI and Swagger UI emit inline
+# style attributes; the two script directives are the ones that carry the
+# guarantee, and a deployment that relaxes them says so in its own file.
+
 # Failed password attempts on the login route are throttled by username.
 # Only valid for MODE: server.
 #
