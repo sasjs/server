@@ -38,6 +38,10 @@ export interface TreeNode {
   relativePath: string
   isFolder: boolean
   children: Array<TreeNode>
+  /** When the file was last written, ISO, from the server's filesystem. */
+  modified?: string
+  /** When the file was created, ISO. Folders carry neither date. */
+  created?: string
   /** Reported by the API for one-level loads: this folder is not empty. */
   hasChildren?: boolean
   /** Set once this node's children have been fetched, so [] means "empty". */

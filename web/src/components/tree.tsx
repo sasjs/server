@@ -136,6 +136,31 @@ const TreeView = ({
     rename(target.relativePath, segments.join('/'))
   }
 
+  /**
+   * The times the server reported for a file, as a hover reads them. Absent for
+   * a folder, and absent for a drive whose filesystem reports no birth time -
+   * the tooltip states what it has rather than a date it made up.
+   */
+  const describeTimes = (node: TreeNode): string | undefined => {
+    if (node.isFolder) return undefined
+
+    const asRead = (iso?: string) => {
+      if (!iso) return ''
+
+      const when = new Date(iso)
+      if (isNaN(when.getTime())) return ''
+
+      return when.toLocaleString()
+    }
+
+    const created = asRead(node.created)
+    const modified = asRead(node.modified)
+
+    return [created && `created ${created}`, modified && `modified ${modified}`]
+      .filter(Boolean)
+      .join(', ')
+  }
+
   const renderTree = (nodes: TreeNode) => (
     <TreeItem
       key={nodes.relativePath}
@@ -147,6 +172,7 @@ const TreeView = ({
       label={
         <Typography
           onClick={() => handleItemClick(nodes)}
+          title={describeTimes(nodes)}
           sx={{
             display: 'flex',
             alignItems: 'center',

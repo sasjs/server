@@ -122,7 +122,18 @@ export const nodeDriveStore = (): DriveStore => ({
 
   async stat(drivePath) {
     const stats = await fsp.stat(absoluteReal(drivePath))
-    return { directory: stats.isDirectory(), size: stats.size }
+
+    return {
+      directory: stats.isDirectory(),
+      size: stats.size,
+      // ISO strings, because the package carries them to a client as JSON and
+      // the drive tree states them beside each file. `birthtime` is the
+      // filesystem's creation time where it has one; on a filesystem that does
+      // not track it, node reports the epoch and the reader sees 1970 - which
+      // is honest about the filesystem, not a date this code invented.
+      modified: stats.mtime.toISOString(),
+      created: stats.birthtime.toISOString()
+    }
   },
 
   async list(drivePath) {
