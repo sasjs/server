@@ -1,6 +1,17 @@
 import path from 'path'
 import { createHash } from 'crypto'
+import { BUNDLE_NAME, withBundleVersion } from '@sasjs/api'
 import { readFile } from '@sasjs/utils'
+
+/**
+ * The bundle's name and the transform that stamps it are the package's, not this
+ * file's: `@sasjs/api` carries the rule (which attribute names the bundle, what
+ * stays prose, how a second application is a no-op) so the browser build's host
+ * and this one cannot answer differently. What stays here is the host's half -
+ * reading the page and digesting the bundle - and the cache of digests, because a
+ * bundle is megabytes and its contents do not change while the process runs.
+ */
+export { BUNDLE_NAME, withBundleVersion }
 
 /**
  * How much of the digest travels in the URL. Twelve hex characters is far more
@@ -8,9 +19,6 @@ import { readFile } from '@sasjs/utils'
  * the reference readable.
  */
 export const BUNDLE_VERSION_LENGTH = 12
-
-/** The entry bundle the served page references. */
-export const BUNDLE_NAME = 'index.bundle.js'
 
 /**
  * The cache-busting token for a bundle's contents.
@@ -27,30 +35,6 @@ export const bundleVersionFor = (bundle: string): string =>
     .update(bundle)
     .digest('hex')
     .slice(0, BUNDLE_VERSION_LENGTH)
-
-/**
- * An HTML attribute whose value names a file. The built page writes these
- * unquoted (`src=./index.bundle.js`), but a quoted form is just as valid, so
- * both are matched.
- */
-const FILE_ATTRIBUTE = /(\s(?:src|href)=)("[^"]*"|'[^']*'|[^\s>]+)/g
-
-/**
- * The page with its bundle reference carrying that token.
- *
- * Only an attribute that names the bundle is rewritten, so the same words in
- * prose are left as prose. A reference that already carries a query string is
- * left alone too, so applying this twice cannot produce a second `?v=`.
- */
-export const withBundleVersion = (html: string, version: string): string =>
-  html.replace(FILE_ATTRIBUTE, (match, attribute: string, value: string) => {
-    const quote = value[0] === '"' || value[0] === "'" ? value[0] : ''
-    const target = quote ? value.slice(1, -1) : value
-
-    if (!target.includes(BUNDLE_NAME) || target.includes('?')) return match
-
-    return `${attribute}${quote}${target}?v=${version}${quote}`
-  })
 
 /**
  * The version already computed for a bundle path. A build's contents do not

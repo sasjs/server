@@ -18,6 +18,7 @@ import {
   isAuthProviderEnabled,
   AuthProviderType
 } from '../../utils'
+import { NO_WEB_BUILD } from '@sasjs/api'
 import { sendRefusal } from '../refusal'
 
 const webRouter = express.Router()
@@ -28,7 +29,7 @@ webRouter.get('/', async (req, res) => {
   try {
     response = await controller.home()
   } catch (_) {
-    response = '<html><head></head><body>Web Build is not present</body></html>'
+    response = NO_WEB_BUILD
   }
 
   // The page carries no inline script: the CSRF token reaches the browser as a
