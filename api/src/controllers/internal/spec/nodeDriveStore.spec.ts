@@ -27,6 +27,10 @@ describe('node drive store', () => {
     expect(await store.exists('/data/a.csv')).toBe(true)
     const stat = await store.stat('/data/a.csv')
     expect(stat.directory).toBe(false)
+    // the port states the filesystem's clock, as ISO, so the drive tree can
+    // carry it to a client
+    expect(stat.modified).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(stat.created).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     const listing = await store.list('/')
     expect(listing.folders).toContain('data')
     const contents = await store.read('/data/a.csv')

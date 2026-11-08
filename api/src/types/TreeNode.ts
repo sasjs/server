@@ -3,6 +3,17 @@ export interface TreeNode {
   relativePath: string
   absolutePath: string
   isFolder: boolean
+  /**
+   * ISO timestamp of the last write. Stated for FILES, from the filesystem's
+   * own metadata; a folder states none, because its date would be whichever
+   * child was written first.
+   */
+  modified?: string
+  /**
+   * ISO timestamp of creation, from the filesystem's `birthtime`. Present for
+   * files; see `modified` for why folders carry neither.
+   */
+  created?: string
   children: Array<TreeNode>
   /**
    * Whether a FOLDER holds at least one entry. Populated for the immediate

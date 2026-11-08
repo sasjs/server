@@ -52,7 +52,7 @@
   "author": "4GL Ltd",
   "dependencies": {
     "@sasjs/adapter": "4.19.1",
-    "@sasjs/api": "0.22.0",
+    "@sasjs/api": "0.23.0",
     "@sasjs/core": "^6.1.2",
     "@sasjs/lint": "5.0.1",
     "@sasjs/utils": "^4.8.0",

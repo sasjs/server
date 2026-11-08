@@ -204,11 +204,20 @@ export class ExecutionController {
           // relative path will only be used in frontend component
           // so, no need to convert '/' to platform specific separator
           const relativeChildPath = `${currentNode.relativePath}/${child}`
+          const childStats = fs.statSync(absoluteChildPath)
+          const isFolder = childStats.isDirectory()
+
           const childNode: TreeNode = {
             name: child,
             relativePath: relativeChildPath,
             absolutePath: absoluteChildPath,
-            isFolder: false,
+            isFolder,
+            ...(isFolder
+              ? {}
+              : {
+                  modified: childStats.mtime.toISOString(),
+                  created: childStats.birthtime.toISOString()
+                }),
             children: []
           }
           currentNode.children.push(childNode)
@@ -340,6 +349,8 @@ const listChildNodes = (
 
     let isFolder = false
     let hasChildren = false
+    let modified: string | undefined
+    let created: string | undefined
 
     try {
       const realChildPath = fs.realpathSync(absoluteChildPath)
@@ -347,8 +358,17 @@ const listChildNodes = (
       if (escapesDrive(driveRootRealPath, realChildPath))
         throw new Error('real path is outside the drive')
 
-      isFolder = fs.statSync(realChildPath).isDirectory()
+      const stats = fs.statSync(realChildPath)
+      isFolder = stats.isDirectory()
       if (isFolder) hasChildren = fs.readdirSync(realChildPath).length > 0
+      else {
+        // A file carries when it was written and when it appeared, so a client
+        // can sort by recency or tell a fresh upload from last year's. A
+        // folder states none: its date would be whichever child was written
+        // first, which is a fact about the children.
+        modified = stats.mtime.toISOString()
+        created = stats.birthtime.toISOString()
+      }
     } catch (err: any) {
       process.logger.warn(
         `Drive entry skipped: ${relativeChildPath} (${
@@ -363,6 +383,8 @@ const listChildNodes = (
       relativePath: relativeChildPath,
       absolutePath: absoluteChildPath,
       isFolder,
+      ...(modified ? { modified } : {}),
+      ...(created ? { created } : {}),
       children: [],
       hasChildren
     })

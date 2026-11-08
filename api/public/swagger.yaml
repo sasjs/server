@@ -682,6 +682,12 @@ components:
                     type: string
                 isFolder:
                     type: boolean
+                modified:
+                    type: string
+                    description: "ISO timestamp of the last write. Stated for FILES, from the filesystem's\nown metadata; a folder states none, because its date would be whichever\nchild was written first."
+                created:
+                    type: string
+                    description: "ISO timestamp of creation, from the filesystem's `birthtime`. Present for\nfiles; see `modified` for why folders carry neither."
                 children:
                     items:
                         $ref: '#/components/schemas/TreeNode'
