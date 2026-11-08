@@ -10,6 +10,55 @@ import {
 import { LDAPClient, AuthProviderType, isAuthProviderEnabled } from '../utils'
 import { mongoDirectoryStore } from './internal/directoryStore'
 
+/**
+ * The provider blocks this route answers, declared here so the document can state
+ * them.
+ *
+ * tsoa generates schemas from declarations it can see, and the package's
+ * `AuthConfigResponse` lives in `@sasjs/api`'s build output - importing the type
+ * makes `npm run swagger` fail with `No declarations found for referenced type`.
+ * So the host states the shape it promises and the check below keeps it honest:
+ * if the package's type gains or loses a field, this stops compiling.
+ */
+export interface AuthConfigLdapDetail {
+  LDAP_URL: string
+  LDAP_BIND_DN: string
+  LDAP_USERS_BASE_DN: string
+  LDAP_GROUPS_BASE_DN: string
+  /** Whether a bind password is configured. The value itself is never sent. */
+  LDAP_BIND_PASSWORD_SET: boolean
+}
+
+export interface AuthConfigOidcDetail {
+  OIDC_PROVIDER_NAME: string
+  OIDC_ISSUER_URL: string
+  OIDC_CLIENT_ID: string
+  OIDC_REDIRECT_URI: string
+  OIDC_SCOPE: string
+  OIDC_SIGNING_ALG: string
+  OIDC_USERNAME_CLAIM: string
+  OIDC_JIT_PROVISION: string
+  /** Whether a client secret is configured. The value itself is never sent. */
+  OIDC_CLIENT_SECRET_SET: boolean
+}
+
+export interface AuthConfigDetail {
+  ldap?: AuthConfigLdapDetail
+  oidc?: AuthConfigOidcDetail
+}
+
+type MutuallyAssignable<A, B> = [A] extends [B]
+  ? [B] extends [A]
+    ? true
+    : never
+  : never
+
+// fails to compile if the package's response type and this one drift apart
+const _authConfigDetailIsThePackageResponse: MutuallyAssignable<
+  AuthConfigResponse,
+  AuthConfigDetail
+> = true
+
 @Security('bearerAuth')
 @Route('SASjsApi/authConfig')
 @Tags('Auth Config')
@@ -24,7 +73,7 @@ export class AuthConfigController {
    *
    * @summary Get the configured authentication providers
    */
-  @Example({
+  @Example<AuthConfigDetail>({
     ldap: {
       LDAP_URL: 'ldaps://my.ldap.server:636',
       LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron',
@@ -40,12 +89,8 @@ export class AuthConfigController {
   @Response(403, 'Not Allowed while in Desktop Mode.')
   @Response(500, 'The provider configuration could not be read')
   @Get('/')
-  // tsoa cannot emit a schema for a declaration it cannot see (the response type
-  // lives in `@sasjs/api`), and this route's document is `{}` for that reason -
-  // so the signature stays untyped here rather than failing the spec build. The
-  // shape is the package's `AuthConfigResponse`, asserted by its own spec.
-  public getDetail(): Promise<any> {
-    return getAuthConfigDetail()
+  public getDetail(): Promise<AuthConfigDetail> {
+    return getAuthConfigDetail() as Promise<AuthConfigDetail>
   }
 
   /**
