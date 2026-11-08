@@ -113,9 +113,9 @@ describe('configureSecurity', () => {
   })
 
   it('should keep the example config in step with the defaults', async () => {
-    // An operator builds a policy from this file, and a config file replaces
-    // the defaults wholesale - so a directive missing here silently undoes a
-    // default rather than adding to it.
+    // An operator builds a policy from this file. A file layers over the
+    // defaults, so a directive it states must state the default value - an
+    // example that quietly loosened one would be copied into deployments.
     const example = JSON.parse(
       await readFile(
         path.join(__dirname, '../../../csp.config.example.json'),
@@ -128,7 +128,8 @@ describe('configureSecurity', () => {
       expect(defaults[directive]).toEqual(value)
     }
 
-    // and the example covers the directives the defaults set
+    // and the example covers the directives the defaults set, so copying it is
+    // a no-op rather than a partial policy
     expect(Object.keys(example).sort()).toEqual(Object.keys(defaults).sort())
   })
 

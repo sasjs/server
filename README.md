@@ -361,17 +361,29 @@ HELMET_COEP=
 # on the server that needs inline scripts (many Angular and Data Controller
 # builds inject them) loosens the policy with its own config file.
 #
-# Example config (the defaults, with `blob:` so the Studio can draw a drive
-# image - it previews one through an object URL):
+# The file LAYERS OVER the server's defaults, one directive at a time: a
+# directive the file does not mention keeps the default, and one it does mention
+# replaces it. The defaults the server itself relies on are
+#   img-src  'self' data: blob:   the Studio previews a drive image through an
+#                                 object URL, which `blob:` allows
+#   frame-src 'self'              the API screen frames the server's own
+#                                 documentation page
+# so the file is merged over the defaults rather than replacing them, and a
+# file that names neither keeps both screens working.
+#
+# Example config (the defaults):
 # {
 #   "img-src": ["'self'", "data:", "blob:"],
+#   "frame-src": ["'self'"],
 #   "script-src": ["'self'"],
 #   "script-src-attr": ["'none'"]
 # }
 #
-# Loosened config for an app that requires inline scripts:
+# Loosened config for an app that requires inline scripts - everything it does
+# not name is still the default:
 # {
 #   "img-src": ["'self'", "data:", "blob:"],
+#   "frame-src": ["'self'"],
 #   "script-src": ["'self'", "'unsafe-inline'"],
 #   "script-src-attr": ["'self'", "'unsafe-inline'"]
 # }

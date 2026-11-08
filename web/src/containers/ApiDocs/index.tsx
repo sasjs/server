@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { Box, IconButton, Tooltip, Typography } from '@mui/material'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Box, Button, IconButton, Tooltip, Typography } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
 
 import { useColorMode } from '../../utils/hooks'
@@ -7,6 +7,15 @@ import { useColorMode } from '../../utils/hooks'
 /** The header's dense toolbar, which this pane sits below. */
 const HEADER_HEIGHT = 48
 const TITLE_BAR_HEIGHT = 40
+
+/**
+ * How long the frame is given before an empty pane is read as a refusal.
+ *
+ * The page is a static document served from the same origin, so it either
+ * arrives quickly or it is not coming: a deployment whose policy refuses the
+ * frame issues no request at all, and nothing on the page reports an error.
+ */
+const FRAME_TIMEOUT_MS = 10000
 
 /**
  * The REST API's documentation, inside the app.
@@ -22,10 +31,20 @@ const TITLE_BAR_HEIGHT = 40
  * (webpack.dev.ts). That is what the API's own headers require - helmet sends
  * X-Frame-Options: SAMEORIGIN and `frame-ancestors 'self'` - and no policy
  * change is needed to host it.
+ *
+ * A same-origin frame can still be refused, and then the pane would otherwise
+ * be an empty rectangle with no explanation: a deployment whose
+ * Content-Security-Policy states a `default-src` and no `frame-src` makes the
+ * frame inherit that default, and a default narrower than the server's own
+ * origin refuses it. The refusal is read from the document's own
+ * `securitypolicyviolation` event, with a timeout as the backstop for anything
+ * that blocks without raising one (an X-Frame-Options mismatch does not), and
+ * the pane says so and offers the link instead.
  */
 const ApiDocs = () => {
   const src = '/SASjsApi/'
   const [colorMode] = useColorMode()
+  const [blocked, setBlocked] = useState(false)
   const frameRef = useRef<HTMLIFrameElement>(null)
 
   /**
@@ -43,6 +62,28 @@ const ApiDocs = () => {
   }, [colorMode])
 
   useEffect(applyColorMode, [applyColorMode])
+
+  useEffect(() => {
+    const onViolation = (event: SecurityPolicyViolationEvent) => {
+      if (event.effectiveDirective === 'frame-src') setBlocked(true)
+    }
+
+    document.addEventListener('securitypolicyviolation', onViolation)
+
+    // A refusal that raises no event leaves the frame on about:blank, and a
+    // frame that never navigated has no document body to read.
+    const timer = window.setTimeout(() => {
+      const frame = frameRef.current
+      const doc = frame?.contentDocument
+
+      if (!frame || !doc || doc.location?.href === 'about:blank') setBlocked(true)
+    }, FRAME_TIMEOUT_MS)
+
+    return () => {
+      document.removeEventListener('securitypolicyviolation', onViolation)
+      window.clearTimeout(timer)
+    }
+  }, [])
 
   return (
     <Box
@@ -81,14 +122,43 @@ const ApiDocs = () => {
           </IconButton>
         </Tooltip>
       </Box>
-      <Box
-        component="iframe"
-        title="SASjs Server API documentation"
-        src={src}
-        ref={frameRef}
-        onLoad={applyColorMode}
-        sx={{ flexGrow: 1, width: '100%', border: 0, display: 'block' }}
-      />
+
+      {blocked ? (
+        <Box sx={{ p: 3, maxWidth: 640 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            The API documentation cannot be shown here
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            This server's Content-Security-Policy refuses to frame its own
+            documentation page, so the screen has nothing to draw. The page
+            itself is served normally - it opens in a new tab - and an
+            administrator can allow it by adding
+            <code> frame-src 'self' </code>
+            to the policy, or by removing HELMET_CSP_CONFIG_PATH so the
+            server's own defaults apply.
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            href={src}
+            target="_blank"
+            rel="noreferrer"
+            startIcon={<OpenInNew />}
+            sx={{ mt: 1 }}
+          >
+            Open the API documentation
+          </Button>
+        </Box>
+      ) : (
+        <Box
+          component="iframe"
+          title="SASjs Server API documentation"
+          src={src}
+          ref={frameRef}
+          onLoad={applyColorMode}
+          sx={{ flexGrow: 1, width: '100%', border: 0, display: 'block' }}
+        />
+      )}
     </Box>
   )
 }
