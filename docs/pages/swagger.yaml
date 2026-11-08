@@ -706,15 +706,18 @@ components:
             properties:
                 displayName:
                     type: string
-                    description: 'Display name for user'
+                    description: "Display name for user\n\nAt least six characters: `utils/validation.ts` refuses a shorter one with a\n`400`, so the document states the bound a client can check for itself."
                     example: 'John Snow'
+                    minLength: 6
                 username:
                     type: string
                     description: 'Username for user'
                     example: johnSnow01
                 password:
                     type: string
-                    description: 'Password for user'
+                    description: "Password for user\n\nSix characters at least, and 1024 at most - the schema in\n`utils/validation.ts`. The minimum matters to a client: a shorter password is\na `400` before the account is looked at, not an authentication failure."
+                    minLength: 6
+                    maxLength: 1024
                 isAdmin:
                     type: boolean
                     description: 'Account should be admin or not, defaults to false'
