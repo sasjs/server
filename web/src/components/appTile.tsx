@@ -35,8 +35,8 @@ const AppTile = (props: {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 1,
-        height: compact ? 112 : 160,
-        p: 2,
+        height: compact ? 96 : 120,
+        p: compact ? 1 : 1.5,
         // A tile is a fixed box: a long app name or appLoc must end in an
         // ellipsis inside it rather than run over the tile beside it.
         overflow: 'hidden',
@@ -56,7 +56,7 @@ const AppTile = (props: {
           src={logo}
           alt=""
           style={{
-            maxHeight: compact ? 40 : 64,
+            maxHeight: compact ? 32 : 44,
             maxWidth: '100%',
             objectFit: 'contain'
           }}

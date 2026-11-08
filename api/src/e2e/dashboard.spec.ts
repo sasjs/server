@@ -135,6 +135,22 @@ describe('Home dashboard and Apps tab', () => {
     expect(await selectedTab(page)).toBe('apps')
     expect(page.url()).toContain('/SASjsApps')
 
+    // Two views of the same list, and the choice is remembered. A tile is a
+    // Paper inside the app's link; a list row is not, so the paper's presence is
+    // what tells the two apart.
+    const tiles = page.locator('a[href="/SASjsStudio"] .MuiPaper-root')
+
+    await page.getByRole('button', { name: 'List view' }).click()
+    await page.getByText('Run ad hoc code').first().waitFor({ timeout: 30000 })
+    expect(await tiles.count()).toBe(0)
+
+    await page.reload()
+    await page.getByText('Run ad hoc code').first().waitFor({ timeout: 30000 })
+    expect(await tiles.count()).toBe(0)
+
+    await page.getByRole('button', { name: 'Grid view' }).click()
+    await tiles.first().waitFor({ timeout: 30000 })
+
     // Opening an app is recorded. Studio opens a file of its own - the default
     // program - and that open is what the dashboard's file list is built from.
     await page.click('text=Run ad hoc code')
