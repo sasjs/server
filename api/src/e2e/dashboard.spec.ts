@@ -178,4 +178,72 @@ describe('Home dashboard and Apps tab', () => {
 
     await context.close()
   }, 180000)
+
+  it('describes a browser host when the page says it is one', async () => {
+    // A browser host states what it is in the document it builds - the mock
+    // site's loader injects `<meta name="sasjs-host" content="browser">`. The
+    // server does not, so the page says it is talking to the server. Here the
+    // document is served as a browser host would serve it, which is the whole
+    // difference the intro has to explain.
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 900 }
+    })
+
+    await context.route(`${baseUrl()}/`, async (route) => {
+      const response = await route.fetch()
+      const html = await response.text()
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: html.replace(
+          '</head>',
+          '<meta name="sasjs-host" content="browser" /></head>'
+        )
+      })
+    })
+
+    const page = await context.newPage()
+
+    await page.goto(baseUrl())
+    await page.waitForSelector('#username', { timeout: 30000 })
+    await page.fill('#username', user.username)
+    await page.fill('#password', NEW_PASSWORD)
+    await page.click('form button[type="submit"]')
+
+    await page.waitForSelector('text=running in this browser', {
+      timeout: 30000
+    })
+
+    expect(await page.getByText('The server process').count()).toBe(0)
+    expect(await page.getByText('A service worker in this page').count()).toBe(
+      1
+    )
+
+    await page.screenshot({
+      path: path.join(screenshotDir, 'dashboard-browser-host.png')
+    })
+    await context.close()
+  }, 120000)
+
+  it('says it is talking to the server when the page carries no such statement', async () => {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 900 }
+    })
+    const page = await context.newPage()
+
+    await page.goto(baseUrl())
+    await page.waitForSelector('#username', { timeout: 30000 })
+    await page.fill('#username', user.username)
+    await page.fill('#password', NEW_PASSWORD)
+    await page.click('form button[type="submit"]')
+
+    await page.waitForSelector('text=You are talking to', { timeout: 30000 })
+
+    expect(
+      await page.getByText('The server process', { exact: true }).count()
+    ).toBe(1)
+
+    await context.close()
+  }, 120000)
 })
