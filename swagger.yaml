@@ -706,15 +706,21 @@ components:
             properties:
                 displayName:
                     type: string
-                    description: 'Display name for user'
+                    description: "Display name for user\n\nAt least six characters: `utils/validation.ts` refuses a shorter one with a\n`400`, so the document states the bound a client can check for itself."
                     example: 'John Snow'
+                    minLength: 6
                 username:
                     type: string
-                    description: 'Username for user'
+                    description: "Username for user\n\nLowercased and stored that way, 3 to 16 characters, letters and digits only\n(`utils/validation.ts`). A name outside that is refused with a `400` before\nthe account is looked at, so a client can validate the field itself."
                     example: johnSnow01
+                    minLength: 3
+                    maxLength: 16
+                    pattern: '^[a-z0-9]+$'
                 password:
                     type: string
-                    description: 'Password for user'
+                    description: "Password for user\n\nSix characters at least, and 1024 at most - the schema in\n`utils/validation.ts`. The minimum matters to a client: a shorter password is\na `400` before the account is looked at, not an authentication failure."
+                    minLength: 6
+                    maxLength: 1024
                 isAdmin:
                     type: boolean
                     description: 'Account should be admin or not, defaults to false'
@@ -759,8 +765,11 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Name of the group'
+                    description: "Name of the group\n\nUnlike a username this is a label, so it is stored as it was given - but\nthe same 3-to-16 alphanumeric rule applies and a name outside it is refused\nwith a `400` (`utils/validation.ts`)."
                     example: DCGroup
+                    minLength: 3
+                    maxLength: 16
+                    pattern: '^[A-Za-z0-9]+$'
                 description:
                     type: string
                     description: 'Description of the group'
