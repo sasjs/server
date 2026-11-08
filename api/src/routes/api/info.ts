@@ -11,7 +11,7 @@ const infoRouter = express.Router()
 infoRouter.get('/', async (req, res) => {
   const controller = new InfoController()
   try {
-    const response = controller.info()
+    const response = await controller.info()
     res.send(response)
   } catch (err: any) {
     res.status(403).send(err.toString())

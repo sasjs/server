@@ -14,6 +14,7 @@ import {
 // controllers through `isPublicRoute`, and a cycle leaves the enum undefined at
 // decorator evaluation time, which fails the whole app at load.
 import { CorsType, ModeType } from '../utils/verifyEnvVariables'
+import { createInfoService } from '@sasjs/api'
 export interface AuthorizedRoutesResponse {
   paths: string[]
 }
@@ -97,11 +98,17 @@ export class InfoController {
     version: 'v3.2.2 (4a26a3d)'
   })
   @Get('/')
-  public info(): InfoResponse {
+  public async info(): Promise<InfoResponse> {
     const authProviders = getAuthProviders()
     const listeners = resolveListeners(process.env)
+    const oidcProviderName = process.env.OIDC_PROVIDER_NAME
 
-    const response: InfoResponse = {
+    // The shape, the two enums and the rule that the sign-on label only travels
+    // with the provider that owns it are @sasjs/api's; this states the values.
+    // The answer is validated before it is returned, so a deployment whose
+    // environment slipped past verifyEnvVariables answers a 500 naming the field
+    // rather than serving a body a client renders as undefined.
+    const answer = await createInfoService(() => ({
       // both are constrained to their enum members by verifyEnvVariables, which
       // has already run by the time a request reaches here
       mode: (process.env.MODE as ModeType) ?? ModeType.Desktop,
@@ -112,16 +119,16 @@ export class InfoController {
           : CorsType.ENABLED),
       httpPort: listeners.config?.httpPort || null,
       httpsPort: listeners.config?.httpsPort || null,
-      runTimes: process.runTimes,
+      runTimes: process.runTimes || [],
       authProviders,
       localLoginEnabled: isLocalLoginEnabled(),
-      version: formatBuildInfo()
-    }
+      version: formatBuildInfo(),
+      ...(oidcProviderName ? { oidcProviderName } : {})
+    })).info()
 
-    if (authProviders.includes('oidc'))
-      response.oidcProviderName = process.env.OIDC_PROVIDER_NAME
-
-    return response
+    // the service answers the same shape in plain strings; the enums it enforced
+    // are what this controller's type states
+    return answer as InfoResponse
   }
 
   /**
