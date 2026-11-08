@@ -1,0 +1,313 @@
+/*
+ * Fonts are served from this site rather than Google Fonts: the build-time
+ * fetch is the only third-party request the site used to make on every page.
+ * The files are the latin subsets of Inter and JetBrains Mono, downloaded by
+ * the same Google Fonts CSS and checked in, so a reader never contacts Google.
+ * `theme.font: false` in mkdocs.yml stops Material emitting its own link.
+ */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/JetBrainsMono-400.woff2") format("woff2");
+}
+
+/* Material declares these on <body> (main.css: body{--md-text-font-family:
+ * var(--md-text-font,_),...}), so they are set on both elements and forced -
+ * a declaration on <html> alone is overridden on body and never inherited. */
+html,
+body {
+  --md-text-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  --md-code-font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace !important;
+}
+
+/*
+ * server.sasjs.io - design tokens and finishing touches for Material for MkDocs.
+ *
+ * The SASjs mark is black and yellow, so the header is black in both schemes
+ * and only the content surface flips. Everything else is derived from the two
+ * token blocks below: change a value here rather than a rule further down.
+ */
+
+/* ---------------------------------------------------------------- tokens */
+
+/* Material sets the scheme attribute on BOTH <html> and <body>, and its own
+ * palette rules are attribute-only (specificity 0,1,0). The element-qualified
+ * selectors below (0,1,1) are what let these tokens win on both elements
+ * without !important. */
+:root,
+html[data-md-color-scheme="default"],
+body[data-md-color-scheme="default"] {
+  --brand: #f6e40c;
+  --brand-ink: #6b5300;
+
+  --md-default-bg-color: #ffffff;
+  --md-default-fg-color: #14140f;
+  --md-default-fg-color--light: #5f5f57;
+  --md-default-fg-color--lighter: #8a8a80;
+  --md-default-fg-color--lightest: #ededea;
+
+  --md-accent-fg-color: #8a6d00;
+
+  --surface: #faf9f5;
+  --surface-border: #e8e6dd;
+  --code-bg: #f7f7f3;
+  --code-border: #e8e6dd;
+
+  --shadow-sm: 0 1px 2px rgba(15, 15, 12, 0.06);
+  --shadow-lg: 0 10px 30px -12px rgba(15, 15, 12, 0.25);
+}
+
+html[data-md-color-scheme="slate"],
+body[data-md-color-scheme="slate"] {
+  --brand: #f6e40c;
+  --brand-ink: #f6e40c;
+
+  --md-default-bg-color: #0e0e11;
+  --md-default-fg-color: #e9e7e0;
+  --md-default-fg-color--light: #a9a9a1;
+  --md-default-fg-color--lighter: #7c7c76;
+  --md-default-fg-color--lightest: #26262d;
+
+  --md-code-bg-color: #16161b;
+  --md-code-fg-color: #e6e4dc;
+
+  --md-accent-fg-color: var(--brand);
+
+  --surface: #16161b;
+  --surface-border: #26262d;
+  --code-bg: #16161b;
+  --code-border: #26262d;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 30px -12px rgba(0, 0, 0, 0.8);
+}
+
+/* ------------------------------------------------------------- typography */
+
+.md-typeset {
+  font-feature-settings: "cv11", "ss01";
+  line-height: 1.65;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  font-size: 2rem;
+  margin-bottom: 0.6rem;
+}
+
+.md-typeset h2 {
+  border-top: 1px solid var(--surface-border);
+  font-size: 1.35rem;
+  margin-top: 2.2em;
+  padding-top: 1.6rem;
+}
+
+.md-typeset h3 {
+  font-size: 1.1rem;
+  margin-top: 1.8em;
+}
+
+.md-typeset code {
+  border-radius: 4px;
+  font-size: 0.82em;
+  padding: 0.12em 0.36em;
+}
+
+.md-typeset pre > code {
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  /* A gutter on the right keeps the last characters clear of the copy button,
+   * which is positioned over the block's top-right corner: a margin, not
+   * padding, because padding is inside the scroll area. */
+  margin-right: 2.4rem;
+  padding: 1rem 0.4rem 1rem 1.1rem;
+}
+
+.md-clipboard {
+  top: 0.7rem;
+  right: 0.6rem;
+}
+
+/* Links keep Material's own colour scheme: it is accessible in both schemes,
+ * and overriding it means beating the palette rules that Material sets on both
+ * <html> and <body>. The brand shows in the header, the logo and the active nav
+ * item instead. */
+.md-typeset a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------- tables */
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 0.78rem;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--surface);
+  border-bottom: 1px solid var(--surface-border);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--surface-border);
+  vertical-align: top;
+}
+
+.md-typeset table:not([class]) tr:hover td {
+  background: var(--surface);
+}
+
+/* A table's first column is often an endpoint or a variable: keep it intact. */
+.md-typeset table:not([class]) td:first-child code {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ admonitions */
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-left: 3px solid var(--md-accent-fg-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.78rem;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- navigation */
+
+.md-tabs__link {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.md-tabs__link--active,
+.md-tabs__link:hover {
+  opacity: 1;
+}
+
+.md-tabs__item--active {
+  border-bottom: 2px solid var(--brand);
+}
+
+.md-nav__title {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Material colours the current page's nav link with its own muted grey, which
+ * reads as less important than the links around it. The brand ink is used
+ * instead, scheme by scheme. */
+.md-nav__link.md-nav__link--active,
+.md-nav__link.md-nav__link--active code {
+  color: #6b5300 !important;
+  font-weight: 600;
+}
+
+body[data-md-color-scheme="slate"] .md-nav__link.md-nav__link--active,
+body[data-md-color-scheme="slate"] .md-nav__link.md-nav__link--active code {
+  color: var(--brand) !important;
+}
+
+/* ----------------------------------------------------------- header bits */
+
+/* The banner takes its colour from the palette (white in light, near-black in
+ * dark), so the hairline under it has to come from the scheme too. */
+.md-header {
+  backdrop-filter: saturate(180%) blur(6px);
+  box-shadow: none;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.md-tabs {
+  border-bottom: 1px solid var(--surface-border);
+}
+
+/* The repository link added by hooks/html_fixes.py sits in the header with the
+ * other icon buttons; the path is filled with the header's foreground colour so
+ * it reads on either banner. */
+.md-header__repo svg {
+  fill: currentColor;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+/* The mark is a yellow S on a black tile - round the tile so it reads as a
+ * logo rather than a screenshot. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  border-radius: 6px;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.md-header__title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.md-search__form {
+  border-radius: 8px;
+}
+
+.md-search__input {
+  font-size: 0.72rem;
+}
+
+/* ---------------------------------------------------------------- footer */
+
+.md-footer {
+  border-top: 1px solid var(--surface-border);
+}
+
+.md-footer-meta {
+  background: #0b0b0c;
+}
+
+/* ------------------------------------------------------------------- api */
+
+/* The Swagger UI frame the plugin emits is sized by the spec it renders; give
+ * it the page width and let it scroll rather than squeeze its columns. */
+.md-content iframe {
+  border: 0;
+  min-height: 80vh;
+  width: 100%;
+}
