@@ -90,6 +90,29 @@ describe('session lifecycle', () => {
     expect(controller.getSessionById(session.id)).toBeUndefined()
   })
 
+  /**
+   * The destroy timer is due a quarter of an hour after the session is created,
+   * and nothing waits for it. Armed with a reference, it keeps the event loop
+   * alive for its whole duration: a test run that triggered one session then sat
+   * there until the kernel killed it (sasjs/server#577), and anything else that
+   * triggered a session and finished would do the same. Unref'd, a server still
+   * fires it - the listening sockets hold the loop open - and a process with
+   * nothing else to do can exit.
+   */
+  it('does not hold the process open for the session lifetime', () => {
+    const session = makeSession(15 * 60 * 1000, SessionState.pending)
+    const spy = jest.spyOn(global, 'setTimeout')
+
+    try {
+      scheduleDestroy(controller, session)
+
+      const timer = spy.mock.results[0].value as NodeJS.Timeout
+      expect(timer.hasRef()).toEqual(false)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('keeps a session that is still running at its death time', async () => {
     const session = makeSession(300, SessionState.running)
     await createFile(path.join(session.path, 'log.log'), 'some log')

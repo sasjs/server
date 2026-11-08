@@ -246,6 +246,12 @@ export class SessionController {
    * `expiresAfterMins` would be silently ignored.
    */
   protected scheduleSessionDestroy(session: Session) {
+    // Unref'd, because this timer outlives the work that armed it: it is due at
+    // the session's death time, a quarter of an hour away, and nothing else in
+    // the process is waiting for it. A server holds listening sockets, so the
+    // loop is alive when it fires; a test run - or anything that triggers a
+    // session and then finishes - is not, and without this it sat there with an
+    // open handle until it was killed (sasjs/server#577).
     setTimeout(
       async () => {
         if (this.isSessionActive(session)) {
@@ -283,7 +289,7 @@ export class SessionController {
         }
       },
       parseInt(session.deathTimeStamp) - new Date().getTime() - 100
-    )
+    ).unref()
   }
 
   /**
