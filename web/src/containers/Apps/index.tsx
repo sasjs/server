@@ -5,27 +5,36 @@ import axios from 'axios'
 import {
   Avatar,
   Box,
+  Button,
   CssBaseline,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Grid,
   IconButton,
   List,
+  ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Snackbar,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
   Typography
 } from '@mui/material'
 import {
+  DeleteOutlined,
   GridViewOutlined,
   OpenInNew,
   ViewListOutlined
 } from '@mui/icons-material'
 
 import AppTile from '../../components/appTile'
-import { AppContext } from '../../context/appContext'
-import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
+import { AppContext, ModeType } from '../../context/appContext'
+import { APP_STREAM_ROUTE, DEPLOY_ROUTE } from '../../utils'
 import {
   RecentApp,
   recallRecentApps,
@@ -50,6 +59,8 @@ interface AppEntry {
   href?: string
   /** The server's publish date, where the bundle has one. */
   publishedAt?: string | null
+  /** The registry entry behind a streamed app, which is what an unpublish names. */
+  streamed?: StreamedApp
 }
 
 const defaultAppLogo = '/sasjs-logo.svg'
@@ -79,26 +90,38 @@ const rememberView = (username: string, view: AppsView): void => {
 }
 
 /**
- * Every app this caller can open: the built-in screens first, then every app
- * streamed to this deployment.
+ * Every app streamed to this deployment, as this caller may open it.
  *
- * The streamed list comes from the server, already filtered to what the caller
- * holds a grant on, so an entry is never a dead end. Two views: tiles for
- * recognising an app by its logo, and a list for scanning names and locations
- * when there are many. The choice is remembered per user.
+ * The list comes from the server, already filtered to what the caller holds a
+ * grant on, so an entry is never a dead end. Two views: tiles for recognising an
+ * app by its logo, and a list for scanning names, locations and dates when there
+ * are many. The choice is remembered per user.
  *
- * Neither view can show when an app was published - the listing carries no
- * date. What it can show is when this browser last opened it, which is what the
- * dashboard's "recently used" is built from, so the list view marks those.
+ * Studio, the API explorer and the docs are not here: they are tabs in the
+ * header, on every screen, so repeating them as tiles only made the list longer
+ * without making anything easier to find.
+ *
+ * A caller who may publish may also take an app back down, which is what the bin
+ * on a list row does - the same route, `DELETE /SASjsApi/drive/deploy`, so the
+ * grant that put an app there is the one that removes it.
  */
 const Apps = () => {
   const appContext = useContext(AppContext)
   const [apps, setApps] = useState<StreamedApp[]>([])
   const [loadingApps, setLoadingApps] = useState(true)
+  const [pendingDelete, setPendingDelete] = useState<StreamedApp | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [failure, setFailure] = useState('')
 
   const username = appContext.username
   const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
-  const canUseStudio = appContext.isAuthorizedFor(STUDIO_ROUTE)
+  // Publishing and unpublishing are one route, so a caller holding it may do
+  // both. Desktop mode has no permission model, which is why the mode check is
+  // here as well.
+  const canUnpublish =
+    appContext.mode === ModeType.Desktop ||
+    appContext.isAdmin ||
+    appContext.isAuthorizedFor(DEPLOY_ROUTE)
 
   const [view, setView] = useState<AppsView>(() => recallView(username))
   const [recent] = useState<RecentApp[]>(() => recallRecentApps(username))
@@ -130,31 +153,14 @@ const Apps = () => {
     }
   }, [canUseAppStream])
 
-  const entries: AppEntry[] = [
-    ...(canUseStudio
-      ? [
-          {
-            title: 'Studio',
-            subtitle: 'Run ad hoc code',
-            logo: defaultAppLogo,
-            to: '/SASjsStudio'
-          }
-        ]
-      : []),
-    {
-      title: 'API Explorer',
-      subtitle: 'Browse the REST API',
-      logo: defaultAppLogo,
-      to: '/SASjsApiDocs'
-    },
-    ...apps.map((app) => ({
-      title: app.name,
-      subtitle: app.appLoc,
-      logo: app.logo ?? defaultAppLogo,
-      href: app.url,
-      publishedAt: app.publishedAt
-    }))
-  ]
+  const entries: AppEntry[] = apps.map((app) => ({
+    title: app.name,
+    subtitle: app.appLoc,
+    logo: app.logo ?? defaultAppLogo,
+    href: app.url,
+    publishedAt: app.publishedAt,
+    streamed: app
+  }))
 
   /** The publish date, as a reader reads it - or nothing when there is none. */
   const published = (entry: AppEntry): string => {
@@ -202,6 +208,40 @@ const Apps = () => {
     if (!next) return
     setView(next)
     rememberView(username, next)
+  }
+
+  /** What the server said, or a plain sentence when it said nothing readable. */
+  const refusal = (error: any): string => {
+    const body = error?.response?.data
+
+    if (typeof body === 'string' && body.trim()) return body.trim()
+    if (typeof body?.message === 'string' && body.message.trim())
+      return body.message.trim()
+
+    return error?.message ?? 'The app could not be unpublished.'
+  }
+
+  /**
+   * Takes the app out of the registry, so it stops being advertised and stops
+   * being served. The bundle's files stay in the drive - removing those is a
+   * different, far more dangerous act - which is why the dialog says so.
+   */
+  const unpublish = async (app: StreamedApp) => {
+    setDeleting(true)
+
+    try {
+      await axios.delete('/SASjsApi/drive/deploy', {
+        data: { appLoc: app.appLoc, streamServiceName: app.name }
+      })
+
+      setApps((current) => current.filter((entry) => entry.name !== app.name))
+      setPendingDelete(null)
+    } catch (error: any) {
+      setFailure(refusal(error))
+      setPendingDelete(null)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -260,41 +300,111 @@ const Apps = () => {
       ) : (
         <List dense disablePadding>
           {entries.map((entry) => (
-            <ListItemButton
+            // The bin is the row's secondary action, beside the row rather than
+            // inside it: a button nested in a button is invalid markup and gives
+            // the row an accessible name that includes "Unpublish ...".
+            <ListItem
               key={entry.href ?? entry.to ?? entry.title}
-              onClick={() => open(entry)}
-              sx={{ borderRadius: 1, minWidth: 0 }}
+              disablePadding
+              secondaryAction={
+                canUnpublish &&
+                entry.streamed && (
+                  <Tooltip title="Unpublish this app">
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      aria-label={`Unpublish ${entry.title}`}
+                      onClick={() => {
+                        setFailure('')
+                        setPendingDelete(entry.streamed ?? null)
+                      }}
+                    >
+                      <DeleteOutlined fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )
+              }
             >
-              <ListItemIcon sx={{ minWidth: 44 }}>
-                <Avatar
-                  variant="rounded"
-                  src={entry.logo ?? defaultAppLogo}
-                  alt=""
-                  sx={{ width: 28, height: 28 }}
+              <ListItemButton
+                onClick={() => open(entry)}
+                sx={{ borderRadius: 1, minWidth: 0 }}
+              >
+                <ListItemIcon sx={{ minWidth: 44 }}>
+                  <Avatar
+                    variant="rounded"
+                    src={entry.logo ?? defaultAppLogo}
+                    alt=""
+                    sx={{ width: 28, height: 28 }}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={entry.title}
+                  secondary={[
+                    entry.subtitle,
+                    published(entry),
+                    lastOpened(entry)
+                  ]
+                    .filter(Boolean)
+                    .join(' - ')}
+                  slotProps={{
+                    primary: { variant: 'body2', noWrap: true },
+                    secondary: { variant: 'caption', noWrap: true }
+                  }}
                 />
-              </ListItemIcon>
-              <ListItemText
-                primary={entry.title}
-                secondary={[entry.subtitle, published(entry), lastOpened(entry)]
-                  .filter(Boolean)
-                  .join(' - ')}
-                slotProps={{
-                  primary: { variant: 'body2', noWrap: true },
-                  secondary: { variant: 'caption', noWrap: true }
-                }}
-              />
-              {entry.href && <OpenInNew fontSize="small" />}
-            </ListItemButton>
+                {entry.href && <OpenInNew fontSize="small" />}
+              </ListItemButton>
+            </ListItem>
           ))}
         </List>
       )}
 
-      {!loadingApps && !apps.length && !canUseStudio && (
+      {!loadingApps && !apps.length && (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 3 }}>
-          No apps are published to this server yet. An administrator publishes
-          one from Admin, and it appears here for everyone it is granted to.
+          {canUseAppStream
+            ? 'No apps are published to this server yet. An administrator publishes one from Admin, and it appears here for everyone it is granted to.'
+            : 'No apps are published here that you hold a grant on. An administrator grants access from Admin.'}
         </Typography>
       )}
+
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={() => (deleting ? undefined : setPendingDelete(null))}
+        aria-labelledby="unpublish-title"
+      >
+        <DialogTitle id="unpublish-title">
+          Unpublish {pendingDelete?.name}?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            The app stops being advertised and stops being served at{' '}
+            <code>{pendingDelete?.url}</code>. The files in{' '}
+            <code>{pendingDelete?.appLoc}</code> stay in the drive, so it can be
+            published again - or the folder deleted, which is a separate and
+            irreversible act.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleting}
+            onClick={() => pendingDelete && unpublish(pendingDelete)}
+          >
+            {deleting ? 'Unpublishing...' : 'Unpublish'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={Boolean(failure)}
+        autoHideDuration={8000}
+        onClose={() => setFailure('')}
+        message={failure}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   )
 }

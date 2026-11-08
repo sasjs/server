@@ -13,3 +13,10 @@ export const STUDIO_ROUTE = '/SASjsApi/code/execute'
 
 /** The App Stream landing page, and the prefix each published app sits under. */
 export const APP_STREAM_ROUTE = '/AppStream'
+
+/**
+ * Publishing and unpublishing an app: `POST /SASjsApi/drive/deploy` writes the
+ * registry entry, `DELETE` on the same route removes it. One route, so a caller
+ * holding the grant to publish holds the one to take it back down.
+ */
+export const DEPLOY_ROUTE = '/SASjsApi/drive/deploy'

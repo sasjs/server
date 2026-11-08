@@ -17,14 +17,19 @@
  * about the behaviour. One tab is clicked for real, to prove the tab works.
  */
 import path from 'path'
-import { mkdirSync } from 'fs'
+import { mkdirSync, writeFileSync } from 'fs'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, Page, chromium } from 'playwright'
 import { createFile, fileExists } from '@sasjs/utils'
-import { getWebBuildFolder, sysInitCompiledPath } from '../utils/'
+import {
+  getFilesFolder,
+  getWebBuildFolder,
+  sysInitCompiledPath
+} from '../utils/'
 import { UserController } from '../controllers/'
+import { publishAppStream } from '../routes/appStream'
 
 const screenshotDir =
   process.env.E2E_SCREENSHOT_DIR ?? path.join(__dirname, 'screenshots')
@@ -70,6 +75,23 @@ describe('Home dashboard and Apps tab', () => {
     server = (await app).listen(0)
     baseUrl = () => `http://localhost:${(server.address() as any).port}`
 
+    // One published app, so the Apps tab has something to list, toggle, open and
+    // unpublish - published through the service the Admin screen calls, so the
+    // registry entry and the served folder are the real pair.
+    const deployment = path.join(
+      getFilesFolder(),
+      'Public',
+      'dashdemo',
+      'services',
+      'web'
+    )
+    mkdirSync(deployment, { recursive: true })
+    writeFileSync(
+      path.join(deployment, 'index.html'),
+      '<!doctype html><title>Dashdemo</title><h1>Dashdemo</h1>'
+    )
+    await publishAppStream('/Public/dashdemo', 'web', 'Dashdemo')
+
     browser = await chromium.launch(
       process.env.CHROMIUM_PATH
         ? { executablePath: process.env.CHROMIUM_PATH }
@@ -78,6 +100,7 @@ describe('Home dashboard and Apps tab', () => {
   }, 120000)
 
   afterAll(async () => {
+    process.appStreamConfig = {}
     await browser?.close()
     server?.close()
     await con?.connection.dropDatabase()
@@ -129,43 +152,86 @@ describe('Home dashboard and Apps tab', () => {
     ).toBe(1)
 
     // Apps live on their own tab now - clicked, not navigated to, so the tab is
-    // known to work.
+    // known to work. It lists published apps and nothing else: Studio and the
+    // API explorer are header tabs on every screen.
     await page.click('[role="tablist"] a[href="/SASjsApps"]')
-    await page.waitForSelector('text=Run ad hoc code', { timeout: 30000 })
+    // The tile's anchor is the visible target; the title inside it is a
+    // zero-width-safe Typography that Playwright reports as hidden.
+    const appTile = page.locator('a[href="/AppStream/Dashdemo/"]')
+    const appRow = page.locator('.MuiListItemButton-root', {
+      hasText: 'Dashdemo'
+    })
+
+    await appTile.first().waitFor({ timeout: 30000 })
     expect(await selectedTab(page)).toBe('apps')
     expect(page.url()).toContain('/SASjsApps')
+    expect(await page.getByText('Run ad hoc code').count()).toBe(0)
 
     // Two views of the same list, and the choice is remembered. A tile is a
     // Paper inside the app's link; a list row is not, so the paper's presence is
     // what tells the two apart.
-    const tiles = page.locator('a[href="/SASjsStudio"] .MuiPaper-root')
+    const tiles = page.locator('a[href="/AppStream/Dashdemo/"] .MuiPaper-root')
 
     await page.getByRole('button', { name: 'List view' }).click()
-    await page.getByText('Run ad hoc code').first().waitFor({ timeout: 30000 })
+    await appRow.first().waitFor({ timeout: 30000 })
     expect(await tiles.count()).toBe(0)
 
     await page.reload()
-    await page.getByText('Run ad hoc code').first().waitFor({ timeout: 30000 })
+    await appRow.first().waitFor({ timeout: 30000 })
     expect(await tiles.count()).toBe(0)
+
+    await page.screenshot({
+      path: path.join(screenshotDir, 'apps-list.png')
+    })
+
+    // The row states the server's publish date, which is the registry's own
+    // record rather than this browser's first sight of the app.
+    // The locale decides whether the day or the month comes first, so the date's
+    // shape is asserted, not its order.
+    expect(
+      await page
+        .getByText(
+          /published (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d)/
+        )
+        .count()
+    ).toBeGreaterThan(0)
+
+    // The bin on the row unpublishes, and the dialog says what it leaves alone.
+    await page
+      .getByRole('button', { name: 'Unpublish Dashdemo', exact: true })
+      .click()
+    await page.waitForSelector('text=Unpublish Dashdemo?', { timeout: 30000 })
+    expect(await page.getByText(/stay in the drive/).count()).toBe(1)
+    await page.getByRole('button', { name: 'Unpublish', exact: true }).click()
+    await page.waitForSelector('text=No apps are published', { timeout: 30000 })
+
+    // Publishing it again brings it back, because the files were never the
+    // registry entry.
+    await publishAppStream('/Public/dashdemo', 'web', 'Dashdemo')
+    await page.reload()
+    await appRow.first().waitFor({ timeout: 30000 })
 
     await page.getByRole('button', { name: 'Grid view' }).click()
     await tiles.first().waitFor({ timeout: 30000 })
 
-    // Opening an app is recorded. Studio opens a file of its own - the default
-    // program - and that open is what the dashboard's file list is built from.
-    await page.click('text=Run ad hoc code')
+    // Opening an app is recorded. A row opens a tab, as a tile does.
+    const popupPromise = context.waitForEvent('page')
+    await appTile.first().click()
+    const popup = await popupPromise
+    await popup.waitForLoadState('domcontentloaded')
+    expect(popup.url()).toContain('/AppStream/Dashdemo/')
+    await popup.close()
+
+    // A file opened in Studio is recorded the same way; the Studio tab in the
+    // header is the path to it now.
+    await page.goto(`${baseUrl()}/SASjsStudio`)
     await page.waitForSelector('text=STUDIO', { timeout: 30000 })
     await page.waitForTimeout(3000)
 
     await page.goto(`${baseUrl()}/`)
     await page.waitForSelector('text=Recently used apps', { timeout: 30000 })
 
-    expect(
-      await page
-        .locator('a[href="/SASjsStudio"]')
-        .filter({ hasText: 'Studio' })
-        .count()
-    ).toBeGreaterThan(0)
+    expect(await page.getByText('Dashdemo').count()).toBeGreaterThan(0)
     expect(await page.getByText(/\/home\/dashuser\/program\.sas/).count()).toBe(
       1
     )
