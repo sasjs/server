@@ -5,6 +5,11 @@ import { AuthProviderType } from '../utils'
 export interface UserPayload {
   /**
    * Display name for user
+   *
+   * At least six characters: `utils/validation.ts` refuses a shorter one with a
+   * `400`, so the document states the bound a client can check for itself.
+   *
+   * @minLength 6
    * @example "John Snow"
    */
   displayName: string
@@ -15,6 +20,13 @@ export interface UserPayload {
   username: string
   /**
    * Password for user
+   *
+   * Six characters at least, and 1024 at most - the schema in
+   * `utils/validation.ts`. The minimum matters to a client: a shorter password is
+   * a `400` before the account is looked at, not an authentication failure.
+   *
+   * @minLength 6
+   * @maxLength 1024
    */
   password: string
   /**
