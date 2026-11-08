@@ -2941,7 +2941,7 @@ paths:
                 '200':
                     description: Ok
                     content:
-                        application/json:
+                        text/html:
                             schema:
                                 type: string
             description: "Serves the web interface's `index.html`, with the current bundle version\nappended so a returning browser loads the updated bundle."
