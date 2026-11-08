@@ -1,7 +1,17 @@
 import path from 'path'
 import express from 'express'
 import { SessionUserResponse } from './user'
-import { Request, Route, Tags, Post, Body, Get, Example, Response } from 'tsoa'
+import {
+  Request,
+  Route,
+  Tags,
+  Post,
+  Body,
+  Get,
+  Example,
+  Produces,
+  Response
+} from 'tsoa'
 import { randomBytes, timingSafeEqual } from 'crypto'
 
 import User from '../model/User'
@@ -33,6 +43,7 @@ export class WebController {
    *
    * @summary Serve the web interface
    */
+  @Produces('text/html')
   @Get('/')
   public async home() {
     return home()
