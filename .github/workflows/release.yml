@@ -169,7 +169,7 @@ jobs:
           done
 
       - name: Save the pkg base binaries
-        if: success() && steps.pending.outputs.release == 'true'
+        if: success() && steps.pending.outputs.release == 'true' && steps.pkg-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pkg-cache
