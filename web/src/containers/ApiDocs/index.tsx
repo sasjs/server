@@ -57,29 +57,61 @@ const ApiDocs = () => {
    * that serves the docs from elsewhere) is left as the API served it.
    */
   const applyColorMode = useCallback(() => {
-    // The frame loaded, whether or not its document is readable from here: a
-    // cross-origin deployment's is not, and that is not a refusal either.
-    loadedRef.current = true
-
     const doc = frameRef.current?.contentDocument
     if (!doc) return
 
     doc.documentElement.classList.toggle('dark-mode', colorMode === 'dark')
   }, [colorMode])
 
+  /**
+   * The frame's own load event, which is the one signal that the page arrived.
+   *
+   * The flag lives here rather than in `applyColorMode` because that callback is
+   * also the mount effect: it runs before the frame has requested anything, so
+   * setting the flag there leaves the backstop timer with nothing to report.
+   */
+  const handleFrameLoad = useCallback(() => {
+    loadedRef.current = true
+
+    applyColorMode()
+  }, [applyColorMode])
+
   useEffect(applyColorMode, [applyColorMode])
 
   useEffect(() => {
+    const docsUrl = new URL(src, window.location.href)
+
+    /**
+     * Only this pane's frame. `securitypolicyviolation` is raised on the
+     * document for every frame in the app, so matching the directive alone
+     * would flip this screen to "blocked" when some other embedded frame is
+     * refused, and clear it never.
+     */
     const onViolation = (event: SecurityPolicyViolationEvent) => {
-      if (event.effectiveDirective === 'frame-src') setBlocked(true)
+      if (event.effectiveDirective !== 'frame-src' || !event.blockedURI) return
+
+      let blocked: URL
+
+      try {
+        blocked = new URL(event.blockedURI)
+      } catch (_) {
+        return
+      }
+
+      if (
+        blocked.origin !== docsUrl.origin ||
+        blocked.pathname !== docsUrl.pathname
+      )
+        return
+
+      setBlocked(true)
     }
 
     document.addEventListener('securitypolicyviolation', onViolation)
 
-    // The frame reports its own load, so the timeout can tell a refusal from a
-    // page that is merely slow: both sit on about:blank until they commit, and
-    // calling a slow proxy's first request a policy refusal would send an
-    // operator looking for a directive that is not the problem.
+    // The backstop for a refusal that raises no event - an X-Frame-Options
+    // mismatch raises none - and for a page that never arrives. The frame
+    // reports its own load, so a slow proxy is not mistaken for a refusal.
     const timer = window.setTimeout(() => {
       if (!loadedRef.current) setBlocked(true)
     }, FRAME_TIMEOUT_MS)
@@ -160,7 +192,7 @@ const ApiDocs = () => {
           title="SASjs Server API documentation"
           src={src}
           ref={frameRef}
-          onLoad={applyColorMode}
+          onLoad={handleFrameLoad}
           sx={{ flexGrow: 1, width: '100%', border: 0, display: 'block' }}
         />
       )}
