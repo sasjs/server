@@ -1,0 +1,3081 @@
+components:
+    examples: {}
+    headers: {}
+    parameters: {}
+    requestBodies: {}
+    responses: {}
+    schemas:
+        BuildInfo:
+            properties:
+                version:
+                    type: string
+                    description: 'Semantic version of the release this build came from, or ''dev''.'
+                gitHash:
+                    type: string
+                    description: 'Short git hash of the commit this build came from, or ''unknown''.'
+                buildDate:
+                    type: string
+                    nullable: true
+                    description: 'ISO timestamp of the build, or null when it is not known.'
+            required:
+                - version
+                - gitHash
+                - buildDate
+            type: object
+            additionalProperties: false
+        ServerDetails:
+            properties:
+                mode:
+                    type: string
+                uptimeSeconds:
+                    type: number
+                    format: double
+                startedAt:
+                    type: string
+                pid:
+                    type: integer
+                    format: int32
+                    description: 'OS process id of the server process.'
+                nodeVersion:
+                    type: string
+                platform:
+                    type: string
+                arch:
+                    type: string
+                cpuCount:
+                    type: number
+                    format: double
+                cpuModel:
+                    type: string
+                loadAverage:
+                    items:
+                        type: number
+                        format: double
+                    type: array
+                runTimes:
+                    items:
+                        type: string
+                    type: array
+                sasjsRoot:
+                    type: string
+            required:
+                - mode
+                - uptimeSeconds
+                - startedAt
+                - pid
+                - nodeVersion
+                - platform
+                - arch
+                - cpuCount
+                - cpuModel
+                - loadAverage
+                - runTimes
+                - sasjsRoot
+            type: object
+            additionalProperties: false
+        MemoryDetails:
+            properties:
+                rssBytes:
+                    type: number
+                    format: double
+                heapTotalBytes:
+                    type: number
+                    format: double
+                heapUsedBytes:
+                    type: number
+                    format: double
+                externalBytes:
+                    type: number
+                    format: double
+                systemTotalBytes:
+                    type: number
+                    format: double
+                systemFreeBytes:
+                    type: number
+                    format: double
+            required:
+                - rssBytes
+                - heapTotalBytes
+                - heapUsedBytes
+                - externalBytes
+                - systemTotalBytes
+                - systemFreeBytes
+            type: object
+            additionalProperties: false
+        FilesystemUsage:
+            properties:
+                path:
+                    type: string
+                totalBytes:
+                    type: number
+                    format: double
+                freeBytes:
+                    type: number
+                    format: double
+                usedBytes:
+                    type: number
+                    format: double
+                usedPercent:
+                    type: number
+                    format: double
+            required:
+                - path
+                - totalBytes
+                - freeBytes
+                - usedBytes
+                - usedPercent
+            type: object
+            additionalProperties: false
+        FolderUsage:
+            properties:
+                label:
+                    type: string
+                path:
+                    type: string
+                exists:
+                    type: boolean
+                bytes:
+                    type: number
+                    format: double
+                files:
+                    type: number
+                    format: double
+                truncated:
+                    type: boolean
+                    description: 'True when the walk stopped at MAX_ENTRIES, so `bytes` is a lower bound.'
+                error:
+                    type: string
+            required:
+                - label
+                - path
+                - exists
+                - bytes
+                - files
+                - truncated
+            type: object
+            additionalProperties: false
+        LogFolderSummary:
+            properties:
+                folder:
+                    type: string
+                fileCount:
+                    type: number
+                    format: double
+                totalBytes:
+                    type: number
+                    format: double
+                newestFile:
+                    type: string
+                    nullable: true
+                newestModified:
+                    type: string
+                    nullable: true
+            required:
+                - folder
+                - fileCount
+                - totalBytes
+                - newestFile
+                - newestModified
+            type: object
+            additionalProperties: false
+        DiagnosticsResponse:
+            properties:
+                build:
+                    $ref: '#/components/schemas/BuildInfo'
+                server:
+                    $ref: '#/components/schemas/ServerDetails'
+                memory:
+                    $ref: '#/components/schemas/MemoryDetails'
+                filesystem:
+                    allOf:
+                        -
+                            $ref: '#/components/schemas/FilesystemUsage'
+                    nullable: true
+                folders:
+                    items:
+                        $ref: '#/components/schemas/FolderUsage'
+                    type: array
+                logs:
+                    $ref: '#/components/schemas/LogFolderSummary'
+            required:
+                - build
+                - server
+                - memory
+                - filesystem
+                - folders
+                - logs
+            type: object
+            additionalProperties: false
+        LogFileInfo:
+            properties:
+                name:
+                    type: string
+                sizeBytes:
+                    type: number
+                    format: double
+                modified:
+                    type: string
+            required:
+                - name
+                - sizeBytes
+                - modified
+            type: object
+            additionalProperties: false
+        LogFilesResponse:
+            properties:
+                files:
+                    items:
+                        $ref: '#/components/schemas/LogFileInfo'
+                    type: array
+            required:
+                - files
+            type: object
+            additionalProperties: false
+        LogTail:
+            properties:
+                fileName:
+                    type: string
+                lines:
+                    type: number
+                    format: double
+                    description: 'Lines actually returned in `content`.'
+                bytesRead:
+                    type: number
+                    format: double
+                truncated:
+                    type: boolean
+                    description: 'True when earlier lines exist but are not included in `content`.'
+                content:
+                    type: string
+            required:
+                - fileName
+                - lines
+                - bytesRead
+                - truncated
+                - content
+            type: object
+            additionalProperties: false
+        TokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                    description: 'Access Token'
+                    example: someRandomCryptoString
+                refreshToken:
+                    type: string
+                    description: 'Refresh Token'
+                    example: someRandomCryptoString
+            required:
+                - accessToken
+                - refreshToken
+            type: object
+            additionalProperties: false
+        TokenPayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: clientID1
+                code:
+                    type: string
+                    description: 'Authorization code'
+                    example: someRandomCryptoString
+            required:
+                - clientId
+                - code
+            type: object
+            additionalProperties: false
+        InfoJWT:
+            properties:
+                clientId:
+                    type: string
+                userId:
+                    type: string
+            required:
+                - clientId
+                - userId
+            type: object
+            additionalProperties: false
+        UpdatePasswordPayload:
+            properties:
+                currentPassword:
+                    type: string
+                    description: 'Current Password'
+                    example: currentPasswordString
+                newPassword:
+                    type: string
+                    description: 'New Password'
+                    example: newPassword
+            required:
+                - currentPassword
+                - newPassword
+            type: object
+            additionalProperties: false
+        ClientPayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: someFormattedClientID1234
+                clientSecret:
+                    type: string
+                    description: 'Client Secret'
+                    example: someRandomCryptoString
+                accessTokenExpiration:
+                    type: number
+                    format: double
+                    description: 'Number of seconds after which access token will expire. Default is 86400 (1 day)'
+                    example: 86400
+                refreshTokenExpiration:
+                    type: number
+                    format: double
+                    description: 'Number of seconds after which access token will expire. Default is 2592000 (30 days)'
+                    example: 2592000
+            required:
+                - clientId
+                - clientSecret
+            type: object
+            additionalProperties: false
+        RunTimeType:
+            enum:
+                - sas
+                - js
+                - py
+                - r
+                - sasviya
+            type: string
+        ExecuteCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'The code to be executed'
+                    example: '* Your Code HERE;'
+                runTime:
+                    $ref: '#/components/schemas/RunTimeType'
+                    description: 'The runtime for the code - eg SAS, JS, PY or R'
+                    example: js
+            required:
+                - code
+                - runTime
+            type: object
+            additionalProperties: false
+        TriggerCodeResponse:
+            description: "Response of `POST /SASjsApi/code/trigger`. The shape and its documentation\nlive in TriggerResponse; the name is kept because generated clients are\nbuilt from it."
+            properties:
+                sessionId:
+                    type: string
+                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store the program's outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
+                    example: 20241028074744-54132-1730101664824
+                pid:
+                    type: integer
+                    format: int32
+                    description: "OS process id of the process running the program: the SAS binary for the\n`sas` runtime, or the interpreter for `js`/`py`/`r`.<br><br>\nOmitted for the `sasviya` runtime, where the program runs on the Viya\nserver and no local process exists. Also omitted if the process has not\nstarted yet, which the endpoint waits briefly for.<br><br>\nThe value identifies the process for as long as it runs: it is cleared when\nthe session finishes, because operating systems recycle pids and a stale id\ncan name an unrelated process. Use it while the session is running, and\npoll GET /SASjsApi/session/{sessionId}/state for completion rather than\nwatching the pid afterwards."
+                    example: 12345
+            required:
+                - sessionId
+            type: object
+            additionalProperties: false
+        TriggerCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'The code to be executed'
+                    example: '* Your Code HERE;'
+                runTime:
+                    $ref: '#/components/schemas/RunTimeType'
+                    description: 'The runtime for the code - eg SAS, JS, PY or R'
+                    example: sas
+                expiresAfterMins:
+                    type: number
+                    format: double
+                    description: "Amount of minutes after the completion of the job when the session must be\ndestroyed."
+                    example: 15
+            required:
+                - code
+                - runTime
+            type: object
+            additionalProperties: false
+        Severity:
+            description: 'Severity indicates the seriousness of a given violation.'
+            enum:
+                - 0
+                - 1
+                - 2
+            type: number
+        Diagnostic:
+            description: "A diagnostic is produced by the execution of a lint rule against a file or line of text.\n\nBoth columns are 1-based, and `endColumnNumber` is the column of the span's LAST\ncharacter - a one-character span starts and ends on the same column. A consumer\nthat highlights `startColumnNumber` through `endColumnNumber` inclusive covers\nexactly the text the rule reports, for every rule in the set."
+            properties:
+                lineNumber:
+                    type: number
+                    format: double
+                startColumnNumber:
+                    type: number
+                    format: double
+                endColumnNumber:
+                    type: number
+                    format: double
+                message:
+                    type: string
+                severity:
+                    $ref: '#/components/schemas/Severity'
+            required:
+                - lineNumber
+                - startColumnNumber
+                - endColumnNumber
+                - message
+                - severity
+            type: object
+            additionalProperties: false
+        LintCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'The SAS code to be linted'
+                    example: "data _null_;\n  x = 1;\nrun;"
+                filePath:
+                    type: string
+                    description: "The drive path of the file the code comes from, when it has one. The rules\nresolve from the nearest `.sasjslint` at or above that file's folder, so\neach folder in the drive tree can carry its own rules. Omitted for an\nuntitled buffer, which lints against the drive-root rules."
+                    example: /projects/app/run.sas
+            required:
+                - code
+            type: object
+            additionalProperties: false
+        FormatCodePayload:
+            properties:
+                code:
+                    type: string
+                    description: 'The SAS code to be formatted'
+                    example: "data _null_;\n  x = 1;\nrun;"
+                filePath:
+                    type: string
+                    description: "The drive path of the file the code comes from, when it has one. The rules\nresolve from the nearest `.sasjslint` at or above that file's folder, so\neach folder in the drive tree can carry its own rules. Omitted for an\nuntitled buffer, which formats against the drive-root rules."
+                    example: /projects/app/run.sas
+            required:
+                - code
+            type: object
+            additionalProperties: false
+        MemberType.folder:
+            enum:
+                - folder
+            type: string
+        FolderMember:
+            properties:
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/MemberType.folder'
+                members:
+                    items:
+                        anyOf:
+                            -
+                                $ref: '#/components/schemas/FolderMember'
+                            -
+                                $ref: '#/components/schemas/ServiceMember'
+                            -
+                                $ref: '#/components/schemas/FileMember'
+                    type: array
+            required:
+                - name
+                - type
+                - members
+            type: object
+            additionalProperties: false
+        MemberType.service:
+            enum:
+                - service
+            type: string
+        ServiceMember:
+            properties:
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/MemberType.service'
+                code:
+                    type: string
+            required:
+                - name
+                - type
+                - code
+            type: object
+            additionalProperties: false
+        MemberType.file:
+            enum:
+                - file
+            type: string
+        FileMember:
+            properties:
+                name:
+                    type: string
+                type:
+                    $ref: '#/components/schemas/MemberType.file'
+                code:
+                    type: string
+            required:
+                - name
+                - type
+                - code
+            type: object
+            additionalProperties: false
+        FileTree:
+            properties:
+                members:
+                    items:
+                        anyOf:
+                            -
+                                $ref: '#/components/schemas/FolderMember'
+                            -
+                                $ref: '#/components/schemas/ServiceMember'
+                            -
+                                $ref: '#/components/schemas/FileMember'
+                    type: array
+            required:
+                - members
+            type: object
+            additionalProperties: false
+        DeployResponse:
+            properties:
+                status:
+                    type: string
+                message:
+                    type: string
+                streamServiceName:
+                    type: string
+                example:
+                    $ref: '#/components/schemas/FileTree'
+            required:
+                - status
+                - message
+            type: object
+            additionalProperties: false
+        DeployPayload:
+            properties:
+                appLoc:
+                    type: string
+                streamWebFolder:
+                    type: string
+                fileTree:
+                    $ref: '#/components/schemas/FileTree'
+            required:
+                - appLoc
+                - fileTree
+            type: object
+            additionalProperties: false
+        FileFolderResponse:
+            properties:
+                status:
+                    type: string
+                message:
+                    type: string
+            required:
+                - status
+            type: object
+            additionalProperties: false
+        UnpublishPayload:
+            description: 'The pair an unpublish names - see `DELETE /SASjsApi/drive/deploy`.'
+            properties:
+                appLoc:
+                    type: string
+                    description: 'The folder the app was published from; `/Public/app/myservice`'
+                streamServiceName:
+                    type: string
+                    description: 'The name the app is advertised and served under'
+            required:
+                - appLoc
+                - streamServiceName
+            type: object
+            additionalProperties: false
+        AddFolderPayload:
+            properties:
+                folderPath:
+                    type: string
+                    description: 'Location of folder'
+                    example: /Public/someFolder
+            required:
+                - folderPath
+            type: object
+            additionalProperties: false
+        RenamePayload:
+            properties:
+                oldPath:
+                    type: string
+                    description: 'Old path of file/folder'
+                    example: /Public/someFolder
+                newPath:
+                    type: string
+                    description: 'New path of file/folder'
+                    example: /Public/newFolder
+            required:
+                - oldPath
+                - newPath
+            type: object
+            additionalProperties: false
+        TreeNode:
+            properties:
+                name:
+                    type: string
+                relativePath:
+                    type: string
+                absolutePath:
+                    type: string
+                isFolder:
+                    type: boolean
+                children:
+                    items:
+                        $ref: '#/components/schemas/TreeNode'
+                    type: array
+                hasChildren:
+                    type: boolean
+                    description: "Whether a FOLDER holds at least one entry. Populated for the immediate\nchildren of a folder, so a caller that loaded one level at a time knows to\noffer an expander before it has requested that folder's contents."
+            required:
+                - name
+                - relativePath
+                - absolutePath
+                - isFolder
+                - children
+            type: object
+            additionalProperties: false
+        GetFileTreeResponse:
+            properties:
+                status:
+                    type: string
+                tree:
+                    $ref: '#/components/schemas/TreeNode'
+            required:
+                - status
+                - tree
+            type: object
+            additionalProperties: false
+        UserResponse:
+            properties:
+                uid:
+                    type: string
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+            required:
+                - uid
+                - username
+                - displayName
+                - isAdmin
+            type: object
+            additionalProperties: false
+        GroupResponse:
+            properties:
+                uid:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+            required:
+                - uid
+                - name
+                - description
+            type: object
+            additionalProperties: false
+        UserDetailsResponse:
+            properties:
+                uid:
+                    type: string
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+                isActive:
+                    type: boolean
+                autoExec:
+                    type: string
+                groups:
+                    items:
+                        $ref: '#/components/schemas/GroupResponse'
+                    type: array
+            required:
+                - uid
+                - username
+                - displayName
+                - isAdmin
+                - isActive
+            type: object
+            additionalProperties: false
+        UserPayload:
+            properties:
+                displayName:
+                    type: string
+                    description: 'Display name for user'
+                    example: 'John Snow'
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: johnSnow01
+                password:
+                    type: string
+                    description: 'Password for user'
+                isAdmin:
+                    type: boolean
+                    description: 'Account should be admin or not, defaults to false'
+                    example: 'false'
+                isActive:
+                    type: boolean
+                    description: 'Account should be active or not, defaults to true'
+                    example: 'true'
+                autoExec:
+                    type: string
+                    description: 'User-specific auto-exec code'
+                    example: ""
+            required:
+                - displayName
+                - username
+                - password
+            type: object
+            additionalProperties: false
+        GroupDetailsResponse:
+            properties:
+                uid:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                isActive:
+                    type: boolean
+                users:
+                    items:
+                        $ref: '#/components/schemas/UserResponse'
+                    type: array
+            required:
+                - uid
+                - name
+                - description
+                - isActive
+                - users
+            type: object
+            additionalProperties: false
+        GroupPayload:
+            properties:
+                name:
+                    type: string
+                    description: 'Name of the group'
+                    example: DCGroup
+                description:
+                    type: string
+                    description: 'Description of the group'
+                    example: 'This group represents Data Controller Users'
+                isActive:
+                    type: boolean
+                    description: 'Group should be active or not, defaults to true'
+                    example: 'true'
+            required:
+                - name
+                - description
+            type: object
+            additionalProperties: false
+        DeleteResult:
+            properties:
+                acknowledged:
+                    type: boolean
+                    description: 'Indicates whether this write result was acknowledged. If not, then all other members of this result will be undefined.'
+                deletedCount:
+                    type: number
+                    format: double
+                    description: 'The number of documents that were deleted'
+            required:
+                - acknowledged
+                - deletedCount
+            type: object
+            additionalProperties: false
+        ModeType:
+            enum:
+                - server
+                - desktop
+            type: string
+        CorsType:
+            enum:
+                - enable
+                - disable
+            type: string
+        InfoResponse:
+            properties:
+                mode:
+                    $ref: '#/components/schemas/ModeType'
+                    description: "Which mode this server runs in, from `MODE` - and the two words it may be.\nTyped as the enum rather than `string` so the published document states the\nenum: a client comparing `mode`, or a host validating this answer, is\nentitled to know that the value is one of two rather than any text. The\nvalues are already constrained to these members by `verifyEnvVariables`,\nwhich refuses the process at startup on anything else."
+                cors:
+                    $ref: '#/components/schemas/CorsType'
+                    description: "The CORS setting, from `CORS` - `enable` or `disable`, as the middleware\nreads it. Same reasoning as `mode`: the value is an enum at runtime, so it\nis stated as one rather than described in prose."
+                httpPort:
+                    type: number
+                    format: double
+                    nullable: true
+                    description: 'Port the plain HTTP listener serves on, or null when it is disabled.'
+                httpsPort:
+                    type: number
+                    format: double
+                    nullable: true
+                    description: 'Port the TLS listener serves on, or null when it is disabled.'
+                runTimes:
+                    items:
+                        type: string
+                    type: array
+                authProviders:
+                    items:
+                        type: string
+                    type: array
+                    description: "Which external authentication providers are configured. Public, because\nthe login screen needs it before anyone is authenticated: it decides\nwhether to offer a single sign-on button."
+                oidcProviderName:
+                    type: string
+                    description: "The label for that button, from OIDC_PROVIDER_NAME. Absent unless OIDC is\nconfigured. Not sensitive - it is a display name."
+                localLoginEnabled:
+                    type: boolean
+                    description: "Whether password sign-in for local (database) accounts is switched on,\nfrom LOCAL_LOGIN_ENABLED. Public for the same reason as authProviders:\nthe login screen must not offer a form the server refuses to accept."
+                version:
+                    type: string
+                    description: "What produced this build, as `v3.2.2 (4a26a3d)` - the release tag and the\ncommit, from buildInfo.generated.ts. Public for the same reason as the rest\nof this response: the interface stamps it in the corner of every screen,\nthe login screen included, so a support report names the build it came from\nwithout anyone having to sign in first."
+            required:
+                - mode
+                - cors
+                - httpPort
+                - httpsPort
+                - runTimes
+                - authProviders
+                - localLoginEnabled
+                - version
+            type: object
+            additionalProperties: false
+        AuthorizedRoutesResponse:
+            properties:
+                paths:
+                    items:
+                        type: string
+                    type: array
+            required:
+                - paths
+            type: object
+            additionalProperties: false
+        PermissionDetailsResponse:
+            properties:
+                uid:
+                    type: string
+                path:
+                    type: string
+                type:
+                    type: string
+                setting:
+                    type: string
+                user:
+                    type: string
+                    description: 'The identifier of the account the rule is assigned to, when it is a user''s.'
+                group:
+                    type: string
+                    description: 'The identifier of the group the rule is assigned to, when it is a group''s.'
+            required:
+                - uid
+                - path
+                - type
+                - setting
+            type: object
+            additionalProperties: false
+        PermissionType:
+            enum:
+                - Route
+            type: string
+        PermissionSettingForRoute:
+            enum:
+                - Grant
+                - Deny
+            type: string
+        PrincipalType:
+            enum:
+                - user
+                - group
+            type: string
+        RegisterPermissionPayload:
+            properties:
+                path:
+                    type: string
+                    description: "The route the rule applies to.\n\nOne of the routes that can be granted - the list is what\n`GET /SASjsApi/info/authorizedRoutes` answers, and a rule for anything else\nis refused with `400`."
+                    example: /SASjsApi/code/execute
+                type:
+                    $ref: '#/components/schemas/PermissionType'
+                    description: 'Type of affected resource'
+                    example: Route
+                setting:
+                    $ref: '#/components/schemas/PermissionSettingForRoute'
+                    description: 'The indication of whether (and to what extent) access is provided'
+                    example: Grant
+                principalType:
+                    $ref: '#/components/schemas/PrincipalType'
+                    description: 'Indicates the type of principal'
+                    example: user
+                principalId:
+                    type: string
+                    description: 'The id of user or group to which a rule is assigned.'
+            required:
+                - path
+                - type
+                - setting
+                - principalType
+                - principalId
+            type: object
+            additionalProperties: false
+        UpdatePermissionPayload:
+            properties:
+                setting:
+                    $ref: '#/components/schemas/PermissionSettingForRoute'
+                    description: 'The indication of whether (and to what extent) access is provided'
+                    example: Grant
+            required:
+                - setting
+            type: object
+            additionalProperties: false
+        SessionResponse:
+            properties:
+                uid:
+                    type: string
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+                needsToUpdatePassword:
+                    type: boolean
+            required:
+                - uid
+                - username
+                - displayName
+                - isAdmin
+            type: object
+            additionalProperties: false
+        SessionState:
+            enum:
+                - initialising
+                - pending
+                - running
+                - completed
+                - failed
+            type: string
+        SessionStateResponse:
+            description: "Response of `GET /SASjsApi/session/{sessionId}/state`.\n\nAn object rather than the bare enum, so the shape matches the compute API a\nViya caller already polls (`{ state: 'running' }`) and a client can be written\nonce for both servers."
+            properties:
+                state:
+                    $ref: '#/components/schemas/SessionState'
+            required:
+                - state
+            type: object
+            additionalProperties: false
+        SessionSummary:
+            description: "Response of `GET /SASjsApi/session/{sessionId}`.\n\n`path` is deliberately absent: the session folder is a server filesystem\nlocation, and the artifacts a caller wants from it are served by the `log`\nand `output` endpoints instead."
+            properties:
+                sessionId:
+                    type: string
+                state:
+                    $ref: '#/components/schemas/SessionState'
+                pid:
+                    type: number
+                    format: double
+                creationTimeStamp:
+                    type: string
+                deathTimeStamp:
+                    type: string
+                failureReason:
+                    type: string
+                expiresAfterMins:
+                    properties:
+                        used:
+                            type: boolean
+                        mins:
+                            type: number
+                            format: double
+                    required:
+                        - used
+                        - mins
+                    type: object
+            required:
+                - sessionId
+                - state
+                - creationTimeStamp
+                - deathTimeStamp
+            type: object
+            additionalProperties: false
+        ExecutePostRequestPayload:
+            properties:
+                _program:
+                    type: string
+                    description: 'Location of SAS program'
+                    example: /Public/somefolder/some.file
+            type: object
+            additionalProperties: false
+        TriggerProgramResponse:
+            description: "Response of `POST /SASjsApi/stp/trigger`. The shape and its documentation\nlive in TriggerResponse; the name is kept because generated clients are\nbuilt from it."
+            properties:
+                sessionId:
+                    type: string
+                    description: "`sessionId` is the ID of the session and the name of the temporary folder\nused to store the program's outputs.<br><br>\nFor SAS, this would be the location of the SASWORK folder.<br><br>\n`sessionId` can be used to poll session state using the\nGET /SASjsApi/session/{sessionId}/state endpoint."
+                    example: 20241028074744-54132-1730101664824
+                pid:
+                    type: integer
+                    format: int32
+                    description: "OS process id of the process running the program: the SAS binary for the\n`sas` runtime, or the interpreter for `js`/`py`/`r`.<br><br>\nOmitted for the `sasviya` runtime, where the program runs on the Viya\nserver and no local process exists. Also omitted if the process has not\nstarted yet, which the endpoint waits briefly for.<br><br>\nThe value identifies the process for as long as it runs: it is cleared when\nthe session finishes, because operating systems recycle pids and a stale id\ncan name an unrelated process. Use it while the session is running, and\npoll GET /SASjsApi/session/{sessionId}/state for completion rather than\nwatching the pid afterwards."
+                    example: 12345
+            required:
+                - sessionId
+            type: object
+            additionalProperties: false
+        SessionUserResponse:
+            description: 'The signed-in caller, as the session reports them.'
+            properties:
+                uid:
+                    type: string
+                username:
+                    type: string
+                displayName:
+                    type: string
+                isAdmin:
+                    type: boolean
+                needsToUpdatePassword:
+                    type: boolean
+            required:
+                - uid
+                - username
+                - displayName
+                - isAdmin
+                - needsToUpdatePassword
+            type: object
+            additionalProperties: false
+        LoginResponse:
+            properties:
+                loggedIn:
+                    type: boolean
+                user:
+                    $ref: '#/components/schemas/SessionUserResponse'
+            required:
+                - loggedIn
+                - user
+            type: object
+            additionalProperties: false
+        LoginPayload:
+            properties:
+                username:
+                    type: string
+                    description: 'Username for user'
+                    example: secretuser
+                password:
+                    type: string
+                    description: 'Password for user'
+                    example: secretpassword
+            required:
+                - username
+                - password
+            type: object
+            additionalProperties: false
+        AuthorizeResponse:
+            properties:
+                code:
+                    type: string
+                    description: 'Authorization code'
+                    example: someRandomCryptoString
+            required:
+                - code
+            type: object
+            additionalProperties: false
+        AuthorizePayload:
+            properties:
+                clientId:
+                    type: string
+                    description: 'Client ID'
+                    example: clientID1
+            required:
+                - clientId
+            type: object
+            additionalProperties: false
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+info:
+    title: 'SASjs Server API'
+    version: 0.0.2
+    description: 'REST API for SASjs Server, the NodeJS wrapper around the SAS binary. Authenticate with a bearer token (see the **Auth** tag) or, for browser clients, with a session cookie.'
+    license:
+        name: MIT
+    contact:
+        name: SASjs
+        url: 'https://sasjs.io'
+openapi: 3.0.0
+paths:
+    /SASjsApi/admin/diagnostics:
+        get:
+            operationId: Diagnostics
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DiagnosticsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {build: {version: v3.2.2, gitHash: 4a26a3d, buildDate: '2026-10-27T19:41:38.000Z'}, server: {mode: server, uptimeSeconds: 3600, startedAt: '2026-10-27T20:00:00.000Z', pid: 1462058, nodeVersion: v22.11.0, platform: 'linux 5.14.0', arch: x64, cpuCount: 8, cpuModel: 'Intel(R) Xeon(R) CPU', loadAverage: [0.08, 0.11, 0.15], runTimes: [sas], sasjsRoot: /home/sasjssrv/sasjs_root}, memory: {rssBytes: 214302720, heapTotalBytes: 41943040, heapUsedBytes: 31457280, externalBytes: 12582912, systemTotalBytes: 66571993088, systemFreeBytes: 61203283968}, filesystem: {path: /home/sasjssrv/sasjs_root, totalBytes: 468151435264, freeBytes: 114890375168, usedBytes: 353261060096, usedPercent: 75.5}, folders: [{label: sessions, path: /home/sasjssrv/sasjs_root/sessions, exists: true, bytes: 346341376, files: 2411, truncated: false}], logs: {folder: /home/sasjssrv/sasjs_root/logs, fileCount: 42, totalBytes: 43008000, newestFile: 20261027210826.log, newestModified: '2026-10-27T21:09:41.000Z'}}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '500':
+                    description: 'The diagnostics could not be read'
+            description: "Reports what this server is running and how it is using the machine:\nthe release tag and commit the binary was built from, process uptime and\nmemory, the free space on the filesystem holding SASJS_ROOT, and the size\nof each folder underneath it.\n\nFolder sizes are best-effort: a subfolder that cannot be read contributes\nan `error` field, and a walk that stops at the entry cap is marked\n`truncated`, rather than the whole answer failing."
+            summary: 'Diagnostics: version, uptime, memory, disk usage'
+            tags:
+                - Admin
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/admin/logs:
+        get:
+            operationId: Logs
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogFilesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {files: [{name: 20261027210826.log, sizeBytes: 2979977, modified: '2026-10-27T21:09:41.000Z'}]}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '500':
+                    description: 'The log folder could not be listed'
+            description: "Lists the access logs the server has written, newest first, with their\nsizes - so an operator can see at a glance whether the log folder is\ngrowing and which file to read."
+            summary: 'List the server''s log files'
+            tags:
+                - Admin
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    '/SASjsApi/admin/logs/{fileName}':
+        get:
+            operationId: LogTail
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogTail'
+                            examples:
+                                'Example 1':
+                                    value: {fileName: 20261027210826.log, lines: 200, bytesRead: 65536, truncated: true, content: '::ffff:127.0.0.1 - - [27/Oct/2026:21:09:41 +0000] "GET /SASjsApi/info HTTP/1.1" 200 118'}
+                '400':
+                    description: 'Invalid log file name.'
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '404':
+                    description: 'Log file not found.'
+                '500':
+                    description: 'The log file could not be read'
+            description: "Returns the end of one log file.\n\n`fileName` must be a bare file name ending in `.log`; anything that could\nresolve outside the log folder is refused with `400`, and a name that does\nnot exist inside it with `404`. The read starts near the end of the file,\nso a large log costs a bounded read rather than a full one, and\n`truncated` says whether earlier lines exist."
+            summary: 'Read the tail of a log file'
+            tags:
+                - Admin
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Name of the log file, as returned by GET /logs'
+                    in: path
+                    name: fileName
+                    required: true
+                    schema:
+                        type: string
+                -
+                    description: 'How many trailing lines to return (default 200, max 5000)'
+                    in: query
+                    name: lines
+                    required: false
+                    schema:
+                        default: 200
+                        format: double
+                        type: number
+    /SASjsApi/auth/token:
+        post:
+            operationId: Token
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TokenResponse'
+                            examples:
+                                'Example 1':
+                                    value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
+                '400':
+                    description: 'The request body is missing `clientId` or `code`'
+                '401':
+                    description: 'The authorization code is invalid, expired, already used, or was issued for another client, or the client id is unknown. This route is unauthenticated, so an unknown client id is a `401` here where `POST /SASLogon/authorize` (which requires a session) answers `403`'
+            description: "Exchanges an authorization code for a token pair.\n\nThe code is single-use, short-lived, and is issued by\n`POST /SASLogon/authorize` to a caller that already holds a session. This\nendpoint requires no authentication of its own: the code is the credential."
+            summary: 'Exchange an authorization code for tokens'
+            tags:
+                - Auth
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TokenPayload'
+    /SASjsApi/auth/refresh:
+        post:
+            operationId: Refresh
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TokenResponse'
+                            examples:
+                                'Example 1':
+                                    value: {accessToken: someRandomCryptoString, refreshToken: someRandomCryptoString}
+                '401':
+                    description: 'The refresh token is missing, invalid or expired, or the client id is unknown'
+            description: "Issues a new access and refresh token pair for the caller identified by the\nbearer token. The previous pair is replaced."
+            summary: 'Refresh the access and refresh tokens'
+            tags:
+                - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/auth/logout:
+        post:
+            operationId: Logout
+            responses:
+                '204':
+                    description: 'No content'
+                '401':
+                    description: 'No valid access token was supplied'
+            description: 'Revokes the access and refresh tokens of the caller and returns no content.'
+            summary: 'Revoke the current tokens'
+            tags:
+                - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/auth/updatePassword:
+        patch:
+            operationId: UpdatePassword
+            responses:
+                '204':
+                    description: 'No content'
+                '400':
+                    description: 'The request body is missing `currentPassword` or `newPassword`'
+                '401':
+                    description: 'No valid access token was supplied'
+                '403':
+                    description: 'The current password is incorrect'
+                '404':
+                    description: 'The authenticated user no longer exists'
+                '405':
+                    description: 'The account authenticates through an external provider, which holds its password'
+            description: "Changes the password of the authenticated user.\n\nThe current password must be supplied and must match. The request is refused\nwith `405` for an account that authenticates through an external provider\n(LDAP or OpenID Connect), whose password is not held here."
+            summary: 'Change the current user''s password'
+            tags:
+                - Auth
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePasswordPayload'
+    /SASjsApi/authConfig:
+        get:
+            operationId: GetDetail
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema: {}
+                            examples:
+                                'Example 1':
+                                    value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron', LDAP_BIND_PASSWORD_SET: true}}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '403':
+                    description: 'Not Allowed while in Desktop Mode.'
+                '500':
+                    description: 'The provider configuration could not be read'
+            description: "Returns the non-secret configuration of each enabled authentication\nprovider, for display in the administration interface.\n\nSecrets are never echoed: for each provider the response reports only\nwhether its bind password or client secret is set (`LDAP_BIND_PASSWORD_SET`,\n`OIDC_CLIENT_SECRET_SET`). Admin only."
+            summary: 'Get the configured authentication providers'
+            tags:
+                - 'Auth Config'
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/authConfig/synchroniseWithLDAP:
+        post:
+            operationId: SynchroniseWithLDAP
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    groupCount: {type: number, format: double}
+                                    userCount: {type: number, format: double}
+                                required:
+                                    - groupCount
+                                    - userCount
+                                type: object
+                            examples:
+                                'Example 1':
+                                    value: {userCount: 5, groupCount: 3}
+                '401':
+                    description: 'Unauthorized, or an administrator account is required. The mount point in routes/api/index.ts applies both checks before this handler runs.'
+                '403':
+                    description: 'Not Allowed while in Desktop Mode.'
+                '500':
+                    description: 'The directory could not be synchronised'
+            description: "Imports the users and groups of the configured LDAP directory into the\ninternal database and returns the number imported.\n\nUsers and groups that already exist are left untouched. Admin only."
+            summary: 'Import users and groups from LDAP'
+            tags:
+                - 'Auth Config'
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/client:
+        post:
+            operationId: CreateClient
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ClientPayload'
+                            examples:
+                                'Example 1':
+                                    value: {clientId: someFormattedClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}
+                '401':
+                    description: 'Admin account required'
+                '403':
+                    description: 'Client ID already exists.'
+            description: "Registers a new OAuth client that SASjs applications can authenticate with.\n\nA client is identified by `clientId` and `clientSecret`. The two optional\nfields set token lifetimes in seconds; when omitted, the defaults of 86400\n(one day) for the access token and 2592000 (30 days) for the refresh token\napply. Admin only."
+            summary: 'Create a client'
+            tags:
+                - Client
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ClientPayload'
+        get:
+            operationId: GetAllClients
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/ClientPayload'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{clientId: someClientID1234, clientSecret: someRandomCryptoString, accessTokenExpiration: 86400}, {clientId: someOtherClientID, clientSecret: someOtherRandomCryptoString, accessTokenExpiration: 86400}]
+                '401':
+                    description: 'Admin account required'
+            description: "Returns every registered client with its id, secret and token lifetimes.\nAdmin only."
+            summary: 'List all clients'
+            tags:
+                - Client
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/code/execute:
+        post:
+            operationId: ExecuteCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
+            description: "Runs the supplied code on the requested runtime and returns its output.\n\nThe response body is assembled from the parts the program produced, joined\nwith newlines and separated by a UUID that marks the boundaries of the log:\n\n1. Webout - the `_webout` content, omitted when the program writes none\n2. Logs UUID - the server's identifier opening the log section\n3. Log - the program log\n4. Logs UUID - the same identifier closing the log section\n5. Print - the SAS listing, present only for the `sas` runtime\n\nThe log can contain the UUID itself: a program's source is echoed into its\nlog, so the literal appears wherever sasjs/core's `ms_runstp` or\n`ms_testservice` is part of the submitted code, and a service that calls\nanother puts the nested response in it. The UUID marks the boundaries of\nthe log, not a fixed number of parts - everything between the first and the\nlast occurrence is the log.\n\nThis endpoint waits for the program to finish. To start a program and poll\nfor its result instead, use `POST /SASjsApi/code/trigger`. See\nhttps://server.sasjs.io/ for the available runtimes."
+            summary: 'Execute code and return its output'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExecuteCodePayload'
+    /SASjsApi/code/trigger:
+        post:
+            operationId: TriggerCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TriggerCodeResponse'
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
+            description: "Starts the supplied code on the requested runtime and returns immediately,\nwithout waiting for it to finish.\n\nThe response carries the `sessionId` of the session running the code. Poll\n`GET /SASjsApi/session/{sessionId}/state` for its state, or set\n`expiresAfterMins` to have the session destroyed that many minutes after it\ncompletes. See https://server.sasjs.io/ for the available runtimes."
+            summary: 'Trigger code and return a session ID'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TriggerCodePayload'
+    /SASjsApi/code/lint:
+        post:
+            operationId: LintCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/Diagnostic'
+                                type: array
+                '400':
+                    description: '"code" is required / "code" must be a string / "code" is not allowed to be empty'
+                '401':
+                    description: Unauthorized
+            description: "Lints the supplied SAS code and returns the diagnostics.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can lint its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nWhen the request names the file's drive path, the rules come from the\nnearest `.sasjslint` at or above that file's folder, so each folder in\nthe drive tree can carry its own rules; a request without a path lints\nagainst the drive-root rules file. Diagnostics describe the submitted\ntext only; no other file is read."
+            summary: 'Lint SAS code and return the diagnostics'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LintCodePayload'
+    /SASjsApi/code/format:
+        post:
+            operationId: FormatCode
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                type: string
+                '400':
+                    description: '"code" is required / "code" must be a string / "code" is not allowed to be empty'
+                '401':
+                    description: Unauthorized
+            description: "Formats the supplied SAS code and returns the formatted text.\n\nThe code is submitted in the request rather than named as a file, so an\neditor can format its buffer, including unsaved changes, and no drive\npermission is involved. Nothing is executed.\n\nWhen the request names the file's drive path, the rules come from the\nnearest `.sasjslint` at or above that file's folder, so each folder in\nthe drive tree can carry its own rules; a request without a path formats\nagainst the drive-root rules file. Formatting only rewrites the submitted\ntext; no other file is read or written."
+            summary: 'Format SAS code and return the formatted text'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FormatCodePayload'
+    /SASjsApi/drive/deploy:
+        post:
+            operationId: Deploy
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success, message: 'Files deployed successfully to @sasjs/server.'}
+                '400':
+                    description: 'Invalid Format'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Provided not supported data format.'}
+                '413':
+                    description: 'File tree exceeds the deploy limit'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'}
+                '500':
+                    description: 'Execution Error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Deployment failed!'}
+            description: "Creates or updates files within SASjs Drive from a JSON file tree.\n\n`appLoc` is the folder within the drive to deploy into, and `fileTree` is a\nnested description of the folders, services and files to write. `appLoc`\ncannot point outside the drive. A `400` is returned for a payload that is\nnot a valid file tree, and a `500` when writing fails.\n\nA `413` is returned for a tree the deploy cap refuses - more than 10,000\nentries, more than 100 MB decoded in total, or a single file over 20 MB -\nnaming the limit and the figure reached. The tree is measured before\nanything is written, so a refused deploy leaves the drive untouched. The\nsame limits apply to `POST /SASjsApi/drive/deploy/upload`, after the\narchive is expanded."
+            summary: 'Deploy a file tree to SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeployPayload'
+        delete:
+            operationId: Unpublish
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                '400':
+                    description: 'Invalid Format'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Unpublishing failed!'}
+                '404':
+                    description: 'No app is published at that folder'
+            description: "Removes a published app stream entry.\n\nThe entry stops being advertised - the landing page, its HTML index and\n`/AppStream/apps.json` are all built from the one registry - and stops being\nserved on `/AppStream/<streamServiceName>`, because the name leaves the route\ninventory as well.\n\n`appLoc` and `streamServiceName` are both required - a caller that names a\nstream but not the folder has not said what to remove - but the **folder is\nwhat identifies the app**: an app is one thing to deploy and one thing to\nremove, and its name is a label on it. A folder may hold two apps only as a\nspecial case, and they are still one thing to load or delete. So a name that\nhas since been changed does not turn a correct removal into a `404`; a folder\nwith nothing published at it answers `404`, and a missing field answers `400`.\n\nThe drive content is left alone. Deleting the folder is `DELETE\n/SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and\npublishing created no permission rule, so there is none to withdraw: a caller\nneeds the same `/SASjsApi/drive/deploy` grant this route already requires.\n\nAn entry whose deployment folder has already gone is removable too, which is\nthe case a stale listing is made of: the registry file is consulted as well as\nthe in-memory view, and only the named entry is dropped."
+            summary: 'Remove an app stream entry'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UnpublishPayload'
+    /SASjsApi/drive/deploy/upload:
+        post:
+            operationId: DeployUpload
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success, message: 'Files deployed successfully to @sasjs/server.'}
+                '400':
+                    description: 'Invalid Format'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Provided not supported data format.'}
+                '413':
+                    description: 'File tree exceeds the deploy limit'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'}
+                '500':
+                    description: 'Execution Error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeployResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: failure, message: 'Deployment failed!'}
+            description: "Creates or updates files within SASjs Drive from an uploaded JSON file.\n\nThe file may be plain JSON or a zip holding a single JSON file of the same\nname (for example `deploy.json.zip` for `deploy.json`); any other member of\nthe archive is ignored. The payload has the same shape as\n`POST /SASjsApi/drive/deploy`, and the same `413` applies once the archive\nis expanded: the cap is measured on the tree, not on the bytes uploaded."
+            summary: 'Deploy an uploaded file to SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                            required:
+                                - file
+    /SASjsApi/drive/file:
+        get:
+            operationId: GetFile
+            responses:
+                '200':
+                    description: 'The contents of the file'
+                '400':
+                    description: 'Can''t get file outside drive'
+                '404':
+                    description: 'File doesn''t exist'
+            description: "Returns the content of a file within SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the file\ndoes not exist. A `.sas` file is served as `text/plain`."
+            summary: 'Get a file from SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of the file within the drive'
+                    in: query
+                    name: _filePath
+                    required: true
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file
+        delete:
+            operationId: DeleteFile
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    status: {type: string}
+                                required:
+                                    - status
+                                type: object
+                '400':
+                    description: 'Can''t delete file outside drive'
+                '404':
+                    description: 'File doesn''t exist'
+            description: "Deletes a file from SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the file\ndoes not exist."
+            summary: 'Delete a file from SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of the file within the drive'
+                    in: query
+                    name: _filePath
+                    required: true
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file
+        post:
+            operationId: SaveFile
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '400':
+                    description: 'Can''t put file outside drive'
+                '409':
+                    description: 'File already exists'
+            description: "Uploads a new file into SASjs Drive, creating any missing parent folders.\n\nThe destination is given either as the `_filePath` query parameter or as the\n`filePath` form field; one of the two is required. A `400` is returned for a\npath outside the drive and a `409` when a file already exists at that path\n(use `PATCH /SASjsApi/drive/file` to replace one)."
+            summary: 'Create a file in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of the file within the drive'
+                    in: query
+                    name: _filePath
+                    required: false
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file.sas
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                filePath:
+                                    type: string
+                            required:
+                                - file
+        patch:
+            operationId: UpdateFile
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '400':
+                    description: 'Can''t modify file outside drive'
+                '404':
+                    description: 'File doesn''t exist'
+            description: "Replaces the content of an existing file in SASjs Drive.\n\nThe destination is given either as the `_filePath` query parameter or as the\n`filePath` form field; one of the two is required. A `400` is returned for a\npath outside the drive and a `404` when no file exists at that path."
+            summary: 'Replace a file in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of the file within the drive'
+                    in: query
+                    name: _filePath
+                    required: false
+                    schema:
+                        type: string
+                    example: /Public/somefolder/some.file.sas
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                filePath:
+                                    type: string
+                            required:
+                                - file
+    /SASjsApi/drive/folder:
+        get:
+            operationId: GetFolder
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    folders: {items: {type: string}, type: array}
+                                    files: {items: {type: string}, type: array}
+                                required:
+                                    - folders
+                                    - files
+                                type: object
+                '400':
+                    description: 'Can''t get folder outside drive'
+                '404':
+                    description: 'Folder doesn''t exist'
+            description: "Returns the names of the files and sub-folders directly inside a folder of\nSASjs Drive. With no `_folderPath`, the drive root is listed.\n\nA `400` is returned for a path outside the drive and a `404` when the\nfolder does not exist."
+            summary: 'List a folder in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of the folder within the drive'
+                    in: query
+                    name: _folderPath
+                    required: false
+                    schema:
+                        type: string
+                    example: /Public/somefolder
+        delete:
+            operationId: DeleteFolder
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    status: {type: string}
+                                required:
+                                    - status
+                                type: object
+                '400':
+                    description: 'Can''t delete folder outside drive'
+                '404':
+                    description: 'Folder doesn''t exist'
+            description: "Deletes a folder, and everything inside it, from SASjs Drive.\n\nA `400` is returned for a path outside the drive and a `404` when the\nfolder does not exist."
+            summary: 'Delete a folder from SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of the folder within the drive'
+                    in: query
+                    name: _folderPath
+                    required: true
+                    schema:
+                        type: string
+                    example: /Public/somefolder/
+        post:
+            operationId: AddFolder
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '400':
+                    description: 'Can''t put folder outside drive'
+                '409':
+                    description: 'Folder already exists. The body is that message as plain text.'
+            description: "Creates an empty folder in SASjs Drive, including any missing parent\nfolders.\n\nA `400` is returned for a path outside the drive and a `409` when the folder\nalready exists."
+            summary: 'Create a folder in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddFolderPayload'
+    /SASjsApi/drive/rename:
+        post:
+            operationId: Rename
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FileFolderResponse'
+                            examples:
+                                'Example 1':
+                                    value: {status: success}
+                '400':
+                    description: 'Can''t rename outside drive'
+                '404':
+                    description: 'No file/folder found for provided path'
+                '409':
+                    description: 'Something already exists at the new path. The body is that message as plain text.'
+            description: "Moves a file or folder within SASjs Drive to a new path.\n\nBoth `oldPath` and `newPath` must be inside the drive: a `400` is returned\nwhen either of them climbs out of it. A `404` is returned when nothing\nexists at `oldPath`, and a `409` when something already exists at `newPath`.\nA file may not be renamed into a name with a blocked extension, and a\nfolder may not be moved inside itself: both answer `400`."
+            summary: 'Rename or move a file or folder in SASjs Drive'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RenamePayload'
+    /SASjsApi/drive/filetree:
+        get:
+            operationId: GetFileTree
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFileTreeResponse'
+            description: "Returns the folder-and-file tree of SASjs Drive, for rendering the drive\nbrowser.\n\nWith no `_folderPath` the whole tree is returned, which is kept for callers\nthat want to hash or mirror the drive in one request. With `_folderPath`\nthe response holds that folder and its IMMEDIATE children only, which is\nwhat the Studio browser uses: it loads a level when a folder is expanded\nrather than walking the entire drive on every page load. Each child folder\ncarries `hasChildren` so the caller can render an expander before\nrequesting that folder's contents."
+            summary: 'Get the SASjs Drive file tree, or one folder of it'
+            tags:
+                - Drive
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: "Drive-relative folder path, e.g. /Public/services. An\nempty value means the drive root; omit the parameter entirely for the whole\ntree."
+                    in: query
+                    name: _folderPath
+                    required: false
+                    schema:
+                        type: string
+    /SASjsApi/user:
+        get:
+            operationId: GetAllUsers
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/UserResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{uid: userIdString, username: johnusername, displayName: John, isAdmin: false}, {uid: anotherUserIdString, username: starkusername, displayName: Stark, isAdmin: true}]
+            description: "Returns every user with their id, username, display name and administrator\nflag.\n\nAvailable to any authenticated user."
+            summary: 'List all users'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreateUser
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                '401':
+                    description: 'Admin account required'
+                '409':
+                    description: 'Username already exists.'
+            description: "Creates a user from a display name, username, password and the `isAdmin`\nand `isActive` flags.\n\nA `409` is returned when the username already exists. Admin only. The new\nuser is added to the all-users group."
+            summary: 'Create a user'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserPayload'
+    '/SASjsApi/user/by/username/{username}':
+        get:
+            operationId: GetUserByUsername
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                '401':
+                    description: Unauthorized
+                '404':
+                    description: 'User is not found.'
+            description: "Returns a user's properties - display name, username, active and admin\nflags and group memberships - looked up by username.\n\nThe `autoExec` code is returned only to an administrator or to the user\nthemselves; for anyone else it is omitted."
+            summary: 'Get a user by username'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The User''s username'
+                    in: path
+                    name: username
+                    required: true
+                    schema:
+                        type: string
+                    example: johnSnow01
+        patch:
+            operationId: UpdateUserByUsername
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Unable to find user with <username>'
+                '405':
+                    description: 'Can not update username of user that is created by an external auth provider. / Can not update display name of user that is created by an external auth provider.'
+                '409':
+                    description: 'Username already exists.'
+            description: "Updates a user's display name, username, password and `isAdmin` and\n`isActive` flags, looked up by username.\n\nCan be performed by an administrator or by the user themselves. A `409` is\nreturned when the new username is already taken, and a `405` when changing\nthe username or display name of an account managed by an external auth\nprovider."
+            summary: 'Update a user by username'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The User''s username'
+                    in: path
+                    name: username
+                    required: true
+                    schema:
+                        type: string
+                    example: johnSnow01
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserPayload'
+        delete:
+            operationId: DeleteUserByUsername
+            responses:
+                '200':
+                    description: 'Account Deleted!'
+                '401':
+                    description: 'Admin account required, or invalid password'
+                '404':
+                    description: 'User is not found.'
+            description: "Deletes a user, looked up by username.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match. A supplied password must be at least six characters - the\nminimum an account's own password has - and a shorter one is a `400` before\nit is compared."
+            summary: 'Delete a user by username'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The User''s username'
+                    in: path
+                    name: username
+                    required: true
+                    schema:
+                        type: string
+                    example: johnSnow01
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                password:
+                                    type: string
+                            type: object
+    '/SASjsApi/user/{uid}':
+        get:
+            operationId: GetUser
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                '401':
+                    description: Unauthorized
+                '404':
+                    description: 'User is not found.'
+            description: "Returns a user's properties - display name, username, active and admin\nflags and group memberships - looked up by identifier.\n\nThe `autoExec` code is returned only to an administrator or to the user\nthemselves; for anyone else it is omitted."
+            summary: 'Get a user by id'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 507f1f77bcf86cd799439011
+        patch:
+            operationId: UpdateUser
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: userIdString, displayName: 'John Snow', username: johnSnow01, isAdmin: false, isActive: true}
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Unable to find user with <id>'
+                '405':
+                    description: 'Can not update username of user that is created by an external auth provider. / Can not update display name of user that is created by an external auth provider.'
+                '409':
+                    description: 'Username already exists.'
+            description: "Updates a user's display name, username, password and `isAdmin` and\n`isActive` flags, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves. A `409` is\nreturned when the new username is already taken, and a `405` when changing\nthe username or display name of an account managed by an external auth\nprovider."
+            summary: 'Update a user by id'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 507f1f77bcf86cd799439011
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserPayload'
+        delete:
+            operationId: DeleteUser
+            responses:
+                '200':
+                    description: 'Account Deleted!'
+                '401':
+                    description: 'Admin account required, or invalid password'
+                '404':
+                    description: 'User is not found.'
+            description: "Deletes a user, looked up by identifier.\n\nCan be performed by an administrator or by the user themselves; anyone else\nmust supply the account password in the body, and a `401` is returned when\nit does not match. A supplied password must be at least six characters - the\nminimum an account's own password has - and a shorter one is a `400` before\nit is compared."
+            summary: 'Delete a user by id'
+            tags:
+                - User
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 507f1f77bcf86cd799439011
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                password:
+                                    type: string
+                            type: object
+    /SASjsApi/group:
+        get:
+            operationId: GetAllGroups
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/GroupResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users'}]
+            description: "Returns every group with its name and description.\n\nAvailable to any authenticated user."
+            summary: 'List all groups'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreateGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                '401':
+                    description: 'Admin account required'
+                '409':
+                    description: 'Group name already exists.'
+            description: "Creates a new group. A `409` is returned when a group of that name already\nexists. Admin only."
+            summary: 'Create a group'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GroupPayload'
+    '/SASjsApi/group/by/groupname/{name}':
+        get:
+            operationId: GetGroupByName
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                '404':
+                    description: 'Group not found.'
+            description: "Returns a group and its members, looked up by name.\n\nAvailable to any authenticated user. A `404` is returned when no group has\nthat name."
+            summary: 'Get a group by name'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s name'
+                    in: path
+                    name: name
+                    required: true
+                    schema:
+                        type: string
+                    example: dcgroup
+    '/SASjsApi/group/{uid}':
+        get:
+            operationId: GetGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                '404':
+                    description: 'Group not found.'
+            description: "Returns a group and its members, looked up by identifier.\n\nAvailable to any authenticated user. A `404` is returned when no group has\nthat identifier."
+            summary: 'Get a group by id'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 12ByteString
+        delete:
+            operationId: DeleteGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteResult'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Group not found.'
+            description: "Deletes a group. Admin only. A `404` is returned when no group has that\nidentifier."
+            summary: 'Delete a group'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 12ByteString
+    '/SASjsApi/group/{groupUid}/{userUid}':
+        post:
+            operationId: AddUserToGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                '400':
+                    description: 'Can''t add/remove user to ''public'' group.'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Group not found. / User not found.'
+                '405':
+                    description: 'Can''t add/remove user to group created by external auth provider.'
+            description: "Adds a user to a group and returns the updated group.\n\nAdmin only. Refused with `400` for the reserved `public` group and with\n`405` when the group or the user is managed by an external auth provider."
+            summary: 'Add a user to a group'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupUid
+                    required: true
+                    schema:
+                        type: string
+                    example: 12ByteString
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userUid
+                    required: true
+                    schema:
+                        type: string
+                    example: 12ByteString
+        delete:
+            operationId: RemoveUserFromGroup
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: groupIdString, name: DCGroup, description: 'This group represents Data Controller Users', isActive: true, users: []}
+                '400':
+                    description: 'Can''t add/remove user to ''public'' group.'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Group not found. / User not found.'
+                '405':
+                    description: 'Can''t add/remove user to group created by external auth provider.'
+            description: "Removes a user from a group and returns the updated group.\n\nAdmin only. Refused with `400` for the reserved `public` group and with\n`405` when the group or the user is managed by an external auth provider."
+            summary: 'Remove a user from a group'
+            tags:
+                - Group
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The group''s identifier'
+                    in: path
+                    name: groupUid
+                    required: true
+                    schema:
+                        type: string
+                    example: 12ByteString
+                -
+                    description: 'The user''s identifier'
+                    in: path
+                    name: userUid
+                    required: true
+                    schema:
+                        type: string
+                    example: 12ByteString
+    /SASjsApi/info:
+        get:
+            operationId: Info
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InfoResponse'
+                            examples:
+                                'Example 1':
+                                    value: {mode: desktop, cors: enable, httpPort: 5000, httpsPort: 443, runTimes: [sas, js], authProviders: [], oidcProviderName: 'OpenID Connect', localLoginEnabled: true, version: 'v3.2.2 (4a26a3d)'}
+            description: "Returns public information about this server instance: the mode it runs in\n(`server` or `desktop`), its CORS setting, the ports its listeners serve on, the\navailable runtimes, the configured external authentication providers,\nwhether password sign-in for local accounts is enabled, and the release\nthat produced the running build.\n\nThis endpoint requires no authentication: the login screen reads it to\ndecide which sign-in methods to offer."
+            summary: 'Get public server information'
+            tags:
+                - Info
+            security: []
+            parameters: []
+    /SASjsApi/info/authorizedRoutes:
+        get:
+            operationId: AuthorizedRoutes
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizedRoutesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {paths: [/AppStream, /SASjsApi/stp/execute]}
+                '401':
+                    description: 'Administrator access is required'
+            description: "Returns every route to which a permission rule can be applied. The\npermissions dialog in the web interface uses this list to populate its\nchoices.\n\nThe inventory is for the administration dialog, and it is **admin-only**:\nthe routes a caller may reach are reconnaissance before sign-in, so the\nmiddleware refuses anyone else with a `401` before this method runs."
+            summary: 'List the routes that accept permissions'
+            tags:
+                - Info
+            security: []
+            parameters: []
+    /SASjsApi/info/myAuthorizedRoutes:
+        get:
+            operationId: MyAuthorizedRoutes
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizedRoutesResponse'
+                            examples:
+                                'Example 1':
+                                    value: {paths: [/AppStream, /SASjsApi/code/execute]}
+            description: "Returns the routes this caller may use, taken from the routes that accept\npermission rules. The web interface reads it to hide the parts of itself\nthe caller cannot use - the Studio tab, for example - rather than offering\nan entry that only leads to a refusal.\n\nAdministrators hold every route, because the permission rules do not apply\nto them, and a public route is included for everyone. A `404` is returned\nwhen the caller has no account."
+            summary: 'List the routes this caller may use'
+            tags:
+                - Info
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    /SASjsApi/permission:
+        get:
+            operationId: GetAllPermissions
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: '#/components/schemas/PermissionDetailsResponse'
+                                type: array
+                            examples:
+                                'Example 1':
+                                    value: [{uid: permissionId1String, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: user1-id}, {uid: permissionId2String, path: /SASjsApi/code/execute, type: Route, setting: Grant, group: group1-id}]
+                '401':
+                    description: 'Admin account required, or no grant on the route'
+                '404':
+                    description: 'User not found.'
+            description: "Returns the permission rules that apply to the authenticated user: the\nrules assigned to them directly and the rules assigned to any group they\nbelong to. An administrator receives every rule."
+            summary: 'List the permission rules for the current user'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+        post:
+            operationId: CreatePermission
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PermissionDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: userIdString}
+                '400':
+                    description: 'Can not add permission for admin user. / Invalid principal type. Valid types are user or group.'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'User not found. / Group not found.'
+                '409':
+                    description: 'Permission already exists with provided Path, Type and User. / Permission already exists with provided Path, Type and Group.'
+            description: "Creates a permission rule granting or denying access to a route for a user\nor a group.\n\n`principalType` selects a user or a group and `principalId` is that\nprincipal's identifier. A `409` is returned when an identical rule already\nexists, and a `400` when the principal is an administrator. Admin only."
+            summary: 'Create a permission rule'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RegisterPermissionPayload'
+    '/SASjsApi/permission/{uid}':
+        patch:
+            operationId: UpdatePermission
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PermissionDetailsResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: permissionIdString, path: /SASjsApi/code/execute, type: Route, setting: Grant, user: userIdString}
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Permission not found.'
+            description: "Changes whether an existing permission rule grants or denies access.\n\nAdmin only. A `404` is returned when no rule has that identifier."
+            summary: 'Update a permission rule'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The permission''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 507f1f77bcf86cd799439011
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePermissionPayload'
+        delete:
+            operationId: DeletePermission
+            responses:
+                '200':
+                    description: 'Permission Deleted!'
+                '401':
+                    description: 'Admin account required'
+                '404':
+                    description: 'Permission not found.'
+            description: "Deletes a permission rule. Admin only. A `404` is returned when no rule has\nthat identifier."
+            summary: 'Delete a permission rule'
+            tags:
+                - Permission
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'The permission''s identifier'
+                    in: path
+                    name: uid
+                    required: true
+                    schema:
+                        type: string
+                    example: 507f1f77bcf86cd799439011
+    /SASjsApi/session:
+        get:
+            operationId: Session
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SessionResponse'
+                            examples:
+                                'Example 1':
+                                    value: {uid: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}
+                '401':
+                    description: 'No valid access token or session was supplied'
+            description: "Returns the properties of the authenticated user as held in the session:\ntheir id, username, display name, whether they are an administrator, and\nwhether they still have to change their password."
+            summary: 'Get the current session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters: []
+    '/SASjsApi/session/{sessionId}/state':
+        get:
+            operationId: SessionState
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SessionStateResponse'
+                            examples:
+                                'Example 1':
+                                    value: {state: completed}
+                '401':
+                    description: 'No valid access token or session was supplied'
+                '404':
+                    description: 'Session with the given ID was not found.'
+            description: "Returns the current state of a session created by `POST /SASjsApi/code/trigger`\nor `POST /SASjsApi/stp/trigger`.\n\nThe state is one of `initialising`, `pending`, `running`, `completed` or\n`failed`. A `404` is returned when no session has that id.\n\nPolling is implemented for single-server deployments only; load-balanced and\ngrid topologies are not yet supported. If your site requires this, please\ncontact SASjs Support."
+            summary: 'Get the state of a session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    '/SASjsApi/session/{sessionId}':
+        get:
+            operationId: SessionDetail
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SessionSummary'
+                            examples:
+                                'Example 1':
+                                    value: {sessionId: 20241028074744-54132-1730101664824, state: completed, pid: 12345, creationTimeStamp: '1730101664824', deathTimeStamp: '1730102564823'}
+                '401':
+                    description: 'No valid access token or session was supplied'
+                '404':
+                    description: 'Session with the given ID was not found.'
+            description: "Returns the session a triggered program is running in: its state, the OS\nprocess id while it runs, when it was created and when it is due to be\ndestroyed, why it failed when that applies, and the retention window the\ncaller asked for.\n\nA `404` is returned when no session has that id, which is also what an\nexpired session answers: the folder is gone and nothing can be read."
+            summary: 'Get a triggered session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    '/SASjsApi/session/{sessionId}/log':
+        get:
+            operationId: SessionLog
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        text/plain:
+                            schema:
+                                type: string
+                '401':
+                    description: 'No valid access token or session was supplied'
+                '404':
+                    description: 'Session with the given ID was not found.'
+            description: "Returns the log of a triggered program as plain text.\n\nThe same log the synchronous execute endpoints return in their response\nbody, which until now was the only way to obtain it: a caller that triggers\na program and polls for its state had no way to read what the program\nprinted.\n\nAn empty body means the run has not written anything yet. A `404` means the\nsession is unknown or has been destroyed, so the log is no longer available."
+            summary: 'Get the log of a triggered session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    '/SASjsApi/session/{sessionId}/output':
+        get:
+            operationId: SessionOutput
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/octet-stream:
+                            schema:
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
+                '401':
+                    description: 'No valid access token or session was supplied'
+                '404':
+                    description: 'Session with the given ID was not found.'
+            description: "Returns the `_webout` of a triggered program, with the headers the program\nset - the same bytes the synchronous execute endpoints answer with, so a\ntriggered run can be consumed exactly like a synchronous one.\n\nThe content type comes from the session's `stpsrv_header.txt` and is passed\nthrough the same header validation as the synchronous path, so a program\ncannot inject response headers through its own output.\n\nA `404` means the session is unknown or has been destroyed. An empty body\nmeans the program wrote no output."
+            summary: 'Get the output of a triggered session'
+            tags:
+                - Session
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: path
+                    name: sessionId
+                    required: true
+                    schema:
+                        type: string
+    /SASjsApi/stp/execute:
+        get:
+            operationId: ExecuteGetRequest
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
+                '400':
+                    description: 'Invalid request: the query parameters are invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
+            description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter. Any other query\nparameter is passed to the program as a session variable, and files may be\nuploaded as form fields. When `_debug` is set, the session log is appended\nto the response body. See https://server.sasjs.io/storedprograms."
+            summary: 'Execute a stored program'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of Stored Program in SASjs Drive.'
+                    in: query
+                    name: _program
+                    required: true
+                    schema:
+                        type: string
+                    example: /Projects/myApp/some/program
+                -
+                    description: 'Optional query param for setting debug mode (returns the session log in the response body).'
+                    in: query
+                    name: _debug
+                    required: false
+                    schema:
+                        format: double
+                        type: number
+                    example: 131
+        post:
+            operationId: ExecutePostRequest
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                anyOf:
+                                    - {type: string}
+                                    - {type: string, format: byte}
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
+            description: "Executes a stored program and returns its `_webout` content.\n\nThe program is identified by the `_program` query parameter or by\n`_program` in the body. Other body fields and query parameters are passed to\nthe program as session variables, and files may be uploaded as form fields.\nSee https://server.sasjs.io/storedprograms."
+            summary: 'Execute a stored program'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of code in SASjs Drive'
+                    in: query
+                    name: _program
+                    required: false
+                    schema:
+                        type: string
+                    example: /Projects/myApp/some/program
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExecutePostRequestPayload'
+    /SASjsApi/stp/trigger:
+        post:
+            operationId: TriggerProgram
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TriggerProgramResponse'
+                '400':
+                    description: 'Invalid request: the payload is invalid, or the program could not be run'
+                '401':
+                    description: Unauthorized
+            description: "Starts a stored program and returns immediately, without waiting for it to\nfinish.\n\nThe response carries the `sessionId` of the session running the program.\nPoll `GET /SASjsApi/session/{sessionId}/state` for its state, or set\n`expiresAfterMins` to have the session destroyed that many minutes after it\ncompletes."
+            summary: 'Trigger a stored program and return a session ID'
+            tags:
+                - STP
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    description: 'Location of code in SASjs Drive.'
+                    in: query
+                    name: _program
+                    required: true
+                    schema:
+                        type: string
+                    example: /Projects/myApp/some/program
+                -
+                    description: 'Optional query param for setting debug mode.'
+                    in: query
+                    name: _debug
+                    required: false
+                    schema:
+                        format: double
+                        type: number
+                    example: 131
+                -
+                    description: 'Optional query param for setting amount of minutes after the completion of the program when the session must be destroyed.'
+                    in: query
+                    name: expiresAfterMins
+                    required: false
+                    schema:
+                        format: double
+                        type: number
+                    example: 15
+    /:
+        get:
+            operationId: Home
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        text/html:
+                            schema:
+                                type: string
+            description: "Serves the web interface's `index.html`, with the current bundle version\nappended so a returning browser loads the updated bundle."
+            summary: 'Serve the web interface'
+            tags:
+                - Web
+            security: []
+            parameters: []
+    /SASLogon/login:
+        post:
+            operationId: Login
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LoginResponse'
+                            examples:
+                                'Example 1':
+                                    value: {loggedIn: true, user: {uid: userIdString, username: johnusername, displayName: John, isAdmin: false, needsToUpdatePassword: false}}
+                '400':
+                    description: 'The request body is missing `username` or `password`'
+                '401':
+                    description: 'The credentials are not valid, or password sign-in is disabled for local accounts'
+                '429':
+                    description: 'Too many failed attempts for this account'
+                    headers:
+                        Retry-After:
+                            description: Whole seconds until the account may attempt a sign-in again
+                            schema:
+                                type: integer
+                '500':
+                    description: 'An unexpected error occurred while signing in'
+            description: "Signs a user in with a username and password and starts a session.\n\nCredentials are checked against the local database or, for an account that\nauthenticates through LDAP, against the directory. A `401` is returned for\nunknown credentials, and also when password sign-in for local accounts is\ndisabled on the server.\n\nA `429` - the account is locked after repeated failures - carries a\n`Retry-After` header in seconds, so a client can show a countdown without\nparsing the message."
+            summary: 'Sign in with a username and password'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginPayload'
+    /SASLogon/authorize:
+        post:
+            operationId: Authorize
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthorizeResponse'
+                            examples:
+                                'Example 1':
+                                    value: {code: someRandomCryptoString}
+                '400':
+                    description: 'The request body is missing `clientId`, or the CSRF token is missing or invalid'
+                '401':
+                    description: 'No signed-in session'
+                '403':
+                    description: 'The client id is unknown. This route runs under a signed-in session, so the caller is authenticated and an unknown client is refused as forbidden; the unauthenticated `POST /SASjsApi/auth/token` answers `401` for the same condition'
+            description: "Issues a short-lived, single-use authorization code for the signed-in user\nand the given client.\n\nThe code is exchanged for tokens at `POST /SASjsApi/auth/token`. A session\nis required; an unknown client id is rejected."
+            summary: 'Issue an authorization code'
+            tags:
+                - Web
+            security: []
+            parameters: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthorizePayload'
+    /SASLogon/logout:
+        get:
+            operationId: Logout
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema: {}
+                '500':
+                    description: 'The session store failed to replace the session'
+            description: "Ends the session held in the request cookie.\n\nThe session is REPLACED rather than destroyed: the browser keeps its\ncookies across a logout, so the route hands back a CSRF token bound to the\nnew session (see routes/web/web.ts). Destroying instead leaves the old\ntoken in place, bound to a session the server no longer has, and the next\nlogin is refused with `Invalid CSRF token!` (sasjs/server#304)."
+            summary: 'Sign out'
+            tags:
+                - Web
+            security: []
+            parameters: []
+servers:
+    -
+        url: /
+tags:
+    -
+        name: Admin
+        description: 'Operational data for administrators: logs, disk usage, versions and metrics'
+    -
+        name: Auth
+        description: 'Sign-in, token exchange and password management'
+    -
+        name: 'Auth Config'
+        description: 'Configuration of external authentication providers'
+    -
+        name: Client
+        description: 'OAuth clients that SASjs applications authenticate with'
+    -
+        name: Code
+        description: 'Execution of code in the supported runtimes (SAS, JS, Python, R)'
+    -
+        name: Drive
+        description: 'Files and folders in SASjs Drive'
+    -
+        name: Group
+        description: 'Groups and their memberships'
+    -
+        name: Info
+        description: 'Public server information'
+    -
+        name: Permission
+        description: 'Permission rules that grant or deny access to routes'
+    -
+        name: Session
+        description: 'Session information and the state of triggered jobs'
+    -
+        name: STP
+        description: 'Execution of Stored Programs held in SASjs Drive'
+    -
+        name: User
+        description: 'User accounts'
+    -
+        name: Web
+        description: 'Browser-facing endpoints that serve the web interface and its sign-in flow'

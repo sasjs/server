@@ -181,6 +181,12 @@ export default setProcessVariables().then(async () => {
   // index.html needs to be injected with some js script.
   app.use(express.static(getWebBuildFolder()))
 
+  // The documentation site, built from docs/ into the web build and served
+  // beside the interface: a static site of its own, public like the build it
+  // sits in. Mounted here, before the shell fallback below, so its paths never
+  // reach the SPA's router.
+  app.use('/docs', express.static(path.join(getWebBuildFolder(), 'docs')))
+
   // The interface's own screens are real paths, so a deep link or a refresh -
   // /SASjsStudio, /SASjsSettings - arrives here with no file to serve. Anything
   // that reaches this point is not an API route, not an AppStream app and not a
@@ -200,7 +206,7 @@ export default setProcessVariables().then(async () => {
     // express.static answers before this runs, so the prefix here ends in a
     // slash: the app's own screen at /SASjsApiDocs is a route like
     // /SASjsStudio, while every path below the API mount stays a 404.
-    const reserved = ['/sasjsapi/', '/appstream', '/saslogon']
+    const reserved = ['/sasjsapi/', '/appstream', '/saslogon', '/docs/']
     const requestPath = req.path.toLowerCase()
     if (reserved.some((prefix) => requestPath.startsWith(prefix)))
       return res.status(404).send('Not Found')

@@ -25,3 +25,8 @@ api/public/SASjsApi/favicon-32x32.png
 api/public/SASjsApi/oauth2-redirect.html
 api/public/SASjsApi/swagger-ui-LICENSE
 api/public/SASjsApi/swagger-ui-NOTICE
+
+# The docs toolchain, installed locally by "npm run docs:build"
+.venv-docs/
+# The public site build (the copy inside the build lives in web/build)
+site-docs/

@@ -1,0 +1,137 @@
+site_name: SASjs Server
+site_url: https://server.sasjs.io
+site_description: The open-source NodeJS wrapper around the SAS binary - a REST API, SASjs Drive, Stored Programs and App Stream, for Viya, SAS 9 and desktop SAS.
+
+# The pages live in pages/ so the rest of this tree - theme, hooks, scripts,
+# requirements - sits beside them rather than inside the published source.
+# A build writes straight into the interface's web build, which is where the
+# server serves /docs from, so the embedded copy is always the documentation of
+# the build that carries it.
+docs_dir: pages
+site_dir: ../web/build/docs
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - User Guide:
+      - App Stream: apps.md
+      - SASjs Studio: studio.md
+  - Developer Guide:
+      - API: api.md
+      - Sessions: sessions.md
+      - Stored Programs: storedprograms.md
+      - Testing VA embedding: testing-va-embed.md
+  - Admin Guide:
+      - Deployment: deployment.md
+      - Authentication: auth.md
+      - Authorisation: permissions.md
+      - Settings: settings.md
+  - FAQ: faq.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - meta
+  - tables
+  - toc:
+      permalink: true
+      title: On this page
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+hooks:
+  - hooks/html_fixes.py
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  # Sizes the Swagger UI frame on the API page to its content - the plugin's
+  # frame clips anything below the fixed height it is given.
+  - javascripts/api-frame.js
+
+plugins:
+  - search
+  # Renders docs/pages/api.md from docs/pages/swagger.yaml. The spec is a copy of the one
+  # the server serves at /swagger.yaml, and docs/scripts/check-server-docs.mjs fails
+  # the build when the copy has drifted from the release it documents.
+  - swagger-ui-tag
+
+# Repository
+# No repo_url: Material fetches api.github.com for the star count on every page,
+# unauthenticated, which rate-limits and logs a console error. The repository is
+# linked from the footer social icons, from the pages themselves, and from the
+# header link that hooks/html_fixes.py adds.
+
+theme:
+  name: material
+  custom_dir: "theme"
+  language: en
+  logo: img/logo/favicon/32.svg
+  favicon: img/logo/favicon/32.ico
+  # Fonts are self-hosted - see docs/stylesheets/extra.css and docs/assets/fonts.
+  font: false
+  # Black and yellow is the SASjs mark, drawn as a yellow S on a black tile, so
+  # it reads on either banner. The banner follows the scheme: white in light,
+  # near-black in dark.
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.tooltips
+    - toc.follow
+
+# Social links are top level: `extra.social`, not `theme.extra.social`. Nested
+# under theme they are silently ignored and the footer icons never render.
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sasjs/server
+      name: sasjs/server on GitHub
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/sasjs
+      name: SASjs on LinkedIn
+
+
+# A page link or an anchor that does not resolve is reported as a warning,
+# and `mkdocs build --strict` in CI turns a warning into a failure - so a dead
+# link stops the build instead of shipping. Absolute links (the `/auth` form
+# these pages use) are informational: they resolve on the live domain.
+validation:
+  links:
+    not_found: warn
+    absolute_links: info
+    unrecognized_links: info
+  anchors: warn

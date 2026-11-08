@@ -1,0 +1,7 @@
+# Toolchain for the server.sasjs.io build, pinned so a deploy is reproducible.
+# Install locally with:  python3 -m venv .venv-docs && .venv-docs/bin/pip install -r docs/requirements.txt
+mkdocs==1.6.1
+mkdocs-material==9.8.0
+# Renders docs/pages/api.md from docs/pages/swagger.yaml, bundling Swagger UI's assets in
+# the package - the page makes no request to a CDN.
+mkdocs-swagger-ui-tag==0.6.11

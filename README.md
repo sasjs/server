@@ -507,6 +507,24 @@ A stop with nothing in flight is far quicker than the ceiling; measure one befor
 `GET /SASjsApi/info` reports the release that produced the running build in `version`, as `v3.2.2 (4a26a3d)` - the tag and the commit - and the interface stamps that value in the corner of every screen, the login screen included, so a screenshot names the build it came from.
 The value comes from `buildInfo.generated.ts`, which the build writes from the release tag (`SASJS_SERVER_VERSION` when the release workflow sets it) or from `git describe`; a build made by hand reports `dev`.
 
+## Documentation
+
+The documentation site - the pages published at <https://server.sasjs.io> - lives in `docs/` in this repository and is built with MkDocs Material:
+
+- `docs/pages/` holds the pages, and `docs/mkdocs.yml` the navigation, theme and plugins.
+- `docs/requirements.txt` pins the toolchain. It is Python, so it is installed separately from the interface's dependencies.
+- The build copies the site into the web build, at `web/build/docs`, which the server serves at `/docs` and the interface's **Docs** tab frames. The copy therefore describes the build that carries it - the pages and the interface are never a release apart.
+- `npm run docs:build` builds the site, `npm run docs:serve` serves it with live reload at <http://127.0.0.1:8000>, and `npm run docs:check` runs the two content checks. The scripts use `.venv-docs/bin/python` when that venv exists and the ambient `python3` otherwise, so activating it is optional.
+
+A development build does not need any of that: the Docs tab says the build carries no documentation and links to the published site. To see the pages while working on them, install the toolchain once (`python3 -m venv .venv-docs && .venv-docs/bin/pip install -r docs/requirements.txt`) and run `npm run docs:serve` - the script picks up that venv by itself.
+
+Two checks run in CI, both against this checkout rather than a clone:
+
+- `docs/scripts/check-server-docs.mjs` fails when a page is missing from the nav, an endpoint or setting it names is not in the code, or `docs/pages/swagger.yaml` differs from `api/public/swagger.yaml`.
+- `docs/scripts/check-external-calls.mjs` fails when the built site fetches anything from another origin - the pages are read offline and on air-gapped hosts.
+
+A change that touches only `docs/` publishes the site and does not cut a release.
+
 ## Initial Credentials
 
 The following credentials can be used for the initial connection to SASjs/server. It is highly recommended to change these on first use.

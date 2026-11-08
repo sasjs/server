@@ -1,0 +1,52 @@
+{# Social and search metadata.
+
+   LinkedIn's post inspector, Slack, X and Google all want the same things: an
+   absolute og:image at least 1200x627, an absolute og:url, and a title and
+   description that say what the page is. Everything below is derived from the
+   page and mkdocs.yml, so a page only needs to override `description` (and,
+   rarely, `og_image`) in its front matter.
+
+   The card is 2400x1260 - twice the 1200x630 that LinkedIn, Slack and X crop
+   to - and is rendered from docs/img/og-card.svg. The file name carries the
+   size so that a change to the artwork is a new URL, which is what makes the
+   crawlers refetch instead of serving their cached copy. #}
+{% extends "base.html" %}
+
+{% block extrahead %}
+{% set meta = page.meta if page and page.meta else {} %}
+{% set site = config.site_name %}
+{% set page_title = page.title if page and page.title else site %}
+{% set og_title = meta.og_title if meta.og_title else (site if page_title == site else page_title ~ " - " ~ site) %}
+{% set og_desc = meta.description if meta.description else config.site_description %}
+{% set og_image = meta.og_image if meta.og_image else 'img/og-card-2400.png' %}
+{% if not og_image.startswith('http') %}
+{% set og_image = config.site_url ~ og_image.lstrip('/') %}
+{% endif %}
+{% set canonical = page.canonical_url if page and page.canonical_url else config.site_url %}
+
+<!-- The description and canonical link are emitted by Material itself, from the
+     page's front matter and `site_url`. Emitting them here as well duplicates
+     both tags. -->
+
+<!-- Open Graph: LinkedIn, Slack, Discord, Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ site }}">
+<meta property="og:locale" content="en_GB">
+<meta property="og:title" content="{{ og_title }}">
+<meta property="og:description" content="{{ og_desc }}">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:image" content="{{ og_image }}">
+<meta property="og:image:type" content="image/png">
+{% if not meta.og_image %}
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1260">
+{% endif %}
+<meta property="og:image:alt" content="{{ site }} - a REST API, a studio and an app portal for SAS">
+
+<!-- X / Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ og_title }}">
+<meta name="twitter:description" content="{{ og_desc }}">
+<meta name="twitter:image" content="{{ og_image }}">
+<meta name="twitter:image:alt" content="{{ site }} - a REST API, a studio and an app portal for SAS">
+{% endblock %}
