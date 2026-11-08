@@ -119,9 +119,12 @@ describe('API screen with a policy that refuses the frame', () => {
 
     // The pane explains itself instead of drawing an empty rectangle, and
     // offers the page the policy does allow - a new tab.
-    await page.waitForSelector('text=The API documentation cannot be shown here', {
-      timeout: 30000
-    })
+    await page.waitForSelector(
+      'text=The API documentation cannot be shown here',
+      {
+        timeout: 30000
+      }
+    )
 
     const pane = page.locator('main, body')
     const text = await pane.first().innerText()

@@ -46,6 +46,8 @@ const ApiDocs = () => {
   const [colorMode] = useColorMode()
   const [blocked, setBlocked] = useState(false)
   const frameRef = useRef<HTMLIFrameElement>(null)
+  /** Set by the frame's own load event; read by the refusal backstop. */
+  const loadedRef = useRef(false)
 
   /**
    * Swagger UI carries both schemes and switches on `html.dark-mode`, which its
@@ -55,6 +57,10 @@ const ApiDocs = () => {
    * that serves the docs from elsewhere) is left as the API served it.
    */
   const applyColorMode = useCallback(() => {
+    // The frame loaded, whether or not its document is readable from here: a
+    // cross-origin deployment's is not, and that is not a refusal either.
+    loadedRef.current = true
+
     const doc = frameRef.current?.contentDocument
     if (!doc) return
 
@@ -70,13 +76,12 @@ const ApiDocs = () => {
 
     document.addEventListener('securitypolicyviolation', onViolation)
 
-    // A refusal that raises no event leaves the frame on about:blank, and a
-    // frame that never navigated has no document body to read.
+    // The frame reports its own load, so the timeout can tell a refusal from a
+    // page that is merely slow: both sit on about:blank until they commit, and
+    // calling a slow proxy's first request a policy refusal would send an
+    // operator looking for a directive that is not the problem.
     const timer = window.setTimeout(() => {
-      const frame = frameRef.current
-      const doc = frame?.contentDocument
-
-      if (!frame || !doc || doc.location?.href === 'about:blank') setBlocked(true)
+      if (!loadedRef.current) setBlocked(true)
     }, FRAME_TIMEOUT_MS)
 
     return () => {
@@ -134,8 +139,8 @@ const ApiDocs = () => {
             itself is served normally - it opens in a new tab - and an
             administrator can allow it by adding
             <code> frame-src 'self' </code>
-            to the policy, or by removing HELMET_CSP_CONFIG_PATH so the
-            server's own defaults apply.
+            to the policy, or by removing HELMET_CSP_CONFIG_PATH so the server's
+            own defaults apply.
           </Typography>
           <Button
             variant="outlined"
