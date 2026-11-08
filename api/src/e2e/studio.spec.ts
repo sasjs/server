@@ -180,6 +180,11 @@ describe('Studio in a browser', () => {
     // login: the sign-in handler settles on the home route, discarding the hash.
     await page.waitForSelector('text=STUDIO', { timeout: 30000 })
 
+    // The landing page reads the caller's home folder for its file count, so
+    // the observation starts when Studio opens - this collector is about what
+    // Studio asks for, not about what the dashboard did first.
+    fileTreeRequests.length = 0
+
     // Studio, then the program. The tab is clicked rather than navigating by
     // hash: a same-document hash change does not render the Studio route.
     await page.click('[role="tab"]:has-text("STUDIO")')
