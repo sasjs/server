@@ -788,12 +788,24 @@ components:
                 - deletedCount
             type: object
             additionalProperties: false
+        ModeType:
+            enum:
+                - server
+                - desktop
+            type: string
+        CorsType:
+            enum:
+                - enable
+                - disable
+            type: string
         InfoResponse:
             properties:
                 mode:
-                    type: string
+                    $ref: '#/components/schemas/ModeType'
+                    description: "Which mode this server runs in, from `MODE` - and the two words it may be.\nTyped as the enum rather than `string` so the published document states the\nenum: a client comparing `mode`, or a host validating this answer, is\nentitled to know that the value is one of two rather than any text. The\nvalues are already constrained to these members by `verifyEnvVariables`,\nwhich refuses the process at startup on anything else."
                 cors:
-                    type: string
+                    $ref: '#/components/schemas/CorsType'
+                    description: "The CORS setting, from `CORS` - `enable` or `disable`, as the middleware\nreads it. Same reasoning as `mode`: the value is an enum at runtime, so it\nis stated as one rather than described in prose."
                 httpPort:
                     type: number
                     format: double
@@ -1311,7 +1323,7 @@ paths:
                                 type: object
                             examples:
                                 'Example 1':
-                                    value: {users: 5, groups: 3}
+                                    value: {userCount: 5, groupCount: 3}
             description: "Imports the users and groups of the configured LDAP directory into the\ninternal database and returns the number imported.\n\nUsers and groups that already exist are left untouched. Admin only."
             summary: 'Import users and groups from LDAP'
             tags:
