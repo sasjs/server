@@ -311,6 +311,69 @@ components:
                 - newPassword
             type: object
             additionalProperties: false
+        AuthConfigLdapDetail:
+            description: "The provider blocks this route answers, declared here so the document can state\nthem.\n\ntsoa generates schemas from declarations it can see, and the package's\n`AuthConfigResponse` lives in `@sasjs/api`'s build output - importing the type\nmakes `npm run swagger` fail with `No declarations found for referenced type`.\nSo the host states the shape it promises and the check below keeps it honest:\nif the package's type gains or loses a field, this stops compiling."
+            properties:
+                LDAP_URL:
+                    type: string
+                LDAP_BIND_DN:
+                    type: string
+                LDAP_USERS_BASE_DN:
+                    type: string
+                LDAP_GROUPS_BASE_DN:
+                    type: string
+                LDAP_BIND_PASSWORD_SET:
+                    type: boolean
+                    description: 'Whether a bind password is configured. The value itself is never sent.'
+            required:
+                - LDAP_URL
+                - LDAP_BIND_DN
+                - LDAP_USERS_BASE_DN
+                - LDAP_GROUPS_BASE_DN
+                - LDAP_BIND_PASSWORD_SET
+            type: object
+            additionalProperties: false
+        AuthConfigOidcDetail:
+            properties:
+                OIDC_PROVIDER_NAME:
+                    type: string
+                OIDC_ISSUER_URL:
+                    type: string
+                OIDC_CLIENT_ID:
+                    type: string
+                OIDC_REDIRECT_URI:
+                    type: string
+                OIDC_SCOPE:
+                    type: string
+                OIDC_SIGNING_ALG:
+                    type: string
+                OIDC_USERNAME_CLAIM:
+                    type: string
+                OIDC_JIT_PROVISION:
+                    type: string
+                OIDC_CLIENT_SECRET_SET:
+                    type: boolean
+                    description: 'Whether a client secret is configured. The value itself is never sent.'
+            required:
+                - OIDC_PROVIDER_NAME
+                - OIDC_ISSUER_URL
+                - OIDC_CLIENT_ID
+                - OIDC_REDIRECT_URI
+                - OIDC_SCOPE
+                - OIDC_SIGNING_ALG
+                - OIDC_USERNAME_CLAIM
+                - OIDC_JIT_PROVISION
+                - OIDC_CLIENT_SECRET_SET
+            type: object
+            additionalProperties: false
+        AuthConfigDetail:
+            properties:
+                ldap:
+                    $ref: '#/components/schemas/AuthConfigLdapDetail'
+                oidc:
+                    $ref: '#/components/schemas/AuthConfigOidcDetail'
+            type: object
+            additionalProperties: false
         ClientPayload:
             properties:
                 clientId:
@@ -1318,7 +1381,8 @@ paths:
                     description: Ok
                     content:
                         application/json:
-                            schema: {}
+                            schema:
+                                $ref: '#/components/schemas/AuthConfigDetail'
                             examples:
                                 'Example 1':
                                     value: {ldap: {LDAP_URL: 'ldaps://my.ldap.server:636', LDAP_BIND_DN: 'cn=admin,ou=system,dc=cloudron', LDAP_USERS_BASE_DN: 'ou=users,dc=cloudron', LDAP_GROUPS_BASE_DN: 'ou=groups,dc=cloudron', LDAP_BIND_PASSWORD_SET: true}}
