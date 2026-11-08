@@ -21,7 +21,7 @@
  *                  "Environment Variables" in settings.md is read by the server
  *                  source. A variable the server no longer reads is a setting
  *                  a reader will set and expect to work.
- *   D  spec      - docs/swagger.yaml, which the API page renders, is byte for
+ *   D  spec      - docs/pages/swagger.yaml, which the API page renders, is byte for
  *                  byte the specification the release ships at
  *                  api/public/swagger.yaml. The published reference cannot
  *                  describe a different set of endpoints from the release.
@@ -69,7 +69,10 @@ const readArg = (name, fallback) => {
   return index > -1 ? process.argv[index + 1] : fallback
 }
 
-const requestedRef = readArg('--server-ref', process.env.SERVER_DOCS_REF || 'main')
+const requestedRef = readArg(
+  '--server-ref',
+  process.env.SERVER_DOCS_REF || 'main'
+)
 const docsDir = path.join(repoRoot, readArg('--docs', 'docs/pages'))
 const navFile = path.join(repoRoot, readArg('--nav', 'docs/mkdocs.yml'))
 const specFile = path.join(docsDir, 'swagger.yaml')
@@ -105,7 +108,10 @@ const resolveLatestTag = () => {
         .split('.')
         .map((part) => parseInt(part, 10))
     }))
-    .filter((entry) => entry.version.length === 3 && entry.version.every((n) => !isNaN(n)))
+    .filter(
+      (entry) =>
+        entry.version.length === 3 && entry.version.every((n) => !isNaN(n))
+    )
 
   tags.sort(
     (a, b) =>
@@ -117,8 +123,7 @@ const resolveLatestTag = () => {
   return tags.length ? tags[0].tag : ''
 }
 
-const serverRef =
-  requestedRef === 'latest' ? resolveLatestTag() : requestedRef
+const serverRef = requestedRef === 'latest' ? resolveLatestTag() : requestedRef
 
 if (!serverRef) {
   console.error(
@@ -203,7 +208,9 @@ const serverRoutes = () => {
   const dir = path.dirname(indexPath)
 
   const mounts = new Map()
-  for (const [, name, file] of index.matchAll(/import\s+(\w+)\s+from\s+'\.\/([\w-]+)'/g)) {
+  for (const [, name, file] of index.matchAll(
+    /import\s+(\w+)\s+from\s+'\.\/([\w-]+)'/g
+  )) {
     mounts.set(name, path.join(dir, `${file}.ts`))
   }
 
@@ -302,7 +309,9 @@ const docFiles = readdirSync(docsDir)
 // the nav - by declaring itself so at the top.
 const unlisted = new Set(
   docFiles.filter((file) =>
-    /<!--\s*server-docs-unlisted\b/.test(readFileSync(path.join(docsDir, file), 'utf8'))
+    /<!--\s*server-docs-unlisted\b/.test(
+      readFileSync(path.join(docsDir, file), 'utf8')
+    )
   )
 )
 
@@ -329,7 +338,9 @@ for (const file of docFiles) {
   const markdown = readFileSync(path.join(docsDir, file), 'utf8')
 
   const ignoredOnPage = new Set()
-  for (const comment of markdown.matchAll(/<!--\s*server-docs-ignore:\s*([^>]*?)-->/g)) {
+  for (const comment of markdown.matchAll(
+    /<!--\s*server-docs-ignore:\s*([^>]*?)-->/g
+  )) {
     for (const token of comment[1].trim().split(/\s+/)) {
       if (!token) continue
       ignoredOnPage.add(token)
@@ -383,7 +394,9 @@ const documentedSettings = []
 let inSettingsSection = false
 let ignoredSettings = new Set()
 
-for (const comment of settings.join('\n').matchAll(/<!--\s*server-docs-ignore:\s*([^>]*?)-->/g)) {
+for (const comment of settings
+  .join('\n')
+  .matchAll(/<!--\s*server-docs-ignore:\s*([^>]*?)-->/g)) {
   for (const token of comment[1].trim().split(/\s+/)) ignoredSettings.add(token)
 }
 
@@ -420,11 +433,11 @@ const checkSpec = () => {
 
   const first = local.findIndex((line, index) => line !== theirs[index])
   fail(
-    `swagger.yaml: docs/swagger.yaml is not the specification at ${serverLabel} ` +
+    `swagger.yaml: docs/pages/swagger.yaml is not the specification at ${serverLabel} ` +
       `(first difference on line ${first + 1}):\n` +
       `      docs:   ${JSON.stringify(local[first])}\n` +
       `      server: ${JSON.stringify(theirs[first])}\n` +
-      `      Refresh it with:  cp <server>/api/public/swagger.yaml docs/swagger.yaml`
+      `      Refresh it with:  cp <server>/api/public/swagger.yaml docs/pages/swagger.yaml`
   )
 }
 
@@ -441,7 +454,9 @@ console.log(
 )
 
 if (ignoredPaths.length) {
-  console.log(`Ignored on request (${ignoredPaths.length}): ${ignoredPaths.join(', ')}`)
+  console.log(
+    `Ignored on request (${ignoredPaths.length}): ${ignoredPaths.join(', ')}`
+  )
 }
 
 if (failures.length) {

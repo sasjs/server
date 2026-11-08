@@ -8,7 +8,7 @@ description: The SASjs Server REST API - every endpoint, its parameters and its 
 
 SASjs Server speaks REST under `/SASjsApi`, and the specification below is the same one a running server publishes at `/swagger.yaml` (and renders at `/SASjsApi/`). Every release ships its own copy, so the reference always describes the endpoints that release actually has.
 
-The specification is checked in as `docs/swagger.yaml` and rendered here at build time. `scripts/check-server-docs.mjs` fails the build when that copy has drifted from the release these pages document, so the reference cannot quietly fall behind the code.
+The specification is checked in as `docs/pages/swagger.yaml` and rendered here at build time. `docs/scripts/check-server-docs.mjs` fails the build when that copy has drifted from the release these pages document, so the reference cannot quietly fall behind the code.
 
 ## Authentication
 

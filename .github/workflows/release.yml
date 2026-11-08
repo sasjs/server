@@ -156,7 +156,7 @@ jobs:
         if: steps.pending.outputs.release == 'true'
         run: |
           pip install -r docs/requirements.txt
-          python3 -m mkdocs build --strict -f docs/mkdocs.yml
+          node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
 
       - name: Install Dependencies API
         if: steps.pending.outputs.release == 'true'

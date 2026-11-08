@@ -187,12 +187,6 @@ jobs:
         env:
           CI: true
 
-  # The browser suite (jest.e2e.config.js). It is excluded from the unit run on
-  # purpose - it needs a web build, a browser and a database - but nothing else
-  # ran it, so a regression in the Studio interface could merge unnoticed. That
-  # is exactly how the drive sidebar came to render nothing at all. It writes a
-  # program into a throwaway drive, so it needs no SAS binary: the runtimes under
-  # test are js only.
   # The documentation lives in docs/ and is built into the web build, so it is
   # this repository's source like any other - and a broken link, a page missing
   # from the nav, an endpoint the server no longer serves or a setting it no
@@ -221,7 +215,7 @@ jobs:
         # The same command the release runs, so a pull request cannot be green
         # and the push to main fail. --strict fails on a broken page link or
         # anchor.
-        run: python3 -m mkdocs build --strict -f docs/mkdocs.yml
+        run: node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
 
       - name: Check the pages against this checkout
         run: node docs/scripts/check-server-docs.mjs
@@ -229,6 +223,12 @@ jobs:
       - name: Check the site is self-contained
         run: node docs/scripts/check-external-calls.mjs
 
+  # The browser suite (jest.e2e.config.js). It is excluded from the unit run on
+  # purpose - it needs a web build, a browser and a database - but nothing else
+  # ran it, so a regression in the Studio interface could merge unnoticed. That
+  # is exactly how the drive sidebar came to render nothing at all. It writes a
+  # program into a throwaway drive, so it needs no SAS binary: the runtimes under
+  # test are js only.
   e2e:
     runs-on: ubuntu-22.04
 

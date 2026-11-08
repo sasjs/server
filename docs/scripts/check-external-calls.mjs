@@ -77,7 +77,9 @@ const html = files.filter((file) => file.endsWith('.html'))
 const css = files.filter((file) => file.endsWith('.css'))
 
 if (!html.length) {
-  console.error(`no HTML in ${siteDir} - build the site first (mkdocs build --strict)`)
+  console.error(
+    `no HTML in ${siteDir} - build the site first (mkdocs build --strict)`
+  )
   process.exit(1)
 }
 
@@ -107,7 +109,9 @@ for (const file of html) {
       checked++
       const host = external(match[1])
       if (host) {
-        fail(`${rel(file)}: <${tag} ${attr}="${match[1].slice(0, 120)}"> fetches from ${host}`)
+        fail(
+          `${rel(file)}: <${tag} ${attr}="${match[1].slice(0, 120)}"> fetches from ${host}`
+        )
       }
     }
   }
@@ -116,16 +120,24 @@ for (const file of html) {
   for (const match of text.matchAll(/url\((['"]?)(https?:\/\/[^)"']+)/gi)) {
     checked++
     const host = external(match[2])
-    if (host) fail(`${rel(file)}: inline style url(${match[2].slice(0, 120)}) fetches from ${host}`)
+    if (host)
+      fail(
+        `${rel(file)}: inline style url(${match[2].slice(0, 120)}) fetches from ${host}`
+      )
   }
 
   // C - a script that loads something dynamically. The URL is often assembled
   // from a variable, so any element creation in an inline script that also
   // contains an absolute URL is reported, whether or not this check could work
   // out what would be fetched.
-  for (const match of text.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)) {
+  for (const match of text.matchAll(
+    /<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi
+  )) {
     const body = match[1]
-    const creates = /createElement\s*\(\s*['"](?:script|img|iframe|link|audio|video|object|embed)['"]/i.test(body)
+    const creates =
+      /createElement\s*\(\s*['"](?:script|img|iframe|link|audio|video|object|embed)['"]/i.test(
+        body
+      )
     if (!creates) continue
 
     const absolute = [...body.matchAll(/https?:\/\/[^\s"'`)]+/gi)]
@@ -133,7 +145,9 @@ for (const file of html) {
       .filter((url) => external(url))
 
     const detail = absolute.length ? ` (${absolute[0].slice(0, 120)})` : ''
-    fail(`${rel(file)}: an inline script creates an element to load a resource${detail}`)
+    fail(
+      `${rel(file)}: an inline script creates an element to load a resource${detail}`
+    )
   }
 }
 
@@ -143,13 +157,17 @@ for (const file of css) {
   for (const match of text.matchAll(/url\((['"]?)(https?:\/\/[^)"']+)/gi)) {
     checked++
     const host = external(match[2])
-    if (host) fail(`${rel(file)}: url(${match[2].slice(0, 120)}) fetches from ${host}`)
+    if (host)
+      fail(`${rel(file)}: url(${match[2].slice(0, 120)}) fetches from ${host}`)
   }
 
   for (const match of text.matchAll(/@import\s+(?:url\()?\s*['"]([^'"]+)/gi)) {
     checked++
     const host = external(match[1])
-    if (host) fail(`${rel(file)}: @import ${match[1].slice(0, 120)} fetches from ${host}`)
+    if (host)
+      fail(
+        `${rel(file)}: @import ${match[1].slice(0, 120)} fetches from ${host}`
+      )
   }
 }
 
@@ -164,4 +182,6 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('The site is self-contained: no resource is fetched from another origin.')
+console.log(
+  'The site is self-contained: no resource is fetched from another origin.'
+)
