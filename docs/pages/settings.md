@@ -645,7 +645,7 @@ SITE_ID=123
 
 ### STATIC_MOCK_LOCATION
 
-The folder the SAS 9 mock reads its files from and writes uploads into - the routes that stand in for `/SASStoredProcess` and the pages around it. A relative path is resolved against the working directory. Default `mocks`.
+The folder the SAS 9 mock reads its files from and writes uploads into - the routes that stand in for `/SASStoredProcess` and the pages around it. A relative path is resolved against the working directory; an absolute path is used as written. Default `mocks`.
 
 Example:
 

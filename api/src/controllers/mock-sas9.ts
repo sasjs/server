@@ -7,7 +7,8 @@ import { ExecutionController } from './internal'
 import {
   getPreProgramVariables,
   getRunTimeAndFilePath,
-  makeFilesNamesMap
+  makeFilesNamesMap,
+  resolveMockPath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 
@@ -28,15 +29,9 @@ export class MockSas9Controller {
   private loggedIn: string | undefined
   private mocksPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
 
-  /**
-   * Where the mock's files are read from: the configured folder when it is
-   * absolute, and otherwise resolved against the working directory. `path.join`
-   * would put an absolute folder under `process.cwd()` instead.
-   */
+  /** Where the mock's files are read from - see resolveMockPath. */
   private mockBase(): string {
-    return path.isAbsolute(this.mocksPath)
-      ? this.mocksPath
-      : path.join(process.cwd(), this.mocksPath)
+    return resolveMockPath(this.mocksPath)
   }
 
   @Get('/SASStoredProcess')

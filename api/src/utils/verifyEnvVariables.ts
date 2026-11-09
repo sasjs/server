@@ -234,8 +234,8 @@ const verifyLISTENERS = (): string[] => resolveListeners(process.env).errors
 
 /**
  * `API_SERVER_URL` is written into generated programs verbatim, so a missing
- * scheme or a trailing slash reaches the SAS session as a broken URL. Refusing
- * at startup names it while someone is still looking at the configuration.
+ * scheme or a path reaches the SAS session as a broken URL. Refusing at startup
+ * names it while someone is still looking at the configuration.
  */
 const verifyApiServerUrl = (): string[] => {
   const { API_SERVER_URL } = process.env
@@ -246,7 +246,7 @@ const verifyApiServerUrl = (): string[] => {
 
   if (!/^https?:\/\/[^/\s]+$/i.test(API_SERVER_URL.trim()))
     errors.push(
-      `- API_SERVER_URL '${API_SERVER_URL}'\n - should be an http(s) URL with a host and no trailing slash`
+      `- API_SERVER_URL '${API_SERVER_URL}'\n - should be an http(s) URL with a host and no path`
     )
 
   return errors
