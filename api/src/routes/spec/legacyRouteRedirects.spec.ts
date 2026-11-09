@@ -19,7 +19,7 @@ describe('legacyRouteRedirects', () => {
     ['/SASjsSettings', '/settings'],
     ['/SASjsLogon', '/logon'],
     ['/SASjsDocs', '/docs'],
-    ['/SASjsApiDocs', '/api']
+    ['/SASjsApiDocs', '/api-assets/']
   ]
 
   it.each(moved)('redirects %s to %s', async (from, to) => {

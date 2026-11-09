@@ -30,8 +30,8 @@ import { oppositePreference } from '../utils/colorScheme'
 import { useColorMode } from '../utils/hooks'
 
 // Every route that has a tab. A path missing here still renders its screen -
-// the tab underline just falls back to Home, which is what a reader sees as a
-// broken tab, so this list and the Tabs below must move together.
+// /settings and the legacy paths are screens without a tab - but nothing is
+// underlined for it, which is why this list and the Tabs below move together.
 const validTabs = ['/', '/apps', '/studio', '/api']
 
 /**

@@ -131,9 +131,18 @@ describe('API tab', () => {
 
     expect(new URL(page.url()).pathname).toBe('/api')
 
-    const frame = page
+    // the frame is attached before it has a URL, so its presence and its
+    // address arrive at different moments
+    let frame = page
       .frames()
       .find((candidate) => candidate.url().includes('/api-assets'))
+
+    for (let attempt = 0; !frame && attempt < 80; attempt++) {
+      await page.waitForTimeout(250)
+      frame = page
+        .frames()
+        .find((candidate) => candidate.url().includes('/api-assets'))
+    }
 
     expect(frame).toBeDefined()
 

@@ -224,7 +224,10 @@ const Search = () => {
 
       const field = fieldRef.current
 
-      if (field) {
+      // The field is only rendered where the bar has room for it; on a narrow
+      // screen it is `display: none`, and focusing a hidden input does nothing -
+      // the shortcut would open a popover anchored to a zero-size element.
+      if (field && field.offsetParent !== null) {
         field.focus()
         setAnchor(field)
         return

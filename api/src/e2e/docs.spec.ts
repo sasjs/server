@@ -155,6 +155,15 @@ describe('Docs screen', () => {
     ).text()
     expect(settings).toContain('../assets/')
 
+    // The Studio page's demo video is raw HTML, which MkDocs does not rewrite -
+    // so it is the one place a root-absolute src would survive the build and
+    // then 404 under the mount, leaving a player that silently does not play.
+    const studio = await (
+      await fetch(`${baseUrl()}/documentation/studio/`)
+    ).text()
+    expect(studio).toContain('src="../img/studio-demo.webm"')
+    expect(studio).toContain('src="../img/studio-demo.mp4"')
+
     const page = await browser.newPage({
       viewport: { width: 1280, height: 800 }
     })
