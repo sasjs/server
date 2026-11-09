@@ -46,7 +46,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that does not read the recording - the demo would then carry the file and
 // still refuse the program.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6.23.0'
+// Pinned exactly, not to a range. `^6.23.0` resolved to whatever the registry's
+// `latest` was at build time, and a release that has been tagged but whose
+// tarball is still propagating fails every `npx` with ETARGET - the retry below
+// only outlasts a short window. An exact version is also what makes a build
+// reproducible: the site is built by the CLI it names, not by today's latest.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.23.1'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
