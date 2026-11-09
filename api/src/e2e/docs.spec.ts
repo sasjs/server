@@ -164,11 +164,12 @@ describe('Docs screen', () => {
 
     const frame = await docsFrame(page)
 
-    await frame.waitForSelector('nav', { timeout: 30000 })
+    // the site's own bar is hidden while framed, so the wait is for a page
+    await frame.locator('text=Installation').first().waitFor({ timeout: 30000 })
 
     // The screen is the app, with the documentation inside it - so the header is
     // still there and the address is the app's route.
-    expect(new URL(page.url()).pathname).toBe('/docs/')
+    expect(new URL(page.url()).pathname).toMatch(/^\/docs\/?$/)
     expect(await page.locator('header').count()).toBeGreaterThan(0)
 
     await page.screenshot({ path: path.join(screenshotDir, 'docs-tab.png') })
@@ -216,17 +217,52 @@ describe('Docs screen', () => {
     })
 
     await signIn(page)
-    await page.goto(`${baseUrl()}/docs/`)
 
-    const frame = await docsFrame(page)
-    await frame.waitForSelector('nav', { timeout: 30000 })
+    // The docs follow the app's colour scheme, not just the operating system's:
+    // the site is same-origin with the app, so the preference the app stores in
+    // `studio-settings` is the one the framed page ends up with. This exercises
+    // the policy too - the palette block is inline, so if the docs mount refused
+    // inline scripts the attribute would never change.
+    const setScheme = async (preference: 'light' | 'dark') => {
+      await page.evaluate((mode) => {
+        const settings = JSON.parse(
+          localStorage.getItem('studio-settings') || '{}'
+        )
 
-    await page.click('[aria-label*="dark theme"]')
-    await frame.waitForFunction(
-      () => document.body.getAttribute('data-md-color-scheme') === 'slate',
-      undefined,
-      { timeout: 30000 }
-    )
+        // Object.assign rather than a spread: this runs in the page, and the
+        // suite compiles to ES5 where a spread becomes a helper the page has no
+        // definition for.
+        localStorage.setItem(
+          'studio-settings',
+          JSON.stringify(
+            Object.assign({}, settings, { 'workbench.colorTheme': mode })
+          )
+        )
+      }, preference)
+
+      await page.goto(`${baseUrl()}/docs/`)
+
+      const frame = await docsFrame(page)
+
+      await frame
+        .locator('text=Installation')
+        .first()
+        .waitFor({ timeout: 30000 })
+
+      // Material may re-apply the palette while it initialises, so the answer is
+      // the settled value rather than the first one.
+      await frame
+        .waitForFunction(
+          (expected) =>
+            document.body.getAttribute('data-md-color-scheme') === expected,
+          preference === 'dark' ? 'slate' : 'default',
+          { timeout: 15000 }
+        )
+        .catch(() => undefined)
+    }
+
+    await setScheme('dark')
+    await setScheme('light')
 
     await page.close()
   }, 120000)

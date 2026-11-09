@@ -122,6 +122,13 @@ jobs:
         # deploy, so the rule is asserted here rather than discovered there.
         run: npm run mock:test
 
+      - name: Parse the site build scripts
+        # mock/build.mjs and mock/serve.mjs are only ever executed by the
+        # mock-site workflow, so a syntax error in them reaches main with every
+        # pull-request job green - which is how an orphaned `else`, left by a
+        # rebase that merged textually, broke the demo's build and nothing else.
+        run: node --check mock/build.mjs && node --check mock/serve.mjs
+
   build-api:
     runs-on: ubuntu-22.04
 

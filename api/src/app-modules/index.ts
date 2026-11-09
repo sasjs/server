@@ -1,4 +1,5 @@
 export * from './configureCors'
+export * from './configureDocsCsp'
 export * from './configureExpressSession'
 export * from './configureLogger'
 export * from './configureSecurity'
