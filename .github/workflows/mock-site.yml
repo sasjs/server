@@ -33,7 +33,10 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          # The rest of the pipeline's LTS. Node 20 cannot load the TypeScript
+          # webpack config: type stripping arrives in 22 (behind a flag) and is
+          # the default from 23, which is what this build relies on.
+          node-version: lts/*
           cache: npm
           cache-dependency-path: |
             web/package-lock.json
