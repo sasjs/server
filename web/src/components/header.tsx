@@ -265,10 +265,10 @@ const Header = (props: any) => {
             justifyContent: 'flex-end'
           }}
         >
-          {/* Nothing to search from a screen the reader has not reached yet,
-              and a field that cannot answer is one more thing between them and
-              the sign-in form. */}
-          {appContext.loggedIn && <Search />}
+          {/* The icons sit before the search box: they are the same on every
+              screen and never move, while the field grows and shrinks with the
+              window - a control that shifts position is one a reader has to hunt
+              for. */}
           <IconButton
             color="inherit"
             href="https://github.com/sasjs/server"
@@ -287,6 +287,10 @@ const Header = (props: any) => {
           >
             {colorMode === 'dark' ? <LightMode /> : <DarkMode />}
           </IconButton>
+          {/* Nothing to search from a screen the reader has not reached yet,
+              and a field that cannot answer is one more thing between them and
+              the sign-in form. */}
+          {appContext.loggedIn && <Search />}
           <Username
             username={appContext.displayName || appContext.username}
             onClickHandler={handleOpenUserMenu}
