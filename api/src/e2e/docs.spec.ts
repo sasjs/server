@@ -19,6 +19,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, Frame, Page, chromium } from 'playwright'
+import { requireWebBuild } from './fixture'
 import { createFile, fileExists } from '@sasjs/utils'
 import { getWebBuildFolder, sysInitCompiledPath } from '../utils/'
 import { UserController } from '../controllers/'
@@ -74,13 +75,7 @@ describe('Docs screen', () => {
 
     mkdirSync(screenshotDir, { recursive: true })
 
-    if (
-      !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
-    ) {
-      throw new Error(
-        `No web build at ${getWebBuildFolder()}. Run \`npm run build\` in web/ before the browser test.`
-      )
-    }
+    requireWebBuild()
 
     if (!(await fileExists(path.join(docsFolder(), 'index.html')))) {
       throw new Error(

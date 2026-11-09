@@ -1,3 +1,7 @@
+import fs from 'fs'
+
+import { getWebBuildFolder } from '../utils/'
+
 /**
  * The program the browser test opens, shared by the setup module (which writes
  * it into the drive) and the spec (which asserts against it).
@@ -45,3 +49,22 @@ export const INDENTED_JSON = [
   '    ]',
   '}'
 ].join('\n')
+
+/**
+ * Fails the run when there is no web build for the browser tests to load.
+ *
+ * Any script will do: the bundle's name carries its contents
+ * (`[name].[contenthash].js`), so a build cannot be recognised by a fixed name -
+ * which is the point.
+ */
+export const requireWebBuild = () => {
+  const folder = getWebBuildFolder()
+
+  if (
+    !fs.existsSync(folder) ||
+    !fs.readdirSync(folder).some((file) => file.endsWith('.js'))
+  )
+    throw new Error(
+      `No web build at ${folder}. Run \`npm run build\` in web/ before the browser test.`
+    )
+}

@@ -22,6 +22,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, Page, chromium } from 'playwright'
+import { requireWebBuild } from './fixture'
 import { createFile, fileExists } from '@sasjs/utils'
 import {
   getFilesFolder,
@@ -59,10 +60,7 @@ describe('Home dashboard and Apps tab', () => {
 
     mkdirSync(screenshotDir, { recursive: true })
 
-    if (!(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js'))))
-      throw new Error(
-        `No web build at ${getWebBuildFolder()}. Run \`npm run build\` in web/ before the browser test.`
-      )
+    requireWebBuild()
 
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()

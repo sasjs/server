@@ -29,6 +29,7 @@ import {
   SAVE_FILE_NAME,
   TRAILING_SPACE_LINE
 } from './fixture'
+import { requireWebBuild } from './fixture'
 import { UserController } from '../controllers/'
 import { RunTimeType, getWebBuildFolder, sysInitCompiledPath } from '../utils/'
 
@@ -72,13 +73,7 @@ describe('Studio in a browser', () => {
     // directory and a failure screenshot would fail on the write itself.
     mkdirSync(screenshotDir, { recursive: true })
 
-    if (
-      !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
-    ) {
-      throw new Error(
-        `No web build at ${getWebBuildFolder()}. Run \`npm run build\` in web/ before the browser test.`
-      )
-    }
+    requireWebBuild()
 
     // setupEnv.ts points the working directory at a throwaway tree, so the
     // drive the app resolves under NODE_ENV=test holds this suite's fixture.
