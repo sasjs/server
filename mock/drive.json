@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "files": {
+    "/sasjs/drive/files/home/sasjsadmin/program.sas": "/**\n  @file\n  @brief A program to try in the demo\n\n  Studio runs JavaScript on this host, so `Run` on a .sas file reports that SAS\n  needs a server - which is the truth about a static site, and the reason this\n  build is a demonstration rather than a deployment.\n**/\n\ndata work.class;\n  set sashelp.class;\n  where age > 13;\nrun;\n",
+    "/sasjs/drive/files/home/sasjsadmin/run.js": "/**\n  @file\n  @brief A program that DOES run in this browser\n\n  Press Run in Studio: the service worker executes this file, the same way\n  sasjs/server would execute it, and the log and webout appear in their tabs.\n**/\n\nconst rows = [\n  { name: 'Alice', age: 14 },\n  { name: 'Bob', age: 15 },\n  { name: 'Carol', age: 13 }\n]\n\nconsole.log(`Read ${rows.length} rows`)\n\nwebout(rows.filter((row) => row.age > 13))\n",
+    "/sasjs/drive/files/Public/demo/services/web/index.html": "<!doctype html>\n<title>Demo app</title>\n<h1>An app, on a static site</h1>\n<p>This page is a file in the drive, served by the browser host.</p>\n",
+    "/sasjs/drive/files/Public/demo/orders.csv": "order_id,customer,amount\n1001,Alice,120.50\n1002,Bob,75.00\n1003,Carol,240.10\n",
+    "/sasjs/drive/files/Public/demo/README.md": "# Public demo folder\n\nTwo files to browse in Studio's explorer, one of them an app deployment.\n"
+  }
+}

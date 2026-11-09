@@ -1,0 +1,62 @@
+name: Mock site
+
+# Publishes the demonstration site: the real interface, running against a
+# browser host instead of a server. Built from the same source as the app, so a
+# screen and the site showing it are never a release apart.
+#
+# Run by hand, and on a release. It is deliberately NOT part of the pull-request
+# pipeline: it needs the released @sasjs/cli (see mock/build.mjs), and a demo
+# that breaks CI is a demo someone will disable.
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mock-site
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            api/package-lock.json
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.0.0
+        with:
+          python-version: '3.12'
+
+      # The docs are built into the web bundle, so the site carries the pages
+      # that describe the build it was made from.
+      - name: Docs dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Web dependencies
+        run: npm ci --prefix web
+
+      - name: Build the mock site
+        run: npm run mock:build
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./sasjsbuild/mock
+          publish_branch: gh-pages
+          # the site is served from its own subdomain, so no /<repo>/ prefix
+          cname: demo.server.sasjs.io
+          user_name: sasjs
+          user_email: sasjs@4gl.io
+          commit_message: 'chore(mock): publish the demonstration site'
