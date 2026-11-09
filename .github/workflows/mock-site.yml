@@ -57,6 +57,17 @@ jobs:
       - name: Test the build's retry, which only fails in a deploy otherwise
         run: npm run mock:test
 
+      # The API's documentation page is part of the site: the interface links to
+      # /api, and mock/build.mjs copies api/public/SASjsApi into the output so a
+      # static host can answer it. The swagger-ui assets beside index.html come
+      # from swagger-ui-dist, which this step installs into that folder - without
+      # it there is an index.html with nothing to load, so the copy is skipped.
+      - name: API dependencies
+        run: npm ci --prefix api
+
+      - name: API documentation assets
+        run: npm run swagger-ui:copy --prefix api
+
       - name: Build the mock site
         run: npm run mock:build
 

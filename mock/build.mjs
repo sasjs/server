@@ -105,6 +105,14 @@ if (existsSync(path.join(swagger, 'swagger-ui.css'))) {
     path.join(root, 'api', 'public', 'swagger.yaml'),
     path.join(site, 'swagger.yaml')
   )
+} else {
+  // Said out loud rather than skipped silently: the demo's API tab would then
+  // answer with the app shell, which is a confusing way to discover that the
+  // assets step did not run.
+  process.stdout.write(
+    '\nNo Swagger UI assets at api/public/SASjsApi - the site will not carry /api. ' +
+      'Run `npm run swagger-ui:copy` in api/ before building.\n'
+  )
 }
 
 // Pages serves a .nojekyll site as-is; without it, a folder starting with an
