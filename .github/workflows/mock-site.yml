@@ -54,6 +54,12 @@ jobs:
       - name: Web dependencies
         run: npm ci --prefix web
 
+      # The API documentation page's stylesheet and bundle are generated from
+      # swagger-ui-dist, which the API installs - without this the site would
+      # carry a page with nothing to draw it with.
+      - name: API dependencies
+        run: npm ci --prefix api
+
       - name: Test the build's retry, which only fails in a deploy otherwise
         run: npm run mock:test
 

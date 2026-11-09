@@ -16,7 +16,13 @@
  * always be traced back to the release that assembled it.
  */
 import { execSync } from 'child_process'
-import { existsSync, copyFileSync, cpSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  copyFileSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync
+} from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -92,20 +98,97 @@ if (!existsSync(index))
 // is a 404 instead of the app.
 copyFileSync(index, path.join(site, '404.html'))
 
+// 404.html makes those paths RENDER, but as an HTTP 404: the browser logs it, a
+// crawler will not follow it, and the page's own links to them read as broken.
+// A folder per screen answers 200, which is the whole of what a static host can
+// do about it - and it is enough, because the app is the page.
+//
+// The long paths are here because the browser-hosted build has no server to
+// redirect them; the app answers them so that a bookmark keeps working.
+for (const route of [
+  'apps',
+  'studio',
+  'settings',
+  'logon',
+  'SASjsApps',
+  'SASjsStudio',
+  'SASjsSettings',
+  'SASjsLogon'
+]) {
+  mkdirSync(path.join(site, route), { recursive: true })
+  copyFileSync(index, path.join(site, route, 'index.html'))
+}
+
 // The API documentation page, at the short prefix the interface links to. The
 // worker answers /SASjsApi from @sasjs/api, but /api is a plain file and a
-// static host serves it only if the page is in the site. Copied only when the
-// API has been built - the page without the swagger-ui assets beside it is a
-// worse answer than the shell - so a checkout that built only the web bundle
-// is unaffected.
-const swagger = path.join(root, 'api', 'public', 'SASjsApi')
-if (existsSync(path.join(swagger, 'swagger-ui.css'))) {
-  cpSync(swagger, path.join(site, 'api'), { recursive: true })
+// static host serves it only if the page is in the site.
+//
+// The page's stylesheet, bundle and preset are GENERATED from swagger-ui-dist
+// and gitignored - api/public/SASjsApi holds only what is committed - so the
+// build asks the API for them first. That needs the API's own install; without
+// it the copy cannot run, and the error below says what to do rather than
+// letting ts-node's absence surface as a mystery.
+//
+// The assets sit at /api-assets rather than beside the page: a released browser
+// host routes everything under /api to the API worker, so a stylesheet requested
+// from /api/swagger-ui.css never finds the file. The page at /api/ is the one
+// path the worker lets through, and the references in it are rewritten to point
+// at the folder it does not claim.
+const swaggerSource = path.join(root, 'api', 'public', 'SASjsApi')
+const swaggerAssets = 'api-assets'
+const swaggerFiles = [
+  'index.html',
+  'swagger-ui-init.js',
+  'swagger-ui.css',
+  'swagger-ui-bundle.js',
+  'swagger-ui-standalone-preset.js',
+  'favicon-16x16.png',
+  'favicon-32x32.png',
+  'oauth2-redirect.html',
+  'swagger-ui-LICENSE',
+  'swagger-ui-NOTICE'
+]
+
+if (
+  !existsSync(path.join(swaggerSource, 'swagger-ui.css')) &&
+  existsSync(path.join(root, 'api', 'node_modules', '.bin', 'ts-node'))
+)
+  run('npm run swagger-ui:copy', path.join(root, 'api'))
+
+const missing = swaggerFiles.filter(
+  (file) => !existsSync(path.join(swaggerSource, file))
+)
+
+if (missing.length)
+  throw new Error(
+    `The API documentation page is incomplete: ${missing.join(', ')} missing from ${swaggerSource}. Run "npm ci --prefix api" and build again.`
+  )
+
+mkdirSync(path.join(site, swaggerAssets), { recursive: true })
+
+for (const file of swaggerFiles) {
+  if (file === 'index.html') continue
+
   copyFileSync(
-    path.join(root, 'api', 'public', 'swagger.yaml'),
-    path.join(site, 'swagger.yaml')
+    path.join(swaggerSource, file),
+    path.join(site, swaggerAssets, file)
   )
 }
+
+// `./swagger-ui.css` -> `/api-assets/swagger-ui.css`, for every reference the
+// page makes: its hrefs, its srcs, and the redirect page its init script opens.
+const page = readFileSync(
+  path.join(swaggerSource, 'index.html'),
+  'utf8'
+).replace(/(\.\/)([a-z0-9.-]+\.(?:css|js|png|html))/gi, `/${swaggerAssets}/$2`)
+
+mkdirSync(path.join(site, 'api'), { recursive: true })
+writeFileSync(path.join(site, 'api', 'index.html'), page)
+
+copyFileSync(
+  path.join(root, 'api', 'public', 'swagger.yaml'),
+  path.join(site, 'swagger.yaml')
+)
 
 // Pages serves a .nojekyll site as-is; without it, a folder starting with an
 // underscore (Monaco's, for one) is dropped by the Jekyll build.
