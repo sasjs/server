@@ -20,6 +20,8 @@ import { existsSync, copyFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
@@ -34,15 +36,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  */
 const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6'
 
-const run = (command, cwd = root) => {
-  process.stdout.write(`\n> ${command}\n`)
-
-  execSync(command, { cwd, stdio: 'inherit' })
-}
+const run = (command, cwd = root) => runInShell(command, cwd)
 
 const sasjs = (arguments_) =>
   // quoted: `^` is an escape character to cmd.exe, and this runs on Windows too
-  run(`npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`)
+  runWhenTheRegistryIsReady(
+    `npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`,
+    { cwd: root }
+  )
 
 /** A command whose output is needed rather than passed through. */
 const capture = (command) => execSync(command, { cwd: root, encoding: 'utf8' })
@@ -50,8 +51,17 @@ const capture = (command) => execSync(command, { cwd: root, encoding: 'utf8' })
 // Which CLI is about to assemble the site. Printed for the deploy log, and
 // written into the output below: a range means the site is not reproducible from
 // this file alone, so the artifact has to carry the answer itself.
-const versionOutput = capture(`npx --yes "@sasjs/cli@${CLI_VERSION}" --version`)
-process.stdout.write(versionOutput)
+let versionOutput = ''
+
+try {
+  versionOutput = capture(`npx --yes "@sasjs/cli@${CLI_VERSION}" --version`)
+} catch (error) {
+  // the build below reports a registry problem with its own retries; this is
+  // only the record of which release was used
+  versionOutput = String(error?.stdout ?? '')
+}
+
+process.stdout.write(versionOutput || '\n')
 const cliUsed = /v(\d+\.\d+\.\d+)/.exec(versionOutput)?.[1] ?? 'unknown'
 
 // The docs are inside the web build by construction, so the site carries the
@@ -64,7 +74,10 @@ sasjs('compile -t mock')
 // The drive a visitor starts with. It is a captured snapshot - the format the
 // browser host exports - so the demo opens on files rather than on an empty
 // drive whose home folder does not exist.
-copyFileSync(path.join(root, 'mock', 'drive.json'), path.join(root, 'sasjsbuild', 'mock-snapshot.json'))
+copyFileSync(
+  path.join(root, 'mock', 'drive.json'),
+  path.join(root, 'sasjsbuild', 'mock-snapshot.json')
+)
 
 sasjs('build -t mock')
 

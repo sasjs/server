@@ -117,6 +117,11 @@ jobs:
       - name: Check Web Code Style
         run: npm run lint-web
 
+      - name: Test the site build s retry
+        # The retry that waits out a registry publish window only fails in a
+        # deploy, so the rule is asserted here rather than discovered there.
+        run: npm run mock:test
+
   build-api:
     runs-on: ubuntu-22.04
 
