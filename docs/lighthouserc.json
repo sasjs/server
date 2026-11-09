@@ -3,12 +3,11 @@
     "collect": {
       "url": [
         "http://localhost:8787/",
-        "http://localhost:8787/installation/",
+        "http://localhost:8787/studio/",
         "http://localhost:8787/apps/",
-        "http://localhost:8787/sessions/",
-        "http://localhost:8787/storedprograms/",
-        "http://localhost:8787/testing-va-embed/",
-        "http://localhost:8787/settings/"
+        "http://localhost:8787/settings/",
+        "http://localhost:8787/documentation/",
+        "http://localhost:8787/documentation/apps/"
       ],
       "numberOfRuns": 3,
       "settings": {
