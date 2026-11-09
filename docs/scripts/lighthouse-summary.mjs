@@ -39,7 +39,29 @@ if (!files.length) {
   process.exit(0)
 }
 
-const rows = []
+/**
+ * The median of a list.
+ *
+ * Every assertion in docs/lighthouserc.json aggregates on the median, so the
+ * table has to as well or the numbers a reviewer reads would disagree with the
+ * ones the run is judged on. LHCI's own default is `optimistic`, which would have
+ * shown the best run of three.
+ */
+const median = (values) => {
+  const sorted = values
+    .filter((value) => typeof value === 'number' && !Number.isNaN(value))
+    .sort((a, b) => a - b)
+
+  if (!sorted.length) return null
+
+  const middle = Math.floor(sorted.length / 2)
+
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2
+}
+
+const byPage = new Map()
 
 for (const file of files) {
   const report = JSON.parse(readFileSync(path.join(REPORTS, file), 'utf8'))
@@ -50,20 +72,39 @@ for (const file of files) {
     ''
   )
 
-  rows.push({
-    url: url || '/',
-    scores: CATEGORIES.map((id) =>
-      pct(categories[id] ? categories[id].score : null)
-    ),
-    lcp: seconds(audits['largest-contentful-paint']?.numericValue),
-    cls:
-      audits['cumulative-layout-shift']?.numericValue === undefined
-        ? 'n/a'
-        : audits['cumulative-layout-shift'].numericValue.toFixed(3),
-    tbt: seconds(audits['total-blocking-time']?.numericValue),
-    weight: kilobytes(audits['total-byte-weight']?.numericValue)
+  const page = url || '/'
+
+  if (!byPage.has(page)) byPage.set(page, [])
+  byPage.get(page).push({
+    perf: categories.performance?.score,
+    a11y: categories.accessibility?.score,
+    best: categories['best-practices']?.score,
+    seo: categories.seo?.score,
+    lcp: audits['largest-contentful-paint']?.numericValue,
+    cls: audits['cumulative-layout-shift']?.numericValue,
+    tbt: audits['total-blocking-time']?.numericValue,
+    weight: audits['total-byte-weight']?.numericValue
   })
 }
+
+// The config runs each page more than once and asserts on the median; a table
+// with one row per RUN would show the same page three times and invite reading
+// the best of them. One row per page, median of its runs.
+const rows = [...byPage.entries()]
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([page, runs]) => {
+    const m = (key) => median(runs.map((run) => run[key]))
+
+    return {
+      url: page,
+      runs: runs.length,
+      scores: [m('perf'), m('a11y'), m('best'), m('seo')].map(pct),
+      lcp: seconds(m('lcp')),
+      cls: m('cls') === null ? 'n/a' : m('cls').toFixed(3),
+      tbt: seconds(m('tbt')),
+      weight: kilobytes(m('weight'))
+    }
+  })
 
 const header = [
   'Page',
@@ -87,7 +128,7 @@ const table = [
 ]
 
 const output = [
-  `## Lighthouse - ${rows.length} page(s)`,
+  `## Lighthouse - ${rows.length} page(s), median of ${rows[0]?.runs ?? 0} run(s) each`,
   '',
   ...table,
   '',

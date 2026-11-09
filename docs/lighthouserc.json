@@ -28,19 +28,22 @@
         "categories:accessibility": [
           "warn",
           {
-            "minScore": 1
+            "minScore": 1,
+            "aggregationMethod": "median"
           }
         ],
         "categories:best-practices": [
           "warn",
           {
-            "minScore": 0.95
+            "minScore": 0.95,
+            "aggregationMethod": "median"
           }
         ],
         "categories:seo": [
           "warn",
           {
-            "minScore": 0.95
+            "minScore": 0.95,
+            "aggregationMethod": "median"
           }
         ],
         "total-byte-weight": [
