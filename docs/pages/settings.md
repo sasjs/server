@@ -80,7 +80,7 @@ For API use by different servers / domains, see [CORS](settings.md#cors) and [WH
 
 ### API_SERVER_URL
 
-The URL generated stored programs use to call back into this server. Unset, it is taken from the request that starts the session; set it when that is wrong for the topology - behind a reverse proxy or a load balancer, for instance - because the value is written into each program verbatim, so a wrong one only surfaces when the program runs. It must be an http(s) URL with a host and no trailing slash: anything else is refused at startup, while the configuration is still in front of you.
+The URL generated stored programs use to call back into this server. Unset, it is taken from the request that starts the session; set it when that is wrong for the topology - behind a reverse proxy or a load balancer, for instance - because the value is written into each program verbatim, so a wrong one only surfaces when the program runs. It must be an http(s) URL with no path: `https://host` is accepted and `https://host/base` is refused, so a deployment behind a path-prefixed proxy has to set the value some other way. A value with a path is refused at startup, while the configuration is still in front of you. (The check does not look past the host, so a query or fragment passes it - no program needs one.)
 
 Example:
 
@@ -645,7 +645,7 @@ SITE_ID=123
 
 ### STATIC_MOCK_LOCATION
 
-The folder the SAS 9 mock reads its files from and writes uploads into - the routes that stand in for `/SASStoredProcess` and the pages around it. A relative path is resolved against the working directory. Default `mocks`.
+The folder the SAS 9 mock reads its files from and writes uploads into - the routes that stand in for `/SASStoredProcess` and the pages around it. A relative path is resolved against the working directory; an absolute path is used as written. Default `mocks`.
 
 Example:
 

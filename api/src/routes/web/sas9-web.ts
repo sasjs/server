@@ -3,9 +3,9 @@ import { setCSRFCookie } from '../../middlewares'
 import { WebController } from '../../controllers'
 import { MockSas9Controller } from '../../controllers/mock-sas9'
 import multer from 'multer'
-import path from 'path'
 import dotenv from 'dotenv'
 import { FileUploadController } from '../../controllers/internal'
+import { mockUploadDestination } from '../../utils'
 
 dotenv.config({ quiet: true })
 
@@ -16,11 +16,9 @@ const webController = new WebController()
 const controller = new MockSas9Controller()
 const fileUploadController = new FileUploadController()
 
-const mockPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
-
-const upload = multer({
-  dest: path.join(process.cwd(), mockPath, 'sas9', 'files-received')
-})
+// A relative STATIC_MOCK_LOCATION resolves against the working directory and an
+// absolute one is used as written; the rule is shared with the controller.
+const upload = multer({ dest: mockUploadDestination() })
 
 // The mock's login form posts application/x-www-form-urlencoded; the parser
 // is scoped here rather than mounted globally in app.ts.

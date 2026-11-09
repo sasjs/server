@@ -7,7 +7,8 @@ import { ExecutionController } from './internal'
 import {
   getPreProgramVariables,
   getRunTimeAndFilePath,
-  makeFilesNamesMap
+  makeFilesNamesMap,
+  resolveMockPath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 
@@ -27,6 +28,11 @@ export interface MockFileRead {
 export class MockSas9Controller {
   private loggedIn: string | undefined
   private mocksPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
+
+  /** Where the mock's files are read from - see resolveMockPath. */
+  private mockBase(): string {
+    return resolveMockPath(this.mocksPath)
+  }
 
   @Get('/SASStoredProcess')
   public async sasStoredProcess(
@@ -51,19 +57,13 @@ export class MockSas9Controller {
 
     if (program) {
       return await getMockResponseFromFile([
-        process.cwd(),
-        this.mocksPath,
+        this.mockBase(),
         'sas9',
         ...filePath
       ])
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
-      'sas9',
-      ...filePath
-    ])
+    return await getMockResponseFromFile([this.mockBase(), 'sas9', ...filePath])
   }
 
   @Get('/SASStoredProcess/do')
@@ -115,12 +115,7 @@ export class MockSas9Controller {
       }
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
-      'sas9',
-      ...filePath
-    ])
+    return await getMockResponseFromFile([this.mockBase(), 'sas9', ...filePath])
   }
 
   @Post('/SASStoredProcess/do/')
@@ -186,8 +181,7 @@ export class MockSas9Controller {
         }
       } else {
         return await getMockResponseFromFile([
-          process.cwd(),
-          'mocks',
+          this.mockBase(),
           'sas9',
           'generic',
           'logged-in'
@@ -196,8 +190,7 @@ export class MockSas9Controller {
     }
 
     return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
+      this.mockBase(),
       'sas9',
       'generic',
       'login'
@@ -215,8 +208,7 @@ export class MockSas9Controller {
     this.loggedIn = req.body.username
 
     return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
+      this.mockBase(),
       'sas9',
       'generic',
       'logged-in'
@@ -229,8 +221,7 @@ export class MockSas9Controller {
 
     if (req.query.publicDenied === 'true') {
       return await getMockResponseFromFile([
-        process.cwd(),
-        'mocks',
+        this.mockBase(),
         'sas9',
         'generic',
         'public-access-denied'
@@ -238,8 +229,7 @@ export class MockSas9Controller {
     }
 
     return await getMockResponseFromFile([
-      process.cwd(),
-      'mocks',
+      this.mockBase(),
       'sas9',
       'generic',
       'logged-out'
