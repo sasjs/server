@@ -157,6 +157,46 @@ describe('Docs screen', () => {
     expect(page.url()).toContain('/SASjsDocs')
 
     await page.screenshot({ path: path.join(screenshotDir, 'docs-tab.png') })
+
+    // The docs follow the app's colour scheme, not just the operating system's.
+    // The palette is Material's, so the assertion is on the attribute Material
+    // sets from it - in the FRAMED document, which is the one the reader sees.
+    const scheme = () =>
+      page
+        .frameLocator('iframe[title="SASjs Server documentation"]')
+        .locator('body')
+        .getAttribute('data-md-color-scheme')
+
+    const setAppScheme = async (preference: 'light' | 'dark') => {
+      await page.evaluate((mode) => {
+        const settings = JSON.parse(
+          localStorage.getItem('studio-settings') || '{}'
+        )
+
+        // Object.assign rather than a spread: this runs in the page, and the
+        // suite compiles to ES5 where a spread becomes a helper the page has no
+        // definition for.
+        localStorage.setItem(
+          'studio-settings',
+          JSON.stringify(
+            Object.assign({}, settings, { 'workbench.colorTheme': mode })
+          )
+        )
+      }, preference)
+    }
+
+    await setAppScheme('dark')
+    await page.goto(`${baseUrl()}/SASjsDocs`)
+    await frame.locator('text=Installation').first().waitFor({ timeout: 30000 })
+
+    expect(await scheme()).toBe('slate')
+
+    await setAppScheme('light')
+    await page.goto(`${baseUrl()}/SASjsDocs`)
+    await frame.locator('text=Installation').first().waitFor({ timeout: 30000 })
+
+    expect(await scheme()).toBe('default')
+
     await page.close()
   }, 120000)
 
