@@ -140,7 +140,7 @@ The value comes from `buildInfo.generated.ts`, which the build writes from the r
 
 - `sasjs/sasjsconfig.json` is the `mock` target the CLI builds against; `mock/build.mjs` runs the docs, the web bundle and the CLI in order and writes what a static host needs: `404.html` and `.nojekyll`, the API's Swagger UI at `/api` with its stylesheet and bundle at `/api-assets` (both generated from `swagger-ui-dist`, which is why the site workflow installs the API's dependencies - the build asks the API for them, and fails naming any that are missing), and a folder per screen (`/studio/index.html` and the rest) so a deep link answers `200` rather than rendering with a `404` status.
 - `npm run mock:serve` serves the built site the way GitHub Pages does, including the fallback that makes a reload on `/studio` work.
-- What runs is JavaScript. Run on a SAS program reports that SAS needs a server - a demo that pretended otherwise would be teaching the wrong thing.
+- What runs is JavaScript. The demo ships a recording of one SAS session, `mock/sas-transcript.json` - a real run's log, listing and webout, with the licensee and site line removed - and a CLI carrying sasjs/cli#1575 answers the demo's `.sas` program with it. Until a CLI release carries that support the program is refused, with `"runTime" must be one of [js]`, and every other `.sas` program is refused either way: a demo that invented a session for every program would be teaching the wrong thing.
 - The site is a browser host: no accounts, no private data, and the seeded identity is the package's demo admin. Nothing here is a security boundary, which is why a demo is all it should ever serve.
 
 ## Documentation

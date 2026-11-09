@@ -85,6 +85,20 @@ copyFileSync(
   path.join(root, 'sasjsbuild', 'mock-snapshot.json')
 )
 
+// A recorded SAS session, so a Run on the demo's .sas program shows a real log,
+// listing and webout instead of a refusal. A browser has no SAS binary; this is
+// the transcript of one run, with the licensee and site line removed.
+//
+// Only a CLI carrying the support reads it (sasjs/cli#1575), so the demo needs a
+// CLI at or above the release that contains it - CLI_VERSION above is `^6`, and
+// SASJS_CLI_VERSION overrides it. Until such a release exists this file travels
+// with the build and the demo keeps refusing the program, which is why the
+// README describes the behaviour only where the recording applies.
+copyFileSync(
+  path.join(root, 'mock', 'sas-transcript.json'),
+  path.join(root, 'sasjsbuild', 'sas-transcript.json')
+)
+
 sasjs('build -t mock')
 
 const site = path.join(root, 'sasjsbuild', 'mock')
