@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useEffect } from 'react'
 
 import {
   Backdrop,
@@ -44,11 +44,42 @@ registerSasLanguage()
 registerSasCompletions()
 registerSasHover()
 
-// The language server starts once for the app: it serves every editor, so
-// the lifecycle belongs here rather than to any single editor mount. A
-// failed start leaves the editor on its static providers; the service
-// clears its cached rejection, so a later mount retries the start.
-startSasLanguageService().catch(() => undefined)
+/**
+ * Starts the language server once the editor is on screen and the browser is
+ * idle.
+ *
+ * It used to start at import time, which meant the worker - a payload of
+ * several megabytes - began downloading while the Monaco chunk was still on its
+ * way, and the two spent the connection on each other: LCP was 5.13s against
+ * 1.5s for the same application's other screens. What the server adds is hover,
+ * completion and diagnostics, none of which is needed for the first paint, so
+ * it waits for one. The static providers registered above mean the editor is
+ * fully usable meanwhile, and a start that never happens because the user
+ * navigated away costs nothing.
+ */
+const startLanguageServerWhenIdle = (): (() => void) => {
+  let cancelled = false
+
+  const start = () => {
+    if (!cancelled) startSasLanguageService().catch(() => undefined)
+  }
+
+  if (typeof window.requestIdleCallback === 'function') {
+    const handle = window.requestIdleCallback(start, { timeout: 2500 })
+
+    return () => {
+      cancelled = true
+      window.cancelIdleCallback(handle)
+    }
+  }
+
+  const handle = window.setTimeout(start, 1500)
+
+  return () => {
+    cancelled = true
+    window.clearTimeout(handle)
+  }
+}
 
 const StyledTabPanel = styled(TabPanel)(() => ({
   padding: '10px'
@@ -85,6 +116,9 @@ const SASjsEditor = ({
   onToggleSideBar
 }: SASjsEditorProps) => {
   const [colorMode] = useColorMode()
+
+  // Deferred rather than started at import: see startLanguageServerWhenIdle.
+  useEffect(() => startLanguageServerWhenIdle(), [])
 
   const {
     fileContent,
