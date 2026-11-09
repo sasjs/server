@@ -16,13 +16,7 @@
  * always be traced back to the release that assembled it.
  */
 import { execSync } from 'child_process'
-import {
-  existsSync,
-  copyFileSync,
-  cpSync,
-  mkdirSync,
-  writeFileSync
-} from 'fs'
+import { existsSync, copyFileSync, cpSync, mkdirSync, writeFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -121,18 +115,48 @@ for (const route of [
 
 // The API documentation page, at the short prefix the interface links to. The
 // worker answers /SASjsApi from @sasjs/api, but /api is a plain file and a
-// static host serves it only if the page is in the site. Copied only when the
-// API has been built - the page without the swagger-ui assets beside it is a
-// worse answer than the shell - so a checkout that built only the web bundle
-// is unaffected.
-const swagger = path.join(root, 'api', 'public', 'SASjsApi')
-if (existsSync(path.join(swagger, 'swagger-ui.css'))) {
-  cpSync(swagger, path.join(site, 'api'), { recursive: true })
-  copyFileSync(
-    path.join(root, 'api', 'public', 'swagger.yaml'),
-    path.join(site, 'swagger.yaml')
+// static host serves it only if the page is in the site.
+//
+// The page's stylesheet, bundle and preset are GENERATED from swagger-ui-dist
+// and gitignored - api/public/SASjsApi holds only what is committed. Asking the
+// API for them is the difference between a documentation page and a blank one,
+// so the build does that when they are missing, then checks every file it is
+// about to publish rather than shipping whatever happens to be there.
+const swaggerSource = path.join(root, 'api', 'public', 'SASjsApi')
+const swaggerFiles = [
+  'index.html',
+  'swagger-ui-init.js',
+  'swagger-ui.css',
+  'swagger-ui-bundle.js',
+  'swagger-ui-standalone-preset.js',
+  'favicon-16x16.png',
+  'favicon-32x32.png',
+  'oauth2-redirect.html',
+  'swagger-ui-LICENSE',
+  'swagger-ui-NOTICE'
+]
+
+if (!existsSync(path.join(swaggerSource, 'swagger-ui.css')))
+  run('npm run swagger-ui:copy', path.join(root, 'api'))
+
+const missing = swaggerFiles.filter(
+  (file) => !existsSync(path.join(swaggerSource, file))
+)
+
+if (missing.length)
+  throw new Error(
+    `The API documentation page is incomplete: ${missing.join(', ')} missing from ${swaggerSource}. Run "npm ci --prefix api" and build again.`
   )
-}
+
+mkdirSync(path.join(site, 'api'), { recursive: true })
+
+for (const file of swaggerFiles)
+  copyFileSync(path.join(swaggerSource, file), path.join(site, 'api', file))
+
+copyFileSync(
+  path.join(root, 'api', 'public', 'swagger.yaml'),
+  path.join(site, 'swagger.yaml')
+)
 
 // Pages serves a .nojekyll site as-is; without it, a folder starting with an
 // underscore (Monaco's, for one) is dropped by the Jekyll build.
