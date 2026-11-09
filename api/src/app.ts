@@ -25,7 +25,8 @@ import {
   configureCors,
   configureExpressSession,
   configureLogger,
-  configureSecurity
+  configureSecurity,
+  docsInlineScripts
 } from './app-modules'
 import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 import { setCSRFCookie } from './middlewares'
@@ -73,6 +74,14 @@ export default setProcessVariables().then(async () => {
    *   Handle security and origin    *
    ***********************************/
   configureSecurity(app)
+
+  // The docs site carries its own inline scripts (Material's scope helper, and
+  // the palette block in docs/theme/main.html), which helmet's `script-src
+  // 'self'` refuses. Relaxed for this mount only, and set here - immediately
+  // after helmet, before any handler - because the web build's static mount at
+  // the root also answers `/docs/...`, so a middleware placed beside the docs
+  // mount would never run for a build that carries the pages.
+  app.use('/docs', docsInlineScripts)
 
   /***********************************
    *      Compress text responses    *

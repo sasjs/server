@@ -155,12 +155,54 @@ describe('Docs tab', () => {
 
     await page.screenshot({ path: path.join(screenshotDir, 'docs-tab.png') })
 
-    // The site's own inline scripts are refused by the server's
-    // Content-Security-Policy (`script-src 'self'`), so its palette and search
-    // do not run when the pages are served by the server. That is a property of
-    // the policy rather than of the path, so it is not asserted here - see the
-    // note in the pull request. What this suite pins is that the tab reaches the
-    // real page, from the real path.
+    // The docs follow the app's colour scheme, not just the operating system's:
+    // the site is same-origin with the app, so the preference the app stores in
+    // `studio-settings` is the one the site reads on load. This exercises the
+    // policy too - the palette block is inline, so if the docs mount refused
+    // inline scripts the attribute would never change.
+    const scheme = () =>
+      page.locator('body').getAttribute('data-md-color-scheme')
+
+    const setScheme = async (preference: 'light' | 'dark') => {
+      await page.evaluate((mode) => {
+        const settings = JSON.parse(
+          localStorage.getItem('studio-settings') || '{}'
+        )
+
+        // Object.assign rather than a spread: this runs in the page, and the
+        // suite compiles to ES5 where a spread becomes a helper the page has no
+        // definition for.
+        localStorage.setItem(
+          'studio-settings',
+          JSON.stringify(
+            Object.assign({}, settings, { 'workbench.colorTheme': mode })
+          )
+        )
+      }, preference)
+
+      await page.reload()
+      await page
+        .locator('text=Installation')
+        .first()
+        .waitFor({ timeout: 30000 })
+
+      // Material may re-apply the palette while it initialises, so the answer is
+      // the settled value rather than the first one.
+      await page
+        .waitForFunction(
+          (expected) =>
+            document.body.getAttribute('data-md-color-scheme') === expected,
+          preference === 'dark' ? 'slate' : 'default',
+          { timeout: 15000 }
+        )
+        .catch(() => undefined)
+    }
+
+    await setScheme('dark')
+    expect(await scheme()).toBe('slate')
+
+    await setScheme('light')
+    expect(await scheme()).toBe('default')
 
     await page.close()
   }, 120000)
