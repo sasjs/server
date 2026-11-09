@@ -42,6 +42,14 @@ jobs:
         # postinstall needed.
         run: npm ci --ignore-scripts
 
+      - name: Drop the published site from the scan
+        # The checkout is full, so gitleaks reads every ref - including gh-pages,
+        # the built site. Its minified bundles carry strings that look like keys
+        # to `generic-api-key`, and a finding there fails every pull request on
+        # an artefact branch nobody merges from. The branch is not history this
+        # repository ships, so it is dropped before the scan.
+        run: git update-ref -d refs/remotes/origin/gh-pages || true
+
       - name: Scan for secrets (gitleaks)
         # The local pre-commit hook is best-effort (and suppressed entirely
         # when .npmrc sets ignore-scripts=true), so CI is the enforcement
