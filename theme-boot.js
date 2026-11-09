@@ -1,0 +1,1 @@
+!function(){try{var e=window.localStorage.getItem("mui-mode"),t=!!window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,o="dark"===e||("system"===e||null===e||""===e)&&t?"dark":"light",a=document.documentElement;a.style.colorScheme=o,a.style.backgroundColor={light:"#ffffff",dark:"#121212"}[o],a.setAttribute("data-color-scheme",o)}catch(e){}}();

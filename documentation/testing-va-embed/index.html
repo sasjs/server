@@ -61,8 +61,26 @@
         : 'light'
     }
 
+    /**
+     * The page's own background, painted before there is a body.
+     *
+     * Material sets the body's attributes after this script and after first
+     * paint, so a reader in dark mode saw white until it did. The document
+     * element can be painted now - it exists - and Material's own colours land
+     * on top of it.
+     */
+    function paintEarly(mode) {
+      var html = document.documentElement
+      if (!html) return
+
+      html.style.colorScheme = mode === 'dark' ? 'dark' : 'light'
+      html.style.backgroundColor = mode === 'dark' ? '#1e1e1e' : '#ffffff'
+    }
+
     function apply(mode) {
       var palette = palettes[mode] || palettes.light
+
+      paintEarly(mode)
 
       try {
         localStorage.setItem('__palette', JSON.stringify(palette))

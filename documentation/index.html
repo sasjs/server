@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="The open-source NodeJS wrapper around the SAS binary - a REST API, SASjs Drive, Stored Programs and App Stream, for Viya, SAS 9 and desktop SAS." name="description"/>
+<meta content="Run SAS programs from a browser or over HTTP. SASjs Server wraps the SAS executable with an interface, a REST API, stored programs and app hosting." name="description"/>
 <link href="https://server.sasjs.io/docs/" rel="canonical"/>
 <link href="installation/" rel="next"/>
 <link href="img/logo/favicon/32.ico" rel="icon"/>
@@ -60,8 +60,26 @@
         : 'light'
     }
 
+    /**
+     * The page's own background, painted before there is a body.
+     *
+     * Material sets the body's attributes after this script and after first
+     * paint, so a reader in dark mode saw white until it did. The document
+     * element can be painted now - it exists - and Material's own colours land
+     * on top of it.
+     */
+    function paintEarly(mode) {
+      var html = document.documentElement
+      if (!html) return
+
+      html.style.colorScheme = mode === 'dark' ? 'dark' : 'light'
+      html.style.backgroundColor = mode === 'dark' ? '#1e1e1e' : '#ffffff'
+    }
+
     function apply(mode) {
       var palette = palettes[mode] || palettes.light
+
+      paintEarly(mode)
 
       try {
         localStorage.setItem('__palette', JSON.stringify(palette))
@@ -118,7 +136,7 @@
 <meta content="SASjs Server" property="og:site_name"/>
 <meta content="en_GB" property="og:locale"/>
 <meta content="Home - SASjs Server" property="og:title"/>
-<meta content="The open-source NodeJS wrapper around the SAS binary - a REST API, SASjs Drive, Stored Programs and App Stream, for Viya, SAS 9 and desktop SAS." property="og:description"/>
+<meta content="Run SAS programs from a browser or over HTTP. SASjs Server wraps the SAS executable with an interface, a REST API, stored programs and app hosting." property="og:description"/>
 <meta content="https://server.sasjs.io/docs/" property="og:url"/>
 <meta content="https://server.sasjs.io/docs/img/og-card-2400.png" property="og:image"/>
 <meta content="image/png" property="og:image:type"/>
@@ -128,7 +146,7 @@
 <!-- X / Twitter -->
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="Home - SASjs Server" name="twitter:title"/>
-<meta content="The open-source NodeJS wrapper around the SAS binary - a REST API, SASjs Drive, Stored Programs and App Stream, for Viya, SAS 9 and desktop SAS." name="twitter:description"/>
+<meta content="Run SAS programs from a browser or over HTTP. SASjs Server wraps the SAS executable with an interface, a REST API, stored programs and app hosting." name="twitter:description"/>
 <meta content="https://server.sasjs.io/docs/img/og-card-2400.png" name="twitter:image"/>
 <meta content="SASjs Server - a REST API, a studio and an app portal for SAS" name="twitter:image:alt"/>
 </head>
@@ -137,7 +155,7 @@
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
 <label class="md-overlay" for="__drawer"></label>
 <div data-md-component="skip">
-<a class="md-skip" href="#sasjs-server-documentation">
+<a class="md-skip" href="#sasjs-server">
           Skip to content
         </a>
 </div>
@@ -283,7 +301,7 @@
 </nav>
 <main class="md-main" data-md-component="main">
 <div class="md-main__inner md-grid">
-<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden="">
 <div class="md-sidebar__scrollwrap">
 <div class="md-sidebar__inner">
 <nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
@@ -324,10 +342,108 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#urls">
+<a class="md-nav__link" href="#what-it-does">
 <span class="md-ellipsis">
       
-        URLs
+        What it does
+      
+    </span>
+</a>
+<nav aria-label="What it does" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sasjs-studio">
+<span class="md-ellipsis">
+      
+        SASjs Studio
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rest-api">
+<span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#app-stream">
+<span class="md-ellipsis">
+      
+        App Stream
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#stored-programs">
+<span class="md-ellipsis">
+      
+        Stored Programs
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#what-happens-to-a-request">
+<span class="md-ellipsis">
+      
+        What happens to a request
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#when-it-is-the-right-tool">
+<span class="md-ellipsis">
+      
+        When it is the right tool
+      
+    </span>
+</a>
+<nav aria-label="When it is the right tool" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reach-for-it-when">
+<span class="md-ellipsis">
+      
+        Reach for it when
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#you-probably-do-not-need-it-if">
+<span class="md-ellipsis">
+      
+        You probably do not need it if
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#running-it">
+<span class="md-ellipsis">
+      
+        Running it
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#where-everything-lives">
+<span class="md-ellipsis">
+      
+        Where everything lives
       
     </span>
 </a>
@@ -572,10 +688,108 @@
     </label>
 <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
 <li class="md-nav__item">
-<a class="md-nav__link" href="#urls">
+<a class="md-nav__link" href="#what-it-does">
 <span class="md-ellipsis">
       
-        URLs
+        What it does
+      
+    </span>
+</a>
+<nav aria-label="What it does" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sasjs-studio">
+<span class="md-ellipsis">
+      
+        SASjs Studio
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rest-api">
+<span class="md-ellipsis">
+      
+        REST API
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#app-stream">
+<span class="md-ellipsis">
+      
+        App Stream
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#stored-programs">
+<span class="md-ellipsis">
+      
+        Stored Programs
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#what-happens-to-a-request">
+<span class="md-ellipsis">
+      
+        What happens to a request
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#when-it-is-the-right-tool">
+<span class="md-ellipsis">
+      
+        When it is the right tool
+      
+    </span>
+</a>
+<nav aria-label="When it is the right tool" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reach-for-it-when">
+<span class="md-ellipsis">
+      
+        Reach for it when
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#you-probably-do-not-need-it-if">
+<span class="md-ellipsis">
+      
+        You probably do not need it if
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#running-it">
+<span class="md-ellipsis">
+      
+        Running it
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#where-everything-lives">
+<span class="md-ellipsis">
+      
+        Where everything lives
       
     </span>
 </a>
@@ -587,24 +801,62 @@
 </div>
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
-<h1 id="sasjs-server-documentation">SASjs Server Documentation<a class="headerlink" href="#sasjs-server-documentation" title="Permanent link">¶</a></h1>
-<p>SASjs Server provides a visual interface and REST API for executing programs directly against the SAS executable (<code>sas.exe</code>/<code>sas.sh</code>).  The executable could be on a desktop, or an actual SAS server.  It works in a broadly similar way to the SAS® Stored Process server, or the Viya Job Execution Service - if you have either of these, then it is likely you do not need SASjs Server.</p>
-<p>SASjs Server is FAST - responsiveness (for SAS Stored Programs) is around 200 milliseconds.  The following features are provided out of the box:</p>
+<div class="home">
+<div class="home-hero">
+<h1 id="sasjs-server">SASjs Server<a class="headerlink" href="#sasjs-server" title="Permanent link">¶</a></h1>
+<p class="home-lead">Your SAS installation, on the web.</p>
+<p>Run SAS programs from a browser, call them over HTTP, and give analysts somewhere to try things out - on desktop SAS, on SAS 9, or on Viya.</p>
+<p>SASjs Server is a small NodeJS service that sits beside your SAS executable and does one job: it takes a request, runs the program, and hands back the log and the result.</p>
+<p><a class="md-button md-button--primary" href="installation/">Install SASjs Server</a>
+<a class="md-button" href="api/">Explore the API</a></p>
+<p class="home-facts">Node 22 or later. MIT licence. Windows, macOS and Linux.</p>
+</div>
+<h2 id="what-it-does">What it does<a class="headerlink" href="#what-it-does" title="Permanent link">¶</a></h2>
+<div class="home-grid">
+<div class="home-card">
+<h3 id="sasjs-studio">SASjs Studio<a class="headerlink" href="#sasjs-studio" title="Permanent link">¶</a></h3>
+<p>A code editor in the browser that runs against your real SAS installation. The log and the <code>webout</code> come back in the same window, and files save to the drive.</p>
+<p><a href="studio/">About Studio</a></p>
+</div>
+<div class="home-card">
+<h3 id="rest-api">REST API<a class="headerlink" href="#rest-api" title="Permanent link">¶</a></h3>
+<p>Every action is an HTTP call: run a stored program, read a folder, upload a file. The reference doubles as a console, so you can try a call before writing any code.</p>
+<p><a href="api/">Browse the API</a></p>
+</div>
+<div class="home-card">
+<h3 id="app-stream">App Stream<a class="headerlink" href="#app-stream" title="Permanent link">¶</a></h3>
+<p>Publish a SAS-backed web app to anyone who can sign in. Compile it with the SASjs CLI, upload the zip, and share the URL.</p>
+<p><a href="apps/">About App Stream</a></p>
+</div>
+<div class="home-card">
+<h3 id="stored-programs">Stored Programs<a class="headerlink" href="#stored-programs" title="Permanent link">¶</a></h3>
+<p>Keep SAS, JS, Python and R programs on the drive and run them by name, the way a Stored Process Server does.</p>
+<p><a href="storedprograms/">Stored Programs</a></p>
+</div>
+</div>
+<h2 id="what-happens-to-a-request">What happens to a request<a class="headerlink" href="#what-happens-to-a-request" title="Permanent link">¶</a></h2>
+<ol>
+<li>Something calls the API - this interface, a SASjs app, a script, a scheduled job. Every call is an ordinary HTTP request to a path such as <code>/SASjsApi/stp/execute</code>.</li>
+<li>The server runs the program in a SAS session, choosing the runtime from the program's file extension.</li>
+<li>The log and the returned data - the <code>webout</code> - come back in the response.</li>
+</ol>
+<p>The API is the one <a href="https://adapter.sasjs.io"><code>@sasjs/adapter</code></a> already speaks, so a SASjs app points at SASjs Server without a code change. A stored program typically answers in around 200 milliseconds.</p>
+<h2 id="when-it-is-the-right-tool">When it is the right tool<a class="headerlink" href="#when-it-is-the-right-tool" title="Permanent link">¶</a></h2>
+<h3 id="reach-for-it-when">Reach for it when<a class="headerlink" href="#reach-for-it-when" title="Permanent link">¶</a></h3>
 <ul>
-<li>SASjs Studio - for running SAS code and examining webout content</li>
-<li>REST API - documentation which can also used to make actual API calls</li>
-<li>AppStream - a portal for home-grown or third-party SAS-Powered Web Applications</li>
+<li>You have Base SAS, desktop SAS, or SAS 9 without a Stored Process Server.</li>
+<li>You want SAS behind a web app, a CI pipeline, or a chat bot.</li>
+<li>You want one place where analysts can run code, keep it, and share the result.</li>
+<li>You need to run <a href="https://cli.sasjs.io/test">tests</a> against your SAS jobs, services and macros.</li>
+<li>You want to install a third-party app such as <a href="https://datacontroller.io">Data Controller for SAS</a>.</li>
 </ul>
-<p>If you are running older versions of SAS, or SAS on a desktop, then this product will enable you to:</p>
-<ul>
-<li>Install third party apps (such as <a href="https://datacontroller.io">Data Controller for SAS</a>)</li>
-<li>Run <a href="https://cli.sasjs.io/test">tests</a> on your SAS Jobs, Services and Macros </li>
-<li>Execute SAS code from a browser</li>
-<li>Execute JS code from SAS</li>
-<li>Build applications on SAS </li>
-</ul>
-<p>SASjs Server is MIT open source and the repository is available here:  <a href="https://github.com/sasjs/server">https://github.com/sasjs/server</a>.</p>
-<h2 id="urls">URLs<a class="headerlink" href="#urls" title="Permanent link">¶</a></h2>
+<h3 id="you-probably-do-not-need-it-if">You probably do not need it if<a class="headerlink" href="#you-probably-do-not-need-it-if" title="Permanent link">¶</a></h3>
+<p>You run Viya's Job Execution Service or a SAS Stored Process Server. Those do this job, and SASjs Server overlaps with them rather than replacing them.</p>
+<h2 id="running-it">Running it<a class="headerlink" href="#running-it" title="Permanent link">¶</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a>npx<span class="w"> </span>@sasjs/server
+</span></code></pre></div>
+<p>The server reads <code>.env</code> from the directory it runs in. Two settings start it: <a href="settings/#sas_path"><code>SAS_PATH</code></a>, the full path to <code>sas.exe</code> or <code>sas.sh</code>, and <a href="settings/#http_port"><code>HTTP_PORT</code></a> for the listener. <a href="installation/">Installation</a> covers the standalone executable, keeping the process running, and the first sign-in.</p>
+<h2 id="where-everything-lives">Where everything lives<a class="headerlink" href="#where-everything-lives" title="Permanent link">¶</a></h2>
 <p>Everything the interface links to is at a top-level path:</p>
 <table>
 <thead>
@@ -640,10 +892,12 @@
 </tr>
 </tbody>
 </table>
-<p>The paths the interface used before these were introduced - <code>/SASjsStudio</code>, <code>/SASjsApps</code>, <code>/SASjsDocs</code>, <code>/SASjsSettings</code>, <code>/SASjsLogon</code>, <code>/AppStream</code> - redirect to them.</p>
+<p>The shorter paths - <code>/SASjsStudio</code>, <code>/SASjsApps</code>, <code>/SASjsDocs</code>, <code>/SASjsSettings</code>, <code>/SASjsLogon</code>, <code>/AppStream</code> - redirect to the ones above.</p>
 <!-- server-docs-ignore: /SASjsApiDocs -->
 <p><code>/SASjsApiDocs</code> redirects to <code>/api-assets/</code>. It is a redirect rule rather than a mounted router, so the endpoint checker - which reads registered routes - does not see it.</p>
 <p>The API also answers on <code>/SASjsApi</code>, the spelling <code>@sasjs/adapter</code> uses and the one the specification below documents. The two are aliases of the same routes, so a client may use either.  Likewise <code>/AppStream</code> keeps serving published apps.</p>
+<p>SASjs Server is MIT open source. The repository is <a href="https://github.com/sasjs/server">sasjs/server on GitHub</a>.</p>
+</div>
 </article>
 </div>
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
