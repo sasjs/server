@@ -15,10 +15,12 @@
  * version it actually used is written into the output, so a published site can
  * always be traced back to the release that assembled it.
  */
-import { execSync, spawnSync } from 'child_process'
+import { execSync } from 'child_process'
 import { existsSync, copyFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+
+import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -34,44 +36,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  */
 const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6'
 
-const run = (command, cwd = root) => {
-  process.stdout.write(`\n> ${command}\n`)
-
-  execSync(command, { cwd, stdio: 'inherit' })
-}
-
-/**
- * Runs a command, and tries again when the registry has not caught up.
- *
- * `npx @sasjs/cli@^6` asks for the newest 6.x. Within a minute of a CLI release
- * the metadata advertises a version whose tarball is not yet served, and npm
- * answers `ETARGET: No matching version found` - which failed a site publish
- * once, on a release that had landed seconds earlier. Nothing about the build is
- * wrong in that case; the registry is.
- */
-const runWhenTheRegistryIsReady = (command, attempts = 3) => {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      run(command)
-      return
-    } catch (error) {
-      const output = `${error?.stdout ?? ''}${error?.stderr ?? ''}`
-
-      if (attempt >= attempts || !/ETARGET|E404/.test(output)) throw error
-
-      process.stdout.write(
-        `\nThe registry is not serving that package yet; trying again in 15s.\n`
-      )
-      // a blocking sleep that works the same on every platform this runs on
-      spawnSync(process.execPath, ['-e', 'setTimeout(() => {}, 15000)'])
-    }
-  }
-}
+const run = (command, cwd = root) => runInShell(command, cwd)
 
 const sasjs = (arguments_) =>
   // quoted: `^` is an escape character to cmd.exe, and this runs on Windows too
   runWhenTheRegistryIsReady(
-    `npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`
+    `npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`,
+    { cwd: root }
   )
 
 /** A command whose output is needed rather than passed through. */
@@ -103,7 +74,10 @@ sasjs('compile -t mock')
 // The drive a visitor starts with. It is a captured snapshot - the format the
 // browser host exports - so the demo opens on files rather than on an empty
 // drive whose home folder does not exist.
-copyFileSync(path.join(root, 'mock', 'drive.json'), path.join(root, 'sasjsbuild', 'mock-snapshot.json'))
+copyFileSync(
+  path.join(root, 'mock', 'drive.json'),
+  path.join(root, 'sasjsbuild', 'mock-snapshot.json')
+)
 
 sasjs('build -t mock')
 

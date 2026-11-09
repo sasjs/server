@@ -54,6 +54,9 @@ jobs:
       - name: Web dependencies
         run: npm ci --prefix web
 
+      - name: Test the build's retry, which only fails in a deploy otherwise
+        run: npm run mock:test
+
       - name: Build the mock site
         run: npm run mock:build
 
