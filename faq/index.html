@@ -15,6 +15,68 @@
 <link href="../assets/stylesheets/palette.fb2fffe2.min.css" rel="stylesheet"/>
 <link href="../stylesheets/extra.css" rel="stylesheet"/>
 <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<script>
+  (function () {
+    var palettes = {
+      light: {
+        index: 0,
+        color: { scheme: 'default', primary: 'white', accent: 'amber' }
+      },
+      dark: {
+        index: 1,
+        color: { scheme: 'slate', primary: 'black', accent: 'amber' }
+      }
+    }
+
+    function parentMode() {
+      try {
+        var settings = JSON.parse(
+          localStorage.getItem('studio-settings') || '{}'
+        )
+        var choice = settings['workbench.colorTheme']
+
+        if (choice === 'light' || choice === 'dark') return choice
+      } catch (error) {
+        /* an unreadable store falls through to the operating system */
+      }
+
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+    }
+
+    function apply(mode) {
+      var palette = palettes[mode] || palettes.light
+
+      try {
+        localStorage.setItem('__palette', JSON.stringify(palette))
+      } catch (error) {
+        /* a blocked store only costs the next page its first paint */
+      }
+
+      var body = document.body
+      if (!body) return
+
+      body.setAttribute('data-md-color-scheme', palette.color.scheme)
+      body.setAttribute('data-md-color-primary', palette.color.primary)
+      body.setAttribute('data-md-color-accent', palette.color.accent)
+    }
+
+    apply(parentMode())
+
+    // Material sets the body's attributes while it initialises, so the choice is
+    // applied again once there is a body to apply it to.
+    document.addEventListener('DOMContentLoaded', function () {
+      apply(parentMode())
+    })
+
+    window.addEventListener('message', function (event) {
+      if (!event.data || event.data.type !== 'sasjs-theme') return
+
+      apply(event.data.mode)
+    })
+  })()
+</script>
 <!-- The description and canonical link are emitted by Material itself, from the
      page's front matter and `site_url`. Emitting them here as well duplicates
      both tags. -->
