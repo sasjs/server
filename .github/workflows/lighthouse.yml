@@ -1,13 +1,16 @@
 name: Lighthouse
 
-# Measures the documentation the way a reader loads it, on every pull request,
-# and prints the scores into the job summary. The docs are the part of this
-# repository with a page weight worth watching - they carry the theme, the
-# self-hosted fonts and the search index - and until now nothing measured them,
-# which is how "it feels slow" stayed a matter of opinion.
+# Measures the site the way a reader loads it, on every pull request, and prints
+# the scores into the job summary.
 #
-# It builds and serves the docs here rather than measuring the published site:
-# a pull request should be judged on its own build, not on whatever is live.
+# It builds the whole mock site rather than only the documentation, because the
+# interface is the part a visitor spends time in - Studio, the Drive and the Apps
+# screen are a client-rendered bundle each, and measuring only the docs would
+# leave the heaviest surface unmeasured. The docs are measured too, at the paths
+# the site serves them from.
+#
+# It builds and serves here rather than measuring the published site: a pull
+# request should be judged on its own build, not on whatever is live.
 
 on:
   pull_request:
@@ -28,6 +31,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: lts/*
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            api/package-lock.json
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.0.0
         with:
@@ -36,12 +43,32 @@ jobs:
       - name: Docs dependencies
         run: pip install -r docs/requirements.txt
 
-      - name: Build the docs
-        run: npm run docs:build
+      - name: Web dependencies
+        run: npm ci --prefix web
 
-      - name: Serve the docs
+      # The API page's stylesheet and bundle are generated from swagger-ui-dist,
+      # which the API installs - without this the site carries a page with
+      # nothing to draw it with.
+      - name: API dependencies
+        run: npm ci --prefix api
+
+      - name: API documentation assets
+        run: npm run swagger-ui:copy --prefix api
+
+      - name: Test the build's retry
+        # The retry that waits out a registry publish window only fails in a
+        # deploy, so the rule is asserted rather than discovered there.
+        run: npm run mock:test
+
+      # Builds the docs into the web bundle, compiles and builds the site with
+      # the released CLI (pinned in mock/build.mjs), and lays out what a static
+      # host needs.
+      - name: Build the mock site
+        run: npm run mock:build
+
+      - name: Serve the site
         run: |
-          cd web/build/documentation
+          cd sasjsbuild/mock
           python3 -m http.server 8787 >/dev/null 2>&1 &
           for attempt in $(seq 1 30); do
             if curl -fsS http://localhost:8787/ >/dev/null; then
@@ -50,7 +77,7 @@ jobs:
             fi
             sleep 1
           done
-          echo "the docs server did not come up" >&2
+          echo "the site did not come up" >&2
           exit 1
 
       - name: Run Lighthouse
