@@ -832,15 +832,44 @@ describe('Studio in a browser', () => {
    * last writing. Only a 404 is the drive saying the file is gone; here the
    * check is refused, and the remembered file must still open.
    */
+  /**
+   * Opening Studio must not ask the drive to create a program that is already
+   * there. It used to: the refusal was the answer, and the browser logged the
+   * 409 as a console error on a screen that had done nothing wrong.
+   */
+  it('does not create the default program when it is already there', async () => {
+    const writes: number[] = []
+
+    page.on('response', (response) => {
+      if (
+        response.request().method() === 'POST' &&
+        response.url().includes('/SASjsApi/drive/file')
+      )
+        writes.push(response.status())
+    })
+
+    await page.goto(`${baseUrl()}/SASjsStudio`, {
+      waitUntil: 'domcontentloaded'
+    })
+    await page.waitForSelector('.monaco-editor', { timeout: 30000 })
+    await page.waitForTimeout(3000)
+
+    expect(writes).toEqual([])
+  }, 120000)
+
   it('opens the remembered file when the drive cannot be asked whether it is there', async () => {
     const rememberedPath = `/${PROGRAM_NAME}`
     const asked: string[] = []
 
     page.on('request', (request) => {
-      if (!request.url().includes('/SASjsApi/drive/file?')) return
+      if (!request.url().includes('/SASjsApi/drive/')) return
 
-      const askedFor = new URL(request.url()).searchParams.get('_filePath')
-      if (askedFor) asked.push(askedFor)
+      const requestUrl = new URL(request.url())
+      const askedFor =
+        requestUrl.searchParams.get('_filePath') ??
+        requestUrl.searchParams.get('_folderPath')
+
+      if (askedFor !== null) asked.push(`${requestUrl.pathname} ${askedFor}`)
     })
 
     // Open the program by URL, which is what remembers it. The editor states the
@@ -857,7 +886,8 @@ describe('Studio in a browser', () => {
     // The next drive-file read is the check. Refuse it, the way a proxy or a
     // restarting server would.
     let refused = 0
-    const check = '**/SASjsApi/drive/file?**'
+    // the check is the folder listing now, so that is what is refused
+    const check = '**/SASjsApi/drive/fileTree?**'
 
     await page.route(check, async (route) => {
       if (refused === 0) {
@@ -884,7 +914,7 @@ describe('Studio in a browser', () => {
 
     expect(refused).toBe(1)
     // The default program was never opened, and never asked for.
-    expect(asked.some((path) => path.includes('program.sas'))).toBe(false)
+    expect(asked.some((asked) => asked.includes('program.sas'))).toBe(false)
 
     await page.unroute(check)
   }, 120000)

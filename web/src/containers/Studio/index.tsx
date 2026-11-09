@@ -254,22 +254,37 @@ const Studio = () => {
     let cancelled = false
 
     /**
-     * Whether the drive still has this file.
+     * Whether the folder holding this file lists it.
      *
-     * Three answers, not two. A `404` is the drive saying the file is gone; a
-     * refusal, a timeout or a `500` is a question that went unanswered. Reading
-     * the second as the first is what opened the default program over the file
-     * the user was last writing - a flash of `program.sas` and then the file
-     * they wanted, on the visits where the check happened to fail.
+     * Three answers, not two. A listing that arrives without the file is the
+     * drive saying it is not there; a listing that could not be asked for - a
+     * refusal, a timeout, a `500` - is a question that went unanswered, and
+     * reading that as an absence is what opened the default program over the
+     * file the user was last writing.
+     *
+     * A LISTING rather than a read of the file itself: reading a file that is
+     * not there is a 404 the browser logs, and asking for the folder is one
+     * request that answers for both paths below.
      */
-    const presenceOf = async (
+    const listed = async (
       filePath: string
     ): Promise<'present' | 'absent' | 'unknown'> => {
+      const folder = filePath.replace(/\/[^/]+$/, '') || '/'
+
       try {
-        await axios.get('/SASjsApi/drive/file', {
-          params: { _filePath: filePath }
+        const response = await axios.get('/SASjsApi/drive/fileTree', {
+          params: { _folderPath: folder }
         })
-        return 'present'
+
+        const children = Array.isArray(response.data?.tree?.children)
+          ? response.data.tree.children
+          : []
+
+        return children.some(
+          (child: TreeNode) => child.relativePath === filePath
+        )
+          ? 'present'
+          : 'absent'
       } catch (error: any) {
         return error?.response?.status === 404 ? 'absent' : 'unknown'
       }
@@ -279,7 +294,7 @@ const Studio = () => {
       const remembered = recallLastFile(username)
 
       if (remembered) {
-        const presence = await presenceOf(remembered)
+        const presence = await listed(remembered)
 
         // An unanswered check opens the remembered file anyway: the editor's
         // own read will say what is wrong, and it says it about a path the
@@ -292,12 +307,19 @@ const Studio = () => {
 
       const filePath = homeFilePathFor(username)
 
+      // Created only when it is not there. Posting regardless and treating the
+      // refusal as success works, but it costs a 409 on every visit - a console
+      // error beside a screen that behaved perfectly - so the listing above
+      // answers the question the refusal was being used to ask.
+      if ((await listed(filePath)) === 'present') return filePath
+
       const formData = new FormData()
       formData.append('file', new Blob([''], { type: 'text/plain' }))
       formData.append('filePath', filePath)
 
       await axios.post('/SASjsApi/drive/file', formData).catch((err) => {
-        // 409: the program is already there. Open it, never replace it.
+        // 409: another visit created it between the listing and this write.
+        // Open it, never replace it.
         if (err?.response?.status !== 409) throw err
       })
 
