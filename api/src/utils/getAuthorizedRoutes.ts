@@ -1,6 +1,8 @@
 import { Request } from 'express'
 
-export const TopLevelRoutes = ['/AppStream', '/SASjsApi']
+import { APP_STREAM_PREFIX, API_PREFIX, canonicalPrefix } from './routePrefixes'
+
+export const TopLevelRoutes = [APP_STREAM_PREFIX, API_PREFIX]
 
 /**
  * Routes any authenticated caller can reach, even though they accept permission
@@ -15,7 +17,7 @@ export const TopLevelRoutes = ['/AppStream', '/SASjsApi']
  * `/AppStream` stays in the inventory because a rule on it is still meaningful -
  * it is the top-level route for every app, so a grant on it admits them all.
  */
-export const AlwaysVisibleRoutes = ['/AppStream']
+export const AlwaysVisibleRoutes = [APP_STREAM_PREFIX]
 
 // Being authenticated is enough for most routes. These specifically also
 // require a granted Permission (checked by the authorize middleware) because
@@ -34,7 +36,9 @@ const StaticAuthorizedRoutes = [
 
 export const getAuthorizedRoutes = () => {
   const streamingApps = Object.keys(process.appStreamConfig)
-  const streamingAppsRoutes = streamingApps.map((app) => `/AppStream/${app}`)
+  const streamingAppsRoutes = streamingApps.map(
+    (app) => `${APP_STREAM_PREFIX}/${app}`
+  )
   return [...TopLevelRoutes, ...StaticAuthorizedRoutes, ...streamingAppsRoutes]
 }
 
@@ -66,16 +70,22 @@ export const canonicalizeRoutePath = (candidate: string): string => {
 }
 
 export const getPath = (req: Request) => {
-  const { baseUrl, path: reqPath } = req
+  // The joined path is canonicalised, not `baseUrl` alone: the gate runs on the
+  // sub-mounted routers, where `baseUrl` is `/api/code` rather than `/api`.
+  const path = canonicalPrefix(req.baseUrl + req.path)
 
-  if (baseUrl === '/AppStream') {
-    const appStream = reqPath.split('/')[1]
+  // The app's own route, not one of its assets.
+  if (path === APP_STREAM_PREFIX)
+    return canonicalizeRoutePath(APP_STREAM_PREFIX)
+
+  if (path.startsWith(`${APP_STREAM_PREFIX}/`)) {
+    const appStream = path.split('/')[2]
 
     // removing trailing slash of URLs
-    return canonicalizeRoutePath(baseUrl + '/' + appStream)
+    return canonicalizeRoutePath(`${APP_STREAM_PREFIX}/${appStream}`)
   }
 
-  return canonicalizeRoutePath(baseUrl + reqPath)
+  return canonicalizeRoutePath(path)
 }
 
 export const isAuthorizingRoute = (req: Request): boolean => {

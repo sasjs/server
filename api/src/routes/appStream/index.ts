@@ -13,7 +13,8 @@ import {
   writeStoredAppStreamConfig,
   resolveWithinDrive,
   resolveListeners,
-  isSafePathSegment
+  isSafePathSegment,
+  APP_STREAM_ALIAS
 } from '../../utils'
 import User from '../../model/User'
 import { AppStreamConfig } from '../../types'
@@ -87,8 +88,10 @@ router.get('/apps.json', authenticateAccessToken, async (req, res) => {
       // Resolved here rather than in the interface: a configured logo is an
       // asset inside the app, so it is addressed relative to the app's stream
       // path. The landing page resolves the same value the same way.
-      logo: entry.streamLogo ? `/AppStream/${name}/${entry.streamLogo}` : null,
-      url: `/AppStream/${name}/`,
+      logo: entry.streamLogo
+        ? `${APP_STREAM_ALIAS}/${name}/${entry.streamLogo}`
+        : null,
+      url: `${APP_STREAM_ALIAS}/${name}/`,
       // When the bundle was last published, or null for a registry written
       // before the registry recorded one - the interface shows the date it
       // has rather than inventing one.
@@ -165,7 +168,7 @@ export const publishAppStream = async (
 
       process.logger.info(
         'Serving Stream App: ',
-        `${scheme}://${host}:${port}/AppStream/${streamServiceName}`
+        `${scheme}://${host}:${port}${APP_STREAM_ALIAS}/${streamServiceName}`
       )
     } else {
       process.logger.warn(

@@ -24,7 +24,7 @@ const singleAppStreamHtml = (
 export const appStreamHtml = (appStreamConfig: AppStreamConfig) => `
 <html>
   <head>
-    <base href="/AppStream/">
+    <base href="/app/">
     ${style}
   </head>
   <body>

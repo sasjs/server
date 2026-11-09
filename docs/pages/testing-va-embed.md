@@ -65,7 +65,7 @@ Build the app, deploy it with its services to a local server, then frame it on a
 # from the application repo, with its mock target pointing at this server
 npm run build
 cd sas/mocks/sasjs
-sasjs cbd -t server-ci          # streams the build to /AppStream/<service name>
+sasjs cbd -t server-ci          # streams the build to /app/<service name>
 sasjs request services/admin/makedata -t server-ci -d deploy/makedata.json
 ```
 
@@ -93,7 +93,7 @@ Encode that as the `message` parameter, and the app URL as `url`:
 http://localhost:5000/ddc-host?url=<encoded app url>&message=<encoded json>&timing=early
 ```
 
-The app URL points at the route the report object opens, including whatever query string the app needs to recognise the embed, for example `http://localhost:5000/AppStream/clickme/#/editor/DC_JSLIB.MPE_X_TEST?embed=va`.
+The app URL points at the route the report object opens, including whatever query string the app needs to recognise the embed, for example `http://localhost:5000/app/clickme/#/editor/DC_JSLIB.MPE_X_TEST?embed=va`.
 
 ## Reading the result
 

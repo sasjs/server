@@ -54,8 +54,7 @@ const PublishApp = () => {
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         Choose a <code>build.json</code> from a compiled SASjs app. The app is
-        deployed to the drive and streamed at{' '}
-        <code>/AppStream/&lt;name&gt;/</code>.
+        deployed to the drive and streamed at <code>/app/&lt;name&gt;/</code>.
       </Typography>
       <input
         ref={input}

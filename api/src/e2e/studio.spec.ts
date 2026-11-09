@@ -846,7 +846,7 @@ describe('Studio in a browser', () => {
     // Open the program by URL, which is what remembers it. The editor states the
     // open as the URL's `filePath`, so that is what tells us it landed.
     await page.goto(
-      `${baseUrl()}/SASjsStudio?filePath=${encodeURIComponent(rememberedPath)}`
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(rememberedPath)}`
     )
     await page.waitForFunction(
       () => decodeURIComponent(location.search).includes('/studio-test.sas'),

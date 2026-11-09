@@ -107,7 +107,7 @@ describe('App Stream listing', () => {
   })
 
   it('should respond with Unauthorized when access token is not present', async () => {
-    await request(app).get('/AppStream/').expect(401)
+    await request(app).get('/app/').expect(401)
   })
 
   it('should serve the page to a caller holding no grants, listing nothing', async () => {
@@ -116,7 +116,7 @@ describe('App Stream listing', () => {
     // The landing page is always visible: it is the navigation that leads to the
     // apps, so it cannot depend on the grant that lists them.
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -130,7 +130,7 @@ describe('App Stream listing', () => {
     await rule('/AppStream/Mario', PermissionSettingForRoute.grant, uid)
 
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -139,7 +139,7 @@ describe('App Stream listing', () => {
 
     // And the app it does list is the one that opens.
     await request(app)
-      .get('/AppStream/Sonic/')
+      .get('/app/Sonic/')
       .auth(token, { type: 'bearer' })
       .expect(401)
   })
@@ -148,7 +148,7 @@ describe('App Stream listing', () => {
     const { token } = await tokenFor(admin.username)
 
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -162,7 +162,7 @@ describe('App Stream listing', () => {
     await rule('/AppStream', PermissionSettingForRoute.grant, uid)
 
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -177,7 +177,7 @@ describe('App Stream listing', () => {
     await rule('/AppStream/Mario', PermissionSettingForRoute.deny, uid)
 
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -186,7 +186,7 @@ describe('App Stream listing', () => {
     expect(res.text).toContain('href="Sonic"')
 
     await request(app)
-      .get('/AppStream/Mario/')
+      .get('/app/Mario/')
       .auth(token, { type: 'bearer' })
       .expect(401)
   })
@@ -201,7 +201,7 @@ describe('App Stream listing', () => {
     const { token } = await tokenFor(admin.username)
 
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .set('Accept-Encoding', 'gzip')
       .expect(200)
@@ -216,7 +216,7 @@ describe('App Stream listing', () => {
     const { token } = await tokenFor(admin.username)
 
     const res = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .set('Accept-Encoding', 'identity')
       .expect(200)

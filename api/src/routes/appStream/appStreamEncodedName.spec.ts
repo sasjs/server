@@ -96,7 +96,7 @@ describe('App Stream serving encoded names', () => {
 
   it('should serve an app whose name needs encoding', async () => {
     const res = await request(app)
-      .get('/AppStream/My%20App/')
+      .get('/app/My%20App/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -105,7 +105,7 @@ describe('App Stream serving encoded names', () => {
 
   it('should redirect the base url to its trailing-slash form, still encoded', async () => {
     const res = await request(app)
-      .get('/AppStream/My%20App')
+      .get('/app/My%20App')
       .auth(token, { type: 'bearer' })
       .expect(301)
 
@@ -114,14 +114,14 @@ describe('App Stream serving encoded names', () => {
 
   it('should serve an asset of that app', async () => {
     await request(app)
-      .get('/AppStream/My%20App/app.js')
+      .get('/app/My%20App/app.js')
       .auth(token, { type: 'bearer' })
       .expect(200)
   })
 
   it('should keep answering the fallback for an unknown name', async () => {
     const res = await request(app)
-      .get('/AppStream/Nope%20App/')
+      .get('/app/Nope%20App/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -130,7 +130,7 @@ describe('App Stream serving encoded names', () => {
 
   it('should still refuse an encoded traversal out of the deployment', async () => {
     const res = await request(app)
-      .get('/AppStream/My%20App/..%2f..%2f..%2f..%2fetc%2fpasswd')
+      .get('/app/My%20App/..%2f..%2f..%2f..%2fetc%2fpasswd')
       .auth(token, { type: 'bearer' })
 
     expect(res.status).not.toBe(200)

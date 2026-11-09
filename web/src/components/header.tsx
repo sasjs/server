@@ -30,14 +30,7 @@ import { useColorMode } from '../utils/hooks'
 // Every route that has a tab. A path missing here still renders its screen -
 // the tab underline just falls back to Home, which is what a reader sees as a
 // broken tab, so this list and the Tabs below must move together.
-const validTabs = [
-  '/',
-  '/SASjsApps',
-  '/SASjsDrive',
-  '/SASjsStudio',
-  '/SASjsApiDocs',
-  '/SASjsDocs'
-]
+const validTabs = ['/', '/apps', '/studio']
 
 const Header = (props: any) => {
   const navigate = useNavigate()
@@ -120,35 +113,20 @@ const Header = (props: any) => {
             onChange={handleTabChange}
           >
             <Tab label="Home" value="/" to="/" component={Link} />
-            <Tab
-              label="Apps"
-              value="/SASjsApps"
-              to="/SASjsApps"
-              component={Link}
-            />
+            <Tab label="Apps" value="/apps" to="/apps" component={Link} />
             {canUseStudio && (
               <Tab
                 label="Studio"
-                value="/SASjsStudio"
-                to="/SASjsStudio"
+                value="/studio"
+                to="/studio"
                 component={Link}
               />
             )}
-            {/* A real tab, not a button beside them: the API documentation is a
-                screen of the app like the others, so it is styled like them and
-                navigates the router rather than a browser window. */}
-            <Tab
-              label="API"
-              value="/SASjsApiDocs"
-              to="/SASjsApiDocs"
-              component={Link}
-            />
-            <Tab
-              label="Docs"
-              value="/SASjsDocs"
-              to="/SASjsDocs"
-              component={Link}
-            />
+            {/* The API documentation and the documentation site are pages of
+                their own, served at a top-level path by the server rather than
+                screens of the app - so these two are links, not routes. */}
+            <Tab label="API" href="/api" component="a" />
+            <Tab label="Docs" href="/docs" component="a" />
           </Tabs>
         </Box>
 
@@ -195,7 +173,7 @@ const Header = (props: any) => {
             <MenuItem sx={{ justifyContent: 'center' }}>
               <Button
                 component={Link}
-                to="/SASjsApps"
+                to="/apps"
                 onClick={handleCloseNavMenu}
                 variant="contained"
                 color="primary"
@@ -208,7 +186,7 @@ const Header = (props: any) => {
               <MenuItem sx={{ justifyContent: 'center' }}>
                 <Button
                   component={Link}
-                  to="/SASjsStudio"
+                  to="/studio"
                   onClick={handleCloseNavMenu}
                   variant="contained"
                   color="primary"
@@ -220,8 +198,8 @@ const Header = (props: any) => {
 
             <MenuItem sx={{ justifyContent: 'center' }}>
               <Button
-                component={Link}
-                to="/SASjsApiDocs"
+                component="a"
+                href="/api"
                 onClick={handleCloseNavMenu}
                 variant="contained"
                 color="primary"
@@ -232,8 +210,8 @@ const Header = (props: any) => {
 
             <MenuItem sx={{ justifyContent: 'center' }}>
               <Button
-                component={Link}
-                to="/SASjsDocs"
+                component="a"
+                href="/docs"
                 onClick={handleCloseNavMenu}
                 variant="contained"
                 color="primary"
@@ -312,7 +290,7 @@ const Header = (props: any) => {
             <MenuItem sx={{ justifyContent: 'center' }}>
               <Button
                 component={Link}
-                to="/SASjsSettings"
+                to="/settings"
                 onClick={handleCloseUserMenu}
                 variant="contained"
                 color="primary"
