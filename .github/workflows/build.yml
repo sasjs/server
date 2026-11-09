@@ -42,6 +42,15 @@ jobs:
         # postinstall needed.
         run: npm ci --ignore-scripts
 
+      - name: Leave the published site out of the secret scan
+        # `fetch-depth: 0` fetches every branch, and `gh-pages` now holds the
+        # BUILT site - minified bundles of vendored libraries, whose high-entropy
+        # strings are not secrets but which no scanner can tell apart from one.
+        # The scan is for the code we write, so the branch holding what the build
+        # produced is dropped first: deleting the ref is what makes those commits
+        # unreachable to the scan.
+        run: git for-each-ref --format='%(refname)' refs/remotes/origin/gh-pages | xargs -r -n1 git update-ref -d
+
       - name: Scan for secrets (gitleaks)
         # The local pre-commit hook is best-effort (and suppressed entirely
         # when .npmrc sets ignore-scripts=true), so CI is the enforcement
