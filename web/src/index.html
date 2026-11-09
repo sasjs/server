@@ -11,6 +11,12 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="/manifest.json" />
+    <!--
+      The colour scheme has to be decided before the bundle loads, or a reader who
+      chose dark sees white until React mounts. An external file, not an inline
+      script: the app is served under `script-src 'self'`.
+    -->
+    <script src="/theme-boot.js"></script>
     <title>SASjs Server Web Interface</title>
   </head>
   <body>
