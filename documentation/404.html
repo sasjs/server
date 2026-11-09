@@ -52,6 +52,22 @@
     
 
 <script>
+  if (window.self !== window.top)
+    document.documentElement.classList.add('sasjs-framed')
+</script>
+<style>
+  .sasjs-framed .md-header__inner {
+    display: none;
+  }
+
+  /* the tabs are the site's navigation; the header's own bar is what the app
+     replaces, so the space it used goes to the page */
+  .sasjs-framed .md-header {
+    box-shadow: none;
+  }
+</style>
+
+<script>
   (function () {
     var palettes = {
       light: {

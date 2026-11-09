@@ -1,0 +1,307 @@
+[
+  {
+    "method": "GET",
+    "path": "/",
+    "summary": "Serve the web interface"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/admin/diagnostics",
+    "summary": "Diagnostics: version, uptime, memory, disk usage"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/admin/logs",
+    "summary": "List the server's log files"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/admin/logs/{fileName}",
+    "summary": "Read the tail of a log file"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/auth/logout",
+    "summary": "Revoke the current tokens"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/auth/refresh",
+    "summary": "Refresh the access and refresh tokens"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/auth/token",
+    "summary": "Exchange an authorization code for tokens"
+  },
+  {
+    "method": "PATCH",
+    "path": "/SASjsApi/auth/updatePassword",
+    "summary": "Change the current user's password"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/authConfig",
+    "summary": "Get the configured authentication providers"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/authConfig/synchroniseWithLDAP",
+    "summary": "Import users and groups from LDAP"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/client",
+    "summary": "List all clients"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/client",
+    "summary": "Create a client"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/code/execute",
+    "summary": "Execute code and return its output"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/code/format",
+    "summary": "Format SAS code and return the formatted text"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/code/lint",
+    "summary": "Lint SAS code and return the diagnostics"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/code/trigger",
+    "summary": "Trigger code and return a session ID"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/drive/deploy",
+    "summary": "Remove an app stream entry"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/drive/deploy",
+    "summary": "Deploy a file tree to SASjs Drive"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/drive/deploy/upload",
+    "summary": "Deploy an uploaded file to SASjs Drive"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/drive/file",
+    "summary": "Delete a file from SASjs Drive"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/drive/file",
+    "summary": "Get a file from SASjs Drive"
+  },
+  {
+    "method": "PATCH",
+    "path": "/SASjsApi/drive/file",
+    "summary": "Replace a file in SASjs Drive"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/drive/file",
+    "summary": "Create a file in SASjs Drive"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/drive/filetree",
+    "summary": "Get the SASjs Drive file tree, or one folder of it"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/drive/folder",
+    "summary": "Delete a folder from SASjs Drive"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/drive/folder",
+    "summary": "List a folder in SASjs Drive"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/drive/folder",
+    "summary": "Create a folder in SASjs Drive"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/drive/rename",
+    "summary": "Rename or move a file or folder in SASjs Drive"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/group",
+    "summary": "List all groups"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/group",
+    "summary": "Create a group"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/group/{groupUid}/{userUid}",
+    "summary": "Remove a user from a group"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/group/{groupUid}/{userUid}",
+    "summary": "Add a user to a group"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/group/{uid}",
+    "summary": "Delete a group"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/group/{uid}",
+    "summary": "Get a group by id"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/group/by/groupname/{name}",
+    "summary": "Get a group by name"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/info",
+    "summary": "Get public server information"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/info/authorizedRoutes",
+    "summary": "List the routes that accept permissions"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/info/myAuthorizedRoutes",
+    "summary": "List the routes this caller may use"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/permission",
+    "summary": "List the permission rules for the current user"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/permission",
+    "summary": "Create a permission rule"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/permission/{uid}",
+    "summary": "Delete a permission rule"
+  },
+  {
+    "method": "PATCH",
+    "path": "/SASjsApi/permission/{uid}",
+    "summary": "Update a permission rule"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/session",
+    "summary": "Get the current session"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/session/{sessionId}",
+    "summary": "Get a triggered session"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/session/{sessionId}/log",
+    "summary": "Get the log of a triggered session"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/session/{sessionId}/output",
+    "summary": "Get the output of a triggered session"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/session/{sessionId}/state",
+    "summary": "Get the state of a session"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/stp/execute",
+    "summary": "Execute a stored program"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/stp/execute",
+    "summary": "Execute a stored program"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/stp/trigger",
+    "summary": "Trigger a stored program and return a session ID"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/user",
+    "summary": "List all users"
+  },
+  {
+    "method": "POST",
+    "path": "/SASjsApi/user",
+    "summary": "Create a user"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/user/{uid}",
+    "summary": "Delete a user by id"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/user/{uid}",
+    "summary": "Get a user by id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/SASjsApi/user/{uid}",
+    "summary": "Update a user by id"
+  },
+  {
+    "method": "DELETE",
+    "path": "/SASjsApi/user/by/username/{username}",
+    "summary": "Delete a user by username"
+  },
+  {
+    "method": "GET",
+    "path": "/SASjsApi/user/by/username/{username}",
+    "summary": "Get a user by username"
+  },
+  {
+    "method": "PATCH",
+    "path": "/SASjsApi/user/by/username/{username}",
+    "summary": "Update a user by username"
+  },
+  {
+    "method": "POST",
+    "path": "/SASLogon/authorize",
+    "summary": "Issue an authorization code"
+  },
+  {
+    "method": "POST",
+    "path": "/SASLogon/login",
+    "summary": "Sign in with a username and password"
+  },
+  {
+    "method": "GET",
+    "path": "/SASLogon/logout",
+    "summary": "Sign out"
+  }
+]
