@@ -1,5 +1,5 @@
 site_name: SASjs Server
-site_url: https://server.sasjs.io
+site_url: https://server.sasjs.io/docs/
 site_description: The open-source NodeJS wrapper around the SAS binary - a REST API, SASjs Drive, Stored Programs and App Stream, for Viya, SAS 9 and desktop SAS.
 
 # The pages live in pages/ so the rest of this tree - theme, hooks, scripts,

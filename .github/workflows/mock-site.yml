@@ -1,8 +1,13 @@
 name: Mock site
 
-# Publishes the demonstration site: the real interface, running against a
-# browser host instead of a server. Built from the same source as the app, so a
-# screen and the site showing it are never a release apart.
+# Publishes the site: the real interface, running against a browser host instead
+# of a server, at https://server.sasjs.io. Built from the same source as the app,
+# so a screen and the site showing it are never a release apart.
+#
+# The documentation is part of this site - it is built into the web bundle and
+# served at /docs - so this job publishes it too. There is no separate docs
+# publish any more: two jobs writing one branch meant whichever ran last decided
+# whether server.sasjs.io served the app or the pages.
 #
 # Run by hand, and on a release. It is deliberately NOT part of the pull-request
 # pipeline: it needs the released @sasjs/cli (see mock/build.mjs), and a demo
@@ -56,7 +61,7 @@ jobs:
           publish_dir: ./sasjsbuild/mock
           publish_branch: gh-pages
           # the site is served from its own subdomain, so no /<repo>/ prefix
-          cname: demo.server.sasjs.io
+          cname: server.sasjs.io
           user_name: sasjs
           user_email: sasjs@4gl.io
           commit_message: 'chore(mock): publish the demonstration site'
