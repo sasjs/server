@@ -543,6 +543,69 @@ describe('drive', () => {
         await deleteFolder(path.join(getFilesFolder(), 'public'))
       })
     })
+
+    describe('an archive of the app itself', () => {
+      const postArchive = (zip: AdmZip, query = '?appLoc=/Public/static') =>
+        request(app)
+          .post(`/SASjsApi/drive/deploy/upload${query}`)
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', zip.toBuffer(), 'site.zip')
+
+      it('writes the archive entries under the folder in the query', async () => {
+        const zip = new AdmZip()
+        zip.addFile('index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
+        zip.addFile('assets/app.js', Buffer.from('console.log(1)', 'utf8'))
+
+        const res = await postArchive(zip)
+
+        expect(res.statusCode).toEqual(200)
+
+        const root = path.join(getFilesFolder(), 'Public', 'static')
+
+        await expect(readFile(path.join(root, 'index.html'))).resolves.toEqual(
+          '<h1>Hello</h1>'
+        )
+        await expect(
+          readFile(path.join(root, 'assets', 'app.js'))
+        ).resolves.toEqual('console.log(1)')
+
+        await deleteFolder(root)
+      })
+
+      it('replaces the folder, so a file the new archive dropped stops being served', async () => {
+        const first = new AdmZip()
+        first.addFile('old.html', Buffer.from('v1', 'utf8'))
+        first.addFile('keep.html', Buffer.from('v1', 'utf8'))
+
+        expect((await postArchive(first)).statusCode).toEqual(200)
+
+        const second = new AdmZip()
+        second.addFile('keep.html', Buffer.from('v2', 'utf8'))
+
+        expect((await postArchive(second)).statusCode).toEqual(200)
+
+        const root = path.join(getFilesFolder(), 'Public', 'static')
+
+        await expect(fileExists(path.join(root, 'old.html'))).resolves.toEqual(
+          false
+        )
+        await expect(readFile(path.join(root, 'keep.html'))).resolves.toEqual(
+          'v2'
+        )
+
+        await deleteFolder(root)
+      })
+
+      it('refuses an archive with no appLoc to deploy into', async () => {
+        const zip = new AdmZip()
+        zip.addFile('index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
+
+        const res = await postArchive(zip, '')
+
+        expect(res.statusCode).toEqual(400)
+        expect(res.text).toEqual('"appLoc" is required')
+      })
+    })
   })
 
   describe('fileTree', () => {

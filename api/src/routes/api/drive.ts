@@ -8,9 +8,10 @@ import { multerSingle } from '../../middlewares/multer'
 import { sendRefusal } from '../refusal'
 import { DriveController } from '../../controllers/'
 import {
+  deployAssetsValidation,
   deployValidation,
+  extractFileTreeFromZip,
   extractJSONFromZip,
-  extractName,
   fileBodyValidation,
   fileParamValidation,
   fileTreeParamValidation,
@@ -68,16 +69,11 @@ driveRouter.post(
     const { value: zipFile } = isZipFile(req.file)
     if (zipFile) {
       fileContent = await extractJSONFromZip(zipFile)
-      const fileInZip = extractName(zipFile.originalname)
 
-      if (!fileContent) {
-        deleteFile(req.file.path)
-        return res
-          .status(400)
-          .send(
-            `No content present in ${fileInZip} of compressed file ${zipFile.originalname}`
-          )
-      }
+      // An archive with no deploy document in it is the app's own files: the
+      // entries become the tree and what the document would have said (folder,
+      // stream, replace) arrives in the query.
+      if (!fileContent) return deployArchive(req, res, zipFile)
     } else {
       fileContent = await readFile(req.file.path)
     }
@@ -121,6 +117,65 @@ driveRouter.post(
     }
   }
 )
+
+/**
+ * Deploys an archive of an app's own files.
+ *
+ * `POST /SASjsApi/drive/deploy/upload` takes either a deploy document - plain or
+ * zipped - or, as here, the app itself: a zip whose entries are the files to
+ * serve. The entries become a deploy tree and go through the same deploy as any
+ * other, so the cap, the member-name checks, containment and `replace` have one
+ * implementation.
+ *
+ * What a deploy document would have said arrives in the QUERY, because the body
+ * is the archive: `appLoc` is required, `streamWebFolder` publishes the folder
+ * as an App Stream app, and `replace` defaults to true - publishing a folder
+ * means the folder is what the archive says it is.
+ */
+const deployArchive = async (
+  req: express.Request,
+  res: express.Response,
+  zipFile: Express.Multer.File
+) => {
+  const { error, value } = deployAssetsValidation(req.query)
+
+  if (error) {
+    deleteFile(zipFile.path)
+
+    return res.status(400).send(error.details[0].message)
+  }
+
+  try {
+    const fileTree = await extractFileTreeFromZip(zipFile)
+
+    const response = await controller.deploy({
+      appLoc: value.appLoc,
+      fileTree,
+      replace: value.replace
+    })
+
+    if (value.streamWebFolder) {
+      const { streamServiceName } = await publishAppStream(
+        value.appLoc,
+        value.streamWebFolder,
+        value.streamServiceName,
+        value.streamLogo
+      )
+
+      response.streamServiceName = streamServiceName
+    }
+
+    res.send(response)
+  } catch (err: any) {
+    const statusCode = typeof err.code === 'number' ? err.code : 500
+
+    delete err.code
+
+    res.status(statusCode).send(err)
+  } finally {
+    deleteFile(zipFile.path)
+  }
+}
 
 /**
  * Removes a published app stream entry, so it stops being advertised and stops

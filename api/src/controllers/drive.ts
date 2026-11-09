@@ -39,8 +39,24 @@ import {
 } from '@sasjs/api'
 
 interface DeployPayload {
+  /** The folder to deploy into; `/Public/apps/myapp` */
   appLoc: string
+  /** A folder of web assets inside the app to publish, e.g. `web` */
   streamWebFolder?: string
+  /**
+   * The name the app is published under. Derived from the last segment of
+   * `appLoc` when absent, with a short digest of the folder when that name is
+   * already held by a different app.
+   */
+  streamServiceName?: string
+  /** A logo to show on the app's tile */
+  streamLogo?: string
+  /**
+   * Write the tree as the folder's whole contents: the folder is removed before
+   * the tree is written, so a file the new version renamed or dropped stops
+   * being served. Absent means the deploy writes over what is already there.
+   */
+  replace?: boolean
   fileTree: FileTree
 }
 
@@ -613,7 +629,11 @@ const deploy = async (data: DeployPayload) => {
   // writes nothing until each has passed, so a refused deploy leaves the drive
   // as it was. The store is node's fs behind the drive root, the same one every
   // other drive route uses.
-  await answered(driveService().deploy(data.appLoc, data.fileTree))
+  await answered(
+    driveService().deploy(data.appLoc, data.fileTree, {
+      replace: data.replace
+    })
+  )
 
   return successDeployResponse
 }

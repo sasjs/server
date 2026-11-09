@@ -573,6 +573,11 @@ components:
                     $ref: '#/components/schemas/MemberType.file'
                 code:
                     type: string
+                encoding:
+                    type: string
+                    enum:
+                        - utf8
+                        - base64
             required:
                 - name
                 - type
@@ -614,8 +619,19 @@ components:
             properties:
                 appLoc:
                     type: string
+                    description: 'The folder to deploy into; `/Public/apps/myapp`'
                 streamWebFolder:
                     type: string
+                    description: 'A folder of web assets inside the app to publish, e.g. `web`'
+                streamServiceName:
+                    type: string
+                    description: "The name the app is published under. Derived from the last segment of\n`appLoc` when absent, with a short digest of the folder when that name is\nalready held by a different app."
+                streamLogo:
+                    type: string
+                    description: 'A logo to show on the app''s tile'
+                replace:
+                    type: boolean
+                    description: "Write the tree as the folder's whole contents: the folder is removed before\nthe tree is written, so a file the new version renamed or dropped stops\nbeing served. Absent means the deploy writes over what is already there."
                 fileTree:
                     $ref: '#/components/schemas/FileTree'
             required:

@@ -147,7 +147,26 @@ export const deployValidation = (data: any): Joi.ValidationResult =>
     streamServiceName: Joi.string(),
     streamWebFolder: Joi.string(),
     streamLogo: Joi.string(),
+    replace: Joi.boolean(),
     fileTree: Joi.any().required()
+  }).validate(data)
+
+/**
+ * The query a published archive is deployed with.
+ *
+ * An archive of an app's own files carries no deploy document, so what the tree
+ * says - the folder, the stream to publish and whether the folder is replaced -
+ * arrives beside the upload. `replace` defaults to true here: the route's
+ * promise is "publish this folder", and a file the new archive no longer carries
+ * should stop being served.
+ */
+export const deployAssetsValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({
+    appLoc: Joi.string().pattern(/^\//).required().min(2),
+    streamServiceName: Joi.string(),
+    streamWebFolder: Joi.string(),
+    streamLogo: Joi.string(),
+    replace: Joi.boolean().default(true)
   }).validate(data)
 
 /**
