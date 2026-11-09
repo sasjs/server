@@ -8,7 +8,7 @@ import {
   useRef,
   useState
 } from 'react'
-import { DiffEditorDidMount, EditorDidMount, monaco } from 'react-monaco-editor'
+import { EditorDidMount, monaco } from 'react-monaco-editor'
 import { SelectChangeEvent } from '@mui/material'
 import { getSelection, programPathInjection } from '../helper'
 import { AppContext, RunTimeType } from '../../../../context/appContext'
@@ -59,7 +59,6 @@ const useEditor = ({
   )
   const [selectedFileExtension, setSelectedFileExtension] = useState('')
   const [openFilePathInputModal, setOpenFilePathInputModal] = useState(false)
-  const [showDiff, setShowDiff] = useState(false)
   // A picture opens as a URL for its own bytes: the drive endpoint needs the
   // session, so the file is fetched as a blob rather than pointed at directly.
   const [imageUrl, setImageUrl] = useState('')
@@ -87,35 +86,75 @@ const useEditor = ({
 
     const node = editor.getDomNode()
     if (node) releaseMousePasteGuard.current = guardMousePaste(node)
+  }
 
-    editor.addAction({
-      // An unique identifier of the contributed action.
-      id: 'show-difference',
+  /**
+   * Whether a format request is in flight.
+   *
+   * The button is disabled while one is: two clicks race, and the second answer
+   * would replace a buffer the first had already formatted.
+   */
+  const [formatting, setFormatting] = useState(false)
 
-      // A label of the action that will be presented to the user.
-      label: 'Show Differences',
+  /**
+   * Applies the `.sasjslint` formatting rules to the buffer.
+   *
+   * Three things this has to get right, and the first version got none of them:
+   *
+   * - the buffer is submitted, so unsaved edits are formatted, and nothing
+   *   reaches the drive until Save
+   * - the answer is applied only if the buffer still holds the text that was
+   *   sent. The request takes as long as the server needs to read the rules
+   *   file, and replacing the whole controlled value on return would discard
+   *   whatever was typed meanwhile
+   * - a failure is said out loud. The formatter rejects rather than returning
+   *   the text unchanged precisely so the caller can surface it; swallowing it
+   *   left the user pressing a button that did nothing
+   */
+  const fixFormatting = useCallback(async () => {
+    if (formatting) return
 
-      // An optional array of keybindings for the action.
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD],
+    const sent = fileContent
 
-      contextMenuGroupId: 'navigation',
+    setFormatting(true)
 
-      contextMenuOrder: 1,
+    try {
+      const formatted = await formatSasCode(sent, selectedFilePath || undefined)
 
-      // Method that will be executed when the action is triggered.
-      // @param editor The editor instance is passed in as a convenience
-      run: function (ed) {
-        setShowDiff(true)
+      if (formatted === sent) {
+        setSnackbarMessage('Already formatted.')
+        setSnackbarSeverity(AlertSeverityType.Info)
+        setOpenSnackbar(true)
+
+        return
       }
-    })
-  }
 
-  const handleDiffEditorDidMount: DiffEditorDidMount = (diffEditor) => {
-    diffEditor.focus()
-    diffEditor.addCommand(monaco.KeyCode.Escape, function () {
-      setShowDiff(false)
-    })
-  }
+      // Only if nothing was typed while the formatter was away.
+      setFileContent((current) => (current === sent ? formatted : current))
+
+      if (fileContent === sent) {
+        setSnackbarMessage('Formatting applied.')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
+      }
+    } catch (error) {
+      setSnackbarMessage('The formatter could not run. Your code is unchanged.')
+      setSnackbarSeverity(AlertSeverityType.Error)
+      setOpenSnackbar(true)
+
+      console.log(error)
+    } finally {
+      setFormatting(false)
+    }
+  }, [
+    fileContent,
+    formatting,
+    selectedFilePath,
+    setFileContent,
+    setOpenSnackbar,
+    setSnackbarMessage,
+    setSnackbarSeverity
+  ])
 
   const saveFile = useCallback(
     (filePath?: string, content?: string) => {
@@ -654,19 +693,18 @@ const useEditor = ({
     runTimes,
     selectedFileExtension,
     selectedRunTime,
-    showDiff,
     webout,
     printOutput,
     Dialog,
     handleChangeRunTime,
-    handleDiffEditorDidMount,
     handleEditorDidMount,
     handleFilePathInput,
     handleRunBtnClick,
     handleTabChange,
     saveBuffer,
+    fixFormatting,
+    formatting,
     saveFile,
-    setShowDiff,
     setOpenFilePathInputModal,
     setFileContent,
     Snackbar

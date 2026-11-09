@@ -13,7 +13,7 @@ import {
 import { Menu, MenuOpen } from '@mui/icons-material'
 import { styled } from '@mui/material/styles'
 
-import Editor, { MonacoDiffEditor } from 'react-monaco-editor'
+import Editor from 'react-monaco-editor'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import FilePathInputModal from '../../components/filePathInputModal'
@@ -98,18 +98,17 @@ const SASjsEditor = ({
     runTimes,
     selectedFileExtension,
     selectedRunTime,
-    showDiff,
     webout,
     printOutput,
     Dialog,
     handleChangeRunTime,
-    handleDiffEditorDidMount,
     handleEditorDidMount,
     handleFilePathInput,
     handleRunBtnClick,
     handleTabChange,
     saveBuffer,
-    setShowDiff,
+    fixFormatting,
+    formatting,
     setOpenFilePathInputModal,
     setFileContent,
     Snackbar
@@ -124,35 +123,41 @@ const SASjsEditor = ({
   // guards: the buffer holds edits the drive does not.
   const isDirty = prevFileContent !== fileContent
 
+  /**
+   * Why the format button cannot be used, or undefined when it can.
+   *
+   * Three different reasons were collapsed into one tooltip before, which told a
+   * `.py` file it had nothing to format: it will never have anything to format.
+   */
+  const formatDisabledReason = formatting
+    ? 'Formatting...'
+    : !fileContent.trim()
+      ? 'Nothing to format yet'
+      : isImageFile(selectedFilePath)
+        ? 'A picture cannot be formatted'
+        : selectedFileExtension !== 'sas'
+          ? 'Formatting applies to .sas files'
+          : undefined
+
   const fileMenu = (
     <FileMenu
-      showDiff={showDiff}
-      setShowDiff={setShowDiff}
       isDirty={isDirty}
       selectedFilePath={selectedFilePath}
       setOpenFilePathInputModal={setOpenFilePathInputModal}
       saveFile={saveBuffer}
+      fixFormatting={fixFormatting}
+      formatDisabledReason={formatDisabledReason}
     />
   )
 
-  const monacoEditor = showDiff ? (
-    <MonacoDiffEditor
+  const monacoEditor = (
+    <Editor
       height="98%"
       // The four marker underlines are a theme colour, so the theme is named
       // rather than left to the wrapper's default: `react-monaco-editor` runs
       // `monaco.editor.setTheme(theme)` in an effect on mount, and its `theme`
       // prop defaults to null, so a theme defined ahead of the editor is
       // replaced with the default as soon as the editor mounts.
-      theme={editorThemeFor(colorMode)}
-      language={getLanguageFromExtension(selectedFileExtension)}
-      original={prevFileContent}
-      value={fileContent}
-      editorDidMount={handleDiffEditorDidMount}
-      onChange={(val) => setFileContent(val)}
-    />
-  ) : (
-    <Editor
-      height="98%"
       theme={editorThemeFor(colorMode)}
       language={getLanguageFromExtension(selectedFileExtension)}
       value={fileContent}

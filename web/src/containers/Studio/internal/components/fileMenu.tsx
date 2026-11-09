@@ -1,23 +1,24 @@
-import React, { useState } from 'react'
+import React from 'react'
 
-import {
-  Badge,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip
-} from '@mui/material'
+import { Badge, IconButton, Tooltip } from '@mui/material'
 
-import { MoreVert, Save, SaveAs, Difference, Edit } from '@mui/icons-material'
+import { AutoFixHigh, Save, SaveAs } from '@mui/icons-material'
 
 type FileMenuProps = {
-  showDiff: boolean
-  setShowDiff: React.Dispatch<React.SetStateAction<boolean>>
   isDirty: boolean
   selectedFilePath: string
   setOpenFilePathInputModal: React.Dispatch<React.SetStateAction<boolean>>
   saveFile: () => void
+  /**
+   * Applies the `.sasjslint` formatting rules to the buffer.
+   *
+   * Formatting, not "fix the issues": the rules that can be corrected without
+   * judgement are layout, spacing and case. A rule about an unused macro
+   * variable needs a decision no button can make.
+   */
+  fixFormatting: () => void
+  /** Why the button is disabled, or undefined when it is not. */
+  formatDisabledReason?: string
 }
 
 /**
@@ -66,34 +67,13 @@ const SaveButton = ({
 }
 
 const FileMenu = ({
-  showDiff,
-  setShowDiff,
   isDirty,
   selectedFilePath,
   setOpenFilePathInputModal,
-  saveFile
+  saveFile,
+  fixFormatting,
+  formatDisabledReason
 }: FileMenuProps) => {
-  const [anchorEl, setAnchorEl] = useState<
-    (EventTarget & HTMLButtonElement) | null
-  >(null)
-
-  const handleMenu = (
-    event?: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    if (event) setAnchorEl(event.currentTarget)
-    else setAnchorEl(null)
-  }
-
-  const handleDiffBtnClick = () => {
-    setAnchorEl(null)
-    setShowDiff(!showDiff)
-  }
-
-  const handleSaveAsBtnClick = () => {
-    setAnchorEl(null)
-    setOpenFilePathInputModal(true)
-  }
-
   return (
     <>
       <SaveButton
@@ -101,47 +81,30 @@ const FileMenu = ({
         selectedFilePath={selectedFilePath}
         saveFile={saveFile}
       />
-      <Tooltip title="Save File Menu">
-        <IconButton onClick={handleMenu}>
-          <MoreVert />
-        </IconButton>
+      <Tooltip title="Save as a new file">
+        <span>
+          <IconButton
+            aria-label="Save as a new file"
+            onClick={() => setOpenFilePathInputModal(true)}
+            disabled={!selectedFilePath}
+          >
+            <SaveAs />
+          </IconButton>
+        </span>
       </Tooltip>
-      <Menu
-        id="save-file-menu"
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center'
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center'
-        }}
-        open={!!anchorEl}
-        onClose={() => handleMenu()}
+      <Tooltip
+        title={formatDisabledReason ?? 'Apply the .sasjslint formatting rules'}
       >
-        <MenuItem sx={{ justifyContent: 'center' }}>
-          <Button
-            onClick={handleDiffBtnClick}
-            variant="contained"
-            color="primary"
-            startIcon={showDiff ? <Edit /> : <Difference />}
+        <span>
+          <IconButton
+            aria-label={formatDisabledReason ?? 'Apply the formatting rules'}
+            onClick={fixFormatting}
+            disabled={!!formatDisabledReason}
           >
-            {showDiff ? 'Edit' : 'Diff'}
-          </Button>
-        </MenuItem>
-        <MenuItem sx={{ justifyContent: 'center' }}>
-          <Button
-            onClick={handleSaveAsBtnClick}
-            variant="contained"
-            color="primary"
-            startIcon={<SaveAs />}
-          >
-            Save As
-          </Button>
-        </MenuItem>
-      </Menu>
+            <AutoFixHigh />
+          </IconButton>
+        </span>
+      </Tooltip>
     </>
   )
 }
