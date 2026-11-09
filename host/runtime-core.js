@@ -1,0 +1,1521 @@
+/**
+ * Browser runtime host for a project's JS stored programs.
+ *
+ * Runs the sasjs/server JS "stored program" contract inside a Web Worker:
+ * a generated wrapper declares the request parameters as module-scope consts,
+ * predeclares `fs` / `weboutPath` / `_SASJS_*` exactly as
+ * controllers/internal/createJSProgram.ts does, executes the program text, and
+ * the program's `_webout` assignment is read back from the virtual drive.
+ *
+ * The virtual drive seeds from vfs-seed.json, which holds the project's own
+ * JS services unchanged, so the services themselves are not adapted in any
+ * way.
+ *
+ * CONTRACT. A stored program gets what the server's generated wrapper gives it:
+ * the request parameters as module-scope consts (`_program` included), the
+ * uploaded tables as `_WEBIN_*` refs, `fs`/`path`/`crypto` from require(),
+ * `Buffer`, and `_webout` / `weboutPath` / `_SASJS_WEBOUT_HEADERS`. Two ways to
+ * answer a request:
+ *
+ *   1. text - assign `_webout`, or write a string to `weboutPath`;
+ *   2. bytes - write an ArrayBuffer, a TypedArray or a Buffer to `weboutPath`,
+ *      the way a service that streams a file does on the server.
+ *
+ * In both cases the response headers are whatever lines the service wrote to
+ * `_SASJS_WEBOUT_HEADERS` (`Content-type`, `Content-Disposition`); the host
+ * applies them to the response. A byte body comes back to the host as base64
+ * with a `binary` flag, because the drive itself holds strings.
+ *
+ * One place the drive is not node: `fs.readFileSync` without an encoding hands
+ * TEXT back as text, which is what a service reading a config, a CSV or a
+ * service file expects - a byte file still reads back as a Buffer, and an
+ * encoding returns a string for either, as node does.
+ */
+
+if (typeof importScripts === 'function') importScripts('host/md5.js')
+
+// ---------------------------------------------------------------- posix path
+const P = {
+  sep: '/',
+  normalise(p) {
+    const isAbs = p.charAt(0) === '/'
+    const out = []
+    for (const part of p.split('/')) {
+      if (!part || part === '.') continue
+      if (part === '..') {
+        if (out.length && out[out.length - 1] !== '..') out.pop()
+        else if (!isAbs) out.push('..')
+      } else out.push(part)
+    }
+    const joined = out.join('/')
+    return isAbs ? '/' + joined : joined || '.'
+  },
+  join(...args) {
+    return (
+      this.normalise(
+        args
+          .filter((a) => a !== undefined && a !== null && String(a) !== '')
+          .join('/')
+      ) || '.'
+    )
+  },
+  resolve(...args) {
+    let resolved = ''
+    for (let i = args.length - 1; i >= 0; i--) {
+      const a = String(args[i] === undefined || args[i] === null ? '' : args[i])
+      if (!a) continue
+      resolved = a + '/' + resolved
+      if (a.charAt(0) === '/') break
+    }
+    if (resolved.charAt(0) !== '/') resolved = '/' + resolved
+    return this.normalise(resolved)
+  },
+  dirname(p) {
+    const n = this.normalise(p)
+    const i = n.lastIndexOf('/')
+    return i <= 0 ? '/' : n.slice(0, i)
+  },
+  basename(p) {
+    const n = this.normalise(p)
+    return n.slice(n.lastIndexOf('/') + 1)
+  },
+  extname(p) {
+    const b = this.basename(p)
+    const i = b.lastIndexOf('.')
+    return i > 0 ? b.slice(i) : ''
+  }
+}
+
+// ------------------------------------------------------------ binary values
+// The drive holds strings: it is persisted as JSON in IndexedDB and seeded from
+// a JSON file. A file a service writes as bytes is therefore stored as base64
+// behind a marker, which keeps the representation self-describing - a drive
+// restored from a snapshot still knows which entries are base64 - and no text
+// file starts with a NUL.
+const BINARY_PREFIX = '\u0000base64:'
+// a text file that would otherwise look like a marker is stored behind this, so
+// a value a service wrote can never be mistaken for a byte entry
+const TEXT_PREFIX = '\u0000text:'
+const BUFFER_MARK = '__sasjsBuffer'
+const CHUNK = 0x8000
+
+const chunked = (bytes) => {
+  let out = ''
+  for (let i = 0; i < bytes.length; i += CHUNK)
+    out += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK))
+  return out
+}
+
+const bytesToBase64 = (bytes) => btoa(chunked(bytes))
+
+/**
+ * Node's base64 decoding: the url-safe alphabet counts, anything that is not a
+ * base64 character is ignored, and a leftover single character (which cannot be
+ * decoded) is dropped rather than throwing.
+ */
+const base64ToBytes = (base64) => {
+  const clean = String(base64)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .replace(/[^A-Za-z0-9+/]/g, '')
+  const usable = clean.length % 4 === 1 ? clean.slice(0, -1) : clean
+  try {
+    return Uint8Array.from(atob(usable), (char) => char.charCodeAt(0))
+  } catch (e) {
+    return new Uint8Array(0)
+  }
+}
+
+/** Node's hex decoding: pairs, stopping at the first pair that is not hex. */
+const hexToBytes = (value) => {
+  const text = String(value)
+  const bytes = []
+  for (let i = 0; i + 1 < text.length; i += 2) {
+    const pair = text.slice(i, i + 2)
+    if (!/^[0-9a-fA-F]{2}$/.test(pair)) break
+    bytes.push(parseInt(pair, 16))
+  }
+  return Uint8Array.from(bytes)
+}
+
+/**
+ * What node accepts as raw bytes: a Buffer or other Uint8Array, an ArrayBuffer,
+ * or a view over one. Arrays and strings are not bytes here - node rejects them
+ * where it wants a buffer, and a mock that quietly accepts them hides a service
+ * that would fail on the server.
+ */
+const asBufferInput = (value) => {
+  if (value instanceof Uint8Array) return value
+  if (value instanceof ArrayBuffer) return new Uint8Array(value)
+  if (ArrayBuffer.isView(value))
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+  return null
+}
+
+/**
+ * The bytes behind a value Buffer.from accepts: the byte-like inputs plus a
+ * plain array of numbers, which node allows there and nowhere else.
+ */
+const asBytes = (data) => {
+  const bytes = asBufferInput(data)
+  if (bytes) return bytes
+  if (Array.isArray(data)) return Uint8Array.from(data)
+  return null
+}
+
+/** How node names a value it refused, so the error names the same rule. */
+const describeValue = (value) => {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'an instance of Array'
+  if (typeof value === 'string') return `type string ('${value}')`
+  if (typeof value !== 'object')
+    return `type ${typeof value} (${String(value)})`
+  return 'an instance of Object'
+}
+
+const isBinary = (contents) =>
+  typeof contents === 'string' && contents.startsWith(BINARY_PREFIX)
+
+/** The text a stored entry holds, with the escape for a marker-like value off. */
+const entryText = (contents) =>
+  contents.startsWith(TEXT_PREFIX)
+    ? contents.slice(TEXT_PREFIX.length)
+    : contents
+
+/** What the drive stores for a string a service wrote. */
+const encodeText = (data) =>
+  data.startsWith('\u0000') ? TEXT_PREFIX + data : data
+
+const utf8Encoder = new TextEncoder()
+const utf8Decoder = new TextDecoder()
+const utf16Decoder = new TextDecoder('utf-16le', { ignoreBOM: true })
+
+/**
+ * The stored base64 of a byte entry, stripped of whitespace and checked, so
+ * every read of the entry - decoding it, measuring it - starts from the same
+ * validated string.
+ *
+ * node's own base64 decoder ignores what it cannot use, but a drive entry is
+ * written by the host as base64 and nothing else, so a corrupt one is a host
+ * bug: it fails here with the same complaint the worker gives when it serves the
+ * file, rather than reading as empty bytes in one place and a 500 in another.
+ */
+const cleanedBase64 = (contents) => {
+  const clean = String(contents.slice(BINARY_PREFIX.length)).replace(/\s+/g, '')
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean) || clean.length % 4)
+    throw corruptEntry()
+  return clean
+}
+
+/**
+ * The stored base64 of a byte entry, once it is known to decode: the run's read
+ * of the webout file uses this, so a corrupt entry fails the run that produced it
+ * rather than reaching the worker's decoder without the drive's name in the
+ * message. Drive *reads* go through `driveStore`, which decodes through the same
+ * check.
+ */
+const validateEntry = (contents) => cleanedBase64(contents)
+
+const corruptEntry = () => {
+  const error = new Error('Corrupt binary entry on the drive: not valid base64')
+  error.status = 500
+  return error
+}
+
+/**
+ * The byte length node reports for a stored entry, worked out from the stored
+ * form rather than by materialising the bytes: the drive now carries seeded
+ * project files, and a multi-megabyte archive must not be decoded to answer a
+ * stat. The arithmetic is exactly what the decoder yields for the same string
+ * (three bytes per four base64 characters, less the padding), so the size and
+ * the contents cannot disagree.
+ */
+const entrySize = (contents) => {
+  if (!isBinary(contents)) return utf8Encoder.encode(entryText(contents)).length
+  const base64 = cleanedBase64(contents)
+  return (
+    Math.floor((base64.length * 3) / 4) -
+    (base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0)
+  )
+}
+
+/** The bytes a stored entry holds, whatever representation it is behind. */
+const entryBytes = (contents) =>
+  isBinary(contents)
+    ? base64ToBytes(cleanedBase64(contents))
+    : utf8Encoder.encode(entryText(contents))
+
+/** Two byte sets joined, as an appending write leaves the file. */
+const joinBytes = (first, second) => {
+  const out = new Uint8Array(first.length + second.length)
+  out.set(first, 0)
+  out.set(second, first.length)
+  return out
+}
+
+/** node's names for its encodings, including the aliases it accepts. */
+const ENCODINGS = [
+  'utf8',
+  'utf-8',
+  'base64',
+  'base64url',
+  'hex',
+  'binary',
+  'latin1',
+  'ascii',
+  'utf16le',
+  'utf-16le',
+  'ucs2',
+  'ucs-2'
+]
+
+const normaliseEncoding = (encoding) => {
+  const how = String(encoding || 'utf8').toLowerCase()
+  if (how === 'utf-8') return 'utf8'
+  if (how === 'ucs2' || how === 'ucs-2' || how === 'utf-16le') return 'utf16le'
+  return how
+}
+
+/** node refuses an encoding it does not implement, rather than guessing utf8. */
+const assertEncoding = (encoding) => {
+  const how = normaliseEncoding(encoding)
+  if (!ENCODINGS.includes(how))
+    throw new TypeError(`Unknown encoding: ${String(encoding)}`)
+  return how
+}
+
+const toBase64Url = (base64) =>
+  base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+
+const fromBase64Url = (base64url) =>
+  String(base64url).replace(/-/g, '+').replace(/_/g, '/')
+
+const bytesToString = (bytes, encoding) => {
+  switch (assertEncoding(encoding)) {
+    case 'base64':
+      return bytesToBase64(bytes)
+    case 'base64url':
+      return toBase64Url(bytesToBase64(bytes))
+    case 'hex':
+      return [...bytes]
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('')
+    case 'binary':
+    case 'latin1':
+      return chunked(bytes)
+    case 'ascii':
+      // node's ascii decode drops the high bit
+      return chunked(Uint8Array.from(bytes, (byte) => byte & 0x7f))
+    case 'utf16le':
+      return utf16Decoder.decode(bytes)
+    default:
+      return utf8Decoder.decode(bytes)
+  }
+}
+
+/**
+ * Gives a Uint8Array the decoding a Buffer has, and makes a view of it a Buffer
+ * too - a service that chunks a file with `subarray(i, j)` then decodes each
+ * chunk gets the chunk, not "80,75". The mark is non-enumerable and the value
+ * serialises as node's Buffer does, so a service putting one in a JSON body
+ * gets the same response from the mock as from the server.
+ */
+const decorate = (view) => {
+  // the mark and the methods stay out of Object.keys and for..in, as they are
+  // on node's Buffer, where they live on the prototype
+  const hide = (name, value) =>
+    Object.defineProperty(view, name, {
+      value,
+      writable: true,
+      configurable: true
+    })
+
+  hide(BUFFER_MARK, true)
+  hide('toString', (encoding, start, end) => {
+    // node clamps a negative start to 0 and a negative end to 0, so an end
+    // below the start yields nothing rather than counting back from the end
+    const from = Math.max(0, start === undefined ? 0 : start)
+    const to = Math.max(0, end === undefined ? view.length : end)
+    if (to <= from) return ''
+    return bytesToString(
+      Uint8Array.prototype.subarray.call(view, from, to),
+      encoding
+    )
+  })
+  hide('subarray', (start, end) =>
+    decorate(Uint8Array.prototype.subarray.call(view, start, end))
+  )
+  // node's Buffer#slice is a view over the same memory, not a copy - the same
+  // operation as subarray, and the reason a service can edit a slice and see the
+  // edit in the original
+  hide('slice', (start, end) =>
+    decorate(Uint8Array.prototype.subarray.call(view, start, end))
+  )
+  hide('toJSON', () => ({ type: 'Buffer', data: Array.from(view) }))
+  Object.defineProperties(view, UNIMPLEMENTED_BUFFER_METHODS)
+  return view
+}
+
+/**
+ * node's Buffer carries many methods; the shim implements the ones a service
+ * needs to build a body. A call to another one names the gap rather than
+ * failing as "x.write is not a function", which reads like a bug in the service.
+ */
+const UNIMPLEMENTED_BUFFER_METHODS = [
+  'write',
+  'equals',
+  'compare',
+  'indexOf',
+  'includes',
+  'copy',
+  'fill',
+  'readUInt8',
+  'readUInt16LE',
+  'readUInt16BE',
+  'readUInt32LE',
+  'readUInt32BE',
+  'readInt8',
+  'readInt16LE',
+  'readInt16BE',
+  'readInt32LE',
+  'readInt32BE',
+  'readFloatLE',
+  'readFloatBE',
+  'readDoubleLE',
+  'readDoubleBE',
+  'writeUInt8',
+  'writeUInt16LE',
+  'writeUInt16BE',
+  'writeUInt32LE',
+  'writeUInt32BE',
+  'writeInt8',
+  'writeInt16LE',
+  'writeInt16BE',
+  'writeInt32LE',
+  'writeInt32BE',
+  'swap16',
+  'swap32',
+  'swap64'
+].reduce((methods, name) => {
+  methods[name] = {
+    value: () => {
+      throw new TypeError(
+        `Buffer.${name} is not implemented in the browser host`
+      )
+    },
+    writable: true,
+    configurable: true
+  }
+  return methods
+}, {})
+
+/**
+ * A minimal Buffer, for the writes a streaming service makes:
+ * `Buffer.from(bytes)` and `Buffer.from(base64, 'base64')`. What it returns is
+ * a Uint8Array that also decodes itself, so a service writes it straight to the
+ * webout and reads it back the way node returns one.
+ */
+const asBuffer = (bytes) => decorate(new Uint8Array(bytes))
+
+/**
+ * node's Buffer.alloc: zero-filled, or filled with the value repeated - a byte
+ * for a number, the bytes of a string in its encoding, or the bytes of a
+ * buffer. A service building a padded payload depends on the repeat.
+ */
+const allocBytes = (size, fill, encoding) => {
+  // node refuses a size that is not a number, and one it cannot make an array
+  // of - a silent empty buffer would hide a service that fails on the server
+  if (typeof size !== 'number')
+    throw new TypeError(
+      `The "size" argument must be of type number. Received ${describeValue(size)}`
+    )
+  const length = Number.isFinite(size) ? Math.trunc(size) : size
+  if (!(length >= 0) || !Number.isFinite(length))
+    throw new RangeError(
+      `The value of "size" is out of range. It must be >= 0 && <= 9007199254740991. Received ${size}`
+    )
+  const out = new Uint8Array(length)
+  if (fill === undefined || !out.length) return out
+  const bytes =
+    typeof fill === 'number'
+      ? Uint8Array.of(fill & 0xff)
+      : typeof fill === 'string'
+        ? BUFFERS.from(fill, encoding)
+        : asBytes(fill)
+  if (!bytes || !bytes.length) return out
+  for (let i = 0; i < out.length; i++) out[i] = bytes[i % bytes.length]
+  return out
+}
+
+const BUFFERS = {
+  /**
+   * node's Buffer.from overloads: (string, encoding), (arrayBuffer, byteOffset,
+   * length), and a single argument for anything else. The offset and length are
+   * read only for an ArrayBuffer - node ignores them for the contents of a view,
+   * so a chunk comes from subarray, not from a second argument.
+   */
+  from(value, offsetOrEncoding, length) {
+    if (typeof value === 'string') {
+      switch (assertEncoding(offsetOrEncoding)) {
+        case 'base64':
+          return asBuffer(base64ToBytes(value))
+        case 'base64url':
+          return asBuffer(base64ToBytes(fromBase64Url(value)))
+        case 'hex':
+          return asBuffer(hexToBytes(value))
+        case 'binary':
+        case 'latin1':
+        // node encodes 'ascii' as latin1 - the low byte of the code unit - and
+        // clears the high bit only when it decodes
+        case 'ascii':
+          return asBuffer(
+            Uint8Array.from(value, (char) => char.charCodeAt(0) & 0xff)
+          )
+        case 'utf16le': {
+          const bytes = new Uint8Array(value.length * 2)
+          for (let i = 0; i < value.length; i++) {
+            const code = value.charCodeAt(i)
+            bytes[i * 2] = code & 0xff
+            bytes[i * 2 + 1] = code >> 8
+          }
+          return asBuffer(bytes)
+        }
+        default:
+          return asBuffer(utf8Encoder.encode(value))
+      }
+    }
+    if (value instanceof ArrayBuffer) {
+      // a non-numeric second argument is not an offset, it is node's encoding
+      // slot, and node ignores it here rather than rejecting it
+      const start =
+        typeof offsetOrEncoding === 'number' ? Math.trunc(offsetOrEncoding) : 0
+      const end =
+        typeof length === 'number'
+          ? start + Math.trunc(length)
+          : value.byteLength
+      if (start < 0 || start > value.byteLength)
+        throw new RangeError(
+          `Start offset ${String(offsetOrEncoding)} is outside the bounds of the buffer`
+        )
+      if (end < start || end > value.byteLength)
+        throw new RangeError('"length" is outside of buffer bounds')
+      // node returns a VIEW over the ArrayBuffer for this overload - a service
+      // that patches the bytes through the buffer is patching the ArrayBuffer
+      // it kept - and copies only for a Uint8Array input, which is what
+      // asBytes does below. `decorate` adds the methods to the view in place;
+      // `asBuffer` would copy it and hide the patch.
+      return decorate(new Uint8Array(value, start, end - start))
+    }
+    const bytes = asBytes(value)
+    if (!bytes)
+      throw new TypeError('Buffer.from: unsupported input in the browser host')
+    return asBuffer(bytes)
+  },
+  alloc: (size, fill, encoding) => asBuffer(allocBytes(size, fill, encoding)),
+  concat(list, totalLength) {
+    const items = list || []
+    const parts = items.map((item, index) => {
+      const bytes = asBufferInput(item)
+      if (!bytes)
+        throw new TypeError(
+          `The "list[${index}]" argument must be an instance of Buffer or Uint8Array. Received ${describeValue(item)}`
+        )
+      return bytes
+    })
+    const written = parts.reduce((sum, part) => sum + part.length, 0)
+    // node pads with zeros when totalLength is longer than the parts and cuts
+    // them short when it is shorter, rather than ignoring the argument
+    const total = totalLength === undefined ? written : totalLength
+    if (typeof total !== 'number')
+      throw new TypeError(
+        `The "length" argument must be of type number. Received ${describeValue(totalLength)}`
+      )
+    if (!Number.isInteger(total) || total < 0)
+      throw new RangeError(
+        `The value of "length" is out of range. It must be ${total < 0 ? '>= 0' : 'an integer'}. Received ${total}`
+      )
+    const out = new Uint8Array(total)
+    let offset = 0
+    for (const part of parts) {
+      if (offset >= total) break
+      const room = Math.min(part.length, total - offset)
+      out.set(part.subarray(0, room), offset)
+      offset += room
+    }
+    return asBuffer(out)
+  },
+  isBuffer: (value) => !!(value && value[BUFFER_MARK]),
+  byteLength(value, encoding) {
+    if (typeof value === 'string') return BUFFERS.from(value, encoding).length
+    const bytes = asBufferInput(value)
+    if (bytes) return bytes.length
+    throw new TypeError(
+      `The "string" argument must be of type string or an instance of Buffer or ArrayBuffer. Received ${describeValue(value)}`
+    )
+  }
+}
+
+BUFFERS.allocUnsafe = BUFFERS.alloc
+
+// ------------------------------------------------------------- virtual drive
+const FILES = new Map() // absolute path -> string contents
+const DIRS = new Set(['/'])
+// abs path -> { contents, size }: the measure of the entry as stored. A cached
+// entry is trusted only while it is the same string, so a write that replaces
+// the contents recomputes - the cache cannot go stale, and a stat of a
+// multi-megabyte seeded file does not scan it again.
+const SIZES = new Map()
+
+/** The byte length of an entry on the drive, measured once per stored value. */
+const entrySizeAt = (abs) => {
+  const contents = FILES.get(abs)
+  const cached = SIZES.get(abs)
+  if (cached && cached.contents === contents) return cached.size
+  const size = entrySize(contents)
+  SIZES.set(abs, { contents, size })
+  return size
+}
+
+// ------------------------------------------------------------ persistence
+// The drive lives in this worker's memory. IndexedDB is owned by the PAGE
+// (a service worker can be terminated between requests, and in some browsers
+// worker and page storage are not shared), so the page hands the drive in at
+// boot and receives the changed files back after each run.
+const dirty = new Map() // abs path -> contents, or null when deleted
+
+const markDirty = (path) => {
+  const contents = FILES.has(path) ? FILES.get(path) : null
+  dirty.set(path, contents)
+}
+
+const takeDirty = () => {
+  const out = {}
+  for (const [path, contents] of dirty) out[path] = contents
+  dirty.clear()
+  return out
+}
+
+const dumpAll = () => {
+  const out = {}
+  for (const [path, contents] of FILES) out[path] = contents
+  return out
+}
+
+const loadSnapshot = (files) => {
+  FILES.clear()
+  SIZES.clear()
+  DIRS.clear()
+  DIRS.add('/')
+  mkdirp(DRIVE_APP)
+  mkdirp(`${DRIVE_ROOT}/files`)
+  for (const [path, contents] of Object.entries(files || {})) {
+    if (typeof contents !== 'string') continue
+    FILES.set(P.resolve(path), contents)
+    mkdirp(P.dirname(path))
+  }
+  lastBoot = {
+    booted: true,
+    restored: true,
+    files: FILES.size,
+    at: new Date().toISOString()
+  }
+  return lastBoot
+}
+
+const mkdirp = (dir) => {
+  const parts = P.normalise(dir).split('/').filter(Boolean)
+  let acc = ''
+  for (const part of parts) {
+    acc += '/' + part
+    DIRS.add(acc)
+  }
+}
+
+/**
+ * node's writeFileSync third argument: an encoding, or an options object that
+ * carries an encoding and a flag. 'w' replaces and 'a' appends, which are the
+ * two that mean something on a drive with no file descriptors; the rest are
+ * refused rather than quietly treated as a replace.
+ */
+const writeOptions = (options) => {
+  if (options === undefined || options === null)
+    return { encoding: 'utf8', flag: 'w' }
+  const opts = typeof options === 'string' ? { encoding: options } : options
+  const flag = opts.flag || 'w'
+  if (flag !== 'w' && flag !== 'a')
+    throw new Error(
+      `Unsupported flag '${flag}' in the browser host - 'w' and 'a' only`
+    )
+  return { encoding: opts.encoding || 'utf8', flag }
+}
+
+const FS = {
+  readFileSync(p, options) {
+    const abs = P.resolve(String(p))
+    if (!FILES.has(abs)) {
+      const err = new Error(
+        `ENOENT: no such file or directory, open '${String(p)}'`
+      )
+      err.code = 'ENOENT'
+      throw err
+    }
+    // node takes the encoding either bare or on an options object. An explicit
+    // `{ encoding: null }` is node's ask for a Buffer, so it is not the same as
+    // no encoding at all - the key has to be told apart from its value.
+    const onOptions = options && typeof options === 'object'
+    const encoding = onOptions ? options.encoding : options
+    const contents = FILES.get(abs)
+    const bytes = isBinary(contents) ? asBuffer(entryBytes(contents)) : null
+    // an encoding asks for a string, as it does in node; without one the drive
+    // hands text back as text (a service reading a config or a CSV expects
+    // that) and a byte file back as bytes
+    if (encoding) {
+      const how = assertEncoding(encoding)
+      return bytes
+        ? bytes.toString(how)
+        : BUFFERS.from(entryText(contents)).toString(how)
+    }
+    // an encoding key present but null: node hands back the Buffer, so a text
+    // entry is its utf8 bytes
+    if (onOptions && 'encoding' in options)
+      return bytes || asBuffer(utf8Encoder.encode(entryText(contents)))
+    return bytes || entryText(contents)
+  },
+  existsSync(p) {
+    const abs = P.resolve(String(p))
+    return FILES.has(abs) || DIRS.has(abs)
+  },
+  writeFileSync(p, data, options) {
+    const abs = P.resolve(String(p))
+    mkdirp(P.dirname(abs))
+    // node's third argument is an encoding, or an object carrying one plus a
+    // flag. An appending write is honoured, because a service that streams a
+    // file in chunks produces a whole file on the server and would otherwise
+    // produce its last chunk here.
+    const { encoding, flag } = writeOptions(options)
+    const appending = flag === 'a' && FILES.has(abs)
+    const before = appending ? entryBytes(FILES.get(abs)) : null
+    const stored = appending && isBinary(FILES.get(abs))
+    // text, or the bytes node lets a service write: an array, a number or null
+    // is an error there, so it is one here too rather than a silent "1,2,3" in
+    // the file that fails on the server
+    if (typeof data !== 'string') {
+      const bytes = asBufferInput(data)
+      if (!bytes)
+        throw new TypeError(
+          `The "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received ${describeValue(data)}`
+        )
+      const written = appending ? joinBytes(before, bytes) : bytes
+      FILES.set(abs, BINARY_PREFIX + bytesToBase64(written))
+      markDirty(abs)
+      return
+    }
+    const how = assertEncoding(encoding)
+    // a utf8 string lands as text, so a service that reads it back as text gets
+    // the text; anything that carries an encoding, or appends onto bytes, lands
+    // as the bytes it produces
+    if (how === 'utf8' && !stored) {
+      const text = appending ? entryText(FILES.get(abs)) + data : data
+      FILES.set(abs, encodeText(text))
+      markDirty(abs)
+      return
+    }
+    const bytes = BUFFERS.from(data, how)
+    const written = appending ? joinBytes(before, bytes) : bytes
+    FILES.set(abs, BINARY_PREFIX + bytesToBase64(written))
+    markDirty(abs)
+  },
+  writeFile(p, data, options, cb) {
+    // node's writeFile takes the options as its third argument, with the
+    // callback either after it or in its place
+    if (typeof options === 'function') {
+      cb = options
+      options = undefined
+    }
+    try {
+      FS.writeFileSync(p, data, options)
+      if (cb) cb(null)
+    } catch (e) {
+      if (cb) cb(e)
+      else throw e
+    }
+  },
+  /**
+   * Node's appendFileSync. The webout() block streams its members with it, and
+   * writeFileSync already honours the appending flag, so this is the same write
+   * with that flag set - text stays text and bytes stay bytes, as in node.
+   */
+  appendFileSync(p, data, options) {
+    const { encoding } = writeOptions(options)
+    FS.writeFileSync(p, data, { encoding, flag: 'a' })
+  },
+  mkdirSync(p) {
+    mkdirp(P.resolve(String(p)))
+  },
+  readdirSync(p) {
+    const abs = P.resolve(String(p))
+    const pre = abs === '/' ? '/' : abs + '/'
+    const out = new Set()
+    for (const k of FILES.keys()) {
+      if (k.startsWith(pre)) {
+        const rest = k.slice(pre.length)
+        if (rest && !rest.includes('/')) out.add(rest)
+      }
+    }
+    for (const d of DIRS) {
+      if (d.startsWith(pre)) {
+        const rest = d.slice(pre.length)
+        if (rest && !rest.includes('/')) out.add(rest)
+      }
+    }
+    return [...out].sort()
+  },
+  statSync(p) {
+    const abs = P.resolve(String(p))
+    if (DIRS.has(abs))
+      return { isDirectory: () => true, isFile: () => false, size: 0 }
+    if (FILES.has(abs)) {
+      const size = entrySizeAt(abs)
+      return { isDirectory: () => false, isFile: () => true, size }
+    }
+    const err = new Error(
+      `ENOENT: no such file or directory, stat '${String(p)}'`
+    )
+    err.code = 'ENOENT'
+    throw err
+  },
+  unlinkSync(p) {
+    const abs = P.resolve(String(p))
+    FILES.delete(abs)
+    SIZES.delete(abs)
+    markDirty(abs)
+  },
+  copyFileSync(from, to) {
+    const src = P.resolve(String(from))
+    if (!FILES.has(src))
+      throw new Error(`ENOENT: no such file, copy '${String(from)}'`)
+    // copy the stored representation verbatim, so a byte file stays bytes and a
+    // text file is not re-escaped
+    const abs = P.resolve(String(to))
+    mkdirp(P.dirname(abs))
+    FILES.set(abs, FILES.get(src))
+    markDirty(abs)
+  }
+}
+
+const CRYPTO = {
+  createHash(alg) {
+    if (String(alg).toLowerCase() !== 'md5')
+      throw new Error(`Unsupported hash in browser host: ${alg}`)
+    let buf = ''
+    return {
+      update(s) {
+        buf += String(s)
+        return this
+      },
+      digest(enc) {
+        const hex = MD5(buf)
+        return enc === 'hex' ? hex : hex
+      }
+    }
+  }
+}
+
+const requireShim = (name) => {
+  switch (name) {
+    case 'path':
+      return P
+    case 'fs':
+      return FS
+    case 'crypto':
+      return CRYPTO
+    default:
+      throw new Error(
+        `Cannot find module '${name}' in the browser runtime host`
+      )
+  }
+}
+
+// ------------------------------------------------------------------ commands
+const DRIVE_ROOT = '/sasjs/drive'
+// Rewritten at boot from host/mock-config.json, which the mock build writes.
+let APP_LOC = '/Public/app'
+let DRIVE_APP = `${DRIVE_ROOT}/files${APP_LOC}`
+let SEED_PATH = 'host/vfs-seed.json'
+const SNAPSHOT_PATH = 'host/vfs-snapshot.json'
+
+/**
+ * The drive storage format, stamped into the seed and the snapshot. The markers
+ * themselves (`\u0000base64:` / `\u0000text:`) are written by the build
+ * (DRIVE_BINARY_PREFIX / DRIVE_TEXT_PREFIX in mockSite.ts) and read here, so the
+ * two sides hold the same format independently - and a one-sided edit would
+ * otherwise show up as a byte file reading as text, or a 500 per entry.
+ *
+ * The stamp is what makes that loud instead of silent: a file written by a build
+ * that speaks a different format is refused here, naming both numbers. Bump this
+ * whenever the marker format changes, and the builder's DRIVE_FORMAT with it.
+ */
+const DRIVE_FORMAT = 1
+
+/**
+ * Reads the generated mock-config.json (appLoc and provenance). Absent or
+ * malformed, the defaults above apply - a demo can then only work when the
+ * services sit under the default appLoc.
+ */
+const loadMockConfig = async () => {
+  try {
+    const res = await fetch('host/mock-config.json', { cache: 'no-store' })
+    if (!res.ok) return
+    const cfg = await res.json()
+    if (cfg && typeof cfg.appLoc === 'string' && cfg.appLoc.trim()) {
+      APP_LOC = '/' + cfg.appLoc.replace(/^\/+/, '').replace(/\/+$/, '')
+      DRIVE_APP = `${DRIVE_ROOT}/files${APP_LOC}`
+    }
+    // the build names the seed it wrote; the default above covers a site built
+    // before the config carried it
+    if (cfg && typeof cfg.seedPath === 'string' && cfg.seedPath.trim()) {
+      SEED_PATH = cfg.seedPath
+    }
+  } catch (e) {
+    /* keep the defaults */
+  }
+}
+
+/**
+ * The webout() block, generated by the mock build from @sasjs/utils with
+ * sentinel values (see WEBOUT_SENTINELS in mockSite.ts). Filled in per run, so
+ * a service that sends data back behaves exactly as it does on a server -
+ * including the content type, which is what the block sets.
+ */
+let weboutPreludeTemplate = ''
+let weboutSentinels = null
+
+const loadWeboutPrelude = async () => {
+  try {
+    const res = await fetch('host/webout-prelude.json', { cache: 'no-store' })
+    if (!res.ok) return
+    const cfg = await res.json()
+    if (cfg && typeof cfg.template === 'string') {
+      weboutPreludeTemplate = cfg.template
+      weboutSentinels = cfg.sentinels || null
+    }
+  } catch (e) {
+    /* a site built before the block existed keeps the _webout-only path */
+  }
+}
+
+/**
+ * One run's webout() source: each sentinel replaced by this run's value, quoted
+ * exactly as the server's generator quotes it. The sentinel names come from the
+ * build (WEBOUT_SENTINELS), so the two sides cannot disagree about them.
+ */
+const fillWeboutPrelude = (values) => {
+  if (!weboutPreludeTemplate || !weboutSentinels) return ''
+  let text = weboutPreludeTemplate
+  for (const [key, sentinel] of Object.entries(weboutSentinels)) {
+    if (!(key in values)) continue
+    text = text
+      .split('"' + sentinel + '"')
+      .join(JSON.stringify(String(values[key])))
+  }
+  return text
+}
+
+let sessionSeq = 0
+
+const formatArg = (a) => {
+  if (typeof a === 'string') return a
+  try {
+    return JSON.stringify(a)
+  } catch (e) {
+    return String(a)
+  }
+}
+
+const PROGRAM_FOLDERS = ['services', 'jobs', 'tests']
+
+/**
+ * Resolves a program reference the way the server does: an exact drive path,
+ * with the runtime extension tried. The adapter sends a full path, and prepends
+ * the appLoc when the app passes one without a leading slash, so a reference
+ * naming no program folder (e.g. "getdata", or "<appLoc>/getdata") is also
+ * tried under services, jobs and tests below the appLoc.
+ */
+const resolveProgram = (program) => {
+  const relative = String(program).replace(/^\/+/, '')
+  const roots = [P.resolve(DRIVE_ROOT, 'files', relative)]
+
+  const namesAFolder = PROGRAM_FOLDERS.some(
+    (folder) => relative === folder || relative.startsWith(folder + '/')
+  )
+  if (!namesAFolder) {
+    // DRIVE_APP already carries the appLoc, and it is absolute: joining it with
+    // P.resolve keeps the drive prefix that the literal appLoc would replace.
+    const underAppLoc = relative.startsWith(APP_LOC.slice(1) + '/')
+      ? relative.slice(APP_LOC.length)
+      : relative
+    for (const folder of PROGRAM_FOLDERS) {
+      roots.push(P.join(DRIVE_APP, folder, underAppLoc))
+    }
+  }
+
+  for (const root of roots) {
+    for (const candidate of [root, root + '.js', root + '.sas']) {
+      if (FILES.has(candidate)) return candidate
+    }
+  }
+
+  return null
+}
+
+/**
+ * The header file a session starts with. sasjs/server seeds this exact line
+ * into a JS session (controllers/internal/Session.ts), so a service that
+ * declares no type answers text/html rather than leaving the choice to the
+ * browser - a mock build matches that here.
+ *
+ * The trailing newline is part of it: the server writes it for a JS session
+ * (`'content-type: text/html; charset=utf-8\n'` in Session.ts, as against the
+ * SAS 9 session's seed with no newline), and it is what keeps a service that
+ * appends a header without a leading newline on its own line - otherwise the two
+ * concatenate into one unusable value.
+ *
+ * It is a default, not a declaration: the worker ignores it for a byte body,
+ * so a service that writes bytes and names no type is still an undeclared
+ * download rather than being labelled text/html. The worker reads the value
+ * from HEADERS_SEED below, so the seed and the rule cannot drift.
+ */
+const SEEDED_HEADERS = 'content-type: text/html; charset=utf-8\n'
+
+/**
+ * The largest body a single upload may carry.
+ *
+ * A browser worker holds the whole payload in memory, so an oversized upload is
+ * an out-of-memory failure rather than a limit a client can act on. This is the
+ * same 10 MB a deploy allows for one file, and it is checked from the File's
+ * `size` before the body is read.
+ */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+const runProgram = ({ program, code, params = {}, tables = [] }) => {
+  const payloadCode = code
+  const codePath = program ? resolveProgram(program) : null
+  if (!codePath && !payloadCode)
+    throw new Error(`Program not found in drive: ${program}`)
+
+  const logLines = []
+  const sandboxConsole = {}
+  for (const level of ['log', 'info', 'warn', 'error', 'debug']) {
+    sandboxConsole[level] = (...args) => {
+      const line = args.map(formatArg).join(' ')
+      logLines.push(line)
+      // eslint-disable-next-line no-console
+      console[level === 'debug' ? 'log' : level](`[service] ${line}`)
+    }
+  }
+
+  const sessionDir = `/sasjs/sessions/s${++sessionSeq}`
+  mkdirp(sessionDir)
+  const weboutPath = `${sessionDir}/webout.txt`
+  const headersPath = `${sessionDir}/stpsrv_header.txt`
+  const tokenFile = `${sessionDir}/reqHeaders.txt`
+  FILES.set(weboutPath, '')
+  FILES.set(headersPath, SEEDED_HEADERS)
+  FILES.set(tokenFile, '')
+
+  const varStatements = Object.entries(params)
+    .filter(([name]) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name))
+    .map(([name, value]) => `const ${name} = ${JSON.stringify(String(value))};`)
+    .join('\n')
+
+  const webinStatements = []
+  tables.forEach((table, idx) => {
+    const n = idx + 1
+    webinStatements.push(
+      `const _WEBIN_NAME${n} = ${JSON.stringify(table.name)};`
+    )
+    webinStatements.push(
+      `const _WEBIN_FILENAME${n} = ${JSON.stringify(table.filename)};`
+    )
+    webinStatements.push(
+      `const _WEBIN_FILEREF${n} = ${JSON.stringify(table.csv)};`
+    )
+  })
+  webinStatements.push(`const _WEBIN_FILE_COUNT = ${tables.length};`)
+
+  // The webout() block, filled in for this run. Empty only for a site whose
+  // build predates it, where the _webout-only tail below still works.
+  const weboutPrelude = fillWeboutPrelude({
+    weboutPath,
+    headersPath,
+    program: codePath || program || '',
+    debug: params._debug || '',
+    username: 'DEMO',
+    userId: '0',
+    apiServerUrl: typeof location !== 'undefined' ? location.origin : ''
+  })
+
+  const preProgram = `
+let _webout = '';
+const weboutPath = ${JSON.stringify(weboutPath)};
+const _SASJS_TOKENFILE = ${JSON.stringify(tokenFile)};
+const _SASJS_WEBOUT_HEADERS = ${JSON.stringify(headersPath)};
+const _SASJS_USERNAME = "DEMO";
+const _SASJS_USERID = "0";
+const _SASJS_DISPLAYNAME = "Demo User";
+const _METAPERSON = _SASJS_DISPLAYNAME;
+const _METAUSER = _SASJS_USERNAME;
+const SASJSPROCESSMODE = 'Stored Program';
+`
+
+  const source = `
+const fs = require('fs');
+${varStatements}
+${webinStatements.join('\n')}
+${preProgram}
+${weboutPrelude}
+${payloadCode || FILES.get(codePath)}
+${
+  weboutPrelude
+    ? '_sasjs_webout.finalise(_webout);'
+    : 'if (_webout) { fs.writeFile(weboutPath, _webout, function () {}); }'
+}
+return _webout;
+`
+
+  let thrown = null
+  let returned = ''
+  try {
+    // the construction sits inside the try: a service that declares a name the
+    // prelude already binds (`const Buffer = ...`) makes new Function throw a
+    // SyntaxError, which belongs in the run's error, not outside it
+    const fn = new Function('require', 'console', 'process', 'Buffer', source)
+    returned = fn(
+      requireShim,
+      sandboxConsole,
+      {
+        pid: 4242,
+        env: { NODE_ENV: 'browser' }
+      },
+      BUFFERS
+    )
+  } catch (e) {
+    thrown = e && e.stack ? e.stack : String(e)
+    logLines.push(String(thrown))
+  }
+
+  const stored = FILES.get(weboutPath) || ''
+  // binary only when the byte body is the body: an empty byte write falls back
+  // to the returned string, and flagging that as bytes would have the worker
+  // base64-decode text. A byte body is validated here the way a read is, so a
+  // corrupt one fails the run instead of reaching the worker's decoder.
+  let fromFile = ''
+  let corrupt = false
+  if (isBinary(stored)) {
+    try {
+      fromFile = validateEntry(stored)
+    } catch (e) {
+      corrupt = true
+      if (!thrown) thrown = e.message
+      logLines.push(e.message)
+    }
+  } else {
+    fromFile = entryText(stored)
+  }
+  const binary = !corrupt && !!fromFile && isBinary(stored)
+  const webout = fromFile || (typeof returned === 'string' ? returned : '')
+
+  // The headers file is read as text whatever way it was written, which is what
+  // the server does (`extractHeaders` reads the file, not the write). A service
+  // that writes it as bytes - a Buffer, or any non-UTF-8 encoding - leaves a
+  // byte entry on the drive, so decoding the entry text alone would hand the
+  // worker the `\u0000base64:...` marker and drop every declared header.
+  const storedHeaders = FILES.get(headersPath) || ''
+
+  return {
+    webout,
+    log: logLines.join('\n'),
+    headers: isBinary(storedHeaders)
+      ? utf8Decoder.decode(entryBytes(storedHeaders))
+      : entryText(storedHeaders),
+    // a byte body travels to the host as base64, which is how it is stored
+    binary,
+    error: thrown
+  }
+}
+
+const DRIVE_FILES = () => `${DRIVE_ROOT}/files`
+
+/**
+ * Writes one entry: bytes stay bytes (behind the base64 marker the drive reads
+ * them back from), a string is text, and the entry is marked for persistence.
+ *
+ * An upload arrives as bytes and is stored as bytes, which is also what the
+ * server does: multer writes the request body to disk and `saveFile` moves that
+ * file, so an uploaded CSV is a byte file there too - a program reading it
+ * without an encoding gets a Buffer on both hosts, and with `'utf8'` a string.
+ * The difference a client actually sees is the content type a download is served
+ * with, and that is decided by the extension on the GET route, as `sendFile`
+ * does on the server.
+ */
+const storeEntry = (abs, data) => {
+  const bytes = asBytes(data)
+  FILES.set(
+    abs,
+    bytes
+      ? BINARY_PREFIX + bytesToBase64(bytes)
+      : encodeText(String(data === undefined || data === null ? '' : data))
+  )
+  SIZES.delete(abs)
+  markDirty(abs)
+}
+
+/**
+ * The ancestor of a path that is itself a file, if there is one.
+ *
+ * `mkdirp` would happily turn `/data/x.csv` into a folder to hold
+ * `/data/x.csv/child`, leaving a path that is a file and has children at the
+ * same time - a state the server never reaches, because the filesystem refuses
+ * it (ENOTDIR). The server answers that with a 500, so this does too: it is a
+ * refusal either way, and reproducing the host failure is the point.
+ */
+const fileAncestorOf = (abs) => {
+  const parts = abs.split('/').filter(Boolean)
+  let acc = ''
+  for (const part of parts.slice(0, -1)) {
+    acc += '/' + part
+    if (FILES.has(acc)) return acc
+  }
+  return null
+}
+
+/**
+ * A drive-relative path - the form the API uses - as the key the map holds.
+ *
+ * The containment test is the storage boundary's own rule, not a second copy of
+ * the API's: `driveStore` is handed out on `self.SASjsMockRuntime`, so a caller
+ * that skips the package can still name `../..` and this must not resolve it out
+ * of the drive. The API refuses such a path first, with the wording a client
+ * sees; reaching this refusal means something bypassed it.
+ */
+const absDrivePath = (driveRelative) => {
+  const relative = String(
+    driveRelative === undefined || driveRelative === null ? '' : driveRelative
+  )
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+  const root = DRIVE_FILES()
+  const abs = relative ? P.resolve(root, relative) : root
+  if (abs !== root && !abs.startsWith(root + '/')) {
+    const err = new Error(
+      `Can't reach a path outside the drive: ${driveRelative}`
+    )
+    err.status = 400
+    throw err
+  }
+  return abs
+}
+
+/** The drive-relative form of an absolute key, for a message a client reads. */
+const driveRelative = (abs) => abs.slice(DRIVE_FILES().length) || '/'
+
+/**
+ * The drive as the API package's storage port.
+ *
+ * `@sasjs/api` owns the drive's *rules* - the statuses, the messages, the order
+ * of the checks, whether a path climbs out of the drive - and asks a host for
+ * eight operations over the bytes. This is those eight over the map above, which
+ * is also what a program running in this host sees through `FS`: a file written
+ * by a service and a file uploaded over HTTP are the same entry.
+ *
+ * Paths arrive drive-relative (`data/x.csv`), the way the API names them; the
+ * drive's own root is added here and never appears in an answer.
+ */
+const driveStore = {
+  async read(drivePath) {
+    const abs = absDrivePath(drivePath)
+    const stored = FILES.get(abs)
+    if (stored === undefined) {
+      // the API checks existence first, so this is a store that was handed a
+      // path it does not hold - refused in the drive's own words rather than
+      // answering undefined
+      const err = new Error(`File doesn't exist.`)
+      err.status = 404
+      throw err
+    }
+    return isBinary(stored) ? entryBytes(stored) : entryText(stored)
+  },
+
+  async write(drivePath, contents) {
+    const abs = absDrivePath(drivePath)
+    const ancestor = fileAncestorOf(abs)
+    if (ancestor)
+      throw new Error(
+        `ENOTDIR: an ancestor of the path is a file: ${driveRelative(ancestor)}`
+      )
+    mkdirp(P.dirname(abs))
+    storeEntry(abs, contents)
+  },
+
+  async exists(drivePath) {
+    const abs = absDrivePath(drivePath)
+    return FILES.has(abs) || DIRS.has(abs)
+  },
+
+  async stat(drivePath) {
+    const abs = absDrivePath(drivePath)
+    if (DIRS.has(abs)) return { directory: true, size: 0 }
+    if (FILES.has(abs)) return { directory: false, size: entrySizeAt(abs) }
+    const err = new Error(
+      `ENOENT: no such file or directory, stat '${drivePath}'`
+    )
+    err.code = 'ENOENT'
+    throw err
+  },
+
+  async list(drivePath) {
+    const abs = absDrivePath(drivePath)
+    const pre = abs === '/' ? '/' : abs + '/'
+    const files = []
+    const folders = []
+    for (const key of FILES.keys()) {
+      if (!key.startsWith(pre)) continue
+      const rest = key.slice(pre.length)
+      if (rest && !rest.includes('/')) files.push(rest)
+    }
+    for (const dir of DIRS) {
+      if (!dir.startsWith(pre)) continue
+      const rest = dir.slice(pre.length)
+      if (rest && !rest.includes('/')) folders.push(rest)
+    }
+    return { files: files.sort(), folders: folders.sort() }
+  },
+
+  async mkdirp(drivePath) {
+    mkdirp(absDrivePath(drivePath))
+  },
+
+  /**
+   * Removes a file, or a folder with everything under it. The drive is a flat
+   * map of paths, so this is the entries' prefix rather than a directory walk -
+   * and each file it removes is marked dirty (as a deletion) so the page drops
+   * it from IndexedDB too. An empty folder is not represented in the persisted
+   * drive, which is a map of files; see the note on the docs page.
+   */
+  async remove(drivePath) {
+    const abs = absDrivePath(drivePath)
+    if (FILES.has(abs)) {
+      FILES.delete(abs)
+      SIZES.delete(abs)
+      markDirty(abs)
+      return
+    }
+    const prefix = abs + '/'
+    for (const path of [...FILES.keys()]) {
+      if (!path.startsWith(prefix)) continue
+      FILES.delete(path)
+      SIZES.delete(path)
+      markDirty(path)
+    }
+    for (const dir of [...DIRS]) {
+      if (dir === abs || dir.startsWith(prefix)) DIRS.delete(dir)
+    }
+  },
+
+  /** Moves a file, or a folder with everything under it, and marks both ends. */
+  async move(fromPath, toPath) {
+    const from = absDrivePath(fromPath)
+    const to = absDrivePath(toPath)
+    const moveEntry = (source, target) => {
+      FILES.set(target, FILES.get(source))
+      FILES.delete(source)
+      SIZES.delete(source)
+      mkdirp(P.dirname(target))
+      markDirty(target)
+      markDirty(source)
+    }
+
+    if (FILES.has(from)) {
+      moveEntry(from, to)
+      return
+    }
+    if (!DIRS.has(from)) throw new Error(`ENOENT: no such folder '${fromPath}'`)
+
+    const prefix = from + '/'
+    mkdirp(P.dirname(to))
+    for (const dir of [...DIRS]) {
+      if (dir === from || dir.startsWith(prefix)) {
+        DIRS.delete(dir)
+        mkdirp(to + dir.slice(from.length))
+      }
+    }
+    for (const path of [...FILES.keys()]) {
+      if (path.startsWith(prefix)) moveEntry(path, to + path.slice(from.length))
+    }
+  }
+}
+
+// -------------------------------------------------------------------- boot
+let ready = null
+let lastBoot = null
+
+/**
+ * Loads the drive the site ships with. A snapshot wins over the plain seed: it
+ * is a complete drive captured after a project's own services had run (a
+ * seeded demo site, for instance), so a visitor starts from data instead of
+ * from an empty drive.
+ */
+const fetchDrive = async () => {
+  for (const [source, url] of [
+    ['snapshot', SNAPSHOT_PATH],
+    ['seed', SEED_PATH]
+  ]) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) continue
+      const body = await res.json()
+      const files = body && body.files ? body.files : body
+      if (!files || typeof files !== 'object') continue
+
+      // A file that declares a format this runtime does not speak is refused
+      // rather than misread: the markers inside it would decode as text, and the
+      // failure would surface as a corrupt download or a 500 per entry with
+      // nothing naming the cause. A file with no stamp predates the stamp and is
+      // read as the current format.
+      if (body && body.format !== undefined && body.format !== DRIVE_FORMAT)
+        throw new Error(
+          'The drive in ' +
+            url +
+            ' is format ' +
+            JSON.stringify(body.format) +
+            ', and this runtime speaks format ' +
+            DRIVE_FORMAT +
+            '. Rebuild the mock site with the matching @sasjs/cli.'
+        )
+
+      return { source, files }
+    } catch (e) {
+      // a format mismatch is not a reason to try the other file: it is the file
+      // the operator meant to ship, and falling through would hide it
+      if (e && /is format /.test(e.message)) throw e
+      /* fall through to the next source */
+    }
+  }
+
+  throw new Error(
+    'No drive to load: neither ' +
+      SNAPSHOT_PATH +
+      ' nor ' +
+      SEED_PATH +
+      ' could be read'
+  )
+}
+
+const boot = async () => {
+  await loadMockConfig()
+  await loadWeboutPrelude()
+  const { source, files: seed } = await fetchDrive()
+  mkdirp(DRIVE_APP)
+  mkdirp(`${DRIVE_ROOT}/files`)
+  for (const [path, contents] of Object.entries(seed)) {
+    FILES.set(P.resolve(path), contents)
+    mkdirp(P.dirname(path))
+  }
+  dirty.clear()
+
+  // No bootstrap: seeding a drive is an ordinary service call, made by the app
+  // (or an operator) the same way it would be against a server. The host knows
+  // nothing about what a project's services do.
+  // Mark the whole drive dirty once, so the host persists a COMPLETE snapshot:
+  // later restores then need no merging with the seed, and a deleted file (a
+  // seeder service that removes itself) stays deleted.
+  for (const path of FILES.keys()) markDirty(path)
+
+  lastBoot = {
+    booted: true,
+    restored: false,
+    source,
+    files: FILES.size,
+    at: new Date().toISOString()
+  }
+  return lastBoot
+}
+
+const reset = async () => {
+  FILES.clear()
+  SIZES.clear()
+  DIRS.clear()
+  DIRS.add('/')
+  dirty.clear()
+  started = true
+  const p = boot()
+  ready = p
+  if (resolveBoot) resolveBoot(p)
+  await p
+  return true
+}
+
+// Nothing runs until the host says whether it has a persisted drive or wants
+// a fresh seed; ensureReady() seeds after a short grace if it hears neither.
+let started = false
+let resolveBoot
+ready = new Promise((resolve) => {
+  resolveBoot = resolve
+})
+
+const api = {
+  ensureReady: async () => {
+    if (!started) {
+      await new Promise((r) => setTimeout(r, 600))
+    }
+    if (!started) await api.seed()
+    await ready
+    return true
+  },
+  // Called by the host with the persisted drive; skips seeding entirely.
+  load: (files) => {
+    started = true
+    const info = loadSnapshot(files)
+    ready = Promise.resolve(info)
+    if (resolveBoot) resolveBoot(info)
+    return ready
+  },
+  seed: () => {
+    started = true
+    const p = boot().catch((e) => ({
+      booted: false,
+      error: (e && e.message) || String(e)
+    }))
+    ready = p
+    if (resolveBoot) resolveBoot(p)
+    return p
+  },
+  reset: () => reset(),
+  takeDirty: () => takeDirty(),
+  dumpAll: () => dumpAll(),
+  bootInfo: () => lastBoot,
+  stats: () => ({
+    files: FILES.size,
+    // the drive's total in bytes, measured per entry the way statSync does it -
+    // the stored representation's own length would count the marker and the
+    // base64 expansion instead - and cached, so a second call scans nothing
+    bytes: [...FILES.keys()].reduce((total, abs) => total + entrySizeAt(abs), 0)
+  }),
+  run: (payload) => runProgram(payload),
+  // the drive's bytes, for @sasjs/api's services: the rules that decide a
+  // status are the package's, so this host hands over storage and nothing else
+  driveStore,
+  // the content type a session's header file is seeded with, so the worker can
+  // tell a default from a declaration rather than carrying a second literal
+  HEADERS_SEED: SEEDED_HEADERS,
+  // the largest single upload the host accepts, so the worker can refuse a body
+  // before materialising it and the specs and docs read the same number
+  MAX_UPLOAD_BYTES: MAX_UPLOAD_BYTES,
+  // the format the snapshot download stamps, so persist.js writes the number
+  // this runtime reads rather than a second literal
+  DRIVE_FORMAT
+}
+
+self.SASjsMockRuntime = api
+
+if (typeof module !== 'undefined') module.exports = api

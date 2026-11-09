@@ -1,0 +1,1560 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="Stored Programs may be written in SAS, Python, R, or JavaScript.  They are saved to SASjs Drive and can be executed with a GET or POST request." name="description"/>
+<link href="https://server.sasjs.io/docs/storedprograms/" rel="canonical"/>
+<link href="../sessions/" rel="prev"/>
+<link href="../testing-va-embed/" rel="next"/>
+<link href="../img/logo/favicon/32.ico" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.8.0" name="generator"/>
+<title>Stored Programs - SASjs Server</title>
+<link href="../assets/stylesheets/main.57a0d79d.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/palette.fb2fffe2.min.css" rel="stylesheet"/>
+<link href="../stylesheets/extra.css" rel="stylesheet"/>
+<script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<script>
+  (function () {
+    var palettes = {
+      light: {
+        index: 0,
+        color: { scheme: 'default', primary: 'white', accent: 'amber' }
+      },
+      dark: {
+        index: 1,
+        color: { scheme: 'slate', primary: 'black', accent: 'amber' }
+      }
+    }
+
+    function parentMode() {
+      try {
+        var settings = JSON.parse(
+          localStorage.getItem('studio-settings') || '{}'
+        )
+        var choice = settings['workbench.colorTheme']
+
+        if (choice === 'light' || choice === 'dark') return choice
+      } catch (error) {
+        /* an unreadable store falls through to the operating system */
+      }
+
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+    }
+
+    function apply(mode) {
+      var palette = palettes[mode] || palettes.light
+
+      try {
+        localStorage.setItem('__palette', JSON.stringify(palette))
+      } catch (error) {
+        /* a blocked store only costs the next page its first paint */
+      }
+
+      var body = document.body
+      if (!body) return
+
+      body.setAttribute('data-md-color-scheme', palette.color.scheme)
+      body.setAttribute('data-md-color-primary', palette.color.primary)
+      body.setAttribute('data-md-color-accent', palette.color.accent)
+    }
+
+    apply(parentMode())
+
+    // Material sets the body's attributes while it initialises, so the choice is
+    // applied again once there is a body to apply it to.
+    document.addEventListener('DOMContentLoaded', function () {
+      apply(parentMode())
+    })
+
+    window.addEventListener('message', function (event) {
+      if (!event.data || event.data.type !== 'sasjs-theme') return
+
+      apply(event.data.mode)
+    })
+  })()
+</script>
+<!-- The description and canonical link are emitted by Material itself, from the
+     page's front matter and `site_url`. Emitting them here as well duplicates
+     both tags. -->
+<!-- Open Graph: LinkedIn, Slack, Discord, Facebook -->
+<meta content="website" property="og:type"/>
+<meta content="SASjs Server" property="og:site_name"/>
+<meta content="en_GB" property="og:locale"/>
+<meta content="Stored Programs - SASjs Server" property="og:title"/>
+<meta content="Stored Programs may be written in SAS, Python, R, or JavaScript.  They are saved to SASjs Drive and can be executed with a GET or POST request." property="og:description"/>
+<meta content="https://server.sasjs.io/docs/storedprograms/" property="og:url"/>
+<meta content="https://server.sasjs.io/docs/img/stps.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="SASjs Server - a REST API, a studio and an app portal for SAS" property="og:image:alt"/>
+<!-- X / Twitter -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Stored Programs - SASjs Server" name="twitter:title"/>
+<meta content="Stored Programs may be written in SAS, Python, R, or JavaScript.  They are saved to SASjs Drive and can be executed with a GET or POST request." name="twitter:description"/>
+<meta content="https://server.sasjs.io/docs/img/stps.png" name="twitter:image"/>
+<meta content="SASjs Server - a REST API, a studio and an app portal for SAS" name="twitter:image:alt"/>
+</head>
+<body data-md-color-accent="amber" data-md-color-primary="white" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#stored-programs">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="SASjs Server" class="md-header__button md-logo" data-md-component="logo" href=".." title="SASjs Server">
+<img alt="" src="../img/logo/favicon/32.svg" width="32" height="32"/>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            SASjs Server
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Stored Programs
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="amber" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="white" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="amber" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="black" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<a aria-label="Share" class="md-search__icon md-icon" data-clipboard="" data-clipboard-text="" data-md-component="search-share" href="javascript:void(0)" tabindex="-1" title="Share">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"></path></svg>
+</a>
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="..">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../installation/">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../apps/">
+          
+  
+  
+  User Guide
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../api/">
+          
+  
+  
+  Developer Guide
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../deployment/">
+          
+  
+  
+  Admin Guide
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../faq/">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="SASjs Server" class="md-nav__button md-logo" data-md-component="logo" href=".." title="SASjs Server">
+<img alt="" src="../img/logo/favicon/32.svg" width="32" height="32"/>
+</a>
+    SASjs Server
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="..">
+<span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../installation/">
+<span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../apps/">
+<span class="md-ellipsis">
+    
+  
+    App Stream
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../studio/">
+<span class="md-ellipsis">
+    
+  
+    SASjs Studio
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+<span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../api/">
+<span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../sessions/">
+<span class="md-ellipsis">
+    
+  
+    Sessions
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    
+  
+    Stored Programs
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    
+  
+    Stored Programs
+  
+
+    
+  </span>
+</a>
+<nav aria-label="On this page" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#special-variables">
+<span class="md-ellipsis">
+      
+        Special Variables
+      
+    </span>
+</a>
+<nav aria-label="Special Variables" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_program">
+<span class="md-ellipsis">
+      
+        _PROGRAM
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_debug">
+<span class="md-ellipsis">
+      
+        _DEBUG
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sas-programs">
+<span class="md-ellipsis">
+      
+        SAS Programs
+      
+    </span>
+</a>
+<nav aria-label="SAS Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#js-programs">
+<span class="md-ellipsis">
+      
+        JS Programs
+      
+    </span>
+</a>
+<nav aria-label="JS Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables_1">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files_1">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output_1">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+<nav aria-label="Output" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_sasjs_webout_headers">
+<span class="md-ellipsis">
+      
+        _SASJS_WEBOUT_HEADERS
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_webout">
+<span class="md-ellipsis">
+      
+        _webout
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#python-programs">
+<span class="md-ellipsis">
+      
+        Python Programs
+      
+    </span>
+</a>
+<nav aria-label="Python Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables_2">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files_2">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output_2">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+<nav aria-label="Output" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_webout_1">
+<span class="md-ellipsis">
+      
+        _WEBOUT
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#headerspath">
+<span class="md-ellipsis">
+      
+        HEADERSPATH
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#r-programs">
+<span class="md-ellipsis">
+      
+        R Programs
+      
+    </span>
+</a>
+<nav aria-label="R Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables_3">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files_3">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output_3">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+<nav aria-label="Output" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_webout_2">
+<span class="md-ellipsis">
+      
+        ._WEBOUT
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#headerspath_1">
+<span class="md-ellipsis">
+      
+        HEADERSPATH
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../testing-va-embed/">
+<span class="md-ellipsis">
+    
+  
+    Testing VA embedding
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Admin Guide
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Admin Guide
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../deployment/">
+<span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../auth/">
+<span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../permissions/">
+<span class="md-ellipsis">
+    
+  
+    Authorisation
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../settings/">
+<span class="md-ellipsis">
+    
+  
+    Settings
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../faq/">
+<span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="On this page" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#special-variables">
+<span class="md-ellipsis">
+      
+        Special Variables
+      
+    </span>
+</a>
+<nav aria-label="Special Variables" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_program">
+<span class="md-ellipsis">
+      
+        _PROGRAM
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_debug">
+<span class="md-ellipsis">
+      
+        _DEBUG
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#sas-programs">
+<span class="md-ellipsis">
+      
+        SAS Programs
+      
+    </span>
+</a>
+<nav aria-label="SAS Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#js-programs">
+<span class="md-ellipsis">
+      
+        JS Programs
+      
+    </span>
+</a>
+<nav aria-label="JS Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables_1">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files_1">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output_1">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+<nav aria-label="Output" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_sasjs_webout_headers">
+<span class="md-ellipsis">
+      
+        _SASJS_WEBOUT_HEADERS
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_webout">
+<span class="md-ellipsis">
+      
+        _webout
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#python-programs">
+<span class="md-ellipsis">
+      
+        Python Programs
+      
+    </span>
+</a>
+<nav aria-label="Python Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables_2">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files_2">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output_2">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+<nav aria-label="Output" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_webout_1">
+<span class="md-ellipsis">
+      
+        _WEBOUT
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#headerspath">
+<span class="md-ellipsis">
+      
+        HEADERSPATH
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#r-programs">
+<span class="md-ellipsis">
+      
+        R Programs
+      
+    </span>
+</a>
+<nav aria-label="R Programs" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-variables_3">
+<span class="md-ellipsis">
+      
+        Input Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#input-files_3">
+<span class="md-ellipsis">
+      
+        Input Files
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#output_3">
+<span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+</a>
+<nav aria-label="Output" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_webout_2">
+<span class="md-ellipsis">
+      
+        ._WEBOUT
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#headerspath_1">
+<span class="md-ellipsis">
+      
+        HEADERSPATH
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="stored-programs">Stored Programs<a class="headerlink" href="#stored-programs" title="Permanent link">¶</a></h1>
+<p>Stored Programs may be written in SAS, Python, R, or JavaScript and are saved to SASjs Drive.  When the <code>/SASjsApi/stp/execute</code> endpoint is called with a <code>_PROGRAM</code> URL parameter (pointing to the logical program location), a "Stored Program" is prepared and executed in a SAS/JS/PYTHON/R <a href="../sessions/">session</a> according to the file extension.</p>
+<p>For the usual case where the <code>_program</code> variable does NOT contain an extension (eg <code>/some/stored/program</code>) then by default, SASjs Server will attempt to find "program.sas" in the <code>/some/stored</code> folder.  To change this default, see the <a href="../settings/#run_times">RUN_TIMES</a> settings.</p>
+<p>When Stored Programs are executed, some pre-code is injected to make available various inputs, such as:</p>
+<ul>
+<li>Input Macro Variables</li>
+<li>Input Files</li>
+<li>Utility Macros / Functions</li>
+</ul>
+<p>The implementation varies depending on whether it is running as a SAS, JS, Python or R session.</p>
+<p>If you are calling your Stored Programs from a web application, it is recommended to review the <a href="https://github.com/sasjs/adapter">sasjs/adapter</a> (designed to work with Stored Programs) and associated <a href="https://github.com/search?q=topic%3Asasjs-seed-app+org%3Asasjs+fork%3Atrue&amp;type=repositories">seed apps</a>.  You might also want to review the <a href="https://git.datacontroller.io/dc/dc">Data Controller source</a> as an example of a relatively large, commercial application built on SASjs.</p>
+<h2 id="special-variables">Special Variables<a class="headerlink" href="#special-variables" title="Permanent link">¶</a></h2>
+<p>The following variables are "special":</p>
+<h3 id="_program"><code>_PROGRAM</code><a class="headerlink" href="#_program" title="Permanent link">¶</a></h3>
+<p>This is a required input, and will point to the Stored Program location in SASjs Drive.  The extension may be omitted, subject to the behaviour in the <a href="../settings/#run_times">RUN_TIMES</a> setting.</p>
+<h3 id="_debug"><code>_DEBUG</code><a class="headerlink" href="#_debug" title="Permanent link">¶</a></h3>
+<p>Setting this to 131 or greater will result in the log being returned.  The log is framed by the following UUID:  <code>SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784</code></p>
+<p>The log can itself contain that UUID - a program's source is echoed into its log, so the literal appears wherever <code>ms_runstp</code> or <code>ms_testservice</code> is part of the submitted code, and a service that calls another puts the nested response in it.  The framing adds exactly two occurrences, one either side of the log: <code>webout</code> is everything before the first, the log everything between the first and the last, and the print output what follows the last.  That holds while <code>webout</code> and the print output carry no occurrence of their own - neither is anything the server adds, though a program that echoes another response into <code>_webout</code> can put one there.</p>
+<p>Setting <code>_DEBUG</code> also results in the creation of a <code>Content-Type</code> header of <code>text/plain</code>.</p>
+<h2 id="sas-programs">SAS Programs<a class="headerlink" href="#sas-programs" title="Permanent link">¶</a></h2>
+<h3 id="input-variables">Input Variables<a class="headerlink" href="#input-variables" title="Permanent link">¶</a></h3>
+<p>Any URL parameters (eg <code>&amp;name1=value1&amp;something=else</code>) are attached as macro variables eg as follows:</p>
+<div class="language-sas highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nb">%let</span> name1=value1;
+</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="nb">%let</span> something=<span class="k">else</span>;
+</span></code></pre></div>
+<p>A number of "fixed" variables are also added at the start of the program - the code that generates them is in the repo, in <a href="https://github.com/sasjs/server/blob/main/api/src/controllers/internal/Execution.ts#L93">the program template in Execution.ts</a>.</p>
+<p>If <code>_DEBUG</code> is set then <code>options mprint;</code> will also be automatically added to the start of the Stored Program.</p>
+<h3 id="input-files">Input Files<a class="headerlink" href="#input-files" title="Permanent link">¶</a></h3>
+<p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a> and the following variables will be dynamically added to the SAS program:</p>
+<ul>
+<li><code>_WEBIN_FILE_COUNT</code> - contains an integer, from 0 to the number of files to being provided. This variable is always created.</li>
+<li><code>_WEBIN_FILENAME1</code> - the value that was specified in the FILENAME attribute by the frontend</li>
+<li><code>_WEBIN_FILEREF1</code> - An 8 letter code, starting with an underscore and finishing with 7 random alphanumeric characters</li>
+<li><code>_WEBIN_NAME1</code> - the value that was specified in the NAME attribute by the frontend</li>
+</ul>
+<p>We will also create the fileref(s) using the filename statement.</p>
+<p>To illustrate with an example - we are uploading two files, F1 and F2. The following SAS code will be generated, and inserted at the beginning of the executed program:</p>
+<div class="language-sas highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="c">/* request files */</span>
+</span><span id="__span-1-2"><a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="k">filename</span> _SJS0001 <span class="s">"/some/temp/location/file1"</span>;
+</span><span id="__span-1-3"><a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="k">filename</span> _SJS0002 <span class="s">"/some/temp/location/file2"</span>;
+</span><span id="__span-1-4"><a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="nb">%let</span> _WEBIN_FILE_COUNT=<span class="m">2</span>;
+</span><span id="__span-1-5"><a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="nb">%let</span> _WEBIN_FILENAME1=myfile<span class="m">.</span>csv;
+</span><span id="__span-1-6"><a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="nb">%let</span> _WEBIN_FILENAME2=myotherfile<span class="m">.</span>txt;
+</span><span id="__span-1-7"><a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="nb">%let</span> _WEBIN_FILEREF1=_SJS0001;
+</span><span id="__span-1-8"><a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="nb">%let</span> _WEBIN_FILEREF2=_SJS0002;
+</span><span id="__span-1-9"><a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="nb">%let</span> _WEBIN_NAME1=F1;
+</span><span id="__span-1-10"><a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="nb">%let</span> _WEBIN_NAME2=F2;
+</span></code></pre></div>
+<p>If there are no files uploaded, only the following code will be generated:</p>
+<div class="language-sas highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="c">/* request files */</span>
+</span><span id="__span-2-2"><a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="nb">%let</span> _WEBIN_FILE_COUNT=<span class="m">0</span>;
+</span></code></pre></div>
+<h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">¶</a></h3>
+<p>Any response data should be written to the <code>_webout</code> fileref (which is pre-assigned in the session).  The corresponding header records (content type etc) can be written using the <a href="https://core.sasjs.io/mfs__httpheader_8sas.html">mfs_httpheader</a> macro. Additional <a href="https://core.sasjs.io/dir_41e1742e44e2de38b3bc91f993fed282.html">SASjs Server specific macros</a> are also available.</p>
+<p>The response (content and header) will vary depending on the <a href="#_debug"><code>_debug</code></a> setting.</p>
+<h2 id="js-programs">JS Programs<a class="headerlink" href="#js-programs" title="Permanent link">¶</a></h2>
+<p>The use of JS "programs" as your backend is highly beneficial for the following use cases:</p>
+<ul>
+<li>You would like to test your application in a non SAS environment (such as a CI/CD pipeline or developer machine)</li>
+<li>You would like to make use of JS packages in your backend SAS applications</li>
+<li>You would like to provide backup services in the case that SAS is down (eg licence expiry)</li>
+</ul>
+<p>Any <code>console.log()</code> statements written by your JavaScript will be returned in the response "log" (identically to SAS). </p>
+<p>If your Job / Service / Test depends on any third party libraries / packages, then you need to bundle that service before deploying it to sasjs server. You can choose any bundler for this process. One possible option could be <code>webpack</code>. If you choose webpack then you can use it like this:</p>
+<p><code>npx webpack --mode none --target node --entry &lt;path-of-file-to-bundle/build&gt; --output-path &lt;path-of-output-folder&gt; --output-filename &lt;name-of-output-file&gt;</code></p>
+<p>For instance if you have a mock service at path <code>sasjs/services/common/appinit.js</code> and you want to build and make it ready for deployment, you can run the following in the terminal:</p>
+<p><code>npx webpack --mode none --target node --entry ./sasjs/services/common/appinit.js --output-path sasjsbuild/services/common --output-filename appinit.js</code></p>
+<p>Repeat this for any other JS Stored Programs as needed.</p>
+<p>Finally, run <code>sasjs build</code> to create the deployment pack, and <code>sasjs deploy</code> to deploy.</p>
+<h3 id="input-variables_1">Input Variables<a class="headerlink" href="#input-variables_1" title="Permanent link">¶</a></h3>
+<p>Any URL parameters (eg <code>&amp;name1=value1&amp;something=else</code>) are attached as JS variables eg as follows:</p>
+<div class="language-js highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">name1</span><span class="o">=</span><span class="s1">'value1'</span>
+</span><span id="__span-3-2"><a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kd">const</span><span class="w"> </span><span class="nx">something</span><span class="o">=</span><span class="s1">'else'</span>
+</span></code></pre></div>
+<p>A JS program is generated in six parts - the host's <code>fs</code>, your request parameters, the runtime variables, the <code>webout()</code> block, your program, and a closing statement. This is the shape, with the paths of one session:</p>
+<div class="language-js highlight"><pre><span></span><code><span id="__span-4-1"><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="nb">globalThis</span><span class="p">.</span><span class="nx">fs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">'fs'</span><span class="p">)</span>
+</span><span id="__span-4-2"><a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="cm">/* runtime vars */</span>
+</span><span id="__span-4-4"><a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_program</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/Public/app/myprogram'</span><span class="p">;</span>
+</span><span id="__span-4-5"><a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_debug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="p">;</span>
+</span><span id="__span-4-6"><a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a>
+</span><span id="__span-4-7"><a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="cm">/* dynamic user-provided vars */</span>
+</span><span id="__span-4-8"><a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="kd">let</span><span class="w"> </span><span class="nx">_webout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="p">;</span>
+</span><span id="__span-4-9"><a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="kd">const</span><span class="w"> </span><span class="nx">weboutPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/home/sasjssrv/sasjs_root/sessions/20220808081136-29012-1659946296436/webout.txt'</span><span class="p">;</span>
+</span><span id="__span-4-10"><a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_SASJS_TOKENFILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/home/sasjssrv/sasjs_root/sessions/20220808081136-29012-1659946296436/reqHeaders.txt'</span><span class="p">;</span>
+</span><span id="__span-4-11"><a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_SASJS_WEBOUT_HEADERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/home/sasjssrv/sasjs_root/sessions/20220808081136-29012-1659946296436/stpsrv_header.txt'</span><span class="p">;</span>
+</span><span id="__span-4-12"><a href="#__codelineno-4-12" id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_SASJS_APISERVERURL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'http://127.0.0.1:5000'</span><span class="p">;</span>
+</span><span id="__span-4-13"><a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_SASJS_USERNAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'allan'</span><span class="p">;</span>
+</span><span id="__span-4-14"><a href="#__codelineno-4-14" id="__codelineno-4-14" name="__codelineno-4-14"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_SASJS_USERID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'6'</span><span class="p">;</span>
+</span><span id="__span-4-15"><a href="#__codelineno-4-15" id="__codelineno-4-15" name="__codelineno-4-15"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_SASJS_DISPLAYNAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'Allan Bowe'</span><span class="p">;</span>
+</span><span id="__span-4-16"><a href="#__codelineno-4-16" id="__codelineno-4-16" name="__codelineno-4-16"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_METAPERSON</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">_SASJS_DISPLAYNAME</span><span class="p">;</span>
+</span><span id="__span-4-17"><a href="#__codelineno-4-17" id="__codelineno-4-17" name="__codelineno-4-17"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_METAUSER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">_SASJS_USERNAME</span><span class="p">;</span>
+</span><span id="__span-4-18"><a href="#__codelineno-4-18" id="__codelineno-4-18" name="__codelineno-4-18"></a><span class="kd">const</span><span class="w"> </span><span class="nx">SASJSPROCESSMODE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'Stored Program'</span><span class="p">;</span>
+</span><span id="__span-4-19"><a href="#__codelineno-4-19" id="__codelineno-4-19" name="__codelineno-4-19"></a>
+</span><span id="__span-4-20"><a href="#__codelineno-4-20" id="__codelineno-4-20" name="__codelineno-4-20"></a><span class="cm">/* webout(): send data back, mirroring %ms_webout in @sasjs/core.</span>
+</span><span id="__span-4-21"><a href="#__codelineno-4-21" id="__codelineno-4-21" name="__codelineno-4-21"></a><span class="cm">   webout('OPEN'); webout('OBJ', 'name', rows); webout('CLOSE')</span>
+</span><span id="__span-4-22"><a href="#__codelineno-4-22" id="__codelineno-4-22" name="__codelineno-4-22"></a><span class="cm">   Generated by @sasjs/utils - change it there, not here. */</span>
+</span><span id="__span-4-23"><a href="#__codelineno-4-23" id="__codelineno-4-23" name="__codelineno-4-23"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_sasjs_webout_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-4-24"><a href="#__codelineno-4-24" id="__codelineno-4-24" name="__codelineno-4-24"></a><span class="cm">/* ...and the rest of the block, see "Output" below */</span>
+</span><span id="__span-4-25"><a href="#__codelineno-4-25" id="__codelineno-4-25" name="__codelineno-4-25"></a><span class="nb">globalThis</span><span class="p">.</span><span class="nx">webout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">_sasjs_webout</span><span class="p">;</span>
+</span><span id="__span-4-26"><a href="#__codelineno-4-26" id="__codelineno-4-26" name="__codelineno-4-26"></a>
+</span><span id="__span-4-27"><a href="#__codelineno-4-27" id="__codelineno-4-27" name="__codelineno-4-27"></a><span class="cm">/* actual job code */</span>
+</span><span id="__span-4-28"><a href="#__codelineno-4-28" id="__codelineno-4-28" name="__codelineno-4-28"></a><span class="c1">// your program</span>
+</span><span id="__span-4-29"><a href="#__codelineno-4-29" id="__codelineno-4-29" name="__codelineno-4-29"></a>
+</span><span id="__span-4-30"><a href="#__codelineno-4-30" id="__codelineno-4-30" name="__codelineno-4-30"></a><span class="cm">/* the tail, which writes _webout if your program assigned it */</span>
+</span><span id="__span-4-31"><a href="#__codelineno-4-31" id="__codelineno-4-31" name="__codelineno-4-31"></a><span class="nx">_sasjs_webout</span><span class="p">.</span><span class="nx">finalise</span><span class="p">(</span><span class="nx">_webout</span><span class="p">)</span>
+</span></code></pre></div>
+<p><code>fs</code> and <code>webout</code> are published as globals, so a program that declares its own <code>fs</code> or <code>webout</code> shadows it without clashing with the runtime's. The runtime keeps its own reference under the reserved <code>_sasjs_webout</code> name, which is also what writes <code>_webout</code> when the program assigns that variable instead of calling <code>webout()</code>.</p>
+<p><code>webout()</code> is generated into the program rather than imported, from the single copy of the block in <a href="https://github.com/sasjs/utils"><code>@sasjs/utils</code></a>: the server and <code>sasjs mock</code> emit the same text, so a program behaves the same in both, and the session log shows exactly what ran. The block resolves its own <code>fs</code> (and <code>os</code>, when the host has one, falling back to what a browser can answer).</p>
+<h3 id="input-files_1">Input Files<a class="headerlink" href="#input-files_1" title="Permanent link">¶</a></h3>
+<p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a> and the following variables will be dynamically added to the JS program:</p>
+<ul>
+<li><code>_WEBIN_FILE_COUNT</code> - contains an integer, from 0 to the number of files to being provided. This variable is always created.</li>
+<li><code>_WEBIN_FILENAME1</code> - the value that was specified in the FILENAME attribute by the frontend</li>
+<li><code>_WEBIN_FILEREF1</code> - This will contain the actual file object</li>
+<li><code>_WEBIN_NAME1</code> - the value that was specified in the NAME attribute by the frontend</li>
+</ul>
+<p>To illustrate with an example - we are uploading two files, F1 and F2. The following JS code will be generated, and inserted at the beginning of the executed program:</p>
+<div class="language-js highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFileSync</span><span class="p">(</span><span class="s1">'/path/to/file1'</span><span class="p">)</span>
+</span><span id="__span-5-2"><a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFileSync</span><span class="p">(</span><span class="s1">'/path/to/file2'</span><span class="p">)</span>
+</span><span id="__span-5-3"><a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILENAME1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'F1'</span>
+</span><span id="__span-5-4"><a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILENAME2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'F2'</span>
+</span><span id="__span-5-5"><a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_NAME1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'FormRef1'</span>
+</span><span id="__span-5-6"><a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_NAME2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'FormRef2'</span>
+</span><span id="__span-5-7"><a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a>
+</span><span id="__span-5-8"><a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2</span>
+</span></code></pre></div>
+<p>If there are no files uploaded, only the following code will be generated:</p>
+<div class="language-js highlight"><pre><span></span><code><span id="__span-6-1"><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span>
+</span></code></pre></div>
+<h3 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">¶</a></h3>
+<p>The recommended way to send data back is <code>webout()</code>, which mirrors the <a href="https://core.sasjs.io/ms__webout_8sas.html"><code>%ms_webout()</code></a> macro so that a JS program is laid out the way a SAS one is:</p>
+<div class="language-sas highlight"><pre><span></span><code><span id="__span-7-1"><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a>data work<span class="m">.</span>users;
+</span><span id="__span-7-2"><a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a>  <span class="k">set</span> work<span class="m">.</span>source;
+</span><span id="__span-7-3"><a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="kr">run;</span>
+</span><span id="__span-7-4"><a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="nf">%ms_webout</span>(OPEN)
+</span><span id="__span-7-6"><a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="nf">%ms_webout</span>(OBJ,users)
+</span><span id="__span-7-7"><a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="nf">%ms_webout</span>(CLOSE)
+</span></code></pre></div>
+<div class="language-js highlight"><pre><span></span><code><span id="__span-8-1"><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">users</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">'ann'</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">'bob'</span><span class="w"> </span><span class="p">}]</span>
+</span><span id="__span-8-2"><a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="nx">webout</span><span class="p">(</span><span class="s1">'OPEN'</span><span class="p">)</span>
+</span><span id="__span-8-4"><a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="nx">webout</span><span class="p">(</span><span class="s1">'OBJ'</span><span class="p">,</span><span class="w"> </span><span class="s1">'users'</span><span class="p">,</span><span class="w"> </span><span class="nx">users</span><span class="p">)</span>
+</span><span id="__span-8-5"><a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="nx">webout</span><span class="p">(</span><span class="s1">'CLOSE'</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OPEN</code></td>
+<td>Truncates the response body, starts one JSON object, and appends <code>content-type: application/json</code> to the response headers.</td>
+</tr>
+<tr>
+<td><code>ARR</code></td>
+<td>Appends one member to that object: an array of rows, each row a positional array of values.</td>
+</tr>
+<tr>
+<td><code>OBJ</code></td>
+<td>Appends one member to that object: an array of rows, each row an object keyed by column name.</td>
+</tr>
+<tr>
+<td><code>CLOSE</code></td>
+<td>Appends the system block below, and closes the JSON object.</td>
+</tr>
+</tbody>
+</table>
+<p>The actions are case-insensitive, the member name is the key the frontend reads (<code>res.users</code>), and a table must come between <code>OPEN</code> and <code>CLOSE</code>.</p>
+<p><code>OPEN</code> writes <code>SYSDATE</code> and <code>SYSTIME</code> as the first two members, in the SAS <code>DATE9</code> and <code>TIME8</code> forms (<code>02NOV2026</code>, <code>11:45:32</code>). <code>CLOSE</code> adds the same system fields that <code>%ms_webout(CLOSE)</code> does, carrying the values a JavaScript runtime can answer:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value in a JS program</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_DEBUG</code></td>
+<td>the <code>_debug</code> query parameter</td>
+</tr>
+<tr>
+<td><code>_PROGRAM</code></td>
+<td>the <code>_program</code> value</td>
+</tr>
+<tr>
+<td><code>AUTOEXEC</code></td>
+<td>empty - JS has no autoexec</td>
+</tr>
+<tr>
+<td><code>MF_GETUSER</code></td>
+<td><code>_SASJS_USERNAME</code></td>
+</tr>
+<tr>
+<td><code>SYSCC</code></td>
+<td><code>0</code>, or <code>8</code> when the program logged an error - see the console mapping below</td>
+</tr>
+<tr>
+<td><code>SYSENCODING</code></td>
+<td><code>utf-8</code></td>
+</tr>
+<tr>
+<td><code>SYSERRORTEXT</code></td>
+<td>the last message the program sent to <code>console.error</code></td>
+</tr>
+<tr>
+<td><code>SYSHOSTINFOLONG</code></td>
+<td>kernel type, release and architecture of the host (browser user agent in a mock build)</td>
+</tr>
+<tr>
+<td><code>SYSHOSTNAME</code></td>
+<td>host name (<code>location.hostname</code> in a mock build)</td>
+</tr>
+<tr>
+<td><code>SYSPROCESSID</code>, <code>SYSJOBID</code></td>
+<td>the interpreter's process id, which in a mock build is the constant <code>4242</code> the sandbox supplies - every mock run reports it, including two running at once</td>
+</tr>
+<tr>
+<td><code>SYSPROCESSMODE</code></td>
+<td><code>Stored Program</code></td>
+</tr>
+<tr>
+<td><code>SYSPROCESSNAME</code></td>
+<td><code>NodeJS</code>, or <code>Browser</code> in a mock build</td>
+</tr>
+<tr>
+<td><code>SYSSCPL</code></td>
+<td>the platform, eg <code>linux</code>, or <code>browser</code> in a mock build</td>
+</tr>
+<tr>
+<td><code>SYSSITE</code></td>
+<td>empty</td>
+</tr>
+<tr>
+<td><code>SYSTCPIPHOSTNAME</code></td>
+<td><code>_SASJS_APISERVERURL</code> - the address the program is running on</td>
+</tr>
+<tr>
+<td><code>SYSUSERID</code></td>
+<td><code>_SASJS_USERID</code></td>
+</tr>
+<tr>
+<td><code>SYSVLONG</code></td>
+<td>the Node version, or <code>browser</code> in a mock build</td>
+</tr>
+<tr>
+<td><code>SYSWARNINGTEXT</code></td>
+<td>the last message the program sent to <code>console.warn</code></td>
+</tr>
+<tr>
+<td><code>END_DTTM</code></td>
+<td>ISO 8601 timestamp of the <code>CLOSE</code></td>
+</tr>
+<tr>
+<td><code>MEMSIZE</code></td>
+<td>total memory of the host, in the <code>SIZEKMG</code> form (eg <code>15.6G</code>); <code>navigator.deviceMemory</code> in a mock build, and empty when the browser does not expose it</td>
+</tr>
+</tbody>
+</table>
+<p>Three behaviours worth knowing:</p>
+<ul>
+<li><strong><code>CLOSE</code> is the program's job.</strong> The server does not close the object for you, exactly as it does not for a SAS program that omits <code>%ms_webout(CLOSE)</code>. A program that stops after <code>OPEN</code> returns the truncated body it wrote, which is not valid JSON; the log carries a NOTE naming the missing call. A program that throws after <code>OPEN</code> behaves the way any runtime does on a failed run: the response carries the partial body, then the log separator and the program's log.</li>
+<li><strong><code>SYSERRORTEXT</code> and <code>SYSWARNINGTEXT</code> come from the console.</strong> SAS fills them from the last error and warning the engine recorded; a JS program has no engine, so the equivalent is the last message it sent to <code>console.error</code> / <code>console.warn</code>. Both calls are still forwarded to the console unchanged, so the session log looks exactly as it did, and <code>SYSCC</code> becomes <code>8</code> when an error was logged. Only the last message of each is kept, and only its final 2000 characters.</li>
+<li><strong>Do not mix <code>webout()</code> with <code>_webout</code>.</strong> When <code>webout()</code> has streamed the body, an assignment to <code>_webout</code> is ignored and the log says so.</li>
+<li><strong>A table before <code>OPEN</code>, a second <code>OPEN</code>, a table after <code>CLOSE</code>, an unknown action, or rows of the wrong shape throws</strong>, so the failure lands in the session log rather than in a malformed response. In a mock build the host facts come from the browser and there is no <code>os</code> module; the block asks for one and falls back when it is refused.</li>
+</ul>
+<h4 id="_sasjs_webout_headers"><code>_SASJS_WEBOUT_HEADERS</code><a class="headerlink" href="#_sasjs_webout_headers" title="Permanent link">¶</a></h4>
+<p>This (string) variable points to the location of a text file where header records (such as <code>Content-type: application/zip</code>) can be written. The file starts with a <code>text/html</code> line, and <code>webout('OPEN')</code> appends a <code>content-type: application/json</code> record to it; a program that wants another content type appends its own record afterwards, and the server takes the last record in the file. Sample code:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a>fs.appendFileSync(_SASJS_WEBOUT_HEADERS, '\ncontent-type: application/zip\n')
+</span></code></pre></div>
+<p>Append, never overwrite. <code>fs.writeFileSync</code> truncates the file, so the seeded <code>text/html</code> line and the record <code>webout('OPEN')</code> wrote are both discarded - the content type becomes the one you wrote, and any header the server had already recorded is gone. The leading newline is there because the seeded line carries no trailing one: without it the two records run together on a single line and are read as one.</p>
+<h4 id="_webout"><code>_webout</code><a class="headerlink" href="#_webout" title="Permanent link">¶</a></h4>
+<p>Any content added to this variable is returned to the browser by SASjs Server, and a program that assigns it owns its own content type - the default is <code>text/html</code>. The variable can hold binary or textual content, so this is the route for a response that is not JSON. To send JSON, or to get the system block for free, use <code>webout()</code> above.</p>
+<h2 id="python-programs">Python Programs<a class="headerlink" href="#python-programs" title="Permanent link">¶</a></h2>
+<p>The use of Python "programs" as your backend is highly beneficial for the following use cases:</p>
+<ul>
+<li>You would like to test your application in a non SAS environment (such as a CI/CD pipeline or developer machine)</li>
+<li>You would like to make use of Python packages in your SAS applications</li>
+<li>You would like to provide backup services in case SAS is unavailable</li>
+</ul>
+<p>Any content written to <code>sys.stdout</code> or <code>sys.stderr</code> will be returned in the response "log" (identically to SAS). </p>
+<h3 id="input-variables_2">Input Variables<a class="headerlink" href="#input-variables_2" title="Permanent link">¶</a></h3>
+<p>Any URL parameters (eg <code>&amp;name1=value1&amp;something=else</code>) are attached as Python variables in uppercase, eg as follows:</p>
+<div class="language-python3 highlight"><pre><span></span><code><span id="__span-10-1"><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="n">NAME1</span><span class="o">=</span><span class="s1">'value1'</span>
+</span><span id="__span-10-2"><a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="n">SOMETHING</span><span class="o">=</span><span class="s1">'else'</span>
+</span></code></pre></div>
+<p>A number of "fixed" variables are also added at the start of the program, eg as follows:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="n">_SASJS_TOKENFILE</span> <span class="o">=</span> <span class="s1">'/home/sasjssrv/sasjs_root/sessions/20220808081136-29012-1659946296436/reqHeaders.txt'</span><span class="p">;</span>
+</span><span id="__span-11-2"><a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="n">_SASJS_USERNAME</span> <span class="o">=</span> <span class="s1">'allan'</span><span class="p">;</span>
+</span><span id="__span-11-3"><a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="n">_SASJS_USERID</span> <span class="o">=</span> <span class="s1">'6'</span><span class="p">;</span>
+</span><span id="__span-11-4"><a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="n">_SASJS_DISPLAYNAME</span> <span class="o">=</span> <span class="s1">'Allan Bowe'</span><span class="p">;</span>
+</span><span id="__span-11-5"><a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="n">_METAPERSON</span> <span class="o">=</span> <span class="n">_SASJS_DISPLAYNAME</span><span class="p">;</span>
+</span><span id="__span-11-6"><a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="n">_METAUSER</span> <span class="o">=</span> <span class="n">_SASJS_USERNAME</span><span class="p">;</span>
+</span><span id="__span-11-7"><a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="n">SASJSPROCESSMODE</span> <span class="o">=</span> <span class="s1">'Stored Program'</span><span class="p">;</span>
+</span></code></pre></div>
+<h3 id="input-files_2">Input Files<a class="headerlink" href="#input-files_2" title="Permanent link">¶</a></h3>
+<p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a>.  The session folder (with the input files) will also be the current folder, eg <code>os.chdir("/path/to/session/folder")</code>. </p>
+<p>When input files exist, the following variables will also be dynamically added to the Python program:</p>
+<ul>
+<li><code>_WEBIN_FILE_COUNT</code> - contains an integer, from 0 to the number of files to being provided. This variable is always created.</li>
+<li><code>_WEBIN_FILENAME1</code> - the value that was specified in the FILENAME attribute by the frontend</li>
+<li><code>_WEBIN_NAME1</code> - the value that was specified in the NAME attribute by the frontend</li>
+</ul>
+<p>To illustrate with an example - we are uploading two files to a Python Stored Program, namely f1.txt and f2.xls. The following Python code will be generated, and inserted at the beginning of the executed program:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="n">_WEBIN_FILENAME1</span> <span class="o">=</span> <span class="s1">'f1.txt'</span>
+</span><span id="__span-12-2"><a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="n">_WEBIN_FILENAME2</span> <span class="o">=</span> <span class="s1">'f2.xls'</span>
+</span><span id="__span-12-3"><a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="n">_WEBIN_NAME1</span> <span class="o">=</span> <span class="s1">'FormRef1'</span>
+</span><span id="__span-12-4"><a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="n">_WEBIN_NAME2</span> <span class="o">=</span> <span class="s1">'FormRef2'</span>
+</span><span id="__span-12-5"><a href="#__codelineno-12-5" id="__codelineno-12-5" name="__codelineno-12-5"></a>
+</span><span id="__span-12-6"><a href="#__codelineno-12-6" id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="n">_WEBIN_FILE_COUNT</span> <span class="o">=</span> <span class="mi">2</span>
+</span></code></pre></div>
+<p>If there are no files uploaded, only the following code will be generated:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="n">_WEBIN_FILE_COUNT</span> <span class="o">=</span> <span class="mi">0</span>
+</span></code></pre></div>
+<p>Note that there are no <code>_WEBIN_FILEREF</code> variables created - in Python it is necessary to know the type of file (eg binary / text) before it can be ingested with the <code>open()</code> function, eg <code>open(_WEBIN_FILENAME1,"rt")</code> or <code>open(_WEBIN_FILENAME2,"rb")</code>.  Therefore it is left as an exercise for the developer to ingest as appropriate.</p>
+<h3 id="output_2">Output<a class="headerlink" href="#output_2" title="Permanent link">¶</a></h3>
+<p>The following variables are "special":</p>
+<h4 id="_webout_1"><code>_WEBOUT</code><a class="headerlink" href="#_webout_1" title="Permanent link">¶</a></h4>
+<p>This variable points to a text file in the session folder (eg <code>_WEBOUT="/path/to/session/folder/webout.txt"</code>).  All content written to <code>_WEBOUT</code> is streamed in the STP API call result.</p>
+<p>Example code:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">_WEBOUT</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span>
+</span><span id="__span-14-2"><a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'{"hello":"world"}'</span><span class="p">)</span>
+</span></code></pre></div>
+<h4 id="headerspath"><code>HEADERSPATH</code><a class="headerlink" href="#headerspath" title="Permanent link">¶</a></h4>
+<p>This variable points to a text file where header records (such as <code>Content-type: application/zip</code>) can be written, eg <code>HEADERSPATH="/path/to/session/folder/headers.txt"</code>).</p>
+<p>To return data to the client, just write it to the <code>_WEBOUT</code> file.  It will then be returned to the browser / client application.  Be sure to set the <code>Content-Type</code> in the <code>HEADERSPATH</code> file if it is anything other than JSON.</p>
+<h2 id="r-programs">R Programs<a class="headerlink" href="#r-programs" title="Permanent link">¶</a></h2>
+<p>Stored Programs may also run using the language of R.  Any content written to <code>.ROut</code> will be returned in the response "log" (identically to SAS).  As R does not support the underscore (<code>_</code>) as the first character in a variable name, the automatic variables are preceded with a period (<code>.</code>) instead.</p>
+<h3 id="input-variables_3">Input Variables<a class="headerlink" href="#input-variables_3" title="Permanent link">¶</a></h3>
+<p>Any URL parameters (eg <code>&amp;name1=value1&amp;something=else</code>) are attached as R variables in uppercase, eg as follows:</p>
+<div class="language-r highlight"><pre><span></span><code><span id="__span-15-1"><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="n">NAME1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'value1'</span>
+</span><span id="__span-15-2"><a href="#__codelineno-15-2" id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="n">SOMETHING</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'else'</span>
+</span></code></pre></div>
+<p>A number of "fixed" variables are also added at the start of the program, eg as follows:</p>
+<div class="language-r highlight"><pre><span></span><code><span id="__span-16-1"><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="n">._SASJS_TOKENFILE</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'/home/sasjssrv/sasjs_root/sessions/20220808081136-29012-1659946296436/reqHeaders.txt'</span><span class="p">;</span>
+</span><span id="__span-16-2"><a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="n">._SASJS_USERNAME</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'allan'</span><span class="p">;</span>
+</span><span id="__span-16-3"><a href="#__codelineno-16-3" id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="n">._SASJS_USERID</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'6'</span><span class="p">;</span>
+</span><span id="__span-16-4"><a href="#__codelineno-16-4" id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="n">._SASJS_DISPLAYNAME</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'Allan Bowe'</span><span class="p">;</span>
+</span><span id="__span-16-5"><a href="#__codelineno-16-5" id="__codelineno-16-5" name="__codelineno-16-5"></a><span class="n">._METAPERSON</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">._SASJS_DISPLAYNAME</span><span class="p">;</span>
+</span><span id="__span-16-6"><a href="#__codelineno-16-6" id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="n">._METAUSER</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">._SASJS_USERNAME</span><span class="p">;</span>
+</span><span id="__span-16-7"><a href="#__codelineno-16-7" id="__codelineno-16-7" name="__codelineno-16-7"></a><span class="n">SASJSPROCESSMODE</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'Stored Program'</span><span class="p">;</span>
+</span></code></pre></div>
+<h3 id="input-files_3">Input Files<a class="headerlink" href="#input-files_3" title="Permanent link">¶</a></h3>
+<p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a>.  The session folder (with the input files) will also be the current folder, eg <code>setwd("/path/to/session/folder")</code>. </p>
+<p>When input files exist, the following variables will also be dynamically added to the R program:</p>
+<ul>
+<li><code>._WEBIN_FILE_COUNT</code> - contains an integer, from 0 to the number of files to being provided. This variable is always created.</li>
+<li><code>._WEBIN_FILENAME1</code> - the value that was specified in the FILENAME attribute by the frontend</li>
+<li><code>._WEBIN_NAME1</code> - the value that was specified in the NAME attribute by the frontend</li>
+</ul>
+<p>To illustrate with an example - we are uploading two files to an R Stored Program, namely f1.txt and f2.xls. The following R code will be generated, and inserted at the beginning of the executed program:</p>
+<div class="language-r highlight"><pre><span></span><code><span id="__span-17-1"><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="n">._WEBIN_FILENAME1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'f1.txt'</span>
+</span><span id="__span-17-2"><a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="n">._WEBIN_FILENAME2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'f2.xls'</span>
+</span><span id="__span-17-3"><a href="#__codelineno-17-3" id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="n">._WEBIN_NAME1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'FormRef1'</span>
+</span><span id="__span-17-4"><a href="#__codelineno-17-4" id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="n">._WEBIN_NAME1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s">'FormRef2'</span>
+</span><span id="__span-17-5"><a href="#__codelineno-17-5" id="__codelineno-17-5" name="__codelineno-17-5"></a>
+</span><span id="__span-17-6"><a href="#__codelineno-17-6" id="__codelineno-17-6" name="__codelineno-17-6"></a><span class="n">._WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">2</span>
+</span></code></pre></div>
+<p>If there are no files uploaded, only the following code will be generated:</p>
+<div class="language-r highlight"><pre><span></span><code><span id="__span-18-1"><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="n">._WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span>
+</span></code></pre></div>
+<p>Note that there are no <code>._WEBIN_FILEREF</code> variables created - in R it is necessary to know the type of file (eg binary / text) before it can be ingested, eg <code>read.delim(._WEBIN_FILENAME1, header = FALSE)</code> or <code>read.delim2(._WEBIN_FILENAME2, header = FALSE)</code>.  Therefore it is left as an exercise for the developer to ingest as appropriate.</p>
+<h3 id="output_3">Output<a class="headerlink" href="#output_3" title="Permanent link">¶</a></h3>
+<p>The following variables are "special":</p>
+<h4 id="_webout_2"><code>._WEBOUT</code><a class="headerlink" href="#_webout_2" title="Permanent link">¶</a></h4>
+<p>This variable points to a text file in the session folder (eg <code>._WEBOUT &lt;- "/path/to/session/folder/webout.txt"</code>).  All content written to <code>._WEBOUT</code> is streamed in the STP API call result.</p>
+<p>Example code:</p>
+<div class="language-r highlight"><pre><span></span><code><span id="__span-19-1"><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="nf">cat</span><span class="p">(</span><span class="s">'{"hello":"world"}'</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="n">._WEBOUT</span><span class="p">)</span>
+</span></code></pre></div>
+<h4 id="headerspath_1"><code>HEADERSPATH</code><a class="headerlink" href="#headerspath_1" title="Permanent link">¶</a></h4>
+<p>This variable points to a text file where header records (such as <code>Content-type: application/zip</code>) can be written, eg <code>HEADERSPATH &lt;- "/path/to/session/folder/headers.txt"</code>).</p>
+<p>To return data to the client, just write it to the <code>._WEBOUT</code> file.  It will then be returned to the browser / client application.  Be sure to set the <code>Content-Type</code> in the <code>HEADERSPATH</code> file if it is anything other than JSON.</p>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<nav aria-label="Footer" class="md-footer__inner md-grid">
+<a aria-label="Previous: Sessions" class="md-footer__link md-footer__link--prev" href="../sessions/">
+<div class="md-footer__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</div>
+<div class="md-footer__title">
+<span class="md-footer__direction">
+                Previous
+              </span>
+<div class="md-ellipsis">
+                Sessions
+              </div>
+</div>
+</a>
+<a aria-label="Next: Testing VA embedding" class="md-footer__link md-footer__link--next" href="../testing-va-embed/">
+<div class="md-footer__title">
+<span class="md-footer__direction">
+                Next
+              </span>
+<div class="md-ellipsis">
+                Testing VA embedding
+              </div>
+</div>
+<div class="md-footer__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"></path></svg>
+</div>
+</a>
+</nav>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/sasjs/server" rel="noopener" target="_blank" title="sasjs/server on GitHub">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"></path></svg>
+</a>
+<a class="md-social__link" href="https://linkedin.com/company/sasjs" rel="noopener" target="_blank" title="SASjs on LinkedIn">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.tracking", "navigation.footer", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+<script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+<script src="../javascripts/api-frame.js"></script>
+<script>document$.subscribe(() => {
+            window.update_swagger_ui_iframe_height = function (id) {
+                var iFrameID = document.getElementById(id);
+                if (iFrameID) {
+                    full_height = (iFrameID.contentWindow.document.body.scrollHeight + 80) + "px";
+                    iFrameID.height = full_height;
+                    iFrameID.style.height = full_height;
+                }
+            }
+        
+            let iframe_id_list = []
+            var iframes = document.getElementsByClassName("swagger-ui-iframe");
+            for (var i = 0; i < iframes.length; i++) { 
+                iframe_id_list.push(iframes[i].getAttribute("id"))
+            }
+        
+            let ticking = true;
+            
+            document.addEventListener('scroll', function(e) {
+                if (!ticking) {
+                    window.requestAnimationFrame(()=> {
+                        let half_vh = window.innerHeight/2;
+                        for(var i = 0; i < iframe_id_list.length; i++) {
+                            let element = document.getElementById(iframe_id_list[i])
+                            if(element==null){
+                                return
+                            }
+                            let diff = element.getBoundingClientRect().top
+                            if(element.contentWindow.update_top_val){
+                                element.contentWindow.update_top_val(half_vh - diff)
+                            }
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        
+            const dark_scheme_name = "slate"
+            
+            window.scheme = document.body.getAttribute("data-md-color-scheme")
+            const options = {
+                attributeFilter: ['data-md-color-scheme'],
+            };
+            function color_scheme_callback(mutations) {
+                for (let mutation of mutations) {
+                    if (mutation.attributeName === "data-md-color-scheme") {
+                        scheme = document.body.getAttribute("data-md-color-scheme")
+                        var iframe_list = document.getElementsByClassName("swagger-ui-iframe")
+                        for(var i = 0; i < iframe_list.length; i++) {
+                            var ele = iframe_list.item(i);
+                            if (ele) {
+                                if (scheme === dark_scheme_name) {
+                                    ele.contentWindow.enable_dark_mode();
+                                } else {
+                                    ele.contentWindow.disable_dark_mode();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            observer = new MutationObserver(color_scheme_callback);
+            observer.observe(document.body, options);
+            })</script></body>
+</html>

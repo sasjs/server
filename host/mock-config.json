@@ -1,0 +1,13 @@
+{
+  "appLoc": "/Public/server",
+  "seedPath": "host/vfs-seed.json",
+  "driveEntries": 0,
+  "jsPrograms": 0,
+  "programFolders": [
+    "services",
+    "jobs",
+    "tests"
+  ],
+  "snapshot": true,
+  "builtAt": "2026-11-09T09:31:54.582Z"
+}
