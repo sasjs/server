@@ -104,7 +104,11 @@ body[data-md-color-scheme="slate"] {
 
 .md-typeset {
   font-feature-settings: "cv11", "ss01";
-  line-height: 1.65;
+  /* Material's own 0.8rem renders as 16px at this site's 125% root size, which
+   * reads small in a documentation pane. 0.9rem is 18px, and the extra leading
+   * keeps long reference pages scannable. */
+  font-size: 0.9rem;
+  line-height: 1.7;
 }
 
 .md-typeset h1,
@@ -168,7 +172,7 @@ body[data-md-color-scheme="slate"] {
   border: 1px solid var(--surface-border);
   border-radius: 8px;
   box-shadow: none;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   overflow: hidden;
 }
 
@@ -200,7 +204,7 @@ body[data-md-color-scheme="slate"] {
   border-left: 3px solid var(--md-accent-fg-color);
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
 }
 
 .md-typeset .admonition-title,
@@ -311,3 +315,175 @@ body[data-md-color-scheme="slate"] .md-nav__link.md-nav__link--active code {
   min-height: 80vh;
   width: 100%;
 }
+
+/* -------------------------------------------------------------- homepage */
+
+/* The landing page introduces the product, so it carries a hero and a set of
+ * cards rather than opening on body copy. Everything here is scoped to the
+ * classes index.md sets, so the reference pages keep their plainer layout. */
+
+/* The home page hides the sidebar, which leaves it wider than a reading column
+ * needs. The wrapper keeps the page at a comfortable measure; the cards and
+ * tables inside it still use the full width. */
+.home {
+  margin: 0 auto;
+  max-width: 840px;
+}
+
+.home-hero {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  margin: 0 0 2.4rem;
+  padding: 2.2rem 2.2rem 1.8rem;
+}
+
+.md-typeset .home-hero > h1:first-child {
+  font-size: 2.4rem;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.4rem;
+}
+
+/* The one-sentence pitch. It is the largest prose on the page after the h1, and
+ * the only paragraph that is not body weight, so the eye lands on it first. */
+.md-typeset .home-hero .home-lead {
+  color: var(--md-default-fg-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  margin: 0 0 1rem;
+}
+
+.md-typeset .home-hero p {
+  font-size: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+/* The facts line sits under the buttons: true of every install, and short
+ * enough not to compete with the pitch. */
+.md-typeset .home-hero .home-facts {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.78rem;
+  margin: 0.9rem 0 0;
+}
+
+.home-hero .md-button {
+  font-size: 0.85rem;
+  margin: 0.4rem 0.5rem 0.2rem 0;
+}
+
+/* Material paints the primary button with the palette's primary colour, which
+ * this site sets to white (light scheme) or black (dark) for the header. The
+ * brand yellow is the call to action here, in both schemes. */
+.home-hero .md-button--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #14140f;
+}
+
+.home-hero .md-button--primary:focus,
+.home-hero .md-button--primary:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #14140f;
+  filter: brightness(1.08);
+}
+
+.home-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 2.4rem;
+}
+
+/* The heading that introduces the cards sits directly under the hero, so it
+ * carries no rule above it - the hero's own edge is the break. */
+.md-typeset .home > h2:first-of-type {
+  border-top: 0;
+  margin-top: 0.4rem;
+  padding-top: 0;
+}
+
+.home-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 1.2rem 1.3rem 0.9rem;
+  position: relative;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+/* The card is the click target. The trailing link's ::after covers the whole
+ * card, so a click anywhere on it opens the page, while the link keeps its own
+ * text as the accessible name. A wrapper <a> around block content would have to
+ * be written as raw HTML in the page. */
+.home-card a::after {
+  border-radius: 12px;
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.home-card a:focus-visible::after {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.home-card:hover {
+  border-color: var(--md-default-fg-color--lighter);
+  box-shadow: var(--shadow-sm);
+}
+
+/* On the dark surface the shared border token is a shade too close to the card
+ * fill for the card edge to read; lift it here rather than change the token
+ * that every divider on the site uses. */
+body[data-md-color-scheme="slate"] .home-card,
+body[data-md-color-scheme="slate"] .home-hero {
+  border-color: #34343d;
+}
+
+.md-typeset .home-card > h3:first-child {
+  font-size: 1.02rem;
+  margin: 0 0 0.4rem;
+}
+
+/* The permalink pilcrow belongs on a reference heading, not on a card title
+ * that already carries its own link. */
+.home-card .headerlink {
+  display: none;
+}
+
+.md-typeset .home-card p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 0.6rem;
+}
+
+.md-typeset .home-card p:last-child {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+
+/* One column when the pane is narrow - the docs are framed at about 700px in
+ * the interface, and two columns of 340px each is comfortable; below this the
+ * cards stack instead of squeezing. */
+@media screen and (max-width: 46em) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-hero {
+    padding: 1.5rem 1.3rem 1.2rem;
+  }
+
+  .md-typeset .home-hero > h1:first-child {
+    font-size: 1.9rem;
+  }
+
+  .md-typeset .home-hero .home-lead {
+    font-size: 1.08rem;
+  }
+}
+
