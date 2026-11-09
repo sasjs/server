@@ -24,11 +24,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /**
  * The CLI that assembles the site.
  *
- * Keep this exact: the site's worker, its boot loader and the `@sasjs/api`
- * browser build inside it all come from this release. Bump it deliberately, with
- * the mock site rebuilt and looked at.
+ * A RANGE, not an exact version: the site's worker, its boot loader and the
+ * `@sasjs/api` browser build inside it all come from the CLI, and every release
+ * of it that fixes the host is a release this site wants without a commit here
+ * saying so. A major needs a deliberate change - that is where a version string
+ * is worth pinning - and the build records which release it actually used, so a
+ * deploy log says what built the site rather than what the range hoped for.
  */
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.13.3'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6'
 
 const run = (command, cwd = root) => {
   process.stdout.write(`\n> ${command}\n`)
@@ -37,7 +40,11 @@ const run = (command, cwd = root) => {
 }
 
 const sasjs = (arguments_) =>
-  run(`npx --yes @sasjs/cli@${CLI_VERSION} ${arguments_}`)
+  // quoted: `^` is an escape character to cmd.exe, and this runs on Windows too
+  run(`npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`)
+
+// Which CLI is about to assemble the site, in the log of the deploy that did it.
+sasjs('--version')
 
 // The docs are inside the web build by construction, so the site carries the
 // pages that describe the release it was built from.
