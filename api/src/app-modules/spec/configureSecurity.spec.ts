@@ -133,36 +133,45 @@ describe('configureSecurity', () => {
     expect(Object.keys(example).sort()).toEqual(Object.keys(defaults).sort())
   })
 
-  it('should keep the README examples in step with the defaults', async () => {
-    // The README carries the same JSON twice more, as commented examples, and
-    // that copy is the one that has drifted: it omitted `blob:` after the
-    // default gained it, in the very example offered for the inline-script apps
-    // that draw a drive image. Parsing the blocks is what keeps it honest.
-    const readme = await readFile(
-      path.join(__dirname, '../../../../README.md'),
+  it('should keep the settings reference in step with the defaults', async () => {
+    // The CSP examples live in the settings reference, which is built into the
+    // site from this repository - and that copy is the one that drifted: it
+    // omitted `blob:` after the default gained it, in the very example offered
+    // for the inline-script apps that draw a drive image. Parsing the page is
+    // what keeps it honest, now that the README links here instead of repeating
+    // the settings.
+    const reference = await readFile(
+      path.join(__dirname, '../../../../docs/pages/settings.md'),
       'utf8'
     )
 
     const blocks: Record<string, string[]>[] = []
     let current: string[] | null = null
 
-    for (const line of readme.split('\n')) {
+    for (const line of reference.split('\n')) {
       const trimmed = line.trim()
 
-      if (trimmed === '# {') {
-        current = []
-        continue
-      }
+      if (trimmed.startsWith('```')) {
+        if (current === null) {
+          current = []
+          continue
+        }
 
-      if (current && trimmed === '# }') {
-        // the braces are the lines the parse skipped, so put them back: the
-        // block is a JSON object written across comment lines
-        blocks.push(JSON.parse(`{${current.join('\n')}}`))
+        // only a fenced block of directives is one of the examples
+        try {
+          const parsed = JSON.parse(current.join('\n'))
+
+          if (parsed && typeof parsed === 'object' && parsed['img-src'])
+            blocks.push(parsed)
+        } catch (error) {
+          /* a block that is not JSON is not a CSP example */
+        }
+
         current = null
         continue
       }
 
-      if (current) current.push(line.replace(/^#\s?/, ''))
+      if (current) current.push(line)
     }
 
     expect(blocks.length).toBeGreaterThan(1)
