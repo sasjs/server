@@ -10,9 +10,10 @@
  *
  * The CLI does the assembly (`sasjs compile` then `sasjs build` against the
  * `mock` target in sasjs/sasjsconfig.json), because the host it installs is the
- * one sasjs/cli already ships and tests. Its version is pinned here rather than
- * left to `latest`: the site is built from a known CLI, so a release of that
- * tool cannot change this site without a commit saying so.
+ * one sasjs/cli already ships and tests. A release of that tool is meant to
+ * change this site - see CLI_VERSION below for how far that follows - and the
+ * version it actually used is written into the output, so a published site can
+ * always be traced back to the release that assembled it.
  */
 import { execSync } from 'child_process'
 import { existsSync, copyFileSync, writeFileSync } from 'fs'
@@ -43,8 +44,15 @@ const sasjs = (arguments_) =>
   // quoted: `^` is an escape character to cmd.exe, and this runs on Windows too
   run(`npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`)
 
-// Which CLI is about to assemble the site, in the log of the deploy that did it.
-sasjs('--version')
+/** A command whose output is needed rather than passed through. */
+const capture = (command) => execSync(command, { cwd: root, encoding: 'utf8' })
+
+// Which CLI is about to assemble the site. Printed for the deploy log, and
+// written into the output below: a range means the site is not reproducible from
+// this file alone, so the artifact has to carry the answer itself.
+const versionOutput = capture(`npx --yes "@sasjs/cli@${CLI_VERSION}" --version`)
+process.stdout.write(versionOutput)
+const cliUsed = /v(\d+\.\d+\.\d+)/.exec(versionOutput)?.[1] ?? 'unknown'
 
 // The docs are inside the web build by construction, so the site carries the
 // pages that describe the release it was built from.
@@ -74,5 +82,13 @@ copyFileSync(index, path.join(site, '404.html'))
 // Pages serves a .nojekyll site as-is; without it, a folder starting with an
 // underscore (Monaco's, for one) is dropped by the Jekyll build.
 writeFileSync(path.join(site, '.nojekyll'), '')
+
+// The site's own record of what assembled it. `^6` follows the CLI's releases,
+// so two deploys of the same commit can differ - this is how a page that
+// misbehaves is traced to the release that built it rather than guessed at.
+writeFileSync(
+  path.join(site, 'cli-version.txt'),
+  `@sasjs/cli ${cliUsed} (resolved from ${CLI_VERSION} at build time)\n`
+)
 
 process.stdout.write(`\nMock site written to ${site}\n`)
