@@ -7,8 +7,8 @@ import FramedPane from '../../components/framedPane'
 /** Where the server mounts the built documentation. */
 const src = '/docs/'
 
-/** The published site, for a build that carries no copy of its own. */
-const publicSite = 'https://server.sasjs.io'
+/** The published pages, for a build that carries no copy of its own. */
+const publicSite = 'https://server.sasjs.io/docs/'
 
 /**
  * The server's own documentation, inside the app.

@@ -472,7 +472,7 @@ LOG_LOCATION=./sasjs_root/logs
 
 ## Persisting the Session
 
-The server runs in the foreground and never detaches, so it lives exactly as long as whatever started it - a terminal, a task, a unit. Give it a supervisor for anything other than a workstation session. The full recipes (systemd, launchd, Windows Task Scheduler, WinSW/NSSM, pm2, nohup) are in [the deployment docs](https://server.sasjs.io/deployment/).
+The server runs in the foreground and never detaches, so it lives exactly as long as whatever started it - a terminal, a task, a unit. Give it a supervisor for anything other than a workstation session. The full recipes (systemd, launchd, Windows Task Scheduler, WinSW/NSSM, pm2, nohup) are in [the deployment docs](https://server.sasjs.io/docs/deployment/).
 
 The short version:
 
@@ -509,7 +509,7 @@ The value comes from `buildInfo.generated.ts`, which the build writes from the r
 
 ## The demonstration site
 
-`npm run mock:build` builds the same interface as a **static site** - no server, no SAS binary - and writes it to `sasjsbuild/mock`. A service worker answers `/SASjsApi` from `@sasjs/api`, the package this server answers with, over a drive that ships with the site (`mock/drive.json`). It is published to <https://demo.server.sasjs.io> by `.github/workflows/mock-site.yml`, from this repository, on a release or by hand.
+`npm run mock:build` builds the same interface as a **static site** - no server, no SAS binary - and writes it to `sasjsbuild/mock`. A service worker answers `/SASjsApi` from `@sasjs/api`, the package this server answers with, over a drive that ships with the site (`mock/drive.json`). It is published to <https://server.sasjs.io> by `.github/workflows/mock-site.yml`, from this repository, on a release or by hand.
 
 - `sasjs/sasjsconfig.json` is the `mock` target the CLI builds against; `mock/build.mjs` runs the docs, the web bundle and the CLI in order and writes the `404.html` and `.nojekyll` a static host needs.
 - `npm run mock:serve` serves the built site the way GitHub Pages does, including the fallback that makes a reload on `/SASjsStudio` work.
@@ -518,7 +518,7 @@ The value comes from `buildInfo.generated.ts`, which the build writes from the r
 
 ## Documentation
 
-The documentation site - the pages published at <https://server.sasjs.io> - lives in `docs/` in this repository and is built with MkDocs Material:
+The documentation site - the pages published at <https://server.sasjs.io/docs/> - lives in `docs/` in this repository and is built with MkDocs Material:
 
 - `docs/pages/` holds the pages, and `docs/mkdocs.yml` the navigation, theme and plugins.
 - `docs/requirements.txt` pins the toolchain. It is Python, so it is installed separately from the interface's dependencies.
