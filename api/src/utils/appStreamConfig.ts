@@ -23,7 +23,9 @@ export const loadAppStreamConfig = async () => {
     )
   }
 
-  process.logger.info('App Stream Config loaded!')
+  process.logger.info(
+    `App Stream Config loaded: ${Object.keys(process.appStreamConfig).length} app(s) registered.`
+  )
 }
 
 /**
@@ -43,14 +45,50 @@ export const readStoredAppStreamConfig = async (): Promise<AppStreamConfig> => {
 
   if (!(await fileExists(appStreamConfigPath))) return {}
 
-  try {
-    const content = await readFile(appStreamConfigPath)
-    const parsed = JSON.parse(content)
+  let parsed: unknown
 
-    return isValidAppStreamConfig(parsed) ? parsed : {}
-  } catch (_) {
+  try {
+    parsed = JSON.parse(await readFile(appStreamConfigPath))
+  } catch (error) {
+    // A registry that cannot be parsed used to be swallowed, which presented as
+    // "no apps" rather than "the file is not JSON" - the two need different
+    // fixes, so the difference is logged.
+    process.logger?.error?.(
+      `App Stream config at ${appStreamConfigPath} could not be read as JSON, so no apps are registered: ${
+        (error as Error)?.message ?? error
+      }`
+    )
+
     return {}
   }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    process.logger?.error?.(
+      `App Stream config at ${appStreamConfigPath} is not an object of app entries, so no apps are registered. Expected an object keyed by stream name, each entry ${EXPECTED_ENTRY}.`
+    )
+
+    return {}
+  }
+
+  // Entries are judged one at a time: a single bad entry used to reject the whole
+  // file, so one typo unregistered every app on the server and said nothing.
+  const config: AppStreamConfig = {}
+
+  for (const [streamServiceName, entry] of Object.entries(parsed)) {
+    const reason = rejectionReason(entry)
+
+    if (reason) {
+      process.logger?.error?.(
+        `App Stream config: ignoring the entry "${streamServiceName}" - ${reason}. Expected ${EXPECTED_ENTRY}; the other entries are registered.`
+      )
+
+      continue
+    }
+
+    config[streamServiceName] = entry as AppStreamConfig[string]
+  }
+
+  return config
 }
 
 /** Writes the registry as stored, replacing the file. */
@@ -132,17 +170,35 @@ const saveAppStreamConfig = async () => {
   }
 }
 
-const isValidAppStreamConfig = (config: any) => {
-  if (config) {
-    return !Object.entries(config).some(([streamServiceName, entry]) => {
-      const { appLoc, streamWebFolder, streamLogo } = entry as any
+/** What a valid entry looks like, quoted in the message when one is rejected. */
+const EXPECTED_ENTRY =
+  '{ "appLoc": string, "streamWebFolder": string, "streamLogo"?: string }'
 
-      return (
-        typeof streamServiceName !== 'string' ||
-        typeof appLoc !== 'string' ||
-        typeof streamWebFolder !== 'string'
-      )
-    })
-  }
-  return false
+/**
+ * Why an entry cannot be used, or undefined when it can.
+ *
+ * Returned as a sentence about the field rather than a boolean, because the
+ * point of validating is to say WHICH entry and WHICH field: a config that is
+ * accepted and then silently not registered leaves the author assuming their
+ * upload failed rather than their schema.
+ */
+const rejectionReason = (entry: unknown): string | undefined => {
+  if (typeof entry !== 'object' || entry === null || Array.isArray(entry))
+    return 'the entry is not an object'
+
+  const { appLoc, streamWebFolder, streamLogo } = entry as Record<
+    string,
+    unknown
+  >
+
+  if (typeof appLoc !== 'string' || !appLoc.trim())
+    return '"appLoc" is missing or not a non-empty string'
+
+  if (typeof streamWebFolder !== 'string' || !streamWebFolder.trim())
+    return '"streamWebFolder" is missing or not a non-empty string'
+
+  if (streamLogo !== undefined && typeof streamLogo !== 'string')
+    return '"streamLogo" is present but not a string'
+
+  return undefined
 }

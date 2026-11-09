@@ -206,6 +206,7 @@ describe('App Stream unpublish', () => {
       .get(`/app/${streamServiceName}/`)
       .auth(adminToken, { type: 'bearer' })
 
+    expect(served.status).toBe(404)
     expect(served.text).toBe("There's no App Stream available here.")
   })
 
