@@ -1,42 +1,60 @@
 /**
- * Paints the colour scheme before the bundle has loaded.
+ * Paints the colour scheme before the bundle loads.
  *
- * The app is a single-page bundle, so the first paint happens before the theme
- * provider exists: a reader who chose dark saw white until React mounted. This
- * runs in the page head, before anything else, and is a file rather than an
- * inline script on purpose - the app is served under `script-src 'self'`, and an
- * inline block would need a hash threaded through env-driven CSP directives.
+ * The interface is themed from a setting the application reads, so a script that
+ * runs before it has to read the SAME setting or the two disagree and the page
+ * flashes - or, worse, paints half of itself in one scheme and half in the other.
  *
- * The key is MUI's own: `ThemeProvider` persists the chosen colour scheme under
- * `mui-mode`, with `system` meaning "follow the operating system". Reading the
- * same key means this cannot disagree with the provider that takes over.
+ * That setting is `localStorage['studio-settings']`, a JSON object whose
+ * `workbench.colorTheme` is `'light'`, `'dark'` or `'system'`. This script
+ * previously read a key called `mui-mode`, which nothing in the application ever
+ * wrote: it therefore always fell back to the operating system's preference, so a
+ * user who had chosen dark on a light machine got a white shell around a dark
+ * interface, and the mismatch was visible as a page that was dark in one half and
+ * light in the other.
  *
- * Nothing here is required for the app to work - if the store is blocked or the
- * value unexpected, the provider still applies the scheme a moment later, which
- * is the behaviour this exists to improve on rather than replace.
+ * `system` (and an absent or unreadable setting) follows the operating system,
+ * which is what the application does with the same value.
  */
-;(function () {
-  var BACKGROUND = { light: '#ffffff', dark: '#121212' }
-
+!(function () {
   try {
-    var stored = window.localStorage.getItem('mui-mode')
-    var prefersDark = window.matchMedia
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      : false
+    var preference = 'system'
 
-    var dark =
-      stored === 'dark' ||
-      ((stored === 'system' || stored === null || stored === '') && prefersDark)
+    var stored = window.localStorage.getItem('studio-settings')
 
-    var scheme = dark ? 'dark' : 'light'
-    var html = document.documentElement
+    if (stored) {
+      try {
+        var settings = JSON.parse(stored)
 
-    // `color-scheme` also tells the browser to paint form controls, scrollbars
-    // and the canvas dark, so the parts the bundle does not draw match.
-    html.style.colorScheme = scheme
-    html.style.backgroundColor = BACKGROUND[scheme]
-    html.setAttribute('data-color-scheme', scheme)
+        if (settings && typeof settings['workbench.colorTheme'] === 'string') {
+          preference = settings['workbench.colorTheme']
+        }
+      } catch (error) {
+        // unreadable settings are the application's problem to report, not a
+        // reason to leave the page unpainted
+      }
+    }
+
+    var osPrefersDark =
+      !!window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+
+    var mode =
+      preference === 'dark' || preference === 'light'
+        ? preference
+        : osPrefersDark
+          ? 'dark'
+          : 'light'
+
+    var element = document.documentElement
+
+    element.style.colorScheme = mode
+    element.style.backgroundColor = {
+      light: '#ffffff',
+      dark: '#121212'
+    }[mode]
+    element.setAttribute('data-color-scheme', mode)
   } catch (error) {
-    /* a blocked store only costs one white flash, not a broken page */
+    // a page that cannot read its setting still has to render
   }
 })()
