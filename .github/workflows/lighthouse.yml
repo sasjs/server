@@ -25,6 +25,12 @@ jobs:
   lighthouse:
     runs-on: ubuntu-22.04
 
+    # The scores are posted on the pull request as well as the job summary, which
+    # is what a reviewer reads; nothing else here writes to the repository.
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -88,6 +94,36 @@ jobs:
       - name: Print the scores
         if: always()
         run: node docs/scripts/lighthouse-summary.mjs
+
+      - name: Post the scores to the pull request
+        # Only for branches in this repository: a pull request from a fork gets a
+        # read-only token, so the comment would fail rather than report.
+        if: >-
+          always() && github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ ! -f lighthouse-summary.md ]; then
+            echo "no summary to post"
+            exit 0
+          fi
+
+          existing=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+            --jq '.[] | select(.body | startswith("<!-- lighthouse-scores -->")) | .id' \
+            | head -1)
+
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" \
+              -F body=@lighthouse-summary.md > /dev/null
+            echo "updated comment $existing"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" \
+              -F body=@lighthouse-summary.md > /dev/null
+            echo "posted a new comment"
+          fi
 
       - name: Keep the reports
         if: always()

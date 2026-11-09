@@ -10,10 +10,20 @@
  * Never exits non-zero: the assertion severities decide whether a run is a
  * failure, and this only reports what the run measured.
  */
-import { existsSync, readdirSync, readFileSync, appendFileSync } from 'node:fs'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  appendFileSync,
+  writeFileSync
+} from 'node:fs'
 import path from 'node:path'
 
 const REPORTS = 'lighthouse-reports'
+
+// The marker lets the workflow find its own comment on the pull request and
+// update it, rather than adding another one on every push.
+const MARKER = '<!-- lighthouse-scores -->'
 const CATEGORIES = ['performance', 'accessibility', 'best-practices', 'seo']
 
 const pct = (score) =>
@@ -25,19 +35,43 @@ const seconds = (ms) =>
 const kilobytes = (bytes) =>
   bytes === null || bytes === undefined ? 'n/a' : `${Math.round(bytes / 1024)} KB`
 
-if (!existsSync(REPORTS)) {
-  console.log(`No Lighthouse reports in ${REPORTS} - was the run skipped?`)
-  process.exit(0)
+/**
+ * Nothing was measured, which is not the same as everything passing.
+ *
+ * The step runs under `if: always()`, so this is what happens after a run that
+ * never got the site up. Exiting quietly left the pull request with a green
+ * check and no scores, and nothing saying why - so the absence is written where
+ * a reader looks: a comment, a warning annotation, and a failing step.
+ */
+const noReports = (reason) => {
+  const message = [
+    MARKER,
+    '## Lighthouse - no scores',
+    '',
+    `${reason}, so there is nothing to report. The scores are missing, not good:`,
+    'check the "Run Lighthouse" step of this job for the reason the run produced',
+    'no reports.'
+  ].join('\n')
+
+  console.log(message)
+  console.log(`::warning::Lighthouse produced no reports - ${reason}`)
+
+  writeFileSync('lighthouse-summary.md', `${message}\n`)
+
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, message + '\n')
+  }
+
+  process.exit(1)
 }
+
+if (!existsSync(REPORTS)) noReports(`no ${REPORTS} folder was written`)
 
 const files = readdirSync(REPORTS)
   .filter((name) => name.endsWith('.report.json'))
   .sort()
 
-if (!files.length) {
-  console.log(`No .report.json files in ${REPORTS}`)
-  process.exit(0)
-}
+if (!files.length) noReports(`${REPORTS} holds no report files`)
 
 /**
  * The median of a list.
@@ -127,7 +161,10 @@ const table = [
   )
 ]
 
+// The marker lets the workflow find its own comment on the pull request and
+// update it, rather than adding another one on every push.
 const output = [
+  MARKER,
   `## Lighthouse - ${rows.length} page(s), median of ${rows[0]?.runs ?? 0} run(s) each`,
   '',
   ...table,
@@ -136,6 +173,10 @@ const output = [
 ].join('\n')
 
 console.log(output)
+
+// Written for the workflow to post on the pull request itself: a reviewer should
+// not have to open the Actions run to see the scores.
+writeFileSync('lighthouse-summary.md', `${output}\n`)
 
 if (process.env.GITHUB_STEP_SUMMARY) {
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, output + '\n')
