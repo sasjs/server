@@ -1,5 +1,7 @@
 import { Request } from 'express'
 
+import { API_PREFIX, canonicalPrefix } from '../utils/routePrefixes'
+
 /**
  * The only routes a password-flagged account may reach: reading its own
  * session (the SPA's session poll), changing its password, and logging out.
@@ -13,11 +15,14 @@ import { Request } from 'express'
  * router that uses it.
  */
 export const isPasswordChangeRoute = (req: Request): boolean => {
-  const p = req.baseUrl + req.path
+  // Canonicalised: a flagged account may reach these on the short prefix too,
+  // and `/api/session` has to mean `/SASjsApi/session` here as it does at the
+  // gate.
+  const p = canonicalPrefix(req.baseUrl + req.path)
   return (
-    p.startsWith('/SASjsApi/auth/updatePassword') ||
-    p === '/SASjsApi/session' ||
-    p === '/SASjsApi/session/' ||
+    p.startsWith(`${API_PREFIX}/auth/updatePassword`) ||
+    p === `${API_PREFIX}/session` ||
+    p === `${API_PREFIX}/session/` ||
     p.startsWith('/SASLogon/logout')
   )
 }

@@ -22,20 +22,23 @@ const devConfig: Configuration = merge(common, {
     },
     historyApiFallback: true,
     port: 3000,
-    // The API serves its own documentation page, and the app frames it. Proxying
-    // it here makes the frame same-origin in development, as it is in every
-    // deployment: the API sends X-Frame-Options: SAMEORIGIN and
-    // frame-ancestors 'self', so a frame loaded straight from the API's own port
-    // would be refused and the screen would be blank.
+    // The API serves Swagger UI at /api and the documentation site at /docs, and
+    // the interface links to both as pages in their own right. Proxying them
+    // here makes a link from the app land on the real page in development, as
+    // it does in a deployment, instead of on the dev server's SPA fallback.
     //
-    // The filter is exact for /SASjsApi and /swagger.yaml, and prefix-only WITH
-    // the trailing slash for the page's assets - so the app's own route at
-    // /SASjsApiDocs stays with the dev server and is not forwarded.
+    // The filter is exact for each root, and prefix-only WITH the trailing
+    // slash, so a future interface route that merely starts with the same word
+    // stays with the dev server.
     proxy: [
       {
         path: (pathname: string) =>
           pathname === '/SASjsApi' ||
           pathname.startsWith('/SASjsApi/') ||
+          pathname === '/api' ||
+          pathname.startsWith('/api/') ||
+          pathname === '/docs' ||
+          pathname.startsWith('/docs/') ||
           pathname === '/swagger.yaml',
         target: `http://localhost:${process.env.PORT_API ?? 5000}`
       }

@@ -7,9 +7,9 @@
  *     and what you were doing rather than listing everything;
  *   - opening an app and opening a file are recorded, so the dashboard knows
  *     about them on return - the wiring, not just the rendering;
- *   - the tab underline follows the route. It fell back to Home on /SASjsDocs
- *     because the header's list of tabbed routes did not include it, which looked
- *     to a reader like a broken tab rather than a missing entry.
+ *   - the tab underline follows the route. It fell back to Home on a tabbed
+ *     route the header's list did not include, which looked to a reader like a
+ *     broken tab rather than a missing entry.
  *
  * Navigation here is mostly by URL with the underline asserted, rather than by
  * clicking every tab: the underline is what the bug was, and a click on a tab
@@ -154,23 +154,23 @@ describe('Home dashboard and Apps tab', () => {
     // Apps live on their own tab now - clicked, not navigated to, so the tab is
     // known to work. It lists published apps and nothing else: Studio and the
     // API explorer are header tabs on every screen.
-    await page.click('[role="tablist"] a[href="/SASjsApps"]')
+    await page.click('[role="tablist"] a[href="/apps"]')
     // The tile's anchor is the visible target; the title inside it is a
     // zero-width-safe Typography that Playwright reports as hidden.
-    const appTile = page.locator('a[href="/AppStream/Dashdemo/"]')
+    const appTile = page.locator('a[href="/app/Dashdemo/"]')
     const appRow = page.locator('.MuiListItemButton-root', {
       hasText: 'Dashdemo'
     })
 
     await appTile.first().waitFor({ timeout: 30000 })
     expect(await selectedTab(page)).toBe('apps')
-    expect(page.url()).toContain('/SASjsApps')
+    expect(page.url()).toContain('/apps')
     expect(await page.getByText('Run ad hoc code').count()).toBe(0)
 
     // Two views of the same list, and the choice is remembered. A tile is a
     // Paper inside the app's link; a list row is not, so the paper's presence is
     // what tells the two apart.
-    const tiles = page.locator('a[href="/AppStream/Dashdemo/"] .MuiPaper-root')
+    const tiles = page.locator('a[href="/app/Dashdemo/"] .MuiPaper-root')
 
     await page.getByRole('button', { name: 'List view' }).click()
     await appRow.first().waitFor({ timeout: 30000 })
@@ -219,12 +219,12 @@ describe('Home dashboard and Apps tab', () => {
     await appTile.first().click()
     const popup = await popupPromise
     await popup.waitForLoadState('domcontentloaded')
-    expect(popup.url()).toContain('/AppStream/Dashdemo/')
+    expect(popup.url()).toContain('/app/Dashdemo/')
     await popup.close()
 
     // A file opened in Studio is recorded the same way; the Studio tab in the
     // header is the path to it now.
-    await page.goto(`${baseUrl()}/SASjsStudio`)
+    await page.goto(`${baseUrl()}/studio`)
     await page.waitForSelector('text=STUDIO', { timeout: 30000 })
     await page.waitForTimeout(3000)
 
@@ -238,11 +238,15 @@ describe('Home dashboard and Apps tab', () => {
 
     await page.screenshot({ path: path.join(screenshotDir, 'dashboard.png') })
 
-    // The Docs tab keeps its own underline: the header lists tabbed routes, and
-    // a route missing from that list showed Home as selected instead.
-    await page.goto(`${baseUrl()}/SASjsDocs`)
-    await page.waitForTimeout(1500)
-    expect(await selectedTab(page)).toBe('docs')
+    // The Docs and API tabs are links to pages the server serves, not screens of
+    // the app, so there is no underline to assert: the target is what has to be
+    // right.
+    expect(await page.locator('[role="tablist"] a[href="/docs"]').count()).toBe(
+      1
+    )
+    expect(await page.locator('[role="tablist"] a[href="/api"]').count()).toBe(
+      1
+    )
 
     // Clearing the history empties both lists.
     await page.goto(`${baseUrl()}/`)

@@ -139,7 +139,7 @@ The value comes from `buildInfo.generated.ts`, which the build writes from the r
 `npm run mock:build` builds the same interface as a **static site** - no server, no SAS binary - and writes it to `sasjsbuild/mock`. A service worker answers `/SASjsApi` from `@sasjs/api`, the package this server answers with, over a drive that ships with the site (`mock/drive.json`). It is published to <https://server.sasjs.io> by `.github/workflows/mock-site.yml`, from this repository, on a release or by hand.
 
 - `sasjs/sasjsconfig.json` is the `mock` target the CLI builds against; `mock/build.mjs` runs the docs, the web bundle and the CLI in order and writes the `404.html` and `.nojekyll` a static host needs.
-- `npm run mock:serve` serves the built site the way GitHub Pages does, including the fallback that makes a reload on `/SASjsStudio` work.
+- `npm run mock:serve` serves the built site the way GitHub Pages does, including the fallback that makes a reload on `/studio` work.
 - What runs is JavaScript. Run on a SAS program reports that SAS needs a server - a demo that pretended otherwise would be teaching the wrong thing.
 - The site is a browser host: no accounts, no private data, and the seeded identity is the package's demo admin. Nothing here is a security boundary, which is why a demo is all it should ever serve.
 

@@ -13,6 +13,7 @@ import {
   getAuthorizedRoutes,
   getPath
 } from './getAuthorizedRoutes'
+import { canonicalPrefix } from './routePrefixes'
 
 export interface RouteRule {
   path: string
@@ -141,7 +142,11 @@ export const isGrantedForRequest = async (
 ): Promise<boolean> => {
   const rules = await loadRouteRules(dbUser)
 
-  return isRouteGranted(rules, getPath(req), topLevelRouteFor(req.baseUrl))
+  return isRouteGranted(
+    rules,
+    getPath(req),
+    topLevelRouteFor(canonicalPrefix(req.baseUrl))
+  )
 }
 
 /**

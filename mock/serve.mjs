@@ -2,8 +2,8 @@
 /**
  * Serves the built mock site the way a static host does.
  *
- * Two things a plain file server gets wrong for this site: an unknown path is a
- * 404 rather than the app's own index.html (so a reload on /SASjsStudio would
+ * Two things a plain file server gets wrong for this site: an unknown path is
+ * a 404 rather than the app's own index.html (so a reload on /studio would
  * fail), and a file with no extension is served as octet-stream. Both are fixed
  * here so a local run matches GitHub Pages closely enough to trust.
  *
