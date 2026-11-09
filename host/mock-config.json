@@ -9,6 +9,7 @@
     "tests"
   ],
   "snapshot": true,
+  "sasTranscript": true,
   "buildStamp": "d751713988",
-  "builtAt": "2026-11-09T17:31:23.922Z"
+  "builtAt": "2026-11-09T18:55:53.540Z"
 }
