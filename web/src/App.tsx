@@ -1,19 +1,31 @@
-import React, { useContext, useEffect } from 'react'
+import React, { Suspense, useContext, useEffect } from 'react'
 import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom'
 import { ThemeProvider, useColorScheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
+import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
 import { theme } from './theme'
 
 import Login from './components/login'
 import Header from './components/header'
 import Home from './containers/Home'
 import Apps from './containers/Apps'
-import Studio from './containers/Studio'
+/**
+ * Studio is the only screen that carries an editor.
+ *
+ * Its bundle includes Monaco and the SAS language server - a worker asset of
+ * some 26 MB - and a static import put all of that on every route: the home,
+ * the Apps screen and Settings were each half a minute of download for a screen
+ * that shows no editor at all. Loaded on demand, Studio pays for itself and the
+ * rest of the interface does not.
+ */
+const Studio = React.lazy(() => import('./containers/Studio'))
 import Settings from './containers/Settings'
 import Docs from './containers/Docs'
 import ApiDocs from './containers/ApiDocs'
 import UpdatePassword from './components/updatePassword'
 import BuildStamp from './components/buildStamp'
+import ErrorBoundary from './components/errorBoundary'
 
 import { AppContext } from './context/appContext'
 import AuthCode from './containers/AuthCode'
@@ -59,7 +71,30 @@ function App() {
     if (!appContext.authorizedRoutesLoaded) return null
 
     return appContext.isAuthorizedFor(STUDIO_ROUTE) ? (
-      <Studio />
+      // The fallback is not null: the chunk carries the 26 MB language server,
+      // so the wait is long enough to need saying, and a blank pane reads as a
+      // broken route. The boundary catches the other half of the same story - a
+      // chunk that fails to load - which would otherwise blank the route with no
+      // message and no way to retry.
+      <ErrorBoundary>
+        <Suspense
+          fallback={
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                minHeight: 240
+              }}
+            >
+              <CircularProgress aria-label="Loading the editor" />
+            </Box>
+          }
+        >
+          <Studio />
+        </Suspense>
+      </ErrorBoundary>
     ) : (
       <Navigate to="/" replace />
     )
