@@ -4,6 +4,7 @@ import axios from 'axios'
 
 import CssBaseline from '@mui/material/CssBaseline'
 import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
 
 import {
   ROOT_PATH,
@@ -33,6 +34,15 @@ const Studio = () => {
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
   const [expanded, setExpanded] = useState<string[]>([ROOT_PATH])
   const [tab, setTab] = useState('code')
+  /**
+   * Whether the opening file has been decided yet.
+   *
+   * The editor used to mount before the drive answered, so the first paint was
+   * whichever file the previous render held - the flash of one file before the
+   * right one. Nothing is painted now until the file is known; the wait is a
+   * drive listing that was happening anyway.
+   */
+  const [initialising, setInitialising] = useState(true)
 
   // Remembered, because it is about the user's screen: someone on a laptop
   // collapses the explorer for editor width and expects it to stay collapsed.
@@ -246,8 +256,11 @@ const Studio = () => {
       selectedFilePath ||
       searchParams.get('filePath') ||
       defaultFileRequested.current
-    )
+    ) {
+      setInitialising(false)
+
       return
+    }
 
     defaultFileRequested.current = true
 
@@ -338,8 +351,12 @@ const Studio = () => {
         if (cancelled) return
 
         handleSelect(filePath)
+        setInitialising(false)
       })
-      .catch((err) => console.log(err))
+      .catch((err) => {
+        console.log(err)
+        setInitialising(false)
+      })
 
     // A resolution that finishes after the component has gone - or after another
     // one has opened a file - must not move the editor: that is the same switch
@@ -420,14 +437,24 @@ const Studio = () => {
           refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
         />
       )}
-      <SASjsEditor
-        selectedFilePath={selectedFilePath}
-        setSelectedFilePath={handleSelect}
-        tab={tab}
-        setTab={setTab}
-        sideBarCollapsed={sideBarCollapsed}
-        onToggleSideBar={() => setSideBarCollapsed(!sideBarCollapsed)}
-      />
+      {initialising ? (
+        <Box
+          sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', p: 6 }}
+          aria-busy="true"
+          aria-label="Opening Studio"
+        >
+          <CircularProgress size={28} />
+        </Box>
+      ) : (
+        <SASjsEditor
+          selectedFilePath={selectedFilePath}
+          setSelectedFilePath={handleSelect}
+          tab={tab}
+          setTab={setTab}
+          sideBarCollapsed={sideBarCollapsed}
+          onToggleSideBar={() => setSideBarCollapsed(!sideBarCollapsed)}
+        />
+      )}
     </Box>
   )
 }

@@ -46,7 +46,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that does not read the recording - the demo would then carry the file and
 // still refuse the program.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6.23.0'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.23.1'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
