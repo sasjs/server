@@ -362,7 +362,10 @@ router.get(
       })(req, res, next)
     }
 
-    return res.send("There's no App Stream available here.")
+    // 404, not 200: a caller checking whether a stream is up reads the status,
+    // and an unregistered name is a missing resource like any other. The text is
+    // unchanged for the browser, which shows it to a person.
+    return res.status(404).send("There's no App Stream available here.")
   }
 )
 

@@ -123,8 +123,7 @@ describe('App Stream serving encoded names', () => {
     const res = await request(app)
       .get('/app/Nope%20App/')
       .auth(token, { type: 'bearer' })
-      .expect(200)
-
+      .expect(404)
     expect(res.text).toBe("There's no App Stream available here.")
   })
 
