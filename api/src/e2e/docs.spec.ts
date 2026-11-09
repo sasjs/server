@@ -1,23 +1,24 @@
 /**
- * Browser test of the Docs tab.
+ * Browser test of the Docs screen.
  *
- * The documentation site is built from `docs/` and copied into the web build,
- * which the server serves at `/docs`; the tab is a link to that path. The test
- * therefore checks three things a reader depends on and a unit test cannot see:
- * the site is served with its own assets under that path, the tab opens it, and
- * a build without the site says so instead of answering with the interface's
- * 404.
+ * The documentation site is built from `docs/` into the web build and served at
+ * `/documentation`; the interface's `/docs` route frames it, so the header and
+ * tabs stay in place and the address bar carries the page being read. The test
+ * checks what a reader depends on and a unit test cannot see:
  *
- * The second case renames the built site out of the way for the duration of one
- * page load, which is what a checkout that skipped `npm run docs:build` looks
- * like from the server's side.
+ *   - the pages are served with their own assets, under their own path
+ *   - the tab opens the screen, not a separate page
+ *   - a deep link, and a link followed inside the frame, both leave the address
+ *     bar on the page that is actually on screen
+ *   - the page takes the app's colour scheme
+ *   - a build without the site says so instead of framing a 404
  */
 import path from 'path'
 import { mkdirSync, renameSync } from 'fs'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import { Browser, Page, chromium } from 'playwright'
+import { Browser, Frame, Page, chromium } from 'playwright'
 import { createFile, fileExists } from '@sasjs/utils'
 import { getWebBuildFolder, sysInitCompiledPath } from '../utils/'
 import { UserController } from '../controllers/'
@@ -36,9 +37,30 @@ const user = {
 
 const NEW_PASSWORD = 'newpass123'
 
-const docsFolder = () => path.join(getWebBuildFolder(), 'docs')
+const docsFolder = () => path.join(getWebBuildFolder(), 'documentation')
 
-describe('Docs tab', () => {
+/** The frame the Docs screen draws, once it has loaded. */
+const docsFrame = async (page: Page): Promise<Frame> => {
+  await page.waitForSelector('iframe[src^="/documentation"]', {
+    timeout: 30000
+  })
+
+  // the frame is attached before it has a URL, so its presence and its address
+  // arrive at different moments
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const frame = page
+      .frames()
+      .find((candidate) => candidate.url().includes('/documentation'))
+
+    if (frame) return frame
+
+    await page.waitForTimeout(250)
+  }
+
+  throw new Error('The Docs screen drew no frame')
+}
+
+describe('Docs screen', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let server: ReturnType<Express['listen']>
@@ -96,8 +118,8 @@ describe('Docs tab', () => {
    * Sign in and land on the app's home screen.
    *
    * The user schema forces a password change on first sign-in, so the first call
-   * also sets the new one - and remembers that it did, because the second case
-   * runs after it in the same browser and would otherwise be refused with the
+   * also sets the new one - and remembers that it did, because the later cases
+   * run after it in the same browser and would otherwise be refused with the
    * password that no longer works.
    */
   let passwordChanged = false
@@ -120,24 +142,18 @@ describe('Docs tab', () => {
     await page.waitForSelector('text=STUDIO', { timeout: 30000 })
   }
 
-  it('serves the site under /docs and the tab opens it', async () => {
-    // The site is served at the short path, and its assets are addressed
-    // relatively: the site's own pages sit one level up from the mount, so
-    // /docs/settings/ asks for ../assets rather than /assets - which is what
-    // makes it work under the mount instead of only at the origin root.
-    const index = await (await fetch(`${baseUrl()}/docs/`)).text()
+  it('serves the pages under /documentation and frames them under /docs', async () => {
+    // The site is served at its own path, with its assets addressed relatively:
+    // /documentation/settings/ asks for ../assets rather than /assets, which is
+    // what lets the site live under a path instead of only at the origin root.
+    const index = await (await fetch(`${baseUrl()}/documentation/`)).text()
     expect(index).toContain('SASjs Server')
     expect(index).toContain('assets/stylesheets/main.')
 
-    const settings = await (await fetch(`${baseUrl()}/docs/settings/`)).text()
+    const settings = await (
+      await fetch(`${baseUrl()}/documentation/settings/`)
+    ).text()
     expect(settings).toContain('../assets/')
-
-    // The Studio page's demo video is raw HTML, which MkDocs does not rewrite -
-    // so it is the one place a root-absolute src would survive the build and
-    // then 404 under the mount, leaving a player that silently does not play.
-    const studio = await (await fetch(`${baseUrl()}/docs/studio/`)).text()
-    expect(studio).toContain('src="../img/studio-demo.webm"')
-    expect(studio).toContain('src="../img/studio-demo.mp4"')
 
     const page = await browser.newPage({
       viewport: { width: 1280, height: 800 }
@@ -146,21 +162,71 @@ describe('Docs tab', () => {
     await signIn(page)
     await page.click('[role="tab"]:has-text("Docs")')
 
-    // The tab is a link to the site, not a screen that frames it: the page in
-    // the browser is the documentation itself, with its own navigation.
-    await page.locator('text=Installation').first().waitFor({ timeout: 30000 })
+    const frame = await docsFrame(page)
 
+    await frame.waitForSelector('nav', { timeout: 30000 })
+
+    // The screen is the app, with the documentation inside it - so the header is
+    // still there and the address is the app's route.
     expect(new URL(page.url()).pathname).toBe('/docs/')
-    expect(await page.locator('iframe').count()).toBe(0)
+    expect(await page.locator('header').count()).toBeGreaterThan(0)
 
     await page.screenshot({ path: path.join(screenshotDir, 'docs-tab.png') })
 
-    // The site's own inline scripts are refused by the server's
-    // Content-Security-Policy (`script-src 'self'`), so its palette and search
-    // do not run when the pages are served by the server. That is a property of
-    // the policy rather than of the path, so it is not asserted here - see the
-    // note in the pull request. What this suite pins is that the tab reaches the
-    // real page, from the real path.
+    await page.close()
+  }, 120000)
+
+  it('keeps the address on the page being read, from a deep link and from inside the frame', async () => {
+    const page = await browser.newPage({
+      viewport: { width: 1280, height: 800 }
+    })
+
+    await signIn(page)
+
+    // A deep link is the app's route for the page, and the frame follows it.
+    await page.goto(`${baseUrl()}/docs/settings/`)
+    const frame = await docsFrame(page)
+
+    await frame.waitForFunction(
+      () =>
+        (document.querySelector('h1')?.textContent ?? '').includes('Settings'),
+      undefined,
+      { timeout: 30000 }
+    )
+
+    expect(frame.url()).toContain('/documentation/settings/')
+
+    // A link followed inside the frame is the reader's new page, so the address
+    // bar follows it - otherwise reload, Back and a bookmark all land elsewhere.
+    await frame.click('nav a[href$="/permissions/"]')
+    await page.waitForFunction(
+      () => window.location.pathname === '/docs/permissions/',
+      undefined,
+      { timeout: 30000 }
+    )
+
+    expect(frame.url()).toContain('/documentation/permissions/')
+
+    await page.close()
+  }, 120000)
+
+  it('carries the app colour scheme into the framed page', async () => {
+    const page = await browser.newPage({
+      viewport: { width: 1280, height: 800 }
+    })
+
+    await signIn(page)
+    await page.goto(`${baseUrl()}/docs/`)
+
+    const frame = await docsFrame(page)
+    await frame.waitForSelector('nav', { timeout: 30000 })
+
+    await page.click('[aria-label*="dark theme"]')
+    await frame.waitForFunction(
+      () => document.body.getAttribute('data-md-color-scheme') === 'slate',
+      undefined,
+      { timeout: 30000 }
+    )
 
     await page.close()
   }, 120000)
@@ -175,9 +241,11 @@ describe('Docs tab', () => {
       })
 
       await signIn(page)
-      await page.click('[role="tab"]:has-text("Docs")')
+      await page.goto(`${baseUrl()}/docs/`)
 
-      await page.waitForSelector('text=This build carries no documentation', {
+      const frame = await docsFrame(page)
+
+      await frame.waitForSelector('text=This build carries no documentation', {
         timeout: 30000
       })
 

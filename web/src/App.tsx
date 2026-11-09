@@ -10,6 +10,8 @@ import Home from './containers/Home'
 import Apps from './containers/Apps'
 import Studio from './containers/Studio'
 import Settings from './containers/Settings'
+import Docs from './containers/Docs'
+import ApiDocs from './containers/ApiDocs'
 import UpdatePassword from './components/updatePassword'
 import BuildStamp from './components/buildStamp'
 
@@ -89,6 +91,11 @@ function App() {
         <Route path="/studio" element={studioElement} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/logon" element={<AuthCode />} />
+        {/* The documentation and the API reference are screens like any other:
+            the header stays, and the address bar carries the page being read
+            inside them, so a reload or a bookmark lands on it. */}
+        <Route path="/docs/*" element={<Docs />} />
+        <Route path="/api" element={<ApiDocs />} />
         {/* The paths before the interface had short URLs. The server redirects
             them, but the browser-hosted build has no server to redirect, and a
             bookmark should not lose the app. The elements are repeated rather

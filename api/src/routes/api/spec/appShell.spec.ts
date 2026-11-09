@@ -63,16 +63,24 @@ describe('the app shell catch-all', () => {
     expect(String(res.headers['set-cookie'])).toContain('XSRF-TOKEN')
   })
 
-  it('should serve the API documentation page at /api, not the shell', async () => {
-    // The API's documentation is a page of its own: the static Swagger build,
-    // not a screen of the interface. The catch-all must not claim it.
-    const res = await request(app)
-      .get('/api/')
+  it('should serve the API documentation page at /api-assets, and the shell at /api', async () => {
+    // The documentation is a page of its own - the static Swagger build - and it
+    // is served beside the interface, not under the app's route: /api is the
+    // screen that frames it, so the catch-all answers /api with the shell and
+    // the page itself lives at /api-assets.
+    const page = await request(app)
+      .get('/api-assets/')
       .set('Accept', 'text/html')
       .expect(200)
 
-    expect(res.text).toContain('swagger-ui')
-    expect(res.text).not.toEqual(SHELL)
+    expect(page.text).toContain('swagger-ui')
+
+    const shell = await request(app)
+      .get('/api')
+      .set('Accept', 'text/html')
+      .expect(200)
+
+    expect(shell.text).toEqual(SHELL)
   })
 
   it('should keep an unknown path below the API mount a 404', async () => {

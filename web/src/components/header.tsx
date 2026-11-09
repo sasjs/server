@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import {
   DarkMode,
+  GitHub,
   LightMode,
   Menu as MenuIcon,
   OpenInNew,
@@ -22,6 +23,7 @@ import {
 } from '@mui/icons-material'
 
 import Username from './username'
+import Search from './search'
 import { AppContext } from '../context/appContext'
 import { STUDIO_ROUTE } from '../utils'
 import { oppositePreference } from '../utils/colorScheme'
@@ -30,15 +32,25 @@ import { useColorMode } from '../utils/hooks'
 // Every route that has a tab. A path missing here still renders its screen -
 // the tab underline just falls back to Home, which is what a reader sees as a
 // broken tab, so this list and the Tabs below must move together.
-const validTabs = ['/', '/apps', '/studio']
+const validTabs = ['/', '/apps', '/studio', '/api']
+
+/**
+ * The tab a path belongs to.
+ *
+ * The docs are a screen with pages under it - /docs/guides/settings/ - so the
+ * whole subtree is one tab; everything else is a path of its own.
+ */
+const tabFor = (pathname: string) => {
+  if (pathname === '/docs' || pathname.startsWith('/docs/')) return '/docs'
+
+  return validTabs.includes(pathname) ? pathname : ''
+}
 
 const Header = (props: any) => {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const appContext = useContext(AppContext)
-  const [tabValue, setTabValue] = useState(
-    validTabs.includes(pathname) ? pathname : '/'
-  )
+  const [tabValue, setTabValue] = useState(tabFor(pathname))
 
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null)
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
@@ -72,7 +84,7 @@ const Header = (props: any) => {
   }
 
   useEffect(() => {
-    setTabValue(validTabs.includes(pathname) ? pathname : '/')
+    setTabValue(tabFor(pathname))
   }, [pathname])
 
   const handleTabChange = (event: React.SyntheticEvent, value: string) => {
@@ -122,11 +134,17 @@ const Header = (props: any) => {
                 component={Link}
               />
             )}
-            {/* The API documentation and the documentation site are pages of
-                their own, served at a top-level path by the server rather than
-                screens of the app - so these two are links, not routes. */}
-            <Tab label="API" href="/api" component="a" />
-            <Tab label="Docs" href="/docs" component="a" />
+            {/* Screens of the app like the rest: each frames a page of its
+                own, which is why the address bar can carry the page being read
+                inside them. */}
+            <Tab
+              label="API"
+              value="/api"
+              to="/api"
+              component={Link}
+              sx={{ borderRadius: 0 }}
+            />
+            <Tab label="Docs" value="/docs" to="/docs" component={Link} />
           </Tabs>
         </Box>
 
@@ -247,6 +265,20 @@ const Header = (props: any) => {
             justifyContent: 'flex-end'
           }}
         >
+          {/* Nothing to search from a screen the reader has not reached yet,
+              and a field that cannot answer is one more thing between them and
+              the sign-in form. */}
+          {appContext.loggedIn && <Search />}
+          <IconButton
+            color="inherit"
+            href="https://github.com/sasjs/server"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="The SASjs server repository on GitHub"
+            title="The SASjs server repository on GitHub"
+          >
+            <GitHub fontSize="small" />
+          </IconButton>
           <IconButton
             color="inherit"
             onClick={() => setColorMode(nextMode)}

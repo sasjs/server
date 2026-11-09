@@ -95,7 +95,7 @@ Every setting is an environment variable, read at startup from the environment o
 
 **<https://server.sasjs.io/docs/settings/>**
 
-That page is built from `docs/` in this repository and is served by the build itself at `/docs`, so the reference and the binary that reads the settings cannot drift apart.
+That page is built from `docs/` in this repository and served by the build it describes - it is the **Docs** screen at `/docs`, which frames it - so the reference and the binary that reads the settings cannot drift apart.
 
 ## Persisting the Session
 
@@ -149,7 +149,7 @@ The documentation site - the pages published at <https://server.sasjs.io/docs/> 
 
 - `docs/pages/` holds the pages, and `docs/mkdocs.yml` the navigation, theme and plugins.
 - `docs/requirements.txt` pins the toolchain. It is Python, so it is installed separately from the interface's dependencies.
-- The build copies the site into the web build, at `web/build/docs`, which the server serves at `/docs` and the interface's **Docs** tab frames. The copy therefore describes the build that carries it - the pages and the interface are never a release apart.
+- The build copies the site into the web build, at `web/build/documentation`, which the server serves at `/documentation`. The interface's **Docs** screen is the route `/docs`, which frames those pages: the header and tabs stay, and the address bar carries the page being read. The copy therefore describes the build that carries it - the pages and the interface are never a release apart.
 - `npm run docs:build` builds the site, `npm run docs:serve` serves it with live reload at <http://127.0.0.1:8000>, and `npm run docs:check` runs the two content checks. The scripts use `.venv-docs/bin/python` when that venv exists and the ambient `python3` otherwise, so activating it is optional.
 
 A development build does not need any of that: the Docs tab says the build carries no documentation and links to the published site. To see the pages while working on them, install the toolchain once (`python3 -m venv .venv-docs && .venv-docs/bin/pip install -r docs/requirements.txt`) and run `npm run docs:serve` - the script picks up that venv by itself.

@@ -4,7 +4,7 @@
   "description": "Api of SASjs server",
   "main": "./src/server.ts",
   "scripts": {
-    "initial": "npm run buildInfo && npm run swagger && npm run swagger-ui:copy && npm run compileSysInit && npm run copySASjsCore && npm run downloadMacros",
+    "initial": "npm run buildInfo && npm run swagger && npm run operations && npm run swagger-ui:copy && npm run compileSysInit && npm run copySASjsCore && npm run downloadMacros",
     "buildInfo": "ts-node ./scripts/generateBuildInfo.ts",
     "prestart": "npm run initial",
     "start": "NODE_ENV=development node --watch -r ts-node/register ./src/server.ts",
@@ -26,7 +26,8 @@
     "copySASjsCore": "ts-node ./scripts/copySASjsCore.ts",
     "downloadMacros": "ts-node ./scripts/downloadMacros.ts",
     "views:copy": "node -e \"require('fs').cpSync('./src/views/','./build/src/views/',{recursive:true})\"",
-    "swagger-ui:copy": "ts-node ./scripts/copySwaggerUi.ts"
+    "swagger-ui:copy": "ts-node ./scripts/copySwaggerUi.ts",
+    "operations": "node ./scripts/writeOperations.mjs"
   },
   "bin": "./build/src/server.js",
   "pkg": {

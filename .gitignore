@@ -17,6 +17,8 @@ executables/
 api/csp.config.json
 # Screenshots produced by the Studio browser test (api npm run test:e2e)
 api/src/e2e/screenshots/
+# Written from api/public/swagger.yaml by scripts/writeOperations.mjs
+api/public/api-operations.json
 api/public/SASjsApi/swagger-ui.css
 api/public/SASjsApi/swagger-ui-bundle.js
 api/public/SASjsApi/swagger-ui-standalone-preset.js
