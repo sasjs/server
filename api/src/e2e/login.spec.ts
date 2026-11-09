@@ -23,6 +23,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, BrowserContext, chromium, Page } from 'playwright'
+import { requireWebBuild } from './fixture'
 import { createFile, fileExists } from '@sasjs/utils'
 import { getWebBuildFolder, sysInitCompiledPath } from '../utils/'
 
@@ -142,13 +143,7 @@ describe('Sign-in screen in a browser', () => {
 
     mkdirSync(screenshotDir, { recursive: true })
 
-    if (
-      !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
-    ) {
-      throw new Error(
-        `No web build at ${getWebBuildFolder()}. Run \`npm run build\` in web/ before the browser test.`
-      )
-    }
+    requireWebBuild()
 
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()

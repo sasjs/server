@@ -29,6 +29,7 @@ import {
   SAVE_FILE_NAME,
   TRAILING_SPACE_LINE
 } from './fixture'
+import { requireWebBuild } from './fixture'
 import { UserController } from '../controllers/'
 import { RunTimeType, getWebBuildFolder, sysInitCompiledPath } from '../utils/'
 
@@ -72,13 +73,7 @@ describe('Studio in a browser', () => {
     // directory and a failure screenshot would fail on the write itself.
     mkdirSync(screenshotDir, { recursive: true })
 
-    if (
-      !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
-    ) {
-      throw new Error(
-        `No web build at ${getWebBuildFolder()}. Run \`npm run build\` in web/ before the browser test.`
-      )
-    }
+    requireWebBuild()
 
     // setupEnv.ts points the working directory at a throwaway tree, so the
     // drive the app resolves under NODE_ENV=test holds this suite's fixture.
@@ -223,10 +218,13 @@ describe('Studio in a browser', () => {
   }, 60000)
 
   it('loads the drive one folder level at a time', async () => {
-    // Opening Studio asked for the root level, never for the whole drive.
-    // Asserted as a property of the session rather than of a fixed array, so
-    // another test touching the tree cannot make this pass or fail by order.
-    expect(fileTreeRequests[0]).toEqual('')
+    // Opening Studio asked for levels of the drive, never for the whole thing.
+    //
+    // Not `[0] === ''`: the editor asks for the folder holding the file it is
+    // about to open before the sidebar asks for the root, and which of the two
+    // is first is a race the reader never sees. What matters is that the root
+    // was asked for, and that nothing asked for the drive in one request.
+    expect(fileTreeRequests).toContain('')
     expect(fileTreeRequests).not.toContain('<whole-tree>')
 
     // The nested program exists but has never been requested into the tree.
