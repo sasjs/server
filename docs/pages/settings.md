@@ -78,6 +78,16 @@ ALLOWED_DOMAIN=sas.company.com
 
 For API use by different servers / domains, see [CORS](settings.md#cors) and [WHITELIST](settings.md#whitelist) settings.
 
+### API_SERVER_URL
+
+The URL generated stored programs use to call back into this server. Unset, it is taken from the request that starts the session; set it when that is wrong for the topology - behind a reverse proxy or a load balancer, for instance - because the value is written into each program verbatim, so a wrong one only surfaces when the program runs. It must be an http(s) URL with a host and no trailing slash: anything else is refused at startup, while the configuration is still in front of you.
+
+Example:
+
+```
+API_SERVER_URL=https://sas.4gl.io
+```
+
 ### CERT_CHAIN
 
 Necessary when `HTTPS_PORT` is set.
@@ -622,6 +632,26 @@ Example:
 `SASJS_ROOT=./sasjs_root`
 
 
+
+### SITE_ID
+
+The site that stored programs report as `SYSSITE`. A SAS session sets that macro variable itself, but a program running in the JavaScript runtime has none, so the value comes from this server's configuration. Default `123`, the SASjs demonstration site. Unset, or blank, leaves it undefined and the default applies.
+
+Example:
+
+```
+SITE_ID=123
+```
+
+### STATIC_MOCK_LOCATION
+
+The folder the SAS 9 mock reads its files from and writes uploads into - the routes that stand in for `/SASStoredProcess` and the pages around it. A relative path is resolved against the working directory. Default `mocks`.
+
+Example:
+
+```
+STATIC_MOCK_LOCATION=mocks
+```
 
 ### WHITELIST
 Space separated urls, eg: `WHITELIST=http://localhost:3000 https://abc.com`.  
