@@ -16,7 +16,13 @@
  * always be traced back to the release that assembled it.
  */
 import { execSync } from 'child_process'
-import { existsSync, copyFileSync, cpSync, mkdirSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  copyFileSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync
+} from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -118,11 +124,18 @@ for (const route of [
 // static host serves it only if the page is in the site.
 //
 // The page's stylesheet, bundle and preset are GENERATED from swagger-ui-dist
-// and gitignored - api/public/SASjsApi holds only what is committed. Asking the
-// API for them is the difference between a documentation page and a blank one,
-// so the build does that when they are missing, then checks every file it is
-// about to publish rather than shipping whatever happens to be there.
+// and gitignored - api/public/SASjsApi holds only what is committed - so the
+// build asks the API for them first. That needs the API's own install; without
+// it the copy cannot run, and the error below says what to do rather than
+// letting ts-node's absence surface as a mystery.
+//
+// The assets sit at /api-assets rather than beside the page: a released browser
+// host routes everything under /api to the API worker, so a stylesheet requested
+// from /api/swagger-ui.css never finds the file. The page at /api/ is the one
+// path the worker lets through, and the references in it are rewritten to point
+// at the folder it does not claim.
 const swaggerSource = path.join(root, 'api', 'public', 'SASjsApi')
+const swaggerAssets = 'api-assets'
 const swaggerFiles = [
   'index.html',
   'swagger-ui-init.js',
@@ -136,7 +149,10 @@ const swaggerFiles = [
   'swagger-ui-NOTICE'
 ]
 
-if (!existsSync(path.join(swaggerSource, 'swagger-ui.css')))
+if (
+  !existsSync(path.join(swaggerSource, 'swagger-ui.css')) &&
+  existsSync(path.join(root, 'api', 'node_modules', '.bin', 'ts-node'))
+)
   run('npm run swagger-ui:copy', path.join(root, 'api'))
 
 const missing = swaggerFiles.filter(
@@ -148,10 +164,26 @@ if (missing.length)
     `The API documentation page is incomplete: ${missing.join(', ')} missing from ${swaggerSource}. Run "npm ci --prefix api" and build again.`
   )
 
-mkdirSync(path.join(site, 'api'), { recursive: true })
+mkdirSync(path.join(site, swaggerAssets), { recursive: true })
 
-for (const file of swaggerFiles)
-  copyFileSync(path.join(swaggerSource, file), path.join(site, 'api', file))
+for (const file of swaggerFiles) {
+  if (file === 'index.html') continue
+
+  copyFileSync(
+    path.join(swaggerSource, file),
+    path.join(site, swaggerAssets, file)
+  )
+}
+
+// `./swagger-ui.css` -> `/api-assets/swagger-ui.css`, for every reference the
+// page makes: its hrefs, its srcs, and the redirect page its init script opens.
+const page = readFileSync(
+  path.join(swaggerSource, 'index.html'),
+  'utf8'
+).replace(/(\.\/)([a-z0-9.-]+\.(?:css|js|png|html))/gi, `/${swaggerAssets}/$2`)
+
+mkdirSync(path.join(site, 'api'), { recursive: true })
+writeFileSync(path.join(site, 'api', 'index.html'), page)
 
 copyFileSync(
   path.join(root, 'api', 'public', 'swagger.yaml'),
