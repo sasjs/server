@@ -199,6 +199,7 @@ Docs: [https://helmetjs.github.io/#reference](https://helmetjs.github.io/#refere
 Default config:
 ```
 {
+  "frame-src": ["'self'"],
   "img-src": ["'self'", "data:", "blob:"],
   "script-src": ["'self'"],
   "script-src-attr": ["'none'"]
@@ -208,6 +209,7 @@ Default config:
 Loosened config for an app that requires inline scripts:
 ```
 {
+  "frame-src": ["'self'"],
   "img-src": ["'self'", "data:", "blob:"],
   "script-src": ["'self'", "'unsafe-inline'"],
   "script-src-attr": ["'self'", "'unsafe-inline'"]
