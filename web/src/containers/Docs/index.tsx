@@ -26,7 +26,11 @@ const Docs = () => {
   useEffect(() => {
     let active = true
 
-    fetch(src, { method: 'HEAD' })
+    // The INDEX FILE, not the folder: a static host answers a HEAD on a
+    // directory with 404 while serving its index.html on GET, so probing `/docs/`
+    // told GitHub Pages this build carried no documentation - and the pane said
+    // so, with the pages one link away.
+    fetch(`${src}index.html`, { method: 'HEAD' })
       .then((response) => {
         if (active) setPresent(response.ok)
       })
