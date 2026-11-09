@@ -60,7 +60,7 @@ export class MockSas9Controller {
 
     return await getMockResponseFromFile([
       process.cwd(),
-      'mocks',
+      this.mocksPath,
       'sas9',
       ...filePath
     ])
@@ -117,7 +117,7 @@ export class MockSas9Controller {
 
     return await getMockResponseFromFile([
       process.cwd(),
-      'mocks',
+      this.mocksPath,
       'sas9',
       ...filePath
     ])
@@ -187,7 +187,7 @@ export class MockSas9Controller {
       } else {
         return await getMockResponseFromFile([
           process.cwd(),
-          'mocks',
+          this.mocksPath,
           'sas9',
           'generic',
           'logged-in'
@@ -197,7 +197,7 @@ export class MockSas9Controller {
 
     return await getMockResponseFromFile([
       process.cwd(),
-      'mocks',
+      this.mocksPath,
       'sas9',
       'generic',
       'login'
@@ -216,7 +216,7 @@ export class MockSas9Controller {
 
     return await getMockResponseFromFile([
       process.cwd(),
-      'mocks',
+      this.mocksPath,
       'sas9',
       'generic',
       'logged-in'
@@ -230,7 +230,7 @@ export class MockSas9Controller {
     if (req.query.publicDenied === 'true') {
       return await getMockResponseFromFile([
         process.cwd(),
-        'mocks',
+        this.mocksPath,
         'sas9',
         'generic',
         'public-access-denied'
@@ -239,7 +239,7 @@ export class MockSas9Controller {
 
     return await getMockResponseFromFile([
       process.cwd(),
-      'mocks',
+      this.mocksPath,
       'sas9',
       'generic',
       'logged-out'
