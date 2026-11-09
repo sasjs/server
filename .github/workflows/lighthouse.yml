@@ -1,0 +1,71 @@
+name: Lighthouse
+
+# Measures the documentation the way a reader loads it, on every pull request,
+# and prints the scores into the job summary. The docs are the part of this
+# repository with a page weight worth watching - they carry the theme, the
+# self-hosted fonts and the search index - and until now nothing measured them,
+# which is how "it feels slow" stayed a matter of opinion.
+#
+# It builds and serves the docs here rather than measuring the published site:
+# a pull request should be judged on its own build, not on whatever is live.
+
+on:
+  pull_request:
+
+permissions: read-all
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Docs dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build the docs
+        run: npm run docs:build
+
+      - name: Serve the docs
+        run: |
+          cd web/build/documentation
+          python3 -m http.server 8787 >/dev/null 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8787/ >/dev/null; then
+              echo "serving on http://localhost:8787"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "the docs server did not come up" >&2
+          exit 1
+
+      - name: Run Lighthouse
+        # The config asks for three runs per page and the median, which is what
+        # makes the numbers comparable between pull requests.
+        run: npx --yes @lhci/cli@0.14.0 autorun --config=docs/lighthouserc.json
+
+      - name: Print the scores
+        if: always()
+        run: node docs/scripts/lighthouse-summary.mjs
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports
+          if-no-files-found: ignore

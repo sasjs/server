@@ -68,13 +68,17 @@ describe('bundled Swagger UI assets', () => {
     const loaded = [
       'swagger-ui.css',
       'swagger-ui-bundle.js',
-      'swagger-ui-standalone-preset.js',
       'swagger-ui-init.js',
       'favicon-32x32.png'
     ]
     for (const file of loaded) {
       expect(html).toContain(`./${file}`)
     }
+
+    // The standalone preset draws Swagger's own bar - an API title, a definition
+    // picker and a search box of its own - which the site's header already does
+    // better. Not loading it is 268 KB a reader does not download.
+    expect(html).not.toContain('swagger-ui-standalone-preset')
 
     const external = html.match(/(src|href)\s*=\s*["']?https?:\/\//gi) || []
     expect(external).toEqual([])
@@ -89,6 +93,9 @@ describe('bundled Swagger UI assets', () => {
     // the API's own calls carry the session cookie and the CSRF header
     expect(script).toContain("request.credentials = 'include'")
     expect(script).toContain('X-XSRF-TOKEN')
+    // BaseLayout, not StandaloneLayout: no Swagger bar above the operations
+    expect(script).toContain("layout: 'BaseLayout'")
+    expect(script).not.toContain('SwaggerUIStandalonePreset')
   })
 
   it('keeps swagger-ui out of the runtime dependencies', () => {
