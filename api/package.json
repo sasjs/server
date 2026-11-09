@@ -54,7 +54,7 @@
     "@sasjs/adapter": "4.19.1",
     "@sasjs/api": "0.23.0",
     "@sasjs/core": "^6.1.2",
-    "@sasjs/lint": "5.0.1",
+    "@sasjs/lint": "^5.1.0",
     "@sasjs/utils": "^4.8.0",
     "bcryptjs": "^3.0.3",
     "compression": "1.8.2",
