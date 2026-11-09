@@ -44,7 +44,10 @@ const readArg = (name, fallback) => {
   return index > -1 ? process.argv[index + 1] : fallback
 }
 
-const siteDir = path.resolve(repoRoot, readArg('--site', 'web/build/docs'))
+const siteDir = path.resolve(
+  repoRoot,
+  readArg('--site', 'web/build/documentation')
+)
 const origin = readArg('--origin', 'https://server.sasjs.io').replace(/\/$/, '')
 
 // Not a network request: the XML namespace of the SVG elements on every page.

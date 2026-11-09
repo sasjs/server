@@ -57,13 +57,15 @@ http
     const candidate = path.join(site, requested)
 
     // no climbing out of the site
-    if (!candidate.startsWith(site)) return send(response, path.join(site, 'index.html'), 400)
+    if (!candidate.startsWith(site))
+      return send(response, path.join(site, 'index.html'), 400)
 
     if (existsSync(candidate) && statSync(candidate).isFile())
       return send(response, candidate)
 
     const index = path.join(candidate, 'index.html')
-    if (existsSync(index) && statSync(index).isFile()) return send(response, index)
+    if (existsSync(index) && statSync(index).isFile())
+      return send(response, index)
 
     // what GitHub Pages does: unknown paths get 404.html, which `mock:build`
     // writes as a copy of the app. A site built without that copy still answers

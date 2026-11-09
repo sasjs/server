@@ -10,7 +10,7 @@ import { Request, RequestHandler, Response } from 'express'
  */
 const moved: Record<string, string> = {
   '/SASjsDocs': '/docs',
-  '/SASjsApiDocs': '/api',
+  '/SASjsApiDocs': '/api-assets/',
   '/SASjsStudio': '/studio',
   '/SASjsApps': '/apps',
   '/SASjsSettings': '/settings',

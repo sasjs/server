@@ -8,7 +8,7 @@ site_description: The open-source NodeJS wrapper around the SAS binary - a REST 
 # server serves /docs from, so the embedded copy is always the documentation of
 # the build that carries it.
 docs_dir: pages
-site_dir: ../web/build/docs
+site_dir: ../web/build/documentation
 
 nav:
   - Home: index.md

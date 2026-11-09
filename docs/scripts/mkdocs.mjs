@@ -12,7 +12,7 @@
  *   node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import path from 'node:path'
 
 const isWindows = process.platform === 'win32'
@@ -27,6 +27,14 @@ const python = existsSync(venvPython)
   : isWindows
     ? 'python'
     : 'python3'
+
+// A build starts from nothing. MkDocs writes into the folder its `site_dir`
+// names and leaves whatever was there before, so a path the site used to be
+// published at - `web/build/docs`, before the interface gave /docs to its own
+// route - survives and is copied into the bundle alongside the current one.
+if (process.argv[2] === 'build')
+  for (const stale of ['web/build/docs', 'web/build/documentation'])
+    rmSync(stale, { recursive: true, force: true })
 
 const result = spawnSync(python, ['-m', 'mkdocs', ...process.argv.slice(2)], {
   stdio: 'inherit'

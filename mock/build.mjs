@@ -21,6 +21,8 @@ import {
   copyFileSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
+  statSync,
   writeFileSync
 } from 'fs'
 import path from 'path'
@@ -110,7 +112,22 @@ if (!existsSync(index))
 // GitHub Pages answers an unknown path from 404.html, and a static host cannot
 // rewrite. Without this copy, a bookmark of /studio - or a reload on it -
 // is a 404 instead of the app.
-copyFileSync(index, path.join(site, '404.html'))
+//
+// The copy carries `<base href="/">` because the page is served from a path of
+// any depth: the shell's asset references are relative, so from /docs/settings/
+// `host/boot.js` would be requested as /docs/settings/host/boot.js and the app
+// would never start. The root copy is left alone - it is already at the root.
+const shell = readFileSync(index, 'utf8').replace(
+  '<head>',
+  '<head><base href="/" />'
+)
+
+if (!shell.includes('<base href="/" />'))
+  throw new Error(
+    `Could not add a base href to ${index} - the shell has no <head>`
+  )
+
+writeFileSync(path.join(site, '404.html'), shell)
 
 // 404.html makes those paths RENDER, but as an HTTP 404: the browser logs it, a
 // crawler will not follow it, and the page's own links to them read as broken.
@@ -130,26 +147,21 @@ for (const route of [
   'SASjsLogon'
 ]) {
   mkdirSync(path.join(site, route), { recursive: true })
-  copyFileSync(index, path.join(site, route, 'index.html'))
+  writeFileSync(path.join(site, route, 'index.html'), shell)
 }
 
-// The API documentation page, at the short prefix the interface links to. The
-// worker answers /SASjsApi from @sasjs/api, but /api is a plain file and a
-// static host serves it only if the page is in the site.
+// The API documentation page, at the path the interface frames. Swagger UI's
+// stylesheet, bundle and preset are GENERATED from swagger-ui-dist and
+// gitignored - api/public/SASjsApi holds only what is committed - so the build
+// asks the API for them first. That needs the API's own install; without it the
+// copy cannot run, and the error below says what to do rather than letting
+// ts-node's absence surface as a mystery.
 //
-// The page's stylesheet, bundle and preset are GENERATED from swagger-ui-dist
-// and gitignored - api/public/SASjsApi holds only what is committed - so the
-// build asks the API for them first. That needs the API's own install; without
-// it the copy cannot run, and the error below says what to do rather than
-// letting ts-node's absence surface as a mystery.
-//
-// The assets sit at /api-assets rather than beside the page: a released browser
-// host routes everything under /api to the API worker, so a stylesheet requested
-// from /api/swagger-ui.css never finds the file. The page at /api/ is the one
-// path the worker lets through, and the references in it are rewritten to point
-// at the folder it does not claim.
+// The whole folder goes to /api-assets, page included, and its references are
+// relative: the page and the files it needs travel together, and /api itself is
+// the app's route - the screen that frames this.
 const swaggerSource = path.join(root, 'api', 'public', 'SASjsApi')
-const swaggerAssets = 'api-assets'
+const apiPage = 'api-assets'
 const swaggerFiles = [
   'index.html',
   'swagger-ui-init.js',
@@ -178,32 +190,53 @@ if (missing.length)
     `The API documentation page is incomplete: ${missing.join(', ')} missing from ${swaggerSource}. Run "npm ci --prefix api" and build again.`
   )
 
-mkdirSync(path.join(site, swaggerAssets), { recursive: true })
+mkdirSync(path.join(site, apiPage), { recursive: true })
 
-for (const file of swaggerFiles) {
-  if (file === 'index.html') continue
-
-  copyFileSync(
-    path.join(swaggerSource, file),
-    path.join(site, swaggerAssets, file)
-  )
-}
-
-// `./swagger-ui.css` -> `/api-assets/swagger-ui.css`, for every reference the
-// page makes: its hrefs, its srcs, and the redirect page its init script opens.
-const page = readFileSync(
-  path.join(swaggerSource, 'index.html'),
-  'utf8'
-).replace(/(\.\/)([a-z0-9.-]+\.(?:css|js|png|html))/gi, `/${swaggerAssets}/$2`)
-
-mkdirSync(path.join(site, 'api'), { recursive: true })
-writeFileSync(path.join(site, 'api', 'index.html'), page)
+for (const file of swaggerFiles)
+  copyFileSync(path.join(swaggerSource, file), path.join(site, apiPage, file))
 
 copyFileSync(
   path.join(root, 'api', 'public', 'swagger.yaml'),
   path.join(site, 'swagger.yaml')
 )
 
+// The operations the interface's search box offers, written from the spec the
+// page serves - one small JSON rather than a YAML parser in the browser bundle.
+run(
+  `node ${path.join(root, 'api', 'scripts', 'writeOperations.mjs')} ${path.join(site, 'api-operations.json')}`
+)
+
+// The documentation's own paths are the app's routes now (/docs/<page>), so each
+// one needs a folder holding the app shell: the frame asks for
+// /documentation/<page>, and the reader's address is the same page under /docs.
+// Written from the built site, so a page added to the docs needs no list here.
+const docsSite = path.join(site, 'documentation')
+
+const documentationRoutes = []
+const collectDocRoutes = (folder, prefix) => {
+  for (const entry of readdirSync(folder)) {
+    const source = path.join(folder, entry)
+
+    if (statSync(source).isDirectory())
+      collectDocRoutes(source, `${prefix}${entry}/`)
+    else if (entry === 'index.html') documentationRoutes.push(prefix)
+  }
+}
+
+if (existsSync(docsSite)) collectDocRoutes(docsSite, '')
+
+for (const route of [
+  'api',
+  ...documentationRoutes.map((path) => `docs/${path}`.replace(/\/$/, ''))
+]) {
+  const folder = path.join(site, route)
+
+  mkdirSync(folder, { recursive: true })
+  writeFileSync(path.join(folder, 'index.html'), shell)
+}
+
+// A path that names a file is an asset request, not a route - so the folders
+// above are all that the build writes.
 // Pages serves a .nojekyll site as-is; without it, a folder starting with an
 // underscore (Monaco's, for one) is dropped by the Jekyll build.
 writeFileSync(path.join(site, '.nojekyll'), '')

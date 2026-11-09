@@ -13,6 +13,34 @@
 {% extends "base.html" %}
 
 {% block extrahead %}
+{# Inside the app, the app's own bar already carries the logo, the search box and
+   the repository link, so this page's copy of them is a second row saying the
+   same thing - and one of the two search boxes searches only half of what the
+   reader wants. The bar is hidden when framed; the section tabs below it stay,
+   because they are this site's own navigation and nothing in the app replaces
+   them.
+
+   Framed-ness is `window.self !== window.top`, which is true only when a page
+   is actually inside a frame - the published site is not, and keeps its bar.
+
+   The app sets the same class itself when it frames a page: a deployment's
+   Content-Security-Policy refuses inline scripts, and the class has to be set
+   either way. #}
+<script>
+  if (window.self !== window.top)
+    document.documentElement.classList.add('sasjs-framed')
+</script>
+<style>
+  .sasjs-framed .md-header__inner {
+    display: none;
+  }
+
+  /* the tabs are the site's navigation; the header's own bar is what the app
+     replaces, so the space it used goes to the page */
+  .sasjs-framed .md-header {
+    box-shadow: none;
+  }
+</style>
 {# The docs are read in two places: published on their own, and framed by the
    app that serves them. The app has a colour-scheme setting of its own, and the
    Material palette below follows the OPERATING SYSTEM's preference - so a reader

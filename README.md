@@ -95,7 +95,7 @@ Every setting is an environment variable, read at startup from the environment o
 
 **<https://server.sasjs.io/docs/settings/>**
 
-That page is built from `docs/` in this repository and is served by the build itself at `/docs`, so the reference and the binary that reads the settings cannot drift apart.
+That page is built from `docs/` in this repository and served by the build it describes - it is the **Docs** screen at `/docs`, which frames it - so the reference and the binary that reads the settings cannot drift apart.
 
 ## Persisting the Session
 
@@ -138,7 +138,7 @@ The value comes from `buildInfo.generated.ts`, which the build writes from the r
 
 `npm run mock:build` builds the same interface as a **static site** - no server, no SAS binary - and writes it to `sasjsbuild/mock`. A service worker answers `/SASjsApi` from `@sasjs/api`, the package this server answers with, over a drive that ships with the site (`mock/drive.json`). It is published to <https://server.sasjs.io> by `.github/workflows/mock-site.yml`, from this repository, on a release or by hand.
 
-- `sasjs/sasjsconfig.json` is the `mock` target the CLI builds against; `mock/build.mjs` runs the docs, the web bundle and the CLI in order and writes what a static host needs: `404.html` and `.nojekyll`, the API's Swagger UI at `/api` with its stylesheet and bundle at `/api-assets` (both generated from `swagger-ui-dist`, which is why the site workflow installs the API's dependencies - the build asks the API for them, and fails naming any that are missing), and a folder per screen (`/studio/index.html` and the rest) so a deep link answers `200` rather than rendering with a `404` status.
+- `sasjs/sasjsconfig.json` is the `mock` target the CLI builds against; `mock/build.mjs` runs the docs, the web bundle and the CLI in order and writes what a static host needs: `404.html` and `.nojekyll`, the API's Swagger UI and its assets together at `/api-assets/` - `/api` is the interface's screen, which frames that page (the stylesheet and bundle are generated from `swagger-ui-dist`, which is why the site workflow installs the API's dependencies: the build asks the API for them, and fails naming any that are missing), and a folder per screen (`/studio/index.html` and the rest) so a deep link answers `200` rather than rendering with a `404` status.
 - `npm run mock:serve` serves the built site the way GitHub Pages does, including the fallback that makes a reload on `/studio` work.
 - What runs is JavaScript. The demo ships a recording of one SAS session, `mock/sas-transcript.json` - a real run's log, listing and webout, with the licensee and site line removed - and a CLI carrying sasjs/cli#1575 answers the demo's `.sas` program with it. Until a CLI release carries that support the program is refused, with `"runTime" must be one of [js]`, and every other `.sas` program is refused either way: a demo that invented a session for every program would be teaching the wrong thing.
 - The site is a browser host: no accounts, no private data, and the seeded identity is the package's demo admin. Nothing here is a security boundary, which is why a demo is all it should ever serve.
@@ -149,7 +149,7 @@ The documentation site - the pages published at <https://server.sasjs.io/docs/> 
 
 - `docs/pages/` holds the pages, and `docs/mkdocs.yml` the navigation, theme and plugins.
 - `docs/requirements.txt` pins the toolchain. It is Python, so it is installed separately from the interface's dependencies.
-- The build copies the site into the web build, at `web/build/docs`, which the server serves at `/docs` and the interface's **Docs** tab frames. The copy therefore describes the build that carries it - the pages and the interface are never a release apart.
+- The build copies the site into the web build, at `web/build/documentation`, which the server serves at `/documentation`. The interface's **Docs** screen is the route `/docs`, which frames those pages: the header and tabs stay, and the address bar carries the page being read. The copy therefore describes the build that carries it - the pages and the interface are never a release apart.
 - `npm run docs:build` builds the site, `npm run docs:serve` serves it with live reload at <http://127.0.0.1:8000>, and `npm run docs:check` runs the two content checks. The scripts use `.venv-docs/bin/python` when that venv exists and the ambient `python3` otherwise, so activating it is optional.
 
 A development build does not need any of that: the Docs tab says the build carries no documentation and links to the published site. To see the pages while working on them, install the toolchain once (`python3 -m venv .venv-docs && .venv-docs/bin/pip install -r docs/requirements.txt`) and run `npm run docs:serve` - the script picks up that venv by itself.

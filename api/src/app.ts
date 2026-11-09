@@ -128,12 +128,18 @@ export default setProcessVariables().then(async () => {
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
 
-  // The API documentation page, at the short prefix as well as the canonical
-  // one (`/SASjsApi`). It is the same files either way: index.html and the
-  // swagger-ui build copied beside it, both served straight out of
-  // public/SASjsApi. Declared here, before the API router is mounted, so the
-  // static assets answer first and everything else falls through to the router.
-  app.use('/api', express.static(path.join(__dirname, '../public/SASjsApi')))
+  // The API documentation page and the swagger-ui build beside it, served
+  // straight out of public/SASjsApi. Declared here, before the API router is
+  // mounted, so the static files answer first and everything else falls through
+  // to the router.
+  //
+  // At /api-assets and not /api: /api is the interface's route - the screen that
+  // frames this page - and the canonical /SASjsApi path still answers with the
+  // same files, for anything holding that address.
+  app.use(
+    '/api-assets',
+    express.static(path.join(__dirname, '../public/SASjsApi'))
+  )
 
   // NOTE: no urlencoded body parser here. The only consumer of
   // form-encoded bodies is the SAS9 mock's login form, which mounts its own
@@ -207,12 +213,20 @@ export default setProcessVariables().then(async () => {
   // beside the interface: a static site of its own, public like the build it
   // sits in. Mounted here, before the shell fallback below, so its paths never
   // reach the SPA's router.
-  app.use('/docs', express.static(path.join(getWebBuildFolder(), 'docs')))
+  //
+  // At /documentation rather than /docs: /docs is the interface's route - the
+  // screen that frames these pages - so serving the pages at the same address
+  // would put the frame and the screen it fills in the same place, and the
+  // frame would load the app that contains it.
+  app.use(
+    '/documentation',
+    express.static(path.join(getWebBuildFolder(), 'documentation'))
+  )
 
   // A build that skipped the docs step has no pages to serve. The link is one
   // the interface advertises, so it says what is missing rather than answering
   // with the interface's own 404.
-  app.get(['/docs', '/docs/*splat'], (_req, res) => {
+  app.get(['/documentation', '/documentation/*splat'], (_req, res) => {
     res
       .status(404)
       .type('html')
@@ -252,7 +266,7 @@ export default setProcessVariables().then(async () => {
       '/app/',
       '/api/',
       '/saslogon',
-      '/docs/'
+      '/documentation/'
     ]
     const requestPath = req.path.toLowerCase()
     if (reserved.some((prefix) => requestPath.startsWith(prefix)))

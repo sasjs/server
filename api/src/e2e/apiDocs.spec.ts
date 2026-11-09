@@ -76,13 +76,14 @@ describe('API tab', () => {
     await mongoServer?.stop()
   }, 60000)
 
-  it('serves Swagger UI at /api and answers the API there too', async () => {
-    // The page is served under the mount, and its assets are addressed
-    // relatively, so a page served at /api/ asks for /api/swagger-ui.css rather
-    // than /swagger-ui.css. The assets themselves are a build artifact
-    // (`npm run swagger-ui:copy`), not source, so the browser suite does not
-    // require them; the reference in the tracked page is what is asserted.
-    const docs = await fetch(`${baseUrl()}/api/`)
+  it('serves Swagger UI at /api-assets, frames it at /api, and answers the API on both spellings', async () => {
+    // The page is served under its own mount, and its assets are addressed
+    // relatively, so a page served at /api-assets/ asks for
+    // /api-assets/swagger-ui.css rather than /swagger-ui.css. The assets
+    // themselves are a build artifact (`npm run swagger-ui:copy`), not source,
+    // so the browser suite does not require them; the reference in the tracked
+    // page is what is asserted.
+    const docs = await fetch(`${baseUrl()}/api-assets/`)
     expect(docs.status).toBe(200)
 
     const markup = await docs.text()
@@ -93,8 +94,12 @@ describe('API tab', () => {
     // whichever prefix the page is reached on.
     expect((await fetch(`${baseUrl()}/swagger.yaml`)).status).toBe(200)
 
-    // The alias reaches the API, not a 404 and not the documentation page: the
-    // same answer as the canonical spelling it is an alias of.
+    // /api is the interface's route now, so it answers with the app shell...
+    const shell = await (await fetch(`${baseUrl()}/api`)).text()
+    expect(shell).toContain('<div id=root>')
+
+    // ...while the API itself still answers there, with the same answer as the
+    // canonical spelling it is an alias of.
     const aliased = await fetch(`${baseUrl()}/api/info`)
     const canonical = await fetch(`${baseUrl()}/SASjsApi/info`)
 
@@ -118,17 +123,28 @@ describe('API tab', () => {
 
     await page.click('[role="tab"]:has-text("API")')
 
-    // The tab reaches the API's page, not the app shell and not a frame. The
-    // page's own rendering is Swagger UI's business - its bundle is a build
-    // artifact (`npm run swagger-ui:copy`) that the browser suite does not
-    // require - so the container the page ships is what is asserted.
-    await page
-      .locator('#swagger-ui')
-      .first()
-      .waitFor({ state: 'attached', timeout: 30000 })
+    // The screen is the app, with the API's page inside it: the header stays,
+    // and the address is the app's route.
+    await page.waitForSelector('iframe[src^="/api-assets"]', {
+      timeout: 30000
+    })
 
-    expect(new URL(page.url()).pathname).toBe('/api/')
-    expect(await page.locator('iframe').count()).toBe(0)
+    expect(new URL(page.url()).pathname).toBe('/api')
+
+    // the frame is attached before it has a URL, so its presence and its
+    // address arrive at different moments
+    let frame = page
+      .frames()
+      .find((candidate) => candidate.url().includes('/api-assets'))
+
+    for (let attempt = 0; !frame && attempt < 80; attempt++) {
+      await page.waitForTimeout(250)
+      frame = page
+        .frames()
+        .find((candidate) => candidate.url().includes('/api-assets'))
+    }
+
+    expect(frame).toBeDefined()
 
     await page.screenshot({ path: path.join(screenshotDir, 'api-tab.png') })
 
