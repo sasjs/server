@@ -15,7 +15,7 @@
  * version it actually used is written into the output, so a published site can
  * always be traced back to the release that assembled it.
  */
-import { execSync } from 'child_process'
+import { execSync, spawnSync } from 'child_process'
 import { existsSync, copyFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -40,9 +40,39 @@ const run = (command, cwd = root) => {
   execSync(command, { cwd, stdio: 'inherit' })
 }
 
+/**
+ * Runs a command, and tries again when the registry has not caught up.
+ *
+ * `npx @sasjs/cli@^6` asks for the newest 6.x. Within a minute of a CLI release
+ * the metadata advertises a version whose tarball is not yet served, and npm
+ * answers `ETARGET: No matching version found` - which failed a site publish
+ * once, on a release that had landed seconds earlier. Nothing about the build is
+ * wrong in that case; the registry is.
+ */
+const runWhenTheRegistryIsReady = (command, attempts = 3) => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      run(command)
+      return
+    } catch (error) {
+      const output = `${error?.stdout ?? ''}${error?.stderr ?? ''}`
+
+      if (attempt >= attempts || !/ETARGET|E404/.test(output)) throw error
+
+      process.stdout.write(
+        `\nThe registry is not serving that package yet; trying again in 15s.\n`
+      )
+      // a blocking sleep that works the same on every platform this runs on
+      spawnSync(process.execPath, ['-e', 'setTimeout(() => {}, 15000)'])
+    }
+  }
+}
+
 const sasjs = (arguments_) =>
   // quoted: `^` is an escape character to cmd.exe, and this runs on Windows too
-  run(`npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`)
+  runWhenTheRegistryIsReady(
+    `npx --yes "@sasjs/cli@${CLI_VERSION}" ${arguments_}`
+  )
 
 /** A command whose output is needed rather than passed through. */
 const capture = (command) => execSync(command, { cwd: root, encoding: 'utf8' })
@@ -50,8 +80,17 @@ const capture = (command) => execSync(command, { cwd: root, encoding: 'utf8' })
 // Which CLI is about to assemble the site. Printed for the deploy log, and
 // written into the output below: a range means the site is not reproducible from
 // this file alone, so the artifact has to carry the answer itself.
-const versionOutput = capture(`npx --yes "@sasjs/cli@${CLI_VERSION}" --version`)
-process.stdout.write(versionOutput)
+let versionOutput = ''
+
+try {
+  versionOutput = capture(`npx --yes "@sasjs/cli@${CLI_VERSION}" --version`)
+} catch (error) {
+  // the build below reports a registry problem with its own retries; this is
+  // only the record of which release was used
+  versionOutput = String(error?.stdout ?? '')
+}
+
+process.stdout.write(versionOutput || '\n')
 const cliUsed = /v(\d+\.\d+\.\d+)/.exec(versionOutput)?.[1] ?? 'unknown'
 
 // The docs are inside the web build by construction, so the site carries the
