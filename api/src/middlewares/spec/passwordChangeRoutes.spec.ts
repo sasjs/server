@@ -43,4 +43,19 @@ describe('isPasswordChangeRoute', () => {
       isPasswordChangeRoute(asRequest('/SASjsApi/drive', '/files'))
     ).toEqual(false)
   })
+
+  it('answers the same on the /api alias', () => {
+    // A client that uses the short spelling has to be able to change its
+    // password, or a flagged account is stranded there.
+    expect(isPasswordChangeRoute(asRequest('/api/session', '/'))).toEqual(true)
+    expect(
+      isPasswordChangeRoute(asRequest('/api/auth/updatePassword', '/'))
+    ).toEqual(true)
+
+    // and the exception is still the poll exactly, not the prefix
+    for (const path of ['/abc/log', '/abc/output', '/abc'])
+      expect(isPasswordChangeRoute(asRequest('/api/session', path))).toEqual(
+        false
+      )
+  })
 })

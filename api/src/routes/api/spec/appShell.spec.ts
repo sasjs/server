@@ -36,7 +36,7 @@ describe('the app shell catch-all', () => {
 
   it('should serve the shell for one of the interface routes', async () => {
     const res = await request(app)
-      .get('/SASjsStudio')
+      .get('/studio')
       .set('Accept', 'text/html')
       .expect(200)
 
@@ -56,22 +56,23 @@ describe('the app shell catch-all', () => {
     // The web router's own shell route sets this cookie, so the catch-all does
     // too - otherwise a deep link depends on a second request for the token.
     const res = await request(app)
-      .get('/SASjsStudio')
+      .get('/studio')
       .set('Accept', 'text/html')
       .expect(200)
 
     expect(String(res.headers['set-cookie'])).toContain('XSRF-TOKEN')
   })
 
-  it("should serve the shell for the app's API documentation screen", async () => {
-    // /SASjsApiDocs is the app's own route - it frames the API's static page at
-    // /SASjsApi - so it is a screen like /SASjsStudio, not an API path.
+  it('should serve the API documentation page at /api, not the shell', async () => {
+    // The API's documentation is a page of its own: the static Swagger build,
+    // not a screen of the interface. The catch-all must not claim it.
     const res = await request(app)
-      .get('/SASjsApiDocs')
+      .get('/api/')
       .set('Accept', 'text/html')
       .expect(200)
 
-    expect(res.text).toEqual(SHELL)
+    expect(res.text).toContain('swagger-ui')
+    expect(res.text).not.toEqual(SHELL)
   })
 
   it('should keep an unknown path below the API mount a 404', async () => {
@@ -109,7 +110,7 @@ describe('the app shell catch-all', () => {
 
   it('should refuse a request that does not accept HTML', async () => {
     await request(app)
-      .get('/SASjsStudio')
+      .get('/studio')
       .set('Accept', 'application/json')
       .expect(404)
   })
@@ -118,7 +119,7 @@ describe('the app shell catch-all', () => {
     mockHome.mockRejectedValue(new Error('index.html is missing'))
 
     const res = await request(app)
-      .get('/SASjsStudio')
+      .get('/studio')
       .set('Accept', 'text/html')
       .expect(404)
 

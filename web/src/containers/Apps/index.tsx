@@ -135,6 +135,8 @@ const Apps = () => {
     let cancelled = false
 
     axios
+      // The canonical spelling, for the same reason as the home screen: the
+      // mock host's service worker answers /AppStream.
       .get('/AppStream/apps.json')
       .then((res) => {
         if (!cancelled) setApps(res.data?.apps ?? [])

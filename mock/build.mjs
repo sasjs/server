@@ -19,9 +19,8 @@ import { execSync } from 'child_process'
 import {
   existsSync,
   copyFileSync,
+  cpSync,
   mkdirSync,
-  readdirSync,
-  statSync,
   writeFileSync
 } from 'fs'
 import path from 'path'
@@ -68,20 +67,6 @@ try {
   versionOutput = String(error?.stdout ?? '')
 }
 
-/** Copy a folder and everything in it; `cpSync` would do, but this runs on any
- * Node the CLI supports. */
-const copyDirectory = (from, to) => {
-  mkdirSync(to, { recursive: true })
-
-  for (const entry of readdirSync(from)) {
-    const source = path.join(from, entry)
-    const target = path.join(to, entry)
-
-    if (statSync(source).isDirectory()) copyDirectory(source, target)
-    else copyFileSync(source, target)
-  }
-}
-
 process.stdout.write(versionOutput || '\n')
 const cliUsed = /v(\d+\.\d+\.\d+)/.exec(versionOutput)?.[1] ?? 'unknown'
 
@@ -109,42 +94,45 @@ if (!existsSync(index))
   throw new Error(`The mock site has no index.html: expected ${index}`)
 
 // GitHub Pages answers an unknown path from 404.html, and a static host cannot
-// rewrite. Without this copy, a bookmark of /SASjsStudio - or a reload on it -
+// rewrite. Without this copy, a bookmark of /studio - or a reload on it -
 // is a 404 instead of the app.
 copyFileSync(index, path.join(site, '404.html'))
 
-// Every screen with a path of its own gets a folder that answers it. 404.html
-// makes a deep link RENDER, but as an HTTP 404: the browser logs it, a crawler
-// will not follow it, and the page's own links to it read as broken. A folder
-// per route is the whole of what a static host can do about that, and it is
-// enough - the app is the page, so the copy is the app.
-const ROUTES = [
+// 404.html makes those paths RENDER, but as an HTTP 404: the browser logs it, a
+// crawler will not follow it, and the page's own links to them read as broken.
+// A folder per screen answers 200, which is the whole of what a static host can
+// do about it - and it is enough, because the app is the page.
+//
+// The long paths are here because the browser-hosted build has no server to
+// redirect them; the app answers them so that a bookmark keeps working.
+for (const route of [
+  'apps',
+  'studio',
+  'settings',
+  'logon',
   'SASjsApps',
   'SASjsStudio',
-  'SASjsApiDocs',
-  'SASjsDocs',
   'SASjsSettings',
   'SASjsLogon'
-]
-
-for (const route of ROUTES) {
+]) {
   mkdirSync(path.join(site, route), { recursive: true })
   copyFileSync(index, path.join(site, route, 'index.html'))
 }
 
-// The API's own documentation page, copied from the server's. A static host has
-// nothing at /SASjsApi - that path is the API itself, and the worker answers it
-// - so the app frames /api-docs instead, which is the same Swagger UI. Its
-// `Try it out` calls go to /SASjsApi and are answered by the worker, so the
-// page documents the API that is actually running.
-copyDirectory(
-  path.join(root, 'api', 'public', 'SASjsApi'),
-  path.join(site, 'api-docs')
-)
-copyFileSync(
-  path.join(root, 'api', 'public', 'swagger.yaml'),
-  path.join(site, 'swagger.yaml')
-)
+// The API documentation page, at the short prefix the interface links to. The
+// worker answers /SASjsApi from @sasjs/api, but /api is a plain file and a
+// static host serves it only if the page is in the site. Copied only when the
+// API has been built - the page without the swagger-ui assets beside it is a
+// worse answer than the shell - so a checkout that built only the web bundle
+// is unaffected.
+const swagger = path.join(root, 'api', 'public', 'SASjsApi')
+if (existsSync(path.join(swagger, 'swagger-ui.css'))) {
+  cpSync(swagger, path.join(site, 'api'), { recursive: true })
+  copyFileSync(
+    path.join(root, 'api', 'public', 'swagger.yaml'),
+    path.join(site, 'swagger.yaml')
+  )
+}
 
 // Pages serves a .nojekyll site as-is; without it, a folder starting with an
 // underscore (Monaco's, for one) is dropped by the Jekyll build.

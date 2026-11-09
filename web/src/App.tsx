@@ -10,8 +10,6 @@ import Home from './containers/Home'
 import Apps from './containers/Apps'
 import Studio from './containers/Studio'
 import Settings from './containers/Settings'
-import ApiDocs from './containers/ApiDocs'
-import Docs from './containers/Docs'
 import UpdatePassword from './components/updatePassword'
 import BuildStamp from './components/buildStamp'
 
@@ -87,10 +85,17 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/apps" element={<Apps />} />
+        <Route path="/studio" element={studioElement} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/logon" element={<AuthCode />} />
+        {/* The paths before the interface had short URLs. The server redirects
+            them, but the browser-hosted build has no server to redirect, and a
+            bookmark should not lose the app. The elements are repeated rather
+            than redirected to, so a deep link keeps its query string -
+            `/SASjsStudio?filePath=...` is how a file is opened. */}
         <Route path="/SASjsApps" element={<Apps />} />
         <Route path="/SASjsStudio" element={studioElement} />
-        <Route path="/SASjsApiDocs" element={<ApiDocs />} />
-        <Route path="/SASjsDocs" element={<Docs />} />
         <Route path="/SASjsSettings" element={<Settings />} />
         <Route path="/SASjsLogon" element={<AuthCode />} />
         {/* The server answers any unmatched path with the app shell, so a

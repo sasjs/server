@@ -136,6 +136,9 @@ const Home = () => {
     let cancelled = false
 
     axios
+      // The canonical spelling, not the short alias: the browser-hosted build
+      // ships a service worker that answers /AppStream and /SASjsApi (the CLI's
+      // mock host), and this request has to reach it there as well as here.
       .get('/AppStream/apps.json')
       .then((res) => {
         if (cancelled) return
@@ -330,7 +333,7 @@ const Home = () => {
                 <ListItemButton
                   key={file.path}
                   component={Link}
-                  to={`/SASjsStudio?filePath=${encodeURIComponent(file.path)}`}
+                  to={`/studio?filePath=${encodeURIComponent(file.path)}`}
                   sx={{ borderRadius: 1, minWidth: 0 }}
                 >
                   <ListItemIcon sx={{ minWidth: 32 }}>
@@ -359,12 +362,7 @@ const Home = () => {
       </Card>
 
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <Button
-          component={Link}
-          to="/SASjsApps"
-          size="small"
-          variant="outlined"
-        >
+        <Button component={Link} to="/apps" size="small" variant="outlined">
           Browse all apps
         </Button>
         {apps.length + files.length > 0 && (

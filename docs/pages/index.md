@@ -18,3 +18,24 @@ If you are running older versions of SAS, or SAS on a desktop, then this product
 
 SASjs Server is MIT open source and the repository is available here:  [https://github.com/sasjs/server](https://github.com/sasjs/server).
 
+## URLs
+
+Everything the interface links to is at a top-level path:
+
+| Path | What it is |
+|---|---|
+| `/` | The interface: the dashboard, the Apps screen, Studio |
+| `/studio` | SASjs Studio, running ad hoc code |
+| `/apps` | The apps the signed-in caller may open |
+| `/docs` | This documentation site |
+| `/api` | The REST API's Swagger UI, and the API itself (`/api/info`, `/api/stp/execute`, ...) |
+| `/app/<name>` | A published App Stream application |
+
+The paths the interface used before these were introduced - `/SASjsStudio`, `/SASjsApps`, `/SASjsDocs`, `/SASjsSettings`, `/SASjsLogon`, `/AppStream` - redirect to them.
+
+<!-- server-docs-ignore: /SASjsApiDocs -->
+
+`/SASjsApiDocs` redirects to `/api`. It is a redirect rule rather than a mounted router, so the endpoint checker - which reads registered routes - does not see it.
+
+The API also answers on `/SASjsApi`, the spelling `@sasjs/adapter` uses and the one the specification below documents. The two are aliases of the same routes, so a client may use either.  Likewise `/AppStream` keeps serving published apps.
+

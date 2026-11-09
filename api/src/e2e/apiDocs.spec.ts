@@ -1,20 +1,19 @@
 /**
- * Browser test of the API screen when the policy refuses its frame.
+ * Browser test of the API tab.
  *
- * The screen frames the server's own documentation page, so a policy that
- * blocks that frame leaves an empty pane with no explanation - which is what a
- * deployment reported: the title bar and the open-in-new-tab icon, and nothing
- * else, while a direct request for the page answered 200. The refusal raises
- * no failed request (the browser never sends one), so nothing in a server log
- * names it; the pane now reads the document's own `securitypolicyviolation`
- * event and says what happened.
+ * The tab links to `/api`, which is where the server now serves Swagger UI -
+ * the same page as `/SASjsApi/`, served from the same folder, and the prefix
+ * the API itself answers on. The test checks the two halves a reader depends
+ * on: the page is served at the short prefix with its own assets, and the tab
+ * opens it.
  *
- * The policy here states `frame-src 'none'` through HELMET_CSP_CONFIG_PATH,
- * which is the operator-reachable way to refuse the frame now that a file
- * layers over the defaults rather than replacing them.
+ * It also checks that the short prefix is a real alias of the API rather than a
+ * second copy of the documentation: a request to `/api/info` has to reach the
+ * same controller as `/SASjsApi/info`, so a client that picks either spelling
+ * gets the same answer.
  */
 import path from 'path'
-import { mkdirSync, writeFileSync } from 'fs'
+import { mkdirSync } from 'fs'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -37,7 +36,7 @@ const user = {
 
 const NEW_PASSWORD = 'newpass123'
 
-describe('API screen with a policy that refuses the frame', () => {
+describe('API tab', () => {
   let con: Mongoose
   let mongoServer: MongoMemoryServer
   let server: ReturnType<Express['listen']>
@@ -50,22 +49,6 @@ describe('API screen with a policy that refuses the frame', () => {
     }
 
     mkdirSync(screenshotDir, { recursive: true })
-
-    if (
-      !(await fileExists(path.join(getWebBuildFolder(), 'index.bundle.js')))
-    ) {
-      throw new Error(
-        `No web build at ${getWebBuildFolder()}. Run \`npm run build\` in web/ before the browser test.`
-      )
-    }
-
-    // Written where the app reads it: relative to the working directory, which
-    // setupEnv.ts has already moved to a throwaway tree.
-    writeFileSync(
-      path.join(process.cwd(), 'csp.e2e.json'),
-      JSON.stringify({ 'frame-src': ["'none'"] })
-    )
-    process.env.HELMET_CSP_CONFIG_PATH = './csp.e2e.json'
 
     mongoServer = await MongoMemoryServer.create()
     process.env.DB_CONNECT = mongoServer.getUri()
@@ -93,16 +76,34 @@ describe('API screen with a policy that refuses the frame', () => {
     await mongoServer?.stop()
   }, 60000)
 
-  it('serves the page, and says why the frame is empty', async () => {
+  it('serves Swagger UI at /api and answers the API there too', async () => {
+    // The page is served under the mount, and its assets are addressed
+    // relatively, so a page served at /api/ asks for /api/swagger-ui.css rather
+    // than /swagger-ui.css. The assets themselves are a build artifact
+    // (`npm run swagger-ui:copy`), not source, so the browser suite does not
+    // require them; the reference in the tracked page is what is asserted.
+    const docs = await fetch(`${baseUrl()}/api/`)
+    expect(docs.status).toBe(200)
+
+    const markup = await docs.text()
+    expect(markup).toContain('swagger-ui')
+    expect(markup).toContain('./swagger-ui.css')
+
+    // The specification the page loads IS source, and is served from the root
+    // whichever prefix the page is reached on.
+    expect((await fetch(`${baseUrl()}/swagger.yaml`)).status).toBe(200)
+
+    // The alias reaches the API, not a 404 and not the documentation page: the
+    // same answer as the canonical spelling it is an alias of.
+    const aliased = await fetch(`${baseUrl()}/api/info`)
+    const canonical = await fetch(`${baseUrl()}/SASjsApi/info`)
+
+    expect(aliased.status).toBe(200)
+    expect(await aliased.json()).toEqual(await canonical.json())
+
     const page = await browser.newPage({
       viewport: { width: 1280, height: 800 }
     })
-
-    // The page itself is served, and the policy still allows the app's own
-    // scripts - the merge keeps script-src when the file names only frames.
-    const docs = await page.request.get(`${baseUrl()}/SASjsApi/`)
-    expect(docs.status()).toBe(200)
-    expect(await docs.text()).toContain('swagger-ui')
 
     // Sign in. The user schema defaults needsToUpdatePassword to true.
     await page.goto(baseUrl())
@@ -117,38 +118,19 @@ describe('API screen with a policy that refuses the frame', () => {
 
     await page.click('[role="tab"]:has-text("API")')
 
-    // The pane explains itself instead of drawing an empty rectangle, and
-    // offers the page the policy does allow - a new tab.
-    await page.waitForSelector(
-      'text=The API documentation cannot be shown here',
-      {
-        timeout: 30000
-      }
-    )
+    // The tab reaches the API's page, not the app shell and not a frame. The
+    // page's own rendering is Swagger UI's business - its bundle is a build
+    // artifact (`npm run swagger-ui:copy`) that the browser suite does not
+    // require - so the container the page ships is what is asserted.
+    await page
+      .locator('#swagger-ui')
+      .first()
+      .waitFor({ state: 'attached', timeout: 30000 })
 
-    const pane = page.locator('main, body')
-    const text = await pane.first().innerText()
-
-    expect(text).toContain('Content-Security-Policy')
+    expect(new URL(page.url()).pathname).toBe('/api/')
     expect(await page.locator('iframe').count()).toBe(0)
-    // The pane's own title bar is gone - the tab names the screen, and a second
-    // header under the app bar was noise - so the only way out to the page is
-    // the button in this refusal: exactly one link carries that name.
-    expect(
-      await page
-        .getByRole('link', { name: 'Open the API documentation', exact: true })
-        .count()
-    ).toBe(1)
 
-    // The diagnosis must survive the backstop. A refused frame never fires a
-    // load event, so an armed timer would replace this text with "did not load"
-    // ten seconds later - and the reader here is the one who can fix the policy.
-    await page.waitForTimeout(12000)
-
-    const afterBackstop = await pane.first().innerText()
-
-    expect(afterBackstop).toContain('Content-Security-Policy')
-    expect(afterBackstop).not.toContain('did not load')
+    await page.screenshot({ path: path.join(screenshotDir, 'api-tab.png') })
 
     await page.close()
   }, 120000)

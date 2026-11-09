@@ -15,7 +15,7 @@ import { generateAccessToken, saveTokensInDB } from '../../utils'
 const clientId = 'someclientID'
 
 /**
- * `/AppStream/apps.json` is what the single-page app's home screen reads to
+ * `/app/apps.json` is what the single-page app's home screen reads to
  * show the app tiles. It must answer with the same permission-filtered list the
  * landing page renders, or the home screen becomes a way to see (and try) apps
  * the caller holds no grant on.
@@ -103,14 +103,14 @@ describe('App Stream listing as JSON', () => {
   })
 
   it('should respond with Unauthorized when access token is not present', async () => {
-    await request(app).get('/AppStream/apps.json').expect(401)
+    await request(app).get('/app/apps.json').expect(401)
   })
 
   it('should list nothing for a caller holding no grants', async () => {
     const { token } = await tokenFor(streamUser.username)
 
     const res = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -123,7 +123,7 @@ describe('App Stream listing as JSON', () => {
     await rule('/AppStream/Mario', PermissionSettingForRoute.grant, uid)
 
     const res = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -134,8 +134,8 @@ describe('App Stream listing as JSON', () => {
         // A configured logo is an asset inside the app, so it is answered as a
         // URL under the app's stream path - the same way the landing page
         // resolves it. Rendered raw it would resolve against the interface root.
-        logo: '/AppStream/Mario/logo.png',
-        url: '/AppStream/Mario/',
+        logo: '/app/Mario/logo.png',
+        url: '/app/Mario/',
         // The registry records when the bundle was last published; an entry
         // seeded without one answers null, which the next case covers.
         publishedAt: '2026-11-01T09:30:00.000Z'
@@ -150,7 +150,7 @@ describe('App Stream listing as JSON', () => {
     await rule('/AppStream/Mario', PermissionSettingForRoute.deny, uid)
 
     const res = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -161,7 +161,7 @@ describe('App Stream listing as JSON', () => {
     const { token } = await tokenFor(admin.username)
 
     const res = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -177,12 +177,12 @@ describe('App Stream listing as JSON', () => {
     await rule('/AppStream/Mario', PermissionSettingForRoute.grant, uid)
 
     const json = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
     const html = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -201,12 +201,12 @@ describe('App Stream listing as JSON', () => {
     await rule('/AppStream/Sonic', PermissionSettingForRoute.grant, uid)
 
     const json = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
     const html = await request(app)
-      .get('/AppStream/')
+      .get('/app/')
       .auth(token, { type: 'bearer' })
       .expect(200)
 
@@ -216,8 +216,8 @@ describe('App Stream listing as JSON', () => {
 
     // Mario configures a logo, which is an asset inside the app - so it is
     // answered under the app's stream path. The page renders the same value
-    // relative to its <base href="/AppStream/">.
-    expect(byName.Mario).toEqual('/AppStream/Mario/logo.png')
+    // relative to its <base href="/app/">.
+    expect(byName.Mario).toEqual('/app/Mario/logo.png')
     expect(html.text).toContain('src="Mario/logo.png"')
 
     // Sonic configures none, and the interface falls back to its own logo.

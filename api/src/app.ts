@@ -5,6 +5,7 @@ import compression from 'compression'
 import dotenv from 'dotenv'
 
 import {
+  API_PREFIXES,
   copySASjsCore,
   createWeboutSasFile,
   getFilesFolder,
@@ -106,12 +107,24 @@ export default setProcessVariables().then(async () => {
   // request body is buffered before authentication and no other route needs the
   // headroom. Matching on the folder also covers /drive/deploy/upload, whose
   // body is multipart and which express.json therefore ignores.
-  app.use(
-    '/SASjsApi/drive/deploy',
-    express.json({ limit: DEPLOY_PAYLOAD_BYTES })
+  // Mounted on every spelling of the API prefix: the alias buffers the same
+  // body, so a deploy that succeeds on /SASjsApi/drive/deploy must not be
+  // refused with entity.too.large on /api/drive/deploy.
+  API_PREFIXES.forEach((prefix) =>
+    app.use(
+      `${prefix}/drive/deploy`,
+      express.json({ limit: DEPLOY_PAYLOAD_BYTES })
+    )
   )
   app.use(express.json({ limit: '100mb' }))
   app.use(express.static(path.join(__dirname, '../public')))
+
+  // The API documentation page, at the short prefix as well as the canonical
+  // one (`/SASjsApi`). It is the same files either way: index.html and the
+  // swagger-ui build copied beside it, both served straight out of
+  // public/SASjsApi. Declared here, before the API router is mounted, so the
+  // static assets answer first and everything else falls through to the router.
+  app.use('/api', express.static(path.join(__dirname, '../public/SASjsApi')))
 
   // NOTE: no urlencoded body parser here. The only consumer of
   // form-encoded bodies is the SAS9 mock's login form, which mounts its own
@@ -187,8 +200,26 @@ export default setProcessVariables().then(async () => {
   // reach the SPA's router.
   app.use('/docs', express.static(path.join(getWebBuildFolder(), 'docs')))
 
+  // A build that skipped the docs step has no pages to serve. The link is one
+  // the interface advertises, so it says what is missing rather than answering
+  // with the interface's own 404.
+  app.get(['/docs', '/docs/*splat'], (_req, res) => {
+    res
+      .status(404)
+      .type('html')
+      .send(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
+          '<title>No documentation</title></head><body>' +
+          '<h1>This build carries no documentation</h1>' +
+          '<p>The pages are built from <code>docs/</code> and copied into the ' +
+          'web build, and this build skipped that step - a development ' +
+          'checkout unless <code>npm run docs:build</code> has been run. The ' +
+          'published site carries the same pages.</p></body></html>'
+      )
+  })
+
   // The interface's own screens are real paths, so a deep link or a refresh -
-  // /SASjsStudio, /SASjsSettings - arrives here with no file to serve. Anything
+  // /studio, /settings - arrives here with no file to serve. Anything
   // that reaches this point is not an API route, not an AppStream app and not a
   // file, so it is one of the interface's routes: serve the app shell and let
   // the router resolve it.
@@ -202,11 +233,18 @@ export default setProcessVariables().then(async () => {
     // has to be case-insensitive too - otherwise /sasjsapi/unknown falls past
     // the API router and is answered with the app shell.
     //
-    // The API's own documentation page is at the exact path /SASjsApi, which
-    // express.static answers before this runs, so the prefix here ends in a
-    // slash: the app's own screen at /SASjsApiDocs is a route like
-    // /SASjsStudio, while every path below the API mount stays a 404.
-    const reserved = ['/sasjsapi/', '/appstream', '/saslogon', '/docs/']
+    // The API's own documentation page is at the exact path /SASjsApi (and
+    // /api), which express.static answers before this runs, so the prefix here
+    // ends in a slash: every path below the API mount stays a 404 rather than
+    // being answered with the app shell.
+    const reserved = [
+      '/sasjsapi/',
+      '/appstream',
+      '/app/',
+      '/api/',
+      '/saslogon',
+      '/docs/'
+    ]
     const requestPath = req.path.toLowerCase()
     if (reserved.some((prefix) => requestPath.startsWith(prefix)))
       return res.status(404).send('Not Found')

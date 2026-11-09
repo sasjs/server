@@ -134,7 +134,7 @@ describe('App Stream unpublish', () => {
 
   const listedApps = async () => {
     const res = await request(app)
-      .get('/AppStream/apps.json')
+      .get('/app/apps.json')
       .auth(adminToken, { type: 'bearer' })
       .expect(200)
 
@@ -186,7 +186,7 @@ describe('App Stream unpublish', () => {
 
     // the app is served while it is published
     const published = await request(app)
-      .get(`/AppStream/${streamServiceName}/`)
+      .get(`/app/${streamServiceName}/`)
       .auth(adminToken, { type: 'bearer' })
       .expect(200)
 
@@ -203,7 +203,7 @@ describe('App Stream unpublish', () => {
     // and it stops being served: the name is no longer in the map the static
     // handler reads, so the request falls through to the fallback
     const served = await request(app)
-      .get(`/AppStream/${streamServiceName}/`)
+      .get(`/app/${streamServiceName}/`)
       .auth(adminToken, { type: 'bearer' })
 
     expect(served.text).toBe("There's no App Stream available here.")
