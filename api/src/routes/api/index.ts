@@ -18,6 +18,7 @@ import authRouter from './auth'
 import sessionRouter from './session'
 import permissionRouter from './permission'
 import authConfigRouter from './authConfig'
+import appRouter from './app'
 
 const router = express.Router()
 
@@ -46,6 +47,11 @@ router.use(
   authenticateAccessToken,
   permissionRouter
 )
+
+// What is deployed under one App Stream name: the entry as registered (appLoc,
+// streamWebFolder, streamLogo, frameAncestors, publishedAt) plus the served entry
+// file and its mtime, which is what a deploy script or an operator asks for.
+router.use('/app', authenticateAccessToken, appRouter)
 
 router.use(
   '/authConfig',
