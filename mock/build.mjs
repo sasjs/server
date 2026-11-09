@@ -42,7 +42,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * is worth pinning - and the build records which release it actually used, so a
  * deploy log says what built the site rather than what the range hoped for.
  */
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6'
+// Pinned to the release that carries the sas-transcript support (sasjs/cli#1575).
+// `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
+// that does not read the recording - the demo would then carry the file and
+// still refuse the program.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '^6.23.0'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
