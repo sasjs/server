@@ -52,9 +52,12 @@
    script, after this one: setting the attribute here would be overwritten by the
    very script that decides the scheme.
 
-   Standalone, no setting exists and the operating system answers, which is what
-   the published site should do. The app also posts its mode on load and on every
-   change, for the case where the reader switches while the page is open. #}
+   Standalone, the reader's own choice wins: Material persists it in `__palette`
+   and applies it itself, so this script must not overwrite that - the toggle
+   would appear to do nothing after a reload. Only when there is no stored choice
+   does the operating system answer, which is what a first visit should do. The
+   app also posts its mode on load and on every change, for the case where the
+   reader switches while the page is open. #}
 <script>
   (function () {
     var palettes = {
@@ -102,12 +105,30 @@
       body.setAttribute('data-md-color-accent', palette.color.accent)
     }
 
-    apply(parentMode())
+    function framed() {
+      return window.self !== window.top
+    }
 
-    // Material sets the body's attributes while it initialises, so the choice is
-    // applied again once there is a body to apply it to.
+    function readerChose() {
+      try {
+        return localStorage.getItem('__palette') !== null
+      } catch (error) {
+        /* a blocked store cannot have recorded a choice */
+        return false
+      }
+    }
+
+    // Framed by the app, the app decides. Standalone, a reader who has used the
+    // toggle decides, and their choice is already in `__palette` for Material to
+    // apply - writing over it here is what made the toggle look broken. With no
+    // choice recorded, the operating system answers.
+    if (framed() || !readerChose()) apply(parentMode())
+
+    // Material sets the body's attributes while it initialises, so the frame's
+    // choice is applied again once there is a body to apply it to. A standalone
+    // reader's stored choice is Material's to apply, not this script's.
     document.addEventListener('DOMContentLoaded', function () {
-      apply(parentMode())
+      if (framed()) apply(parentMode())
     })
 
     window.addEventListener('message', function (event) {

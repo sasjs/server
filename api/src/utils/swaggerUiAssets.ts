@@ -15,7 +15,6 @@ import path from 'path'
 export const swaggerUiAssets = [
   'swagger-ui.css',
   'swagger-ui-bundle.js',
-  'swagger-ui-standalone-preset.js',
   'favicon-16x16.png',
   'favicon-32x32.png',
   'oauth2-redirect.html'

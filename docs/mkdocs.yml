@@ -85,16 +85,18 @@ theme:
   # Black and yellow is the SASjs mark, drawn as a yellow S on a black tile, so
   # it reads on either banner. The banner follows the scheme: white in light,
   # near-black in dark.
+  # No `media:` queries here, deliberately. An entry with `media` makes Material
+  # follow the operating system and render NO toggle at all - which is why the
+  # docs had no light/dark switch. The initial choice still follows the system,
+  # set by the script in theme/main.html when the reader has not chosen yet.
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: white
       accent: amber
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: slate
       primary: black
       accent: amber
       toggle:

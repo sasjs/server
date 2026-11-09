@@ -7,9 +7,13 @@ window.onload = function () {
     url: '/swagger.yaml',
     dom_id: '#swagger-ui',
     deepLinking: true,
-    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+    // BaseLayout, not StandaloneLayout: the standalone preset draws Swagger's own
+    // bar with the API title, a definition picker and a search box, which sits
+    // inside the site that already has a header - and the search there searches
+    // the documentation, not the spec. The page is the spec and nothing else.
+    presets: [SwaggerUIBundle.presets.apis],
     plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-    layout: 'StandaloneLayout',
+    layout: 'BaseLayout',
     // null, not the default: the online validator posts the spec URL to
     // validator.swagger.io, and nothing on this page talks to a third party.
     validatorUrl: null,
