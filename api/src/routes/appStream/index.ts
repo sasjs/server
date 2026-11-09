@@ -14,7 +14,8 @@ import {
   resolveWithinDrive,
   resolveListeners,
   isSafePathSegment,
-  APP_STREAM_ALIAS
+  APP_STREAM_ALIAS,
+  applyAppFraming
 } from '../../utils'
 import User from '../../model/User'
 import { AppStreamConfig } from '../../types'
@@ -38,7 +39,12 @@ const router = express.Router()
  * Desktop mode has no permission model (authenticateAccessToken bypasses the
  * gate there), so the whole list stands.
  */
-const permittedAppStreamConfig = async (
+/**
+ * Exported for the per-app detail endpoint, so the detail and the listing are
+ * decided by the same grant rule: an app missing from the listing must not be
+ * describable by asking for it by name.
+ */
+export const permittedAppStreamConfig = async (
   req: Request
 ): Promise<AppStreamConfig> => {
   const appStreamConfig = process.appStreamConfig ?? {}
@@ -352,6 +358,15 @@ router.get(
     const appStream = appStreamKey(reqPath.split('/')[0])
     const appStreamFilesPath = appStreams[appStream]
     if (appStreamFilesPath) {
+      // One app may name the origins allowed to frame it; every other app keeps
+      // the server's policy. Applied to the response helmet has already written,
+      // and before the files are served, because a static answer carries these
+      // headers out with it.
+      applyAppFraming(
+        res,
+        (process.appStreamConfig ?? {})[appStream]?.frameAncestors
+      )
+
       // resourcePath is without appStream base path
       const resourcePath = reqPath.split('/').slice(1).join('/') || 'index.html'
 

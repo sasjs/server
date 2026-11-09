@@ -172,7 +172,7 @@ const saveAppStreamConfig = async () => {
 
 /** What a valid entry looks like, quoted in the message when one is rejected. */
 const EXPECTED_ENTRY =
-  '{ "appLoc": string, "streamWebFolder": string, "streamLogo"?: string }'
+  '{ "appLoc": string, "streamWebFolder": string, "streamLogo"?: string, "frameAncestors"?: string | string[] }'
 
 /**
  * Why an entry cannot be used, or undefined when it can.
@@ -186,10 +186,8 @@ const rejectionReason = (entry: unknown): string | undefined => {
   if (typeof entry !== 'object' || entry === null || Array.isArray(entry))
     return 'the entry is not an object'
 
-  const { appLoc, streamWebFolder, streamLogo } = entry as Record<
-    string,
-    unknown
-  >
+  const { appLoc, streamWebFolder, streamLogo, frameAncestors } =
+    entry as Record<string, unknown>
 
   if (typeof appLoc !== 'string' || !appLoc.trim())
     return '"appLoc" is missing or not a non-empty string'
@@ -199,6 +197,16 @@ const rejectionReason = (entry: unknown): string | undefined => {
 
   if (streamLogo !== undefined && typeof streamLogo !== 'string')
     return '"streamLogo" is present but not a string'
+
+  if (
+    frameAncestors !== undefined &&
+    typeof frameAncestors !== 'string' &&
+    !(
+      Array.isArray(frameAncestors) &&
+      frameAncestors.every((source) => typeof source === 'string')
+    )
+  )
+    return '"frameAncestors" is present but is not a string or a list of strings'
 
   return undefined
 }

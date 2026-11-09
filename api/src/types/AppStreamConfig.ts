@@ -12,5 +12,18 @@ export interface AppStreamConfig {
      * modified time of the bundle: the entry IS the publish.
      */
     publishedAt?: string
+    /**
+     * Origins allowed to frame this app, as CSP `frame-ancestors` sources.
+     *
+     * Absent means the server's own policy stands, which is `'self'` - every app
+     * that never asked to be framed stays framed by nobody. An app embedded by a
+     * page on another domain names that origin here, so the exception is a
+     * reviewed per-app decision rather than a relaxation of the whole server.
+     *
+     * A cross-domain exception also needs the session cookie to travel into the
+     * framed page (`SameSite=None; Secure`), or the app frames and then cannot
+     * authenticate.
+     */
+    frameAncestors?: string | string[]
   }
 }
