@@ -173,14 +173,6 @@ for (const file of swaggerFiles) {
     path.join(swaggerSource, file),
     path.join(site, swaggerAssets, file)
   )
-} else {
-  // Said out loud rather than skipped silently: the demo's API tab would then
-  // answer with the app shell, which is a confusing way to discover that the
-  // assets step did not run.
-  process.stdout.write(
-    '\nNo Swagger UI assets at api/public/SASjsApi - the site will not carry /api. ' +
-      'Run `npm run swagger-ui:copy` in api/ before building.\n'
-  )
 }
 
 // `./swagger-ui.css` -> `/api-assets/swagger-ui.css`, for every reference the
