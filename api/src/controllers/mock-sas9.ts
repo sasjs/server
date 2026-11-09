@@ -28,6 +28,17 @@ export class MockSas9Controller {
   private loggedIn: string | undefined
   private mocksPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
 
+  /**
+   * Where the mock's files are read from: the configured folder when it is
+   * absolute, and otherwise resolved against the working directory. `path.join`
+   * would put an absolute folder under `process.cwd()` instead.
+   */
+  private mockBase(): string {
+    return path.isAbsolute(this.mocksPath)
+      ? this.mocksPath
+      : path.join(process.cwd(), this.mocksPath)
+  }
+
   @Get('/SASStoredProcess')
   public async sasStoredProcess(
     @Request() req: express.Request
@@ -51,19 +62,13 @@ export class MockSas9Controller {
 
     if (program) {
       return await getMockResponseFromFile([
-        process.cwd(),
-        this.mocksPath,
+        this.mockBase(),
         'sas9',
         ...filePath
       ])
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      this.mocksPath,
-      'sas9',
-      ...filePath
-    ])
+    return await getMockResponseFromFile([this.mockBase(), 'sas9', ...filePath])
   }
 
   @Get('/SASStoredProcess/do')
@@ -115,12 +120,7 @@ export class MockSas9Controller {
       }
     }
 
-    return await getMockResponseFromFile([
-      process.cwd(),
-      this.mocksPath,
-      'sas9',
-      ...filePath
-    ])
+    return await getMockResponseFromFile([this.mockBase(), 'sas9', ...filePath])
   }
 
   @Post('/SASStoredProcess/do/')
@@ -186,8 +186,7 @@ export class MockSas9Controller {
         }
       } else {
         return await getMockResponseFromFile([
-          process.cwd(),
-          this.mocksPath,
+          this.mockBase(),
           'sas9',
           'generic',
           'logged-in'
@@ -196,8 +195,7 @@ export class MockSas9Controller {
     }
 
     return await getMockResponseFromFile([
-      process.cwd(),
-      this.mocksPath,
+      this.mockBase(),
       'sas9',
       'generic',
       'login'
@@ -215,8 +213,7 @@ export class MockSas9Controller {
     this.loggedIn = req.body.username
 
     return await getMockResponseFromFile([
-      process.cwd(),
-      this.mocksPath,
+      this.mockBase(),
       'sas9',
       'generic',
       'logged-in'
@@ -229,8 +226,7 @@ export class MockSas9Controller {
 
     if (req.query.publicDenied === 'true') {
       return await getMockResponseFromFile([
-        process.cwd(),
-        this.mocksPath,
+        this.mockBase(),
         'sas9',
         'generic',
         'public-access-denied'
@@ -238,8 +234,7 @@ export class MockSas9Controller {
     }
 
     return await getMockResponseFromFile([
-      process.cwd(),
-      this.mocksPath,
+      this.mockBase(),
       'sas9',
       'generic',
       'logged-out'

@@ -18,8 +18,12 @@ const fileUploadController = new FileUploadController()
 
 const mockPath = process.env.STATIC_MOCK_LOCATION || 'mocks'
 
+// `path.join` puts an absolute folder under the working directory, so the
+// configured location is used as it is when it is absolute.
 const upload = multer({
-  dest: path.join(process.cwd(), mockPath, 'sas9', 'files-received')
+  dest: path.isAbsolute(mockPath)
+    ? path.join(mockPath, 'sas9', 'files-received')
+    : path.join(process.cwd(), mockPath, 'sas9', 'files-received')
 })
 
 // The mock's login form posts application/x-www-form-urlencoded; the parser
