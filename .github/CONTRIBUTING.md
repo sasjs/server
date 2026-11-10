@@ -42,6 +42,8 @@ Be sure to use v16 or above, and to set your environment variables in the releva
 
 SASjs Server is split between an API server (serving REST requests) and a WEB Server (everything else).  These can be run together, or on seperate ports.
 
+The first API start downloads the SAS_PACKAGES macros and caches them in `api/sas/sasautos-download`; later starts reinstall them from that cache, because every start rebuilds `api/sas/sasautos` from `@sasjs/core`. To refresh the cache - a macro was added or changed upstream - run `npm run downloadMacros -- --force` from `api/`; a build does that automatically before it starts.
+
 ### NodeJS Dev - Single Port
 
 Here the environment variables should be configured under `api.env`.  Then:
