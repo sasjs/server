@@ -2,10 +2,14 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 
+import { sasJSCoreMacros } from '../src/utils/file'
 import {
   cacheDownloads,
   cachedDownloadsAreCurrent,
-  installFromCache
+  downloadCache,
+  downloadMacros,
+  installFromCache,
+  macroFileName
 } from './downloadMacros'
 
 describe('downloadMacros', () => {
@@ -175,6 +179,51 @@ describe('downloadMacros', () => {
         )
       ).toBe(false)
       expect(listOf(folder)).toEqual(['mf_core.sas'])
+    })
+  })
+
+  describe('downloadMacros', () => {
+    it('should install a warm cache without fetching', async () => {
+      write(folder, ['mf_core.sas'])
+      fs.writeFileSync(path.join(folder, '.macrolist'), 'mf_core.sas\n')
+
+      write(cache, ['mf_dl_a.sas', 'mf_dl_b.sas'])
+      fs.writeFileSync(
+        path.join(cache, '.macrolist'),
+        'mf_dl_a.sas\nmf_dl_b.sas\n'
+      )
+      fs.writeFileSync(path.join(cache, 'mf_dl_a.sas'), 'cached-a')
+      fs.writeFileSync(path.join(cache, 'mf_dl_b.sas'), 'cached-b')
+
+      await downloadMacros(folder, cache, false)
+
+      // The cached content, not whatever GitHub would have served, proves the
+      // branch replaced the download.
+      expect(fs.readFileSync(path.join(folder, 'mf_dl_a.sas'), 'utf8')).toBe(
+        'cached-a'
+      )
+      expect(fs.readFileSync(path.join(folder, 'mf_dl_b.sas'), 'utf8')).toBe(
+        'cached-b'
+      )
+      expect(listOf(folder)).toEqual([
+        'mf_core.sas',
+        'mf_dl_a.sas',
+        'mf_dl_b.sas'
+      ])
+    })
+  })
+
+  describe('paths', () => {
+    it('should keep the cache out of the sas/ tree the build copies', () => {
+      const sasTree = path.dirname(sasJSCoreMacros)
+
+      expect(downloadCache.startsWith(sasTree + path.sep)).toBe(false)
+      expect(path.basename(downloadCache)).toBe('.sasautos-download')
+    })
+
+    it('should strip the SAS_PACKAGES prefix from a macro path', () => {
+      expect(macroFileName('SPF/Macros/mf_a.sas')).toBe('mf_a.sas')
+      expect(macroFileName('mf_b.sas')).toBe('mf_b.sas')
     })
   })
 
