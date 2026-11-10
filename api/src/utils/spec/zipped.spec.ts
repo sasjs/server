@@ -189,6 +189,24 @@ describe('reading an archive into a tree', () => {
     expect(tree.members.map((member) => member.name)).toEqual(['index.html'])
   })
 
+  it('refuses an archive with nothing deployable in it', async () => {
+    // every entry dropped, and an empty archive, are both a build that produced
+    // nothing: deploying them would remove the folder and answer success
+    const dropped = archive({
+      '__MACOSX/._index.html': 'resource fork',
+      '.DS_Store': 'junk'
+    })
+
+    await expect(extractFileTreeFromZip(dropped)).rejects.toMatchObject({
+      code: 400,
+      message: expect.stringContaining('contains no files to deploy')
+    })
+
+    await expect(extractFileTreeFromZip(archive({}))).rejects.toMatchObject({
+      code: 400
+    })
+  })
+
   it('is a refusal object the routes can render', async () => {
     const file = archive({ 'big.bin': Buffer.alloc(11, 1) })
 

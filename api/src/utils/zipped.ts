@@ -229,5 +229,15 @@ export const extractFileTreeFromZip = async (
     })
   }
 
+  // An archive with nothing deployable is refused rather than deployed: the
+  // route replaces the folder by default, so an empty tree would remove a
+  // published app and answer `200 Files deployed successfully` - a build that
+  // produced nothing silently deleting what is live.
+  if (!members.length)
+    throw new DeployRefusal(
+      400,
+      `The archive ${zipFile.originalname} contains no files to deploy.`
+    )
+
   return { members }
 }

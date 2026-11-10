@@ -241,8 +241,9 @@ export class DriveController {
    * Creates or updates files within SASjs Drive from an uploaded file.
    *
    * The upload has two shapes. An archive whose ROOT holds a JSON deploy
-   * document - an object naming `appLoc` and `fileTree` - is deployed as that
-   * document. Any other archive is the app itself: every entry becomes a file
+   * document - an object naming `appLoc` or `fileTree` - is deployed as that
+   * document, and one naming only one of them is refused with the missing field
+   * named. Any other archive is the app itself: every entry becomes a file
    * under `appLoc`, and the folder, the stream to publish and the replacement
    * policy come from the query parameters below.
    *
