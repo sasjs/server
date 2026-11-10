@@ -275,6 +275,19 @@ jobs:
           }
           console.log('tarball: ' + files.length + ' files, ' + report.unpackedSize + ' bytes unpacked')
           "
+      # The tarball check above reads the file LIST; this runs the package. It is
+      # the only job that installs as a user installs (`--omit=dev`) and boots, and
+      # it exists because 6.0.0 passed every other check while being unable to
+      # start: `adm-zip` was a devDependency, so the list was correct and the
+      # runtime was not.
+      # Guarded on the artefact rather than on a release being pending: the point
+      # of the check is that it runs against whatever was staged, so a run that
+      # stages a package - on a release, or in any future PR job that stages one -
+      # boots it.
+      - name: Smoke test the npm package as installed
+        if: hashFiles('npm-package/package.json') != ''
+        run: node .github/scripts/smoke-npm-package.mjs npm-package
+
       - name: Compress Executables
         if: steps.pending.outputs.release == 'true'
         working-directory: ./executables

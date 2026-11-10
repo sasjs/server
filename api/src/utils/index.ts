@@ -1,4 +1,5 @@
 export * from './appStreamConfig'
+export * from './appStreamIdentity'
 export * from './appStreamFraming'
 export * from './buildInfo'
 export * from './connectDB'

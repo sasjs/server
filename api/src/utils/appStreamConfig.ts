@@ -3,6 +3,12 @@ import { publishAppStream } from '../routes/appStream'
 import { AppStreamConfig } from '../types'
 
 import { getAppStreamConfigPath } from './file'
+import {
+  ID_LENGTHS,
+  appIdFor,
+  isAppId,
+  normaliseAppLoc
+} from './appStreamIdentity'
 
 export const loadAppStreamConfig = async () => {
   process.appStreamConfig = {}
@@ -85,7 +91,20 @@ export const readStoredAppStreamConfig = async (): Promise<AppStreamConfig> => {
       continue
     }
 
-    config[streamServiceName] = entry as AppStreamConfig[string]
+    const usable = entry as AppStreamConfig[string]
+
+    // A malformed id used to survive: preserved on write, filtered out of the
+    // taken set, so it was neither valid nor replaced. Dropping it lets the next
+    // publish regenerate one from the folder.
+    if (usable.id !== undefined && !isAppId(usable.id)) {
+      process.logger?.error?.(
+        `App Stream config: ignoring the id on "${streamServiceName}" - expected a lowercase hex id of a length a publish can mint (${ID_LENGTHS.join(', ')}); it will be regenerated on the next publish.`
+      )
+
+      delete usable.id
+    }
+
+    config[streamServiceName] = usable
   }
 
   return config
@@ -141,7 +160,35 @@ export const addEntryToAppStreamConfig = (
 ) =>
   mutateRegistry(async () => {
     if (streamServiceName && appLoc && streamWebFolder) {
+      // Ids already in use, so a fresh id cannot claim one. An entry republishing
+      // under the same appLoc keeps the id it has: it is a function of the folder,
+      // and the folder did not move.
+      // The identity is the FOLDER, so another entry pointing at the same folder
+      // is the same app and must not push this one onto a longer id. That the
+      // registry currently allows two names for one folder is a v1 shape #544
+      // removes; until it does, both entries answer with the same id rather than
+      // one of them silently acquiring a different identity.
+      const appLocKey = normaliseAppLoc(appLoc)
+
+      const taken = Object.entries(process.appStreamConfig)
+        .filter(
+          ([name, entry]) =>
+            name !== streamServiceName &&
+            normaliseAppLoc(entry.appLoc) !== appLocKey
+        )
+        .map(([, entry]) => entry.id)
+        .filter((id): id is string => typeof id === 'string')
+
       process.appStreamConfig[streamServiceName] = {
+        id:
+          // only when the entry still points at the same folder: a name can be
+          // republished against another appLoc, and keeping the old id there would
+          // give one folder two identities
+          (process.appStreamConfig[streamServiceName] &&
+          normaliseAppLoc(process.appStreamConfig[streamServiceName].appLoc) ===
+            appLocKey
+            ? process.appStreamConfig[streamServiceName].id
+            : undefined) ?? appIdFor(appLoc, taken),
         appLoc,
         streamWebFolder,
         streamLogo,

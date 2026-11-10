@@ -1,5 +1,15 @@
 export interface AppStreamConfig {
   [key: string]: {
+    /**
+     * The app's identity: a hash of its normalised appLoc, and stable for the
+     * life of that folder.
+     *
+     * The registry is still keyed by NAME, so this is the first step of the v4
+     * model rather than the whole of it: the id exists, is stable and is reported,
+     * while the name keeps the registry key, the URL and the permission path until
+     * those move.
+     */
+    id?: string
     appLoc: string
     streamWebFolder: string
     streamLogo?: string
