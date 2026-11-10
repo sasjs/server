@@ -104,10 +104,21 @@ export const addDocumentedHeaders = (yaml: string): string => {
   return lines.join('\n')
 }
 
+/**
+ * Resolves JSDoc inline tags in the generated document.
+ *
+ * A property description can come from a type in a dependency - `FileMember`
+ * lives in `@sasjs/utils` - and a `{@link X}` in that comment reaches tsoa
+ * verbatim, which then ships to generated clients and to the documentation site
+ * as literal text. The tag is resolved to the sentence it stands for instead.
+ */
+export const resolveJsdocTags = (yaml: string): string =>
+  yaml.replace(/\{@link\s+([^}\s]+)(?:\s+[^}]*)?\}/g, 'the $1 schema')
+
 /** Applies the list to the document on disk, the way `npm run swagger` does. */
 export const documentResponseHeaders = (file: string): void => {
   const yaml = fs.readFileSync(file, 'utf8')
-  fs.writeFileSync(file, addDocumentedHeaders(yaml))
+  fs.writeFileSync(file, resolveJsdocTags(addDocumentedHeaders(yaml)))
 }
 
 if (require.main === module) {

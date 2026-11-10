@@ -169,7 +169,7 @@ driveRouter.post(
     }
 
     try {
-      const response = await controller.deployUpload(req.file, body)
+      const response = await controller.deploy(body)
 
       if (body.streamWebFolder) {
         const { streamServiceName } = await publishAppStream(

@@ -7,7 +7,10 @@ import {
   generateSpec,
   validateSpecConfig
 } from 'tsoa'
-import { addDocumentedHeaders } from '../../../../scripts/documentResponseHeaders'
+import {
+  addDocumentedHeaders,
+  resolveJsdocTags
+} from '../../../../scripts/documentResponseHeaders'
 
 /**
  * Guard for the generated API documentation (sasjs/server#376).
@@ -66,9 +69,13 @@ const generate = async (yaml: boolean): Promise<string> => {
     'utf8'
   )
 
-  // `npm run swagger` runs this over the same output: tsoa cannot state a
-  // response header, so the step that does is part of what "generated" means
-  const document = yaml ? addDocumentedHeaders(output) : output
+  // `npm run swagger` runs these over the same output: tsoa cannot state a
+  // response header, and it copies a dependency's `{@link ...}` JSDoc tag into
+  // the document as literal text, so both steps are part of what "generated"
+  // means
+  const document = yaml
+    ? resolveJsdocTags(addDocumentedHeaders(output))
+    : output
 
   fs.rmSync(outputDirectory, { recursive: true, force: true })
 
@@ -167,6 +174,15 @@ describe('Swagger documentation', () => {
 
     expect(leaked).toEqual([])
   })
+
+  it('carries no unresolved JSDoc tags', async () => {
+    // a `{@link X}` in a type comment reaches generated clients as text; the
+    // step that resolves them is part of what `npm run swagger` writes, and the
+    // published document is what has to be clean
+    const yaml = await generate(true)
+
+    expect(yaml.includes('{@link')).toBe(false)
+  }, 120000)
 
   it('is regenerated when the controllers change', async () => {
     const committed = fs.readFileSync(committedSpecPath, 'utf8')

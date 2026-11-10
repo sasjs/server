@@ -206,7 +206,10 @@ export class DriveController {
    * `appLoc` is the folder within the drive to deploy into, and `fileTree` is a
    * nested description of the folders, services and files to write. `appLoc`
    * cannot point outside the drive. A `400` is returned for a payload that is
-   * not a valid file tree, and a `500` when writing fails.
+   * not a valid file tree, and for a tree that names `streamWebFolder` without
+   * carrying that folder under `services/` - the folder an app is served from -
+   * because publishing it would advertise an app that resolves to nothing. A
+   * `500` is returned when writing fails.
    *
    * A `413` is returned for a tree the deploy cap refuses - more than 10,000
    * entries, more than 100 MB decoded in total, or a single file over 20 MB -
@@ -235,13 +238,21 @@ export class DriveController {
   }
 
   /**
-   * Creates or updates files within SASjs Drive from an uploaded JSON file.
+   * Creates or updates files within SASjs Drive from an uploaded file.
    *
-   * The file may be plain JSON or a zip holding a single JSON file of the same
-   * name (for example `deploy.json.zip` for `deploy.json`); any other member of
-   * the archive is ignored. The payload has the same shape as
-   * `POST /SASjsApi/drive/deploy`, and the same `413` applies once the archive
-   * is expanded: the cap is measured on the tree, not on the bytes uploaded.
+   * The upload has two shapes. An archive whose ROOT holds a JSON deploy
+   * document - an object naming `appLoc` and `fileTree` - is deployed as that
+   * document. Any other archive is the app itself: every entry becomes a file
+   * under `appLoc`, and the folder, the stream to publish and the replacement
+   * policy come from the query parameters below.
+   *
+   * A `400` is returned when the document is not a valid file tree, when `appLoc`
+   * is missing for an archive of files, or when `streamWebFolder` names a folder
+   * the tree does not carry. A `413` is returned for a tree past the deploy cap -
+   * more than 10,000 entries, more than 100 MB decoded in total, or a single file
+   * over 20 MB - naming the limit and the figure reached. An archive's own size
+   * figures are checked before it is expanded, so an oversized one is refused
+   * without being decompressed.
    *
    * @summary Deploy an uploaded file to SASjs Drive
    */
@@ -259,10 +270,25 @@ export class DriveController {
   @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
   @Post('/deploy/upload')
   public async deployUpload(
-    @UploadedFile() file: Express.Multer.File, // passing here for API docs
-    @Query() @Hidden() body?: DeployPayload // Hidden decorator has be optional
+    @UploadedFile() file: Express.Multer.File,
+    /** The folder to deploy into. Required when the archive is the app's own files. */
+    @Query() appLoc?: string,
+    /** A folder under `services/` to publish as an App Stream app, e.g. `web`. */
+    @Query() streamWebFolder?: string,
+    /** The name to publish under. Derived from the last segment of `appLoc` when absent. */
+    @Query() streamServiceName?: string,
+    /** A logo to show on the app's tile. */
+    @Query() streamLogo?: string,
+    /** Write the tree as the folder's whole contents. Defaults to true for an archive. */
+    @Query() replace?: boolean
   ): Promise<DeployResponse> {
-    return deploy(body!)
+    // The route reads the upload itself - it has to decide whether the archive
+    // holds a document before a payload exists - and calls `deploy` with the
+    // result. This method exists so the reference describes the parameters that
+    // route reads; it is not a second implementation of them.
+    throw new Error(
+      'POST /SASjsApi/drive/deploy/upload is served by its route, which parses the upload itself.'
+    )
   }
 
   /**

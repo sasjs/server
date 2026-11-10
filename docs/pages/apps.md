@@ -57,7 +57,7 @@ The archive's structure is kept under `appLoc`. What a deploy document would hav
 
 An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. The same rule holds for `POST /SASjsApi/drive/deploy` with a JSON tree: a request that names `streamWebFolder` must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.
 
-A zip that contains a deploy document - a root-level JSON file naming `appLoc` and `fileTree` - is read as a document instead, so the route answers both shapes. A JSON file the app itself ships, such as a manifest or a data file, is not a document and is deployed with the rest.
+A zip that contains a deploy document - a root-level JSON file naming `appLoc` or `fileTree` - is read as a document instead, so the route answers both shapes. A file naming only one of the two is refused with the missing field named. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.
 
 Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under `__MACOSX/`, and `.DS_Store`.
 
@@ -85,6 +85,8 @@ A `file` member carries the caller's own text by default. An asset that is not t
 ```
 
 Nothing is guessed from the contents: `test` and `data` are both valid base64, so a guess would corrupt short text rather than decode a file. An archive upload marks every entry `base64`, because an archive holds bytes.
+
+A deploy document written by a client older than `@sasjs/api` 0.24 states no `encoding` and carries its files as base64, which this server now reads as text - so such a document has to add `encoding: "base64"` to each `file` member. The CLI states it for the assets it builds.
 
 ## Securing Apps
 
