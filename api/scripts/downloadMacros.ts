@@ -10,7 +10,11 @@ import {
   readFile
 } from '@sasjs/utils'
 
-import { sasJSCoreMacros, sasJSCoreMacrosInfo } from '../src/utils/file'
+import {
+  apiRoot,
+  sasJSCoreMacros,
+  sasJSCoreMacrosInfo
+} from '../src/utils/file'
 import { githubApiHeaders } from '../src/utils/githubApi'
 
 const listUrl =
@@ -19,16 +23,22 @@ const listUrl =
 /**
  * Where the downloaded macros are kept between starts.
  *
- * `copySASjsCore` deletes and recreates `sasJSCoreMacros` on every start, so a
- * cache inside that folder would be wiped with it and every start would fetch
- * again. This folder is rebuilt only by the download - it is the completion
+ * Two directories must not contain it: `sasJSCoreMacros`, which `copySASjsCore`
+ * deletes and recreates on every start, and `api/sas/`, which `sas:copy` copies
+ * wholesale into the build - a cache there would be wiped each start, or ship a
+ * second copy of the macros that nothing reads. It sits beside `sas/` instead,
+ * and this folder is rebuilt only by the download, so it is the completion
  * marker for sasjs/server#312's skip.
  */
-const downloadCache = path.join(
-  path.dirname(sasJSCoreMacros),
-  'sasautos-download'
-)
+export const downloadCache = path.join(apiRoot, '.sasautos-download')
 const downloadCacheList = path.join(downloadCache, '.macrolist')
+
+/**
+ * The file name a macro is stored under: the SAS_PACKAGES path is stripped, the
+ * rest is the name.
+ */
+export const macroFileName = (pathInRepo: string): string =>
+  pathInRepo.replace(/^SPF\/Macros\//, '')
 
 /**
  * Refreshes the cache even when it looks current. Set by passing `--force` to
@@ -180,10 +190,21 @@ export const cacheDownloads = async (
  * to download one named macro are different problems, and the second one is not
  * a rate limit whatever the first one's message says.
  */
-export const downloadMacros = async () => {
-  if (await installFromCache()) {
+export const downloadMacros = async (
+  folder: string = sasJSCoreMacros,
+  cacheFolder: string = downloadCache,
+  forced: boolean = force
+) => {
+  if (
+    await installFromCache(
+      folder,
+      cacheFolder,
+      path.join(folder, '.macrolist'),
+      forced
+    )
+  ) {
     console.info(
-      `Macros installed from ${downloadCache}; skipping the download (npm run downloadMacros -- --force refreshes them)`
+      `Macros installed from ${cacheFolder}; skipping the download (npm run downloadMacros -- --force refreshes them)`
     )
 
     return
@@ -218,20 +239,23 @@ export const downloadMacros = async () => {
     }
   }
 
-  const names = await downloadFiles(files)
+  const names = await downloadFiles(files, folder)
 
-  await cacheDownloads(names)
+  await cacheDownloads(names, folder, cacheFolder)
 }
 
-const downloadFiles = async function (fileList: any[]): Promise<string[]> {
+const downloadFiles = async function (
+  fileList: any[],
+  folder: string = sasJSCoreMacros
+): Promise<string[]> {
   const names: string[] = []
 
   for (const file of fileList) {
-    const fileName = file.path.replace(/^SPF\/Macros/, '')
+    const fileName = macroFileName(file.path)
 
     const downloader = new Downloader({
       url: file.download_url,
-      directory: sasJSCoreMacros,
+      directory: folder,
       fileName,
       cloneFiles: false
     })
@@ -249,7 +273,7 @@ const downloadFiles = async function (fileList: any[]): Promise<string[]> {
     names.push(fileName)
   }
 
-  await writeInventory(sasJSCoreMacros, sasJSCoreMacrosInfo)
+  await writeInventory(folder, path.join(folder, '.macrolist'))
 
   return names
 }

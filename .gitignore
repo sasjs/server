@@ -4,6 +4,8 @@ node_modules/
 .DS_Store
 .env*
 sas/
+# The SAS_PACKAGES macro download cache beside api/sas (api/scripts/downloadMacros.ts)
+.sasautos-download/
 sasjs_root/
 tmp/
 # leftovers from a spec run that died before its afterAll cleanup
