@@ -275,6 +275,15 @@ jobs:
           }
           console.log('tarball: ' + files.length + ' files, ' + report.unpackedSize + ' bytes unpacked')
           "
+      # The tarball check above reads the file LIST; this runs the package. It is
+      # the only job that installs as a user installs (`--omit=dev`) and boots, and
+      # it exists because 6.0.0 passed every other check while being unable to
+      # start: `adm-zip` was a devDependency, so the list was correct and the
+      # runtime was not.
+      - name: Smoke test the npm package as installed
+        if: steps.pending.outputs.release == 'true'
+        run: node .github/scripts/smoke-npm-package.mjs npm-package
+
       - name: Compress Executables
         if: steps.pending.outputs.release == 'true'
         working-directory: ./executables
