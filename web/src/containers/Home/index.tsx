@@ -45,7 +45,7 @@ import {
   recallSignIns
 } from '../../utils/recent'
 
-/** \"today at 14:05\", \"yesterday at 09:12\", or the date - never a bare ISO stamp. */
+/** "today at 14:05", "yesterday at 09:12", or the date - never a bare ISO stamp. */
 const describeWhen = (iso: string): string => {
   const then = new Date(iso)
   if (isNaN(then.getTime())) return ''
@@ -319,7 +319,7 @@ const Home = () => {
   )
 
   // The list is newest first, so the previous sign-in is the second entry: a
-  // single value written at login would always read \"now\".
+  // single value written at login would always read "now".
   const previousSignIn = signIns[1] ? describeWhen(signIns[1]) : ''
 
   const canUseAppStream = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
