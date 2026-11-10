@@ -53,6 +53,7 @@
   },
   "author": "4GL Ltd",
   "dependencies": {
+    "adm-zip": "0.6.1",
     "@sasjs/adapter": "4.19.1",
     "@sasjs/api": "0.24.0",
     "@sasjs/core": "^6.1.2",
@@ -80,7 +81,8 @@
     "rotating-file-stream": "^3.2.10",
     "tsoa": "5.1.1",
     "unzipper": "^0.12.5",
-    "url": "^0.11.4"
+    "url": "^0.11.4",
+    "fs-extra": "11.4.1"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
@@ -100,7 +102,6 @@
     "@types/supertest": "^7.2.1",
     "@types/unzipper": "^0.10.11",
     "@yao-pkg/pkg": "6.24.0",
-    "adm-zip": "^0.6.1",
     "axios": "^1.20.0",
     "jest": "^30.5.2",
     "mongodb-memory-server": "^11.3.0",
