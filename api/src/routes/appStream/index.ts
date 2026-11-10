@@ -108,6 +108,24 @@ router.get('/apps.json', authenticateAccessToken, async (req, res) => {
 })
 
 /**
+ * The name an app is already published under, if it is published at all.
+ *
+ * A folder AND a stream folder make an app - one folder may hold two - so both
+ * are matched. This is what keeps a redeploy idempotent for an app registered
+ * before the name was derived: its `AppStreamName<n>` entry is found here and
+ * reused, instead of a second name being added for the same folder.
+ */
+export const publishedName = (
+  appLoc: string,
+  streamWebFolder: string,
+  published: Record<string, { appLoc: string; streamWebFolder?: string }>
+): string | undefined =>
+  Object.entries(published).find(
+    ([, entry]) =>
+      entry.appLoc === appLoc && entry.streamWebFolder === streamWebFolder
+  )?.[0]
+
+/**
  * The name an app is published under when the caller does not choose one.
  *
  * The last segment of the app's folder, which is what everyone means by "the
@@ -181,10 +199,13 @@ export const publishAppStream = async (
 
   if (await folderExists(pathToDeployment)) {
     if (!streamServiceName) {
-      streamServiceName = deriveStreamServiceName(
-        appLoc,
-        process.appStreamConfig ?? {}
-      )
+      // an app that is already published keeps the name it has: deriving a new
+      // one for the same folder would advertise the folder twice, which is the
+      // duplicate tile this naming rule exists to prevent. The folder AND the
+      // stream folder make the app, since one folder may hold two.
+      streamServiceName =
+        publishedName(appLoc, streamWebFolder, process.appStreamConfig ?? {}) ??
+        deriveStreamServiceName(appLoc, process.appStreamConfig ?? {})
     }
 
     appStreams[streamServiceName] = pathToDeployment

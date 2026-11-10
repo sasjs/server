@@ -606,6 +606,97 @@ describe('drive', () => {
         expect(res.statusCode).toEqual(400)
         expect(res.text).toEqual('"appLoc" is required')
       })
+
+      it('deploys a JSON file the app itself ships', async () => {
+        // a manifest is not a deploy document: no appLoc, no fileTree
+        const zip = new AdmZip()
+        zip.addFile(
+          'manifest.json',
+          Buffer.from(JSON.stringify({ name: 'harness' }), 'utf8')
+        )
+        zip.addFile('index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
+
+        const res = await postArchive(zip)
+
+        expect(res.statusCode).toEqual(200)
+
+        const root = path.join(getFilesFolder(), 'Public', 'static')
+
+        await expect(
+          readFile(path.join(root, 'manifest.json'))
+        ).resolves.toEqual('{"name":"harness"}')
+        await expect(readFile(path.join(root, 'index.html'))).resolves.toEqual(
+          '<h1>Hello</h1>'
+        )
+
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
+      })
+
+      it('keeps what is already there when replace is false', async () => {
+        const first = new AdmZip()
+        first.addFile('old.html', Buffer.from('v1', 'utf8'))
+
+        expect((await postArchive(first)).statusCode).toEqual(200)
+
+        const second = new AdmZip()
+        second.addFile('new.html', Buffer.from('v2', 'utf8'))
+
+        const res = await postArchive(
+          second,
+          '?appLoc=/Public/static&replace=false'
+        )
+
+        expect(res.statusCode).toEqual(200)
+
+        const root = path.join(getFilesFolder(), 'Public', 'static')
+
+        await expect(fileExists(path.join(root, 'old.html'))).resolves.toEqual(
+          true
+        )
+        await expect(fileExists(path.join(root, 'new.html'))).resolves.toEqual(
+          true
+        )
+
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
+      })
+
+      it('refuses to publish a folder the archive does not carry', async () => {
+        const zip = new AdmZip()
+        zip.addFile('index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
+
+        const res = await postArchive(
+          zip,
+          '?appLoc=/Public/harness&streamWebFolder=web'
+        )
+
+        expect(res.statusCode).toEqual(400)
+        expect(res.text).toContain('no "services/web" folder')
+      })
+
+      it('publishes the folder as an app, under the folder-derived name', async () => {
+        const zip = new AdmZip()
+        zip.addFile(
+          'services/web/index.html',
+          Buffer.from('<h1>Hi</h1>', 'utf8')
+        )
+
+        const res = await postArchive(
+          zip,
+          '?appLoc=/Public/harness&streamWebFolder=web'
+        )
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body.streamServiceName).toEqual('harness')
+
+        const registry = process.appStreamConfig ?? {}
+        expect(registry['harness']).toMatchObject({
+          appLoc: '/Public/harness',
+          streamWebFolder: 'web'
+        })
+
+        delete process.appStreamConfig?.['harness']
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
+      })
     })
   })
 

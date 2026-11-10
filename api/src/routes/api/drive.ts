@@ -1,5 +1,6 @@
 import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
+import type { FileTree, FolderMember } from '@sasjs/utils'
 
 import { publishAppStream } from '../appStream'
 
@@ -10,8 +11,8 @@ import { DriveController } from '../../controllers/'
 import {
   deployAssetsValidation,
   deployValidation,
+  extractDeployDocumentFromZip,
   extractFileTreeFromZip,
-  extractJSONFromZip,
   fileBodyValidation,
   fileParamValidation,
   fileTreeParamValidation,
@@ -27,9 +28,43 @@ const controller = new DriveController()
 
 const driveRouter = express.Router()
 
+/**
+ * Whether the tree carries the folder App Stream publishes from.
+ *
+ * An app is served out of `<appLoc>/services/<streamWebFolder>`, so a tree
+ * without that folder publishes nothing - `publishAppStream` finds no folder and
+ * returns an empty result, and the deploy would answer `200 Files deployed
+ * successfully` while the tile it promised never appears. The check runs BEFORE
+ * the deploy, so a request that cannot publish writes nothing either.
+ */
+const hasStreamFolder = (tree: FileTree, streamWebFolder: string): boolean => {
+  const services = tree.members.find(
+    (member): member is FolderMember =>
+      member.type === 'folder' && member.name === 'services'
+  )
+
+  return Boolean(
+    services?.members.some(
+      (member) => member.type === 'folder' && member.name === streamWebFolder
+    )
+  )
+}
+
+/** The refusal a tree earns when it has nothing to publish. */
+const noStreamFolder = (appLoc: string, streamWebFolder: string): string =>
+  `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or omit streamWebFolder.`
+
 driveRouter.post('/deploy', async (req, res) => {
   const { error, value: body } = deployValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
+
+  if (
+    body.streamWebFolder &&
+    !hasStreamFolder(body.fileTree, body.streamWebFolder)
+  )
+    return res
+      .status(400)
+      .send(noStreamFolder(body.appLoc, body.streamWebFolder))
 
   try {
     const response = await controller.deploy(body)
@@ -68,7 +103,7 @@ driveRouter.post(
 
     const { value: zipFile } = isZipFile(req.file)
     if (zipFile) {
-      fileContent = await extractJSONFromZip(zipFile)
+      fileContent = (await extractDeployDocumentFromZip(zipFile)) ?? ''
 
       // An archive with no deploy document in it is the app's own files: the
       // entries become the tree and what the document would have said (folder,
@@ -90,6 +125,16 @@ driveRouter.post(
     if (error) {
       deleteFile(req.file.path)
       return res.status(400).send(error.details[0].message)
+    }
+
+    if (
+      body.streamWebFolder &&
+      !hasStreamFolder(body.fileTree, body.streamWebFolder)
+    ) {
+      deleteFile(req.file.path)
+      return res
+        .status(400)
+        .send(noStreamFolder(body.appLoc, body.streamWebFolder))
     }
 
     try {
@@ -147,6 +192,14 @@ const deployArchive = async (
 
   try {
     const fileTree = await extractFileTreeFromZip(zipFile)
+
+    if (
+      value.streamWebFolder &&
+      !hasStreamFolder(fileTree, value.streamWebFolder)
+    )
+      return res
+        .status(400)
+        .send(noStreamFolder(value.appLoc, value.streamWebFolder))
 
     const response = await controller.deploy({
       appLoc: value.appLoc,

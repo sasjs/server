@@ -7,11 +7,30 @@
  * without a new grant or an audit trail. The name is now a function of the app's
  * folder, which is what makes it stable across deploys.
  */
-import { deriveStreamServiceName } from '../index'
+import { deriveStreamServiceName, publishedName } from '../index'
 
-type Published = Record<string, { appLoc: string }>
+type Entry = { appLoc: string; streamWebFolder?: string }
+type Published = Record<string, Entry>
 
 const none: Published = {}
+
+describe('finding the name an app already has', () => {
+  const published: Published = {
+    AppStreamName1: { appLoc: '/Public/apps/demo', streamWebFolder: 'web' },
+    demo: { appLoc: '/Public/other/demo', streamWebFolder: 'web' }
+  }
+
+  it('matches on the folder AND the stream folder', () => {
+    // the name an app published before the derived default keeps working, so a
+    // redeploy adds no second entry for the same folder
+    expect(publishedName('/Public/apps/demo', 'web', published)).toEqual(
+      'AppStreamName1'
+    )
+    expect(
+      publishedName('/Public/apps/demo', 'other', published)
+    ).toBeUndefined()
+  })
+})
 
 describe('deriving an app stream name', () => {
   it('uses the last segment of the app folder', () => {

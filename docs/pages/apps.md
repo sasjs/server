@@ -46,12 +46,18 @@ Member names are checked in the same pass: a name carrying `/`, `\` or `..` woul
 An app does not need a compiled service pack. `POST /SASjsApi/drive/deploy/upload` takes a zip whose entries are the files to serve:
 
 ```bash
+# the archive holds the app's files, rooted where the server serves them from:
+#   services/web/index.html, services/web/app.js, assets/logo.png
 curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&streamWebFolder=web" \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@harness.zip"
 ```
 
-The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` names it. A zip that contains a JSON deploy file is read as a deploy document instead, so the route answers both shapes.
+The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` names it.
+
+An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. A tree without that folder is refused with a message naming it, rather than deployed: publishing it would advertise an app that resolves to nothing.
+
+A zip that contains a deploy document - a root-level JSON file naming `appLoc` and `fileTree` - is read as a document instead, so the route answers both shapes. A JSON file the app itself ships, such as a manifest or a data file, is not a document and is deployed with the rest.
 
 Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under `__MACOSX/`, and `.DS_Store`.
 
