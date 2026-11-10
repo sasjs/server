@@ -4,9 +4,16 @@ import axios from 'axios'
 
 import { deployFormFor } from './deployForm'
 
+interface PublishedApp {
+  id: string
+  name: string
+  url: string
+}
+
 interface PublishResult {
   message: string
-  streamServiceName: string
+  /** The app this deploy published, when it published one. */
+  app?: PublishedApp
 }
 
 /**
@@ -53,8 +60,10 @@ const PublishApp = () => {
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Choose a <code>build.json</code> from a compiled SASjs app. The app is
-        deployed to the drive and streamed at <code>/app/&lt;name&gt;/</code>.
+        Choose a <code>build.json</code> or a zip from a compiled SASjs app. The
+        app is deployed to the drive and streamed at{' '}
+        <code>/app/&lt;id&gt;/</code>, where the id is assigned on the first
+        publish and kept on every redeploy - so the URL survives a new bundle.
       </Typography>
       <input
         ref={input}
@@ -77,8 +86,18 @@ const PublishApp = () => {
       </Button>
       {result && (
         <Alert severity="success" sx={{ mt: 1 }}>
-          {result.message} Streamed as{' '}
-          <strong>{result.streamServiceName}</strong>.
+          {result.message}{' '}
+          {result.app ? (
+            <>
+              Published as <strong>{result.app.name}</strong>, at{' '}
+              <a href={result.app.url} target="_blank" rel="noreferrer">
+                {result.app.url}
+              </a>
+              .
+            </>
+          ) : (
+            'No app was published: the archive carries no web folder, so it was deployed as files only.'
+          )}
         </Alert>
       )}
       {error && (

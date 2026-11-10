@@ -1,5 +1,4 @@
 // TODO: uppercase types
-export * from './AppStreamConfig'
 export * from './Execution'
 export * from './InfoJWT'
 export * from './PreProgramVars'

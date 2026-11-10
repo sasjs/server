@@ -12,7 +12,6 @@ declare namespace NodeJS {
     pkg?: unknown
     sessionController?: import('../../controllers/internal').SessionController
     sasSessionController?: import('../../controllers/internal').SASSessionController
-    appStreamConfig: import('../').AppStreamConfig
     logger: import('@sasjs/utils/logger').Logger
     runTimes: import('../../utils').RunTimeType[]
     secrets: import('../../model/Configuration').ConfigurationType

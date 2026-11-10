@@ -1,4 +1,6 @@
 import { Request } from 'express'
+
+import { appDecidingPath, appEntryForPath } from './appStreamConfig'
 import Permission from '../model/Permission'
 import Group, { PUBLIC_GROUP_NAME } from '../model/Group'
 import { IUserDocument } from '../model/User'
@@ -141,10 +143,19 @@ export const isGrantedForRequest = async (
   req: Request
 ): Promise<boolean> => {
   const rules = await loadRouteRules(dbUser)
+  const requested = getPath(req)
+
+  // An app's route is decided on the path that admits it - its id, or the label
+  // an older rule names - which is the same decision the surface makes when it
+  // lists and serves the app. Comparing the id alone would show a caller a tile
+  // it is then refused, and comparing the label alone would let a deny be
+  // outweighed by a stream-wide grant.
+  const entry = appEntryForPath(requested)
+  const path = entry ? appDecidingPath(entry, rules) : requested
 
   return isRouteGranted(
     rules,
-    getPath(req),
+    path,
     topLevelRouteFor(canonicalPrefix(req.baseUrl))
   )
 }
@@ -166,12 +177,17 @@ export const filterGrantedRoutes = async (
     getPublicRoutePaths()
   ])
 
-  return routes.filter(
-    (route) =>
-      AlwaysVisibleRoutes.includes(route) ||
-      publicPaths.includes(route) ||
-      isRouteGranted(rules, route, topLevelRouteFor(route))
-  )
+  return routes.filter((route) => {
+    if (AlwaysVisibleRoutes.includes(route) || publicPaths.includes(route))
+      return true
+
+    // an app is granted through the path that decides for it, so the inventory
+    // it is filtered from says what the request on its URL would
+    const entry = appEntryForPath(route)
+    const decided = entry ? appDecidingPath(entry, rules) : route
+
+    return isRouteGranted(rules, decided, topLevelRouteFor(route))
+  })
 }
 
 /**

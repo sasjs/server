@@ -1,9 +1,33 @@
+import { randomBytes } from 'crypto'
+import path from 'path'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
+import { generateTimestamp } from '@sasjs/utils'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import { DEFAULT_IDENTITY, RECORD_CORPUS } from '@sasjs/api'
 import type { CorpusCase, IdentityFixture } from '@sasjs/api'
+
+import * as fileUtilModules from '../../../utils/file'
+
+/**
+ * The index of published apps, in a folder of this suite's own.
+ *
+ * One case pins the route inventory exactly, and a published app contributes a
+ * route of its own - so the inventory depends on what this server's drive holds.
+ * That is empty when the suite runs alone and not empty beside another suite's
+ * deploy, or on a machine that has published an app, and neither is what the
+ * case measures. The drive corpus isolates its drive the same way.
+ */
+const appStreamIndexPath = path.join(
+  process.cwd(),
+  `tmp-records-${generateTimestamp()}`,
+  'appStreamConfig.json'
+)
+
+jest
+  .spyOn(fileUtilModules, 'getAppStreamConfigPath')
+  .mockImplementation(() => appStreamIndexPath)
 
 import appPromise from '../../../app'
 import {
@@ -84,7 +108,11 @@ describe('record conformance corpus', () => {
       const created = await users.createUser({
         username: user.username,
         displayName: user.displayName,
-        password: user.password,
+        // A fixture user may carry no password: the account is managed by a
+        // directory, so nothing here signs in with one. The server's own model
+        // still stores a hash, so an unguessable value keeps that true without
+        // inventing a credential a case could use.
+        password: user.password ?? randomBytes(24).toString('hex'),
         isAdmin: user.isAdmin,
         isActive: user.isActive,
         autoExec: user.autoExec

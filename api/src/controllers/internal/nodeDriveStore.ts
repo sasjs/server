@@ -54,8 +54,15 @@ const absolute = (driveRelative: string): string => {
  * nearest existing ancestor.
  */
 const absoluteReal = (driveRelative: string): string => {
-  const root = fs.realpathSync(driveRoot())
   const resolved = absolute(driveRelative)
+  const drive = driveRoot()
+
+  // A drive that does not exist yet holds no links, and `absolute` has already
+  // refused a lexical escape - so a create in a drive that has never been
+  // written needs no real-path check, and realpathSync would throw ENOENT on it.
+  if (!fs.existsSync(drive)) return resolved
+
+  const root = fs.realpathSync(drive)
   let target = resolved
   while (!fs.existsSync(target)) target = path.dirname(target)
   const real = fs.realpathSync(target)
@@ -101,7 +108,7 @@ export const nodeDriveStore = (): DriveStore => ({
   },
 
   async write(drivePath, contents) {
-    const target = absolute(drivePath)
+    const target = absoluteReal(drivePath)
     const data =
       typeof contents === 'string' ? Buffer.from(contents, 'utf8') : contents
     await fsp.writeFile(target, data)
@@ -149,7 +156,7 @@ export const nodeDriveStore = (): DriveStore => ({
   },
 
   async mkdirp(drivePath) {
-    await fsp.mkdir(absolute(drivePath), { recursive: true })
+    await fsp.mkdir(absoluteReal(drivePath), { recursive: true })
   },
 
   async remove(drivePath) {
@@ -157,6 +164,6 @@ export const nodeDriveStore = (): DriveStore => ({
   },
 
   async move(fromPath, toPath) {
-    await fsp.rename(absoluteReal(fromPath), absolute(toPath))
+    await fsp.rename(absoluteReal(fromPath), absoluteReal(toPath))
   }
 })

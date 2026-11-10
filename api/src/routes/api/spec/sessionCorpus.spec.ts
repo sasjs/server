@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import { Express } from 'express'
 import path from 'path'
 import os from 'os'
@@ -64,7 +65,11 @@ describe('session conformance corpus', () => {
       await users.createUser({
         username: user.username,
         displayName: user.displayName,
-        password: user.password,
+        // A fixture user may carry no password: the account is managed by a
+        // directory, so nothing here signs in with one. The server's own model
+        // still stores a hash, so an unguessable value keeps that true without
+        // inventing a credential a case could use.
+        password: user.password ?? randomBytes(24).toString('hex'),
         isAdmin: user.isAdmin,
         isActive: user.isActive
       })

@@ -170,16 +170,17 @@ export const deployAssetsValidation = (data: any): Joi.ValidationResult =>
   }).validate(data)
 
 /**
- * The pair that unpublishing names: the registry is keyed by
- * `streamServiceName`, and `appLoc` is required because a name republished for a
- * different folder is a different app. Both are validated here so a request that
- * names neither answers with the field it is missing rather than reaching the
- * registry and 404ing.
+ * The one field unpublishing names: the app's id.
+ *
+ * Not the folder and not the label. An app's label is shared by design - two
+ * folders may both be called "report" - and its folder is where it was published
+ * rather than what it is. The id is the identity, and the id a publish answered
+ * with is the handle a caller removes it by, so a rename or a redeploy elsewhere
+ * cannot leave a removal pointing at the wrong app.
  */
 export const unpublishValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    appLoc: Joi.string().pattern(/^\//).required().min(2),
-    streamServiceName: Joi.string().required()
+    id: Joi.string().required()
   }).validate(data)
 
 const filePathSchema = Joi.string()

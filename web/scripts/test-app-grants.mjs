@@ -45,26 +45,36 @@ const grants = groupAppGrants([
 
 check('two apps are reported', grants.length === 2)
 check(
-  'apps are listed by name',
-  grants.map((grant) => grant.name).join(',') === 'mario,rockroller'
+  'apps are listed by what the rule names',
+  grants.map((grant) => grant.key).join(',') === 'mario,rockroller'
 )
 
-const mario = grants.find((grant) => grant.name === 'mario')
+// An app's id is what its rule names now, and a label is what an older rule
+// names; the gate honours both, so a read-only view must report both rather
+// than deciding one of them is not an app grant.
+const streamedId = '0a0b0c0d-1111-4111-8111-121212121212'
+const byId = groupAppGrants([userRule(`/AppStream/${streamedId}`, 'alice')])
+check(
+  'a rule on an id is one app',
+  byId.length === 1 && byId[0].key === streamedId
+)
+
+const mario = grants.find((grant) => grant.key === 'mario')
 check('user grants are collected', mario.users.join(',') === 'alice,bob')
 check('group grants are collected', mario.groups.join(',') === 'analysts')
 check('an app with no deny has none', mario.denied.length === 0)
 
-const rock = grants.find((grant) => grant.name === 'rockroller')
+const rock = grants.find((grant) => grant.key === 'rockroller')
 check('a deny is separated from the grants', rock.denied.join(',') === 'eve')
 check('a deny is not counted as a grant', rock.users.join(',') === 'alice')
 
 check(
   'a rule on the stream itself is not one app',
-  grants.every((grant) => grant.name !== 'AppStream')
+  grants.every((grant) => grant.key !== 'AppStream')
 )
 check(
   'a non-app route is ignored',
-  !grants.some((grant) => grant.name.includes('SASjsApi'))
+  !grants.some((grant) => grant.key.includes('SASjsApi'))
 )
 check(
   'a nested path is not an app name',

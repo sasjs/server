@@ -341,9 +341,10 @@ const Home = () => {
     let cancelled = false
 
     axios
-      // The canonical spelling, not the short alias: the browser-hosted build
-      // ships a service worker that answers /AppStream and /SASjsApi (the CLI's
-      // mock host), and this request has to reach it there as well as here.
+      // The canonical spelling, which the server answers on both prefixes but
+      // the browser-hosted build (the CLI's mock host) still answers only here:
+      // its `/app` answers are hard-coded empty until the mock is wired to the
+      // package. Shorten this to `/app/apps.json` with that change.
       .get('/AppStream/apps.json')
       .then((res) => {
         if (cancelled) return

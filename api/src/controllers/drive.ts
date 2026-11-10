@@ -32,11 +32,12 @@ import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
 import { HttpError } from '../utils'
-import { unpublishAppStream as unpublishFromRegistry } from '../routes/appStream'
 import {
-  unpublishAppStream as unpublish,
-  type AppStreamRegistry
-} from '@sasjs/api'
+  appStreamService,
+  refreshAppStreamIndex,
+  type PublishedApp
+} from '../utils'
+import { appSummary, type AppStreamEntry } from '@sasjs/api'
 
 interface DeployPayload {
   /** The folder to deploy into; `/Public/apps/myapp` */
@@ -60,18 +61,24 @@ interface DeployPayload {
   fileTree: FileTree
 }
 
-/** The pair an unpublish names - see `DELETE /SASjsApi/drive/deploy`. */
+/** The app an unpublish names - see `DELETE /SASjsApi/drive/deploy`. */
 interface UnpublishPayload {
-  /** The folder the app was published from; `/Public/app/myservice` */
-  appLoc: string
-  /** The name the app is advertised and served under */
-  streamServiceName: string
+  /** The id the publish answered with, e.g. `6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60` */
+  id: string
 }
 
+/** What removing an app answers: the app that is no longer published. */
+interface UnpublishResponse {
+  status: string
+  app: PublishedApp
+}
+
+/** What a deploy answers, and the app it published when it published one. */
 interface DeployResponse {
   status: string
   message: string
-  streamServiceName?: string
+  /** The app this deploy published, with the URL it is served on. */
+  app?: PublishedApp
   example?: FileTree
 }
 
@@ -294,51 +301,50 @@ export class DriveController {
   }
 
   /**
-   * Removes a published app stream entry.
+   * Removes a published app.
    *
-   * The entry stops being advertised - the landing page, its HTML index and
-   * `/AppStream/apps.json` are all built from the one registry - and stops being
-   * served on `/AppStream/<streamServiceName>`, because the name leaves the route
-   * inventory as well.
+   * The body names the app by **id** - the value the publish answered with - and
+   * nothing else. An app's label is shared by design (two folders may both be
+   * called "report") and its folder is where it was published rather than what it
+   * is, so neither is an identity: a removal that named a label could take down
+   * an app nobody meant, and a removal that named a folder would miss an app
+   * whose deployment has since gone. The id removes exactly the app it names,
+   * whatever the app is currently called.
    *
-   * `appLoc` and `streamServiceName` are both required - a caller that names a
-   * stream but not the folder has not said what to remove - but the **folder is
-   * what identifies the app**: an app is one thing to deploy and one thing to
-   * remove, and its name is a label on it. A folder may hold two apps only as a
-   * special case, and they are still one thing to load or delete. So a name that
-   * has since been changed does not turn a correct removal into a `404`; a folder
-   * with nothing published at it answers `404`, and a missing field answers `400`.
+   * The entry stops being advertised - the landing page and `/app/apps.json` are
+   * both built from the index - and stops being served, because the id leaves the
+   * route inventory as well. The drive content is left alone: deleting the folder
+   * is `DELETE /SASjsApi/drive/folder`, so unpublishing never destroys a
+   * deployment, and publishing created no permission rule, so there is none to
+   * withdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this route
+   * already requires.
    *
-   * The drive content is left alone. Deleting the folder is `DELETE
-   * /SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and
-   * publishing created no permission rule, so there is none to withdraw: a caller
-   * needs the same `/SASjsApi/drive/deploy` grant this route already requires.
+   * An id the index does not hold answers `404`; a body that names no id answers
+   * `400`.
    *
-   * An entry whose deployment folder has already gone is removable too, which is
-   * the case a stale listing is made of: the registry file is consulted as well as
-   * the in-memory view, and only the named entry is dropped.
-   *
-   * @summary Remove an app stream entry
+   * @summary Remove an app
    */
   @Response<FileFolderResponse>(400, 'Invalid Format', {
     status: 'failure',
     message: 'Unpublishing failed!'
   })
-  @Response(404, 'No app is published at that folder')
+  @Response(404, 'No app is published with that id')
   @Delete('/deploy')
   public async unpublish(
     @Body() body: UnpublishPayload
-  ): Promise<FileFolderResponse> {
-    // The decisions are the package's - both body values required, the folder as
-    // the identity, and the 404 when nothing is published there - so a mock, a
-    // worker and this server cannot drift apart. What stays here is the port: the
-    // package cannot know this host's registry.
-    const registry: AppStreamRegistry = {
-      unpublish: (appLoc) => unpublishFromRegistry(appLoc)
-    }
-
+  ): Promise<UnpublishResponse> {
+    // The decisions are the package's - the id is the identity, an unknown id is
+    // a 404, and the answer states what went - so a mock, a worker and this
+    // server cannot drift apart. What stays here is the port: the file the index
+    // is kept in, and the inventory the permission gate reads.
     try {
-      return await unpublish(registry, body)
+      const removed: AppStreamEntry = await appStreamService().unpublish(
+        body.id
+      )
+
+      await refreshAppStreamIndex()
+
+      return { status: 'success', app: appSummary(removed) }
     } catch (error) {
       // an ApiError is a decision the package made and the caller should see; a
       // second error type escaping this method would reach the client as a 500

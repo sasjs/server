@@ -1,453 +1,213 @@
-import path from 'path'
 import express, { Request, Response } from 'express'
-import { createHash } from 'crypto'
+
 import { authenticateAccessToken, generateCSRFToken } from '../../middlewares'
-import { folderExists } from '@sasjs/utils'
+import {
+  createAppStreamWebService,
+  isAppId,
+  NO_SUCH_APP,
+  type AppStreamEntry,
+  type AppStreamPage,
+  type AppStreamWebService
+} from '@sasjs/api'
 
 import {
-  addEntryToAppStreamConfig,
-  filterGrantedRoutes,
-  getFilesFolder,
-  ModeType,
-  mutateRegistry,
-  readStoredAppStreamConfig,
-  writeStoredAppStreamConfig,
-  resolveWithinDrive,
-  resolveListeners,
-  isSafePathSegment,
+  API_PREFIX,
   APP_STREAM_ALIAS,
-  applyAppFraming
+  appIsGranted,
+  appStreamDrive,
+  appStreamEntries,
+  appStreamService,
+  isRouteGranted,
+  loadRouteRules,
+  ModeType
 } from '../../utils'
 import User from '../../model/User'
-import { AppStreamConfig } from '../../types'
-import { appStreamHtml } from './appStreamHtml'
 
-const appStreams: { [key: string]: string } = {}
+/**
+ * The App Stream surface: the landing page, the listing, an app's own files and
+ * the removal of one.
+ *
+ * All of it is `@sasjs/api`'s. The package decides what the listing says, what a
+ * missing app answers, how an asset is found inside a deployment, what is
+ * cacheable and what a `DELETE` removes - so this host, the browser build and
+ * the conformance corpus cannot drift apart, which is how the name-keyed
+ * registry and the two hand-written implementations diverged before.
+ *
+ * What stays here is the transport and the one thing a package cannot know: who
+ * is asking. Express renders a `AppStreamPage`; the permission grant that admits
+ * an app is read from this server's database.
+ */
+const appStreamWeb = (): AppStreamWebService =>
+  createAppStreamWebService(appStreamService(), appStreamDrive(), {
+    basePath: APP_STREAM_ALIAS
+  })
+
+/**
+ * The ids of the apps this caller may open.
+ *
+ * The package asks this per entry - `allow` - so the answer is a set built once
+ * per request rather than a query per app. Each app is decided by the same rule
+ * the gate applies to its own route: a grant on the app's id, or on the label it
+ * carries (see `appGrantPaths`), or on `/AppStream` itself, which admits them
+ * all.
+ *
+ * Desktop mode has no permission model - `authenticateAccessToken` bypasses the
+ * gate there - so every app stands.
+ */
+const allowedAppIds = async (req: Request): Promise<Set<string>> => {
+  // read from what boot and the last publish left: this runs for every asset a
+  // page loads, and the index cannot change while the process serves it
+  const entries = appStreamEntries()
+
+  if (process.env.MODE === ModeType.Desktop)
+    return new Set(entries.map((entry) => entry.id))
+
+  const dbUser = await User.findOne({ _id: req.user?.userId })
+
+  if (!dbUser) return new Set()
+
+  if (dbUser.isAdmin) return new Set(entries.map((entry) => entry.id))
+
+  const rules = await loadRouteRules(dbUser)
+
+  return new Set(
+    entries
+      .filter((entry: AppStreamEntry) => appIsGranted(entry, rules))
+      .map((entry) => entry.id)
+  )
+}
+
+/** The route the landing page is answered on, whatever the mount spelling. */
+const isLanding = (path: string): boolean => {
+  const clean = (path.split(/[?#]/)[0] || '/').replace(/\/+$/, '')
+
+  return (
+    clean === APP_STREAM_ALIAS || clean === `${APP_STREAM_ALIAS}/index.html`
+  )
+}
+
+/**
+ * One package answer, rendered by express.
+ *
+ * The status, the headers the package set (caching, `allow`, the framing policy
+ * of the app being served) and the body travel together, so a host cannot answer
+ * a page's status with another page's body.
+ */
+const render = (req: Request, res: Response, page: AppStreamPage) => {
+  res.status(page.status)
+
+  for (const [name, value] of Object.entries(page.headers ?? {}))
+    res.setHeader(name, value)
+
+  if (page.location) return res.redirect(page.status, page.location)
+
+  // The interface fetches the CSRF token from the landing screen, so the page
+  // that hands out the app list keeps handing it out.
+  if (isLanding(req.originalUrl))
+    res.cookie('XSRF-TOKEN', generateCSRFToken(req))
+
+  if (page.contentType) res.type(page.contentType)
+
+  return res.send(
+    typeof page.body === 'undefined'
+      ? ''
+      : typeof page.body === 'string'
+        ? page.body
+        : Buffer.from(page.body)
+  )
+}
+
+/**
+ * Whether this caller may take an app down.
+ *
+ * The surface's `allow` predicate is a VIEW filter - the package uses it to
+ * decide which app a request may see, and then removes what it resolved - so
+ * passing it the grant that admits an app would let everyone who can open an
+ * app also delete it. Removal is the deploy route's permission, which is what
+ * `DELETE /SASjsApi/drive/deploy` requires and what the interface gates the bin
+ * on. Desktop mode has no permission model.
+ */
+const mayUnpublish = async (req: Request): Promise<boolean> => {
+  if (process.env.MODE === ModeType.Desktop) return true
+
+  const dbUser = await User.findOne({ _id: req.user?.userId })
+
+  if (!dbUser) return false
+
+  if (dbUser.isAdmin) return true
+
+  return isRouteGranted(
+    await loadRouteRules(dbUser),
+    `${API_PREFIX}/drive/deploy`,
+    API_PREFIX
+  )
+}
+
+/**
+ * The refusal a `DELETE` earns, or undefined when the request may proceed.
+ *
+ * Two things the surface leaves to its host. The first is WHO may remove: see
+ * `mayUnpublish`. The second is that a removal names an **id** - the package
+ * resolves a label as a courtesy to a bookmark, which is right for opening an
+ * app and wrong for deleting one, where a label that a later publish reuses
+ * would remove an app nobody named. A label-addressed removal answers the same
+ * `404` as an unknown app, so a caller cannot use it to ask whether a name is
+ * taken.
+ */
+const removalRefusal = async (
+  req: Request
+): Promise<{ status: number; body?: string } | undefined> => {
+  if (!(await mayUnpublish(req))) return { status: 401 }
+
+  const segment = req.path.replace(/^\/+|\/+$/g, '')
+
+  if (!segment || !isAppId(decodeURIComponent(segment)))
+    return { status: 404, body: NO_SUCH_APP }
+
+  return undefined
+}
 
 const router = express.Router()
 
-/**
- * The apps this caller may open.
- *
- * The landing page itself is always visible to a signed-in caller, so this is
- * the only thing that varies: a tile for an app the caller holds no grant on is
- * a dead end, because the app's own route is permissioned and following the
- * tile answers 401. Each app is decided by the same rule the gate applies to
- * `/AppStream/<name>`, read from the same place, so the list and the gate cannot
- * disagree - and a grant on `/AppStream` itself admits every app, exactly as it
- * does at the gate.
- *
- * Desktop mode has no permission model (authenticateAccessToken bypasses the
- * gate there), so the whole list stands.
- */
-/**
- * Exported for the per-app detail endpoint, so the detail and the listing are
- * decided by the same grant rule: an app missing from the listing must not be
- * describable by asking for it by name.
- */
-export const permittedAppStreamConfig = async (
-  req: Request
-): Promise<AppStreamConfig> => {
-  const appStreamConfig = process.appStreamConfig ?? {}
-
-  if (process.env.MODE === ModeType.Desktop) return appStreamConfig
-
-  const dbUser = await User.findOne({ _id: req.user?.userId })
-  if (!dbUser) return {}
-
-  const names = Object.keys(appStreamConfig)
-  const granted = await filterGrantedRoutes(
-    dbUser,
-    names.map((name) => `/AppStream/${name}`)
-  )
-
-  return names.reduce((config: AppStreamConfig, name) => {
-    if (granted.indexOf(`/AppStream/${name}`) > -1)
-      config[name] = appStreamConfig[name]
-
-    return config
-  }, {})
-}
-
-router.get('/', authenticateAccessToken, async (req, res) => {
-  const content = appStreamHtml(await permittedAppStreamConfig(req))
-
-  res.cookie('XSRF-TOKEN', generateCSRFToken(req))
-
-  return res.send(content)
-})
+router.use(authenticateAccessToken)
 
 /**
- * The same list the landing page renders, as JSON, so the single-page app's home
- * screen can show the apps without scraping the HTML. It answers with the same
- * permission-filtered config the page uses, so the two cannot disagree.
+ * The request's path as the package reads it.
  *
- * Declared before the `/*splat` handler below, which would otherwise serve this
- * path as an app's static asset.
+ * The surface is mounted at both spellings, and the package knows one base path,
+ * so the canonical prefix is translated to the short one. That is the same
+ * request, not an alias for something else: `/AppStream/apps.json` and
+ * `/app/apps.json` answer the same listing. It does NOT translate what follows
+ * the prefix - that segment is an app's id, and a name is not one, so an app's
+ * own URL under the old prefix still 404s rather than being guessed at.
  */
-router.get('/apps.json', authenticateAccessToken, async (req, res) => {
-  const config = await permittedAppStreamConfig(req)
-
-  return res.json({
-    apps: Object.entries(config).map(([name, entry]) => ({
-      name,
-      appLoc: entry.appLoc,
-      // Resolved here rather than in the interface: a configured logo is an
-      // asset inside the app, so it is addressed relative to the app's stream
-      // path. The landing page resolves the same value the same way.
-      logo: entry.streamLogo
-        ? `${APP_STREAM_ALIAS}/${name}/${entry.streamLogo}`
-        : null,
-      url: `${APP_STREAM_ALIAS}/${name}/`,
-      // When the bundle was last published, or null for a registry written
-      // before the registry recorded one - the interface shows the date it
-      // has rather than inventing one.
-      publishedAt: entry.publishedAt ?? null
-    }))
-  })
-})
+const surfacePath = (req: Request): string => `${APP_STREAM_ALIAS}${req.path}`
 
 /**
- * The name an app is already published under, if it is published at all.
+ * Every path and method the surface answers, including the ones it refuses:
+ * the package decides a `405` for a method it does not take, and express's own
+ * `404` would say nothing about why.
  *
- * A folder AND a stream folder make an app - one folder may hold two - so both
- * are matched. This is what keeps a redeploy idempotent for an app registered
- * before the name was derived: its `AppStreamName<n>` entry is found here and
- * reused, instead of a second name being added for the same folder.
+ * Mounted at `/app` and at `/AppStream` (see setupRoutes), and the package is
+ * handed the short spelling for both: the two prefixes are one surface, so the
+ * listing answers on either. What follows the prefix is not translated, so an
+ * app's own URL under the old prefix 404s - its name is not its address.
  */
-export const publishedName = (
-  appLoc: string,
-  streamWebFolder: string,
-  published: Record<string, { appLoc: string; streamWebFolder?: string }>
-): string | undefined =>
-  Object.entries(published).find(
-    ([, entry]) =>
-      entry.appLoc === appLoc && entry.streamWebFolder === streamWebFolder
-  )?.[0]
+router.all(['/', '/*splat'], async (req: Request, res: Response) => {
+  if (req.method === 'DELETE') {
+    const refusal = await removalRefusal(req)
 
-/**
- * The name an app is published under when the caller does not choose one.
- *
- * The last segment of the app's folder, which is what everyone means by "the
- * app's name" - `/Public/apps/dashdemo` publishes as `dashdemo`. It is derived
- * from the folder rather than from the number of published apps, because that
- * count moves: unpublish anything and the next default name collides with an
- * existing one and silently re-points it at a different app.
- *
- * A segment that is not URL-safe is reduced to one: the name is a URL segment
- * and a permission path, so spaces, `?` and `#` cannot be carried literally.
- *
- * When the readable name is already held by a DIFFERENT folder, a short digest
- * of the folder is appended, so publishing `/Public/a/report` and
- * `/Public/b/report` yields two names instead of one overwriting the other. The
- * digest is a function of the folder, so the same folder derives the same name
- * on every deploy.
- */
-export const deriveStreamServiceName = (
-  appLoc: string,
-  published: Record<string, { appLoc: string }>
-): string => {
-  const segment = appLoc.split('/').filter(Boolean).pop() ?? ''
-  const readable =
-    segment.replace(/[^A-Za-z0-9._~-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '') ||
-    'app'
-
-  const holder = published[readable]
-
-  if (!holder || holder.appLoc === appLoc) return readable
-
-  const digest = createHash('sha256').update(appLoc).digest('hex')
-
-  for (const length of [6, 8, 12, 64]) {
-    const candidate = `${readable}-${digest.slice(0, length)}`
-    const taken = published[candidate]
-
-    if (!taken || taken.appLoc === appLoc) return candidate
+    if (refusal) return res.status(refusal.status).send(refusal.body)
   }
 
-  // six characters of a sha256 colliding on four lengths running is not a case
-  // that can happen; keeping the readable name is the least surprising answer
-  return readable
-}
-
-export const publishAppStream = async (
-  appLoc: string,
-  streamWebFolder: string,
-  streamServiceName?: string,
-  streamLogo?: string,
-  addEntryToFile: boolean = true
-) => {
-  const driveFilesPath = getFilesFolder()
-
-  const appLocParts = appLoc.replace(/^\//, '')?.split('/')
-  const appLocPath = resolveWithinDrive(appLoc)
-  if (!appLocPath) {
-    throw new Error('appLoc cannot be outside drive.')
-  }
-
-  // streamWebFolder must itself be a single safe segment: joined naively it
-  // could climb out of the deployment (and the drive) the same way a member
-  // name can.
-  if (!isSafePathSegment(streamWebFolder)) {
-    throw new Error('streamWebFolder must be a single path segment.')
-  }
-
-  const pathToDeployment = path.join(appLocPath, 'services', streamWebFolder)
-  if (!pathToDeployment.includes(appLocPath)) {
-    throw new Error('streamWebFolder cannot be outside appLoc.')
-  }
-
-  if (await folderExists(pathToDeployment)) {
-    if (!streamServiceName) {
-      // an app that is already published keeps the name it has: deriving a new
-      // one for the same folder would advertise the folder twice, which is the
-      // duplicate tile this naming rule exists to prevent. The folder AND the
-      // stream folder make the app, since one folder may hold two.
-      streamServiceName =
-        publishedName(appLoc, streamWebFolder, process.appStreamConfig ?? {}) ??
-        deriveStreamServiceName(appLoc, process.appStreamConfig ?? {})
-    }
-
-    appStreams[streamServiceName] = pathToDeployment
-
-    await addEntryToAppStreamConfig(
-      streamServiceName,
-      appLoc,
-      streamWebFolder,
-      streamLogo,
-      addEntryToFile
-    )
-
-    // the URL the app is reachable on, from the listener configuration rather
-    // than a variable nothing sets any more - scheme and port are read together
-    // so the pair always describes a listener that exists
-    const { config, errors } = resolveListeners(process.env)
-
-    if (config) {
-      const port = config.httpPort || config.httpsPort
-      const scheme = config.httpPort ? 'http' : 'https'
-      // the bound address, not localhost: a listener on 0.0.0.0 or a specific
-      // interface is not reachable as localhost from another machine
-      const bind = config.httpPort
-        ? config.httpBindAddress
-        : config.httpsBindAddress
-      const host =
-        !bind || bind === '0.0.0.0' || bind === '::'
-          ? 'localhost'
-          : bind.includes(':')
-            ? `[${bind}]`
-            : bind
-
-      process.logger.info(
-        'Serving Stream App: ',
-        `${scheme}://${host}:${port}${APP_STREAM_ALIAS}/${streamServiceName}`
-      )
-    } else {
-      process.logger.warn(
-        'Serving Stream App: ',
-        `${streamServiceName} - no listener is configured, so there is no URL to report: ${errors.join(' ')}`
-      )
-    }
-    return { streamServiceName }
-  }
-  return {}
-}
-
-/**
- * Stops advertising a published app, and stops serving it.
- *
- * Publishing does two things, and this undoes both: it writes an entry to the
- * registry that the landing page, its HTML index and `/AppStream/apps.json` are
- * all built from, and it points `appStreams` - the map the handler below serves
- * `/AppStream/<name>` out of - at the deployment's folder. Removing the entry
- * alone would leave an app reachable at a URL that nothing advertises, which is
- * the state that is hardest to reason about: it answers, and no listing offers
- * it.
- *
- * The pair is checked, not just the name. A name that has been republished for a
- * different `appLoc` is a different app, so a caller asking to unpublish the
- * older one must not take the newer one down; a pair that matches no entry
- * answers `false`, which the route renders as a 404 - the same answer as a name
- * the registry never held.
- *
- * The drive content is left alone: deleting the folder is `DELETE
- * /SASjsApi/drive/folder`. Publishing wrote the registry entry and nothing else,
- * so that is what unpublishing removes - there is no permission rule to withdraw,
- * because publishing does not create one. The per-app routes
- * (`getAuthorizedRoutes`) are read from this same registry, so the name drops out
- * of a caller's route inventory as soon as the entry goes.
- *
- * The entry is looked for in the stored registry as well as in memory, because
- * those differ: boot records an entry only when its deployment folder still
- * exists, so an app whose folder was deleted out from under the server is in the
- * file and not in `process.appStreamConfig`. Those are the entries a stale
- * listing is made of, and before this route they had no removal at all.
- */
-export const unpublishAppStream = (appLoc: string): Promise<boolean> =>
-  // queued with publishing: both are whole-file writes over the same registry,
-  // and interleaved they discard each other (see mutateRegistry)
-  mutateRegistry(async () => {
-    const stored = await readStoredAppStreamConfig()
-
-    // the file is the durable record, so it is consulted as well as memory: an
-    // entry whose deployment folder went missing is dropped from memory at boot
-    // and lives only on disk - and those are exactly the entries a stale listing
-    // is made of, so they are the ones most in need of removal.
-    const resolved = (path?: string) =>
-      path ? resolveWithinDrive(path) : undefined
-
-    // compared on the resolved path, not the raw string: `/Public/app/x` and
-    // `/Public/app/x/` are one folder, and a caller deleting an app with the
-    // spelling it published is entitled to a match either way. Case is NOT
-    // folded - the drive is a case-sensitive filesystem, so two spellings are
-    // two folders there.
-    const matches = (entry?: { appLoc: string }) => {
-      const entryPath = resolved(entry?.appLoc)
-      const givenPath = resolved(appLoc)
-
-      return !!entryPath && !!givenPath && entryPath === givenPath
-    }
-
-    // The folder is the identity. An app is one thing to deploy and one thing
-    // to remove, and its name is a label on it - so the entry published at this
-    // folder is found whatever it is currently called, and a client that renamed
-    // its stream can still remove it.
-    const keyAt = (config?: AppStreamConfig) =>
-      Object.entries(config ?? {}).find(([, entry]) => matches(entry))?.[0]
-
-    const fileKey = keyAt(stored)
-    const memoryKey = keyAt(process.appStreamConfig as AppStreamConfig)
-
-    if (!fileKey && !memoryKey) return false
-
-    const next = { ...stored }
-
-    if (fileKey) delete next[fileKey]
-
-    if (memoryKey) {
-      delete (process.appStreamConfig as AppStreamConfig)[memoryKey]
-
-      // served from the name, so the route stops answering in the same breath
-      delete appStreams[memoryKey]
-    }
-
-    if (fileKey) {
-      // Written from the stored view, not from memory: writing memory here would
-      // also purge every other entry whose deployment has gone. A name still live
-      // in memory for a *different* folder is another app that happens to hold
-      // that name, and it keeps its place in the file.
-      const live = (process.appStreamConfig as AppStreamConfig)[fileKey]
-      if (live) next[fileKey] = live
-
-      await writeStoredAppStreamConfig(next)
-    } else {
-      await writeStoredAppStreamConfig(
-        process.appStreamConfig as AppStreamConfig
-      )
-    }
-
-    return true
+  const allow = await allowedAppIds(req)
+  const page = await appStreamWeb().request({
+    method: req.method,
+    path: surfacePath(req),
+    allow: (entry) => allow.has(entry.id)
   })
 
-/**
- * The first path segment, percent-decoded.
- *
- * `req.path` is the raw, still-encoded pathname (`/My%20App/`), while the app's
- * name is the string it was published under (`My App`). Comparing the two
- * directly meant a name that needs encoding was publishable and unreachable: the
- * lookup missed and the request fell through to the "no App Stream" page. A name
- * with a space, an accent or a `+` is an ordinary thing for a deployer to type,
- * so the segment is decoded before it is used as a key.
- *
- * Only the KEY is decoded. The remainder of the path stays as it arrived,
- * because it becomes `req.url` for `express.static`, which decodes and contains
- * it under its own rules - decoding it here would hand a `..` segment to a
- * handler that expects to do that itself.
- *
- * A malformed escape (`%E0%A4%A`) throws in `decodeURIComponent`; that is a
- * request no app can be named after, so the raw segment is used and the lookup
- * misses as it did before.
- */
-const appStreamKey = (segment: string): string => {
-  try {
-    return decodeURIComponent(segment)
-  } catch (_) {
-    return segment
-  }
-}
-
-/**
- * Caching for an app's own build output.
- *
- * An SPA build names its files after their content (`main.<hash>.js`), so a
- * hashed name is immutable: a deployment ships a new name, never a new body.
- * Everything else - `index.html` above all - has to be revalidated, or a browser
- * keeps opening the previous deployment's shell against the new bundle.
- *
- * Without this, express.static sends no Cache-Control at all, so every visit
- * re-downloads the whole bundle and every deploy is one hard-refresh away from
- * taking effect. Measured against an App Stream app: 10.4MB transferred and 8.5s
- * to first contentful paint with no caching, 3.1MB and 2.8s with the two
- * headers this sets.
- */
-export const appStreamCacheHeaders = (
-  res: Response,
-  filePath: string
-): void => {
-  // Angular's own naming, and anything else that embeds a content hash: the
-  // extension follows a run of hex digits. `assets/config.json` does not match,
-  // which is the point - it can change under the same name.
-  const isContentHashed = /\.[0-9a-f]{8,}\.[A-Za-z0-9]+$/.test(filePath)
-
-  res.setHeader(
-    'Cache-Control',
-    isContentHashed
-      ? 'public, max-age=31536000, immutable'
-      : 'public, max-age=0, must-revalidate'
-  )
-}
-
-// Express 5 (path-to-regexp v8) requires wildcard segments to be named;
-// a bare `*` throws at router registration time. The name is unused here
-// because the handler reads `req.path` directly.
-router.get(
-  `/*splat`,
-  authenticateAccessToken,
-  function (req: Request, res, next) {
-    const reqPath = req.path.replace(/^\//, '')
-
-    // Redirecting to url with trailing slash for appStream base URL only
-    if (reqPath.split('/').length === 1 && !reqPath.endsWith('/'))
-      // navigating to same url with slash at start
-      return res.redirect(301, `${reqPath}/`)
-
-    const appStream = appStreamKey(reqPath.split('/')[0])
-    const appStreamFilesPath = appStreams[appStream]
-    if (appStreamFilesPath) {
-      // One app may name the origins allowed to frame it; every other app keeps
-      // the server's policy. Applied to the response helmet has already written,
-      // and before the files are served, because a static answer carries these
-      // headers out with it.
-      applyAppFraming(
-        res,
-        (process.appStreamConfig ?? {})[appStream]?.frameAncestors
-      )
-
-      // resourcePath is without appStream base path
-      const resourcePath = reqPath.split('/').slice(1).join('/') || 'index.html'
-
-      req.url = resourcePath
-
-      return express.static(appStreamFilesPath, {
-        setHeaders: appStreamCacheHeaders
-      })(req, res, next)
-    }
-
-    // 404, not 200: a caller checking whether a stream is up reads the status,
-    // and an unregistered name is a missing resource like any other. The text is
-    // unchanged for the browser, which shows it to a person.
-    return res.status(404).send("There's no App Stream available here.")
-  }
-)
+  return render(req, res, page)
+})
 
 export default router
