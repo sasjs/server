@@ -431,6 +431,60 @@ describe('App Stream surface', () => {
     }
   })
 
+  it('serves an app under the framing policy it asked for', async () => {
+    const { token } = await tokenFor(admin.username)
+
+    // An app's `frameAncestors` is validated and stored by the package, but the
+    // response headers are the host's: without applying it, an app configured
+    // for cross-origin embedding is served under helmet's `frame-ancestors
+    // 'self'` and silently refuses to frame.
+    const FRAMED = '8b8c8d8e-3f4a-4b5c-9d0e-1f2a3b4c5d6e'
+    const deployment = path.join(
+      driveFolder,
+      'Public',
+      'app',
+      'framed',
+      'services',
+      'web'
+    )
+
+    await createFile(path.join(deployment, 'index.html'), '<h1>Framed</h1>')
+
+    await writeStoredAppStreamEntries([
+      ...(await readStoredAppStreamEntries()),
+      {
+        id: FRAMED,
+        name: 'Framed',
+        appLoc: '/Public/app/framed',
+        streamWebFolder: 'web',
+        frameAncestors: ['https://example.com', 'https://example.org'],
+        publishedAt: '2026-11-05T10:00:00.000Z'
+      }
+    ])
+    await refreshAppStreamIndex()
+
+    try {
+      const res = await request(app)
+        .get(`/app/${FRAMED}/`)
+        .auth(token, { type: 'bearer' })
+        .expect(200)
+
+      expect(String(res.headers['content-security-policy'])).toContain(
+        'frame-ancestors https://example.com https://example.org'
+      )
+      // CSP is the policy that decides, and a legacy header naming 'self' would
+      // contradict it in the browsers that still read it
+      expect(res.headers['x-frame-options']).toBeUndefined()
+    } finally {
+      await writeStoredAppStreamEntries(
+        (await readStoredAppStreamEntries()).filter(
+          (entry) => entry.id !== FRAMED
+        )
+      )
+      await refreshAppStreamIndex()
+    }
+  })
+
   it('still redirects the old landing page to the short one', async () => {
     const res = await request(app).get('/AppStream').expect(301)
 

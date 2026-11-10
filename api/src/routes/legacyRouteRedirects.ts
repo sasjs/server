@@ -30,11 +30,13 @@ const queryOf = (req: Request): string => {
  * `/AppStream` is the App Stream prefix: the landing page moves to `/app`, and
  * that redirect stays.
  *
- * `/AppStream/<anything>` does NOT redirect any more. What followed the old
- * prefix was an app's NAME, and an app is addressed by its id now - there is
- * nothing to translate a name into, and guessing (the one app holding that
- * label?) is worse than the `404` the App Stream surface answers, which is what
- * a stale bookmark of an app should get: the app is not at that address.
+ * `/AppStream/<anything>` does NOT redirect, and is not rewritten here. It is
+ * left to the middleware that follows, which mounts the App Stream surface at
+ * both prefixes - so the segment is resolved the way `/app/<segment>` is: an id
+ * serves the app, and so does a label only one app carries, which is what a
+ * stale bookmark of the old name-shaped URL was written with. A segment that
+ * names nothing answers the surface's `404`; there is no redirect to invent,
+ * because the app's own address is its id and only the surface knows it.
  */
 const target = (path: string): string | undefined => {
   const direct = moved[path]

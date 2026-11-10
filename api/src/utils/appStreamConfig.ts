@@ -246,9 +246,15 @@ export const appDecidingPath = (
   return paths.find(spoken) ?? paths[0]
 }
 
-/** The one segment an app's route carries, or undefined when there is none. */
+/**
+ * The segment that names an app: the first one after either spelling of the
+ * prefix. Both, because a request arrives on whichever it used - and anything
+ * deeper is a file inside the app, which belongs to the same app.
+ */
 const appSegment = (route: string): string | undefined => {
-  const match = /^\/AppStream\/([^/]+)\/?$/.exec(route.split(/[?#]/)[0] ?? '')
+  const match = /^\/(?:AppStream|app)\/([^/?#]+)/i.exec(
+    route.split(/[?#]/)[0] ?? ''
+  )
 
   return match ? decodeURIComponent(match[1]) : undefined
 }

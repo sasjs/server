@@ -13,10 +13,12 @@ import {
 import {
   API_PREFIX,
   APP_STREAM_ALIAS,
+  appEntryForPath,
   appIsGranted,
   appStreamDrive,
   appStreamEntries,
   appStreamService,
+  applyAppFraming,
   isRouteGranted,
   loadRouteRules,
   ModeType,
@@ -178,9 +180,9 @@ router.use(authenticateAccessToken)
  * The surface is mounted at both spellings, and the package knows one base path,
  * so the canonical prefix is translated to the short one. That is the same
  * request, not an alias for something else: `/AppStream/apps.json` and
- * `/app/apps.json` answer the same listing. It does NOT translate what follows
- * the prefix - that segment is an app's id, and a name is not one, so an app's
- * own URL under the old prefix still 404s rather than being guessed at.
+ * `/app/apps.json` answer the same listing, and `/AppStream/<segment>` is
+ * resolved exactly as `/app/<segment>` is - by id, or by a label only one app
+ * holds, which is what a bookmark of the old name-shaped URL needs.
  */
 const surfacePath = (req: Request): string => `${APP_STREAM_ALIAS}${req.path}`
 
@@ -191,10 +193,12 @@ const surfacePath = (req: Request): string => `${APP_STREAM_ALIAS}${req.path}`
  *
  * Mounted at `/app` and at `/AppStream` (see setupRoutes), and the package is
  * handed the short spelling for both: the two prefixes are one surface, so the
- * listing answers on either. What follows the prefix is not translated, so an
- * app's own URL under the old prefix 404s - its name is not its address.
+ * listing and an app's files answer on either. A segment that names no app - by
+ * id, or by a label only one app carries - is the package's `404`.
  */
 router.all(['/', '/*splat'], async (req: Request, res: Response) => {
+  const path = surfacePath(req)
+
   if (req.method === 'DELETE') {
     const refusal = await removalRefusal(req)
 
@@ -206,7 +210,7 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
     // "there's no app here" to a caller the interface showed the bin to.
     const page = await appStreamWeb().request({
       method: req.method,
-      path: surfacePath(req),
+      path,
       allow: () => true
     })
 
@@ -220,9 +224,16 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
   const allow = await allowedAppIds(req)
   const page = await appStreamWeb().request({
     method: req.method,
-    path: surfacePath(req),
+    path,
     allow: (entry) => allow.has(entry.id)
   })
+
+  // The per-app framing policy. The package validates and stores an app's
+  // `frameAncestors` but emits no header for it, because the response headers
+  // are the host's: without this an app configured for cross-origin embedding is
+  // served under helmet's `frame-ancestors 'self'` and silently refuses to
+  // frame. An app with no setting leaves helmet's headers alone.
+  applyAppFraming(res, appEntryForPath(path)?.frameAncestors)
 
   return render(req, res, page)
 })
