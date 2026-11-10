@@ -1,5 +1,6 @@
 import path from 'path'
 import express, { Request, Response } from 'express'
+import { createHash } from 'crypto'
 import { authenticateAccessToken, generateCSRFToken } from '../../middlewares'
 import { folderExists } from '@sasjs/utils'
 
@@ -106,6 +107,69 @@ router.get('/apps.json', authenticateAccessToken, async (req, res) => {
   })
 })
 
+/**
+ * The name an app is already published under, if it is published at all.
+ *
+ * A folder AND a stream folder make an app - one folder may hold two - so both
+ * are matched. This is what keeps a redeploy idempotent for an app registered
+ * before the name was derived: its `AppStreamName<n>` entry is found here and
+ * reused, instead of a second name being added for the same folder.
+ */
+export const publishedName = (
+  appLoc: string,
+  streamWebFolder: string,
+  published: Record<string, { appLoc: string; streamWebFolder?: string }>
+): string | undefined =>
+  Object.entries(published).find(
+    ([, entry]) =>
+      entry.appLoc === appLoc && entry.streamWebFolder === streamWebFolder
+  )?.[0]
+
+/**
+ * The name an app is published under when the caller does not choose one.
+ *
+ * The last segment of the app's folder, which is what everyone means by "the
+ * app's name" - `/Public/apps/dashdemo` publishes as `dashdemo`. It is derived
+ * from the folder rather than from the number of published apps, because that
+ * count moves: unpublish anything and the next default name collides with an
+ * existing one and silently re-points it at a different app.
+ *
+ * A segment that is not URL-safe is reduced to one: the name is a URL segment
+ * and a permission path, so spaces, `?` and `#` cannot be carried literally.
+ *
+ * When the readable name is already held by a DIFFERENT folder, a short digest
+ * of the folder is appended, so publishing `/Public/a/report` and
+ * `/Public/b/report` yields two names instead of one overwriting the other. The
+ * digest is a function of the folder, so the same folder derives the same name
+ * on every deploy.
+ */
+export const deriveStreamServiceName = (
+  appLoc: string,
+  published: Record<string, { appLoc: string }>
+): string => {
+  const segment = appLoc.split('/').filter(Boolean).pop() ?? ''
+  const readable =
+    segment.replace(/[^A-Za-z0-9._~-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '') ||
+    'app'
+
+  const holder = published[readable]
+
+  if (!holder || holder.appLoc === appLoc) return readable
+
+  const digest = createHash('sha256').update(appLoc).digest('hex')
+
+  for (const length of [6, 8, 12, 64]) {
+    const candidate = `${readable}-${digest.slice(0, length)}`
+    const taken = published[candidate]
+
+    if (!taken || taken.appLoc === appLoc) return candidate
+  }
+
+  // six characters of a sha256 colliding on four lengths running is not a case
+  // that can happen; keeping the readable name is the least surprising answer
+  return readable
+}
+
 export const publishAppStream = async (
   appLoc: string,
   streamWebFolder: string,
@@ -134,12 +198,14 @@ export const publishAppStream = async (
   }
 
   if (await folderExists(pathToDeployment)) {
-    const appCount = process.appStreamConfig
-      ? Object.keys(process.appStreamConfig).length
-      : 0
-
     if (!streamServiceName) {
-      streamServiceName = `AppStreamName${appCount + 1}`
+      // an app that is already published keeps the name it has: deriving a new
+      // one for the same folder would advertise the folder twice, which is the
+      // duplicate tile this naming rule exists to prevent. The folder AND the
+      // stream folder make the app, since one folder may hold two.
+      streamServiceName =
+        publishedName(appLoc, streamWebFolder, process.appStreamConfig ?? {}) ??
+        deriveStreamServiceName(appLoc, process.appStreamConfig ?? {})
     }
 
     appStreams[streamServiceName] = pathToDeployment

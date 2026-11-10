@@ -1,5 +1,6 @@
 import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
+import type { FileTree, FolderMember } from '@sasjs/utils'
 
 import { publishAppStream } from '../appStream'
 
@@ -8,9 +9,10 @@ import { multerSingle } from '../../middlewares/multer'
 import { sendRefusal } from '../refusal'
 import { DriveController } from '../../controllers/'
 import {
+  deployAssetsValidation,
   deployValidation,
-  extractJSONFromZip,
-  extractName,
+  extractDeployDocumentFromZip,
+  extractFileTreeFromZip,
   fileBodyValidation,
   fileParamValidation,
   fileTreeParamValidation,
@@ -26,9 +28,67 @@ const controller = new DriveController()
 
 const driveRouter = express.Router()
 
+/**
+ * Whether the tree carries the folder App Stream publishes from.
+ *
+ * An app is served out of `<appLoc>/services/<streamWebFolder>`, so a tree
+ * without that folder publishes nothing - `publishAppStream` finds no folder and
+ * returns an empty result, and the deploy would answer `200 Files deployed
+ * successfully` while the tile it promised never appears. The check runs BEFORE
+ * the deploy, so a request that cannot publish writes nothing either.
+ */
+const hasStreamFolder = (tree: FileTree, streamWebFolder: string): boolean => {
+  const services = tree.members.find(
+    (member): member is FolderMember =>
+      member.type === 'folder' && member.name === 'services'
+  )
+
+  return Boolean(
+    services?.members.some(
+      (member) => member.type === 'folder' && member.name === streamWebFolder
+    )
+  )
+}
+
+/** The refusal a tree earns when it has nothing to publish. */
+const noStreamFolder = (appLoc: string, streamWebFolder: string): string =>
+  `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or omit streamWebFolder.`
+
+/**
+ * Renders a refusal from the archive reader the way the deploy routes render a
+ * tree's: a status from `code`, and the deploy routes' `{status, message}`
+ * envelope.
+ *
+ * An `Error` is not JSON - `res.send(error)` answers `{}` - so a refusal thrown
+ * by the reader would otherwise reach the client as an empty 413, or as the
+ * express error handler's generic 500 when it is thrown outside a route's own
+ * try. Anything that is not an Error keeps the shape it arrived with, which is
+ * what `@sasjs/api`'s refusals use.
+ */
+const sendArchiveRefusal = (res: express.Response, err: any) => {
+  const statusCode = typeof err.code === 'number' ? err.code : 500
+
+  if (err instanceof Error)
+    return res
+      .status(statusCode)
+      .send({ status: 'failure', message: err.message })
+
+  delete err.code
+
+  return res.status(statusCode).send(err)
+}
+
 driveRouter.post('/deploy', async (req, res) => {
   const { error, value: body } = deployValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
+
+  if (
+    body.streamWebFolder &&
+    !hasStreamFolder(body.fileTree, body.streamWebFolder)
+  )
+    return res
+      .status(400)
+      .send(noStreamFolder(body.appLoc, body.streamWebFolder))
 
   try {
     const response = await controller.deploy(body)
@@ -67,17 +127,19 @@ driveRouter.post(
 
     const { value: zipFile } = isZipFile(req.file)
     if (zipFile) {
-      fileContent = await extractJSONFromZip(zipFile)
-      const fileInZip = extractName(zipFile.originalname)
-
-      if (!fileContent) {
+      try {
+        fileContent = (await extractDeployDocumentFromZip(zipFile)) ?? ''
+      } catch (err: any) {
+        // the reader refuses an oversized document before parsing it, and that
+        // refusal is the deploy cap's 413, not a broken request
         deleteFile(req.file.path)
-        return res
-          .status(400)
-          .send(
-            `No content present in ${fileInZip} of compressed file ${zipFile.originalname}`
-          )
+        return sendArchiveRefusal(res, err)
       }
+
+      // An archive with no deploy document in it is the app's own files: the
+      // entries become the tree and what the document would have said (folder,
+      // stream, replace) arrives in the query.
+      if (!fileContent) return deployArchive(req, res, zipFile)
     } else {
       fileContent = await readFile(req.file.path)
     }
@@ -96,8 +158,18 @@ driveRouter.post(
       return res.status(400).send(error.details[0].message)
     }
 
+    if (
+      body.streamWebFolder &&
+      !hasStreamFolder(body.fileTree, body.streamWebFolder)
+    ) {
+      deleteFile(req.file.path)
+      return res
+        .status(400)
+        .send(noStreamFolder(body.appLoc, body.streamWebFolder))
+    }
+
     try {
-      const response = await controller.deployUpload(req.file, body)
+      const response = await controller.deploy(body)
 
       if (body.streamWebFolder) {
         const { streamServiceName } = await publishAppStream(
@@ -121,6 +193,69 @@ driveRouter.post(
     }
   }
 )
+
+/**
+ * Deploys an archive of an app's own files.
+ *
+ * `POST /SASjsApi/drive/deploy/upload` takes either a deploy document - plain or
+ * zipped - or, as here, the app itself: a zip whose entries are the files to
+ * serve. The entries become a deploy tree and go through the same deploy as any
+ * other, so the cap, the member-name checks, containment and `replace` have one
+ * implementation.
+ *
+ * What a deploy document would have said arrives in the QUERY, because the body
+ * is the archive: `appLoc` is required, `streamWebFolder` publishes the folder
+ * as an App Stream app, and `replace` defaults to true - publishing a folder
+ * means the folder is what the archive says it is.
+ */
+const deployArchive = async (
+  req: express.Request,
+  res: express.Response,
+  zipFile: Express.Multer.File
+) => {
+  const { error, value } = deployAssetsValidation(req.query)
+
+  if (error) {
+    deleteFile(zipFile.path)
+
+    return res.status(400).send(error.details[0].message)
+  }
+
+  try {
+    const fileTree = await extractFileTreeFromZip(zipFile)
+
+    if (
+      value.streamWebFolder &&
+      !hasStreamFolder(fileTree, value.streamWebFolder)
+    )
+      return res
+        .status(400)
+        .send(noStreamFolder(value.appLoc, value.streamWebFolder))
+
+    const response = await controller.deploy({
+      appLoc: value.appLoc,
+      fileTree,
+      replace: value.replace
+    })
+
+    if (value.streamWebFolder) {
+      const { streamServiceName } = await publishAppStream(
+        value.appLoc,
+        value.streamWebFolder,
+        value.streamServiceName,
+        value.streamLogo
+      )
+
+      response.streamServiceName = streamServiceName
+    }
+
+    res.send(response)
+  } catch (err: any) {
+    sendArchiveRefusal(res, err)
+  } finally {
+    deleteFile(zipFile.path)
+  }
+}
 
 /**
  * Removes a published app stream entry, so it stops being advertised and stops

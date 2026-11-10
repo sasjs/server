@@ -25,14 +25,21 @@ const deployPayload = {
   fileTree: {
     members: [
       {
-        name: 'string',
+        // an app is served out of services/<streamWebFolder>, so that is where
+        // the web folder sits in the tree
+        name: 'services',
         type: 'folder',
         members: [
-          'string',
           {
             name: 'string',
-            type: 'service',
-            code: 'string'
+            type: 'folder',
+            members: [
+              {
+                name: 'string',
+                type: 'service',
+                code: 'string'
+              }
+            ]
           }
         ]
       }

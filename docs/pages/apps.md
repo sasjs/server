@@ -37,9 +37,56 @@ A deploy is measured before anything is written, and refused with `413` when the
 
 The refusal names the limit and the figure it reached, for example `The file tree exceeds the deploy limit: 10001 entries (maximum 10000).` Nothing is written before the checks pass, so a refused deploy leaves the drive exactly as it was.
 
-Sizes are decoded bytes. A file member's contents travel as base64 - four characters for every three bytes - so a tree at the total limit is up to a third larger on the wire than on the drive, and the transport admits that much. `POST /SASjsApi/drive/deploy/upload` applies the same limits to the tree it unpacks from the archive, not to the archive itself.
+Sizes are decoded bytes. A file member travels as its own text, or as base64 when it says `encoding: "base64"` - four characters for every three bytes - so a tree at the total limit with binary members is up to a third larger on the wire than on the drive, and the transport admits that much. `POST /SASjsApi/drive/deploy/upload` applies the same limits to the tree it unpacks from the archive, not to the archive itself.
 
 Member names are checked in the same pass: a name carrying `/`, `\` or `..` would write outside the deployment folder, so the tree is refused with `400` instead.
+
+## Publishing a folder of files
+
+An app does not need a compiled service pack. `POST /SASjsApi/drive/deploy/upload` takes a zip whose entries are the files to serve:
+
+```bash
+# the archive holds the app's files, rooted where the server serves them from:
+#   services/web/index.html, services/web/app.js, assets/logo.png
+curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&streamWebFolder=web" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@harness.zip"
+```
+
+The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` names it.
+
+An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. The same rule holds for `POST /SASjsApi/drive/deploy` with a JSON tree: a request that names `streamWebFolder` must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.
+
+A zip that contains a deploy document - a root-level JSON file naming `appLoc` or `fileTree` - is read as a document instead, so the route answers both shapes. A file naming only one of the two is refused with the missing field named. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.
+
+Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under `__MACOSX/`, and `.DS_Store`.
+
+### The name an app is published under
+
+When `streamServiceName` is absent, the name is the last segment of `appLoc` - `/Public/apps/dashdemo` publishes as `dashdemo`. A segment that cannot be a URL path is reduced to one (`My App` becomes `My-App`), and a name already held by a different folder gains a short digest of its folder (`dashdemo-3f9a1c`), so two apps whose folders end in the same word do not overwrite each other. The same folder always derives the same name.
+
+### Replacing the folder
+
+`POST /SASjsApi/drive/deploy` takes `replace: true` to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a folder means the folder is what the archive says it is - and `?replace=false` keeps what is already there.
+
+The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder, not just the app being deployed.
+
+### Text and binary file members
+
+A `file` member carries the caller's own text by default. An asset that is not text states `encoding: "base64"`, and its `code` is base64 of the bytes to write:
+
+```json
+{
+  "members": [
+    { "name": "index.html", "type": "file", "code": "<h1>Hello</h1>" },
+    { "name": "logo.png", "type": "file", "encoding": "base64", "code": "iVBORw0..." }
+  ]
+}
+```
+
+Nothing is guessed from the contents: `test` and `data` are both valid base64, so a guess would corrupt short text rather than decode a file. An archive upload marks every entry `base64`, because an archive holds bytes.
+
+A deploy document written by a client older than `@sasjs/api` 0.24 states no `encoding` and carries its files as base64, which this server now reads as text - so such a document has to add `encoding: "base64"` to each `file` member. The CLI states it for the assets it builds.
 
 ## Securing Apps
 
