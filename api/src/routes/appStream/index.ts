@@ -19,7 +19,8 @@ import {
   appStreamService,
   isRouteGranted,
   loadRouteRules,
-  ModeType
+  ModeType,
+  refreshAppStreamIndex
 } from '../../utils'
 import User from '../../model/User'
 
@@ -198,6 +199,22 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
     const refusal = await removalRefusal(req)
 
     if (refusal) return res.status(refusal.status).send(refusal.body)
+
+    // The caller holds the permission a removal takes, and `removalRefusal` has
+    // already decided it: handing the package the VIEW predicate here would
+    // refuse them again - the package resolves the app through it - and answer
+    // "there's no app here" to a caller the interface showed the bin to.
+    const page = await appStreamWeb().request({
+      method: req.method,
+      path: surfacePath(req),
+      allow: () => true
+    })
+
+    // the inventory is what the gate and the permission editor read, so an app
+    // that is no longer published must leave it now, not at the next restart
+    if (page.status === 200) await refreshAppStreamIndex()
+
+    return render(req, res, page)
   }
 
   const allow = await allowedAppIds(req)

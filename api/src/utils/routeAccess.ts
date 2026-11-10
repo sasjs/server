@@ -15,7 +15,7 @@ import {
   getAuthorizedRoutes,
   getPath
 } from './getAuthorizedRoutes'
-import { canonicalPrefix } from './routePrefixes'
+import { API_PREFIX, canonicalPrefix } from './routePrefixes'
 
 export interface RouteRule {
   path: string
@@ -144,18 +144,24 @@ export const isGrantedForRequest = async (
 ): Promise<boolean> => {
   const rules = await loadRouteRules(dbUser)
   const requested = getPath(req)
-
-  // An app's route is decided on the path that admits it - its id, or the label
-  // an older rule names - which is the same decision the surface makes when it
-  // lists and serves the app. Comparing the id alone would show a caller a tile
-  // it is then refused, and comparing the label alone would let a deny be
-  // outweighed by a stream-wide grant.
   const entry = appEntryForPath(requested)
-  const path = entry ? appDecidingPath(entry, rules) : requested
 
+  // Taking an app down is the deploy route's permission, not the app's: a grant
+  // on an app is what opens it, and requiring that as well would refuse a caller
+  // the interface offers the bin to (its `canUnpublish` is the deploy route
+  // alone). It is also the permission `DELETE /SASjsApi/drive/deploy` takes, so
+  // the two ways of removing an app cannot disagree.
+  if (entry && req.method === 'DELETE')
+    return isRouteGranted(rules, `${API_PREFIX}/drive/deploy`, API_PREFIX)
+
+  // Otherwise an app's route is decided on the path that admits it - its id, or
+  // the label an older rule names - which is the same decision the surface makes
+  // when it lists and serves the app. Comparing the id alone would show a caller
+  // a tile it is then refused, and comparing the label alone would let a deny be
+  // outweighed by a stream-wide grant.
   return isRouteGranted(
     rules,
-    path,
+    entry ? appDecidingPath(entry, rules) : requested,
     topLevelRouteFor(canonicalPrefix(req.baseUrl))
   )
 }

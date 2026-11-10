@@ -29,7 +29,9 @@ import {
   UserController
 } from '../../controllers/'
 import {
+  appStreamService,
   generateAccessToken,
+  getAuthorizedRoutes,
   readStoredAppStreamEntries,
   refreshAppStreamIndex,
   saveTokensInDB,
@@ -471,6 +473,41 @@ describe('App Stream surface', () => {
     )
   })
 
+  it('removes an app for a caller holding only the deploy grant', async () => {
+    const { token, uid } = await tokenFor(streamUser.username)
+
+    // The bin in the interface is offered on this grant alone, so the API has to
+    // accept it alone: removal is the deploy route's permission, and the app
+    // grant is what opens an app rather than what takes it down.
+    await rule('/SASjsApi/drive/deploy', PermissionSettingForRoute.grant, uid)
+
+    const entry = await appStreamService().publish({
+      appLoc: '/Public/app/spare',
+      streamWebFolder: 'web',
+      name: 'Spare'
+    })
+    await refreshAppStreamIndex()
+
+    const agent = request.agent(app)
+    const landing = await agent
+      .get('/app/')
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+    const cookie = ([] as string[])
+      .concat(landing.headers['set-cookie'] ?? [])
+      .map((line: string) => line.split(';')[0])
+      .find((pair: string) => pair.startsWith('XSRF-TOKEN=')) as string
+
+    const removed = await agent
+      .delete(`/app/${entry.id}`)
+      .set('X-XSRF-TOKEN', decodeURIComponent(cookie.split('=')[1]))
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+
+    expect(removed.body.app).toMatchObject({ id: entry.id, name: 'Spare' })
+    expect(getAuthorizedRoutes()).not.toContain(`/AppStream/${entry.id}`)
+  })
+
   it('removes an app by its id, never by a label', async () => {
     const { token } = await tokenFor(admin.username)
 
@@ -532,6 +569,11 @@ describe('App Stream surface', () => {
     expect(await readStoredAppStreamEntries()).toEqual([
       expect.objectContaining({ id: MARIO })
     ])
+
+    // and the route inventory has dropped it in the same breath: the gate and
+    // the permission editor read that list, not the store, so an id left there
+    // would be offered as a route no app is served on until the next restart
+    expect(getAuthorizedRoutes()).not.toContain(`/AppStream/${SONIC}`)
 
     await request(app)
       .get(`/app/${SONIC}/`)
