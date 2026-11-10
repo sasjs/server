@@ -673,6 +673,24 @@ describe('drive', () => {
         expect(res.text).toContain('no "services/web" folder')
       })
 
+      it('answers the deploy cap refusal for an archive past the entry cap', async () => {
+        // the reader refuses from the central directory, before expanding
+        // anything, and the route renders it as the deploy route's 413
+        const zip = new AdmZip()
+
+        for (let at = 0; at < 10001; at++)
+          zip.addFile(`f${at}.txt`, Buffer.from(''))
+
+        const res = await postArchive(zip)
+
+        expect(res.statusCode).toEqual(413)
+        expect(res.body).toEqual({
+          status: 'failure',
+          message:
+            'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'
+        })
+      })
+
       it('publishes the folder as an app, under the folder-derived name', async () => {
         const zip = new AdmZip()
         zip.addFile(

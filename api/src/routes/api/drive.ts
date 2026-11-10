@@ -54,6 +54,30 @@ const hasStreamFolder = (tree: FileTree, streamWebFolder: string): boolean => {
 const noStreamFolder = (appLoc: string, streamWebFolder: string): string =>
   `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or omit streamWebFolder.`
 
+/**
+ * Renders a refusal from the archive reader the way the deploy routes render a
+ * tree's: a status from `code`, and the deploy routes' `{status, message}`
+ * envelope.
+ *
+ * An `Error` is not JSON - `res.send(error)` answers `{}` - so a refusal thrown
+ * by the reader would otherwise reach the client as an empty 413, or as the
+ * express error handler's generic 500 when it is thrown outside a route's own
+ * try. Anything that is not an Error keeps the shape it arrived with, which is
+ * what `@sasjs/api`'s refusals use.
+ */
+const sendArchiveRefusal = (res: express.Response, err: any) => {
+  const statusCode = typeof err.code === 'number' ? err.code : 500
+
+  if (err instanceof Error)
+    return res
+      .status(statusCode)
+      .send({ status: 'failure', message: err.message })
+
+  delete err.code
+
+  return res.status(statusCode).send(err)
+}
+
 driveRouter.post('/deploy', async (req, res) => {
   const { error, value: body } = deployValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
@@ -103,7 +127,14 @@ driveRouter.post(
 
     const { value: zipFile } = isZipFile(req.file)
     if (zipFile) {
-      fileContent = (await extractDeployDocumentFromZip(zipFile)) ?? ''
+      try {
+        fileContent = (await extractDeployDocumentFromZip(zipFile)) ?? ''
+      } catch (err: any) {
+        // the reader refuses an oversized document before parsing it, and that
+        // refusal is the deploy cap's 413, not a broken request
+        deleteFile(req.file.path)
+        return sendArchiveRefusal(res, err)
+      }
 
       // An archive with no deploy document in it is the app's own files: the
       // entries become the tree and what the document would have said (folder,
@@ -220,11 +251,7 @@ const deployArchive = async (
 
     res.send(response)
   } catch (err: any) {
-    const statusCode = typeof err.code === 'number' ? err.code : 500
-
-    delete err.code
-
-    res.status(statusCode).send(err)
+    sendArchiveRefusal(res, err)
   } finally {
     deleteFile(zipFile.path)
   }

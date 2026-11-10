@@ -55,7 +55,7 @@ curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps
 
 The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` names it.
 
-An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. A tree without that folder is refused with a message naming it, rather than deployed: publishing it would advertise an app that resolves to nothing.
+An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. The same rule holds for `POST /SASjsApi/drive/deploy` with a JSON tree: a request that names `streamWebFolder` must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.
 
 A zip that contains a deploy document - a root-level JSON file naming `appLoc` and `fileTree` - is read as a document instead, so the route answers both shapes. A JSON file the app itself ships, such as a manifest or a data file, is not a document and is deployed with the rest.
 
