@@ -53,7 +53,7 @@ curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps
   -F "file=@harness.zip"
 ```
 
-The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` names it.
+The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` sets its label.
 
 An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. The same rule holds for `POST /SASjsApi/drive/deploy` with a JSON tree: a request that names `streamWebFolder` must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.
 
@@ -61,9 +61,30 @@ A zip that contains a deploy document - a root-level JSON file naming `appLoc` o
 
 Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under `__MACOSX/`, and `.DS_Store`.
 
-### The name an app is published under
+### The app's id, and the label it is known by
 
-When `streamServiceName` is absent, the name is the last segment of `appLoc` - `/Public/apps/dashdemo` publishes as `dashdemo`. A segment that cannot be a URL path is reduced to one (`My App` becomes `My-App`), and a name already held by a different folder gains a short digest of its folder (`dashdemo-3f9a1c`), so two apps whose folders end in the same word do not overwrite each other. The same folder always derives the same name.
+A publish gives an app its identity. The first publish of a deployment mints a UUID, and that id is the app: its URL is `/app/<id>/`, a removal names it, and a redeploy of the same folder keeps it - so a new bundle never moves an app's URL. The deploy answer states it as `app: { id, name, url }`.
+
+The name is a label and only a label. It is what the tile says, and it may be shared: two folders may both be called `report`, because nothing addresses an app by its name. When `streamServiceName` is absent the label is the last segment of `appLoc` as it is spelled - `/Public/apps/dashdemo` publishes as `dashdemo`.
+
+### The bundle's manifest
+
+A compiled app may describe itself, in `sasjs.app.json` at the root of the archive:
+
+```json
+{
+  "name": "Dashboard",
+  "streamWebFolder": "web",
+  "logo": "assets/logo.png",
+  "frameAncestors": ["https://example.com"]
+}
+```
+
+`streamWebFolder` is the folder under `<appLoc>/services` holding the app's web assets; `name`, `logo` and `frameAncestors` are optional. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak - a caller naming a folder or a label is correcting the archive. The SASjs CLI writes the manifest into the deploy tree when a target has a stream configuration.
+
+### Removing an app
+
+`DELETE /SASjsApi/drive/deploy` takes `{ "id": "<id>" }` and nothing else. The app stops being advertised and stops being served; the deployment's files stay in the drive, because deleting those is `DELETE /SASjsApi/drive/folder`.
 
 ### Replacing the folder
 
@@ -90,7 +111,7 @@ A deploy document written by a client older than `@sasjs/api` 0.24 states no `en
 
 ## Securing Apps
 
-If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s).
+If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s). An app's route names its id, `/AppStream/<id>`, which is the last segment of the app's URL.
 
 
 ## Available Apps

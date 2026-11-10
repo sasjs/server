@@ -2,7 +2,9 @@ import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
 import type { FileTree, FolderMember } from '@sasjs/utils'
 
-import { publishAppStream } from '../appStream'
+import { isApiError } from '@sasjs/api'
+
+import { prepareDeploy, publishDeployedApp } from '../../utils'
 
 import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 import { multerSingle } from '../../middlewares/multer'
@@ -29,30 +31,26 @@ const controller = new DriveController()
 const driveRouter = express.Router()
 
 /**
- * Whether the tree carries the folder App Stream publishes from.
+ * Renders the package's refusal the way every deploy route renders one: a
+ * status, and the `{status, message}` envelope these two routes answer with.
  *
- * An app is served out of `<appLoc>/services/<streamWebFolder>`, so a tree
- * without that folder publishes nothing - `publishAppStream` finds no folder and
- * returns an empty result, and the deploy would answer `200 Files deployed
- * successfully` while the tile it promised never appears. The check runs BEFORE
- * the deploy, so a request that cannot publish writes nothing either.
+ * `prepareDeploy` is the package's decision about the app a bundle publishes -
+ * a folder it cannot index, a web folder that is not one segment, a manifest
+ * that is not JSON - and it runs before the drive is written, so its refusal is
+ * a `400` naming the field rather than a deployment that half happened.
  */
-const hasStreamFolder = (tree: FileTree, streamWebFolder: string): boolean => {
-  const services = tree.members.find(
-    (member): member is FolderMember =>
-      member.type === 'folder' && member.name === 'services'
+const sendPublishRefusal = (res: express.Response, err: unknown): boolean => {
+  if (!isApiError(err)) return false
+
+  res.status(err.status).send(
+    (err.body as object) ?? {
+      status: 'failure',
+      message: err.message
+    }
   )
 
-  return Boolean(
-    services?.members.some(
-      (member) => member.type === 'folder' && member.name === streamWebFolder
-    )
-  )
+  return true
 }
-
-/** The refusal a tree earns when it has nothing to publish. */
-const noStreamFolder = (appLoc: string, streamWebFolder: string): string =>
-  `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or omit streamWebFolder.`
 
 /**
  * Renders a refusal from the archive reader the way the deploy routes render a
@@ -82,29 +80,18 @@ driveRouter.post('/deploy', async (req, res) => {
   const { error, value: body } = deployValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
-  if (
-    body.streamWebFolder &&
-    !hasStreamFolder(body.fileTree, body.streamWebFolder)
-  )
-    return res
-      .status(400)
-      .send(noStreamFolder(body.appLoc, body.streamWebFolder))
-
   try {
-    const response = await controller.deploy(body)
+    // every reason to refuse the app is decided before the drive is written
+    const { tree, request } = prepareDeploy(body)
 
-    if (body.streamWebFolder) {
-      const { streamServiceName } = await publishAppStream(
-        body.appLoc,
-        body.streamWebFolder,
-        body.streamServiceName,
-        body.streamLogo
-      )
-      response.streamServiceName = streamServiceName
-    }
+    const response = await controller.deploy({ ...body, fileTree: tree as any })
+
+    await publishDeployedApp(response as any, request)
 
     res.send(response)
   } catch (err: any) {
+    if (sendPublishRefusal(res, err)) return
+
     const statusCode = err.code
 
     delete err.code
@@ -158,36 +145,27 @@ driveRouter.post(
       return res.status(400).send(error.details[0].message)
     }
 
-    if (
-      body.streamWebFolder &&
-      !hasStreamFolder(body.fileTree, body.streamWebFolder)
-    ) {
-      deleteFile(req.file.path)
-      return res
-        .status(400)
-        .send(noStreamFolder(body.appLoc, body.streamWebFolder))
-    }
-
     try {
-      const response = await controller.deploy(body)
+      // the document is an archive's deploy request, so it publishes exactly as
+      // the JSON route does - one implementation of when a bundle is an app
+      const { tree, request } = prepareDeploy(body)
 
-      if (body.streamWebFolder) {
-        const { streamServiceName } = await publishAppStream(
-          body.appLoc,
-          body.streamWebFolder,
-          body.streamServiceName,
-          body.streamLogo
-        )
-        response.streamServiceName = streamServiceName
-      }
+      const response = await controller.deploy({
+        ...body,
+        fileTree: tree as any
+      })
+
+      await publishDeployedApp(response as any, request)
 
       res.send(response)
     } catch (err: any) {
-      const statusCode = err.code
+      if (!sendPublishRefusal(res, err)) {
+        const statusCode = err.code
 
-      delete err.code
+        delete err.code
 
-      res.status(statusCode).send(err)
+        res.status(statusCode).send(err)
+      }
     } finally {
       deleteFile(req.file.path)
     }
@@ -224,34 +202,27 @@ const deployArchive = async (
   try {
     const fileTree = await extractFileTreeFromZip(zipFile)
 
-    if (
-      value.streamWebFolder &&
-      !hasStreamFolder(fileTree, value.streamWebFolder)
-    )
-      return res
-        .status(400)
-        .send(noStreamFolder(value.appLoc, value.streamWebFolder))
+    const deploy = {
+      appLoc: value.appLoc,
+      fileTree,
+      streamWebFolder: value.streamWebFolder,
+      streamServiceName: value.streamServiceName,
+      streamLogo: value.streamLogo
+    }
+
+    const { tree, request } = prepareDeploy(deploy as any)
 
     const response = await controller.deploy({
       appLoc: value.appLoc,
-      fileTree,
+      fileTree: tree as any,
       replace: value.replace
     })
 
-    if (value.streamWebFolder) {
-      const { streamServiceName } = await publishAppStream(
-        value.appLoc,
-        value.streamWebFolder,
-        value.streamServiceName,
-        value.streamLogo
-      )
-
-      response.streamServiceName = streamServiceName
-    }
+    await publishDeployedApp(response as any, request)
 
     res.send(response)
   } catch (err: any) {
-    sendArchiveRefusal(res, err)
+    if (!sendPublishRefusal(res, err)) sendArchiveRefusal(res, err)
   } finally {
     deleteFile(zipFile.path)
   }

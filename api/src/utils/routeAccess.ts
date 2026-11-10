@@ -1,4 +1,6 @@
 import { Request } from 'express'
+
+import { appDecidingPath, appEntryForPath } from './appStreamConfig'
 import Permission from '../model/Permission'
 import Group, { PUBLIC_GROUP_NAME } from '../model/Group'
 import { IUserDocument } from '../model/User'
@@ -13,7 +15,7 @@ import {
   getAuthorizedRoutes,
   getPath
 } from './getAuthorizedRoutes'
-import { canonicalPrefix } from './routePrefixes'
+import { API_PREFIX, canonicalPrefix } from './routePrefixes'
 
 export interface RouteRule {
   path: string
@@ -141,10 +143,25 @@ export const isGrantedForRequest = async (
   req: Request
 ): Promise<boolean> => {
   const rules = await loadRouteRules(dbUser)
+  const requested = getPath(req)
+  const entry = appEntryForPath(requested)
 
+  // Taking an app down is the deploy route's permission, not the app's: a grant
+  // on an app is what opens it, and requiring that as well would refuse a caller
+  // the interface offers the bin to (its `canUnpublish` is the deploy route
+  // alone). It is also the permission `DELETE /SASjsApi/drive/deploy` takes, so
+  // the two ways of removing an app cannot disagree.
+  if (entry && req.method === 'DELETE')
+    return isRouteGranted(rules, `${API_PREFIX}/drive/deploy`, API_PREFIX)
+
+  // Otherwise an app's route is decided on the path that admits it - its id, or
+  // the label an older rule names - which is the same decision the surface makes
+  // when it lists and serves the app. Comparing the id alone would show a caller
+  // a tile it is then refused, and comparing the label alone would let a deny be
+  // outweighed by a stream-wide grant.
   return isRouteGranted(
     rules,
-    getPath(req),
+    entry ? appDecidingPath(entry, rules) : requested,
     topLevelRouteFor(canonicalPrefix(req.baseUrl))
   )
 }
@@ -166,12 +183,17 @@ export const filterGrantedRoutes = async (
     getPublicRoutePaths()
   ])
 
-  return routes.filter(
-    (route) =>
-      AlwaysVisibleRoutes.includes(route) ||
-      publicPaths.includes(route) ||
-      isRouteGranted(rules, route, topLevelRouteFor(route))
-  )
+  return routes.filter((route) => {
+    if (AlwaysVisibleRoutes.includes(route) || publicPaths.includes(route))
+      return true
+
+    // an app is granted through the path that decides for it, so the inventory
+    // it is filtered from says what the request on its URL would
+    const entry = appEntryForPath(route)
+    const decided = entry ? appDecidingPath(entry, rules) : route
+
+    return isRouteGranted(rules, decided, topLevelRouteFor(route))
+  })
 }
 
 /**

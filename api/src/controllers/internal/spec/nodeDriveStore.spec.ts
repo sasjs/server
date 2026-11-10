@@ -69,6 +69,22 @@ describe('node drive store', () => {
     await expect(store.exists('/escape-link')).rejects.toThrow(
       /outside the drive/
     )
+
+    // every operation goes through the same check, not only the reads: a
+    // write through the link would put a file outside the drive, a mkdirp
+    // would create a folder there, and a move would land one there
+    await expect(store.write('/escape-link', 'overwrite')).rejects.toThrow(
+      /outside the drive/
+    )
+    await expect(store.mkdirp('/escape-link/sub')).rejects.toThrow(
+      /outside the drive/
+    )
+    await expect(
+      store.move('/plain.csv', '/escape-link/moved.csv')
+    ).rejects.toThrow(/outside the drive/)
+
+    expect(fs.readFileSync(outside, 'utf8')).toEqual('not yours')
+
     fs.rmSync(outside, { force: true })
   })
 

@@ -28,19 +28,21 @@ const queryOf = (req: Request): string => {
  * Where a moved path now lives, or undefined when the path did not move.
  *
  * `/AppStream` is the App Stream prefix: the landing page moves to `/app`, and
- * an app's own root (`/AppStream/<name>`) moves to `/app/<name>/`. Anything
- * deeper - an app's own assets - is left where it is, because the app that was
- * published under the old prefix may name its files by an absolute path, and
- * redirecting every asset would buy nothing a reader can see.
+ * that redirect stays.
+ *
+ * `/AppStream/<anything>` does NOT redirect, and is not rewritten here. It is
+ * left to the middleware that follows, which mounts the App Stream surface at
+ * both prefixes - so the segment is resolved the way `/app/<segment>` is: an id
+ * serves the app, and so does a label only one app carries, which is what a
+ * stale bookmark of the old name-shaped URL was written with. A segment that
+ * names nothing answers the surface's `404`; there is no redirect to invent,
+ * because the app's own address is its id and only the surface knows it.
  */
 const target = (path: string): string | undefined => {
   const direct = moved[path]
   if (direct) return direct
 
   if (path === '/AppStream') return '/app'
-
-  const appRoot = /^\/AppStream\/([^/.]+)$/.exec(path)
-  if (appRoot) return `/app/${appRoot[1]}/`
 
   return undefined
 }

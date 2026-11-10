@@ -39,6 +39,13 @@ jest
   .spyOn(fileUtilModules, 'getFilesFolder')
   .mockImplementation(() => path.join(tmpFolder, 'drive', 'files'))
 
+// The app index is a file beside the drive, and its path resolves through
+// process.driveLoc - so a publish in this file would otherwise write the shared
+// sasjs_root/drive/appStreamConfig.json that other suites read.
+jest
+  .spyOn(fileUtilModules, 'getAppStreamConfigPath')
+  .mockImplementation(() => path.join(tmpFolder, 'appStreamConfig.json'))
+
 import appPromise from '../../../app'
 import {
   UserController,
@@ -48,7 +55,13 @@ import {
   PrincipalType
 } from '../../../controllers/'
 import { getTreeExample } from '../../../controllers/internal'
-import { generateAccessToken, saveTokensInDB } from '../../../utils/'
+import {
+  appStreamService,
+  generateAccessToken,
+  readStoredAppStreamEntries,
+  refreshAppStreamIndex,
+  saveTokensInDB
+} from '../../../utils/'
 const { getFilesFolder } = fileUtilModules
 
 const clientId = 'someclientID'
@@ -670,7 +683,10 @@ describe('drive', () => {
         )
 
         expect(res.statusCode).toEqual(400)
-        expect(res.text).toContain('no "services/web" folder')
+        // the refusal arrives in the deploy routes' envelope, so it is the
+        // message in the body rather than the body's JSON-escaped text
+        expect(res.body).toMatchObject({ status: 'failure' })
+        expect(res.body.message).toContain('no "services/web" folder')
       })
 
       it('answers the deploy cap refusal for an archive past the entry cap', async () => {
@@ -691,7 +707,7 @@ describe('drive', () => {
         })
       })
 
-      it('publishes the folder as an app, under the folder-derived name', async () => {
+      it('publishes the folder as an app, answering the id it was published under', async () => {
         const zip = new AdmZip()
         zip.addFile(
           'services/web/index.html',
@@ -704,15 +720,53 @@ describe('drive', () => {
         )
 
         expect(res.statusCode).toEqual(200)
-        expect(res.body.streamServiceName).toEqual('harness')
+        // The label is derived from the folder; the IDENTITY is a minted UUID,
+        // and the answer states both - the label for a person, the id for a
+        // client that has to print or open the app later.
+        expect(res.body.app.name).toEqual('harness')
+        expect(res.body.app.id).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+        )
+        expect(res.body.app.url).toEqual(`/app/${res.body.app.id}/`)
 
-        const registry = process.appStreamConfig ?? {}
-        expect(registry['harness']).toMatchObject({
-          appLoc: '/Public/harness',
-          streamWebFolder: 'web'
-        })
+        // Indexed in the file, which is the registry: a restart reads it back
+        const index = await readStoredAppStreamEntries()
+        expect(
+          index.find((entry) => entry.id === res.body.app.id)
+        ).toMatchObject({ appLoc: '/Public/harness', streamWebFolder: 'web' })
 
-        delete process.appStreamConfig?.['harness']
+        await appStreamService().unpublish(res.body.app.id)
+        await refreshAppStreamIndex()
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
+      })
+
+      it('keeps the id when the same folder is published again', async () => {
+        const bundle = () => {
+          const zip = new AdmZip()
+          zip.addFile(
+            'services/web/index.html',
+            Buffer.from('<h1>Hi</h1>', 'utf8')
+          )
+
+          return zip
+        }
+
+        const first = await postArchive(
+          bundle(),
+          '?appLoc=/Public/redeploy&streamWebFolder=web'
+        )
+        const second = await postArchive(
+          bundle(),
+          '?appLoc=/Public/redeploy&streamWebFolder=web'
+        )
+
+        expect(first.statusCode).toEqual(200)
+        expect(second.statusCode).toEqual(200)
+        // the URL survives a new bundle, which is what makes a redeploy safe
+        expect(second.body.app.id).toEqual(first.body.app.id)
+
+        await appStreamService().unpublish(first.body.app.id)
+        await refreshAppStreamIndex()
         await deleteFolder(path.join(getFilesFolder(), 'Public'))
       })
     })

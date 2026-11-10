@@ -12,6 +12,10 @@ import {
 } from '@sasjs/utils'
 import { DRIVE_CORPUS } from '@sasjs/api'
 import type { CorpusCase } from '@sasjs/api'
+import {
+  refreshAppStreamIndex,
+  writeStoredAppStreamEntries
+} from '../../../utils'
 
 import * as fileUtilModules from '../../../utils/file'
 
@@ -26,6 +30,11 @@ jest
 jest
   .spyOn(fileUtilModules, 'getFilesFolder')
   .mockImplementation(() => path.join(tmpFolder, 'drive', 'files'))
+jest
+  .spyOn(fileUtilModules, 'getAppStreamConfigPath')
+  .mockImplementation(() =>
+    path.join(tmpFolder, 'drive', 'appStreamConfig.json')
+  )
 
 import appPromise from '../../../app'
 import {
@@ -116,6 +125,21 @@ describe('drive conformance corpus', () => {
   // bytes above 0x7f on their way through a UTF-8 string.
   const seedDrive = async (testCase: CorpusCase) => {
     await deleteFolder(files)
+
+    // The app the unpublish cases remove, exactly as the package's own runner
+    // seeds it: the id is stated rather than minted, because a case that pins
+    // "the id that is there" cannot invent one.
+    await writeStoredAppStreamEntries([
+      {
+        id: '6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60',
+        name: 'myApp',
+        appLoc: '/Public/myApp',
+        streamWebFolder: 'web',
+        publishedAt: '2026-01-01T00:00:00.000Z'
+      }
+    ])
+    await refreshAppStreamIndex()
+
     for (const [file, contents] of Object.entries(testCase.seed || {})) {
       const target = path.join(files, file)
       await createFolder(path.dirname(target))

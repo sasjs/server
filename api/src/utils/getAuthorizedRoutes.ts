@@ -1,6 +1,7 @@
 import { Request } from 'express'
 
 import { APP_STREAM_PREFIX, API_PREFIX, canonicalPrefix } from './routePrefixes'
+import { appStreamIds } from './appStreamConfig'
 
 export const TopLevelRoutes = [APP_STREAM_PREFIX, API_PREFIX]
 
@@ -12,7 +13,8 @@ export const TopLevelRoutes = [APP_STREAM_PREFIX, API_PREFIX]
  * whole job is to list the apps the caller may open, so gating it on
  * `/AppStream` made reaching those apps depend on a grant that lists them: a
  * caller granted a single app could not open the page that leads to it. Each
- * app keeps its own rule, and the page lists only the apps the caller holds.
+ * app keeps its own rule - `/AppStream/<id>` - and the page lists only the apps
+ * the caller holds.
  *
  * `/AppStream` stays in the inventory because a rule on it is still meaningful -
  * it is the top-level route for every app, so a grant on it admits them all.
@@ -34,11 +36,20 @@ const StaticAuthorizedRoutes = [
   '/SASjsApi/drive/rename'
 ]
 
+/**
+ * Every route the permission model knows about.
+ *
+ * A published app contributes its own route, keyed by the app's **id** - that is
+ * what the app's URL carries and what a grant on one app names. The list is read
+ * from the index rather than from a variable somebody has to remember to update:
+ * `refreshAppStreamIndex` is what publishes, unpublishes and boot all call, so
+ * the inventory cannot miss an app that exists or hold one that has gone.
+ */
 export const getAuthorizedRoutes = () => {
-  const streamingApps = Object.keys(process.appStreamConfig)
-  const streamingAppsRoutes = streamingApps.map(
-    (app) => `${APP_STREAM_PREFIX}/${app}`
+  const streamingAppsRoutes = appStreamIds().map(
+    (id) => `${APP_STREAM_PREFIX}/${id}`
   )
+
   return [...TopLevelRoutes, ...StaticAuthorizedRoutes, ...streamingAppsRoutes]
 }
 

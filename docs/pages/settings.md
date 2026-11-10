@@ -176,7 +176,7 @@ This setting is useful if you are running multiple instances of SASjs Server and
 
 The DRIVE_LOCATION can be shared across instances, but the SASJS_ROOT can't - as it will cause conflicts with sessions / uploads etc.
 
-If using this feature, be aware that the `appStreamConfig.json` is loaded on server startup - therefore if you are deploying a new app (or modifying app metadata attributes, such as the logo), the other instances will need to be restarted to view them in the portal.   If this is problematic for your project, please raise an [issue](https://github.com/sasjs/server/issues/new).
+If using this feature, be aware that the index of published apps (`appStreamConfig.json`, in the drive folder) is read at server startup and refreshed when an instance publishes or removes an app - so a deploy made on one instance reaches the others on their next restart.   If this is problematic for your project, please raise an [issue](https://github.com/sasjs/server/issues/new).
 
 See also:
 

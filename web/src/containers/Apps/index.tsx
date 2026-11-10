@@ -42,6 +42,8 @@ import {
 } from '../../utils/recent'
 
 interface StreamedApp {
+  /** The app's identity, which is what an unpublish names and its URL carries. */
+  id: string
   name: string
   appLoc: string
   logo: string | null
@@ -136,7 +138,7 @@ const Apps = () => {
 
     axios
       // The canonical spelling, for the same reason as the home screen: the
-      // mock host's service worker answers /AppStream.
+      // server answers both, and the mock host answers this one today.
       .get('/AppStream/apps.json')
       .then((res) => {
         if (!cancelled) setApps(res.data?.apps ?? [])
@@ -232,11 +234,14 @@ const Apps = () => {
     setDeleting(true)
 
     try {
+      // By id, and only by id: a label is shared by design (two folders may both
+      // be called "report"), so a removal that named one could take down an app
+      // nobody meant.
       await axios.delete('/SASjsApi/drive/deploy', {
-        data: { appLoc: app.appLoc, streamServiceName: app.name }
+        data: { id: app.id }
       })
 
-      setApps((current) => current.filter((entry) => entry.name !== app.name))
+      setApps((current) => current.filter((entry) => entry.id !== app.id))
       setPendingDelete(null)
     } catch (error: any) {
       setFailure(refusal(error))

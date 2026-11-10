@@ -16,7 +16,12 @@ import {
   UserDetailsResponse,
   PermissionDetailsResponse
 } from '../../../controllers'
-import { generateAccessToken, saveTokensInDB } from '../../../utils'
+import {
+  generateAccessToken,
+  refreshAppStreamIndex,
+  saveTokensInDB,
+  writeStoredAppStreamEntries
+} from '../../../utils'
 import { randomBytes } from 'crypto'
 
 const deployPayload = {
@@ -587,8 +592,14 @@ describe('permission', () => {
         )
     })
 
-    afterEach(() => {
+    afterEach(async () => {
       jest.resetAllMocks()
+
+      // The deploy publishes the app it deployed, and the index is a file -
+      // it outlives this process, so an entry left here would decide the route
+      // inventory another suite measures.
+      await writeStoredAppStreamEntries([])
+      await refreshAppStreamIndex()
     })
 
     it('should create files in SASJS drive', async () => {

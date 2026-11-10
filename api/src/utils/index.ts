@@ -1,5 +1,7 @@
+export * from './appStreamAccess'
 export * from './appStreamConfig'
 export * from './appStreamFraming'
+export * from './appStreamPublish'
 export * from './buildInfo'
 export * from './connectDB'
 export * from './copySASjsCore'

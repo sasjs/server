@@ -35,9 +35,10 @@ URI rules can be applied to the following endpoints:
 
 They can also be applied to individual apps.  This part of the list is dynamically generated, for example:
 
-* /AppStream/DataController
-* /AppStream/Mario
-* /AppStream/Sonic
+* /AppStream/9f1c2d3e-4a5b-4c6d-8e7f-8a9b0c1d2e3f
+* /AppStream/2b7d4e1a-6c3f-4d8e-9a0b-1c2d3e4f5a6b
+
+An app's route names its id, which is the last segment of its URL.  A rule written before apps had an id names the app's label instead (`/AppStream/Mario`), and is still honoured: where a caller's rules speak about an id the id decides, and only when no rule names the id does the label decide.
 
 
 ## Folder Access

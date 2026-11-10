@@ -12,8 +12,8 @@ import {
   getPackagesFolder,
   getWebBuildFolder,
   instantiateLogger,
-  loadAppStreamConfig,
   ModeType,
+  refreshAppStreamIndex,
   ReturnCode,
   setProcessVariables,
   setupFilesFolder,
@@ -198,12 +198,20 @@ export default setProcessVariables().then(async () => {
     await createWeboutSasFile()
   }
 
+  // The published apps, read before the routes are mounted so the permission
+  // inventory holds them from the first request - and logged, because an index
+  // that is empty or unreadable is the difference between "nothing is published"
+  // and "nothing is published any more".
+  const publishedApps = await refreshAppStreamIndex()
+
+  process.logger.info(
+    `App Stream index loaded: ${publishedApps.length} app(s) registered.`
+  )
+
   // loading these modules after setting up variables due to
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')
   setupRoutes(app)
-
-  await loadAppStreamConfig()
 
   // should be served after setting up web route
   // index.html needs to be injected with some js script.

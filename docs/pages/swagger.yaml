@@ -517,6 +517,21 @@ components:
                 - code
             type: object
             additionalProperties: false
+        PublishedApp:
+            description: 'What a published app is reported as, on the deploy answer.'
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                url:
+                    type: string
+            required:
+                - id
+                - name
+                - url
+            type: object
+            additionalProperties: false
         MemberType.folder:
             enum:
                 - folder
@@ -605,13 +620,15 @@ components:
             type: object
             additionalProperties: false
         DeployResponse:
+            description: 'What a deploy answers, and the app it published when it published one.'
             properties:
                 status:
                     type: string
                 message:
                     type: string
-                streamServiceName:
-                    type: string
+                app:
+                    $ref: '#/components/schemas/PublishedApp'
+                    description: 'The app this deploy published, with the URL it is served on.'
                 example:
                     $ref: '#/components/schemas/FileTree'
             required:
@@ -643,6 +660,18 @@ components:
                 - fileTree
             type: object
             additionalProperties: false
+        UnpublishResponse:
+            description: 'What removing an app answers: the app that is no longer published.'
+            properties:
+                status:
+                    type: string
+                app:
+                    $ref: '#/components/schemas/PublishedApp'
+            required:
+                - status
+                - app
+            type: object
+            additionalProperties: false
         FileFolderResponse:
             properties:
                 status:
@@ -654,17 +683,13 @@ components:
             type: object
             additionalProperties: false
         UnpublishPayload:
-            description: 'The pair an unpublish names - see `DELETE /SASjsApi/drive/deploy`.'
+            description: 'The app an unpublish names - see `DELETE /SASjsApi/drive/deploy`.'
             properties:
-                appLoc:
+                id:
                     type: string
-                    description: 'The folder the app was published from; `/Public/app/myservice`'
-                streamServiceName:
-                    type: string
-                    description: 'The name the app is advertised and served under'
+                    description: 'The id the publish answered with, e.g. `6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60`'
             required:
-                - appLoc
-                - streamServiceName
+                - id
             type: object
             additionalProperties: false
         AddFolderPayload:
@@ -1691,7 +1716,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/FileFolderResponse'
+                                $ref: '#/components/schemas/UnpublishResponse'
                 '400':
                     description: 'Invalid Format'
                     content:
@@ -1702,9 +1727,9 @@ paths:
                                 'Example 1':
                                     value: {status: failure, message: 'Unpublishing failed!'}
                 '404':
-                    description: 'No app is published at that folder'
-            description: "Removes a published app stream entry.\n\nThe entry stops being advertised - the landing page, its HTML index and\n`/AppStream/apps.json` are all built from the one registry - and stops being\nserved on `/AppStream/<streamServiceName>`, because the name leaves the route\ninventory as well.\n\n`appLoc` and `streamServiceName` are both required - a caller that names a\nstream but not the folder has not said what to remove - but the **folder is\nwhat identifies the app**: an app is one thing to deploy and one thing to\nremove, and its name is a label on it. A folder may hold two apps only as a\nspecial case, and they are still one thing to load or delete. So a name that\nhas since been changed does not turn a correct removal into a `404`; a folder\nwith nothing published at it answers `404`, and a missing field answers `400`.\n\nThe drive content is left alone. Deleting the folder is `DELETE\n/SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and\npublishing created no permission rule, so there is none to withdraw: a caller\nneeds the same `/SASjsApi/drive/deploy` grant this route already requires.\n\nAn entry whose deployment folder has already gone is removable too, which is\nthe case a stale listing is made of: the registry file is consulted as well as\nthe in-memory view, and only the named entry is dropped."
-            summary: 'Remove an app stream entry'
+                    description: 'No app is published with that id'
+            description: "Removes a published app.\n\nThe body names the app by **id** - the value the publish answered with - and\nnothing else. An app's label is shared by design (two folders may both be\ncalled \"report\") and its folder is where it was published rather than what it\nis, so neither is an identity: a removal that named a label could take down\nan app nobody meant, and a removal that named a folder would miss an app\nwhose deployment has since gone. The id removes exactly the app it names,\nwhatever the app is currently called.\n\nThe entry stops being advertised - the landing page and `/app/apps.json` are\nboth built from the index - and stops being served, because the id leaves the\nroute inventory as well. The drive content is left alone: deleting the folder\nis `DELETE /SASjsApi/drive/folder`, so unpublishing never destroys a\ndeployment, and publishing created no permission rule, so there is none to\nwithdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this route\nalready requires.\n\nAn id the index does not hold answers `404`; a body that names no id answers\n`400`."
+            summary: 'Remove an app'
             tags:
                 - Drive
             security:

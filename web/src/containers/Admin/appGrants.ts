@@ -4,8 +4,11 @@ import type { PermissionResponse } from '../../utils/types'
 const APP_ROUTE_PREFIX = '/AppStream/'
 
 export interface AppGrant {
-  /** The stream's name, which is the last segment of its route. */
-  name: string
+  /**
+   * What the rule names: an app's id, or the label an older rule was written
+   * with. Both are honoured by the gate, so both appear here.
+   */
+  key: string
   /** Principals holding a Grant on it. */
   users: string[]
   groups: string[]
@@ -17,8 +20,8 @@ export interface AppGrant {
  * The app grants, grouped by app.
  *
  * Read from the permission rules rather than from the app list: a rule on
- * `/AppStream/<name>` is what decides who may open that app, so the rows are the
- * truth. A grant on `/AppStream` itself is not an app grant - it admits every
+ * `/AppStream/<id>` is what decides who may open that app - `/AppStream/<label>`
+ * on a rule written before apps had an id - so the rows are the truth. A grant on `/AppStream` itself is not an app grant - it admits every
  * app - so it is reported separately by the caller, not folded in here.
  *
  * An app nobody has a rule for does not appear; that is not a gap in this
@@ -28,17 +31,17 @@ export interface AppGrant {
 export const groupAppGrants = (
   permissions: PermissionResponse[]
 ): AppGrant[] => {
-  const byName = new Map<string, AppGrant>()
+  const byKey = new Map<string, AppGrant>()
 
   for (const permission of permissions) {
     if (!permission.path.startsWith(APP_ROUTE_PREFIX)) continue
 
-    const name = permission.path.slice(APP_ROUTE_PREFIX.length)
+    const key = permission.path.slice(APP_ROUTE_PREFIX.length)
 
-    if (!name || name.includes('/')) continue
+    if (!key || key.includes('/')) continue
 
-    const grant = byName.get(name) ?? {
-      name,
+    const grant = byKey.get(key) ?? {
+      key,
       users: [],
       groups: [],
       denied: []
@@ -55,10 +58,8 @@ export const groupAppGrants = (
       }
     }
 
-    byName.set(name, grant)
+    byKey.set(key, grant)
   }
 
-  return Array.from(byName.values()).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  )
+  return Array.from(byKey.values()).sort((a, b) => a.key.localeCompare(b.key))
 }

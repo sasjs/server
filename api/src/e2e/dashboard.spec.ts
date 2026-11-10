@@ -25,12 +25,13 @@ import { Browser, Page, chromium } from 'playwright'
 import { requireWebBuild } from './fixture'
 import { createFile, fileExists } from '@sasjs/utils'
 import {
+  appStreamService,
   getFilesFolder,
   getWebBuildFolder,
+  refreshAppStreamIndex,
   sysInitCompiledPath
 } from '../utils/'
 import { UserController } from '../controllers/'
-import { publishAppStream } from '../routes/appStream'
 
 const screenshotDir =
   process.env.E2E_SCREENSHOT_DIR ?? path.join(__dirname, 'screenshots')
@@ -52,6 +53,21 @@ describe('Home dashboard and Apps tab', () => {
   let server: ReturnType<Express['listen']>
   let browser: Browser
   let baseUrl: () => string
+  /** The app's URL, which carries its id rather than its label. */
+  let appUrl: string
+
+  /** Publishes the demo app through the service the Admin screen uses. */
+  const publishDemoApp = async () => {
+    const entry = await appStreamService().publish({
+      appLoc: '/Public/dashdemo',
+      streamWebFolder: 'web',
+      name: 'Dashdemo'
+    })
+
+    await refreshAppStreamIndex()
+
+    appUrl = `/app/${entry.id}/`
+  }
 
   beforeAll(async () => {
     if (!(await fileExists(sysInitCompiledPath))) {
@@ -88,7 +104,7 @@ describe('Home dashboard and Apps tab', () => {
       path.join(deployment, 'index.html'),
       '<!doctype html><title>Dashdemo</title><h1>Dashdemo</h1>'
     )
-    await publishAppStream('/Public/dashdemo', 'web', 'Dashdemo')
+    await publishDemoApp()
 
     browser = await chromium.launch(
       process.env.CHROMIUM_PATH
@@ -98,7 +114,6 @@ describe('Home dashboard and Apps tab', () => {
   }, 120000)
 
   afterAll(async () => {
-    process.appStreamConfig = {}
     await browser?.close()
     server?.close()
     await con?.connection.dropDatabase()
@@ -154,13 +169,15 @@ describe('Home dashboard and Apps tab', () => {
     // API explorer are header tabs on every screen.
     await page.click('[role="tablist"] a[href="/apps"]')
     // The tile's anchor is the visible target; the title inside it is a
-    // zero-width-safe Typography that Playwright reports as hidden.
-    const appTile = page.locator('a[href="/app/Dashdemo/"]')
+    // zero-width-safe Typography that Playwright reports as hidden. Read from
+    // `appUrl` each time rather than captured once: an unpublish takes the app's
+    // id with it, so publishing it again mints a new one and moves the URL.
+    const appTile = () => page.locator(`a[href="${appUrl}"]`)
     const appRow = page.locator('.MuiListItemButton-root', {
       hasText: 'Dashdemo'
     })
 
-    await appTile.first().waitFor({ timeout: 30000 })
+    await appTile().first().waitFor({ timeout: 30000 })
     expect(await selectedTab(page)).toBe('apps')
     expect(page.url()).toContain('/apps')
     expect(await page.getByText('Run ad hoc code').count()).toBe(0)
@@ -168,15 +185,15 @@ describe('Home dashboard and Apps tab', () => {
     // Two views of the same list, and the choice is remembered. A tile is a
     // Paper inside the app's link; a list row is not, so the paper's presence is
     // what tells the two apart.
-    const tiles = page.locator('a[href="/app/Dashdemo/"] .MuiPaper-root')
+    const tiles = () => page.locator(`a[href="${appUrl}"] .MuiPaper-root`)
 
     await page.getByRole('button', { name: 'List view' }).click()
     await appRow.first().waitFor({ timeout: 30000 })
-    expect(await tiles.count()).toBe(0)
+    expect(await tiles().count()).toBe(0)
 
     await page.reload()
     await appRow.first().waitFor({ timeout: 30000 })
-    expect(await tiles.count()).toBe(0)
+    expect(await tiles().count()).toBe(0)
 
     await page.screenshot({
       path: path.join(screenshotDir, 'apps-list.png')
@@ -205,19 +222,19 @@ describe('Home dashboard and Apps tab', () => {
 
     // Publishing it again brings it back, because the files were never the
     // registry entry.
-    await publishAppStream('/Public/dashdemo', 'web', 'Dashdemo')
+    await publishDemoApp()
     await page.reload()
     await appRow.first().waitFor({ timeout: 30000 })
 
     await page.getByRole('button', { name: 'Grid view' }).click()
-    await tiles.first().waitFor({ timeout: 30000 })
+    await tiles().first().waitFor({ timeout: 30000 })
 
     // Opening an app is recorded. A row opens a tab, as a tile does.
     const popupPromise = context.waitForEvent('page')
-    await appTile.first().click()
+    await appTile().first().click()
     const popup = await popupPromise
     await popup.waitForLoadState('domcontentloaded')
-    expect(popup.url()).toContain('/app/Dashdemo/')
+    expect(popup.url()).toContain(appUrl)
     await popup.close()
 
     // A file opened in Studio is recorded the same way; the Studio tab in the
