@@ -6,6 +6,8 @@ var frame = document.getElementById('frame')
 var logEl = document.getElementById('log')
 var frameLoaded = false
 var earlyTimer = null
+var earlyAttempts = 0
+var captureReported = false
 
 function log(message) {
   var time = new Date().toISOString().slice(11, 23)
@@ -111,29 +113,43 @@ function frameBuffered() {
  * Stops as soon as the app reports a capture (same-origin only), on load, or
  * after 30 seconds - a frame that never loads must not leave a timer running.
  */
+/**
+ * Report the capture, once, from whichever looks first: the replay's own tick, or
+ * the frame's load event. The tick runs every `interval` ms, so a capture that
+ * lands after the last tick and at or before load is only visible to the load
+ * handler - and reporting it there is the difference between the page saying it
+ * saw the capture and saying it saw none when the app had already taken one.
+ */
+function reportCapture() {
+  if (captureReported || !frameBuffered()) return false
+  captureReported = true
+  log(
+    'early replay: the app captured the message after ' +
+      Math.max(earlyAttempts, 1) +
+      ' post(s)'
+  )
+  return true
+}
+
 function startEarlyReplay(payload) {
   var interval = parseInt(params().get('interval'), 10) || 50
   var deadline = Date.now() + 30000
-  var attempts = 0
+  earlyAttempts = 0
+  captureReported = false
 
   log(
     'early replay: posting every ' + interval + 'ms until the app captures it'
   )
   earlyTimer = setInterval(function () {
     if (!frame.contentWindow) return
-    attempts++
+    earlyAttempts++
     postToFrame(payload)
-    if (frameBuffered()) {
-      log(
-        'early replay: the app captured the message after ' +
-          attempts +
-          ' post(s)'
-      )
+    if (reportCapture()) {
       stopEarlyReplay()
     } else if (Date.now() > deadline) {
       log(
         'early replay: gave up after ' +
-          attempts +
+          earlyAttempts +
           ' post(s) in 30s, no capture seen'
       )
       stopEarlyReplay()
@@ -169,6 +185,9 @@ function post() {
 frame.addEventListener('load', function () {
   frameLoaded = true
   var mode = timing()
+  // Look once more before stopping: the capture may have landed between the
+  // last tick and this event, in which case no tick will ever see it.
+  reportCapture()
   stopEarlyReplay()
   log('frame loaded')
   // Post once on load only when a message was supplied in the query string;
