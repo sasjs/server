@@ -23,12 +23,10 @@ const listUrl =
 /**
  * Where the downloaded macros are kept between starts.
  *
- * Two directories must not contain it: `sasJSCoreMacros`, which `copySASjsCore`
- * deletes and recreates on every start, and `api/sas/`, which `sas:copy` copies
- * wholesale into the build - a cache there would be wiped each start, or ship a
- * second copy of the macros that nothing reads. It sits beside `sas/` instead,
- * and this folder is rebuilt only by the download, so it is the completion
- * marker for sasjs/server#312's skip.
+ * It must not sit inside `sasJSCoreMacros`: `copySASjsCore` deletes and recreates
+ * that folder on every start, so a cache there would be wiped and every start
+ * would fetch again. It sits beside `sas/` instead, and only the download
+ * rebuilds it - so it is the completion marker for sasjs/server#312's skip.
  */
 export const downloadCache = path.join(apiRoot, '.sasautos-download')
 const downloadCacheList = path.join(downloadCache, '.macrolist')

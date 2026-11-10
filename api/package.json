@@ -21,7 +21,7 @@
     "copy:files": "npm run public:copy && npm run views:copy && npm run sasjsbuild:copy && npm run sas:copy && npm run web:copy",
     "public:copy": "node -e \"require('fs').cpSync('./public/','./build/public/',{recursive:true})\"",
     "sasjsbuild:copy": "node -e \"require('fs').cpSync('./sasjsbuild/','./build/sasjsbuild/',{recursive:true})\"",
-    "sas:copy": "node -e \"require('fs').cpSync('./sas/','./build/sas/',{recursive:true})\"",
+    "sas:copy": "node -e \"require('fs').cpSync('./sas/sasautos/','./build/sas/sasautos/',{recursive:true})\"",
     "web:copy": "rimraf web && mkdir web && node -e \"require('fs').cpSync('../web/build/','./web/build/',{recursive:true})\"",
     "compileSysInit": "ts-node ./scripts/compileSysInit.ts",
     "copySASjsCore": "ts-node ./scripts/copySASjsCore.ts",
