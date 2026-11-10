@@ -120,6 +120,9 @@ describe('App Stream unpublish', () => {
                     {
                       name: 'index.html',
                       type: 'file',
+                      // the bytes are base64, and a file member says so: text is
+                      // the format's default
+                      encoding: 'base64',
                       code: Buffer.from('<html>Torrents</html>').toString(
                         'base64'
                       )
@@ -369,6 +372,7 @@ describe('App Stream unpublish', () => {
                     {
                       name: 'index.html',
                       type: 'file',
+                      encoding: 'base64',
                       code: Buffer.from('<html>racer</html>').toString('base64')
                     }
                   ]

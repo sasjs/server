@@ -569,7 +569,8 @@ describe('drive', () => {
           readFile(path.join(root, 'assets', 'app.js'))
         ).resolves.toEqual('console.log(1)')
 
-        await deleteFolder(root)
+        // the drive root lists /Public in a later test, so the app's folder goes
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
       })
 
       it('replaces the folder, so a file the new archive dropped stops being served', async () => {
@@ -593,7 +594,7 @@ describe('drive', () => {
           'v2'
         )
 
-        await deleteFolder(root)
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
       })
 
       it('refuses an archive with no appLoc to deploy into', async () => {

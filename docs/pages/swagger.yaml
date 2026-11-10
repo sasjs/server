@@ -565,6 +565,12 @@ components:
             enum:
                 - file
             type: string
+        FileEncoding:
+            type: string
+            enum:
+                - utf8
+                - base64
+            description: "How a file member carries its bytes.\n\n`utf8` is what an absent `encoding` means: `code` is the file's text. A\nbinary asset states `base64`, and its `code` is base64 of the bytes to write."
         FileMember:
             properties:
                 name:
@@ -574,10 +580,8 @@ components:
                 code:
                     type: string
                 encoding:
-                    type: string
-                    enum:
-                        - utf8
-                        - base64
+                    $ref: '#/components/schemas/FileEncoding'
+                    description: 'Absent means `utf8`. See {@link FileEncoding}.'
             required:
                 - name
                 - type
