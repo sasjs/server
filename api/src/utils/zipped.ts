@@ -81,7 +81,9 @@ export const extractFileTreeFromZip = async (
   for (const entry of zip.getEntries()) {
     if (entry.isDirectory) continue
 
-    const segments = entry.entryName.split('/').filter((segment) => segment !== '')
+    const segments = entry.entryName
+      .split('/')
+      .filter((segment) => segment !== '')
 
     if (!segments.length || segments[0] === '__MACOSX') continue
 

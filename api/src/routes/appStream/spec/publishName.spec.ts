@@ -66,7 +66,9 @@ describe('deriving an app stream name', () => {
 
     published[first] = { appLoc: '/Public/two/demo' }
 
-    expect(deriveStreamServiceName('/Public/two/demo', published)).toEqual(first)
+    expect(deriveStreamServiceName('/Public/two/demo', published)).toEqual(
+      first
+    )
   })
 
   it('lengthens the digest when even the suffixed name is held', () => {
