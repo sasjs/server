@@ -248,8 +248,9 @@ export class DriveController {
    * policy come from the query parameters below.
    *
    * A `400` is returned when the document is not a valid file tree, when `appLoc`
-   * is missing for an archive of files, or when `streamWebFolder` names a folder
-   * the tree does not carry. A `413` is returned for a tree past the deploy cap -
+   * is missing for an archive of files, when `streamWebFolder` names a folder the
+   * tree does not carry, or when an archive carries no deployable files - an
+   * empty zip, or one whose entries are all macOS metadata. A `413` is returned for a tree past the deploy cap -
    * more than 10,000 entries, more than 100 MB decoded in total, or a single file
    * over 20 MB - naming the limit and the figure reached. An archive's own size
    * figures are checked before it is expanded, so an oversized one is refused
