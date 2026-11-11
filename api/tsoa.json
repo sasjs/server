@@ -23,6 +23,10 @@
         "description": "Operational data for administrators: logs, disk usage, versions and metrics"
       },
       {
+        "name": "App Stream",
+        "description": "Apps published to the App Stream: what is deployed under each id, and where it is served from"
+      },
+      {
         "name": "Auth",
         "description": "Sign-in, token exchange and password management"
       },

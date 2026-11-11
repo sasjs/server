@@ -4,7 +4,26 @@ import '../api/spec/sessionEnv'
 // the app module is what installs the process variables the routers resolve their
 // folders from, so it loads before they do
 import appPromise from '../../app'
-import apiRouter, { API_MOUNTS } from '../api'
+import apiRouter, { API_MOUNTS, ApiMount } from '../api'
+import {
+  authenticateAccessToken,
+  authenticateRefreshToken,
+  verifyAdmin
+} from '../../middlewares'
+
+/**
+ * The middleware that refuses a caller without a credential.
+ *
+ * Three of them rather than one: an access token is the usual requirement, the refresh
+ * exchange takes a refresh token instead, and `verifyAdmin` answers 401 to anyone it
+ * cannot identify. A route behind any of them needs credentials, which is what the
+ * document's `security` states.
+ */
+const AUTHENTICATORS = [
+  authenticateAccessToken,
+  authenticateRefreshToken,
+  verifyAdmin
+]
 import { API_PREFIX } from '../../utils/routePrefixes'
 import { Operation, documentedOperations } from './documentOperations'
 
@@ -75,20 +94,6 @@ const mountedOperations = (): Operation[] => {
 }
 
 /**
- * Operations that are mounted and deliberately not documented, with where that is
- * tracked. Empty is the goal; an entry here is a route published without a
- * contract, and the test fails if the list and the routes disagree in either
- * direction - so a stale entry cannot hide a fixed one, and a new gap cannot slip
- * in beside it.
- */
-const UNDOCUMENTED_ON_PURPOSE: Record<string, string> = {
-  // sasjs/server#672 - the App Stream surface is served by a hand-written router,
-  // and the document is generated from the controllers, so this route has nowhere
-  // to be stated until one of the two moves.
-  'GET /SASjsApi/app/{id}': 'https://github.com/sasjs/server/issues/672'
-}
-
-/**
  * Anything the api router carries that is not one of its mounts.
  *
  * The walk below reads `API_MOUNTS`, which is the table the router is built from -
@@ -134,14 +139,92 @@ describe('the mounted operations', () => {
       .filter((o) => !documented.has(o))
       .sort()
 
-    // every exemption is still a mounted route: one that has been documented, or
-    // removed, has to leave this list too
-    for (const exempt of Object.keys(UNDOCUMENTED_ON_PURPOSE))
-      expect(undocumented).toContain(exempt)
+    // nothing is exempt: every operation mounted under the API prefix is stated in
+    // the document, and a route that is not fails here by name
+    expect(undocumented).toEqual([])
+  })
 
-    expect(undocumented.filter((o) => !(o in UNDOCUMENTED_ON_PURPOSE))).toEqual(
-      []
+  it('state credentials everywhere but where the API is genuinely open', () => {
+    // A guard is not always on the mount: nineteen of the documented operations sit
+    // behind `authenticateAccessToken` on the handler itself - the user and group
+    // routers, auth's refresh/logout/updatePassword, info/myAuthorizedRoutes - and a
+    // walk of the mount table cannot see those. So this is asserted over the
+    // document: an operation may state `security: []` only if it is on this list, and
+    // everything on this list still has to be stated as open. Both directions, so a
+    // route that quietly becomes public and one that quietly stops being public are
+    // both a failure, and an addition here is a deliberate edit with a reason.
+    const PUBLIC_OPERATIONS = [
+      'POST /SASjsApi/auth/token', // the sign-in exchange itself
+      'GET /SASjsApi/info', // mode/runTimes/authProviders, read before anyone signs in
+      'GET /', // the interface shell
+      'POST /SASLogon/login',
+      'POST /SASLogon/authorize',
+      'GET /SASLogon/logout'
+    ]
+
+    const documented = documentedOperations()
+    const label = (operation: Operation) =>
+      `${operation.method} ${operation.path}`
+
+    const open = documented
+      .filter((operation) => operation.secured === false)
+      .map(label)
+      .sort()
+
+    expect(open).toEqual([...PUBLIC_OPERATIONS].sort())
+
+    // and the complement, so "says nothing" cannot pass: an operation that states no
+    // `security` key at all is neither open nor secured, and would satisfy the
+    // assertion above while telling a client nothing about credentials
+    const silent = documented
+      .filter((operation) => !PUBLIC_OPERATIONS.includes(label(operation)))
+      .filter((operation) => operation.secured !== true)
+      .map(label)
+      .sort()
+
+    expect(silent).toEqual([])
+  })
+
+  it('are secured exactly where their route requires a token', () => {
+    // The test above compares the document against a list somebody keeps. This one
+    // compares it against the routers: a mount's `guards`, and the handler chain each
+    // route registers. Without it, removing `authenticateAccessToken` from a mount
+    // leaves both tests green - the route is open and the document still promises a
+    // bearer requirement - which is the reverse of the defect this file was written for
+    // and just as invisible.
+    const carriesToken = (mount: ApiMount, layer: any): boolean =>
+      (mount.guards ?? []).some((guard) => AUTHENTICATORS.includes(guard)) ||
+      layer.route.stack.some((entry: any) =>
+        AUTHENTICATORS.includes(entry.handle)
+      )
+
+    const documented = new Map(
+      documentedOperations().map((o) => [`${o.method} ${o.path}`, o])
     )
+
+    const mismatched: string[] = []
+
+    for (const mount of API_MOUNTS) {
+      for (const layer of (mount.router as any).stack) {
+        if (!layer.route) continue
+
+        const requiresToken = carriesToken(mount, layer)
+
+        for (const method of Object.keys(layer.route.methods)) {
+          const path = `${API_PREFIX}${mount.path}${withoutTrailingSlash(
+            toDocumentForm(layer.route.path)
+          )}`
+          const label = `${method.toUpperCase()} ${path}`
+          const entry = documented.get(label)
+
+          if (!entry) continue
+
+          if ((entry.secured === true) !== requiresToken) mismatched.push(label)
+        }
+      }
+    }
+
+    expect(mismatched.sort()).toEqual([])
   })
 
   it('are mounted through the table, and only through it', () => {
