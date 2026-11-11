@@ -146,6 +146,7 @@ export class InfoController {
     paths: ['/AppStream', '/SASjsApi/stp/execute']
   })
   @Response(401, 'Administrator access is required')
+  @Security('bearerAuth')
   @Get('/authorizedRoutes')
   public authorizedRoutes(): AuthorizedRoutesResponse {
     const response = {

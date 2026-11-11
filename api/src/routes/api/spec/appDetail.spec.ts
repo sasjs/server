@@ -18,6 +18,7 @@ jest
 
 import appPromise from '../../../app'
 import {
+  AppController,
   PermissionController,
   PermissionSettingForRoute,
   PermissionType,
@@ -151,6 +152,34 @@ describe('App Stream app detail', () => {
       .expect(404)
 
     expect(res.body.message).toContain('that id')
+  })
+
+  it('should answer 500 with the fixed envelope when the controller throws', async () => {
+    // The route sends the same { status, message } shape for every refusal, so a
+    // client parses one thing - and a 5xx carries no library message, because a
+    // driver's text is nothing a caller can act on and can carry internals. Spied on
+    // the controller rather than the store: the store answers an unreadable index with
+    // an empty one by design, so there is no file this could be provoked with.
+    const spy = jest
+      .spyOn(AppController.prototype, 'getApp')
+      .mockRejectedValue(new Error('EIO: i/o error, read'))
+
+    try {
+      const { token } = await tokenFor(admin.username)
+
+      const res = await request(app)
+        .get(`/SASjsApi/app/${MARIO}`)
+        .auth(token, { type: 'bearer' })
+
+      expect(res.status).toBe(500)
+      expect(res.body).toEqual({
+        status: 'failure',
+        message: 'Internal Server Error'
+      })
+      expect(JSON.stringify(res.body)).not.toContain('EIO')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('should not answer a label in place of an id', async () => {

@@ -1,10 +1,21 @@
 import fs from 'fs'
 import path from 'path'
 
-/** One operation as the document states it: the method, and the path it answers. */
+/** One operation as the document states it: the method, the path it answers, and
+ * whether it states credentials are needed. */
 export interface Operation {
   method: string
   path: string
+
+  /**
+   * `true` when the operation states a security requirement, `false` when it states
+   * `security: []` - explicitly open - and `undefined` when it states neither.
+   *
+   * `security: []` is not the same as saying nothing: it is how the generator says
+   * "no credentials", and a client built from the document will call the route
+   * unauthenticated on the strength of it.
+   */
+  secured?: boolean
 }
 
 const apiRoot = path.resolve(__dirname, '../../..')
@@ -34,6 +45,7 @@ export const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'patch']
 export const documentedOperations = (): Operation[] => {
   const operations: Operation[] = []
   let route: string | undefined
+  let current: Operation | undefined
   let inPaths = false
 
   for (const line of fs.readFileSync(specPath, 'utf8').split('\n')) {
@@ -55,8 +67,17 @@ export const documentedOperations = (): Operation[] => {
     }
 
     const methodMatch = /^ {8}([a-z]+):\s*$/.exec(line)
-    if (route && methodMatch && HTTP_METHODS.includes(methodMatch[1]))
-      operations.push({ method: methodMatch[1].toUpperCase(), path: route })
+    if (route && methodMatch && HTTP_METHODS.includes(methodMatch[1])) {
+      current = { method: methodMatch[1].toUpperCase(), path: route }
+      operations.push(current)
+      continue
+    }
+
+    // an operation's own keys sit one level below its method; `security: []` is the
+    // generator saying no credentials, and a list under it is a requirement
+    const securityMatch = /^ {12}security:(.*)$/.exec(line)
+    if (current && securityMatch)
+      current.secured = securityMatch[1].trim() !== '[]'
   }
 
   return operations
