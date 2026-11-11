@@ -2,8 +2,6 @@
 // installs `process.secrets` in server mode, and the token the probes carry is
 // signed with ACCESS_TOKEN_SECRET from it
 import '../api/spec/sessionEnv'
-import fs from 'fs'
-import path from 'path'
 import request from 'supertest'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
@@ -12,6 +10,7 @@ import appPromise from '../../app'
 import { UserController } from '../../controllers'
 import { generateAccessToken, saveTokensInDB } from '../../utils'
 import { API_ALIAS, API_PREFIX } from '../../utils/routePrefixes'
+import { Operation, documentedOperations } from './documentOperations'
 
 /**
  * Every operation the document states is mounted in this app.
@@ -57,11 +56,6 @@ import { API_ALIAS, API_PREFIX } from '../../utils/routePrefixes'
  * (`/` and the `/SASLogon` endpoints) are mounted at the root and have one
  * spelling, so they are asked for once.
  */
-const apiRoot = path.resolve(__dirname, '../../..')
-const specPath = path.join(apiRoot, 'public', 'swagger.yaml')
-
-const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'patch']
-
 /**
  * The two spellings every operation under the API mount has to answer on.
  *
@@ -86,51 +80,6 @@ const notMounted = (
 ): boolean =>
   answer.status === 404 &&
   (answer.text === 'Not Found' || answer.text.includes(`Cannot ${method} /`))
-
-interface Operation {
-  method: string
-  path: string
-}
-
-/**
- * The paths and methods the document states, read from the file itself.
- *
- * Not YAML: the `paths` section is a route per line at the first indent and a
- * method per line at the second, and adding a YAML parser (and its types) to the
- * package to read two levels of it would be a bigger thing than the check. Reading
- * the server's own copy is the point - the package carries a vendored copy, and a
- * stale one there must not be mistaken for this document.
- */
-const documentedOperations = (): Operation[] => {
-  const operations: Operation[] = []
-  let route: string | undefined
-  let inPaths = false
-
-  for (const line of fs.readFileSync(specPath, 'utf8').split('\n')) {
-    if (line.startsWith('paths:')) {
-      inPaths = true
-      continue
-    }
-    if (!inPaths) continue
-    // a new top-level key ends the section
-    if (/^\S/.test(line)) break
-
-    // a path that carries a parameter is quoted by the generator, and one that
-    // does not is bare: reading only the bare form would attribute the quoted
-    // paths' methods to the path above them and never probe them at all
-    const routeMatch = /^ {4}'?(\/[^']*)'?:\s*$/.exec(line)
-    if (routeMatch) {
-      route = routeMatch[1]
-      continue
-    }
-
-    const methodMatch = /^ {8}([a-z]+):\s*$/.exec(line)
-    if (route && methodMatch && HTTP_METHODS.includes(methodMatch[1]))
-      operations.push({ method: methodMatch[1].toUpperCase(), path: route })
-  }
-
-  return operations
-}
 
 /** A path parameter as a caller would fill it: one segment, nothing exotic. */
 const filled = (route: string): string => route.replace(/\{([^}]+)\}/g, 'probe')
