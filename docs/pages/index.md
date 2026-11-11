@@ -100,13 +100,5 @@ Everything the interface links to is at a top-level path:
 | `/api` | The REST API's reference, inside the interface (the Swagger page is at `/api-assets/`); the API answers `/api/info`, `/api/stp/execute`, ... |
 | `/app/<name>` | A published App Stream application |
 
-The shorter paths - `/SASjsStudio`, `/SASjsApps`, `/SASjsDocs`, `/SASjsSettings`, `/SASjsLogon`, `/AppStream` - redirect to the ones above.
-
-<!-- server-docs-ignore: /SASjsApiDocs -->
-
-`/SASjsApiDocs` redirects to `/api-assets/`. It is a redirect rule rather than a mounted router, so the endpoint checker - which reads registered routes - does not see it.
-
-The API also answers on `/SASjsApi`, the spelling `@sasjs/adapter` uses and the one the specification below documents. The two are aliases of the same routes, so a client may use either.  Likewise `/AppStream` still answers the app stream listing, though an app is served at `/app/<id>/`.
-
 SASjs Server is MIT open source. The repository is [sasjs/server on GitHub](https://github.com/sasjs/server).
 </div>
