@@ -20,6 +20,11 @@
     "summary": "Read the tail of a log file"
   },
   {
+    "method": "GET",
+    "path": "/SASjsApi/app/{id}",
+    "summary": "Get a published app by id"
+  },
+  {
     "method": "POST",
     "path": "/SASjsApi/auth/logout",
     "summary": "Revoke the current tokens"

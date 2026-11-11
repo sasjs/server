@@ -477,6 +477,24 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#the-apps-url">
+<span class="md-ellipsis">
+      
+        The app's URL
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#one-pack-either-run-time">
+<span class="md-ellipsis">
+      
+        One pack, either run time
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#securing-apps">
 <span class="md-ellipsis">
       
@@ -891,6 +909,24 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#the-apps-url">
+<span class="md-ellipsis">
+      
+        The app's URL
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#one-pack-either-run-time">
+<span class="md-ellipsis">
+      
+        One pack, either run time
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#securing-apps">
 <span class="md-ellipsis">
       
@@ -1111,8 +1147,19 @@
 </span></code></pre></div>
 <p>Nothing is guessed from the contents: <code>test</code> and <code>data</code> are both valid base64, so a guess would corrupt short text rather than decode a file. An archive upload marks every entry <code>base64</code>, because an archive holds bytes.</p>
 <p>A deploy document written by a client older than <code>@sasjs/api</code> 0.24 states no <code>encoding</code> and carries its files as base64, which this server now reads as text - so such a document has to add <code>encoding: "base64"</code> to each <code>file</code> member. The CLI states it for the assets it builds.</p>
+<h2 id="the-apps-url">The app's URL<a class="headerlink" href="#the-apps-url" title="Permanent link">¶</a></h2>
+<p>An app answers on two URLs.</p>
+<ul>
+<li><code>/AppStream/&lt;id&gt;</code> - the id is a UUID, minted when the folder is first published and kept when it is published again, so this URL survives a redeploy and a rename.</li>
+<li><code>/AppStream/&lt;name&gt;</code> - the readable form, which is what a person shares. It is resolved only when exactly one app holds that name; an ambiguous name answers <code>404</code> rather than guessing which app was meant.</li>
+</ul>
+<p>A name a deploy <em>states</em> (<code>streamServiceName</code> in a compiled pack, <code>name</code> on the deploy routes) is the app's address as well as its label, so it has to be spellable as one URL segment: letters, digits, dot, dash, underscore or tilde, starting with a letter or digit, at most 64 characters, and not <code>apps.json</code> or <code>index.html</code> - which the App Stream answers itself. A publish that states anything else is refused with <code>400</code>, and one that states a name another app already answers on is refused with <code>409</code>, naming the folder that holds it.</p>
+<p>A name derived from the folder carries no such rule: it is what a first publish that states no name gets, it is a label rather than an address, and two folders may share a leaf name. Such an app opens by id, or by name through percent-encoding when the name is unique. A later publish that states nothing inherits the name the app already has - stated or derived - so a deploy never renames an app back to its folder.</p>
+<h2 id="one-pack-either-run-time">One pack, either run time<a class="headerlink" href="#one-pack-either-run-time" title="Permanent link">¶</a></h2>
+<p>A SASjs Server runs programs as SAS or as JavaScript, chosen by <code>RUN_TIMES</code>. A deployment can carry both: the SAS service <code>services/common/configure</code> and the JS program <code>services/common/configure.js</code> sit side by side under the app's folder, and the run time decides which one runs. A pack built for a server that runs JS - the <code>server</code> target of a SASjs app with its JS mocks in <code>serviceFolders</code> - therefore works on either without a second build, and a browser-hosted site (which is a JS host) runs the same programs.</p>
 <h2 id="securing-apps">Securing Apps<a class="headerlink" href="#securing-apps" title="Permanent link">¶</a></h2>
-<p>If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s). An app's route names its id, <code>/AppStream/&lt;id&gt;</code>, which is the last segment of the app's URL.</p>
+<p>If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s).</p>
+<p>An app's route names its ID, <code>/AppStream/&lt;id&gt;</code>, and the rule has to be written that way even when the URL a person opens shows the name (<code>/app/&lt;name&gt;/</code>): the permission is keyed on the id route, so a rule on <code>/AppStream/macro-dash</code> matches no route and grants nothing.</p>
 <h2 id="available-apps">Available Apps<a class="headerlink" href="#available-apps" title="Permanent link">¶</a></h2>
 <p>SASjs Server does not have an in-built "app store" (due to our security policy of having no external web requests), however you may download apps yourself from the following locations and upload them to your SASjs Server instance.</p>
 <h3 id="productivity-apps">Productivity Apps<a class="headerlink" href="#productivity-apps" title="Permanent link">¶</a></h3>
