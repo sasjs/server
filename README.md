@@ -136,7 +136,7 @@ The value comes from `buildInfo.generated.ts`, which the build writes from the r
 
 ## The demonstration site
 
-`npm run mock:build` builds the same interface as a **static site** - no server, no SAS binary - and writes it to `sasjsbuild/mock`. A service worker answers `/SASjsApi` from `@sasjs/api`, the package this server answers with, over a drive that ships with the site (`mock/drive.json`). It is published to <https://server.sasjs.io> by `.github/workflows/mock-site.yml`, from this repository, on a release or by hand.
+`npm run mock:build` builds the same interface as a **static site** - no server, no SAS binary - and writes it to `sasjsbuild/mock`. A service worker answers `/SASjsApi` from `@sasjs/api`, the package this server answers with, over a drive that ships with the site (`mock/drive.json`). It is published to <https://server.sasjs.io> by `.github/workflows/mock-site.yml`, from this repository, on every push to `main` or by hand.
 
 - `sasjs/sasjsconfig.json` is the `mock` target the CLI builds against; `mock/build.mjs` runs the docs, the web bundle and the CLI in order and writes what a static host needs: `404.html` and `.nojekyll`, the API's Swagger UI and its assets together at `/api-assets/` - `/api` is the interface's screen, which frames that page (the stylesheet and bundle are generated from `swagger-ui-dist`, which is why the site workflow installs the API's dependencies: the build asks the API for them, and fails naming any that are missing), and a folder per screen (`/studio/index.html` and the rest) so a deep link answers `200` rather than rendering with a `404` status.
 - `npm run mock:serve` serves the built site the way GitHub Pages does, including the fallback that makes a reload on `/studio` work.
