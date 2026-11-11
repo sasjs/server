@@ -47,6 +47,13 @@ const ColorSchemeSync = () => {
 
   useEffect(() => {
     if (applied !== mode) setMode(mode)
+
+    // The canvas is painted by `theme-boot.css`, keyed on this attribute, and
+    // `theme-boot.js` sets it once at boot. A switch to the other scheme at
+    // runtime has to move it too, or the page keeps the body colour MUI paints
+    // and the background it booted with - which shows around the app and in the
+    // overscroll area.
+    document.documentElement.setAttribute('data-color-scheme', mode)
   }, [applied, mode, setMode])
 
   return null

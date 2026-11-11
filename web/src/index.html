@@ -15,8 +15,20 @@
       The colour scheme has to be decided before the bundle loads, or a reader who
       chose dark sees white until React mounts. An external file, not an inline
       script: the app is served under `script-src 'self'`.
+
+      The stylesheet paints the CANVAS, which the parser applies before the first
+      paint; the script states the resolved scheme, which is what lets a stored
+      `light`/`dark` choice beat the OS. Both are needed: on the browser-hosted
+      site the script waits for the service worker to claim the page (~3s), and
+      until it runs the stylesheet is the only thing that has painted.
+
+      `data-early` is what stops that wait: the browser-hosted build defers every
+      script until the worker controls the page, and a script carrying this
+      marker is left in the page to run in the parser instead. It must not touch
+      the API - this one reads localStorage and sets a background.
     -->
-    <script src="/theme-boot.js"></script>
+    <link rel="stylesheet" href="/theme-boot.css" />
+    <script src="/theme-boot.js" data-early></script>
     <title>SASjs Server Web Interface</title>
   </head>
   <body>
