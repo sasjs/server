@@ -299,7 +299,41 @@ jobs:
 
       - name: Install Chromium for playwright
         working-directory: ./api
-        run: npx playwright install --with-deps chromium
+        # `--with-deps` installs system packages BEFORE the browser is
+        # downloaded, so the runner's apt mirror is the one dependency this
+        # pipeline does not control: a resolver failure there fails the step,
+        # the browser tests are skipped, and the whole run is red for a reason
+        # that has nothing to do with the commit under test (2026-11-11:
+        # "Temporary failure resolving", on two branches, while `main` had
+        # passed the same step minutes earlier).
+        #
+        # So the system packages are best-effort and the browser is not. If the
+        # full install cannot complete, the browser alone is fetched - and the
+        # launch check below is what decides whether that image really carried
+        # what the browser needs.
+        run: |
+          npx playwright install --with-deps chromium ||
+            npx playwright install chromium
+
+      - name: Check Chromium launches
+        # The fallback above is only acceptable when the image already has the
+        # libraries, and starting the browser is the way to know: reading the
+        # install's exit code would accept a browser that cannot run, which
+        # fails every test in the suite with a timeout instead of naming the
+        # missing library here.
+        working-directory: ./api
+        run: |
+          node -e "
+            const { chromium } = require('playwright')
+            chromium
+              .launch()
+              .then((browser) => browser.close())
+              .then(() => console.log('chromium launches'))
+              .catch((error) => {
+                console.error(error)
+                process.exit(1)
+              })
+          "
 
       - name: Run the browser tests
         working-directory: ./api

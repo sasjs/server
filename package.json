@@ -12,7 +12,7 @@
     "docs:check": "node docs/scripts/check-server-docs.mjs && node docs/scripts/check-external-calls.mjs",
     "mock:build": "node mock/build.mjs",
     "mock:serve": "node mock/serve.mjs",
-    "mock:test": "node --test mock/lib.test.mjs",
+    "mock:test": "node --test mock/lib.test.mjs mock/apps.test.mjs",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath ./.git-hooks",
     "lint-api:fix": "npx prettier --write \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-api": "npx prettier --check \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
