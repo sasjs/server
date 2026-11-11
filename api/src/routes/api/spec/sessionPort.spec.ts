@@ -16,7 +16,10 @@ import {
   RunTimeType,
   saveTokensInDB
 } from '../../../utils'
-import { desktopUser } from '../../../middlewares/desktop'
+import {
+  DESKTOP_USER_ID,
+  desktopIdentityStore
+} from '../../../utils/desktopIdentity'
 import { Session, SessionState } from '../../../types/Session'
 
 /**
@@ -215,17 +218,21 @@ describe('the session routes, over the package', () => {
     expect(Buffer.from(res.body).equals(Buffer.from(bytes))).toBe(true)
   })
 
-  it('serves desktop mode, whose only user is a sentinel id rather than an ObjectId', async () => {
-    // Desktop mode runs as one fixed user whose id is `12345`. The directory the
-    // service reads looks accounts up by id, and `12345` is not an ObjectId, so
-    // a guard written for token-supplied ids refused the only caller there is -
-    // every session route answered 401 in the mode this server also ships in.
+  it('serves desktop mode, whose only user has an id that is not an ObjectId', async () => {
+    // Desktop mode runs as one fixed user, whose id is the operating system's for the account
+    // running the server (`DESKTOP_USER_ID`) - never a Mongo ObjectId. The directory the
+    // service reads looks accounts up by id, so a guard written for token-supplied ObjectIds
+    // refused the only caller there is - every session route answered 401 in the mode this
+    // server also ships in.
     const previousMode = process.env.MODE
     process.env.MODE = ModeType.Desktop
 
     try {
       const session = await register(
-        { owner: desktopUser.username },
+        {
+          owner: (await desktopIdentityStore.userById(DESKTOP_USER_ID))!
+            .username
+        },
         { log: 'desktop log' }
       )
 

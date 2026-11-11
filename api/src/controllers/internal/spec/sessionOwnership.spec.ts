@@ -14,10 +14,10 @@ import { getSessionController } from '../Session'
  * side: the value comes from the caller of `getSession`, which every route
  * passes from `req.user.username`.
  *
- * Desktop mode takes the same path: `authenticateAccessToken` assigns the fixed
- * `desktopUser` to `req.user` before any session route runs, so the owner is
- * that user's name and the check passes for every request the single desktop
- * user makes.
+ * Desktop mode takes the same path: `authenticateAccessToken` resolves the single desktop
+ * account through `desktopCaller()` - the identity store, not a snapshot - and assigns it to
+ * `req.user` before any session route runs, so the owner is that account's name and the check
+ * passes for every request it makes.
  */
 describe('session ownership', () => {
   let controller: SessionController

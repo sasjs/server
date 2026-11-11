@@ -10,7 +10,8 @@ import {
   isPublicRoute,
   publicUser
 } from '../utils'
-import { desktopUser } from './desktop'
+import { DESKTOP_ACCESS_TOKEN, desktopCaller } from '../utils/desktopIdentity'
+import { isApiError } from '@sasjs/api'
 import { authorize } from './authorize'
 
 export const authenticateAccessToken: RequestHandler = async (
@@ -20,7 +21,17 @@ export const authenticateAccessToken: RequestHandler = async (
 ) => {
   const { MODE } = process.env
   if (MODE === ModeType.Desktop) {
-    req.user = desktopUser
+    // Read out of the identity store rather than asserted: the account, the token and the
+    // store are one declaration (utils/desktopIdentity), and the same `authenticate` the
+    // rest of the framework runs decides whether it still holds. A store that refuses - a
+    // deactivated record, a pair it no longer holds - is a refusal, not a crash: the token
+    // path below answers 401 through the same helper.
+    try {
+      req.user = await desktopCaller()
+    } catch (error) {
+      return refuseDesktopCaller(error, req, res)
+    }
+
     return next()
   }
 
@@ -121,16 +132,17 @@ const authenticateToken = async (
 ) => {
   const { MODE } = process.env
   if (MODE === ModeType.Desktop) {
-    req.user = {
-      userId: '1234',
-      clientId: 'desktopModeClientId',
-      username: 'desktopModeUsername',
-      displayName: 'desktopModeDisplayName',
-      isAdmin: true,
-      isActive: true,
-      needsToUpdatePassword: false
+    // This branch used to build its own caller from a second literal - a different id
+    // ('1234') and placeholder names - so the same desktop request was two identities
+    // depending on which middleware saw it. One store answers both now, and a store that
+    // refuses is answered as unauthenticated rather than allowed to throw into a 500.
+    try {
+      req.user = await desktopCaller()
+    } catch (error) {
+      return refuseDesktopCaller(error, req, res)
     }
-    req.accessToken = 'desktopModeAccessToken'
+
+    req.accessToken = DESKTOP_ACCESS_TOKEN
     return next()
   }
 
@@ -169,6 +181,28 @@ const authenticateToken = async (
 
     await sendUnauthenticated(req, res)
   }
+}
+
+/**
+ * Answer a desktop caller the identity store would not name.
+ *
+ * A refusal - the account exists but its token no longer resolves, the account having been
+ * deactivated - is a 401, the same answer the token path gives. Everything else is the store
+ * being unable to answer (seeded with no account, or none for the token it seeded): a broken
+ * installation, which answering 401 would hide behind a login screen this mode does not
+ * have. It is logged and reported as a 500.
+ */
+const refuseDesktopCaller = async (
+  error: unknown,
+  req: Request,
+  res: Response
+) => {
+  if (isApiError(error) && error.status === 401)
+    return sendUnauthenticated(req, res)
+
+  console.error(error)
+
+  return res.status(500).send('Desktop mode identity is misconfigured.')
 }
 
 /**

@@ -5,6 +5,8 @@ import {
   PrincipalType
 } from '../controllers/permission'
 import { getAuthorizedRoutes } from './getAuthorizedRoutes'
+import { DESKTOP_USER_ID } from './desktopIdentity'
+import { ModeType } from './verifyEnvVariables'
 
 // `.lowercase()` folds before `.alphanum()` validates, so the schema accepts
 // `JohnSnow01` and stores `johnsnow01` - the published pattern says letters and
@@ -18,10 +20,30 @@ const groupnameSchema = Joi.string().alphanum().min(3).max(16)
 
 export const blockFileRegex = /\.(exe|sh|htaccess)$/i
 
-export const uidValidation = (data: any) =>
-  Joi.object({
-    uid: Joi.string().length(24).hex().required()
+/**
+ * A `uid` path parameter.
+ *
+ * A deployment's accounts are Mongo ObjectIds, and the shape is checked here so a
+ * malformed one is refused before any lookup. Desktop mode has one account whose id is the
+ * operating system's (`DESKTOP_USER_ID`) - never an ObjectId - so that id, and only that
+ * id, is admitted in that form: the route the desktop caller is allowed to use is its own
+ * profile, and `desktopRestrict` has already refused every other path by the time this runs.
+ * Without the branch the desktop profile answered `400 "uid" length must be 24 characters
+ * long` and the caller could neither read nor save its own auto-exec.
+ */
+export const uidValidation = (data: any) => {
+  const desktopId =
+    process.env.MODE === ModeType.Desktop &&
+    data?.uid !== undefined &&
+    data.uid === DESKTOP_USER_ID
+
+  return Joi.object({
+    uid: (desktopId
+      ? Joi.string().pattern(/^[A-Za-z0-9._-]+$/)
+      : Joi.string().length(24).hex()
+    ).required()
   }).validate(data)
+}
 
 export const groupUserUidValidation = (data: any) =>
   Joi.object({
@@ -101,6 +123,23 @@ export const updateUserValidation = (
   }
   return Joi.object(validationChecks).validate(data)
 }
+
+/**
+ * Desktop mode's profile PATCH body.
+ *
+ * Only the auto-exec is validated, because only the auto-exec is the caller's to change: the
+ * account's name is the operating system's, and the Settings screen posts it back unchanged on
+ * every save. Applying the rules for a *chosen* display name (six characters, folded usernames)
+ * to that echo would refuse the save on a machine whose account name is shorter - and would
+ * refuse the one thing the route is reachable for in this mode.
+ *
+ * `unknown(true)` because the echo carries those identity fields: the controller compares them
+ * with the account and refuses a real change.
+ */
+export const desktopProfileValidation = (data: any): Joi.ValidationResult =>
+  Joi.object({ autoExec: Joi.string().allow('') })
+    .unknown(true)
+    .validate(data)
 
 export const updatePasswordValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
