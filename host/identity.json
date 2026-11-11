@@ -1,0 +1,80 @@
+{
+  "format": 1,
+  "users": [
+    {
+      "uid": "user-admin",
+      "username": "sasjsadmin",
+      "displayName": "Demo Admin",
+      "password": "Orion123",
+      "isAdmin": true,
+      "isActive": true,
+      "needsToUpdatePassword": false
+    },
+    {
+      "uid": "user-restricted",
+      "username": "sasjsuser",
+      "displayName": "Demo User",
+      "password": "Orion123",
+      "isAdmin": false,
+      "isActive": true,
+      "needsToUpdatePassword": false
+    }
+  ],
+  "groups": [
+    {
+      "uid": "group-data-controller",
+      "name": "DCGroup",
+      "description": "Data Controller users",
+      "isActive": true,
+      "users": [
+        "sasjsuser"
+      ]
+    },
+    {
+      "uid": "group-admins",
+      "name": "Admins",
+      "description": "Everything the API offers",
+      "isActive": true,
+      "users": [
+        "sasjsadmin"
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "uid": "rule-routes",
+      "path": "/SASjsApi/drive/file",
+      "type": "Route",
+      "setting": "Grant",
+      "group": "group-data-controller"
+    },
+    {
+      "uid": "rule-execute",
+      "path": "/SASjsApi/stp/execute",
+      "type": "Route",
+      "setting": "Grant",
+      "group": "group-data-controller"
+    },
+    {
+      "uid": "rule-code",
+      "path": "/SASjsApi/code/execute",
+      "type": "Route",
+      "setting": "Deny",
+      "user": "user-restricted"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "web_app",
+      "clientSecret": "web_app",
+      "accessTokenExpiration": 86400,
+      "refreshTokenExpiration": 2592000
+    },
+    {
+      "clientId": "sasjs",
+      "clientSecret": "sasjs",
+      "accessTokenExpiration": 3600,
+      "refreshTokenExpiration": 86400
+    }
+  ]
+}

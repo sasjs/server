@@ -1,4 +1,4 @@
-/* @sasjs/api 0.23.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.27.1 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -25,12 +25,15 @@ var SASjsApi = (() => {
     ADMIN_CORPUS: () => ADMIN_CORPUS,
     ADMIN_SIGNED_IN: () => ADMIN_SIGNED_IN,
     ALWAYS_VISIBLE_ROUTES: () => ALWAYS_VISIBLE_ROUTES,
+    APP_MANIFEST: () => APP_MANIFEST,
+    APP_STREAM_INDEX: () => APP_STREAM_INDEX,
     AUTH_CONFIG_CORPUS: () => AUTH_CONFIG_CORPUS,
     ApiError: () => ApiError,
     BROWSER_INFO: () => BROWSER_INFO,
     BUNDLE_NAME: () => BUNDLE_NAME,
     CODE_CORPUS: () => CODE_CORPUS,
     CODE_DEBUG: () => CODE_DEBUG,
+    DEFAULT_APP_PATH: () => DEFAULT_APP_PATH,
     DEFAULT_GRANTABLE_ROUTES: () => DEFAULT_GRANTABLE_ROUTES,
     DEFAULT_IDENTITY: () => DEFAULT_IDENTITY,
     DEFAULT_LOG_LINES: () => DEFAULT_LOG_LINES,
@@ -48,11 +51,12 @@ var SASjsApi = (() => {
     IDENTITY_FORMAT: () => IDENTITY_FORMAT,
     INFO_CORPUS: () => INFO_CORPUS,
     MAX_LOG_LINES: () => MAX_LOG_LINES,
-    MemoryAppStreamRegistry: () => MemoryAppStreamRegistry,
+    MemoryAppStreamStore: () => MemoryAppStreamStore,
     MemoryDriveStore: () => MemoryDriveStore,
     MemoryIdentityStore: () => MemoryIdentityStore,
     MemorySessionHost: () => MemorySessionHost,
     MemorySessionRunner: () => MemorySessionRunner,
+    NO_SUCH_APP: () => NO_SUCH_APP,
     NO_WEB_BUILD: () => NO_WEB_BUILD,
     OVERLAY: () => OVERLAY,
     PROVIDER_MANAGED: () => PROVIDER_MANAGED,
@@ -63,12 +67,19 @@ var SASjsApi = (() => {
     STATIC_AUTHORIZED_ROUTES: () => STATIC_AUTHORIZED_ROUTES,
     TAG_CAPABILITIES: () => TAG_CAPABILITIES,
     TOP_LEVEL_ROUTES: () => TOP_LEVEL_ROUTES,
+    appSummary: () => appSummary,
     basename: () => basename,
+    cacheControlFor: () => cacheControlFor,
     checkDeployTree: () => checkDeployTree,
     checkLogFileName: () => checkLogFileName,
+    checkPublishRequest: () => checkPublishRequest,
+    contentTypeFor: () => contentTypeFor,
     createAdminService: () => createAdminService,
+    createAppStreamService: () => createAppStreamService,
+    createAppStreamWebService: () => createAppStreamWebService,
     createAuthConfigService: () => createAuthConfigService,
     createDirectoryService: () => createDirectoryService,
+    createDriveAppStreamStore: () => createDriveAppStreamStore,
     createDriveService: () => createDriveService,
     createHomeService: () => createHomeService,
     createIdentityService: () => createIdentityService,
@@ -77,29 +88,36 @@ var SASjsApi = (() => {
     createRuntimeService: () => createRuntimeService,
     createSessionService: () => createSessionService,
     decodeBase64: () => decodeBase64,
+    defaultAppName: () => defaultAppName,
     deployTree: () => deployTree,
     dirname: () => dirname,
     dispatch: () => dispatch,
+    escapeHtml: () => escapeHtml,
     findRoute: () => findRoute,
     hasBlockedExtension: () => hasBlockedExtension,
     isApiError: () => isApiError,
+    isAppId: () => isAppId,
     isDeployTree: () => isDeployTree,
     isRoot: () => isRoot,
     isRouteGranted: () => isRouteGranted,
     logLines: () => logLines,
     measureDeployTree: () => measureDeployTree,
+    newAppId: () => newAppId,
+    normaliseAppLoc: () => normaliseAppLoc,
     normaliseAuthConfig: () => normaliseAuthConfig,
     normaliseDiagnostics: () => normaliseDiagnostics,
     normaliseDrivePath: () => normaliseDrivePath,
     normaliseInfo: () => normaliseInfo,
     normaliseLogFiles: () => normaliseLogFiles,
+    parseAppManifest: () => parseAppManifest,
     parseIdentity: () => parseIdentity,
+    publishRequestFor: () => publishRequestFor,
     routeById: () => routeById,
     runCase: () => runCase,
     sanitiseDisplayName: () => sanitiseDisplayName,
     servicesFor: () => servicesFor,
+    splitAppBundle: () => splitAppBundle,
     topLevelRouteFor: () => topLevelRouteFor,
-    unpublishAppStream: () => unpublishAppStream,
     withBundleVersion: () => withBundleVersion
   });
 
@@ -120,9 +138,9 @@ var SASjsApi = (() => {
   var BLOCKED_EXTENSION = /\.(exe|sh|htaccess)$/i;
   var hasBlockedExtension = (path) => BLOCKED_EXTENSION.test(path);
   var normaliseDrivePath = (input) => {
-    const given = typeof input === "string" ? input : "";
+    const given2 = typeof input === "string" ? input : "";
     const segments = [];
-    for (const segment of given.replace(/\\/g, "/").split("/")) {
+    for (const segment of given2.replace(/\\/g, "/").split("/")) {
       if (!segment || segment === ".") continue;
       if (segment === "..") {
         if (!segments.length) return null;
@@ -191,7 +209,7 @@ var SASjsApi = (() => {
     return bytes3;
   };
   var memberName = (member) => member.type === "service" ? `${member.name}.sas` : member.name;
-  var memberBytes = (member) => member.type === "file" ? base64Length(member.code) : utf8Length(member.code);
+  var memberBytes = (member) => member.type === "file" && member.encoding === "base64" ? base64Length(member.code) : utf8Length(member.code);
   var MEGABYTE = 1024 * 1024;
   var describeSize = (bytes3) => bytes3 < MEGABYTE ? `${bytes3} bytes` : `${Math.ceil(bytes3 / MEGABYTE * 10) / 10} MB`;
   var describeLimit = (bytes3) => bytes3 < MEGABYTE ? `${bytes3} bytes` : `${Math.round(bytes3 / MEGABYTE * 10) / 10} MB`;
@@ -276,11 +294,13 @@ var SASjsApi = (() => {
     if (typeof member.name !== "string") return false;
     if (member.type === "folder")
       return Array.isArray(member.members) && member.members.every(isDeployMember);
-    if (member.type === "service" || member.type === "file")
-      return typeof member.code === "string";
+    if (member.type === "service") return typeof member.code === "string";
+    if (member.type === "file")
+      return typeof member.code === "string" && (member.encoding === void 0 || member.encoding === "utf8" || member.encoding === "base64");
     return false;
   };
-  var deployTree = async (store, appLoc, tree, limits = DEPLOY_LIMITS) => {
+  var deployTree = async (store, appLoc, tree, options = {}) => {
+    const limits = options.limits ?? DEPLOY_LIMITS;
     if (!isDeployTree(tree))
       throw new ApiError(400, "Provided not supported data format.", {
         status: "failure",
@@ -299,6 +319,8 @@ var SASjsApi = (() => {
         message: refusal.message
       });
     try {
+      if (options.replace && await store.exists(root)) await store.remove(root);
+      await store.mkdirp(root);
       await writeMembers(store, tree.members, root);
     } catch {
       throw new ApiError(500, "Deployment failed!", {
@@ -317,7 +339,7 @@ var SASjsApi = (() => {
       }
       await store.write(
         path,
-        member.type === "file" ? decodeBase64(member.code) : member.code
+        member.type === "file" && member.encoding === "base64" ? decodeBase64(member.code) : member.code
       );
     }
   };
@@ -365,9 +387,9 @@ var SASjsApi = (() => {
       };
     };
     return {
-      async list(given) {
+      async list(given2) {
         const path = folderPath(
-          given === void 0 ? "" : given,
+          given2 === void 0 ? "" : given2,
           "Can't get folder outside drive."
         );
         if (!await store.exists(path))
@@ -380,37 +402,37 @@ var SASjsApi = (() => {
           folders: [...listing.folders].sort()
         };
       },
-      async read(given) {
-        const path = filePath(given, "Can't get file outside drive.");
+      async read(given2) {
+        const path = filePath(given2, "Can't get file outside drive.");
         if (!await store.exists(path))
           throw new ApiError(404, `File doesn't exist.`);
         const contents = await store.read(path);
         return { contents, binary: typeof contents !== "string" };
       },
-      async save(given, contents) {
-        const path = filePath(given, "Can't put file outside drive.");
+      async save(given2, contents) {
+        const path = filePath(given2, "Can't put file outside drive.");
         if (await store.exists(path))
           throw new ApiError(409, "File already exists.");
         await store.mkdirp(dirname(path));
         await store.write(path, contents);
         return { status: "success" };
       },
-      async update(given, contents) {
-        const path = filePath(given, "Can't modify file outside drive.");
+      async update(given2, contents) {
+        const path = filePath(given2, "Can't modify file outside drive.");
         if (!await store.exists(path))
           throw new ApiError(404, `File doesn't exist.`);
         await store.write(path, contents);
         return { status: "success" };
       },
-      async remove(given) {
-        const path = filePath(given, "Can't delete file outside drive.");
+      async remove(given2) {
+        const path = filePath(given2, "Can't delete file outside drive.");
         if (!await store.exists(path))
           throw new ApiError(404, `File doesn't exist.`);
         await store.remove(path);
         return { status: "success" };
       },
-      async mkdir(given) {
-        const path = folderPath(given, "Can't put folder outside drive.");
+      async mkdir(given2) {
+        const path = folderPath(given2, "Can't put folder outside drive.");
         if (isRoot(path))
           throw new ApiError(400, "Can't put folder outside drive.");
         if (await store.exists(path))
@@ -418,8 +440,8 @@ var SASjsApi = (() => {
         await store.mkdirp(path);
         return { status: "success" };
       },
-      async rmdir(given) {
-        const path = folderPath(given, "Can't delete folder outside drive.");
+      async rmdir(given2) {
+        const path = folderPath(given2, "Can't delete folder outside drive.");
         if (isRoot(path))
           throw new ApiError(400, "Can't delete folder outside drive.");
         if (!await store.exists(path) || !(await store.stat(path)).directory)
@@ -451,9 +473,9 @@ var SASjsApi = (() => {
         }
         throw new ApiError(404, "No file/folder found for provided path.");
       },
-      async tree(given) {
+      async tree(given2) {
         const path = folderPath(
-          given === void 0 ? "" : given,
+          given2 === void 0 ? "" : given2,
           "Can't get folder outside drive."
         );
         if (!await store.exists(path))
@@ -462,8 +484,8 @@ var SASjsApi = (() => {
         if (!stat.directory) throw new ApiError(400, "Not a Folder.");
         return { status: "success", tree: await treeOf(path) };
       },
-      async deploy(appLoc, tree) {
-        await deployTree(store, appLoc, tree);
+      async deploy(appLoc, tree, options) {
+        await deployTree(store, appLoc, tree, options);
         return { status: "success" };
       }
     };
@@ -1104,16 +1126,10 @@ var SASjsApi = (() => {
       method: "DELETE",
       path: "/SASjsApi/drive/deploy",
       tag: "Drive",
-      summary: "Remove an app stream entry",
+      summary: "Remove an app",
       params: [
         {
-          name: "appLoc",
-          in: "body",
-          required: true,
-          type: "string"
-        },
-        {
-          name: "streamServiceName",
+          name: "id",
           in: "body",
           required: true,
           type: "string"
@@ -1131,7 +1147,7 @@ var SASjsApi = (() => {
         },
         {
           status: 404,
-          description: "No app is published at that folder"
+          description: "No app is published with that id"
         }
       ]
     },
@@ -1153,6 +1169,24 @@ var SASjsApi = (() => {
           in: "body",
           required: false,
           type: "string"
+        },
+        {
+          name: "streamServiceName",
+          in: "body",
+          required: false,
+          type: "string"
+        },
+        {
+          name: "streamLogo",
+          in: "body",
+          required: false,
+          type: "string"
+        },
+        {
+          name: "replace",
+          in: "body",
+          required: false,
+          type: "boolean"
         },
         {
           name: "fileTree",
@@ -1188,6 +1222,36 @@ var SASjsApi = (() => {
       tag: "Drive",
       summary: "Deploy an uploaded file to SASjs Drive",
       params: [
+        {
+          name: "appLoc",
+          in: "query",
+          required: false,
+          type: "string"
+        },
+        {
+          name: "streamWebFolder",
+          in: "query",
+          required: false,
+          type: "string"
+        },
+        {
+          name: "streamServiceName",
+          in: "query",
+          required: false,
+          type: "string"
+        },
+        {
+          name: "streamLogo",
+          in: "query",
+          required: false,
+          type: "string"
+        },
+        {
+          name: "replace",
+          in: "query",
+          required: false,
+          type: "boolean"
+        },
         {
           name: "file",
           in: "formData",
@@ -2887,8 +2951,8 @@ var SASjsApi = (() => {
       }
     },
     "POST /SASjsApi/drive/deploy/upload": { implemented: true },
-    // `404` is a pair - the registry name and the appLoc it was published from -
-    // that matches no entry, and the drive's content is deliberately left alone.
+    // `404` is an id the index does not hold - the id is the app, and its label and
+    // folder are not handles - and the drive's content is deliberately left alone.
     "DELETE /SASjsApi/drive/deploy": { implemented: true },
     // Group - members and the groups themselves
     "GET /SASjsApi/group": { implemented: true },
@@ -3068,22 +3132,288 @@ var SASjsApi = (() => {
     return void 0;
   };
 
-  // src/drive/registry.ts
-  var unpublishAppStream = async (registry, body) => {
-    if (!body?.streamServiceName)
-      throw new ApiError(400, '"streamServiceName" is required');
-    if (!body.appLoc) throw new ApiError(400, '"appLoc" is required');
-    if (!await registry.unpublish(body.appLoc))
-      throw new ApiError(404, "No app is published at that folder.");
-    return { status: "success" };
+  // src/appstream/identity.ts
+  var normaliseAppLoc = (appLoc) => {
+    if (typeof appLoc !== "string" || appLoc === "")
+      throw new Error(
+        `App location must be a non-empty string, got ${JSON.stringify(appLoc)}.`
+      );
+    const normalised = normaliseDrivePath(appLoc);
+    if (normalised === null)
+      throw new ApiError(400, "appLoc cannot be outside drive.");
+    return normalised;
   };
-  var MemoryAppStreamRegistry = class {
-    constructor(folders = ["/Public/myApp"]) {
-      this.folders = new Set(folders);
+  var newAppId = () => {
+    const webCrypto = globalThis.crypto;
+    if (typeof webCrypto?.randomUUID === "function") return webCrypto.randomUUID();
+    if (typeof webCrypto?.getRandomValues !== "function")
+      throw new Error("No cryptographic source of randomness is available.");
+    const bytes3 = new Uint8Array(16);
+    webCrypto.getRandomValues(bytes3);
+    bytes3[6] = bytes3[6] & 15 | 64;
+    bytes3[8] = bytes3[8] & 63 | 128;
+    const hex = Array.from(bytes3).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20)
+    ].join("-");
+  };
+  var APP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  var isAppId = (value) => typeof value === "string" && APP_ID.test(value);
+
+  // src/appstream/service.ts
+  var appSummary = (entry) => ({
+    id: entry.id,
+    name: entry.name,
+    url: `/app/${entry.id}/`
+  });
+  var webFolderOf = (value) => {
+    if (typeof value !== "string" || value === "")
+      throw new ApiError(400, '"streamWebFolder" is required');
+    if (value === "." || value === ".." || /[\\/]/.test(value))
+      throw new ApiError(400, "streamWebFolder must be a single path segment.");
+    return value;
+  };
+  var defaultAppName = (appLoc) => {
+    const segment = appLoc.split("/").filter(Boolean).pop();
+    return segment ? segment : "app";
+  };
+  var sameAppLoc = (left, right) => {
+    try {
+      return normaliseAppLoc(left) === normaliseAppLoc(right);
+    } catch (_) {
+      return false;
     }
-    async unpublish(appLoc) {
-      return this.folders.delete(appLoc);
+  };
+  var appLocOf = (value) => {
+    try {
+      return normaliseAppLoc(value);
+    } catch (error) {
+      throw new ApiError(400, error.message);
     }
+  };
+  var hasStreamFolder = (tree, streamWebFolder) => {
+    const members = tree?.members;
+    if (!Array.isArray(members)) return false;
+    const isFolder = (member, name) => {
+      const entry = member;
+      return entry?.type === "folder" && entry?.name === name;
+    };
+    const services = members.find((member) => isFolder(member, "services"));
+    const children = services?.members;
+    return Array.isArray(children) && children.some((member) => isFolder(member, streamWebFolder));
+  };
+  var checkPublishRequest = (request, tree, options = {}) => {
+    const appLoc = appLocOf(request.appLoc);
+    if (appLoc === "/")
+      throw new ApiError(400, "An app cannot be published at the drive root.");
+    const logo = logoOf(request.logo);
+    const frameAncestors = frameAncestorsOf(request.frameAncestors);
+    const streamWebFolder = webFolderOf(request.streamWebFolder);
+    if (tree !== void 0 && !hasStreamFolder(tree, streamWebFolder))
+      throw new ApiError(
+        400,
+        `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or ${options.folderFromManifest ? "correct the folder sasjs.app.json names." : "omit streamWebFolder."}`
+      );
+    return {
+      appLoc,
+      streamWebFolder,
+      ...request.name === void 0 ? {} : { name: nameOf(request.name, appLoc) },
+      ...logo === void 0 ? {} : { logo },
+      ...frameAncestors === void 0 ? {} : { frameAncestors },
+      ...request.publishedAt === void 0 ? {} : { publishedAt: request.publishedAt }
+    };
+  };
+  var nameOf = (value, appLoc) => {
+    if (value === void 0) return defaultAppName(appLoc);
+    if (typeof value !== "string" || value.trim() === "")
+      throw new ApiError(400, '"name" must be a non-empty string');
+    return value.trim();
+  };
+  var logoOf = (value) => {
+    if (value === void 0) return void 0;
+    if (typeof value !== "string" || value === "")
+      throw new ApiError(400, '"logo" must be a non-empty string');
+    return value;
+  };
+  var frameAncestorsOf = (value) => {
+    if (value === void 0) return void 0;
+    const list = Array.isArray(value) ? value : [value];
+    if (list.length === 0 || list.some((source) => typeof source !== "string" || source === ""))
+      throw new ApiError(
+        400,
+        '"frameAncestors" must be a string or a non-empty list of strings'
+      );
+    return [...list];
+  };
+  var createAppStreamService = (store) => {
+    let queue = Promise.resolve();
+    const mutate = (work) => {
+      const run = queue.then(work, work);
+      queue = run.catch(() => void 0);
+      return run;
+    };
+    const readable = (allow) => store.read().then(
+      (entries) => entries.filter((entry) => allow ? allow(entry) : true).map((entry) => ({ ...entry })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+    );
+    return {
+      list: readable,
+      async get(id) {
+        const entry = (await store.read()).find(
+          (candidate) => candidate.id === id
+        );
+        if (!entry) throw new ApiError(404, "No app is published with that id.");
+        return { ...entry };
+      },
+      async forAppLoc(appLoc) {
+        let normalised;
+        try {
+          normalised = normaliseAppLoc(appLoc);
+        } catch (_) {
+          return void 0;
+        }
+        const entry = (await store.read()).find(
+          (candidate) => sameAppLoc(candidate.appLoc, normalised)
+        );
+        return entry ? { ...entry } : void 0;
+      },
+      publish(request) {
+        return mutate(async () => {
+          const checked = checkPublishRequest(request);
+          const appLoc = checked.appLoc;
+          const streamWebFolder = checked.streamWebFolder;
+          const entries = await store.read();
+          const existing = entries.find(
+            (entry2) => sameAppLoc(entry2.appLoc, appLoc)
+          );
+          const logo = checked.logo;
+          const frameAncestors = checked.frameAncestors;
+          const entry = {
+            id: existing ? existing.id : newAppId(),
+            // the label is the one field a redeploy inherits: everything else is
+            // what this publish states
+            name: nameOf(checked.name ?? existing?.name, appLoc),
+            appLoc,
+            streamWebFolder,
+            ...logo === void 0 ? {} : { logo },
+            ...frameAncestors === void 0 ? {} : { frameAncestors },
+            publishedAt: checked.publishedAt ?? (/* @__PURE__ */ new Date()).toISOString()
+          };
+          await store.write([
+            ...entries.filter(
+              (candidate) => !sameAppLoc(candidate.appLoc, appLoc)
+            ),
+            entry
+          ]);
+          return { ...entry };
+        });
+      },
+      unpublish(id) {
+        return mutate(async () => {
+          const entries = await store.read();
+          const index = entries.findIndex((entry) => entry.id === id);
+          if (index === -1)
+            throw new ApiError(404, "No app is published with that id.");
+          const [removed] = entries.splice(index, 1);
+          await store.write(entries);
+          return { ...removed };
+        });
+      }
+    };
+  };
+  var MemoryAppStreamStore = class {
+    constructor(entries = []) {
+      this.entries = entries.map((entry) => ({ ...entry }));
+    }
+    async read() {
+      return this.entries.map((entry) => ({ ...entry }));
+    }
+    async write(entries) {
+      this.entries = entries.map((entry) => ({ ...entry }));
+    }
+  };
+
+  // src/appstream/bundle.ts
+  var APP_MANIFEST = "sasjs.app.json";
+  var isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+  var text = (value, field) => {
+    if (value === void 0) return void 0;
+    if (typeof value !== "string" || value.trim() === "")
+      throw new ApiError(
+        400,
+        `"${field}" must be a non-empty string in ${APP_MANIFEST}.`
+      );
+    return value.trim();
+  };
+  var parseAppManifest = (value) => {
+    if (!isObject(value))
+      throw new ApiError(400, `${APP_MANIFEST} must be an object.`);
+    const streamWebFolder = text(value.streamWebFolder, "streamWebFolder");
+    if (streamWebFolder === void 0)
+      throw new ApiError(
+        400,
+        `${APP_MANIFEST} must state "streamWebFolder": the folder under services/ holding the compiled app.`
+      );
+    const name = text(value.name, "name");
+    const logo = text(value.logo, "logo");
+    const frameAncestors = value.frameAncestors;
+    if (frameAncestors !== void 0 && (typeof frameAncestors !== "string" || frameAncestors === "") && !(Array.isArray(frameAncestors) && frameAncestors.length > 0 && frameAncestors.every(
+      (source) => typeof source === "string" && source !== ""
+    )))
+      throw new ApiError(
+        400,
+        `"frameAncestors" in ${APP_MANIFEST} must be a string or a non-empty list of strings.`
+      );
+    return {
+      ...name === void 0 ? {} : { name },
+      streamWebFolder,
+      ...logo === void 0 ? {} : { logo },
+      ...frameAncestors === void 0 ? {} : { frameAncestors }
+    };
+  };
+  var splitAppBundle = (tree) => {
+    if (!isObject(tree) || !Array.isArray(tree.members))
+      return { tree };
+    const members = tree.members;
+    const at = members.findIndex(
+      (member2) => isObject(member2) && member2.type === "file" && member2.name === APP_MANIFEST
+    );
+    if (at === -1) return { tree };
+    const member = members[at];
+    if (typeof member.code !== "string")
+      throw new ApiError(400, `${APP_MANIFEST} carries no text.`);
+    let parsed;
+    try {
+      parsed = JSON.parse(member.code);
+    } catch (error) {
+      throw new ApiError(
+        400,
+        `${APP_MANIFEST} is not valid JSON: ${error.message}`
+      );
+    }
+    return {
+      tree: {
+        ...tree,
+        members: members.filter((_, index) => index !== at)
+      },
+      manifest: parseAppManifest(parsed)
+    };
+  };
+  var publishRequestFor = (deploy, manifest) => {
+    const streamWebFolder = deploy.streamWebFolder ?? manifest?.streamWebFolder;
+    if (streamWebFolder === void 0) return void 0;
+    const name = deploy.streamServiceName ?? manifest?.name;
+    const logo = deploy.streamLogo ?? manifest?.logo;
+    return {
+      appLoc: deploy.appLoc,
+      streamWebFolder,
+      ...name === void 0 ? {} : { name },
+      ...logo === void 0 ? {} : { logo },
+      ...manifest?.frameAncestors === void 0 ? {} : { frameAncestors: manifest.frameAncestors }
+    };
   };
 
   // src/host/dispatch.ts
@@ -3095,15 +3425,24 @@ var SASjsApi = (() => {
     "POST /SASjsApi/code/execute",
     "POST /SASjsApi/code/trigger"
   ];
+  var given = (value) => typeof value === "string" && value !== "" ? value : void 0;
+  var replaceOf = (value) => {
+    if (value === void 0 || value === "") return void 0;
+    if (typeof value === "boolean") return value;
+    const text2 = String(value).trim().toLowerCase();
+    if (text2 === "true") return true;
+    if (text2 === "false") return false;
+    throw new ApiError(400, '"replace" must be true or false.');
+  };
   var validate = (route, request) => {
     for (const param of route.params) {
       if (!param.required || param.in === "formData" || param.in === "header")
         continue;
       if (param.in === "path") continue;
-      const given = param.in === "query" ? request.query?.[param.name] : request.body?.[param.name];
-      if (given === void 0)
+      const given2 = param.in === "query" ? request.query?.[param.name] : request.body?.[param.name];
+      if (given2 === void 0)
         throw new ApiError(400, `"${param.name}" is required`);
-      if (given === "")
+      if (given2 === "")
         throw new ApiError(400, `"${param.name}" is not allowed to be empty`);
     }
   };
@@ -3335,19 +3674,43 @@ var SASjsApi = (() => {
       // expansion, which is why the two share this path rather than reading bytes.
       case "POST /SASjsApi/drive/deploy/upload":
       case "POST /SASjsApi/drive/deploy": {
-        await drive.deploy(String(body.appLoc ?? ""), body.fileTree);
-        return { status: 200, body: DEPLOY_SUCCESS };
-      }
-      case "DELETE /SASjsApi/drive/deploy":
-        if (!services.registry)
-          throw new ApiError(
-            501,
-            `This host has no app stream registry, so it cannot answer ${routeId}.`
-          );
+        const bundle = splitAppBundle(body.fileTree);
+        const isUpload = routeId === "POST /SASjsApi/drive/deploy/upload";
+        const setting = (name) => isUpload ? given(query[name]) ?? body?.[name] : body?.[name];
+        const appLoc = String(setting("appLoc") ?? "");
+        const requested = services.appStream ? publishRequestFor(
+          {
+            appLoc,
+            streamWebFolder: given(setting("streamWebFolder")),
+            streamServiceName: given(setting("streamServiceName")),
+            streamLogo: given(setting("streamLogo"))
+          },
+          bundle.manifest
+        ) : void 0;
+        const folderFromManifest = requested?.streamWebFolder !== void 0 && given(setting("streamWebFolder")) === void 0 && bundle.manifest?.streamWebFolder !== void 0;
+        const publish = requested === void 0 ? void 0 : checkPublishRequest(requested, bundle.tree, { folderFromManifest });
+        const replace = replaceOf(setting("replace")) ?? isUpload;
+        await drive.deploy(appLoc, bundle.tree, { replace });
+        if (publish === void 0 || !services.appStream)
+          return { status: 200, body: DEPLOY_SUCCESS };
+        const entry = await services.appStream.publish(publish);
         return {
           status: 200,
-          body: await unpublishAppStream(services.registry, body)
+          body: { ...DEPLOY_SUCCESS, app: appSummary(entry) }
         };
+      }
+      case "DELETE /SASjsApi/drive/deploy": {
+        if (!services.appStream)
+          throw new ApiError(
+            501,
+            `This host has no app stream, so it cannot answer ${routeId}.`
+          );
+        const removed = await services.appStream.unpublish(String(body.id ?? ""));
+        return {
+          status: 200,
+          body: { status: "success", app: appSummary(removed) }
+        };
+      }
       case "GET /SASjsApi/drive/filetree":
         return { status: 200, body: await drive.tree(query._folderPath) };
       // ------------------------------------------------------------- run times
@@ -4470,7 +4833,7 @@ var SASjsApi = (() => {
   var BUNDLE_REFERENCE = new RegExp(
     `(^|/)${BUNDLE_NAME.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`
   );
-  var withBundleVersion = (html, version) => html.replace(FILE_ATTRIBUTE, (match, attribute, value) => {
+  var withBundleVersion = (html2, version) => html2.replace(FILE_ATTRIBUTE, (match, attribute, value) => {
     const quote = value[0] === '"' || value[0] === "'" ? value[0] : "";
     const target = quote ? value.slice(1, -1) : value;
     if (!BUNDLE_REFERENCE.test(target) || target.includes("?")) return match;
@@ -4703,7 +5066,7 @@ var SASjsApi = (() => {
   // src/admin/service.ts
   var DEFAULT_LOG_LINES = 200;
   var MAX_LOG_LINES = 5e3;
-  var isObject = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+  var isObject2 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
   var isNumber = (value) => typeof value === "number" && Number.isFinite(value);
   var isString = (value) => typeof value === "string";
   var requireString = (holder, key, where) => {
@@ -4720,14 +5083,14 @@ var SASjsApi = (() => {
   };
   var requireObject = (holder, key, where) => {
     const value = holder[key];
-    if (!isObject(value))
+    if (!isObject2(value))
       throw new Error(
         `The ${where} report states \`${key}\` as ${JSON.stringify(value)}; the document states an object.`
       );
     return value;
   };
   var normaliseDiagnostics = (report) => {
-    if (!isObject(report))
+    if (!isObject2(report))
       throw new Error("The diagnostics report is not an object.");
     const build = requireObject(
       report,
@@ -4779,7 +5142,7 @@ var SASjsApi = (() => {
       requireNumber(memory, key, "diagnostics memory");
     const filesystem = report.filesystem;
     if (filesystem !== null) {
-      if (!isObject(filesystem))
+      if (!isObject2(filesystem))
         throw new Error(
           `The diagnostics report states \`filesystem\` as ${JSON.stringify(filesystem)}; the document states an object or null.`
         );
@@ -4800,7 +5163,7 @@ var SASjsApi = (() => {
         "The diagnostics report states `folders` as something other than an array."
       );
     for (const folder of report.folders) {
-      if (!isObject(folder))
+      if (!isObject2(folder))
         throw new Error(
           "The diagnostics report carries a folder that is not an object."
         );
@@ -4833,7 +5196,7 @@ var SASjsApi = (() => {
     if (!Array.isArray(files))
       throw new Error("The log report is not an array of files.");
     return files.map((file) => {
-      if (!isObject(file))
+      if (!isObject2(file))
         throw new Error("The log report carries an entry that is not an object.");
       const entry = file;
       requireString(entry, "name", "logs");
@@ -4855,7 +5218,7 @@ var SASjsApi = (() => {
     return Math.min(Math.max(Math.trunc(wanted), 1), MAX_LOG_LINES);
   };
   var normaliseLogTail = (tail) => {
-    if (!isObject(tail)) throw new Error("The log tail report is not an object.");
+    if (!isObject2(tail)) throw new Error("The log tail report is not an object.");
     const entry = tail;
     requireString(entry, "fileName", "log tail");
     requireString(entry, "content", "log tail");
@@ -5128,7 +5491,8 @@ var SASjsApi = (() => {
           authProvider: user3.authProvider,
           autoExec: user3.autoExec
         });
-        this.passwords.set(user3.uid, user3.password);
+        if (user3.password !== void 0)
+          this.passwords.set(user3.uid, user3.password);
       }
       for (const client of fixture.clients) {
         this.clientMap.set(client.clientId, {
@@ -5411,6 +5775,52 @@ var SASjsApi = (() => {
         refreshTokenExpiration: input.refreshTokenExpiration
       });
       return input;
+    }
+    /**
+     * The fixture this store would be seeded from now.
+     *
+     * A host that persists the store - the browser build keeps it beside the
+     * drive - writes this object and seeds the next boot from it, so the file a
+     * person reads and the object the store speaks are the same shape. Passwords
+     * are carried because a seed needs them to sign in: the administration
+     * records deliberately leave them out, and a snapshot that did too would be a
+     * fixture no one could log into.
+     *
+     * Tokens and authorization codes are absent on purpose. They are credentials
+     * with a lifetime, minted per session; a persisted one would authenticate a
+     * caller after the pair it names had been rotated or revoked, which is the
+     * failure a token store exists to prevent.
+     *
+     * An account with no local password - one a directory imported, or one
+     * created and never given a password - is stated without one. Writing an
+     * empty string would seed an account the equality check signs in with `''`,
+     * while an absent password refuses every attempt, which is what this store
+     * itself answers for that account.
+     */
+    snapshot() {
+      return {
+        format: IDENTITY_FORMAT,
+        users: this.userList.map((user3) => {
+          const password = this.passwords.get(user3.uid);
+          return {
+            ...user3,
+            ...password === void 0 ? {} : { password }
+          };
+        }),
+        groups: [...this.groupList.values()].map((group) => ({
+          ...group,
+          // the store holds members as uids; the fixture states them by username,
+          // which is what the constructor resolves back - writing uids here would
+          // seed a group whose membership matches no account
+          users: group.users.map(
+            (uid) => this.userList.find((user3) => user3.uid === uid)?.username
+          ).filter((username) => username !== void 0)
+        })),
+        permissions: [...this.permissionList.values()].map((permission) => ({
+          ...permission
+        })),
+        clients: [...this.clientRecords.values()].map((client) => ({ ...client }))
+      };
     }
   };
 
@@ -6117,46 +6527,35 @@ var SASjsApi = (() => {
     {
       id: "deploy-unpublish",
       route: "DELETE /SASjsApi/drive/deploy",
-      description: "removes a published app stream and answers the status",
+      description: "removes the app the id names, and says what went",
       request: {
         subject: SUBJECT,
-        body: { streamServiceName: "myApp", appLoc: "/Public/myApp" }
+        body: { id: "6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60" }
       },
-      expect: { status: 200, body: { status: "success" } }
+      expect: {
+        status: 200,
+        partial: {
+          status: "success",
+          app: { id: "6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60", name: "myApp" }
+        }
+      }
     },
     {
-      id: "deploy-unpublish-other-name",
+      id: "deploy-unpublish-no-id",
       route: "DELETE /SASjsApi/drive/deploy",
-      description: "removes the app by its folder when the name has been renamed",
+      description: "refuses a body that does not say which app to remove",
+      request: { subject: SUBJECT, body: {} },
+      expect: { status: 400, error: '"id" is required' }
+    },
+    {
+      id: "deploy-unpublish-unknown-id",
+      route: "DELETE /SASjsApi/drive/deploy",
+      description: "answers 404 for an id the index does not hold",
       request: {
         subject: SUBJECT,
-        body: { streamServiceName: "renamed-app", appLoc: "/Public/myApp" }
+        body: { id: "11111111-1111-4111-8111-111111111111" }
       },
-      expect: { status: 200, body: { status: "success" } }
-    },
-    {
-      id: "deploy-unpublish-no-stream-name",
-      route: "DELETE /SASjsApi/drive/deploy",
-      description: "refuses a body that does not say which stream to remove",
-      request: { subject: SUBJECT, body: { appLoc: "/Public/myApp" } },
-      expect: { status: 400, error: '"streamServiceName" is required' }
-    },
-    {
-      id: "deploy-unpublish-no-app-loc",
-      route: "DELETE /SASjsApi/drive/deploy",
-      description: "refuses a body that does not say which folder to remove",
-      request: { subject: SUBJECT, body: { streamServiceName: "myApp" } },
-      expect: { status: 400, error: '"appLoc" is required' }
-    },
-    {
-      id: "deploy-unpublish-unknown-folder",
-      route: "DELETE /SASjsApi/drive/deploy",
-      description: "answers 404 for a folder nothing is published at",
-      request: {
-        subject: SUBJECT,
-        body: { streamServiceName: "myApp", appLoc: "/Public/not-an-app" }
-      },
-      expect: { status: 404, error: "No app is published at that folder." }
+      expect: { status: 404, error: "No app is published with that id." }
     },
     // ------------------------------------------- the uploaded-archive route
     // The archive is expanded by the host, so what arrives here is the same tree
@@ -6171,7 +6570,91 @@ var SASjsApi = (() => {
           appLoc: "/Public/apps/uploaded",
           fileTree: {
             members: [
-              { name: "index.html", type: "file", code: "PGgxPkhlbGxvPC9oMT4=" }
+              {
+                name: "index.html",
+                type: "file",
+                code: "PGgxPkhlbGxvPC9oMT4=",
+                encoding: "base64"
+              }
+            ]
+          }
+        }
+      },
+      expect: {
+        status: 200,
+        body: {
+          status: "success",
+          message: "Files deployed successfully to @sasjs/server."
+        }
+      }
+    },
+    {
+      id: "upload-query-fields",
+      route: "POST /SASjsApi/drive/deploy/upload",
+      description: "takes the folder and the stream from the query, where the document states them",
+      request: {
+        subject: SUBJECT,
+        query: { appLoc: "/Public/apps/from-query", streamWebFolder: "web" },
+        body: {
+          fileTree: {
+            members: [
+              {
+                name: "services",
+                type: "folder",
+                members: [
+                  {
+                    name: "web",
+                    type: "folder",
+                    members: [
+                      { name: "index.html", type: "file", code: "<h1>Hello</h1>" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      expect: {
+        status: 200,
+        partial: {
+          status: "success",
+          app: { name: "from-query" }
+        }
+      }
+    },
+    {
+      id: "deploy-refuses-a-tree-without-its-web-folder",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "refuses a stream the tree does not carry, rather than indexing an app that would answer 404",
+      request: {
+        subject: SUBJECT,
+        body: {
+          appLoc: "/Public/apps/no-web",
+          streamWebFolder: "web",
+          fileTree: {
+            members: [
+              { name: "index.html", type: "file", code: "<h1>Hello</h1>" }
+            ]
+          }
+        }
+      },
+      expect: {
+        status: 400,
+        error: 'The deployed tree has no "services/web" folder, so nothing would be published at /Public/apps/no-web. Deploy the web assets under services/web, or omit streamWebFolder.'
+      }
+    },
+    {
+      id: "upload-text-file",
+      route: "POST /SASjsApi/drive/deploy/upload",
+      description: "writes a file member as its own text when no encoding is stated",
+      request: {
+        subject: SUBJECT,
+        body: {
+          appLoc: "/Public/apps/text",
+          fileTree: {
+            members: [
+              { name: "index.html", type: "file", code: "<h1>Hello</h1>" }
             ]
           }
         }
@@ -6221,6 +6704,72 @@ var SASjsApi = (() => {
         error: "The file tree exceeds the deploy limit: 10001 entries (maximum 10000)."
       }
     },
+    // ------------------------------------------- a bundle that is an app
+    // One deploy writes the tree and indexes the app, from the manifest at the
+    // root of the archive. The id is minted, so the case pins what can be pinned:
+    // the app exists, under the label the manifest states.
+    {
+      id: "deploy-publishes-an-app",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "indexes a bundle as an app from the manifest it carries, in one request",
+      request: {
+        subject: SUBJECT,
+        body: {
+          appLoc: "/Public/apps/mario",
+          fileTree: {
+            members: [
+              {
+                name: "sasjs.app.json",
+                type: "file",
+                code: JSON.stringify({
+                  name: "Mario",
+                  streamWebFolder: "web",
+                  logo: "logo.png"
+                })
+              },
+              {
+                name: "services",
+                type: "folder",
+                members: [
+                  {
+                    name: "web",
+                    type: "folder",
+                    members: [
+                      { name: "index.html", type: "file", code: "<h1>Mario</h1>" }
+                    ]
+                  },
+                  { name: "run", type: "service", code: "%put hi;" }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      expect: {
+        status: 200,
+        partial: {
+          status: "success",
+          app: { name: "Mario" }
+        }
+      }
+    },
+    {
+      id: "deploy-refuses-a-bad-manifest",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "refuses a bundle whose manifest is not JSON",
+      request: {
+        subject: SUBJECT,
+        body: {
+          appLoc: "/Public/apps/bad-manifest",
+          fileTree: {
+            members: [{ name: "sasjs.app.json", type: "file", code: "{not json" }]
+          }
+        }
+      },
+      expect: {
+        status: 400
+      }
+    },
     {
       id: "upload-refused-by-store",
       route: "POST /SASjsApi/drive/deploy/upload",
@@ -6239,6 +6788,66 @@ var SASjsApi = (() => {
         status: 500,
         body: { status: "failure", message: "Deployment failed!" },
         error: "Deployment failed!"
+      }
+    },
+    {
+      id: "upload-replaces-the-folder",
+      route: "POST /SASjsApi/drive/deploy/upload",
+      description: "an archive upload is the folder's whole contents, so a file it drops is gone",
+      seed: {
+        "/Public/apps/replaced/services/web/old.html": "<h1>old</h1>"
+      },
+      request: {
+        subject: SUBJECT,
+        query: { appLoc: "/Public/apps/replaced", streamWebFolder: "web" },
+        body: {
+          fileTree: {
+            members: [
+              {
+                name: "services",
+                type: "folder",
+                members: [
+                  {
+                    name: "web",
+                    type: "folder",
+                    members: [
+                      { name: "index.html", type: "file", code: "<h1>new</h1>" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      expect: {
+        status: 200,
+        partial: { status: "success", app: { name: "replaced" } }
+      },
+      expectDrive: {
+        present: ["/Public/apps/replaced/services/web/index.html"],
+        missing: ["/Public/apps/replaced/services/web/old.html"]
+      }
+    },
+    {
+      id: "deploy-keeps-what-is-there",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "the JSON route writes over what is there unless it is told to replace",
+      seed: {
+        "/Public/apps/kept/old.html": "<h1>old</h1>"
+      },
+      request: {
+        subject: SUBJECT,
+        body: {
+          appLoc: "/Public/apps/kept",
+          fileTree: {
+            members: [{ name: "a.html", type: "file", code: "<h1>a</h1>" }]
+          }
+        }
+      },
+      expect: { status: 200 },
+      expectDrive: {
+        present: ["/Public/apps/kept/a.html", "/Public/apps/kept/old.html"]
       }
     }
   ];
@@ -6521,9 +7130,9 @@ var SASjsApi = (() => {
     if (value === void 0 || value === null || value === "") return void 0;
     if (typeof value === "number")
       return Number.isFinite(value) ? value : void 0;
-    const text = String(value).trim();
-    if (!text) return void 0;
-    return /^[+-]?\d+$/.test(text) ? Number(text) : CODE_DEBUG;
+    const text2 = String(value).trim();
+    if (!text2) return void 0;
+    return /^[+-]?\d+$/.test(text2) ? Number(text2) : CODE_DEBUG;
   };
   var pad = (value) => String(value).padStart(2, "0");
   var timestamp = (now) => [
@@ -8177,6 +8786,13 @@ var SASjsApi = (() => {
   ];
 
   // src/corpus/runner.ts
+  var CORPUS_APP = {
+    id: "6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60",
+    name: "myApp",
+    appLoc: "/Public/myApp",
+    streamWebFolder: "web",
+    publishedAt: "2026-01-01T00:00:00.000Z"
+  };
   var servicesFor = (testCase) => {
     const identity = new MemoryIdentityStore(
       testCase.identity || DEFAULT_IDENTITY
@@ -8200,7 +8816,7 @@ var SASjsApi = (() => {
       directory: createDirectoryService(identity, CORPUS_DIRECTORY),
       identity: createIdentityService(identity),
       records: createRecordService(identity),
-      registry: new MemoryAppStreamRegistry(),
+      appStream: createAppStreamService(new MemoryAppStreamStore([CORPUS_APP])),
       session: createSessionService(identity, runner),
       // no `runTimes` option: the default is the five the document names, so a
       // case is never refused for a reason that belongs to one host's install
@@ -8218,9 +8834,31 @@ var SASjsApi = (() => {
       throw new Error("the store refused the write");
     }
   };
+  var checkDrive = async (testCase, services) => {
+    if (!testCase.expectDrive || !services.drive) return;
+    const holds = async (path) => {
+      try {
+        await services.drive.read(path);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+    for (const path of testCase.expectDrive.present || [])
+      if (!await holds(path))
+        throw new Error(
+          `${testCase.id}: expected a file at ${path}, and the drive has none`
+        );
+    for (const path of testCase.expectDrive.missing || [])
+      if (await holds(path))
+        throw new Error(
+          `${testCase.id}: expected no file at ${path}, and the drive still holds one`
+        );
+  };
   var runCase = async (testCase, services = servicesFor(testCase)) => {
     try {
       const response = await dispatch(services, testCase.route, testCase.request);
+      await checkDrive(testCase, services);
       return {
         status: response.status,
         body: response.body,
@@ -8231,6 +8869,225 @@ var SASjsApi = (() => {
         return { status: error.status, body: error.body, error: error.message };
       throw error;
     }
+  };
+
+  // src/appstream/store.ts
+  var APP_STREAM_INDEX = "/.sasjs/apps.json";
+  var isEntry = (value) => {
+    if (typeof value !== "object" || value === null) return false;
+    const entry = value;
+    return typeof entry.id === "string" && typeof entry.name === "string" && typeof entry.appLoc === "string" && typeof entry.streamWebFolder === "string" && typeof entry.publishedAt === "string";
+  };
+  var createDriveAppStreamStore = (drive, filePath2 = APP_STREAM_INDEX) => ({
+    async read() {
+      let contents;
+      try {
+        contents = (await drive.read(filePath2)).contents;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return [];
+        throw error;
+      }
+      if (typeof contents !== "string")
+        throw new ApiError(
+          500,
+          `The app index at ${filePath2} is not text, so no app can be read from it.`
+        );
+      let parsed;
+      try {
+        parsed = JSON.parse(contents);
+      } catch (error) {
+        throw new ApiError(
+          500,
+          `The app index at ${filePath2} is not valid JSON, so no app is registered: ${error.message}`
+        );
+      }
+      if (!Array.isArray(parsed) || !parsed.every(isEntry))
+        throw new ApiError(
+          500,
+          `The app index at ${filePath2} is not a list of app entries, so no app is registered.`
+        );
+      return parsed;
+    },
+    async write(entries) {
+      const contents = JSON.stringify(entries, null, 2);
+      try {
+        await drive.update(filePath2, contents);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          await drive.save(filePath2, contents);
+          return;
+        }
+        throw error;
+      }
+    }
+  });
+
+  // src/appstream/web.ts
+  var DEFAULT_APP_PATH = "/app";
+  var NO_SUCH_APP = "There's no App Stream available here.";
+  var ESCAPES = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  };
+  var escapeHtml = (value) => value.replace(/[&<>"']/g, (character) => ESCAPES[character]);
+  var CONTENT_TYPES = {
+    html: "text/html; charset=utf-8",
+    htm: "text/html; charset=utf-8",
+    js: "text/javascript; charset=utf-8",
+    mjs: "text/javascript; charset=utf-8",
+    css: "text/css; charset=utf-8",
+    json: "application/json; charset=utf-8",
+    map: "application/json; charset=utf-8",
+    txt: "text/plain; charset=utf-8",
+    svg: "image/svg+xml",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    ico: "image/x-icon",
+    woff: "font/woff",
+    woff2: "font/woff2",
+    ttf: "font/ttf",
+    otf: "font/otf",
+    wasm: "application/wasm",
+    pdf: "application/pdf",
+    zip: "application/zip"
+  };
+  var contentTypeFor = (filePath2) => {
+    const extension = filePath2.slice(filePath2.lastIndexOf(".") + 1).toLowerCase();
+    return CONTENT_TYPES[extension] ?? "application/octet-stream";
+  };
+  var cacheControlFor = (filePath2) => /\.[0-9a-f]{8,}\.[A-Za-z0-9]+$/.test(filePath2) ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate";
+  var html = (status, markup) => ({
+    status,
+    body: markup,
+    contentType: "text/html; charset=utf-8"
+  });
+  var json = (status, body) => ({
+    status,
+    body: JSON.stringify(body),
+    contentType: "application/json; charset=utf-8"
+  });
+  var noSuchApp = () => html(404, `<!doctype html><html><body>${NO_SUCH_APP}</body></html>`);
+  var methodNotAllowed = (allowed) => ({
+    status: 405,
+    body: JSON.stringify({ status: "failure", message: `${allowed} only.` }),
+    contentType: "application/json; charset=utf-8",
+    headers: { allow: allowed }
+  });
+  var decoded = (segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch (_) {
+      return void 0;
+    }
+  };
+  var createAppStreamWebService = (appStream, drive, options = {}) => {
+    const base = (options.basePath ?? DEFAULT_APP_PATH).replace(/\/+$/, "");
+    const title = options.title ?? "SASjs App Stream";
+    const urlOf = (entry) => `${base}/${entry.id}/`;
+    const rowOf = (entry) => ({
+      id: entry.id,
+      name: entry.name,
+      appLoc: entry.appLoc,
+      logo: entry.logo === void 0 ? null : `${urlOf(entry)}${entry.logo}`,
+      url: urlOf(entry),
+      publishedAt: entry.publishedAt ?? null
+    });
+    const apps = async (allow) => {
+      const entries = await appStream.list(allow);
+      return { apps: entries.map(rowOf) };
+    };
+    const landing = async (allow) => {
+      const { apps: rows } = await apps(allow);
+      const tiles = rows.length ? `<ul class="apps">${rows.map(
+        (row) => `<li><a href="${escapeHtml(row.url)}">${escapeHtml(row.name)}</a><span class="loc">${escapeHtml(row.appLoc)}</span></li>`
+      ).join("")}</ul>` : '<p class="empty">No apps have been published yet.</p>';
+      return html(
+        200,
+        [
+          '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+          '<meta name="viewport" content="width=device-width,initial-scale=1">',
+          `<title>${escapeHtml(title)}</title>`,
+          "<style>",
+          "body{font-family:system-ui,sans-serif;margin:2rem;color:#1f2430}",
+          "h1{font-size:1.4rem}",
+          "ul.apps{list-style:none;padding:0;display:grid;gap:.75rem;max-width:40rem}",
+          "ul.apps li{display:flex;flex-direction:column;gap:.15rem;padding:.75rem 1rem;",
+          "border:1px solid #d8dee9;border-radius:.5rem}",
+          "ul.apps a{font-weight:600;text-decoration:none;color:#0b5cad}",
+          ".loc{font-size:.8rem;color:#5b6472;font-family:ui-monospace,monospace}",
+          ".empty{color:#5b6472}",
+          "</style></head><body>",
+          `<h1>${escapeHtml(title)}</h1>`,
+          tiles,
+          "</body></html>"
+        ].join("")
+      );
+    };
+    const resolve = async (segment, allow) => {
+      const entries = await appStream.list(allow);
+      const byId2 = entries.find((entry) => entry.id === segment);
+      if (byId2) return byId2;
+      const byName = entries.filter((entry) => entry.name === segment);
+      return byName.length === 1 ? byName[0] : void 0;
+    };
+    const asset = async (entry, segments) => {
+      const parts = segments.map(decoded);
+      if (parts.some((part) => part === void 0)) return noSuchApp();
+      const relative = parts.join("/") || "index.html";
+      try {
+        const file = await drive.read(
+          `${entry.appLoc}/services/${entry.streamWebFolder}/${relative}`
+        );
+        return {
+          status: 200,
+          body: file.contents,
+          contentType: contentTypeFor(relative),
+          headers: { "cache-control": cacheControlFor(relative) }
+        };
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 404 || error.status === 400))
+          return noSuchApp();
+        throw error;
+      }
+    };
+    return {
+      apps,
+      landing,
+      async request({ method, path, allow }) {
+        const clean = (path.split(/[?#]/)[0] || "/").replace(/\/{2,}/g, "/");
+        const relative = base === "" ? clean : clean === base ? "/" : clean.startsWith(`${base}/`) ? clean.slice(base.length) : null;
+        if (relative === null) return noSuchApp();
+        if (relative === "" || relative === "/" || relative === "/index.html") {
+          if (method !== "GET") return methodNotAllowed("GET");
+          return landing(allow);
+        }
+        if (relative === "/apps.json") {
+          if (method !== "GET") return methodNotAllowed("GET");
+          return json(200, await apps(allow));
+        }
+        const segments = relative.split("/").filter(Boolean);
+        const key = decoded(segments[0]);
+        if (key === void 0) return noSuchApp();
+        if (method === "DELETE") {
+          const entry2 = await resolve(key, allow);
+          if (!entry2) return noSuchApp();
+          const removed = await appStream.unpublish(entry2.id);
+          return json(200, { status: "success", app: rowOf(removed) });
+        }
+        if (method !== "GET") return methodNotAllowed("GET, DELETE");
+        const entry = await resolve(key, allow);
+        if (!entry) return noSuchApp();
+        if (segments.length === 1 && !relative.endsWith("/"))
+          return { status: 301, location: urlOf(entry) };
+        return asset(entry, segments.slice(1));
+      }
+    };
   };
   return __toCommonJS(index_exports);
 })();
