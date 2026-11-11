@@ -33,6 +33,7 @@ import {
 } from '@mui/icons-material'
 
 import AppTile from '../../components/appTile'
+import { appsColumnSx } from '../../components/appTileLayout'
 import { AppContext, ModeType } from '../../context/appContext'
 import { APP_STREAM_ROUTE, DEPLOY_ROUTE } from '../../utils'
 import { appHref } from '../../utils/appUrl'
@@ -256,7 +257,7 @@ const Apps = () => {
   }
 
   return (
-    <Box className="container" sx={{ p: 3 }}>
+    <Box className="container" sx={{ p: 3, ...appsColumnSx }}>
       <CssBaseline />
       <Box
         sx={{
