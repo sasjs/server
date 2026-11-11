@@ -669,5 +669,8 @@ const deploy = async (data: DeployPayload) => {
     })
   )
 
-  return successDeployResponse
+  // a copy per request: the route adds the published app to this object, and the
+  // shared one would carry the last app published by ANY deploy to every answer
+  // after it - a deploy that published nothing naming an app somebody else did
+  return { ...successDeployResponse }
 }
