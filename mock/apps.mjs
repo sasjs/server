@@ -34,7 +34,7 @@ import { inflateRawSync } from 'node:zlib'
  * as a rebuild of the site with no commit saying so. Bumping it is a one-line
  * change with a reason in the PR.
  */
-export const MACRO_DASH_RELEASE = 'v1.6.0'
+export const MACRO_DASH_RELEASE = 'v1.7.0'
 
 /**
  * The version the app displays, without the tag's `v`.
@@ -61,8 +61,16 @@ export const MACRO_DASH_URL =
  */
 export const MACRO_DASH_APP_ID = '3f2b9c1e-8d4a-4b7e-9c2f-5a6d1e0b7c34'
 
-/** The name the tile carries. */
-export const MACRO_DASH_NAME = 'Macro Dash'
+/**
+ * The app's name: the tile's label AND its readable URL.
+ *
+ * `/app/macro-dash` is how the demo's app is shared, so the name is a URL
+ * segment rather than prose - no space, no capital that a reader has to
+ * reproduce - which is also the rule a deploy is held to (`@sasjs/api` refuses a
+ * stated name that is not one). The tile reads the same string; a label a
+ * deployment derives from its folder would read the same way.
+ */
+export const MACRO_DASH_NAME = 'macro-dash'
 
 /**
  * Where `@sasjs/api` keeps a drive-backed app index - `APP_STREAM_INDEX` in that
@@ -212,9 +220,17 @@ const folderNamed = (node, name) =>
  * reading, and what a `sasjs deploy` never does) would publish a page whose whole
  * content is base64.
  *
- * Only the streamed web folder is taken: the tree's other members are SAS
- * services, which a browser host cannot run, and a folder named like a service
- * is not an asset the App Stream serves.
+ * Two sets of files come out of the tree, because a browser host needs both to
+ * run the app rather than only show it:
+ *
+ *   - the streamed web folder, which the App Stream serves as the app itself;
+ *   - the executable programs beside it - a `.js` file anywhere else under
+ *     `services/` - which the host runs when the app calls a service. A `.js`
+ *     service is written by a pack built for a server that can run JS (the
+ *     macro-dash `server` target carries both runtimes), and only a JS server -
+ *     which is what this host is - can execute it. The `.sas` services in the
+ *     same pack stay out of the drive: this host has no SAS to run them, and they
+ *     travel with a real deployment instead.
  */
 export const packFiles = (pack) => {
   const services = folderNamed(pack.fileTree, 'services') ?? pack.fileTree
@@ -225,37 +241,65 @@ export const packFiles = (pack) => {
       `The packaged app has no ${pack.streamWebFolder} folder under services, so there is nothing to serve from it.`
     )
 
+  const appLoc = pack.appLoc.replace(/\/+$/, '')
   const files = []
-  const webFolder = `${pack.appLoc.replace(/\/+$/, '')}/services/${pack.streamWebFolder}`
+  const webFolder = `${appLoc}/services/${pack.streamWebFolder}`
 
-  const walk = (node, prefix) => {
+  const entryFor = (bytes) => {
+    if (!isText(bytes))
+      return { contents: BINARY_PREFIX + bytes.toString('base64') }
+
+    const text = bytes.toString('utf8').replaceAll('{{VERSION}}', MACRO_DASH_VERSION)
+
+    return { contents: text.startsWith('\u0000') ? TEXT_PREFIX + text : text }
+  }
+
+  /** The app's own assets: what a browser is served, and what it requests. */
+  const walkWeb = (node, prefix) => {
     for (const member of node.members ?? []) {
       const name = `${prefix}/${member.name}`
 
       if (member.type === 'folder') {
-        walk(member, name)
+        walkWeb(member, name)
         continue
       }
 
       if (member.type !== 'file') continue
 
-      const bytes = decodeCode(member)
-      const path = `${webFolder}${name}`
-
-      if (!isText(bytes)) {
-        files.push({ path, contents: BINARY_PREFIX + bytes.toString('base64') })
-        continue
-      }
-
-      const text = bytes.toString('utf8').replaceAll('{{VERSION}}', MACRO_DASH_VERSION)
       files.push({
-        path,
-        contents: text.startsWith('\u0000') ? TEXT_PREFIX + text : text
+        path: `${webFolder}${name}`,
+        ...entryFor(decodeCode(member))
       })
     }
   }
 
-  walk(web, '')
+  /**
+   * The services the app calls: JS programs, which are what this host executes.
+   *
+   * The streamed web folder is skipped by name - it is served rather than run,
+   * and its own `js/` folder is the app's source, not a service.
+   */
+  const walkPrograms = (node, prefix) => {
+    for (const member of node.members ?? []) {
+      const name = `${prefix}/${member.name}`
+
+      if (member.type === 'folder') {
+        if (name === `/${pack.streamWebFolder}`) continue
+        walkPrograms(member, name)
+        continue
+      }
+
+      if (member.type !== 'file' || !member.name.endsWith('.js')) continue
+
+      files.push({
+        path: `${appLoc}/services${name}`,
+        ...entryFor(decodeCode(member))
+      })
+    }
+  }
+
+  walkWeb(web, '')
+  walkPrograms(services, '')
   return files
 }
 

@@ -53,20 +53,32 @@ describe('Home dashboard and Apps tab', () => {
   let server: ReturnType<Express['listen']>
   let browser: Browser
   let baseUrl: () => string
-  /** The app's URL, which carries its id rather than its label. */
+  /**
+   * The URL the tile carries, and the id URL that still opens the app.
+   *
+   * The tile links to the readable form when one app holds the name (it does
+   * here), and the id form remains valid - the id is what a redeploy keeps, so a
+   * link shared before a rename still opens the app. Both are asserted, because
+   * "linkable by id and by name" is the promise this screen makes.
+   */
   let appUrl: string
+  let appIdUrl: string
+
+  /** The name the fixture app is published under, which is its readable URL. */
+  const APP_NAME = 'Dashdemo'
 
   /** Publishes the demo app through the service the Admin screen uses. */
   const publishDemoApp = async () => {
     const entry = await appStreamService().publish({
       appLoc: '/Public/dashdemo',
       streamWebFolder: 'web',
-      name: 'Dashdemo'
+      name: APP_NAME
     })
 
     await refreshAppStreamIndex()
 
-    appUrl = `/app/${entry.id}/`
+    appUrl = `/app/${APP_NAME}/`
+    appIdUrl = `/app/${entry.id}/`
   }
 
   beforeAll(async () => {
@@ -168,16 +180,25 @@ describe('Home dashboard and Apps tab', () => {
     // known to work. It lists published apps and nothing else: Studio and the
     // API explorer are header tabs on every screen.
     await page.click('[role="tablist"] a[href="/apps"]')
-    // The tile's anchor is the visible target; the title inside it is a
-    // zero-width-safe Typography that Playwright reports as hidden. Read from
-    // `appUrl` each time rather than captured once: an unpublish takes the app's
-    // id with it, so publishing it again mints a new one and moves the URL.
-    const appTile = () => page.locator(`a[href="${appUrl}"]`)
+    // The tile is found by its title, not by its href: the href is what this
+    // test is about, so a selector that encodes the expected spelling turns a
+    // wrong URL into a 30-second timeout instead of an assertion naming both
+    // values. Read `appUrl` each time rather than capturing it once - an
+    // unpublish takes the app's id with it, so publishing it again mints a new
+    // one and the id form moves.
+    const appTile = () => page.locator('a', { hasText: APP_NAME })
     const appRow = page.locator('.MuiListItemButton-root', {
-      hasText: 'Dashdemo'
+      hasText: APP_NAME
     })
 
     await appTile().first().waitFor({ timeout: 30000 })
+
+    // The tile opens the readable URL, and the id URL opens the same app: one
+    // address survives a rename, the other is what a person shares.
+    expect(await appTile().first().getAttribute('href')).toBe(appUrl)
+    const byId = await page.request.get(`${baseUrl()}${appIdUrl}`)
+    expect(byId.status()).toBe(200)
+
     expect(await selectedTab(page)).toBe('apps')
     expect(page.url()).toContain('/apps')
     expect(await page.getByText('Run ad hoc code').count()).toBe(0)
@@ -185,7 +206,8 @@ describe('Home dashboard and Apps tab', () => {
     // Two views of the same list, and the choice is remembered. A tile is a
     // Paper inside the app's link; a list row is not, so the paper's presence is
     // what tells the two apart.
-    const tiles = () => page.locator(`a[href="${appUrl}"] .MuiPaper-root`)
+    const tiles = () =>
+      page.locator('a', { hasText: APP_NAME }).locator('.MuiPaper-root')
 
     await page.getByRole('button', { name: 'List view' }).click()
     await appRow.first().waitFor({ timeout: 30000 })

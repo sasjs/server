@@ -109,9 +109,26 @@ Nothing is guessed from the contents: `test` and `data` are both valid base64, s
 
 A deploy document written by a client older than `@sasjs/api` 0.24 states no `encoding` and carries its files as base64, which this server now reads as text - so such a document has to add `encoding: "base64"` to each `file` member. The CLI states it for the assets it builds.
 
+## The app's URL
+
+An app answers on two URLs.
+
+- `/AppStream/<id>` - the id is a UUID, minted when the folder is first published and kept when it is published again, so this URL survives a redeploy and a rename.
+- `/AppStream/<name>` - the readable form, which is what a person shares. It is resolved only when exactly one app holds that name; an ambiguous name answers `404` rather than guessing which app was meant.
+
+A name a deploy *states* (`streamServiceName` in a compiled pack, `name` on the deploy routes) is the app's address as well as its label, so it has to be spellable as one URL segment: letters, digits, dot, dash, underscore or tilde, starting with a letter or digit, at most 64 characters, and not `apps.json` or `index.html` - which the App Stream answers itself. A publish that states anything else is refused with `400`, and one that states a name another app already answers on is refused with `409`, naming the folder that holds it.
+
+A name derived from the folder carries no such rule: it is what a first publish that states no name gets, it is a label rather than an address, and two folders may share a leaf name. Such an app opens by id, or by name through percent-encoding when the name is unique. A later publish that states nothing inherits the name the app already has - stated or derived - so a deploy never renames an app back to its folder.
+
+## One pack, either run time
+
+A SASjs Server runs programs as SAS or as JavaScript, chosen by `RUN_TIMES`. A deployment can carry both: the SAS service `services/common/configure` and the JS program `services/common/configure.js` sit side by side under the app's folder, and the run time decides which one runs. A pack built for a server that runs JS - the `server` target of a SASjs app with its JS mocks in `serviceFolders` - therefore works on either without a second build, and a browser-hosted site (which is a JS host) runs the same programs.
+
 ## Securing Apps
 
-If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s). An app's route names its id, `/AppStream/<id>`, which is the last segment of the app's URL.
+If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s).
+
+An app's route names its ID, `/AppStream/<id>`, and the rule has to be written that way even when the URL a person opens shows the name (`/app/<name>/`): the permission is keyed on the id route, so a rule on `/AppStream/macro-dash` matches no route and grants nothing.
 
 
 ## Available Apps
