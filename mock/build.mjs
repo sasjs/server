@@ -43,12 +43,16 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * is worth pinning - and the build records which release it actually used, so a
  * deploy log says what built the site rather than what the range hoped for.
  */
-// Pinned to the release that carries the sas-transcript support (sasjs/cli#1575)
-// AND the drive-backed App Stream: before 6.27.1 the browser host answered an
-// empty listing by design, so the Apps screen was blank however the drive was
-// seeded. `^6` resolved to whatever 6.x npm served at build time, which could be
-// a CLI that refuses the recording - or one that serves no apps.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.27.1'
+// Pinned to the release that carries the sas-transcript support (sasjs/cli#1575),
+// the drive-backed App Stream, and the run times this host actually answers:
+// before 6.27.1 the browser host answered an empty listing by design, so the Apps
+// screen was blank however the drive was seeded, and before 6.27.2 its `/info`
+// answer stated `['js']` while its runtime served `sas` - so the Studio drew no
+// Run control on the demo's .sas program and the recording could not be reached
+// from it. `^6` resolved to whatever 6.x npm served at build time, which could be
+// a CLI that refuses the recording, one that serves no apps, or one whose run
+// times hide the program this site exists to show.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.27.2'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
