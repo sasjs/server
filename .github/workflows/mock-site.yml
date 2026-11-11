@@ -9,14 +9,24 @@ name: Mock site
 # publish any more: two jobs writing one branch meant whichever ran last decided
 # whether server.sasjs.io served the app or the pages.
 #
-# Run by hand, and on a release. It is deliberately NOT part of the pull-request
-# pipeline: it needs the released @sasjs/cli (see mock/build.mjs), and a demo
-# that breaks CI is a demo someone will disable.
+# Runs on every push to main, and by hand. It is deliberately NOT part of the
+# pull-request pipeline: it needs the released @sasjs/cli (see mock/build.mjs),
+# and a demo that breaks CI is a demo someone will disable.
+#
+# NOT on `release: published`. release.yml cuts the release with semantic-release
+# authenticated by the repository's GITHUB_TOKEN, and GitHub does not start a
+# workflow from an event that token created - only workflow_dispatch and
+# repository_dispatch are exempt. So the release trigger read as "publishes on
+# every release" and never fired at all: every run in this workflow's history is
+# a manual dispatch, and after six releases the site was still built from a commit
+# 35 behind main. A push to main is the event that actually happens when the
+# source the site is built from changes.
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
