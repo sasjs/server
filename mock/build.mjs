@@ -29,6 +29,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
+import { fetchPack, withPublishedApp, MACRO_DASH_RELEASE } from './apps.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -42,11 +43,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * is worth pinning - and the build records which release it actually used, so a
  * deploy log says what built the site rather than what the range hoped for.
  */
-// Pinned to the release that carries the sas-transcript support (sasjs/cli#1575).
-// `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
-// that does not read the recording - the demo would then carry the file and
-// still refuse the program.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.23.1'
+// Pinned to the release that carries the sas-transcript support (sasjs/cli#1575)
+// AND the drive-backed App Stream: before 6.27.1 the browser host answered an
+// empty listing by design, so the Apps screen was blank however the drive was
+// seeded. `^6` resolved to whatever 6.x npm served at build time, which could be
+// a CLI that refuses the recording - or one that serves no apps.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.27.1'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
@@ -86,9 +88,25 @@ sasjs('compile -t mock')
 // The drive a visitor starts with. It is a captured snapshot - the format the
 // browser host exports - so the demo opens on files rather than on an empty
 // drive whose home folder does not exist.
-copyFileSync(
-  path.join(root, 'mock', 'drive.json'),
-  path.join(root, 'sasjsbuild', 'mock-snapshot.json')
+//
+// The snapshot is ALSO how the site publishes an app: a whole drive replaces the
+// seed in the host, so the packaged app's files and the registry entry that lists
+// them have to be in this one file. `apps.mjs` owns that - what it reads from the
+// release, where the entries land, and the shape of the index.
+const snapshot = JSON.parse(
+  readFileSync(path.join(root, 'mock', 'drive.json'), 'utf8')
+)
+const pack = await fetchPack()
+const published = withPublishedApp(snapshot, pack, new Date().toISOString())
+
+writeFileSync(
+  path.join(root, 'sasjsbuild', 'mock-snapshot.json'),
+  JSON.stringify(published)
+)
+
+process.stdout.write(
+  `\nPublished ${pack.streamServiceName} ${MACRO_DASH_RELEASE} to the demo drive` +
+    ` (${Object.keys(published.files).length} files)\n`
 )
 
 // A recorded SAS session, so a Run on the demo's .sas program shows a real log,
