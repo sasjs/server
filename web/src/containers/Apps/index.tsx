@@ -35,6 +35,7 @@ import {
 import AppTile from '../../components/appTile'
 import { AppContext, ModeType } from '../../context/appContext'
 import { APP_STREAM_ROUTE, DEPLOY_ROUTE } from '../../utils'
+import { appHref } from '../../utils/appUrl'
 import {
   RecentApp,
   recallRecentApps,
@@ -157,11 +158,14 @@ const Apps = () => {
     }
   }, [canUseAppStream])
 
+  // The readable URL where this listing holds one app by that name, the id
+  // otherwise: a shareable link is the point of a name, and an ambiguous one
+  // would open nothing.
   const entries: AppEntry[] = apps.map((app) => ({
     title: app.name,
     subtitle: app.appLoc,
     logo: app.logo ?? defaultAppLogo,
-    href: app.url,
+    href: appHref(app, apps),
     publishedAt: app.publishedAt,
     streamed: app
   }))

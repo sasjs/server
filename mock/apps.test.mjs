@@ -19,7 +19,8 @@ import {
   unzipEntry,
   withPublishedApp,
   MACRO_DASH_APP_ID,
-  MACRO_DASH_NAME
+  MACRO_DASH_NAME,
+  MACRO_DASH_VERSION
 } from './apps.mjs'
 
 /** A file member's `code`, which is base64 in this format for every file. */
@@ -92,7 +93,14 @@ const pack = {
             name: 'common',
             type: 'folder',
             members: [
-              { name: 'configure', type: 'service', code: '%macro configure;%mend;' }
+              // a service is SAS by type; the JS one beside it is a file, which
+              // is what a browser host can run
+              { name: 'configure', type: 'service', code: '%macro configure;%mend;' },
+              {
+                name: 'configure.js',
+                type: 'file',
+                code: code('const rootdir = "x"\n_webout = "{}"')
+              }
             ]
           },
           {
@@ -143,13 +151,19 @@ test('decodes the file tree, and writes the app under its appLoc', () => {
   const files = packFiles(pack)
   const byPath = Object.fromEntries(files.map((file) => [file.path, file.contents]))
 
-  // the service is not in the web folder, so it is not served: only the app's own
-  // assets are, which is what the App Stream answers for
+  // the app's assets, plus the JS program beside them that the host runs: the
+  // SAS service is neither served nor runnable here, so it stays out
   assert.deepEqual(Object.keys(byPath).sort(), [
+    '/Public/app/macrodash/services/common/configure.js',
     '/Public/app/macrodash/services/web/index.html',
     '/Public/app/macrodash/services/web/js/game.js',
     '/Public/app/macrodash/services/web/macrodash.png'
   ])
+
+  assert.equal(
+    byPath['/Public/app/macrodash/services/common/configure.js'],
+    'const rootdir = "x"\n_webout = "{}"'
+  )
 
   // base64 in, text on the drive - a page left encoded is a blank app
   assert.equal(
@@ -200,7 +214,10 @@ test('the version placeholder the release ships is filled in', () => {
   }
 
   const [file] = packFiles(placeholder)
-  assert.equal(file.contents, `<p>v${'1.6.0'}</p>`)
+
+  // the version the module was pinned to, not a literal: a bump must not need
+  // this assertion edited
+  assert.equal(file.contents, `<p>v${MACRO_DASH_VERSION}</p>`)
 })
 
 test('a package with no streamed web folder is refused by name', () => {

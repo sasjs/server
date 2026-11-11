@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:appgrants && npm run test:images",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:appgrants && npm run test:appurl && npm run test:images",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -28,7 +28,8 @@
     "test:colorscheme": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-color-scheme.mjs",
     "test:lintissues": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-issues.mjs",
     "test:deployform": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-deploy-form.mjs",
-    "test:appgrants": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-app-grants.mjs"
+    "test:appgrants": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-app-grants.mjs",
+    "test:appurl": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-app-url.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
