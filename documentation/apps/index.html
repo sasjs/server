@@ -419,6 +419,64 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#publishing-a-folder-of-files">
+<span class="md-ellipsis">
+      
+        Publishing a folder of files
+      
+    </span>
+</a>
+<nav aria-label="Publishing a folder of files" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-apps-id-and-the-label-it-is-known-by">
+<span class="md-ellipsis">
+      
+        The app's id, and the label it is known by
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-bundles-manifest">
+<span class="md-ellipsis">
+      
+        The bundle's manifest
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#removing-an-app">
+<span class="md-ellipsis">
+      
+        Removing an app
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#replacing-the-folder">
+<span class="md-ellipsis">
+      
+        Replacing the folder
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#text-and-binary-file-members">
+<span class="md-ellipsis">
+      
+        Text and binary file members
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#securing-apps">
 <span class="md-ellipsis">
       
@@ -775,6 +833,64 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#publishing-a-folder-of-files">
+<span class="md-ellipsis">
+      
+        Publishing a folder of files
+      
+    </span>
+</a>
+<nav aria-label="Publishing a folder of files" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-apps-id-and-the-label-it-is-known-by">
+<span class="md-ellipsis">
+      
+        The app's id, and the label it is known by
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-bundles-manifest">
+<span class="md-ellipsis">
+      
+        The bundle's manifest
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#removing-an-app">
+<span class="md-ellipsis">
+      
+        Removing an app
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#replacing-the-folder">
+<span class="md-ellipsis">
+      
+        Replacing the folder
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#text-and-binary-file-members">
+<span class="md-ellipsis">
+      
+        Text and binary file members
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#securing-apps">
 <span class="md-ellipsis">
       
@@ -952,10 +1068,51 @@
 </tbody>
 </table>
 <p>The refusal names the limit and the figure it reached, for example <code>The file tree exceeds the deploy limit: 10001 entries (maximum 10000).</code> Nothing is written before the checks pass, so a refused deploy leaves the drive exactly as it was.</p>
-<p>Sizes are decoded bytes. A file member's contents travel as base64 - four characters for every three bytes - so a tree at the total limit is up to a third larger on the wire than on the drive, and the transport admits that much. <code>POST /SASjsApi/drive/deploy/upload</code> applies the same limits to the tree it unpacks from the archive, not to the archive itself.</p>
+<p>Sizes are decoded bytes. A file member travels as its own text, or as base64 when it says <code>encoding: "base64"</code> - four characters for every three bytes - so a tree at the total limit with binary members is up to a third larger on the wire than on the drive, and the transport admits that much. <code>POST /SASjsApi/drive/deploy/upload</code> applies the same limits to the tree it unpacks from the archive, not to the archive itself.</p>
 <p>Member names are checked in the same pass: a name carrying <code>/</code>, <code>\</code> or <code>..</code> would write outside the deployment folder, so the tree is refused with <code>400</code> instead.</p>
+<h2 id="publishing-a-folder-of-files">Publishing a folder of files<a class="headerlink" href="#publishing-a-folder-of-files" title="Permanent link">¶</a></h2>
+<p>An app does not need a compiled service pack. <code>POST /SASjsApi/drive/deploy/upload</code> takes a zip whose entries are the files to serve:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># the archive holds the app's files, rooted where the server serves them from:</span>
+</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="c1">#   services/web/index.html, services/web/app.js, assets/logo.png</span>
+</span><span id="__span-0-3"><a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&amp;streamWebFolder=web"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4"><a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-5"><a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">  </span>-F<span class="w"> </span><span class="s2">"file=@harness.zip"</span>
+</span></code></pre></div>
+<p>The archive's structure is kept under <code>appLoc</code>. What a deploy document would have said comes from the query: <code>appLoc</code> is required, <code>streamWebFolder</code> publishes that folder as an App Stream app, and <code>streamServiceName</code> sets its label.</p>
+<p>An app is served from <code>&lt;appLoc&gt;/services/&lt;streamWebFolder&gt;</code>, so that is where its entry page lives - the example above holds <code>services/web/index.html</code>. The same rule holds for <code>POST /SASjsApi/drive/deploy</code> with a JSON tree: a request that names <code>streamWebFolder</code> must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.</p>
+<p>A zip that contains a deploy document - a root-level JSON file naming <code>appLoc</code> or <code>fileTree</code> - is read as a document instead, so the route answers both shapes. A file naming only one of the two is refused with the missing field named. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.</p>
+<p>Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under <code>__MACOSX/</code>, and <code>.DS_Store</code>.</p>
+<h3 id="the-apps-id-and-the-label-it-is-known-by">The app's id, and the label it is known by<a class="headerlink" href="#the-apps-id-and-the-label-it-is-known-by" title="Permanent link">¶</a></h3>
+<p>A publish gives an app its identity. The first publish of a deployment mints a UUID, and that id is the app: its URL is <code>/app/&lt;id&gt;/</code>, a removal names it, and a redeploy of the same folder keeps it - so a new bundle never moves an app's URL. The deploy answer states it as <code>app: { id, name, url }</code>.</p>
+<p>The name is a label and only a label. It is what the tile says, and it may be shared: two folders may both be called <code>report</code>, because nothing addresses an app by its name. When <code>streamServiceName</code> is absent the label is the last segment of <code>appLoc</code> as it is spelled - <code>/Public/apps/dashdemo</code> publishes as <code>dashdemo</code>.</p>
+<h3 id="the-bundles-manifest">The bundle's manifest<a class="headerlink" href="#the-bundles-manifest" title="Permanent link">¶</a></h3>
+<p>A compiled app may describe itself, in <code>sasjs.app.json</code> at the root of the archive:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dashboard"</span><span class="p">,</span>
+</span><span id="__span-1-3"><a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">  </span><span class="nt">"streamWebFolder"</span><span class="p">:</span><span class="w"> </span><span class="s2">"web"</span><span class="p">,</span>
+</span><span id="__span-1-4"><a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">  </span><span class="nt">"logo"</span><span class="p">:</span><span class="w"> </span><span class="s2">"assets/logo.png"</span><span class="p">,</span>
+</span><span id="__span-1-5"><a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">  </span><span class="nt">"frameAncestors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"https://example.com"</span><span class="p">]</span>
+</span><span id="__span-1-6"><a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p><code>streamWebFolder</code> is the folder under <code>&lt;appLoc&gt;/services</code> holding the app's web assets; <code>name</code>, <code>logo</code> and <code>frameAncestors</code> are optional. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak - a caller naming a folder or a label is correcting the archive. The SASjs CLI writes the manifest into the deploy tree when a target has a stream configuration.</p>
+<h3 id="removing-an-app">Removing an app<a class="headerlink" href="#removing-an-app" title="Permanent link">¶</a></h3>
+<p><code>DELETE /SASjsApi/drive/deploy</code> takes <code>{ "id": "&lt;id&gt;" }</code> and nothing else. The app stops being advertised and stops being served; the deployment's files stay in the drive, because deleting those is <code>DELETE /SASjsApi/drive/folder</code>.</p>
+<h3 id="replacing-the-folder">Replacing the folder<a class="headerlink" href="#replacing-the-folder" title="Permanent link">¶</a></h3>
+<p><code>POST /SASjsApi/drive/deploy</code> takes <code>replace: true</code> to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a folder means the folder is what the archive says it is - and <code>?replace=false</code> keeps what is already there.</p>
+<p>The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder, not just the app being deployed.</p>
+<h3 id="text-and-binary-file-members">Text and binary file members<a class="headerlink" href="#text-and-binary-file-members" title="Permanent link">¶</a></h3>
+<p>A <code>file</code> member carries the caller's own text by default. An asset that is not text states <code>encoding: "base64"</code>, and its <code>code</code> is base64 of the bytes to write:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="p">{</span>
+</span><span id="__span-2-2"><a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="nt">"members"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-3"><a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"index.html"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;h1&gt;Hello&lt;/h1&gt;"</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-2-4"><a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"logo.png"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span><span class="w"> </span><span class="nt">"encoding"</span><span class="p">:</span><span class="w"> </span><span class="s2">"base64"</span><span class="p">,</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"iVBORw0..."</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-5"><a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-2-6"><a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Nothing is guessed from the contents: <code>test</code> and <code>data</code> are both valid base64, so a guess would corrupt short text rather than decode a file. An archive upload marks every entry <code>base64</code>, because an archive holds bytes.</p>
+<p>A deploy document written by a client older than <code>@sasjs/api</code> 0.24 states no <code>encoding</code> and carries its files as base64, which this server now reads as text - so such a document has to add <code>encoding: "base64"</code> to each <code>file</code> member. The CLI states it for the assets it builds.</p>
 <h2 id="securing-apps">Securing Apps<a class="headerlink" href="#securing-apps" title="Permanent link">¶</a></h2>
-<p>If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s).</p>
+<p>If you are running in "Server" mode you can grant permissions at the level of User or Group to any uploaded application - just click on your username, then "Settings", then "Permissions", to create the necessary rule(s). An app's route names its id, <code>/AppStream/&lt;id&gt;</code>, which is the last segment of the app's URL.</p>
 <h2 id="available-apps">Available Apps<a class="headerlink" href="#available-apps" title="Permanent link">¶</a></h2>
 <p>SASjs Server does not have an in-built "app store" (due to our security policy of having no external web requests), however you may download apps yourself from the following locations and upload them to your SASjs Server instance.</p>
 <h3 id="productivity-apps">Productivity Apps<a class="headerlink" href="#productivity-apps" title="Permanent link">¶</a></h3>

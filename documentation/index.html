@@ -895,7 +895,7 @@
 <p>The shorter paths - <code>/SASjsStudio</code>, <code>/SASjsApps</code>, <code>/SASjsDocs</code>, <code>/SASjsSettings</code>, <code>/SASjsLogon</code>, <code>/AppStream</code> - redirect to the ones above.</p>
 <!-- server-docs-ignore: /SASjsApiDocs -->
 <p><code>/SASjsApiDocs</code> redirects to <code>/api-assets/</code>. It is a redirect rule rather than a mounted router, so the endpoint checker - which reads registered routes - does not see it.</p>
-<p>The API also answers on <code>/SASjsApi</code>, the spelling <code>@sasjs/adapter</code> uses and the one the specification below documents. The two are aliases of the same routes, so a client may use either.  Likewise <code>/AppStream</code> keeps serving published apps.</p>
+<p>The API also answers on <code>/SASjsApi</code>, the spelling <code>@sasjs/adapter</code> uses and the one the specification below documents. The two are aliases of the same routes, so a client may use either.  Likewise <code>/AppStream</code> still answers the app stream listing, though an app is served at <code>/app/&lt;id&gt;/</code>.</p>
 <p>SASjs Server is MIT open source. The repository is <a href="https://github.com/sasjs/server">sasjs/server on GitHub</a>.</p>
 </div>
 </article>

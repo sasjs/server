@@ -517,6 +517,21 @@ components:
                 - code
             type: object
             additionalProperties: false
+        PublishedApp:
+            description: 'What a published app is reported as, on the deploy answer.'
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                url:
+                    type: string
+            required:
+                - id
+                - name
+                - url
+            type: object
+            additionalProperties: false
         MemberType.folder:
             enum:
                 - folder
@@ -565,6 +580,12 @@ components:
             enum:
                 - file
             type: string
+        FileEncoding:
+            type: string
+            enum:
+                - utf8
+                - base64
+            description: "How a file member carries its bytes.\n\n`utf8` is what an absent `encoding` means: `code` is the file's text. A\nbinary asset states `base64`, and its `code` is base64 of the bytes to write."
         FileMember:
             properties:
                 name:
@@ -573,6 +594,9 @@ components:
                     $ref: '#/components/schemas/MemberType.file'
                 code:
                     type: string
+                encoding:
+                    $ref: '#/components/schemas/FileEncoding'
+                    description: 'Absent means `utf8`. See the FileEncoding schema.'
             required:
                 - name
                 - type
@@ -596,13 +620,15 @@ components:
             type: object
             additionalProperties: false
         DeployResponse:
+            description: 'What a deploy answers, and the app it published when it published one.'
             properties:
                 status:
                     type: string
                 message:
                     type: string
-                streamServiceName:
-                    type: string
+                app:
+                    $ref: '#/components/schemas/PublishedApp'
+                    description: 'The app this deploy published, with the URL it is served on.'
                 example:
                     $ref: '#/components/schemas/FileTree'
             required:
@@ -614,13 +640,36 @@ components:
             properties:
                 appLoc:
                     type: string
+                    description: 'The folder to deploy into; `/Public/apps/myapp`'
                 streamWebFolder:
                     type: string
+                    description: 'A folder of web assets inside the app to publish, e.g. `web`'
+                streamServiceName:
+                    type: string
+                    description: "The name the app is published under. Derived from the last segment of\n`appLoc` when absent, with a short digest of the folder when that name is\nalready held by a different app."
+                streamLogo:
+                    type: string
+                    description: 'A logo to show on the app''s tile'
+                replace:
+                    type: boolean
+                    description: "Write the tree as the folder's whole contents: the folder is removed before\nthe tree is written, so a file the new version renamed or dropped stops\nbeing served. Absent means the deploy writes over what is already there."
                 fileTree:
                     $ref: '#/components/schemas/FileTree'
             required:
                 - appLoc
                 - fileTree
+            type: object
+            additionalProperties: false
+        UnpublishResponse:
+            description: 'What removing an app answers: the app that is no longer published.'
+            properties:
+                status:
+                    type: string
+                app:
+                    $ref: '#/components/schemas/PublishedApp'
+            required:
+                - status
+                - app
             type: object
             additionalProperties: false
         FileFolderResponse:
@@ -634,17 +683,13 @@ components:
             type: object
             additionalProperties: false
         UnpublishPayload:
-            description: 'The pair an unpublish names - see `DELETE /SASjsApi/drive/deploy`.'
+            description: 'The app an unpublish names - see `DELETE /SASjsApi/drive/deploy`.'
             properties:
-                appLoc:
+                id:
                     type: string
-                    description: 'The folder the app was published from; `/Public/app/myservice`'
-                streamServiceName:
-                    type: string
-                    description: 'The name the app is advertised and served under'
+                    description: 'The id the publish answered with, e.g. `6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60`'
             required:
-                - appLoc
-                - streamServiceName
+                - id
             type: object
             additionalProperties: false
         AddFolderPayload:
@@ -1649,7 +1694,7 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: "Creates or updates files within SASjs Drive from a JSON file tree.\n\n`appLoc` is the folder within the drive to deploy into, and `fileTree` is a\nnested description of the folders, services and files to write. `appLoc`\ncannot point outside the drive. A `400` is returned for a payload that is\nnot a valid file tree, and a `500` when writing fails.\n\nA `413` is returned for a tree the deploy cap refuses - more than 10,000\nentries, more than 100 MB decoded in total, or a single file over 20 MB -\nnaming the limit and the figure reached. The tree is measured before\nanything is written, so a refused deploy leaves the drive untouched. The\nsame limits apply to `POST /SASjsApi/drive/deploy/upload`, after the\narchive is expanded."
+            description: "Creates or updates files within SASjs Drive from a JSON file tree.\n\n`appLoc` is the folder within the drive to deploy into, and `fileTree` is a\nnested description of the folders, services and files to write. `appLoc`\ncannot point outside the drive. A `400` is returned for a payload that is\nnot a valid file tree, and for a tree that names `streamWebFolder` without\ncarrying that folder under `services/` - the folder an app is served from -\nbecause publishing it would advertise an app that resolves to nothing. A\n`500` is returned when writing fails.\n\nA `413` is returned for a tree the deploy cap refuses - more than 10,000\nentries, more than 100 MB decoded in total, or a single file over 20 MB -\nnaming the limit and the figure reached. The tree is measured before\nanything is written, so a refused deploy leaves the drive untouched. The\nsame limits apply to `POST /SASjsApi/drive/deploy/upload`, after the\narchive is expanded."
             summary: 'Deploy a file tree to SASjs Drive'
             tags:
                 - Drive
@@ -1671,7 +1716,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/FileFolderResponse'
+                                $ref: '#/components/schemas/UnpublishResponse'
                 '400':
                     description: 'Invalid Format'
                     content:
@@ -1682,9 +1727,9 @@ paths:
                                 'Example 1':
                                     value: {status: failure, message: 'Unpublishing failed!'}
                 '404':
-                    description: 'No app is published at that folder'
-            description: "Removes a published app stream entry.\n\nThe entry stops being advertised - the landing page, its HTML index and\n`/AppStream/apps.json` are all built from the one registry - and stops being\nserved on `/AppStream/<streamServiceName>`, because the name leaves the route\ninventory as well.\n\n`appLoc` and `streamServiceName` are both required - a caller that names a\nstream but not the folder has not said what to remove - but the **folder is\nwhat identifies the app**: an app is one thing to deploy and one thing to\nremove, and its name is a label on it. A folder may hold two apps only as a\nspecial case, and they are still one thing to load or delete. So a name that\nhas since been changed does not turn a correct removal into a `404`; a folder\nwith nothing published at it answers `404`, and a missing field answers `400`.\n\nThe drive content is left alone. Deleting the folder is `DELETE\n/SASjsApi/drive/folder`, so unpublishing never destroys a deployment - and\npublishing created no permission rule, so there is none to withdraw: a caller\nneeds the same `/SASjsApi/drive/deploy` grant this route already requires.\n\nAn entry whose deployment folder has already gone is removable too, which is\nthe case a stale listing is made of: the registry file is consulted as well as\nthe in-memory view, and only the named entry is dropped."
-            summary: 'Remove an app stream entry'
+                    description: 'No app is published with that id'
+            description: "Removes a published app.\n\nThe body names the app by **id** - the value the publish answered with - and\nnothing else. An app's label is shared by design (two folders may both be\ncalled \"report\") and its folder is where it was published rather than what it\nis, so neither is an identity: a removal that named a label could take down\nan app nobody meant, and a removal that named a folder would miss an app\nwhose deployment has since gone. The id removes exactly the app it names,\nwhatever the app is currently called.\n\nThe entry stops being advertised - the landing page and `/app/apps.json` are\nboth built from the index - and stops being served, because the id leaves the\nroute inventory as well. The drive content is left alone: deleting the folder\nis `DELETE /SASjsApi/drive/folder`, so unpublishing never destroys a\ndeployment, and publishing created no permission rule, so there is none to\nwithdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this route\nalready requires.\n\nAn id the index does not hold answers `404`; a body that names no id answers\n`400`."
+            summary: 'Remove an app'
             tags:
                 - Drive
             security:
@@ -1737,14 +1782,49 @@ paths:
                             examples:
                                 'Example 1':
                                     value: {status: failure, message: 'Deployment failed!'}
-            description: "Creates or updates files within SASjs Drive from an uploaded JSON file.\n\nThe file may be plain JSON or a zip holding a single JSON file of the same\nname (for example `deploy.json.zip` for `deploy.json`); any other member of\nthe archive is ignored. The payload has the same shape as\n`POST /SASjsApi/drive/deploy`, and the same `413` applies once the archive\nis expanded: the cap is measured on the tree, not on the bytes uploaded."
+            description: "Creates or updates files within SASjs Drive from an uploaded file.\n\nThe upload has two shapes. An archive whose ROOT holds a JSON deploy\ndocument - an object naming `appLoc` or `fileTree` - is deployed as that\ndocument, and one naming only one of them is refused with the missing field\nnamed. Any other archive is the app itself: every entry becomes a file\nunder `appLoc`, and the folder, the stream to publish and the replacement\npolicy come from the query parameters below.\n\nA `400` is returned when the document is not a valid file tree, when `appLoc`\nis missing for an archive of files, when `streamWebFolder` names a folder the\ntree does not carry, or when an archive carries no deployable files - an\nempty zip, or one whose entries are all macOS metadata. A `413` is returned for a tree past the deploy cap -\nmore than 10,000 entries, more than 100 MB decoded in total, or a single file\nover 20 MB - naming the limit and the figure reached. An archive's own size\nfigures are checked before it is expanded, so an oversized one is refused\nwithout being decompressed."
             summary: 'Deploy an uploaded file to SASjs Drive'
             tags:
                 - Drive
             security:
                 -
                     bearerAuth: []
-            parameters: []
+            parameters:
+                -
+                    description: 'The folder to deploy into. Required when the archive is the app''s own files.'
+                    in: query
+                    name: appLoc
+                    required: false
+                    schema:
+                        type: string
+                -
+                    description: 'A folder under `services/` to publish as an App Stream app, e.g. `web`.'
+                    in: query
+                    name: streamWebFolder
+                    required: false
+                    schema:
+                        type: string
+                -
+                    description: 'The name to publish under. Derived from the last segment of `appLoc` when absent.'
+                    in: query
+                    name: streamServiceName
+                    required: false
+                    schema:
+                        type: string
+                -
+                    description: 'A logo to show on the app''s tile.'
+                    in: query
+                    name: streamLogo
+                    required: false
+                    schema:
+                        type: string
+                -
+                    description: 'Write the tree as the folder''s whole contents. Defaults to true for an archive.'
+                    in: query
+                    name: replace
+                    required: false
+                    schema:
+                        type: boolean
             requestBody:
                 required: true
                 content:

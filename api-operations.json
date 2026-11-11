@@ -82,7 +82,7 @@
   {
     "method": "DELETE",
     "path": "/SASjsApi/drive/deploy",
-    "summary": "Remove an app stream entry"
+    "summary": "Remove an app"
   },
   {
     "method": "POST",
