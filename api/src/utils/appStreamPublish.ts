@@ -1,5 +1,4 @@
 import {
-  ApiError,
   appSummary,
   checkPublishRequest,
   publishRequestFor,
@@ -57,43 +56,19 @@ export const prepareDeploy = (
 
   if (!request) return { tree }
 
-  // normalises the folder, refuses the drive root, and refuses a web folder that
-  // is not a single segment - the package's rules, before anything is written
-  checkPublishRequest(request)
-
-  if (!hasStreamFolder(tree, request.streamWebFolder))
-    throw new ApiError(
-      400,
-      noStreamFolder(deploy.appLoc, request.streamWebFolder)
-    )
+  // every refusal is the package's: the folder is normalised, the drive root and a
+  // multi-segment folder are refused, and the tree has to carry the folder the app
+  // would be served from. That last one is the rule both hosts used to keep a copy
+  // of, and the copy is what drifted - it told a caller whose bundle named the
+  // folder to "omit streamWebFolder", which that caller cannot do.
+  checkPublishRequest(request, tree, {
+    folderFromManifest:
+      deploy.streamWebFolder === undefined &&
+      (manifest as AppManifest | undefined)?.streamWebFolder !== undefined
+  })
 
   return { tree, request }
 }
-
-/**
- * Whether the tree carries the folder App Stream serves an app from.
- *
- * An app is served out of `<appLoc>/services/<streamWebFolder>`, so a tree
- * without that folder would be indexed and then answer 404 to every request -
- * a tile that opens nothing, which is worse than a refusal that says which
- * folder is missing.
- */
-const hasStreamFolder = (tree: any, streamWebFolder: string): boolean => {
-  const services = (tree?.members ?? []).find(
-    (member: any) => member.type === 'folder' && member.name === 'services'
-  )
-
-  return Boolean(
-    services?.members?.some(
-      (member: any) =>
-        member.type === 'folder' && member.name === streamWebFolder
-    )
-  )
-}
-
-/** The refusal a tree earns when it has nothing to publish. */
-const noStreamFolder = (appLoc: string, streamWebFolder: string): string =>
-  `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or omit streamWebFolder.`
 
 /**
  * Indexes the app a deploy published, and states it on the answer.
