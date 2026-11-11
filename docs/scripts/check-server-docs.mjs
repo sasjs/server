@@ -192,7 +192,13 @@ const sourceText = sourceFiles
 
 /** Every (method, path) the server registers under /SASjsApi, built from the
  * routers themselves: api/index.ts mounts a router on a prefix, and the router
- * file declares the paths under it. */
+ * file declares the paths under it.
+ *
+ * The mounts are read from the table the router is built from (`API_MOUNTS`), not
+ * from a run of `router.use(` calls - the calls became data, and a scan that still
+ * looked for them found nothing, which reported every endpoint mention in the docs
+ * as unregistered. A read that finds no mounts is a failure on its own, so a layout
+ * change cannot turn this check into a solid block of false findings again. */
 const serverRoutes = () => {
   const routes = []
   const base = '/SASjsApi'
@@ -214,42 +220,68 @@ const serverRoutes = () => {
     mounts.set(name, path.join(dir, `${file}.ts`))
   }
 
-  // `router.use('/prefix', middleware, someRouter)` - possibly across several
-  // lines. The call is read by brace depth so a middleware call in the middle
-  // does not end it early.
-  const useCalls = []
-  const marker = 'router.use('
-  let at = index.indexOf(marker)
-  while (at > -1) {
+  // The mounts are the entries of the `API_MOUNTS` array: one object literal each,
+  // read as a block and then asked for its two fields. Field order cannot matter
+  // that way, and an entry that is missing one is reported rather than dropped -
+  // a short read here would show up as endpoints the docs mention and the server
+  // "does not register", which is the wrong direction to be wrong in.
+  const declared = (() => {
+    // anchored on the declaration, not on the name: the type annotation beside it
+    // (`ApiMount[]`) carries a bracket of its own, and starting from that one reads
+    // a slice of the interface instead of the array
+    const declaration = index.match(/export const API_MOUNTS[^=]*=\s*\[/)
+    if (!declaration) return []
+
+    const open = declaration.index + declaration[0].length - 1
+
+    // the array literal ends at its own bracket, so nothing after it is read
     let depth = 0
-    let end = at + marker.length
+    let end = open
     for (; end < index.length; end++) {
-      if (index[end] === '(') depth++
-      else if (index[end] === ')') {
-        if (depth === 0) {
-          end++
-          break
-        }
-        depth--
-      }
+      if (index[end] === '[') depth++
+      else if (index[end] === ']' && --depth === 0) break
     }
-    useCalls.push(index.slice(at + marker.length, end - 1))
-    at = index.indexOf(marker, end)
+
+    return Array.from(
+      index.slice(open, end).matchAll(/\{[^{}]*\}/g),
+      ([block]) => block
+    )
+  })()
+
+  if (!declared.length) {
+    fail(
+      `routes: no mounts read from ${indexPath} - the table it builds the router ` +
+        'from changed shape, update serverRoutes() in docs/scripts/check-server-docs.mjs'
+    )
+    return routes
   }
 
-  for (const call of useCalls) {
-    const prefix = call.match(/^\s*'([^']*)'/)
-    const router = call.match(/\b(\w+Router)\b/)
-    if (!prefix || !router) continue
+  const table = []
+  const unread = []
+  for (const block of declared) {
+    const prefix = block.match(/path:\s*'([^']+)'/)
+    const router = block.match(/router:\s*(\w+)/)
+    if (prefix && router) table.push({ prefix: prefix[1], router: router[1] })
+    else unread.push(block.replace(/\s+/g, ' ').trim())
+  }
 
-    const file = mounts.get(router[1])
+  if (unread.length) {
+    fail(
+      `routes: ${unread.length} mount(s) in ${indexPath} could not be read - each ` +
+        'entry needs `path` and `router`: ' +
+        unread.join(' | ')
+    )
+  }
+
+  for (const { prefix, router } of table) {
+    const file = mounts.get(router)
     if (!file) {
-      fail(`routes: ${router[1]} is mounted at "${prefix[1]}" but not imported`)
+      fail(`routes: ${router} is mounted at "${prefix}" but not imported`)
       continue
     }
 
     const source = readFileSync(file, 'utf8')
-    const mountedAt = `${base}${prefix[1] === '/' ? '' : prefix[1]}`
+    const mountedAt = `${base}${prefix === '/' ? '' : prefix}`
     for (const [, method, routePath] of source.matchAll(
       /\w+Router\.(get|post|put|patch|delete)\(\s*\n?\s*'([^']*)'/g
     )) {
