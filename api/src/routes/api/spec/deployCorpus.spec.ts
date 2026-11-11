@@ -213,12 +213,9 @@ describe('deploy conformance corpus', () => {
   const replayable = DEPLOY_CORPUS.filter(
     (testCase) =>
       !testCase.unwritable &&
-      // a tree that is not a tree is an expansion no archive can produce. The
-      // corpus marks it `transport: 'expansion'` (sasjs/api#72); until that
-      // releases and this pin moves, the id says the same thing, so both apply and
-      // the id goes with the next bump.
-      (testCase as { transport?: string }).transport !== 'expansion' &&
-      testCase.id !== 'upload-refused-by-shape'
+      // a tree that is not a tree is an expansion no archive can produce, which the
+      // corpus marks on the case rather than leaving each host to name it
+      testCase.transport !== 'expansion'
   )
 
   it.each(replayable)('$id', async (testCase) => {
