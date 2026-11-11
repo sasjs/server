@@ -116,6 +116,21 @@ describe('what a deploy publishes', () => {
     }
 
     expect(() => prepareDeploy(input)).toThrow(/has no "services\/web" folder/)
+
+    // the advice names where the folder came from: this caller stated it, so
+    // dropping the field is a fix they can make
+    expect(() => prepareDeploy(input)).toThrow(/omit streamWebFolder\./)
+  })
+
+  it('tells a bundle to fix the folder its manifest names', () => {
+    // the manifest stated the folder, so "omit streamWebFolder" is not advice the
+    // caller can take - the manifest cannot leave the field out
+    expect(() =>
+      prepareDeploy({
+        appLoc: '/Public/apps/mario',
+        fileTree: bundle({ name: 'Mario', streamWebFolder: 'web' }, 'assets')
+      })
+    ).toThrow(/correct the folder sasjs\.app\.json names\./)
   })
 
   it('refuses a folder the index could not accept', () => {
