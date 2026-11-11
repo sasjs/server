@@ -418,7 +418,13 @@ driveRouter.post('/rename', async (req, res) => {
   }
 })
 
-driveRouter.get('/fileTree', async (req, res) => {
+// The document, the shared route table in `@sasjs/api` and the mock all spell
+// this `filetree`; the route inventory below spells it `fileTree`, and keeps
+// doing so - a permission record names a route, and the records already written
+// carry that spelling. Express matches case-insensitively and the gate resolves
+// the request against the inventory, so both spellings are answered and granted
+// either way; this is the spelling the contract states.
+driveRouter.get('/filetree', async (req, res) => {
   const { error, value: query } = fileTreeParamValidation(req.query)
 
   if (error) return res.status(400).send(error.details[0].message)
