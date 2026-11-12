@@ -342,6 +342,38 @@ check(
     formatJson('{"b":1,"a":2}').text.indexOf('"a"')
 )
 
+// Two documents a parse-and-re-emit would silently change: a double that cannot
+// hold the integer, and a key written twice.
+const bigId = formatJson('{"id": 9007199254740993}')
+check(
+  'an integer past the safe range is refused rather than rounded',
+  bigId.ok === false && /9007199254740993/.test(bigId.error)
+)
+
+const duplicated = formatJson('{"a": 1, "a": 2}')
+check(
+  'a key written twice is refused rather than collapsed',
+  duplicated.ok === false && /"a"/.test(duplicated.error)
+)
+
+const nestedDuplicate = formatJson('{"outer": {"k": 1, "k": 2}}')
+check(
+  'and a duplicate is found inside an object, not only at the top',
+  nestedDuplicate.ok === false
+)
+check(
+  'the same key in two different objects is not a duplicate',
+  formatJson('{"a": {"k": 1}, "b": {"k": 2}}').ok === true
+)
+check(
+  'a number inside a string is not a number',
+  formatJson('{"a": "9007199254740993"}').ok === true
+)
+check(
+  'and an index in an array is still a value, not a key',
+  formatJson('{"a": ["x", "y"], "b": 1}').ok === true
+)
+
 const invalidJson = formatJson('{"a": 1,}')
 check(
   'a syntax error is reported rather than guessed at',

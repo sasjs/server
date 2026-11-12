@@ -141,9 +141,8 @@ const useEditor = ({
         const result = formatJson(sent)
 
         if (!result.ok) {
-          setSnackbarMessage(
-            `This is not valid JSON, so nothing was changed: ${result.error}`
-          )
+          // the message names the refusal and what would have been lost
+          setSnackbarMessage(result.error)
           setSnackbarSeverity(AlertSeverityType.Error)
           setOpenSnackbar(true)
 
