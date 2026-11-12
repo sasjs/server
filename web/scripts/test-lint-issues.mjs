@@ -84,35 +84,6 @@ check(
     describeLintSummary(summariseLintIssues([])) === ''
 )
 
-if (failures.length) {
-  console.error(`lint issues: ${failures.length} check(s) failed`)
-  for (const failure of failures) console.error(`  - ${failure}`)
-  process.exit(1)
-}
-
-// The SAS rules are the only rules the endpoint applies, so a buffer in another
-// run time is left unmarked - and, in the hook, clears what the panel held. A
-// .js file open beside a .sas program was reported with that program's findings
-// before the buffer was asked this question at all.
-check(
-  'a .sas file is judged by the SAS rules',
-  lintAppliesTo('/a/b/run.sas', 'js')
-)
-check(
-  'a .js file is not, whatever run time is selected',
-  !lintAppliesTo('/a/b/run.js', 'sas')
-)
-check('a .py file is not', !lintAppliesTo('/a/b/run.py', 'sas'))
-check(
-  'an untitled buffer follows the selected run time',
-  lintAppliesTo('', 'sas')
-)
-check(
-  'an untitled buffer is left alone when the selection is not SAS',
-  !lintAppliesTo('', 'js')
-)
-check('upper case still names SAS', lintAppliesTo('/a/b/RUN.SAS', 'js'))
-
 // The SAS rules are the only rules the endpoint applies, so a buffer in another
 // run time is left unmarked - and, in the hook, clears what the panel held. A
 // .js file open beside a .sas program was reported with that program's findings

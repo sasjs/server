@@ -29,7 +29,7 @@ import {
   LogObject,
   parseExecutionResponse
 } from '../../../../utils'
-import { clearLintModel, lintModel } from '../lint'
+import { applyLintMarkers, clearLintModel, lintModel } from '../lint'
 import { lintAppliesTo } from '../lintScope'
 import { formatSasCode } from '../format'
 import { prettyJson } from '../pretty'
@@ -76,6 +76,14 @@ const useEditor = ({
   const [lintMarkers, setLintMarkers] = useState<monaco.editor.IMarkerData[]>(
     []
   )
+
+  /**
+   * The file the panel describes.
+   *
+   * A lint request outlives the switch that follows it, so the answer is checked
+   * against this before it is shown - see `lint`.
+   */
+  const selectedFilePathRef = useRef(selectedFilePath)
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   // Detaches the mouse-paste guard from the editor that was unmounted, so a
@@ -354,22 +362,18 @@ const useEditor = ({
   }
 
   /**
-   * Whether the buffer holds a SAS program. The model's language tells it for
-   * a file opened from the drive; an untitled buffer mounts as plaintext, so
-   * there the selected runtime decides - the same signal the lint flow uses.
+   * Whether the buffer holds a SAS program.
+   *
+   * The same question the lint flow asks, from the same helper: the model's
+   * language id is not consulted, because the editor sets it from the extension
+   * (`getLanguageFromExtension`) - a second copy of an answer that would then
+   * drift from this one. An untitled buffer mounts as plaintext, which is the
+   * case the selected run time covers.
    */
-  const isSasBuffer = useCallback(() => {
-    const model = editorRef.current?.getModel()
-    if (model && model.getLanguageId() !== 'plaintext') {
-      return model.getLanguageId() === 'sas'
-    }
-
-    if (selectedFilePath) {
-      return extensionOf(selectedFilePath) === 'sas'
-    }
-
-    return selectedRunTime === RunTimeType.SAS
-  }, [selectedFilePath, selectedRunTime])
+  const isSasBuffer = useCallback(
+    () => lintAppliesTo(selectedFilePath, selectedRunTime),
+    [selectedFilePath, selectedRunTime]
+  )
 
   /**
    * Formats the buffer and applies the result to the editor model, returning
@@ -641,6 +645,7 @@ const useEditor = ({
       setFileContent(content)
       setImageUrl('')
     }
+    selectedFilePathRef.current = selectedFilePath
     setWebout('')
     setTab('code')
     /* And the lint panel empties with the file. It lists findings about the
@@ -687,11 +692,18 @@ const useEditor = ({
 
       // The file's own path drives the `.sasjslint` resolution on the server,
       // so the buffer is judged by the rules that apply where it lives.
-      void lintModel(
-        editorRef.current?.getModel() ?? null,
-        code,
-        filePath || undefined
-      ).then(setLintMarkers)
+      const requestedFor = filePath ?? ''
+
+      void lintModel(code, filePath || undefined).then((markers) => {
+        /* A lint outlives a file switch: the answer for the previous buffer can
+           arrive after the next one is open, and painting it would put that
+           file's findings back for a debounce - the symptom this flow exists to
+           avoid. The answer is dropped unless it describes what is open now. */
+        if (requestedFor !== selectedFilePathRef.current) return
+
+        applyLintMarkers(editorRef.current?.getModel() ?? null, markers)
+        setLintMarkers(markers)
+      })
     },
     [selectedRunTime]
   )
