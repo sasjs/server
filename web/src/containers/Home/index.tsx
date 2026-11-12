@@ -37,7 +37,7 @@ import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
 import { brand } from '../../theme/palette'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
-import { clearCachedSite } from '../../utils/cachedSite'
+import { browserSite, clearSite } from '../../utils/cachedSite'
 import { ApiHost, apiHost } from '../../utils/host'
 import {
   RecentApp,
@@ -433,19 +433,15 @@ const Home = () => {
   }
 
   /**
-   * Takes this browser's cached copy of the site off it, then reloads.
+   * Takes this browser's copy of the site off it - worker, caches, IndexedDB and
+   * the two storage stores - then leaves for a fresh page.
    *
-   * Only the demonstration site has a service worker - that is how it answers
-   * `/SASjsApi` with no server - so only there is there anything to wipe; on a
-   * server every response already comes from the process.
+   * Only the demonstration site keeps its answers in the browser, so only there is
+   * there anything to wipe; on a server every response comes from the process and
+   * the button is not drawn.
    */
   const wipeCachedSite = () => {
-    void clearCachedSite({
-      serviceWorker: globalThis.navigator?.serviceWorker,
-      caches: globalThis.caches,
-      href: window.location.href,
-      navigate: (url) => window.location.replace(url)
-    })
+    void clearSite(browserSite())
   }
 
   const runTimes = appContext.runTimes.length
@@ -935,13 +931,13 @@ const Home = () => {
           </Button>
         )}
         {host === 'browser' && (
-          <Tooltip title="Unregisters the service worker, deletes the cached responses and reloads - the fix for a browser holding an old version of this site">
+          <Tooltip title="Unregisters the service worker, deletes the cached responses and the IndexedDB databases, clears this site's local and session storage, then loads the page afresh - the fix for a browser holding an old version of this site">
             <Button
               size="small"
               startIcon={<DeleteForever />}
               onClick={wipeCachedSite}
             >
-              Wipe the cached site
+              Wipe this browser's copy
             </Button>
           </Tooltip>
         )}

@@ -14,8 +14,7 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { cacheBust, clearCachedSite } =
-  await import('../src/utils/cachedSite.ts')
+const { cacheBust, clearSite } = await import('../src/utils/cachedSite.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -33,9 +32,20 @@ const hostWith = ({
   registrations = [],
   caches = [],
   refuseRegistration = '',
-  refuseCache = ''
+  refuseCache = '',
+  refuseDatabase = '',
+  databases = [],
+  storage = true
 } = {}) => {
-  const state = { unregistered: [], deleted: [], reloads: 0, went: '' }
+  const state = {
+    unregistered: [],
+    deleted: [],
+    dropped: [],
+    clearLocal: 0,
+    clearSession: 0,
+    reloads: 0,
+    went: ''
+  }
 
   return {
     state,
@@ -61,6 +71,29 @@ const hostWith = ({
           return true
         }
       },
+      databases: {
+        list: async () => databases,
+        delete: async (name) => {
+          state.dropped.push(name)
+          if (name === refuseDatabase) throw new Error('refused')
+
+          return true
+        }
+      },
+      localStorage: storage
+        ? {
+            clear: () => {
+              state.clearLocal++
+            }
+          }
+        : undefined,
+      sessionStorage: storage
+        ? {
+            clear: () => {
+              state.clearSession++
+            }
+          }
+        : undefined,
       href: 'https://demo.example/home?tab=all',
       navigate: (url) => {
         state.reloads++
@@ -72,14 +105,15 @@ const hostWith = ({
 
 const run = async (options) => {
   const { host, state } = hostWith(options)
-  const wiped = await clearCachedSite(host)
+  const wiped = await clearSite(host)
 
   return { wiped, state }
 }
 
 const normal = await run({
   registrations: ['/', '/studio/'],
-  caches: ['workbox-precache', 'assets']
+  caches: ['workbox-precache', 'assets'],
+  databases: ['sasjs-studio', 'sasjs-dashboard']
 })
 
 check(
@@ -93,12 +127,42 @@ check(
 )
 check('and counted', normal.wiped.caches === 2)
 check('the page is reloaded once', normal.state.reloads === 1)
+check(
+  'every database is deleted',
+  normal.state.dropped.join(',') === 'sasjs-studio,sasjs-dashboard'
+)
+check('and counted', normal.wiped.databases === 2)
+check(
+  'local and session storage are both cleared',
+  normal.state.clearLocal === 1 && normal.state.clearSession === 1
+)
+check('and reported', normal.wiped.stores === 2)
+
+// A tab that holds a database open answers `blocked` rather than deleting: the
+// adapter resolves it, and the sweep continues.
+const blocked = await run({
+  databases: ['held-open', 'free'],
+  refuseDatabase: 'held-open'
+})
+check(
+  'a blocked database does not abandon the next one',
+  blocked.state.dropped.join(',') === 'held-open,free'
+)
+check('only what succeeded is counted', blocked.wiped.databases === 1)
+
+const noStorage = await run({ storage: false })
+check(
+  'a host with no storage reports none wiped and still reloads',
+  noStorage.wiped.stores === 0 && noStorage.state.reloads === 1
+)
 
 const empty = await run()
 check('a browser holding nothing still reloads', empty.state.reloads === 1)
 check(
   'and reports nothing wiped',
-  empty.wiped.workers === 0 && empty.wiped.caches === 0
+  empty.wiped.workers === 0 &&
+    empty.wiped.caches === 0 &&
+    empty.wiped.databases === 0
 )
 
 const refused = await run({
@@ -125,7 +189,7 @@ check(
 // A host with no worker at all (a server page) must not throw on the way to the
 // reload - the button is hidden there, but the function is not allowed to assume it.
 let bareReloaded = false
-await clearCachedSite({
+await clearSite({
   href: 'https://demo.example/home',
   navigate: () => (bareReloaded = true)
 })
