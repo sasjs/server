@@ -78,11 +78,6 @@ export const MACRO_DASH = {
 export const MINIMAL_SEED_APP = {
   id: 'b7c1d0e2-4a63-4f18-9b52-6d3e8c0741af',
   name: 'minimal-seed-app',
-  // v1.6.1, not v1.6.0: 1.6.0's page wires its controls in <head>, so it throws
-  // on a host that serves the page as it is - which this one does - and the app
-  // paints as a heading with nothing behind it. The release that carries the fix
-  // (sasjs/minimal-seed-app#36) is what belongs here; until it exists this build
-  // fails at the download, by design, rather than publishing a dead app.
   // latest, not v1.6.0: that release wires its controls in <head>, so it throws on
   // a host that serves the page as it is - which this one does - and the app paints
   // as a heading with nothing behind it. The fix is in 1.6.1 and anything after it
@@ -100,9 +95,10 @@ export const REACT_SEED_APP = {
   // latest resolves to a release that carries the JavaScript twin of each service
   // (appinit.js, getdata.js, upload.js and the dataset they read), which arrived in
   // v1.8.0. This host runs JavaScript, so a release from before that - SAS services
-  // only - would publish a tile that loads and then cannot answer anything, and
-  // stating v1.8.0 here is how to hold it back if `latest` ever moves somewhere
-  // older than that.
+  // only - would publish a tile that loads and then cannot answer anything, which is
+  // why the fallback is v1.8.0: a build that cannot read `latest` still ships a
+  // release that works, and a release older than this one would be held back by
+  // stating its own tag here instead.
   release: LATEST,
   fallback: 'v1.8.0',
   asset: 'server.json.zip'
@@ -140,7 +136,8 @@ export const latestReleaseUrl = (app) =>
  */
 const fetchJson = async (url) => {
   const headers = { accept: 'application/vnd.github+json' }
-  if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+  if (process.env.GITHUB_TOKEN)
+    headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`
 
   const response = await fetch(url, { headers })
 
@@ -164,7 +161,9 @@ export const resolveRelease = async (app, getJson = fetchJson) => {
 
   const note = (reason) => {
     if (!app.fallback) throw new Error(reason)
-    console.warn(`${reason} - building ${app.name} from ${app.fallback} instead`)
+    console.warn(
+      `${reason} - building ${app.name} from ${app.fallback} instead`
+    )
     return { ...app, release: app.fallback, resolved: false }
   }
 
@@ -172,7 +171,9 @@ export const resolveRelease = async (app, getJson = fetchJson) => {
   try {
     release = await getJson(latestReleaseUrl(app))
   } catch (error) {
-    return note(`Could not read the newest release of sasjs/${app.name}: ${error.message}`)
+    return note(
+      `Could not read the newest release of sasjs/${app.name}: ${error.message}`
+    )
   }
 
   const tag = release && release.tag_name
@@ -210,7 +211,8 @@ const TEXT_PREFIX = '\u0000text:'
  * UTF-8 round trip - because the drive is one map of strings and a decoded image
  * written as text is a corrupt one.
  */
-const isText = (bytes) => Buffer.from(bytes.toString('utf8'), 'utf8').equals(bytes)
+const isText = (bytes) =>
+  Buffer.from(bytes.toString('utf8'), 'utf8').equals(bytes)
 
 /**
  * A file member's bytes.
@@ -272,14 +274,17 @@ export const unzipEntry = (archive, wanted) => {
     }
   }
 
-  if (eocd < 0) throw new Error('That archive is not a zip: no end of central directory.')
+  if (eocd < 0)
+    throw new Error('That archive is not a zip: no end of central directory.')
 
   const entries = archive.readUInt16LE(eocd + 10)
   let cursor = archive.readUInt32LE(eocd + 16)
 
   for (let entry = 0; entry < entries; entry++) {
     if (archive.readUInt32LE(cursor) !== 0x02014b50)
-      throw new Error('That archive is not a zip: a central directory entry is missing.')
+      throw new Error(
+        'That archive is not a zip: a central directory entry is missing.'
+      )
 
     const method = archive.readUInt16LE(cursor + 10)
     const compressedSize = archive.readUInt32LE(cursor + 20)
