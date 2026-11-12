@@ -30,6 +30,8 @@ const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
   await import('../src/containers/Studio/internal/render/csv.ts')
 const { jsonTreeOf } =
   await import('../src/containers/Studio/internal/render/jsonTree.ts')
+const { formatJson } =
+  await import('../src/containers/Studio/internal/render/jsonFormat.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -273,6 +275,63 @@ check(
 check(
   'an empty document is neither',
   jsonTreeOf('  ').root === null && jsonTreeOf('  ').error === null
+)
+
+// ---- the JSON format action ------------------------------------------------
+
+const minified = '{"a":1,"b":[1,2],"c":{"d":true}}'
+const tidy = formatJson(minified)
+check(
+  'a minified document is indented',
+  tidy.ok &&
+    tidy.text ===
+      [
+        '{',
+        '  "a": 1,',
+        '  "b": [',
+        '    1,',
+        '    2',
+        '  ],',
+        '  "c": {',
+        '    "d": true',
+        '  }',
+        '}',
+        ''
+      ].join('\n')
+)
+
+const again = formatJson(tidy.text)
+check(
+  'a tidy document is left exactly as it is',
+  again.ok && again.text === tidy.text
+)
+check(
+  'four spaces are rewritten to the house indent',
+  formatJson('{\n    "a": 1\n}\n').ok &&
+    formatJson('{\n    "a": 1\n}\n').text === '{\n  "a": 1\n}'.concat('\n')
+)
+check(
+  "key order is the file's order",
+  formatJson('{"b":1,"a":2}').text.indexOf('"b"') <
+    formatJson('{"b":1,"a":2}').text.indexOf('"a"')
+)
+
+const invalidJson = formatJson('{"a": 1,}')
+check(
+  'a syntax error is reported rather than guessed at',
+  invalidJson.ok === false
+)
+check(
+  'and the reason travels with it',
+  invalidJson.ok === false && /JSON|token|position/i.test(invalidJson.error)
+)
+check(
+  'an empty document stays empty',
+  formatJson('   ').ok && formatJson('   ').text === '   '
+)
+check(
+  'a value that is not an object formats too',
+  formatJson('[1,2]').text === '[\n  1,\n  2\n]\n'
 )
 
 if (failures.length) {

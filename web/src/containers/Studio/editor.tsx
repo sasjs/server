@@ -22,6 +22,7 @@ import FilePathInputModal from '../../components/filePathInputModal'
 import { DisplayPane } from './internal/components/displayPane'
 import {
   DisplayMode,
+  displayKindOf,
   displayModeLabel,
   displayModeStorageKey,
   displayModesFor,
@@ -205,8 +206,9 @@ const SASjsEditor = ({
       ? 'Nothing to format yet'
       : isImageFile(selectedFilePath)
         ? 'A picture cannot be formatted'
-        : selectedFileExtension !== 'sas'
-          ? 'Formatting applies to .sas files'
+        : selectedFileExtension !== 'sas' &&
+            displayKindOf(selectedFilePath) !== 'json'
+          ? 'Formatting applies to .sas and .json files'
           : undefined
 
   const fileMenu = (
@@ -231,6 +233,13 @@ const SASjsEditor = ({
       theme={editorThemeFor(colorMode)}
       language={getLanguageFromExtension(selectedFileExtension)}
       value={fileContent}
+      // Monaco measures its container once and only when told. `relayout` below
+      // covers the mode switch, but it runs before the split has finished
+      // flexing: the editor measured 594px in a 501px column, so it drew over
+      // the tree beside it. Reporting the real size is the one fix that cannot
+      // be early - the observer fires when the layout is final, for the mode
+      // switch, the drive explorer and a window resize alike.
+      options={{ automaticLayout: true }}
       editorDidMount={handleEditorDidMount}
       onChange={(val) => setFileContent(val)}
     />
