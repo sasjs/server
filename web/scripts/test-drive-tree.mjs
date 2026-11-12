@@ -15,11 +15,14 @@ registerHooks(tsResolverHooks)
 
 const {
   ancestorPathsOf,
+  childPrefixOf,
   childrenOf,
   expandedDescendantsOf,
   graftLevel,
   isDriveRootPath,
-  parentPathOf
+  isRootPath,
+  parentPathOf,
+  withRootPath
 } = await import('../src/utils/driveTree.ts')
 
 const node = (name, relativePath, isFolder, children = [], extra = {}) => ({
@@ -172,6 +175,47 @@ check('isDriveRootPath is false for a folder below the root', () => {
 check('isDriveRootPath is false for a file, whatever its path', () => {
   assert.equal(isDriveRootPath('', false), false)
   assert.equal(isDriveRootPath('/x.sas', false), false)
+})
+
+check('isRootPath accepts either spelling of the root', () => {
+  assert.equal(isRootPath(''), true)
+  assert.equal(isRootPath('/'), true)
+})
+
+check('isRootPath is false for a folder, a file, and a double separator', () => {
+  assert.equal(isRootPath('/Public'), false)
+  assert.equal(isRootPath('/x.sas'), false)
+  assert.equal(isRootPath('//'), false)
+})
+
+check('childPrefixOf gives the root children their own separator, once', () => {
+  // '//' would match nothing: the root's children are '/Public', not '//Public'
+  assert.equal(childPrefixOf(''), '/')
+  assert.equal(childPrefixOf('/'), '/')
+  assert.equal(childPrefixOf('/Public'), '/Public/')
+})
+
+check('expandedDescendantsOf works for a tree whose root says /', () => {
+  // what the browser host's tree looks like before the root is keyed ROOT_PATH
+  const expanded = ['/', '/Public', '/Public/app', '/Other']
+
+  assert.deepEqual(expandedDescendantsOf(expanded, '/'), [
+    '/Public',
+    '/Other',
+    '/Public/app'
+  ])
+})
+
+check('withRootPath keys the browser host root the way the screen asks', () => {
+  // graftLevel compares by exact equality, so a root at '/' is a tree nothing
+  // grafts onto: ROOT_PATH is what every caller passes
+  assert.equal(withRootPath(node('files', '/', true)).relativePath, '')
+
+  // and nothing else is rewritten - the folders under the root already agree
+  assert.equal(withRootPath(node('Public', '/Public', true)).relativePath, '/Public')
+
+  // a file is never the root, whatever its path
+  assert.equal(withRootPath(node('x.sas', '/', false)).relativePath, '/')
 })
 
 console.log(`\n${checks} checks passed`)

@@ -9,6 +9,16 @@ export const ROOT_PATH = ''
  */
 export const LOADING_SUFFIX = '::loading'
 
+/**
+ * Whether a path is the drive root, in either spelling.
+ *
+ * The two hosts answer differently - see `isDriveRootPath` - so any comparison
+ * against the root has to accept both, or the browser host's tree is keyed on a
+ * spelling the rest of the screen never asks for.
+ */
+export const isRootPath = (relativePath: string) =>
+  relativePath === ROOT_PATH || relativePath === '/'
+
 /** '' for the drive root, '/Public/foo' for a folder under it. */
 export const parentPathOf = (relativePath: string) => {
   const segments = relativePath.split('/')
@@ -79,7 +89,30 @@ export const graftLevel = (
 export const isDriveRootPath = (
   relativePath: string,
   isFolder: boolean
-): boolean => isFolder && (relativePath === ROOT_PATH || relativePath === '/')
+): boolean => isFolder && isRootPath(relativePath)
+
+/**
+ * A fetched level, keyed the way the rest of the screen asks for it.
+ *
+ * The root is the one node whose path differs between the hosts, and every later
+ * graft walks from it: `graftLevel(tree, ROOT_PATH, level)` finds nothing when the
+ * tree's root node says '/'. Normalising the root to ROOT_PATH as it arrives means
+ * the ancestor walk, the expanded list and the graft all agree on one spelling -
+ * rather than each of them carrying a two-spelling comparison.
+ */
+export const withRootPath = (level: TreeNode): TreeNode =>
+  isDriveRootPath(level.relativePath, level.isFolder)
+    ? { ...level, relativePath: ROOT_PATH }
+    : level
+
+/**
+ * The prefix a folder's children share.
+ *
+ * The root's children are '/Public', not '//Public', so the root is the one path
+ * whose separator is already there - in either spelling.
+ */
+export const childPrefixOf = (folderPath: string) =>
+  isRootPath(folderPath) ? '/' : `${folderPath}/`
 
 /**
  * The expanded folders underneath `folderPath`, nearest first.
@@ -93,7 +126,7 @@ export const expandedDescendantsOf = (
   expanded: Iterable<string>,
   folderPath: string
 ): string[] => {
-  const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
+  const prefix = childPrefixOf(folderPath)
 
   return Array.from(expanded)
     .filter((path) => path !== folderPath && path.startsWith(prefix))
