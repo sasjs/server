@@ -1,7 +1,12 @@
 import { readFileSync } from 'fs'
+import os from 'os'
+import path from 'path'
+
 import { LintConfig, Severity } from '@sasjs/lint'
+import { createFile, createFolder } from '@sasjs/utils'
 
 import defaultLintConfiguration from '../defaultLintConfiguration.json'
+import { getDriveLintConfig } from '../lintConfig'
 
 /**
  * The drive-root `.sasjslint` is what every installation starts from and what
@@ -87,5 +92,53 @@ describe('the seeded lint configuration', () => {
 
   it('points an editor at the published schema', () => {
     expect(seed.$schema).toEqual('https://cli.sasjs.io/sasjslint-schema.json')
+  })
+})
+
+/**
+ * A rules file the drive carries but cannot parse is the case the log line
+ * exists for: the resolver walks on to a file higher up (or to the package
+ * default), so the rules the author wrote are silently not the rules in force.
+ */
+describe('a drive rules file that does not parse', () => {
+  const originalDriveLoc = process.driveLoc
+  const originalLogger = process.logger
+  let warn: jest.Mock
+
+  beforeEach(async () => {
+    const drive = path.join(
+      os.tmpdir(),
+      `sasjs-drive-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    )
+    await createFolder(path.join(drive, 'files'))
+    process.driveLoc = drive
+    warn = jest.fn()
+    process.logger = { warn } as any
+  })
+
+  afterEach(() => {
+    process.driveLoc = originalDriveLoc
+    process.logger = originalLogger
+  })
+
+  it('warns, naming the file, and applies the defaults instead', async () => {
+    const brokenPath = path.join(process.driveLoc, 'files', '.sasjslint')
+    await createFile(brokenPath, '{\n  "noTrailingSpaces": true // comment\n}')
+
+    const config = await getDriveLintConfig()
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain(brokenPath)
+    expect(warn.mock.calls[0][0]).toContain('not a JSON object')
+
+    // the package default is what answers - not the seed, and not "no rules"
+    expect(config.source).toEqual(defaultLintConfiguration)
+  })
+
+  it('stays quiet when the drive has no rules file at all', async () => {
+    const config = await getDriveLintConfig()
+
+    expect(warn).not.toHaveBeenCalled()
+    expect(config.source).toEqual(defaultLintConfiguration)
   })
 })

@@ -87,18 +87,36 @@ export const getDriveLintConfig = async (
   return rootConfig ?? new LintConfig(defaultLintConfiguration)
 }
 
+/**
+ * Reads one rules file, or null when there is none at that path.
+ *
+ * A file that is present and does not parse is the case worth a log line: the
+ * caller goes on to a file higher up (or to the package default), so the rules
+ * the author wrote are not applied and nothing else says so. A file that is
+ * merely absent is the normal case in the walk and stays quiet.
+ */
 const readConfig = async (configPath: string): Promise<LintConfig | null> => {
   const content = await readFile(configPath).catch(() => null)
   if (content === null) return null
-  if (!isParsableConfig(content)) return null
-  return new LintConfig(JSON.parse(content))
+
+  const parsed = parseConfig(content)
+
+  if (parsed === null) {
+    process.logger.warn(
+      `sasjslint: ${configPath} is not a JSON object - the rules in it are not applied`
+    )
+    return null
+  }
+
+  return new LintConfig(parsed)
 }
 
-const isParsableConfig = (content: string) => {
+/** The parsed file, or null when it is not a JSON object. */
+const parseConfig = (content: string): object | null => {
   try {
     const parsed = JSON.parse(content)
-    return !!parsed && typeof parsed === 'object'
+    return parsed && typeof parsed === 'object' ? parsed : null
   } catch {
-    return false
+    return null
   }
 }
