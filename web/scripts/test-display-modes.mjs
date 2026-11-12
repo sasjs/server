@@ -1,0 +1,217 @@
+/**
+ * The pure half of the display modes: which files offer one, what the toggle
+ * says, and the three renderings the panes draw.
+ *
+ * The panes themselves are React and are seen in the browser; what can be wrong
+ * and impossible to see is here - a Markdown renderer that lets a `<script>` or a
+ * `javascript:` link through, a CSV parser that splits a quoted field in two, a
+ * JSON tree that loses a branch. Those are the failures this file pins.
+ *
+ * Run with `npm run test:displaymodes`.
+ */
+import { registerHooks } from 'node:module'
+
+import { tsResolverHooks } from './node-ts-resolver.mjs'
+
+registerHooks(tsResolverHooks)
+
+const {
+  DISPLAY_MODES,
+  displayModeLabel,
+  displayModeStorageKey,
+  displayModesFor,
+  storedDisplayMode
+} = await import('../src/containers/Studio/internal/displayMode.ts')
+
+const { markdownToHtml, isSafeHref } =
+  await import('../src/containers/Studio/internal/render/markdown.ts')
+const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
+  await import('../src/containers/Studio/internal/render/csv.ts')
+const { jsonTreeOf } =
+  await import('../src/containers/Studio/internal/render/jsonTree.ts')
+
+const failures = []
+const check = (label, condition) => {
+  if (!condition) failures.push(label)
+}
+
+// --- which files get the choice -------------------------------------------
+
+check('markdown offers three modes', displayModesFor('md').length === 3)
+check(
+  'markdown, spelled out, is the same',
+  displayModesFor('markdown').length === 3
+)
+check('csv offers three modes', displayModesFor('csv').length === 3)
+check('json offers three modes', displayModesFor('json').length === 3)
+check('case does not matter', displayModesFor('JSON').length === 3)
+check(
+  'a SAS program keeps the editor alone',
+  displayModesFor('sas').length === 0
+)
+check('a JS program keeps the editor alone', displayModesFor('js').length === 0)
+check(
+  'the modes are source, split, rendered',
+  DISPLAY_MODES.join(',') === 'source,split,rendered'
+)
+
+check('the source label', displayModeLabel('source', 'md') === 'Source')
+check('the split label', displayModeLabel('split', 'md') === 'Split')
+check('markdown previews', displayModeLabel('rendered', 'md') === 'Preview')
+check('csv is a table', displayModeLabel('rendered', 'csv') === 'Table')
+check('json is a tree', displayModeLabel('rendered', 'json') === 'Tree')
+
+check(
+  'the stored key is per extension',
+  displayModeStorageKey('CSV') === 'studio.displayMode.csv'
+)
+
+const storageOf = (value) => ({ getItem: () => value })
+
+check(
+  'nothing stored means the source',
+  storedDisplayMode('csv', storageOf(null)) === 'source'
+)
+check(
+  'a stored mode is honoured',
+  storedDisplayMode('csv', storageOf('rendered')) === 'rendered'
+)
+check(
+  'a stored mode that is not offered is ignored',
+  storedDisplayMode('csv', storageOf('tree')) === 'source'
+)
+check(
+  'a type with no modes is always the source',
+  storedDisplayMode('sas', storageOf('rendered')) === 'source'
+)
+
+// --- markdown --------------------------------------------------------------
+
+const html = markdownToHtml(
+  '# Title\n\nSome **bold** and `code`.\n\n```\ndata x; run;\n```\n\n- one\n- two\n\n[ok](https://example.com)\n[bad](javascript:alert(1))\n'
+)
+
+check('a heading renders', html.includes('<h1>Title</h1>'))
+check('bold renders', html.includes('<strong>bold</strong>'))
+check('inline code renders', html.includes('<code>code</code>'))
+check(
+  'a fence renders as pre/code',
+  html.includes('<pre><code>data x; run;</code></pre>')
+)
+check('list items render', html.includes('<ul><li>one</li><li>two</li></ul>'))
+check(
+  'a safe link becomes an anchor',
+  html.includes('<a href="https://example.com"')
+)
+check(
+  'a javascript: link is left as text',
+  !html.includes('javascript:alert(1)"') && html.includes('bad')
+)
+check(
+  'markup in the file is escaped, not run',
+  markdownToHtml('<script>alert(1)</script>').includes('&lt;script&gt;')
+)
+check(
+  'an unclosed fence still shows its body',
+  markdownToHtml('```\nabc').includes('abc')
+)
+check(
+  'an ordered list is ol',
+  markdownToHtml('1. first\n2. second').includes('<ol>')
+)
+
+check('https is a safe href', isSafeHref('https://example.com'))
+check('mailto is a safe href', isSafeHref('mailto:a@b.c'))
+check('an anchor is a safe href', isSafeHref('#top'))
+check('a relative path is a safe href', isSafeHref('./doc.md'))
+check('javascript: is not', !isSafeHref('javascript:alert(1)'))
+check('data: is not', !isSafeHref('data:text/html,<b>x</b>'))
+
+// --- csv -------------------------------------------------------------------
+
+const rows = parseCsv('a,b\n1,"two, with comma"\n3,"a ""quote"""\n')
+check('plain cells', rows[0].join('|') === 'a|b')
+check('a quoted comma stays in its cell', rows[1][1] === 'two, with comma')
+check('doubled quotes become one', rows[2][1] === 'a "quote"')
+
+check(
+  'a newline inside quotes stays in the cell',
+  parseCsv('a,b\n"line one\nline two",x\n')[1][0] === 'line one\nline two'
+)
+check('CRLF is one line ending', parseCsv('a,b\r\n1,2\r\n').length === 2)
+check(
+  'no trailing newline still yields the last row',
+  parseCsv('a,b\n1,2').length === 2
+)
+check(
+  'a BOM does not become part of the first cell',
+  parseCsv('\ufeffa,b\n').at(0)[0] === 'a'
+)
+check(
+  'an apostrophe is not a quote',
+  parseCsv("a\nO'Brien\n")[1][0] === "O'Brien"
+)
+
+const table = csvTable('name,age\nann,30\nbob,40\n')
+check('the first row is the header', table.header.join('|') === 'name|age')
+check(
+  'the rows follow it',
+  table.rows.length === 2 && table.rows[1][1] === '40'
+)
+check("the column count is the header's", table.columns === 2)
+check(
+  'nothing is truncated',
+  table.truncated === false && table.totalRows === 2
+)
+
+const many = ['h']
+  .concat(Array.from({ length: 5 }, (_, i) => String(i)))
+  .join('\n')
+const capped = csvTable(many, 3)
+check('the cap keeps the rows asked for', capped.rows.length === 3)
+check(
+  'and says how many there were',
+  capped.totalRows === 5 && capped.truncated === true
+)
+check('the default cap is the constant', MAX_PREVIEW_ROWS === 200)
+check('an empty file is an empty table', csvTable('').columns === 0)
+
+// --- json ------------------------------------------------------------------
+
+const tree = jsonTreeOf('{"a": 1, "b": [true, null], "c": {"d": "x"}}')
+check(
+  'the root is an object',
+  tree.root.kind === 'object' && tree.root.summary === '3 keys'
+)
+check(
+  'keys keep their order and labels',
+  tree.root.children.map((n) => n.label).join(',') === 'a,b,c'
+)
+check('a leaf carries its value', tree.root.children[0].value === '1')
+check('an array counts its items', tree.root.children[1].summary === '2 items')
+check(
+  'a nested key has a path',
+  tree.root.children[2].children[0].path === '/c/d'
+)
+check(
+  'a string leaf is quoted',
+  tree.root.children[2].children[0].value === '"x"'
+)
+
+const broken = jsonTreeOf('{not json')
+check(
+  'an unparseable document says why',
+  broken.root === null && typeof broken.error === 'string'
+)
+check(
+  'an empty document is neither',
+  jsonTreeOf('  ').root === null && jsonTreeOf('  ').error === null
+)
+
+if (failures.length) {
+  console.error(`display modes: ${failures.length} check(s) failed`)
+  for (const failure of failures) console.error(`  - ${failure}`)
+  process.exit(1)
+}
+
+console.log('display modes: all checks passed')

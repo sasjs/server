@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 
 import {
   Backdrop,
@@ -7,6 +7,8 @@ import {
   IconButton,
   Paper,
   Tab,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography
 } from '@mui/material'
@@ -17,6 +19,14 @@ import Editor from 'react-monaco-editor'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import FilePathInputModal from '../../components/filePathInputModal'
+import { DisplayPane } from './internal/components/displayPane'
+import {
+  DisplayMode,
+  displayModeLabel,
+  displayModeStorageKey,
+  displayModesFor,
+  storedDisplayMode
+} from './internal/displayMode'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
 import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
@@ -124,6 +134,7 @@ const SASjsEditor = ({
     fileContent,
     imageUrl,
     lintMarkers,
+    relayout,
     revealLine,
     isLoading,
     log,
@@ -156,6 +167,31 @@ const SASjsEditor = ({
   // The dot on the save icon is the same news the unsaved-changes prompt
   // guards: the buffer holds edits the drive does not.
   const isDirty = prevFileContent !== fileContent
+
+  /* Which of the file's views is showing: the text, a rendering, or both. Only
+     the files with a rendering offer the choice (displayMode.ts), and the choice
+     is remembered per file type. */
+  const displayModes = displayModesFor(selectedFileExtension)
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('source')
+
+  useEffect(() => {
+    setDisplayMode(storedDisplayMode(selectedFileExtension))
+  }, [selectedFileExtension])
+
+  const chooseDisplayMode = (mode: DisplayMode | null) => {
+    if (!mode) return
+
+    setDisplayMode(mode)
+
+    try {
+      localStorage.setItem(displayModeStorageKey(selectedFileExtension), mode)
+    } catch {
+      // a browser with storage refused keeps the choice for this session only
+    }
+  }
+
+  // The editor's width changes with the pane, and Monaco only measures when told.
+  useEffect(relayout, [displayMode, relayout])
 
   /**
    * Why the format button cannot be used, or undefined when it can.
@@ -340,7 +376,14 @@ const SASjsEditor = ({
                 height: 'calc(100vh - 170px)'
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
                 <RunMenu
                   fileContent={fileContent}
                   prevFileContent={prevFileContent}
@@ -350,6 +393,27 @@ const SASjsEditor = ({
                   handleChangeRunTime={handleChangeRunTime}
                   handleRunBtnClick={handleRunBtnClick}
                 />
+                {displayModes.length > 0 && (
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={displayMode}
+                    onChange={(_event, mode: DisplayMode | null) =>
+                      chooseDisplayMode(mode)
+                    }
+                    aria-label="Display mode"
+                  >
+                    {displayModes.map((mode) => (
+                      <ToggleButton
+                        key={mode}
+                        value={mode}
+                        sx={{ textTransform: 'none', px: 1.5, py: 0.25 }}
+                      >
+                        {displayModeLabel(mode, selectedFileExtension)}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                )}
                 {fileMenu}
               </Box>
               <LintIssues markers={lintMarkers} onSelectLine={revealLine} />
@@ -363,7 +427,42 @@ const SASjsEditor = ({
                 }}
                 elevation={3}
               >
-                {monacoEditor}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 1,
+                    height: '100%',
+                    minHeight: 0
+                  }}
+                >
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: '100%',
+                      display: displayMode === 'rendered' ? 'none' : 'block'
+                    }}
+                  >
+                    {monacoEditor}
+                  </Box>
+                  {displayMode !== 'source' && (
+                    <Box
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        height: '100%',
+                        overflow: 'auto',
+                        borderLeft: displayMode === 'split' ? 1 : 0,
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <DisplayPane
+                        extension={selectedFileExtension}
+                        text={fileContent}
+                      />
+                    </Box>
+                  )}
+                </Box>
                 <p
                   style={{
                     position: 'absolute',
