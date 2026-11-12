@@ -29,7 +29,12 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
-import { fetchPack, withPublishedApp, MACRO_DASH_RELEASE } from './apps.mjs'
+import {
+  fetchPack,
+  withPublishedApps,
+  PUBLISHED_APPS,
+  releaseUrl
+} from './apps.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -97,24 +102,31 @@ sasjs('compile -t mock')
 // browser host exports - so the demo opens on files rather than on an empty
 // drive whose home folder does not exist.
 //
-// The snapshot is ALSO how the site publishes an app: a whole drive replaces the
-// seed in the host, so the packaged app's files and the registry entry that lists
-// them have to be in this one file. `apps.mjs` owns that - what it reads from the
-// release, where the entries land, and the shape of the index.
+// The snapshot is ALSO how the site publishes its apps: a whole drive replaces the
+// seed in the host, so each packaged app's files and the registry entry that lists
+// them have to be in this one file. `apps.mjs` owns that - which apps, what it
+// reads from each release, where the entries land, and the shape of the index.
 const snapshot = JSON.parse(
   readFileSync(path.join(root, 'mock', 'drive.json'), 'utf8')
 )
-const pack = await fetchPack()
-const published = withPublishedApp(snapshot, pack, new Date().toISOString())
+const published = await Promise.all(
+  PUBLISHED_APPS.map(async (app) => ({
+    app,
+    pack: await fetchPack(releaseUrl(app))
+  }))
+)
+const drive = withPublishedApps(snapshot, published, new Date().toISOString())
 
 writeFileSync(
   path.join(root, 'sasjsbuild', 'mock-snapshot.json'),
-  JSON.stringify(published)
+  JSON.stringify(drive)
 )
 
 process.stdout.write(
-  `\nPublished ${pack.streamServiceName} ${MACRO_DASH_RELEASE} to the demo drive` +
-    ` (${Object.keys(published.files).length} files)\n`
+  `\nPublished ${published
+    .map(({ app, pack }) => `${pack.streamServiceName} ${app.release}`)
+    .join(', ')} to the demo drive` +
+    ` (${Object.keys(drive.files).length} files)\n`
 )
 
 // A recorded SAS session, so a Run on the demo's .sas program shows a real log,
