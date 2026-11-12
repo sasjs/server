@@ -220,11 +220,12 @@ test('the version placeholder the release ships is filled in', () => {
     }
   }
 
-  const [file] = packFiles(placeholder, MACRO_DASH)
+  // a stated tag, because the descriptor itself says `latest` - filling the
+  // placeholder from an unresolved descriptor is the state the resolution step
+  // exists to prevent, and asserting `vlatest` would pass for exactly that
+  const [file] = packFiles(placeholder, { ...MACRO_DASH, release: 'v2.0.0' })
 
-  // the version the module was pinned to, not a literal: a bump must not need
-  // this assertion edited
-  assert.equal(file.contents, `<p>v${appVersion(MACRO_DASH)}</p>`)
+  assert.equal(file.contents, '<p>v2.0.0</p>')
 })
 
 test('a package with no streamed web folder is refused by name', () => {
@@ -516,7 +517,10 @@ test('every app follows its repository\'s newest release, unless it pins one', a
     ].sort()
   )
 
-  resolved.forEach((app) => assert.equal(app.release, 'v9.9.9'))
+  resolved.forEach((app) => {
+    assert.equal(app.release, 'v9.9.9')
+    assert.equal(app.resolved, true)
+  })
 
   // a stated tag is a pin: nothing is asked about it, and the URL keeps the tag
   const pinned = await resolveRelease(
@@ -537,9 +541,31 @@ test('every app follows its repository\'s newest release, unless it pins one', a
   assert.equal(appVersion({ ...MACRO_DASH, release: 'v2.0.0' }), '2.0.0')
 })
 
-test('a release that reports no tag fails the build by name', async () => {
+test('an unreadable latest falls back to the last known tag, and says so', async () => {
+  const warnings = []
+  const { warn } = console
+  console.warn = (message) => warnings.push(message)
+
+  try {
+    const onApiError = await resolveRelease(MINIMAL_SEED_APP, async () => {
+      throw new Error('403 rate limit exceeded')
+    })
+    const onNoTag = await resolveRelease(MINIMAL_SEED_APP, async () => ({}))
+
+    assert.equal(onApiError.release, MINIMAL_SEED_APP.fallback)
+    assert.equal(onNoTag.release, MINIMAL_SEED_APP.fallback)
+    // `resolved: false` is what makes the build say it fell back rather than
+    // publish an old release as if it were the newest
+    assert.equal(onApiError.resolved, false)
+    assert.equal(warnings.length, 2)
+    assert.match(warnings[0], /building minimal-seed-app from v1\.6\.1 instead/)
+  } finally {
+    console.warn = warn
+  }
+
+  // a descriptor with no fallback and no readable release fails by name
   await assert.rejects(
-    () => resolveRelease(MINIMAL_SEED_APP, async () => ({})),
+    () => resolveRelease({ ...MINIMAL_SEED_APP, fallback: undefined }, async () => ({})),
     /Could not read the newest release of sasjs\/minimal-seed-app/
   )
 })

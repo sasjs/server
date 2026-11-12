@@ -44,6 +44,12 @@ import { inflateRawSync } from 'node:zlib'
  * tag instead, which pins that app; that is the escape hatch for holding one back
  * while its latest release is known to be broken.
  *
+ * `fallback` is the last tag this site was known to work with. It is used when
+ * `releases/latest` cannot be read at all - a rate limit, a network drop - so a
+ * pull request that touches nothing here does not go red because the API answered
+ * 403. It is not a pin: a readable `latest` always wins, and the build says which
+ * of the two it used.
+ *
  * `id` is fixed rather than minted per build, because an app is addressed by its id
  * (`/app/<id>/`) - a fresh UUID on every build would change the app's URL weekly and
  * break every bookmark of it. It is a constant of the demonstration, not a record of
@@ -65,6 +71,7 @@ export const MACRO_DASH = {
   id: '3f2b9c1e-8d4a-4b7e-9c2f-5a6d1e0b7c34',
   name: 'macro-dash',
   release: LATEST,
+  fallback: 'v1.7.0',
   asset: 'macro-dash-server.json.zip'
 }
 
@@ -83,6 +90,7 @@ export const MINIMAL_SEED_APP = {
   // release breaks the page this way again, state that tag here and the app is held
   // back until it is fixed.
   release: LATEST,
+  fallback: 'v1.6.1',
   asset: 'server.json.zip'
 }
 
@@ -96,6 +104,7 @@ export const REACT_SEED_APP = {
   // stating v1.8.0 here is how to hold it back if `latest` ever moves somewhere
   // older than that.
   release: LATEST,
+  fallback: 'v1.8.0',
   asset: 'server.json.zip'
 }
 
@@ -153,15 +162,26 @@ const fetchJson = async (url) => {
 export const resolveRelease = async (app, getJson = fetchJson) => {
   if (app.release !== LATEST) return app
 
-  const release = await getJson(latestReleaseUrl(app))
-  const tag = release && release.tag_name
+  const note = (reason) => {
+    if (!app.fallback) throw new Error(reason)
+    console.warn(`${reason} - building ${app.name} from ${app.fallback} instead`)
+    return { ...app, release: app.fallback, resolved: false }
+  }
 
+  let release
+  try {
+    release = await getJson(latestReleaseUrl(app))
+  } catch (error) {
+    return note(`Could not read the newest release of sasjs/${app.name}: ${error.message}`)
+  }
+
+  const tag = release && release.tag_name
   if (!tag)
-    throw new Error(
+    return note(
       `Could not read the newest release of sasjs/${app.name}: ${latestReleaseUrl(app)} answered no tag_name`
     )
 
-  return { ...app, release: tag }
+  return { ...app, release: tag, resolved: true }
 }
 
 /**

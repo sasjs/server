@@ -93,6 +93,11 @@ jobs:
         run: npm run swagger-ui:copy --prefix api
 
       - name: Build the mock site
+        # mock/apps.mjs resolves each app's newest release through the GitHub
+        # API; the token is not ambient, it has to be given to the step, or
+        # three unauthenticated calls go out from a shared runner's address.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run mock:build
 
       - name: Publish to gh-pages

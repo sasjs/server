@@ -70,6 +70,11 @@ jobs:
       # the released CLI (pinned in mock/build.mjs), and lays out what a static
       # host needs.
       - name: Build the mock site
+        # mock/apps.mjs resolves each app's newest release through the GitHub
+        # API; the token is not ambient, it has to be given to the step, or
+        # three unauthenticated calls go out from a shared runner's address.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run mock:build
 
       - name: Serve the site
