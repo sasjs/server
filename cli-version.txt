@@ -1,1 +1,1 @@
-@sasjs/cli 6.27.2 (resolved from 6.27.2 at build time)
+@sasjs/cli 6.27.3 (resolved from 6.27.3 at build time)

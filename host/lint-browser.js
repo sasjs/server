@@ -29,9 +29,9 @@
     mod
   ));
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/asyncForEach.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/asyncForEach.js
   var require_asyncForEach = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/asyncForEach.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/asyncForEach.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -72,9 +72,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-6Sozbe/path.js
+  // ../../../../../tmp/sasjs-lint-5FmppC/path.js
   var require_path = __commonJS({
-    "../../../../../tmp/sasjs-lint-6Sozbe/path.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-5FmppC/path.js"(exports, module) {
       var SEP = String.fromCharCode(92);
       var clean = (value) => String(value).split(SEP).join("/").replace(/\/+/g, "/");
       var strip = (value) => clean(value).replace(/\/+$/, "");
@@ -112,9 +112,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-6Sozbe/os.js
+  // ../../../../../tmp/sasjs-lint-5FmppC/os.js
   var require_os = __commonJS({
-    "../../../../../tmp/sasjs-lint-6Sozbe/os.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-5FmppC/os.js"(exports, module) {
       module.exports = {
         homedir: () => "/",
         platform: () => "browser",
@@ -124,33 +124,33 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/Diagnostic.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/Diagnostic.js
   var require_Diagnostic = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/Diagnostic.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/Diagnostic.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/FormatResult.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/FormatResult.js
   var require_FormatResult = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/FormatResult.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/FormatResult.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LintRule.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LintRule.js
   var require_LintRule = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LintRule.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LintRule.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LintRuleType.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LintRuleType.js
   var require_LintRuleType = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LintRuleType.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LintRuleType.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LintRuleType = void 0;
@@ -163,9 +163,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/Severity.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/Severity.js
   var require_Severity = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/Severity.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/Severity.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.Severity = void 0;
@@ -178,17 +178,17 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/Macro.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/Macro.js
   var require_Macro = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/Macro.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/Macro.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/index.js
   var require_types = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -217,9 +217,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LineEndings.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LineEndings.js
   var require_LineEndings = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LineEndings.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LineEndings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LineEndings = void 0;
@@ -232,9 +232,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/splitLines.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/splitLines.js
   var require_splitLines = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/splitLines.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/splitLines.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitLines = void 0;
@@ -243,9 +243,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getPosition.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getPosition.js
   var require_getPosition = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getPosition.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getPosition.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getPosition = void 0;
@@ -263,9 +263,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getSeverity.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getSeverity.js
   var require_getSeverity = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getSeverity.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getSeverity.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getSeverity = void 0;
@@ -277,9 +277,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js
   var require_hasDoxygenHeader = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasDoxygenHeader = void 0;
@@ -438,9 +438,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/escapeRegExp.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/escapeRegExp.js
   var require_escapeRegExp = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/escapeRegExp.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/escapeRegExp.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.escapeRegExp = void 0;
@@ -449,9 +449,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getColumnNumber.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getColumnNumber.js
   var require_getColumnNumber = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getColumnNumber.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getColumnNumber.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getColumnNumber = void 0;
@@ -468,9 +468,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/trimComments.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/trimComments.js
   var require_trimComments = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/trimComments.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/trimComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.trimComments = void 0;
@@ -516,9 +516,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseMacros.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseMacros.js
   var require_parseMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseMacros.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacros = void 0;
@@ -639,9 +639,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js
   var require_hasMacroNameInMend = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasMacroNameInMend = void 0;
@@ -747,9 +747,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js
   var require_hasMacroParentheses = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasMacroParentheses = void 0;
@@ -757,10 +757,21 @@
       var Severity_1 = require_Severity();
       var getColumnNumber_1 = require_getColumnNumber();
       var parseMacros_1 = require_parseMacros();
+      var utils_1 = require_utils();
       var getSeverity_1 = require_getSeverity();
       var name = "hasMacroParentheses";
       var description = "Enforces the presence of parentheses in macro definitions.";
       var message = "Macro definition missing parentheses";
+      var parameterlessDeclaration = (macroName) => new RegExp(`(%macro\\s+${(0, utils_1.escapeRegExp)(macroName)})((?:\\s*/\\*.*?\\*/)?\\s*;)`, "i");
+      var nameLine = (macro) => macro.declarationLines.findIndex((declarationLine) => declarationLine.includes(macro.name));
+      var lineStarts = (text) => {
+        const starts = [0];
+        for (let index = 0; index < text.length; index++) {
+          if (text[index] === "\n")
+            starts.push(index + 1);
+        }
+        return starts;
+      };
       var test = (value, config) => {
         const diagnostics = [];
         const macros = (0, parseMacros_1.parseMacros)(value, config);
@@ -777,7 +788,7 @@
               severity
             });
           } else if (!macro.declarationLines.find((dl) => dl.includes("("))) {
-            const macroNameLineIndex = macro.declarationLines.findIndex((dl) => dl.includes(macro.name));
+            const macroNameLineIndex = nameLine(macro);
             diagnostics.push({
               message,
               lineNumber: macro.startLineNumbers[macroNameLineIndex],
@@ -789,19 +800,36 @@
         });
         return diagnostics;
       };
+      var fix = (value, config) => {
+        if (!value)
+          return value;
+        const declarations = (0, parseMacros_1.parseMacros)(value, config).filter((macro) => !!macro.name).map((macro) => ({ macro, index: nameLine(macro) })).filter(({ index }) => index !== -1);
+        return declarations.reduce((text, { macro, index }) => {
+          const lineNumber = macro.startLineNumbers[index];
+          const starts = lineStarts(text);
+          const start = starts[lineNumber - 1];
+          const end = lineNumber < starts.length ? starts[lineNumber] : text.length;
+          const line = text.slice(start, end);
+          const pattern = parameterlessDeclaration(macro.name);
+          if (!pattern.test(line))
+            return text;
+          return text.slice(0, start) + line.replace(pattern, "$1()$2") + text.slice(end);
+        }, value);
+      };
       exports.hasMacroParentheses = {
         type: LintRuleType_1.LintRuleType.File,
         name,
         description,
         message,
-        test
+        test,
+        fix
       };
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/lineEndings.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/lineEndings.js
   var require_lineEndings = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/lineEndings.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/lineEndings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lineEndings = void 0;
@@ -881,9 +909,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js
   var require_minMacroNameLength = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.minMacroNameLength = void 0;
@@ -969,9 +997,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseMacroCalls.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseMacroCalls.js
   var require_parseMacroCalls = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseMacroCalls.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseMacroCalls.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacroCalls = void 0;
@@ -1206,9 +1234,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js
   var require_noMacroIfInOpenCode = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noMacroIfInOpenCode = void 0;
@@ -1257,9 +1285,395 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getIndex.js
+  var require_getIndex = __commonJS({
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getIndex.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.getIndex = void 0;
+      var splitLines_1 = require_splitLines();
+      var getIndex = (text, lineNumber, columnNumber) => {
+        if (lineNumber <= 1)
+          return Math.max(columnNumber - 1, 0);
+        const lines = (0, splitLines_1.splitLines)(text);
+        let index = 0;
+        for (let line = 1; line < lineNumber && line <= lines.length; line++) {
+          const terminator = text.startsWith("\r\n", index + lines[line - 1].length) ? 2 : 1;
+          index += lines[line - 1].length + terminator;
+        }
+        return Math.min(index + Math.max(columnNumber - 1, 0), text.length);
+      };
+      exports.getIndex = getIndex;
+    }
+  });
+
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/sasMacros.generated.js
+  var require_sasMacros_generated = __commonJS({
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/sasMacros.generated.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.sasMacros = void 0;
+      exports.sasMacros = [
+        "abort",
+        "armconv",
+        "armend",
+        "armgtid",
+        "arminit",
+        "armjoin",
+        "armproc",
+        "armstop",
+        "armstrt",
+        "armupdt",
+        "bquote",
+        "by",
+        "cmpres",
+        "colormac",
+        "compstor",
+        "copy",
+        "datatyp",
+        "dequote",
+        "display",
+        "do",
+        "dqload",
+        "dqputloc",
+        "dqunload",
+        "else",
+        "end",
+        "eval",
+        "global",
+        "goto",
+        "helpclr",
+        "if",
+        "inc",
+        "include",
+        "index",
+        "indexc",
+        "indexw",
+        "input",
+        "kcmpres",
+        "kindex",
+        "kleft",
+        "klength",
+        "klowcase",
+        "kscan",
+        "ksubstr",
+        "ktrim",
+        "kupcase",
+        "kverify",
+        "left",
+        "length",
+        "let",
+        "list",
+        "local",
+        "lowcase",
+        "macro",
+        "mend",
+        "nrbquote",
+        "nrquote",
+        "nrstr",
+        "perfend",
+        "perfinit",
+        "perfstop",
+        "perfstrt",
+        "put",
+        "qbquote",
+        "qcmpres",
+        "qdequote",
+        "qindex",
+        "qindexc",
+        "qindexw",
+        "qkcmpres",
+        "qkleft",
+        "qklowcas",
+        "qklowcase",
+        "qkscan",
+        "qksubstr",
+        "qktrim",
+        "qkupcase",
+        "qleft",
+        "qlowcase",
+        "qscan",
+        "qsubstr",
+        "qsysfunc",
+        "qtrim",
+        "quote",
+        "qupcase",
+        "return",
+        "run",
+        "scan",
+        "str",
+        "substr",
+        "superq",
+        "symdel",
+        "symexist",
+        "symglobl",
+        "symlocal",
+        "syscall",
+        "sysevalf",
+        "sysexec",
+        "sysfunc",
+        "sysget",
+        "syslput",
+        "sysmacdelete",
+        "sysmacexec",
+        "sysmacexist",
+        "sysmexecdepth",
+        "sysmexecname",
+        "sysmstoreclear",
+        "sysprod",
+        "sysrc",
+        "sysrput",
+        "then",
+        "to",
+        "tplot",
+        "translate",
+        "tranwrd",
+        "trim",
+        "trimn",
+        "unquote",
+        "until",
+        "upcase",
+        "validchs",
+        "verify",
+        "while",
+        "window"
+      ];
+    }
+  });
+
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/sasMacros.js
+  var require_sasMacros = __commonJS({
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/sasMacros.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.isSasMacro = exports.sasMacros = void 0;
+      var sasMacros_generated_1 = require_sasMacros_generated();
+      exports.sasMacros = new Set(sasMacros_generated_1.sasMacros);
+      var isSasMacro = (name) => exports.sasMacros.has(name.toLowerCase());
+      exports.isSasMacro = isSasMacro;
+    }
+  });
+
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js
+  var require_parseMacroCallArguments = __commonJS({
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.parseMacroCallArguments = exports.hasMaskedName = void 0;
+      var getIndex_1 = require_getIndex();
+      var maskingFunction = /%(nrstr|str|bquote|quote|superq|qsysfunc|qcmpres|qleft|qlowcase|qscan|qsubstr|qtrim|qupcase|qverify)\s*\(/iy;
+      var keywordParameter = /^\s*(?:&+[a-z_][a-z0-9_.]*|[a-z_][a-z0-9_]*)\s*=/i;
+      var leadingComment = /^(?:\s*\/\*[\s\S]*?\*\/)*\s*/;
+      var skipMasked = (text, openParen) => {
+        let depth = 1;
+        let index = openParen + 1;
+        while (index < text.length && depth) {
+          if (text[index] === "%" && (text[index + 1] === "(" || text[index + 1] === ")")) {
+            index += 2;
+            continue;
+          }
+          if (text[index] === "(")
+            depth++;
+          if (text[index] === ")")
+            depth--;
+          index++;
+        }
+        return index;
+      };
+      var hasMaskedName = (parameter) => {
+        const start = parameter.length - parameter.trimStart().length;
+        maskingFunction.lastIndex = start;
+        if (!maskingFunction.test(parameter))
+          return false;
+        const end = skipMasked(parameter, maskingFunction.lastIndex - 1);
+        return /^\s*=/.test(parameter.slice(end));
+      };
+      exports.hasMaskedName = hasMaskedName;
+      var parseMacroCallArguments = (text, call) => {
+        if (!text)
+          return null;
+        let openParen = (0, getIndex_1.getIndex)(text, call.lineNumber, call.endColumnNumber);
+        while (openParen < text.length && /\s/.test(text[openParen]))
+          openParen++;
+        if (text[openParen] !== "(")
+          return null;
+        const parameters = [];
+        let depth = 0;
+        let quote = null;
+        let inComment = false;
+        let parameterStart = openParen + 1;
+        let index = openParen + 1;
+        const closeParameter = (end) => {
+          const parameter = text.slice(parameterStart, end);
+          parameters.push({
+            text: parameter,
+            isKeyword: keywordParameter.test(parameter.replace(leadingComment, "")),
+            start: parameterStart,
+            end
+          });
+        };
+        while (index < text.length) {
+          const char = text[index];
+          if (inComment) {
+            if (text.startsWith("*/", index)) {
+              inComment = false;
+              index += 2;
+              continue;
+            }
+            index++;
+            continue;
+          }
+          if (quote) {
+            if (char === quote)
+              quote = null;
+            index++;
+            continue;
+          }
+          maskingFunction.lastIndex = index;
+          if (maskingFunction.test(text)) {
+            index = skipMasked(text, maskingFunction.lastIndex - 1);
+            continue;
+          }
+          if (text.startsWith("/*", index)) {
+            inComment = true;
+            index += 2;
+            continue;
+          }
+          if (char === "'" || char === '"') {
+            quote = char;
+            index++;
+            continue;
+          }
+          if (char === "(") {
+            depth++;
+            index++;
+            continue;
+          }
+          if (char === ")") {
+            if (depth) {
+              depth--;
+              index++;
+              continue;
+            }
+            closeParameter(index);
+            const lineEnd = text.indexOf("\n", index);
+            const afterClose = text.slice(index + 1, lineEnd === -1 ? text.length : lineEnd);
+            return {
+              openParen,
+              closeParen: index,
+              unclosed: null,
+              parameters,
+              afterClose
+            };
+          }
+          if (char === "," && !depth) {
+            closeParameter(index);
+            parameterStart = index + 1;
+            index++;
+            continue;
+          }
+          index++;
+        }
+        return {
+          openParen,
+          closeParen: -1,
+          unclosed: inComment ? "comment" : quote ? "quote" : "parenthesis",
+          parameters,
+          afterClose: ""
+        };
+      };
+      exports.parseMacroCallArguments = parseMacroCallArguments;
+    }
+  });
+
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js
+  var require_noMalformedMacroCalls = __commonJS({
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.noMalformedMacroCalls = void 0;
+      var LintRuleType_1 = require_LintRuleType();
+      var Severity_1 = require_Severity();
+      var getIndex_1 = require_getIndex();
+      var getPosition_1 = require_getPosition();
+      var getSeverity_1 = require_getSeverity();
+      var sasMacros_1 = require_sasMacros();
+      var parseMacroCallArguments_1 = require_parseMacroCallArguments();
+      var parseMacroCalls_1 = require_parseMacroCalls();
+      var name = "noMalformedMacroCalls";
+      var message = "Macro call arguments: {reason}";
+      var description = "Reports macro calls whose argument list does not parse as written: a call that never closes, or text spilled after a keyword parameter.";
+      var reasons = {
+        quote: "unclosed quote - the rest of the file is read as part of the value; quote it with %str()",
+        parenthesis: "unclosed parenthesis - the call never closes; quote the value with %str()",
+        comment: "unterminated comment - the rest of the call is read as a comment",
+        spill: '"%s" is not a name=value parameter and follows one - a comma inside a value? quote it with %str()',
+        empty: "an empty parameter follows a comma - remove it; the engine reads it as a positional parameter",
+        quotedName: 'a parameter name cannot be quoted - the engine answers "Invalid macro parameter name"; drop the quotes',
+        maskedName: "a parameter name cannot be masked - the engine reads it as a positional parameter; drop the %str() and name the parameter directly"
+      };
+      var quotedParameterName = /^\s*(['"])[^'"]*\1\s*=/;
+      var test = (value, config) => {
+        const diagnostics = [];
+        const severity = (0, getSeverity_1.getSeverity)(config, name, Severity_1.Severity.Warning);
+        const at = (start, end, reason) => {
+          const from = (0, getPosition_1.getPosition)(value, start);
+          const to = (0, getPosition_1.getPosition)(value, end);
+          return {
+            message: message.replace("{reason}", reason),
+            lineNumber: from.lineNumber,
+            startColumnNumber: from.columnNumber,
+            endColumnNumber: to.columnNumber,
+            severity
+          };
+        };
+        (0, parseMacroCalls_1.parseMacroCalls)(value, config).filter((call) => !call.quoted && !(0, sasMacros_1.isSasMacro)(call.name)).forEach((call) => {
+          const args = (0, parseMacroCallArguments_1.parseMacroCallArguments)(value, call);
+          if (!args)
+            return;
+          const callStart = (0, getIndex_1.getIndex)(value, call.lineNumber, call.startColumnNumber);
+          if (args.unclosed) {
+            diagnostics.push(at(callStart, callStart + call.name.length + 1, reasons[args.unclosed]));
+            return;
+          }
+          const firstKeyword = args.parameters.findIndex((parameter) => parameter.isKeyword);
+          if (firstKeyword === -1)
+            return;
+          const stray = args.parameters.slice(firstKeyword + 1).find((parameter) => !parameter.isKeyword);
+          if (stray) {
+            const visible = stray.text.replace(/\/\*[\s\S]*?\*\//g, " ").trim().replace(/\s+/g, " ");
+            const textStart = stray.start + (stray.text.length - stray.text.trimStart().length);
+            const textEnd = stray.end - (stray.text.length - stray.text.trimEnd().length);
+            if ((0, parseMacroCallArguments_1.hasMaskedName)(stray.text)) {
+              diagnostics.push(at(textStart, textEnd, reasons.maskedName));
+              return;
+            }
+            if (quotedParameterName.test(stray.text)) {
+              diagnostics.push(at(textStart, textEnd, reasons.quotedName));
+              return;
+            }
+            if (!visible) {
+              diagnostics.push(at(Math.max(stray.start - 1, 0), stray.start, reasons.empty));
+              return;
+            }
+            diagnostics.push(at(textStart, textEnd, reasons.spill.replace("%s", visible)));
+          }
+        });
+        return diagnostics;
+      };
+      exports.noMalformedMacroCalls = {
+        type: LintRuleType_1.LintRuleType.File,
+        name,
+        description,
+        message,
+        test
+      };
+    }
+  });
+
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js
   var require_noNestedCommentsInHeader = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noNestedCommentsInHeader = void 0;
@@ -1326,9 +1740,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noNestedMacros.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noNestedMacros.js
   var require_noNestedMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noNestedMacros.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noNestedMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noNestedMacros = void 0;
@@ -1367,9 +1781,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noXcmd.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noXcmd.js
   var require_noXcmd = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noXcmd.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noXcmd.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noXcmd = void 0;
@@ -1718,9 +2132,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/splitText.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/splitText.js
   var require_splitText = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/splitText.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/splitText.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitText = void 0;
@@ -1737,9 +2151,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js
   var require_getHeaderLinesCount = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getHeaderLinesCount = void 0;
@@ -1761,9 +2175,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/headerMacros.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/headerMacros.js
   var require_headerMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/headerMacros.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/headerMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.removeMacrosFromHeader = exports.repairHeaderList = exports.addMacrosToHeader = exports.getHeaderMacros = void 0;
@@ -2030,9 +2444,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/isDoxygenHeader.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/isDoxygenHeader.js
   var require_isDoxygenHeader = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/isDoxygenHeader.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/isDoxygenHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.isDoxygenHeader = void 0;
@@ -2068,156 +2482,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/sasMacros.generated.js
-  var require_sasMacros_generated = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/sasMacros.generated.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.sasMacros = void 0;
-      exports.sasMacros = [
-        "abort",
-        "armconv",
-        "armend",
-        "armgtid",
-        "arminit",
-        "armjoin",
-        "armproc",
-        "armstop",
-        "armstrt",
-        "armupdt",
-        "bquote",
-        "by",
-        "cmpres",
-        "colormac",
-        "compstor",
-        "copy",
-        "datatyp",
-        "dequote",
-        "display",
-        "do",
-        "dqload",
-        "dqputloc",
-        "dqunload",
-        "else",
-        "end",
-        "eval",
-        "global",
-        "goto",
-        "helpclr",
-        "if",
-        "inc",
-        "include",
-        "index",
-        "indexc",
-        "indexw",
-        "input",
-        "kcmpres",
-        "kindex",
-        "kleft",
-        "klength",
-        "klowcase",
-        "kscan",
-        "ksubstr",
-        "ktrim",
-        "kupcase",
-        "kverify",
-        "left",
-        "length",
-        "let",
-        "list",
-        "local",
-        "lowcase",
-        "macro",
-        "mend",
-        "nrbquote",
-        "nrquote",
-        "nrstr",
-        "perfend",
-        "perfinit",
-        "perfstop",
-        "perfstrt",
-        "put",
-        "qbquote",
-        "qcmpres",
-        "qdequote",
-        "qindex",
-        "qindexc",
-        "qindexw",
-        "qkcmpres",
-        "qkleft",
-        "qklowcas",
-        "qklowcase",
-        "qkscan",
-        "qksubstr",
-        "qktrim",
-        "qkupcase",
-        "qleft",
-        "qlowcase",
-        "qscan",
-        "qsubstr",
-        "qsysfunc",
-        "qtrim",
-        "quote",
-        "qupcase",
-        "return",
-        "run",
-        "scan",
-        "str",
-        "substr",
-        "superq",
-        "symdel",
-        "symexist",
-        "symglobl",
-        "symlocal",
-        "syscall",
-        "sysevalf",
-        "sysexec",
-        "sysfunc",
-        "sysget",
-        "syslput",
-        "sysmacdelete",
-        "sysmacexec",
-        "sysmacexist",
-        "sysmexecdepth",
-        "sysmexecname",
-        "sysmstoreclear",
-        "sysprod",
-        "sysrc",
-        "sysrput",
-        "then",
-        "to",
-        "tplot",
-        "translate",
-        "tranwrd",
-        "trim",
-        "trimn",
-        "unquote",
-        "until",
-        "upcase",
-        "validchs",
-        "verify",
-        "while",
-        "window"
-      ];
-    }
-  });
-
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/sasMacros.js
-  var require_sasMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/sasMacros.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.isSasMacro = exports.sasMacros = void 0;
-      var sasMacros_generated_1 = require_sasMacros_generated();
-      exports.sasMacros = new Set(sasMacros_generated_1.sasMacros);
-      var isSasMacro = (name) => exports.sasMacros.has(name.toLowerCase());
-      exports.isSasMacro = isSasMacro;
-    }
-  });
-
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js
   var require_noUndeclaredMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUndeclaredMacros = void 0;
@@ -2304,9 +2571,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js
   var require_noUnusedMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUnusedMacros = void 0;
@@ -2364,9 +2631,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseLibnames.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseLibnames.js
   var require_parseLibnames = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseLibnames.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseLibnames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getUnusedLibnames = exports.parseLibnames = void 0;
@@ -2543,9 +2810,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js
   var require_noUnusedLibnames = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUnusedLibnames = void 0;
@@ -2584,9 +2851,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js
   var require_strictMacroDefinition = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.strictMacroDefinition = void 0;
@@ -2745,9 +3012,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js
   var require_hasRequiredMacroOptions = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasRequiredMacroOptions = void 0;
@@ -2792,9 +3059,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js
   var require_noSingleAsteriskComments = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noSingleAsteriskComments = void 0;
@@ -2977,9 +3244,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js
   var require_lowerCaseMacroNames = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lowerCaseMacroNames = void 0;
@@ -3099,12 +3366,12 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/index.js
   var require_file = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/file/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/file/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.lowerCaseMacroNames = exports.noSingleAsteriskComments = exports.hasRequiredMacroOptions = exports.strictMacroDefinition = exports.noUnusedLibnames = exports.noUnusedMacros = exports.noUndeclaredMacros = exports.noXcmd = exports.noNestedMacros = exports.noNestedCommentsInHeader = exports.noMacroIfInOpenCode = exports.minMacroNameLength = exports.lineEndings = exports.hasMacroParentheses = exports.hasMacroNameInMend = exports.hasDoxygenHeader = void 0;
+      exports.lowerCaseMacroNames = exports.noSingleAsteriskComments = exports.hasRequiredMacroOptions = exports.strictMacroDefinition = exports.noUnusedLibnames = exports.noUnusedMacros = exports.noUndeclaredMacros = exports.noXcmd = exports.noNestedMacros = exports.noNestedCommentsInHeader = exports.noMalformedMacroCalls = exports.noMacroIfInOpenCode = exports.minMacroNameLength = exports.lineEndings = exports.hasMacroParentheses = exports.hasMacroNameInMend = exports.hasDoxygenHeader = void 0;
       var hasDoxygenHeader_1 = require_hasDoxygenHeader();
       Object.defineProperty(exports, "hasDoxygenHeader", { enumerable: true, get: function() {
         return hasDoxygenHeader_1.hasDoxygenHeader;
@@ -3128,6 +3395,10 @@
       var noMacroIfInOpenCode_1 = require_noMacroIfInOpenCode();
       Object.defineProperty(exports, "noMacroIfInOpenCode", { enumerable: true, get: function() {
         return noMacroIfInOpenCode_1.noMacroIfInOpenCode;
+      } });
+      var noMalformedMacroCalls_1 = require_noMalformedMacroCalls();
+      Object.defineProperty(exports, "noMalformedMacroCalls", { enumerable: true, get: function() {
+        return noMalformedMacroCalls_1.noMalformedMacroCalls;
       } });
       var noNestedCommentsInHeader_1 = require_noNestedCommentsInHeader();
       Object.defineProperty(exports, "noNestedCommentsInHeader", { enumerable: true, get: function() {
@@ -3172,9 +3443,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noBannedStrings.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noBannedStrings.js
   var require_noBannedStrings = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noBannedStrings.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noBannedStrings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noBannedStrings = void 0;
@@ -3230,9 +3501,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noGremlins.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noGremlins.js
   var require_noGremlins = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noGremlins.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noGremlins.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.charFromHex = exports.noGremlins = void 0;
@@ -3282,9 +3553,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/indentationMultiple.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/indentationMultiple.js
   var require_indentationMultiple = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/indentationMultiple.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/indentationMultiple.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.indentationMultiple = void 0;
@@ -3324,9 +3595,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/maxLineLength.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/maxLineLength.js
   var require_maxLineLength = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/maxLineLength.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/maxLineLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.maxLineLength = void 0;
@@ -3371,9 +3642,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js
   var require_noEncodedPasswords = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noEncodedPasswords = void 0;
@@ -3407,9 +3678,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noTabs.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noTabs.js
   var require_noTabs = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noTabs.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noTabs.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTabs = void 0;
@@ -3442,9 +3713,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js
   var require_noTrailingSpaces = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTrailingSpaces = void 0;
@@ -3478,9 +3749,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/index.js
   var require_line = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/line/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/line/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTrailingSpaces = exports.noTabs = exports.noEncodedPasswords = exports.maxLineLength = exports.indentationMultiple = exports.noGremlins = exports.noBannedStrings = void 0;
@@ -3515,9 +3786,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js
   var require_lowerCaseFileNames = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js"(exports) {
       "use strict";
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -3556,9 +3827,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js
   var require_noSpacesInFileNames = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js"(exports) {
       "use strict";
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -3598,9 +3869,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/path/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/path/index.js
   var require_path2 = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/rules/path/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/rules/path/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noSpacesInFileNames = exports.lowerCaseFileNames = void 0;
@@ -3615,9 +3886,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/mergeLintConfig.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/mergeLintConfig.js
   var require_mergeLintConfig = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/mergeLintConfig.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/mergeLintConfig.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.mergeLintConfig = void 0;
@@ -3663,9 +3934,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LintConfig.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LintConfig.js
   var require_LintConfig = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/types/LintConfig.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/types/LintConfig.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LintConfig = void 0;
@@ -3787,6 +4058,9 @@
           }
           if ((json === null || json === void 0 ? void 0 : json.hasMacroNameInMend) !== false) {
             this.fileLintRules.push(file_1.hasMacroNameInMend);
+          }
+          if (json === null || json === void 0 ? void 0 : json.noMalformedMacroCalls) {
+            this.fileLintRules.push(file_1.noMalformedMacroCalls);
           }
           if ((json === null || json === void 0 ? void 0 : json.noNestedCommentsInHeader) !== false) {
             this.fileLintRules.push(file_1.noNestedCommentsInHeader);
@@ -3914,9 +4188,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-6Sozbe/utils-file.js
+  // ../../../../../tmp/sasjs-lint-5FmppC/utils-file.js
   var require_utils_file = __commonJS({
-    "../../../../../tmp/sasjs-lint-6Sozbe/utils-file.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-5FmppC/utils-file.js"(exports, module) {
       var unavailable = (name) => async () => {
         throw new Error(name + " is not available in the browser host");
       };
@@ -3929,9 +4203,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getProjectRoot.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getProjectRoot.js
   var require_getProjectRoot = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getProjectRoot.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getProjectRoot.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -3993,9 +4267,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/defaultBannedStrings.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/defaultBannedStrings.js
   var require_defaultBannedStrings = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/defaultBannedStrings.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/defaultBannedStrings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.defaultBannedStrings = void 0;
@@ -4003,9 +4277,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js
   var require_defaultIgnoredMacros = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.defaultIgnoredMacros = void 0;
@@ -4013,9 +4287,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getLintConfig.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getLintConfig.js
   var require_getLintConfig = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getLintConfig.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getLintConfig.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -4083,6 +4357,7 @@
         noEncodedPasswords: true,
         noGremlins: true,
         noMacroIfInOpenCode: false,
+        noMalformedMacroCalls: false,
         noNestedCommentsInHeader: true,
         noNestedMacros: true,
         noSingleAsteriskComments: false,
@@ -4110,9 +4385,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/gremlinCharacters.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/gremlinCharacters.js
   var require_gremlinCharacters = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/gremlinCharacters.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/gremlinCharacters.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.gremlinCharacters = void 0;
@@ -4433,9 +4708,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/ignore/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/ignore/index.js
   var require_ignore = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/ignore/index.js"(exports, module) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/ignore/index.js"(exports, module) {
       function makeArray(subject) {
         return Array.isArray(subject) ? subject : [subject];
       }
@@ -5283,9 +5558,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/isIgnored.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/isIgnored.js
   var require_isIgnored = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/isIgnored.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/isIgnored.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5343,9 +5618,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/listSasFiles.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/listSasFiles.js
   var require_listSasFiles = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/listSasFiles.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/listSasFiles.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5385,9 +5660,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getIndicesOf.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getIndicesOf.js
   var require_getIndicesOf = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getIndicesOf.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getIndicesOf.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getIndicesOf = void 0;
@@ -5411,9 +5686,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js
   var require_getDataSectionsDetail = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.checkIsDataLine = exports.getDataSectionsDetail = void 0;
@@ -5460,9 +5735,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseLintOverride.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseLintOverride.js
   var require_parseLintOverride = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/parseLintOverride.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/parseLintOverride.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.applyLintOverride = exports.getLintOverride = void 0;
@@ -5525,9 +5800,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/index.js
   var require_utils = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/utils/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/utils/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -5557,6 +5832,7 @@
       __exportStar(require_splitLines(), exports);
       __exportStar(require_getIndicesOf(), exports);
       __exportStar(require_getHeaderLinesCount(), exports);
+      __exportStar(require_getIndex(), exports);
       __exportStar(require_isDoxygenHeader(), exports);
       __exportStar(require_getDataSectionsDetail(), exports);
       __exportStar(require_defaultBannedStrings(), exports);
@@ -5567,14 +5843,15 @@
       __exportStar(require_mergeLintConfig(), exports);
       __exportStar(require_parseLibnames(), exports);
       __exportStar(require_parseLintOverride(), exports);
+      __exportStar(require_parseMacroCallArguments(), exports);
       __exportStar(require_parseMacroCalls(), exports);
       __exportStar(require_sasMacros(), exports);
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/shared.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/shared.js
   var require_shared = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/shared.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/shared.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.processLine = exports.processText = void 0;
@@ -5608,9 +5885,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatText.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatText.js
   var require_formatText = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatText.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatText.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5651,9 +5928,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/shared.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/shared.js
   var require_shared2 = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/shared.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/shared.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.processLine = exports.processFile = exports.processText = void 0;
@@ -5699,9 +5976,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintText.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintText.js
   var require_lintText = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintText.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintText.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5742,9 +6019,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintFile.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintFile.js
   var require_lintFile = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintFile.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintFile.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5792,9 +6069,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintFolder.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintFolder.js
   var require_lintFolder = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintFolder.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintFolder.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5862,9 +6139,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintProject.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintProject.js
   var require_lintProject = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/lintProject.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/lintProject.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5909,9 +6186,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/index.js
   var require_lint = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/lint/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/lint/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -5937,9 +6214,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatFile.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatFile.js
   var require_formatFile = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatFile.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatFile.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5999,9 +6276,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatFolder.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatFolder.js
   var require_formatFolder = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatFolder.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatFolder.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -6084,9 +6361,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatProject.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatProject.js
   var require_formatProject = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/formatProject.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/formatProject.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -6131,9 +6408,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/index.js
   var require_format = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/format/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/format/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -6159,9 +6436,9 @@
     }
   });
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/index.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/index.js
   var require_lint2 = __commonJS({
-    "../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/lint/index.js"(exports) {
+    "../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/lint/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -6187,7 +6464,7 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-6Sozbe/process.js
+  // ../../../../../tmp/sasjs-lint-5FmppC/process.js
   if (typeof globalThis.process === "undefined")
     globalThis.process = {
       env: {},
@@ -6198,10 +6475,10 @@
       version: "v0"
     };
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/api/build/esm/code/service.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/api/build/esm/code/service.js
   var import_lint = __toESM(require_lint2(), 1);
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/api/build/esm/types.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/api/build/esm/types.js
   var ApiError = class extends Error {
     constructor(status, message, body) {
       super(message);
@@ -6212,7 +6489,7 @@
     }
   };
 
-  // ../../../.npm/_npx/3fd07d8234f946c4/node_modules/@sasjs/api/build/esm/code/service.js
+  // ../../../.npm/_npx/785b5e714f3336de/node_modules/@sasjs/api/build/esm/code/service.js
   var codeOf = (body) => {
     const value = body.code;
     if (value === void 0)
@@ -6241,6 +6518,6 @@
     };
   };
 
-  // ../../../../../tmp/sasjs-lint-6Sozbe/entry.js
+  // ../../../../../tmp/sasjs-lint-5FmppC/entry.js
   globalThis.SASjsCode = { createCodeService };
 })();
