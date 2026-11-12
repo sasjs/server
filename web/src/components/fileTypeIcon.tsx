@@ -1,10 +1,15 @@
 import React from 'react'
 import Box from '@mui/material/Box'
+import ArticleIcon from '@mui/icons-material/Article'
+import CodeIcon from '@mui/icons-material/Code'
 import DataObjectIcon from '@mui/icons-material/DataObject'
 import DescriptionIcon from '@mui/icons-material/Description'
+import FolderZipIcon from '@mui/icons-material/FolderZip'
 import ImageIcon from '@mui/icons-material/Image'
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import StorageIcon from '@mui/icons-material/Storage'
 import TableChartIcon from '@mui/icons-material/TableChart'
+import WebIcon from '@mui/icons-material/Web'
 
 import SasjsMark, { FILE_ICON_SIZE } from './sasjsMark'
 import { DriveFileKind, driveFileKindOf } from '../utils/files'
@@ -17,12 +22,23 @@ import { DriveFileKind, driveFileKindOf } from '../utils/files'
  * rest are monochrome glyphs that inherit the row's colour, so they read the
  * same in the light and dark themes - they identify a file, they are not a
  * status.
+ *
+ * The glyphs are chosen for the question a reader asks of the tree - what is
+ * this file - so a `.js` beside a `.sas` reads as another program (a code
+ * bracket, not the SAS mark), a `.zip` reads as something to unpack, and a
+ * `.csv` and a `.xlsx` read the same because they are the same thing to an
+ * analyst.
  */
 const ICONS: { [kind in Exclude<DriveFileKind, 'program'>]: any } = {
+  script: CodeIcon,
+  markup: WebIcon,
   data: StorageIcon,
   log: DescriptionIcon,
   config: DataObjectIcon,
   table: TableChartIcon,
+  text: ArticleIcon,
+  document: InsertDriveFileIcon,
+  archive: FolderZipIcon,
   image: ImageIcon
 }
 

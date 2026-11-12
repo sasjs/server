@@ -67,18 +67,43 @@ export const isImageFile = (filePath: string) =>
  * `IMAGE_EXTENSIONS`, so the two cannot drift.
  */
 export type DriveFileKind =
-  'program' | 'data' | 'log' | 'config' | 'table' | 'image'
+  | 'program'
+  | 'script'
+  | 'markup'
+  | 'config'
+  | 'data'
+  | 'table'
+  | 'log'
+  | 'text'
+  | 'document'
+  | 'archive'
+  | 'image'
 
-/** The extensions behind every kind but `image`, which reuses the image list. */
+/**
+ * The extensions behind every kind but `image`, which reuses the image list.
+ *
+ * The list is the set of files a drive actually holds rather than every format
+ * in existence: a program the host can run, the scripts beside it, the markup a
+ * streamed app is built from, the config a project carries, SAS datasets and the
+ * exports an analyst puts next to them, logs, text, office documents and
+ * archives. An extension in none of them gets the reserved blank column, which is
+ * the same treatment as a name with no extension at all.
+ */
 const EXTENSIONS_BY_KIND: {
   [kind in Exclude<DriveFileKind, 'image'>]: string[]
 } = {
+  // SAS is the one kind with its own mark; the others are glyphs
   program: ['sas'],
-  data: ['sas7bdat', 'sas7bcat'],
-  log: ['log'],
+  script: ['js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'py', 'r', 'sh', 'bash'],
+  markup: ['html', 'htm', 'css', 'scss', 'less', 'xml', 'yml', 'yaml'],
   // `.sasjslint` is the drive's own rules file, and JSON like the rest
-  config: ['json', 'sasjslint'],
-  table: ['csv', 'xls', 'xlsx']
+  config: ['json', 'sasjslint', 'toml', 'ini', 'conf', 'env'],
+  data: ['sas7bdat', 'sas7bcat', 'xpt', 'parquet', 'dta', 'rds', 'sav'],
+  table: ['csv', 'tsv', 'xls', 'xlsx', 'xlsm'],
+  log: ['log'],
+  text: ['txt', 'md', 'markdown', 'rst'],
+  document: ['doc', 'docx', 'odt', 'rtf', 'pdf', 'ppt', 'pptx', 'key', 'pages'],
+  archive: ['zip', 'gz', 'tgz', 'tar', '7z', 'rar']
 }
 
 /**

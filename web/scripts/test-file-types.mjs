@@ -53,11 +53,33 @@ check(
 )
 check('an uppercase png is an image', kind('/pictures/SHOT.PNG') === 'image')
 
+check('a text file is text', kind('/notes/readme.txt') === 'text')
+check('markdown is text', kind('/Public/demo/README.md') === 'text')
+check('and so is reStructuredText', kind('/docs/page.rst') === 'text')
+
+check('a JS program is a script', kind('/home/me/run.js') === 'script')
+check('so is an ES module', kind('/lib/util.mjs') === 'script')
+check('and a TypeScript file', kind('/src/app.tsx') === 'script')
+check('a Python file is a script', kind('/jobs/extract.py') === 'script')
+check('an R file is a script', kind('/jobs/model.r') === 'script')
+check('a shell script is a script', kind('/bin/run.sh') === 'script')
+
+check('an html page is markup', kind('/app/index.html') === 'markup')
+check('a stylesheet is markup', kind('/app/style.css') === 'markup')
 check(
-  'a plain text file has no icon of its own',
-  kind('/notes/readme.txt') === null
+  'a YAML file is markup',
+  kind('/.github/workflows/mock-site.yml') === 'markup'
 )
-check('an unknown extension has no icon', kind('/data/archive.zip') === null)
+
+check('an XPT transport file is data', kind('/data/export.xpt') === 'data')
+check('a parquet file is data', kind('/data/events.parquet') === 'data')
+check('a tsv is a table', kind('/export/people.tsv') === 'table')
+check('a pdf is a document', kind('/docs/spec.pdf') === 'document')
+check('a word document is a document', kind('/docs/spec.docx') === 'document')
+check('a zip is an archive', kind('/data/archive.zip') === 'archive')
+check('a tarball is an archive', kind('/data/src.tgz') === 'archive')
+
+check('an unknown extension has no icon', kind('/data/blob.weird') === null)
 check('a path with no extension has no icon', kind('/sasjs/README') === null)
 check('a dotfile with no extension has no icon', kind('/.gitignore') === null)
 check(
