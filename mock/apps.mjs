@@ -359,8 +359,8 @@ const folderNamed = (node, name) =>
  * reading, and what a `sasjs deploy` never does) would publish a page whose whole
  * content is base64.
  *
- * Two sets of files come out of the tree, because a browser host needs both to
- * run the app rather than only show it:
+ * Three sets of files come out of the tree, because a browser host needs the first
+ * two to run the app and a reader browsing it in Studio wants the third:
  *
  *   - the streamed web folder, which the App Stream serves as the app itself;
  *   - every file beside it under `services/`, which is what the host runs and what
@@ -373,6 +373,14 @@ const folderNamed = (node, name) =>
  *     whose data call fails. So the rule is "every file under services except the
  *     streamed web folder", not "every `.js` file" - the set of files a program
  *     needs is the app's to state, not this build's to guess.
+ *   - the `jobs/` and `tests/` folders beside `services/`, where a compile puts the
+ *     scheduled jobs and the test programs. Neither runs on this host - it has no SAS
+ *     and no scheduler - but both are the deployment's own programs, and an app that
+ *     ships them is exactly the one worth reading. Absent folders are simply absent:
+ *     most apps have no jobs, and half have no tests.
+ *
+ * The pack's `sasjs.app.json` is NOT put on the drive. It is the deploy's manifest
+ * rather than a program, so it would add a file to the tree a reader has to skip.
  *
  * The `.sas` services are `service` members rather than files, and they ARE put on
  * the drive, as `<name>.sas` beside the JavaScript twin of the same name. This host
@@ -440,9 +448,10 @@ export const packFiles = (pack, app) => {
         continue
       }
 
-      if (member.type === 'service') {
-        /* The compiled SAS the service runs, as text. Named `.sas` so that it sits
-           beside the `.js` of the same name rather than replacing it. */
+      if (member.type === 'service' || member.type === 'job') {
+        /* The compiled SAS the service (or a job, wherever a pack puts one) runs, as
+           text. Named `.sas` so that it sits beside the `.js` of the same name rather
+           than replacing it. */
         files.push({
           path: `${appLoc}/services${name}.sas`,
           ...entryFor(Buffer.from(member.code ?? '', 'utf8'))
@@ -460,8 +469,47 @@ export const packFiles = (pack, app) => {
     }
   }
 
+  /**
+   * A compiled `jobs/` or `tests/` tree, which a project with either carries at the
+   * pack's root. Same rules as `services/`: a `service` or `job` member is the
+   * compiled program and lands as `<name>.sas`, a `file` member is decoded.
+   */
+  const walkPrograms = (node, prefix) => {
+    for (const member of node.members ?? []) {
+      const name = `${prefix}/${member.name}`
+
+      if (member.type === 'folder') {
+        walkPrograms(member, name)
+        continue
+      }
+
+      if (member.type === 'service' || member.type === 'job') {
+        files.push({
+          path: `${appLoc}${name}.sas`,
+          ...entryFor(Buffer.from(member.code ?? '', 'utf8'))
+        })
+
+        continue
+      }
+
+      if (member.type !== 'file') continue
+
+      files.push({
+        path: `${appLoc}${name}`,
+        ...entryFor(decodeCode(member))
+      })
+    }
+  }
+
   walkWeb(web, '')
   walkServices(services, '')
+
+  for (const name of ['jobs', 'tests']) {
+    const folder = folderNamed(pack.fileTree, name)
+
+    if (folder) walkPrograms(folder, `/${name}`)
+  }
+
   return files
 }
 

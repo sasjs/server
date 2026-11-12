@@ -95,6 +95,51 @@ const pack = {
   fileTree: {
     name: 'files',
     members: [
+      // the deploy's manifest: carries no program, so it stays off the drive
+      {
+        name: 'sasjs.app.json',
+        type: 'file',
+        code: code('{"appLoc":"/Public/app/macrodash"}')
+      },
+      {
+        // what `sasjs cb` puts beside services/ for a project with jobs
+        name: 'jobs',
+        type: 'folder',
+        members: [
+          { name: 'nightly', type: 'job', code: '%macro nightly;%mend;' },
+          { name: 'scores', type: 'job', code: '%macro scores;%mend;' }
+        ]
+      },
+      {
+        // and the test tree: a test service, a test file, and a macro folder
+        name: 'tests',
+        type: 'folder',
+        members: [
+          {
+            name: 'services',
+            type: 'folder',
+            members: [
+              {
+                name: 'rungetdata',
+                type: 'service',
+                code: '%macro rungetdata;%mend;'
+              }
+            ]
+          },
+          {
+            name: 'jobs',
+            type: 'folder',
+            members: [
+              {
+                name: 'testscores',
+                type: 'service',
+                code: '%macro testscores;%mend;'
+              }
+            ]
+          },
+          { name: 'testSetup.sas', type: 'file', code: code('%let setup = 1;') }
+        ]
+      },
       {
         name: 'services',
         type: 'folder',
@@ -182,12 +227,35 @@ test('decodes the file tree, and writes the app under its appLoc', () => {
   // the same service is deployed as - the half of a SASjs app a reader browsing the
   // demo came for
   assert.deepEqual(Object.keys(byPath).sort(), [
+    '/Public/app/macrodash/jobs/nightly.sas',
+    '/Public/app/macrodash/jobs/scores.sas',
     '/Public/app/macrodash/services/common/configure.js',
     '/Public/app/macrodash/services/common/configure.sas',
     '/Public/app/macrodash/services/web/index.html',
     '/Public/app/macrodash/services/web/js/game.js',
-    '/Public/app/macrodash/services/web/macrodash.png'
+    '/Public/app/macrodash/services/web/macrodash.png',
+    '/Public/app/macrodash/tests/jobs/testscores.sas',
+    '/Public/app/macrodash/tests/services/rungetdata.sas',
+    '/Public/app/macrodash/tests/testSetup.sas'
   ])
+
+  // the jobs and the tests are programs, so they land as `.sas` like the services -
+  // and are the reason an app with a scheduler is worth opening in Studio
+  assert.equal(
+    byPath['/Public/app/macrodash/jobs/nightly.sas'],
+    '%macro nightly;%mend;'
+  )
+  assert.equal(
+    byPath['/Public/app/macrodash/tests/jobs/testscores.sas'],
+    '%macro testscores;%mend;'
+  )
+  assert.equal(
+    byPath['/Public/app/macrodash/tests/testSetup.sas'],
+    '%let setup = 1;'
+  )
+
+  // the manifest is not a program and is not published
+  assert.equal(byPath['/Public/app/macrodash/sasjs.app.json'], undefined)
 
   // a service member's code is the compiled SAS as TEXT, not base64: it goes on
   // the drive as it stands, or the file a visitor opens is gibberish
