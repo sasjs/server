@@ -4,11 +4,12 @@
  * The Apps screen lists what a server has published, so a demo with nothing
  * published shows an empty page and a sentence about an administrator - true of
  * this host, and useless to a reader who came to see what the screen looks like
- * with an app on it. Two apps are published: Macro Dash, a game with a set of SAS
- * services behind it, and the Minimal Seed App, which is the template a reader
- * setting out to build one is pointed at. Both are streamed from SAS on a real
- * deployment, which is exactly the shape the App Stream serves, and both are
- * packaged here from their releases rather than rebuilt, so this build carries
+ * with an app on it. Three apps are published: Macro Dash, a game with a set of
+ * SAS services behind it, the Minimal Seed App, which is the template a reader
+ * setting out to build one is pointed at, and the React Seed App, which is the
+ * one the SAS Apps team starts from. Each is streamed from SAS on a real
+ * deployment, which is exactly the shape the App Stream serves, and each is
+ * packaged here from its release rather than rebuilt, so this build carries
  * versions someone can name instead of a copy of another repository's source.
  *
  * The packaging is the release's own `server.json`, the file a `sasjs deploy`
@@ -34,10 +35,20 @@ import { inflateRawSync } from 'node:zlib'
  * A descriptor rather than a constant per app: everything below works from one, so
  * a third app is a third entry and a release bump is one string.
  *
- * `release` is a TAG, not `latest`: two deploys of the same commit have to publish
- * the same app, and a release that changed an app's look would otherwise arrive
- * here as a rebuild of the site with no commit saying so. Bumping it is a one-line
- * change with a reason in the PR.
+ * `release` is `latest` by default: the demonstration should show the newest app
+ * each repository has published, not the one that was current when someone last
+ * edited this file. It is resolved at build time against the repository's
+ * `releases/latest`, and the tag that came back is what the build logs and what
+ * the app's own version placeholder is filled from - so a rebuild is still
+ * traceable to three tags, without a commit per release. A descriptor may state a
+ * tag instead, which pins that app; that is the escape hatch for holding one back
+ * while its latest release is known to be broken.
+ *
+ * `fallback` is the last tag this site was known to work with. It is used when
+ * `releases/latest` cannot be read at all - a rate limit, a network drop - so a
+ * pull request that touches nothing here does not go red because the API answered
+ * 403. It is not a pin: a readable `latest` always wins, and the build says which
+ * of the two it used.
  *
  * `id` is fixed rather than minted per build, because an app is addressed by its id
  * (`/app/<id>/`) - a fresh UUID on every build would change the app's URL weekly and
@@ -53,27 +64,48 @@ import { inflateRawSync } from 'node:zlib'
  * macro-dash names the file after itself, while the minimal seed app ships a bare
  * `server.json.zip`. That is why the asset is stated rather than derived.
  */
+/** What a descriptor says when it should follow the repository's newest release. */
+export const LATEST = 'latest'
+
 export const MACRO_DASH = {
   id: '3f2b9c1e-8d4a-4b7e-9c2f-5a6d1e0b7c34',
   name: 'macro-dash',
-  release: 'v1.7.0',
+  release: LATEST,
+  fallback: 'v1.7.0',
   asset: 'macro-dash-server.json.zip'
 }
 
 export const MINIMAL_SEED_APP = {
   id: 'b7c1d0e2-4a63-4f18-9b52-6d3e8c0741af',
   name: 'minimal-seed-app',
-  // v1.6.1, not v1.6.0: 1.6.0's page wires its controls in <head>, so it throws
-  // on a host that serves the page as it is - which this one does - and the app
-  // paints as a heading with nothing behind it. The release that carries the fix
-  // (sasjs/minimal-seed-app#36) is what belongs here; until it exists this build
-  // fails at the download, by design, rather than publishing a dead app.
-  release: 'v1.6.1',
+  // latest, not v1.6.0: that release wires its controls in <head>, so it throws on
+  // a host that serves the page as it is - which this one does - and the app paints
+  // as a heading with nothing behind it. The fix is in 1.6.1 and anything after it
+  // (sasjs/minimal-seed-app#36), which is what `latest` resolves to. If a future
+  // release breaks the page this way again, state that tag here and the app is held
+  // back until it is fixed.
+  release: LATEST,
+  fallback: 'v1.6.1',
+  asset: 'server.json.zip'
+}
+
+export const REACT_SEED_APP = {
+  id: 'd4e7a1b9-2c56-4f03-8a71-9b5c2e6d4f18',
+  name: 'react-seed-app',
+  // latest resolves to a release that carries the JavaScript twin of each service
+  // (appinit.js, getdata.js, upload.js and the dataset they read), which arrived in
+  // v1.8.0. This host runs JavaScript, so a release from before that - SAS services
+  // only - would publish a tile that loads and then cannot answer anything, which is
+  // why the fallback is v1.8.0: a build that cannot read `latest` still ships a
+  // release that works, and a release older than this one would be held back by
+  // stating its own tag here instead.
+  release: LATEST,
+  fallback: 'v1.8.0',
   asset: 'server.json.zip'
 }
 
 /** The apps the demo drive carries, in the order the build publishes them. */
-export const PUBLISHED_APPS = [MACRO_DASH, MINIMAL_SEED_APP]
+export const PUBLISHED_APPS = [MACRO_DASH, MINIMAL_SEED_APP, REACT_SEED_APP]
 
 /**
  * The version an app displays, without the tag's `v`.
@@ -90,6 +122,68 @@ export const appVersion = (app) => app.release.replace(/^v/, '')
 /** The release asset that carries an app's deploy document. */
 export const releaseUrl = (app) =>
   `https://github.com/sasjs/${app.name}/releases/download/${app.release}/${app.asset}`
+
+/** The GitHub API endpoint naming an app repository's newest release. */
+export const latestReleaseUrl = (app) =>
+  `https://api.github.com/repos/sasjs/${app.name}/releases/latest`
+
+/**
+ * GitHub's answer, as JSON, with the token CI already has.
+ *
+ * Unauthenticated calls to the API are rate limited by IP, and a shared runner's
+ * IP is not ours; the token is what keeps a build from failing for that. It is
+ * optional, because a local build usually has none and three calls are nothing.
+ */
+const fetchJson = async (url) => {
+  const headers = { accept: 'application/vnd.github+json' }
+  if (process.env.GITHUB_TOKEN)
+    headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+
+  const response = await fetch(url, { headers })
+
+  if (!response.ok)
+    throw new Error(
+      `Could not read ${url}: ${response.status} ${response.statusText}`
+    )
+
+  return response.json()
+}
+
+/**
+ * A descriptor with its release resolved: `latest` becomes the tag the repository
+ * currently calls its newest release, and a stated tag is returned untouched.
+ *
+ * `getJson` is injected so the resolution can be tested without the network, the
+ * same way `fetchPack` is tested against a packed archive.
+ */
+export const resolveRelease = async (app, getJson = fetchJson) => {
+  if (app.release !== LATEST) return app
+
+  const note = (reason) => {
+    if (!app.fallback) throw new Error(reason)
+    console.warn(
+      `${reason} - building ${app.name} from ${app.fallback} instead`
+    )
+    return { ...app, release: app.fallback, resolved: false }
+  }
+
+  let release
+  try {
+    release = await getJson(latestReleaseUrl(app))
+  } catch (error) {
+    return note(
+      `Could not read the newest release of sasjs/${app.name}: ${error.message}`
+    )
+  }
+
+  const tag = release && release.tag_name
+  if (!tag)
+    return note(
+      `Could not read the newest release of sasjs/${app.name}: ${latestReleaseUrl(app)} answered no tag_name`
+    )
+
+  return { ...app, release: tag, resolved: true }
+}
 
 /**
  * Where `@sasjs/api` keeps a drive-backed app index - `APP_STREAM_INDEX` in that
@@ -117,7 +211,8 @@ const TEXT_PREFIX = '\u0000text:'
  * UTF-8 round trip - because the drive is one map of strings and a decoded image
  * written as text is a corrupt one.
  */
-const isText = (bytes) => Buffer.from(bytes.toString('utf8'), 'utf8').equals(bytes)
+const isText = (bytes) =>
+  Buffer.from(bytes.toString('utf8'), 'utf8').equals(bytes)
 
 /**
  * A file member's bytes.
@@ -179,14 +274,17 @@ export const unzipEntry = (archive, wanted) => {
     }
   }
 
-  if (eocd < 0) throw new Error('That archive is not a zip: no end of central directory.')
+  if (eocd < 0)
+    throw new Error('That archive is not a zip: no end of central directory.')
 
   const entries = archive.readUInt16LE(eocd + 10)
   let cursor = archive.readUInt32LE(eocd + 16)
 
   for (let entry = 0; entry < entries; entry++) {
     if (archive.readUInt32LE(cursor) !== 0x02014b50)
-      throw new Error('That archive is not a zip: a central directory entry is missing.')
+      throw new Error(
+        'That archive is not a zip: a central directory entry is missing.'
+      )
 
     const method = archive.readUInt16LE(cursor + 10)
     const compressedSize = archive.readUInt32LE(cursor + 20)

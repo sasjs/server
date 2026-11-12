@@ -14,12 +14,17 @@ import { deflateRawSync } from 'node:zlib'
 import test from 'node:test'
 
 import {
+  LATEST,
   MACRO_DASH,
+  PUBLISHED_APPS,
   MINIMAL_SEED_APP,
+  REACT_SEED_APP,
   appEntry,
   appVersion,
   packFiles,
+  latestReleaseUrl,
   releaseUrl,
+  resolveRelease,
   unzipEntry,
   withPublishedApp,
   withPublishedApps
@@ -215,11 +220,12 @@ test('the version placeholder the release ships is filled in', () => {
     }
   }
 
-  const [file] = packFiles(placeholder, MACRO_DASH)
+  // a stated tag, because the descriptor itself says `latest` - filling the
+  // placeholder from an unresolved descriptor is the state the resolution step
+  // exists to prevent, and asserting `vlatest` would pass for exactly that
+  const [file] = packFiles(placeholder, { ...MACRO_DASH, release: 'v2.0.0' })
 
-  // the version the module was pinned to, not a literal: a bump must not need
-  // this assertion edited
-  assert.equal(file.contents, `<p>v${appVersion(MACRO_DASH)}</p>`)
+  assert.equal(file.contents, '<p>v2.0.0</p>')
 })
 
 test('a package with no streamed web folder is refused by name', () => {
@@ -401,17 +407,166 @@ test('a data file beside a program travels with it, so the program can read it',
   )
 })
 
-test('each app is downloaded from its own release asset', () => {
-  assert.equal(
-    releaseUrl(MACRO_DASH),
-    'https://github.com/sasjs/macro-dash/releases/download/v1.7.0/macro-dash-server.json.zip'
+/**
+ * The React seed app's shape: a JavaScript twin of each of its three services -
+ * two under `services/common` and `upload` under `services/files` - the dataset
+ * the twins read, and the built frontend: one bundle, since its webpack config
+ * emits a single `index.bundle.js` rather than the seed app's handful of files.
+ *
+ * The SAS service of the same name travels as a `service` member, which this host
+ * cannot run: `RUN_TIMES` here is JavaScript, so the `.js` twin is what answers.
+ */
+const reactPack = {
+  appLoc: '/Public/app/react-seed-app',
+  streamWebFolder: 'web',
+  streamServiceName: 'React',
+  streamLogo: 'logo512.png',
+  fileTree: {
+    name: 'files',
+    members: [
+      {
+        name: 'services',
+        type: 'folder',
+        members: [
+          {
+            name: 'common',
+            type: 'folder',
+            members: [
+              { name: 'appinit', type: 'service', code: '%macro appinit;%mend;' },
+              { name: 'appinit.js', type: 'file', code: code('webout("OPEN")') },
+              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
+              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
+              { name: 'springs.json', type: 'file', code: code('[{"AREA":"Adak"}]') }
+            ]
+          },
+          {
+            // the release's twins are not all in one folder: upload lives under
+            // services/files, so the walk has to reach a second level
+            name: 'files',
+            type: 'folder',
+            members: [
+              { name: 'upload', type: 'service', code: '%macro upload;%mend;' },
+              { name: 'upload.js', type: 'file', code: code('webout("OPEN")') }
+            ]
+          },
+          {
+            name: 'web',
+            type: 'folder',
+            members: [
+              {
+                name: 'index.html',
+                type: 'file',
+                code: code('<!doctype html><title>React Seed</title>')
+              },
+              {
+                name: 'index.bundle.js',
+                type: 'file',
+                code: code('console.log("bundle")')
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+test('the React seed app publishes its JS services, dataset and bundle', () => {
+  const byPath = Object.fromEntries(
+    packFiles(reactPack, REACT_SEED_APP).map((file) => [file.path, file.contents])
   )
 
-  // the seed app's asset is a bare server.json.zip, which is why the asset is
-  // stated in the descriptor rather than derived from the app's name
+  assert.deepEqual(Object.keys(byPath).sort(), [
+    '/Public/app/react-seed-app/services/common/appinit.js',
+    '/Public/app/react-seed-app/services/common/getdata.js',
+    '/Public/app/react-seed-app/services/common/springs.json',
+    '/Public/app/react-seed-app/services/files/upload.js',
+    '/Public/app/react-seed-app/services/web/index.bundle.js',
+    '/Public/app/react-seed-app/services/web/index.html'
+  ])
+
   assert.equal(
-    releaseUrl(MINIMAL_SEED_APP),
+    byPath['/Public/app/react-seed-app/services/common/springs.json'],
+    '[{"AREA":"Adak"}]'
+  )
+})
+
+test('every app follows its repository\'s newest release, unless it pins one', async () => {
+  const asked = []
+  const getJson = async (url) => {
+    asked.push(url)
+    return { tag_name: 'v9.9.9' }
+  }
+
+  // all three descriptors say `latest`, so all three are resolved
+  assert.deepEqual(
+    PUBLISHED_APPS.map((app) => app.release),
+    [LATEST, LATEST, LATEST]
+  )
+
+  const resolved = await Promise.all(
+    PUBLISHED_APPS.map(async (app) => await resolveRelease(app, getJson))
+  )
+
+  assert.deepEqual(
+    asked.sort(),
+    [
+      latestReleaseUrl(MACRO_DASH),
+      latestReleaseUrl(MINIMAL_SEED_APP),
+      latestReleaseUrl(REACT_SEED_APP)
+    ].sort()
+  )
+
+  resolved.forEach((app) => {
+    assert.equal(app.release, 'v9.9.9')
+    assert.equal(app.resolved, true)
+  })
+
+  // a stated tag is a pin: nothing is asked about it, and the URL keeps the tag
+  const pinned = await resolveRelease(
+    { ...MINIMAL_SEED_APP, release: 'v1.6.1' },
+    getJson
+  )
+  assert.equal(pinned.release, 'v1.6.1')
+  assert.equal(
+    releaseUrl(pinned),
     'https://github.com/sasjs/minimal-seed-app/releases/download/v1.6.1/server.json.zip'
+  )
+
+  // and the resolved tag is what the asset URL and the version placeholder use
+  assert.equal(
+    releaseUrl({ ...MACRO_DASH, release: 'v2.0.0' }),
+    'https://github.com/sasjs/macro-dash/releases/download/v2.0.0/macro-dash-server.json.zip'
+  )
+  assert.equal(appVersion({ ...MACRO_DASH, release: 'v2.0.0' }), '2.0.0')
+})
+
+test('an unreadable latest falls back to the last known tag, and says so', async () => {
+  const warnings = []
+  const { warn } = console
+  console.warn = (message) => warnings.push(message)
+
+  try {
+    const onApiError = await resolveRelease(MINIMAL_SEED_APP, async () => {
+      throw new Error('403 rate limit exceeded')
+    })
+    const onNoTag = await resolveRelease(MINIMAL_SEED_APP, async () => ({}))
+
+    assert.equal(onApiError.release, MINIMAL_SEED_APP.fallback)
+    assert.equal(onNoTag.release, MINIMAL_SEED_APP.fallback)
+    // `resolved: false` is what makes the build say it fell back rather than
+    // publish an old release as if it were the newest
+    assert.equal(onApiError.resolved, false)
+    assert.equal(warnings.length, 2)
+    assert.match(warnings[0], /building minimal-seed-app from v1\.6\.1 instead/)
+  } finally {
+    console.warn = warn
+  }
+
+  // a descriptor with no fallback and no readable release fails by name
+  await assert.rejects(
+    () => resolveRelease({ ...MINIMAL_SEED_APP, fallback: undefined }, async () => ({})),
+    /Could not read the newest release of sasjs\/minimal-seed-app/
   )
 })
 
@@ -420,7 +575,8 @@ test('every app is published into one index, and each keeps its own files', () =
     { format: 1, files: {} },
     [
       { app: MACRO_DASH, pack },
-      { app: MINIMAL_SEED_APP, pack: seedPack }
+      { app: MINIMAL_SEED_APP, pack: seedPack },
+      { app: REACT_SEED_APP, pack: reactPack }
     ],
     '2026-11-11T00:00:00.000Z'
   )
@@ -431,11 +587,12 @@ test('every app is published into one index, and each keeps its own files', () =
     index.map((entry) => [entry.name, entry.appLoc]),
     [
       ['macro-dash', '/Public/app/macrodash'],
-      ['minimal-seed-app', '/Public/app/minimal-seed-app']
+      ['minimal-seed-app', '/Public/app/minimal-seed-app'],
+      ['react-seed-app', '/Public/app/react-seed-app']
     ]
   )
 
-  // both apps' files are on the drive, and neither overwrote the other
+  // each app's files are on the drive, and none overwrote another
   assert.equal(
     published.files['/sasjs/drive/files/Public/app/macrodash/services/web/index.html'],
     '<!doctype html><title>Macro Dash</title>'
@@ -443,5 +600,9 @@ test('every app is published into one index, and each keeps its own files', () =
   assert.equal(
     published.files['/sasjs/drive/files/Public/app/minimal-seed-app/services/common/springs.json'],
     '[{"AREA":"x"}]'
+  )
+  assert.equal(
+    published.files['/sasjs/drive/files/Public/app/react-seed-app/services/web/index.bundle.js'],
+    'console.log("bundle")'
   )
 })
