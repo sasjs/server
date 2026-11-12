@@ -9,7 +9,13 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
+  Fab,
   Grid,
   List,
   ListItemButton,
@@ -17,6 +23,7 @@ import {
   ListItemText,
   Paper,
   Stack,
+  Tooltip,
   Typography
 } from '@mui/material'
 import {
@@ -24,6 +31,7 @@ import {
   Apps as AppsIcon,
   ArrowForward,
   Code as CodeIcon,
+  DeleteForever,
   DeleteSweep,
   InfoOutlined,
   InsertDriveFileOutlined,
@@ -35,6 +43,7 @@ import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
 import { brand } from '../../theme/palette'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
+import { browserSite, clearSite } from '../../utils/cachedSite'
 import { ApiHost, apiHost } from '../../utils/host'
 import {
   RecentApp,
@@ -424,9 +433,24 @@ const Home = () => {
     }
   }, [username])
 
+  /* The wipe asks first: it is the one control here that throws state away. */
+  const [confirmingWipe, setConfirmingWipe] = useState(false)
+
   const clearHistory = () => {
     clearDashboardHistory(username)
     setHistoryVersion((version) => version + 1)
+  }
+
+  /**
+   * Takes this browser's copy of the site off it - worker, caches, IndexedDB and
+   * the two storage stores - then leaves for a fresh page.
+   *
+   * Only the demonstration site keeps its answers in the browser, so only there is
+   * there anything to wipe; on a server every response comes from the process and
+   * the button is not drawn.
+   */
+  const wipeCachedSite = () => {
+    void clearSite(browserSite())
   }
 
   const runTimes = appContext.runTimes.length
@@ -903,11 +927,64 @@ const Home = () => {
             size="small"
             startIcon={<DeleteSweep />}
             onClick={clearHistory}
-            aria-label="Clear this browser's dashboard history"
           >
             Clear this browser's history
           </Button>
         </Box>
+      )}
+
+      {/*
+        Pinned to the corner rather than sitting at the end of the page: the
+        reader who needs it is looking at a build that is wrong, and a control
+        below two cards is below the fold on the screen they land on.
+
+        It asks before it acts because it throws the site's local state away, and
+        a corner button is the kind that gets clicked by accident.
+      */}
+      {host === 'browser' && (
+        <>
+          <Tooltip title="Wipe this browser's copy of the site">
+            <Fab
+              size="small"
+              aria-label="Wipe this browser's copy of the site"
+              onClick={() => setConfirmingWipe(true)}
+              data-testid="wipe-site"
+              sx={{
+                position: 'fixed',
+                right: 24,
+                bottom: 24,
+                zIndex: (theme) => theme.zIndex.snackbar
+              }}
+            >
+              <DeleteForever />
+            </Fab>
+          </Tooltip>
+
+          <Dialog
+            open={confirmingWipe}
+            onClose={() => setConfirmingWipe(false)}
+            aria-labelledby="wipe-site-title"
+          >
+            <DialogTitle id="wipe-site-title">
+              Wipe this browser's copy of the site?
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                The service worker, the cached responses, the IndexedDB
+                databases and this site's local and session storage will be
+                deleted, and the page will reload. Anything you have set in this
+                browser for this site - including the dashboard's recent files -
+                goes with it.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmingWipe(false)}>Cancel</Button>
+              <Button color="error" onClick={wipeCachedSite}>
+                Wipe and reload
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
       )}
     </Box>
   )

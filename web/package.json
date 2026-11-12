@@ -14,6 +14,7 @@
     "test:language-server": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-language-server.mjs",
     "test:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-studio-settings.mjs",
     "test:prettyjson": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-pretty-json.mjs",
+    "test:cachedsite": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-cached-site.mjs",
     "test:displaymodes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-display-modes.mjs",
     "test:mousepaste": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-mouse-paste-guard.mjs",
     "test:drivetree": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-drive-tree.mjs",
