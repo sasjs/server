@@ -16,7 +16,7 @@ import {
   Request,
   SuccessResponse
 } from 'tsoa'
-import { desktopUser } from '../middlewares'
+import { desktopCaller } from '../utils/desktopIdentity'
 
 import User, { UserPayload } from '../model/User'
 import { sanitiseDisplayName } from '../utils/programVariables'
@@ -196,8 +196,7 @@ export class UserController {
   ): Promise<UserDetailsResponse> {
     const { MODE } = process.env
 
-    if (MODE === ModeType.Desktop)
-      return updateDesktopAutoExec(body.autoExec ?? '')
+    if (MODE === ModeType.Desktop) return updateDesktopAutoExec(body)
 
     return updateUser({ username }, body)
   }
@@ -236,8 +235,7 @@ export class UserController {
   ): Promise<UserDetailsResponse> {
     const { MODE } = process.env
 
-    if (MODE === ModeType.Desktop)
-      return updateDesktopAutoExec(body.autoExec ?? '')
+    if (MODE === ModeType.Desktop) return updateDesktopAutoExec(body)
 
     return updateUser({ _id: uid }, body)
   }
@@ -392,10 +390,20 @@ const getUser = async (
   }
 }
 
+/**
+ * The desktop caller's own record.
+ *
+ * Resolved through the identity store, not read off the module-load snapshot: the store is
+ * what both middlewares authenticate against, so the account these routes describe is the one
+ * that authenticated. The auto-exec code itself still lives in its file - it is data, not
+ * identity - so it is added here rather than held in the store.
+ */
 const getDesktopAutoExec = async () => {
+  const caller = await desktopCaller()
+
   return {
-    ...desktopUser,
-    uid: desktopUser.userId,
+    ...caller,
+    uid: caller.userId,
     autoExec: await getUserAutoExec()
   }
 }
@@ -480,12 +488,66 @@ const updateUser = async (
   }
 }
 
-const updateDesktopAutoExec = async (autoExec: string) => {
-  await updateUserAutoExec(autoExec)
+/**
+ * Desktop mode's PATCH.
+ *
+ * The account is the operating system's: its name, admin flag and password are not this
+ * server's to change. A request that asks to change one is refused, because a `200` that
+ * silently ignores a field leaves the caller unable to tell an ignored field from an applied
+ * one.
+ *
+ * What it must NOT refuse is a field sent back unchanged. The Settings screen posts the
+ * profile it just read - `{ username, displayName, autoExec }` - on every save, in every mode,
+ * so treating an echoed value as an attempt to change it would refuse the one thing this route
+ * exists for in desktop mode: saving the auto-exec. An echoed value is compared with the
+ * account and left alone.
+ *
+ * An absent `autoExec` means "leave it as it is" too. Treating it as `''` erased the caller's
+ * code on any request that did not carry the field.
+ */
+const updateDesktopAutoExec = async (body: UserPayload | undefined) => {
+  const change: Partial<UserPayload> = body ?? {}
+  const caller = await desktopCaller()
+
+  /** Whether a field the caller sent carries the value the account already has. */
+  const echoesAccount = (field: string): boolean => {
+    switch (field) {
+      case 'username':
+        return change.username === caller.username
+      case 'displayName':
+        return change.displayName === caller.displayName
+      case 'isAdmin':
+        return change.isAdmin === caller.isAdmin
+      case 'isActive':
+        return change.isActive === caller.isActive
+      // a password, or a field this mode has no notion of: an attempt to change something
+      // the operating system owns
+      default:
+        return false
+    }
+  }
+
+  const sent = Object.keys(change).filter(
+    (field) => change[field as keyof UserPayload] !== undefined
+  )
+  const changed = sent.filter(
+    (field) => field !== 'autoExec' && !echoesAccount(field)
+  )
+
+  if (changed.length)
+    throw {
+      code: 400,
+      message: `Desktop mode can only change autoExec: this request also sent ${changed.join(
+        ', '
+      )}.`
+    }
+
+  if (change.autoExec !== undefined) await updateUserAutoExec(change.autoExec)
+
   return {
-    ...desktopUser,
-    uid: desktopUser.userId,
-    autoExec
+    ...caller,
+    uid: caller.userId,
+    autoExec: change.autoExec ?? (await getUserAutoExec())
   }
 }
 

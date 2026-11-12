@@ -1,24 +1,32 @@
 import { RequestHandler, Request } from 'express'
-import { userInfo } from 'os'
-import { RequestUser } from '../types'
 import { ModeType } from '../utils'
+import { DESKTOP_USER_ID } from '../utils/desktopIdentity'
 
-// In desktop mode the user identifier is the fixed '12345' sentinel set on
-// desktopUser below - never a Mongo ObjectId - so a numeric segment is correct.
-const regexUser = /^\/SASjsApi\/user\/[0-9]*$/ // /SASjsApi/user/12345
+// The desktop account's id is the operating system's for the user running the server:
+// numeric on Linux and macOS; on Windows Node answers -1 and does not expose the SID, so
+// the account name is used, and a directory account can answer `DOMAIN\name`. The guard
+// never assumed otherwise in spirit - the point is "your own profile only" - but it was
+// written as `[0-9]*` against the old '12345' sentinel, which would have refused a Windows
+// desktop outright, its id being a name there rather than a number.
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const regexUser = new RegExp(
+  `^/SASjsApi/user/${escapeRegExp(DESKTOP_USER_ID)}/?$`
+)
 
-// Desktop mode has no login/logout (see authenticateAccessToken's desktop
-// bypass) and every request runs as the single fixed desktopUser, but the
-// desktop UI still needs to read/update that user's own profile (e.g.
-// autoExec) - so these two routes stay reachable while every other
-// /SASLogon/* and user-management route is blocked below.
+// Desktop mode has no login/logout - every request resolves through `desktopCaller()`
+// against the identity store, which is one account and no credentials - but the desktop UI
+// still needs to read/update that account's own profile (e.g. autoExec), so these two routes
+// stay reachable while every other /SASLogon/* and user-management route is blocked below.
 const allowedInDesktopMode: { [key: string]: RegExp[] } = {
   GET: [regexUser],
   PATCH: [regexUser]
 }
 
 const reqAllowedInDesktopMode = (request: Request): boolean => {
-  const { method, originalUrl: url } = request
+  const { method, originalUrl } = request
+  // the query is not part of the route, and a profile read may carry one
+  const url = originalUrl.split('?')[0]
 
   return !!allowedInDesktopMode[method]?.find((urlRegex) => urlRegex.test(url))
 }
@@ -34,12 +42,6 @@ export const desktopRestrict: RequestHandler = (req, res, next) => {
   next()
 }
 
-export const desktopUser: RequestUser = {
-  userId: '12345',
-  clientId: 'desktop_app',
-  username: userInfo().username,
-  displayName: userInfo().username,
-  isAdmin: true,
-  isActive: true,
-  needsToUpdatePassword: false
-}
+// The account itself is declared once, in utils/desktopIdentity, and every consumer reads it
+// through `desktopCaller()` - the middlewares, the profile routes and the session directory.
+// There is deliberately no summary exported from here to drift from it.

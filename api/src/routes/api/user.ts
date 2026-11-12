@@ -7,7 +7,9 @@ import {
 } from '../../middlewares'
 import {
   deleteUserValidation,
+  desktopProfileValidation,
   getUserValidation,
+  ModeType,
   registerUserValidation,
   uidValidation,
   updateUserValidation
@@ -87,7 +89,12 @@ userRouter.patch(
     const { username } = params
 
     // only an admin can update `isActive` and `isAdmin` fields
-    const { error, value: body } = updateUserValidation(req.body, user!.isAdmin)
+    // Desktop mode validates only what it lets the caller change: the account's name is the
+    // operating system's and the Settings screen echoes it back on every save.
+    const { error, value: body } =
+      process.env.MODE === ModeType.Desktop
+        ? desktopProfileValidation(req.body)
+        : updateUserValidation(req.body, user!.isAdmin)
     if (error) return res.status(400).send(error.details[0].message)
 
     const controller = new UserController()
@@ -113,7 +120,12 @@ userRouter.patch(
     const { uid } = params
 
     // only an admin can update `isActive` and `isAdmin` fields
-    const { error, value: body } = updateUserValidation(req.body, user!.isAdmin)
+    // Desktop mode validates only what it lets the caller change: the account's name is the
+    // operating system's and the Settings screen echoes it back on every save.
+    const { error, value: body } =
+      process.env.MODE === ModeType.Desktop
+        ? desktopProfileValidation(req.body)
+        : updateUserValidation(req.body, user!.isAdmin)
     if (error) return res.status(400).send(error.details[0].message)
 
     const controller = new UserController()

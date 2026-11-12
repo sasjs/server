@@ -107,7 +107,7 @@ credential checks:
    the `SESSION_SECRET`, and expires after 24 hours regardless of activity.
 2. **The bearer JWT** (`accessToken`/`refreshToken`) - proves "this caller
    was issued a token by exchanging a valid auth code". Used for every
-   `SASjsApi` route. Despite being a self-verifying JWT, it is *also*
+   `SASjsApi` route. Despite being a self-verifying JWT, it is _also_
    cross-checked against a copy stored on the `User` document
    (`utils/verifyTokenInDB.ts:23-49`) - this is what makes server-side
    revocation possible (logout, or issuing a new token pair via refresh,
@@ -187,13 +187,15 @@ receiving a 200 - a cross-origin redirect would be followed as an XHR and fail.
 
 ## Branches and edge cases
 
-- **Desktop mode** (`MODE=desktop`): `authenticateAccessToken` short-circuits
-  to a fixed, always-admin `desktopUser` before any session/token logic runs
-  (`authenticateToken.ts:20-24`, `middlewares/desktop.ts:30-38`) - no
-  password, session, or CSRF check ever happens. `desktopRestrict`
-  additionally blocks all three `/SASLogon/*` routes outright in this mode
-  (`middlewares/desktop.ts:19-28`), since there is no concept of logging in
-  or out of a single-user desktop install.
+- **Desktop mode** (`MODE=desktop`): `authenticateAccessToken` resolves the single
+  desktop account through `desktopCaller()` - `@sasjs/api`'s identity store, seeded with
+  that one account - before any session/token logic runs
+  (`authenticateToken.ts:23-32`, `middlewares/desktop.ts:11-22`) - no password, session,
+  or CSRF check ever happens. A store that refuses the account is answered as a 401, and a
+  store that cannot answer at all as a 500, rather than the caller being assumed.
+  `desktopRestrict` additionally blocks all three `/SASLogon/*` routes outright in this
+  mode (`middlewares/desktop.ts:34-43`), since there is no concept of logging in or out of
+  a single-user desktop install.
 - **Public routes**: if token/session auth fails outright, the request is
   not necessarily rejected - `isPublicRoute()` checks whether an admin has
   granted the built-in Public group access to that specific path
