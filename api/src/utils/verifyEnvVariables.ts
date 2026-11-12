@@ -1,6 +1,7 @@
 import os from 'os'
 
 import { resolveListeners } from './resolveListeners'
+import { parseCorsWhiteList } from './parseCorsWhiteList'
 
 export enum MOCK_SERVERTYPEType {
   SAS9 = 'sas9',
@@ -265,19 +266,16 @@ const verifyCORS = (): string[] => {
     if (CORS === CorsType.ENABLED) {
       const { WHITELIST } = process.env
 
-      const urls = WHITELIST?.trim()
-        .split(' ')
-        .filter((url) => !!url)
-      if (urls?.length) {
-        urls.forEach((url) => {
-          if (!url.startsWith('http://') && !url.startsWith('https://'))
-            errors.push(
-              `- CORS '${CORS}'\n - provided WHITELIST ${url} is not valid`
-            )
-        })
-      } else {
+      const { origins, invalid } = parseCorsWhiteList(WHITELIST)
+
+      invalid.forEach((url) =>
+        errors.push(
+          `- CORS '${CORS}'\n - provided WHITELIST ${url} is not valid\n - use an http(s) origin, such as http://localhost:3000`
+        )
+      )
+
+      if (!origins.length && !invalid.length)
         errors.push(`- CORS '${CORS}'\n - provide at least one WHITELIST URL`)
-      }
     }
   } else {
     const { MODE } = process.env

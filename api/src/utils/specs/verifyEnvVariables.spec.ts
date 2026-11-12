@@ -6,7 +6,8 @@ import {
   isAuthProviderEnabled,
   isLocalLoginEnabled,
   AuthProviderType,
-  ModeType
+  ModeType,
+  CorsType
 } from '../verifyEnvVariables'
 import { userInfo } from 'os'
 
@@ -14,6 +15,8 @@ import { userInfo } from 'os'
 // that exercise it temporarily switch NODE_ENV and restore it afterwards.
 const managedEnvVars = [
   'MODE',
+  'CORS',
+  'WHITELIST',
   'NODE_ENV',
   'DB_CONNECT',
   'ADMIN_USERNAME',
@@ -368,6 +371,62 @@ describe('verifyEnvVariables', () => {
       delete process.env.OIDC_CLIENT_ID
 
       expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+  })
+
+  describe('CORS', () => {
+    /**
+     * A CORS allow-list entry is compared against the `Origin` header, which a
+     * browser sends as a bare origin. An entry carrying a path, a query or no
+     * scheme can therefore never match, and the server would start up answering
+     * no cross-origin request at all - so those are refused here.
+     */
+    it('accepts a space separated WHITELIST', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com http://two.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+
+    it('accepts a comma separated WHITELIST', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com,http://two.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+
+    it('rejects an entry that carries a path', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com/app'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('rejects an entry with no scheme', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'one.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('names the offending entry and what a valid one looks like', () => {
+      const error = jest.fn()
+      process.logger = { error, info: jest.fn() } as any
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com/app'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+
+      const message = String(error.mock.calls[0]?.[0])
+      expect(message).toContain('http://one.example.com/app')
+      expect(message).toContain('http://localhost:3000')
+    })
+
+    it('still requires at least one URL when CORS is enabled', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = ' '
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
     })
   })
 })
