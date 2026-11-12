@@ -374,9 +374,12 @@ const folderNamed = (node, name) =>
  *     streamed web folder", not "every `.js` file" - the set of files a program
  *     needs is the app's to state, not this build's to guess.
  *
- * The `.sas` services in the same pack stay out of the drive: they are `service`
- * members rather than files, this host has no SAS to run them, and they travel with
- * a real deployment instead.
+ * The `.sas` services are `service` members rather than files, and they ARE put on
+ * the drive, as `<name>.sas` beside the JavaScript twin of the same name. This host
+ * has no SAS to run them - the browser host answers from the `.js` - but a visitor
+ * browsing the demo in Studio is looking at a SASjs deployment, and the SAS is the
+ * half of it worth reading. A service's `code` is the compiled program as text (the
+ * file members are base64; these are not), so it goes on the drive as it is.
  */
 export const packFiles = (pack, app) => {
   const services = folderNamed(pack.fileTree, 'services') ?? pack.fileTree
@@ -434,6 +437,17 @@ export const packFiles = (pack, app) => {
       if (member.type === 'folder') {
         if (name === `/${pack.streamWebFolder}`) continue
         walkServices(member, name)
+        continue
+      }
+
+      if (member.type === 'service') {
+        /* The compiled SAS the service runs, as text. Named `.sas` so that it sits
+           beside the `.js` of the same name rather than replacing it. */
+        files.push({
+          path: `${appLoc}/services${name}.sas`,
+          ...entryFor(Buffer.from(member.code ?? '', 'utf8'))
+        })
+
         continue
       }
 

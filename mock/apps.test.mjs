@@ -47,7 +47,9 @@ const zipWith = (name, contents, method = 8) => {
   const data = method === 8 ? deflateRawSync(contents) : contents
   const nameBytes = Buffer.from(name)
 
-  const localExtra = Buffer.from([0x55, 0x54, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04])
+  const localExtra = Buffer.from([
+    0x55, 0x54, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04
+  ])
   const centralExtra = Buffer.from([])
 
   const local = Buffer.alloc(30)
@@ -103,7 +105,11 @@ const pack = {
             members: [
               // a service is SAS by type; the JS one beside it is a file, which
               // is what a browser host can run
-              { name: 'configure', type: 'service', code: '%macro configure;%mend;' },
+              {
+                name: 'configure',
+                type: 'service',
+                code: '%macro configure;%mend;'
+              },
               {
                 name: 'configure.js',
                 type: 'file',
@@ -127,7 +133,11 @@ const pack = {
                 name: 'js',
                 type: 'folder',
                 members: [
-                  { name: 'game.js', type: 'file', code: code('console.log(1)') }
+                  {
+                    name: 'game.js',
+                    type: 'file',
+                    code: code('console.log(1)')
+                  }
                 ]
               }
             ]
@@ -143,7 +153,11 @@ test('reads the archive member, whichever way it was compressed', () => {
 
   for (const method of [0, 8]) {
     const read = unzipEntry(zipWith('server.json', body, method), 'server.json')
-    assert.equal(read.toString('utf8'), body.toString('utf8'), `method ${method}`)
+    assert.equal(
+      read.toString('utf8'),
+      body.toString('utf8'),
+      `method ${method}`
+    )
   }
 })
 
@@ -152,21 +166,35 @@ test('refuses an archive with no such member, and one that is not a zip', () => 
     () => unzipEntry(zipWith('other.json', Buffer.from('{}')), 'server.json'),
     /holds no server\.json/
   )
-  assert.throws(() => unzipEntry(Buffer.from('not a zip at all'), 'server.json'), /not a zip/)
+  assert.throws(
+    () => unzipEntry(Buffer.from('not a zip at all'), 'server.json'),
+    /not a zip/
+  )
 })
 
 test('decodes the file tree, and writes the app under its appLoc', () => {
   const files = packFiles(pack, MACRO_DASH)
-  const byPath = Object.fromEntries(files.map((file) => [file.path, file.contents]))
+  const byPath = Object.fromEntries(
+    files.map((file) => [file.path, file.contents])
+  )
 
-  // the app's assets, plus the JS program beside them that the host runs: the
-  // SAS service is neither served nor runnable here, so it stays out
+  // the app's assets, the JS program beside them that the host runs, and the SAS
+  // the same service is deployed as - the half of a SASjs app a reader browsing the
+  // demo came for
   assert.deepEqual(Object.keys(byPath).sort(), [
     '/Public/app/macrodash/services/common/configure.js',
+    '/Public/app/macrodash/services/common/configure.sas',
     '/Public/app/macrodash/services/web/index.html',
     '/Public/app/macrodash/services/web/js/game.js',
     '/Public/app/macrodash/services/web/macrodash.png'
   ])
+
+  // a service member's code is the compiled SAS as TEXT, not base64: it goes on
+  // the drive as it stands, or the file a visitor opens is gibberish
+  assert.equal(
+    byPath['/Public/app/macrodash/services/common/configure.sas'],
+    '%macro configure;%mend;'
+  )
 
   assert.equal(
     byPath['/Public/app/macrodash/services/common/configure.js'],
@@ -178,7 +206,10 @@ test('decodes the file tree, and writes the app under its appLoc', () => {
     byPath['/Public/app/macrodash/services/web/index.html'],
     '<!doctype html><title>Macro Dash</title>'
   )
-  assert.equal(byPath['/Public/app/macrodash/services/web/js/game.js'], 'console.log(1)')
+  assert.equal(
+    byPath['/Public/app/macrodash/services/web/js/game.js'],
+    'console.log(1)'
+  )
 
   // and the PNG is a byte entry, marked the way the runtime reads
   assert.equal(
@@ -195,7 +226,9 @@ test('a text file that begins with the marker is escaped, not misread as bytes',
         {
           name: 'web',
           type: 'folder',
-          members: [{ name: 'index.html', type: 'file', code: code('\u0000text:hello') }]
+          members: [
+            { name: 'index.html', type: 'file', code: code('\u0000text:hello') }
+          ]
         }
       ]
     }
@@ -214,7 +247,11 @@ test('the version placeholder the release ships is filled in', () => {
           name: 'web',
           type: 'folder',
           members: [
-            { name: 'index.html', type: 'file', code: code('<p>v{{VERSION}}</p>') }
+            {
+              name: 'index.html',
+              type: 'file',
+              code: code('<p>v{{VERSION}}</p>')
+            }
           ]
         }
       ]
@@ -248,14 +285,21 @@ test('a file member that is not base64 is refused by name, not published as moji
             // a build that shipped the page's characters rather than their
             // encoding: `Buffer.from(..., 'base64')` would decode this to
             // rubbish and the entry would ship as bytes
-            { name: 'index.html', type: 'file', code: '<!doctype html><title>x</title>' }
+            {
+              name: 'index.html',
+              type: 'file',
+              code: '<!doctype html><title>x</title>'
+            }
           ]
         }
       ]
     }
   }
 
-  assert.throws(() => packFiles(raw, MACRO_DASH), /index\.html does not carry base64/)
+  assert.throws(
+    () => packFiles(raw, MACRO_DASH),
+    /index\.html does not carry base64/
+  )
 })
 
 test('a file member with no code is refused, while an empty one is a blank file', () => {
@@ -272,7 +316,10 @@ test('a file member with no code is refused, while an empty one is a blank file'
   )
 
   // what base64 calls an empty file is legitimate, and is an empty text entry
-  const [file] = packFiles(tree({ name: 'empty.js', type: 'file', code: '' }), MACRO_DASH)
+  const [file] = packFiles(
+    tree({ name: 'empty.js', type: 'file', code: '' }),
+    MACRO_DASH
+  )
   assert.equal(file.contents, '')
 })
 
@@ -292,11 +339,21 @@ test('the index carries the registration a deploy would have written', () => {
 test('the snapshot keeps the files the site already shipped, and gains the app', () => {
   const snapshot = {
     format: 1,
-    files: { '/sasjs/drive/files/Public/demo/orders.csv': 'order_id,customer\n1,Alice\n' }
+    files: {
+      '/sasjs/drive/files/Public/demo/orders.csv':
+        'order_id,customer\n1,Alice\n'
+    }
   }
 
-  const published = withPublishedApp(snapshot, pack, MACRO_DASH, '2026-11-11T00:00:00.000Z')
-  const index = JSON.parse(published.files['/sasjs/drive/files/.sasjs/apps.json'])
+  const published = withPublishedApp(
+    snapshot,
+    pack,
+    MACRO_DASH,
+    '2026-11-11T00:00:00.000Z'
+  )
+  const index = JSON.parse(
+    published.files['/sasjs/drive/files/.sasjs/apps.json']
+  )
 
   assert.equal(published.format, 1)
   assert.equal(
@@ -304,7 +361,9 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
     snapshot.files['/sasjs/drive/files/Public/demo/orders.csv']
   )
   assert.equal(
-    published.files['/sasjs/drive/files/Public/app/macrodash/services/web/index.html'],
+    published.files[
+      '/sasjs/drive/files/Public/app/macrodash/services/web/index.html'
+    ],
     '<!doctype html><title>Macro Dash</title>'
   )
   assert.equal(index.length, 1)
@@ -312,14 +371,26 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
 
   // the input is not mutated: the build writes one snapshot from one read
   assert.equal(
-    snapshot.files['/sasjs/drive/files/Public/app/macrodash/services/web/index.html'],
+    snapshot.files[
+      '/sasjs/drive/files/Public/app/macrodash/services/web/index.html'
+    ],
     undefined
   )
 })
 
 test('publishing twice replaces the entry rather than listing the app twice', () => {
-  const first = withPublishedApp({ format: 1, files: {} }, pack, MACRO_DASH, '2026-11-11T00:00:00.000Z')
-  const second = withPublishedApp(first, pack, MACRO_DASH, '2026-11-12T00:00:00.000Z')
+  const first = withPublishedApp(
+    { format: 1, files: {} },
+    pack,
+    MACRO_DASH,
+    '2026-11-11T00:00:00.000Z'
+  )
+  const second = withPublishedApp(
+    first,
+    pack,
+    MACRO_DASH,
+    '2026-11-12T00:00:00.000Z'
+  )
   const index = JSON.parse(second.files['/sasjs/drive/files/.sasjs/apps.json'])
 
   assert.equal(index.length, 1)
@@ -337,7 +408,9 @@ test('an unreadable index is replaced, not carried forward', () => {
     '2026-11-11T00:00:00.000Z'
   )
 
-  const index = JSON.parse(published.files['/sasjs/drive/files/.sasjs/apps.json'])
+  const index = JSON.parse(
+    published.files['/sasjs/drive/files/.sasjs/apps.json']
+  )
   assert.equal(index.length, 1)
 })
 
@@ -366,10 +439,22 @@ const seedPack = {
             type: 'folder',
             members: [
               // the SAS service, which this host has no engine for
-              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
-              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
+              {
+                name: 'getdata',
+                type: 'service',
+                code: '%macro getdata;%mend;'
+              },
+              {
+                name: 'getdata.js',
+                type: 'file',
+                code: code('webout("OPEN")')
+              },
               // and the dataset the JS program reads by path
-              { name: 'springs.json', type: 'file', code: code('[{"AREA":"x"}]') }
+              {
+                name: 'springs.json',
+                type: 'file',
+                code: code('[{"AREA":"x"}]')
+              }
             ]
           },
           {
@@ -391,13 +476,16 @@ const seedPack = {
 
 test('a data file beside a program travels with it, so the program can read it', () => {
   const byPath = Object.fromEntries(
-    packFiles(seedPack, MINIMAL_SEED_APP).map((file) => [file.path, file.contents])
+    packFiles(seedPack, MINIMAL_SEED_APP).map((file) => [
+      file.path,
+      file.contents
+    ])
   )
 
-  // the program, the data it reads, and nothing else: the SAS service is a
-  // `service` member, which this host cannot run
+  // the program, the data it reads, and the SAS the same service deploys as
   assert.deepEqual(Object.keys(byPath).sort(), [
     '/Public/app/minimal-seed-app/services/common/getdata.js',
+    '/Public/app/minimal-seed-app/services/common/getdata.sas',
     '/Public/app/minimal-seed-app/services/common/springs.json',
     '/Public/app/minimal-seed-app/services/web/index.html'
   ])
@@ -433,11 +521,31 @@ const reactPack = {
             name: 'common',
             type: 'folder',
             members: [
-              { name: 'appinit', type: 'service', code: '%macro appinit;%mend;' },
-              { name: 'appinit.js', type: 'file', code: code('webout("OPEN")') },
-              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
-              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
-              { name: 'springs.json', type: 'file', code: code('[{"AREA":"Adak"}]') }
+              {
+                name: 'appinit',
+                type: 'service',
+                code: '%macro appinit;%mend;'
+              },
+              {
+                name: 'appinit.js',
+                type: 'file',
+                code: code('webout("OPEN")')
+              },
+              {
+                name: 'getdata',
+                type: 'service',
+                code: '%macro getdata;%mend;'
+              },
+              {
+                name: 'getdata.js',
+                type: 'file',
+                code: code('webout("OPEN")')
+              },
+              {
+                name: 'springs.json',
+                type: 'file',
+                code: code('[{"AREA":"Adak"}]')
+              }
             ]
           },
           {
@@ -474,14 +582,23 @@ const reactPack = {
 
 test('the React seed app publishes its JS services, dataset and bundle', () => {
   const byPath = Object.fromEntries(
-    packFiles(reactPack, REACT_SEED_APP).map((file) => [file.path, file.contents])
+    packFiles(reactPack, REACT_SEED_APP).map((file) => [
+      file.path,
+      file.contents
+    ])
   )
 
+  // every service twice: the `.js` twin the browser host runs, and the `.sas` the
+  // service is deployed as - one under `services/files`, so the walk is checked at
+  // two levels for both kinds
   assert.deepEqual(Object.keys(byPath).sort(), [
     '/Public/app/react-seed-app/services/common/appinit.js',
+    '/Public/app/react-seed-app/services/common/appinit.sas',
     '/Public/app/react-seed-app/services/common/getdata.js',
+    '/Public/app/react-seed-app/services/common/getdata.sas',
     '/Public/app/react-seed-app/services/common/springs.json',
     '/Public/app/react-seed-app/services/files/upload.js',
+    '/Public/app/react-seed-app/services/files/upload.sas',
     '/Public/app/react-seed-app/services/web/index.bundle.js',
     '/Public/app/react-seed-app/services/web/index.html'
   ])
@@ -516,11 +633,31 @@ const angularPack = {
             name: 'common',
             type: 'folder',
             members: [
-              { name: 'appinit', type: 'service', code: '%macro appinit;%mend;' },
-              { name: 'appinit.js', type: 'file', code: code('webout("OPEN")') },
-              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
-              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
-              { name: 'springs.json', type: 'file', code: code('[{"AREA":"Adak"}]') }
+              {
+                name: 'appinit',
+                type: 'service',
+                code: '%macro appinit;%mend;'
+              },
+              {
+                name: 'appinit.js',
+                type: 'file',
+                code: code('webout("OPEN")')
+              },
+              {
+                name: 'getdata',
+                type: 'service',
+                code: '%macro getdata;%mend;'
+              },
+              {
+                name: 'getdata.js',
+                type: 'file',
+                code: code('webout("OPEN")')
+              },
+              {
+                name: 'springs.json',
+                type: 'file',
+                code: code('[{"AREA":"Adak"}]')
+              }
             ]
           },
           {
@@ -563,9 +700,12 @@ test('the Angular seed app publishes its JS services and bundle', () => {
 
   assert.deepEqual(Object.keys(byPath).sort(), [
     '/Public/app/angular-seed-app/services/common/appinit.js',
+    '/Public/app/angular-seed-app/services/common/appinit.sas',
     '/Public/app/angular-seed-app/services/common/getdata.js',
+    '/Public/app/angular-seed-app/services/common/getdata.sas',
     '/Public/app/angular-seed-app/services/common/springs.json',
     '/Public/app/angular-seed-app/services/files/upload.js',
+    '/Public/app/angular-seed-app/services/files/upload.sas',
     '/Public/app/angular-seed-app/services/web/index.html',
     '/Public/app/angular-seed-app/services/web/main-K4JT6XUZ.js'
   ])
@@ -576,7 +716,7 @@ test('the Angular seed app publishes its JS services and bundle', () => {
   )
 })
 
-test('every app follows its repository\'s newest release, unless it pins one', async () => {
+test("every app follows its repository's newest release, unless it pins one", async () => {
   const asked = []
   const getJson = async (url) => {
     asked.push(url)
@@ -651,7 +791,11 @@ test('an unreadable latest falls back to the last known tag, and says so', async
 
   // a descriptor with no fallback and no readable release fails by name
   await assert.rejects(
-    () => resolveRelease({ ...MINIMAL_SEED_APP, fallback: undefined }, async () => ({})),
+    () =>
+      resolveRelease(
+        { ...MINIMAL_SEED_APP, fallback: undefined },
+        async () => ({})
+      ),
     /Could not read the newest release of sasjs\/minimal-seed-app/
   )
 })
@@ -668,7 +812,9 @@ test('every app is published into one index, and each keeps its own files', () =
     '2026-11-11T00:00:00.000Z'
   )
 
-  const index = JSON.parse(published.files['/sasjs/drive/files/.sasjs/apps.json'])
+  const index = JSON.parse(
+    published.files['/sasjs/drive/files/.sasjs/apps.json']
+  )
 
   assert.deepEqual(
     index.map((entry) => [entry.name, entry.appLoc]),
@@ -682,15 +828,21 @@ test('every app is published into one index, and each keeps its own files', () =
 
   // each app's files are on the drive, and none overwrote another
   assert.equal(
-    published.files['/sasjs/drive/files/Public/app/macrodash/services/web/index.html'],
+    published.files[
+      '/sasjs/drive/files/Public/app/macrodash/services/web/index.html'
+    ],
     '<!doctype html><title>Macro Dash</title>'
   )
   assert.equal(
-    published.files['/sasjs/drive/files/Public/app/minimal-seed-app/services/common/springs.json'],
+    published.files[
+      '/sasjs/drive/files/Public/app/minimal-seed-app/services/common/springs.json'
+    ],
     '[{"AREA":"x"}]'
   )
   assert.equal(
-    published.files['/sasjs/drive/files/Public/app/react-seed-app/services/web/index.bundle.js'],
+    published.files[
+      '/sasjs/drive/files/Public/app/react-seed-app/services/web/index.bundle.js'
+    ],
     'console.log("bundle")'
   )
 })
