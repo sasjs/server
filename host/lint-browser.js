@@ -72,9 +72,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSsegc/path.js
+  // ../../../../../tmp/sasjs-lint-pENlXV/path.js
   var require_path = __commonJS({
-    "../../../../../tmp/sasjs-lint-BSsegc/path.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-pENlXV/path.js"(exports, module) {
       var SEP = String.fromCharCode(92);
       var clean = (value) => String(value).split(SEP).join("/").replace(/\/+/g, "/");
       var strip = (value) => clean(value).replace(/\/+$/, "");
@@ -112,9 +112,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSsegc/os.js
+  // ../../../../../tmp/sasjs-lint-pENlXV/os.js
   var require_os = __commonJS({
-    "../../../../../tmp/sasjs-lint-BSsegc/os.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-pENlXV/os.js"(exports, module) {
       module.exports = {
         homedir: () => "/",
         platform: () => "browser",
@@ -4188,9 +4188,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSsegc/utils-file.js
+  // ../../../../../tmp/sasjs-lint-pENlXV/utils-file.js
   var require_utils_file = __commonJS({
-    "../../../../../tmp/sasjs-lint-BSsegc/utils-file.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-pENlXV/utils-file.js"(exports, module) {
       var unavailable = (name) => async () => {
         throw new Error(name + " is not available in the browser host");
       };
@@ -6464,7 +6464,7 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSsegc/process.js
+  // ../../../../../tmp/sasjs-lint-pENlXV/process.js
   if (typeof globalThis.process === "undefined")
     globalThis.process = {
       env: {},
@@ -6518,6 +6518,6 @@
     };
   };
 
-  // ../../../../../tmp/sasjs-lint-BSsegc/entry.js
+  // ../../../../../tmp/sasjs-lint-pENlXV/entry.js
   globalThis.SASjsCode = { createCodeService };
 })();
