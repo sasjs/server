@@ -14,7 +14,8 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { cacheBust, clearSite } = await import('../src/utils/cachedSite.ts')
+const { browserSite, cacheBust, clearSite } =
+  await import('../src/utils/cachedSite.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -212,6 +213,53 @@ check(
   cacheBust('https://demo.example/home?sasjs-cache-bust=1', 2) ===
     'https://demo.example/home?sasjs-cache-bust=2'
 )
+
+// ---- the browser adapter ---------------------------------------------------
+
+// A browser that forbids storage throws on the property ACCESS. Read eagerly in
+// `browserSite()` that throw lands outside every guard in `clearSite`, so the click
+// would do nothing at all - the case the guard exists for.
+Object.defineProperty(globalThis, 'localStorage', {
+  configurable: true,
+  get() {
+    throw new Error('SecurityError')
+  }
+})
+Object.defineProperty(globalThis, 'sessionStorage', {
+  configurable: true,
+  get() {
+    throw new Error('SecurityError')
+  }
+})
+
+let refusedHost = null
+let refusedError = null
+
+try {
+  refusedHost = browserSite()
+} catch (error) {
+  refusedError = error
+}
+
+check(
+  'a browser that refuses storage still yields a host',
+  refusedHost !== null,
+  refusedError ? `threw: ${refusedError.message}` : ''
+)
+check(
+  'and the two stores are absent rather than throwing',
+  refusedHost && !refusedHost.localStorage && !refusedHost.sessionStorage
+)
+
+if (refusedHost) {
+  const wiped = await clearSite({
+    ...refusedHost,
+    href: 'https://demo.example/home',
+    navigate: () => void 0
+  })
+
+  check('and the sweep reports no store wiped', wiped.stores === 0)
+}
 
 if (failures.length) {
   console.error(`cached site: ${failures.length} check(s) failed`)

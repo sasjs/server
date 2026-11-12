@@ -164,6 +164,25 @@ export const clearSite = async (host: SiteHost): Promise<SiteWipe> => {
 }
 
 /**
+ * One of the two storage objects, or undefined where it is refused.
+ *
+ * The property ACCESS throws SecurityError in a browser that forbids storage -
+ * blocked cookies, some private modes - and it would throw here, in
+ * `browserSite()`, outside every guard `clearSite` has: the click handler would
+ * throw before the first step and nothing would be wiped. The read is guarded
+ * instead, the way `indexedDB` already is.
+ */
+const storage = (
+  name: 'localStorage' | 'sessionStorage'
+): { clear(): void } | undefined => {
+  try {
+    return globalThis[name]
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * The host, read from the browser the page is running in.
  *
  * Kept here rather than in the dashboard so that the awkward parts - the request
@@ -179,19 +198,26 @@ export const browserSite = (): SiteHost => ({
       : {
           list: async () =>
             (await globalThis.indexedDB.databases()).map((db) => db.name),
+          /*
+           * A refusal REJECTS rather than resolving: `settle` turns that into a
+           * skipped item, which is the truth. Resolving here would have made a
+           * blocked delete - another tab holding the database - count as wiped,
+           * and the sweep would have reported work it had not done.
+           */
           delete: (name: string) =>
-            new Promise<void>((resolve) => {
-              // Every outcome resolves: a blocked delete (another tab holds the
-              // database) is not a reason to leave the page half-wiped.
+            new Promise<void>((resolve, reject) => {
               const request = globalThis.indexedDB.deleteDatabase(name)
 
               request.onsuccess = () => resolve()
-              request.onerror = () => resolve()
-              request.onblocked = () => resolve()
+              request.onerror = () =>
+                reject(request.error ?? new Error('delete failed'))
+              request.onblocked = () => reject(new Error('blocked'))
             })
         },
-  localStorage: globalThis.localStorage,
-  sessionStorage: globalThis.sessionStorage,
-  href: window.location.href,
-  navigate: (url) => window.location.replace(url)
+  localStorage: storage('localStorage'),
+  sessionStorage: storage('sessionStorage'),
+  // `globalThis` rather than `window`, so the adapter can be read in a test that
+  // is not a browser - which is where the throwing-storage case is pinned.
+  href: globalThis.location?.href ?? '',
+  navigate: (url) => globalThis.location?.replace(url)
 })
