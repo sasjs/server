@@ -257,30 +257,33 @@ const verifyCORS = (): string[] => {
   const errors: string[] = []
   const { CORS } = process.env
 
-  if (CORS) {
-    const corsTypes = Object.values(CorsType)
+  if (CORS && !Object.values(CorsType).includes(CORS as CorsType))
+    errors.push(`- CORS '${CORS}'\n - valid options ${Object.values(CorsType)}`)
 
-    if (!corsTypes.includes(CORS as CorsType))
-      errors.push(`- CORS '${CORS}'\n - valid options ${corsTypes}`)
-
-    if (CORS === CorsType.ENABLED) {
-      const { WHITELIST } = process.env
-
-      const { origins, invalid } = parseCorsWhiteList(WHITELIST)
-
-      invalid.forEach((url) =>
-        errors.push(
-          `- CORS '${CORS}'\n - provided WHITELIST ${url} is not valid\n - use an http(s) origin, such as http://localhost:3000`
-        )
-      )
-
-      if (!origins.length && !invalid.length)
-        errors.push(`- CORS '${CORS}'\n - provide at least one WHITELIST URL`)
-    }
-  } else {
+  if (!CORS) {
     const { MODE } = process.env
     process.env.CORS =
       MODE === ModeType.Server ? CorsType.DISABLED : CorsType.ENABLED
+  }
+
+  // Checked against the value in effect, not only when the operator set CORS:
+  // a desktop install leaves it unset and gets the enabled default above, so a
+  // malformed entry would otherwise reach the middleware on that path too. The
+  // list itself is only mandatory when CORS was enabled explicitly - the
+  // desktop default answers same-origin requests without one.
+  if (process.env.CORS === CorsType.ENABLED) {
+    const { origins, invalid } = parseCorsWhiteList(process.env.WHITELIST)
+
+    invalid.forEach((url) =>
+      errors.push(
+        `- CORS '${CorsType.ENABLED}'\n - provided WHITELIST ${url} is not valid\n - use an http(s) origin, such as http://localhost:3000`
+      )
+    )
+
+    if (CORS && !origins.length && !invalid.length)
+      errors.push(
+        `- CORS '${CorsType.ENABLED}'\n - provide at least one WHITELIST URL`
+      )
   }
 
   return errors

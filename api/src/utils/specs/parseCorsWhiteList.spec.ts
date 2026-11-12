@@ -65,6 +65,13 @@ describe('parseCorsWhiteList', () => {
     })
   })
 
+  it('reports a wildcard host as invalid', () => {
+    expect(parseCorsWhiteList('https://*.example.com')).toEqual({
+      origins: [],
+      invalid: ['https://*.example.com']
+    })
+  })
+
   it('returns nothing for an unset or empty value', () => {
     expect(parseCorsWhiteList(undefined)).toEqual({ origins: [], invalid: [] })
     expect(parseCorsWhiteList('   ')).toEqual({ origins: [], invalid: [] })

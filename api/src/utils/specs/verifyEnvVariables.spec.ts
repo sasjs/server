@@ -428,6 +428,26 @@ describe('verifyEnvVariables', () => {
 
       expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
     })
+
+    // A desktop install leaves CORS unset and takes the enabled default, so the
+    // allow-list has to be checked against the value in effect rather than only
+    // when the operator set CORS explicitly.
+    it('rejects a bad entry on the desktop default, where CORS is unset', () => {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.CORS
+      process.env.WHITELIST = 'http://one.example.com/app'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('accepts a valid list on the desktop default, where CORS is unset', () => {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.CORS
+      process.env.WHITELIST = 'http://one.example.com,http://two.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+      expect(process.env.CORS).toEqual(CorsType.ENABLED)
+    })
   })
 })
 

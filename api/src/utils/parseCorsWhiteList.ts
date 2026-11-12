@@ -35,11 +35,15 @@ export const parseCorsWhiteList = (
     // A bare origin is a scheme and a host, so the parsed URL has nothing but
     // the root path - and `origin` then gives it back normalised (lower case
     // host, no trailing slash), which is the form the middleware compares with.
+    // A wildcard host is refused as well: the cors package compares an entry
+    // against the request's Origin literally, so `https://*.example.com` would
+    // match nothing and leave the same unanswered allow-list behind.
     const isBareOrigin =
       parsed.pathname === '/' && !parsed.search && !parsed.hash
     const isHttp = ['http:', 'https:'].includes(parsed.protocol)
+    const hasWildcardHost = parsed.hostname.includes('*')
 
-    if (!isBareOrigin || !isHttp) invalid.push(entry)
+    if (!isBareOrigin || !isHttp || hasWildcardHost) invalid.push(entry)
     else if (!origins.includes(parsed.origin)) origins.push(parsed.origin)
   })
 
