@@ -35,10 +35,14 @@ import { inflateRawSync } from 'node:zlib'
  * A descriptor rather than a constant per app: everything below works from one, so
  * a third app is a third entry and a release bump is one string.
  *
- * `release` is a TAG, not `latest`: two deploys of the same commit have to publish
- * the same app, and a release that changed an app's look would otherwise arrive
- * here as a rebuild of the site with no commit saying so. Bumping it is a one-line
- * change with a reason in the PR.
+ * `release` is `latest` by default: the demonstration should show the newest app
+ * each repository has published, not the one that was current when someone last
+ * edited this file. It is resolved at build time against the repository's
+ * `releases/latest`, and the tag that came back is what the build logs and what
+ * the app's own version placeholder is filled from - so a rebuild is still
+ * traceable to three tags, without a commit per release. A descriptor may state a
+ * tag instead, which pins that app; that is the escape hatch for holding one back
+ * while its latest release is known to be broken.
  *
  * `id` is fixed rather than minted per build, because an app is addressed by its id
  * (`/app/<id>/`) - a fresh UUID on every build would change the app's URL weekly and
@@ -54,10 +58,13 @@ import { inflateRawSync } from 'node:zlib'
  * macro-dash names the file after itself, while the minimal seed app ships a bare
  * `server.json.zip`. That is why the asset is stated rather than derived.
  */
+/** What a descriptor says when it should follow the repository's newest release. */
+export const LATEST = 'latest'
+
 export const MACRO_DASH = {
   id: '3f2b9c1e-8d4a-4b7e-9c2f-5a6d1e0b7c34',
   name: 'macro-dash',
-  release: 'v1.7.0',
+  release: LATEST,
   asset: 'macro-dash-server.json.zip'
 }
 
@@ -69,18 +76,26 @@ export const MINIMAL_SEED_APP = {
   // paints as a heading with nothing behind it. The release that carries the fix
   // (sasjs/minimal-seed-app#36) is what belongs here; until it exists this build
   // fails at the download, by design, rather than publishing a dead app.
-  release: 'v1.6.1',
+  // latest, not v1.6.0: that release wires its controls in <head>, so it throws on
+  // a host that serves the page as it is - which this one does - and the app paints
+  // as a heading with nothing behind it. The fix is in 1.6.1 and anything after it
+  // (sasjs/minimal-seed-app#36), which is what `latest` resolves to. If a future
+  // release breaks the page this way again, state that tag here and the app is held
+  // back until it is fixed.
+  release: LATEST,
   asset: 'server.json.zip'
 }
 
 export const REACT_SEED_APP = {
   id: 'd4e7a1b9-2c56-4f03-8a71-9b5c2e6d4f18',
   name: 'react-seed-app',
-  // v1.8.0 is the first release that carries the JavaScript twin of each service
-  // (appinit.js, getdata.js, upload.js and the dataset they read). This host runs
-  // JavaScript, so an earlier release - SAS services only - would publish a tile
-  // that loads and then cannot answer anything.
-  release: 'v1.8.0',
+  // latest resolves to a release that carries the JavaScript twin of each service
+  // (appinit.js, getdata.js, upload.js and the dataset they read), which arrived in
+  // v1.8.0. This host runs JavaScript, so a release from before that - SAS services
+  // only - would publish a tile that loads and then cannot answer anything, and
+  // stating v1.8.0 here is how to hold it back if `latest` ever moves somewhere
+  // older than that.
+  release: LATEST,
   asset: 'server.json.zip'
 }
 
@@ -102,6 +117,52 @@ export const appVersion = (app) => app.release.replace(/^v/, '')
 /** The release asset that carries an app's deploy document. */
 export const releaseUrl = (app) =>
   `https://github.com/sasjs/${app.name}/releases/download/${app.release}/${app.asset}`
+
+/** The GitHub API endpoint naming an app repository's newest release. */
+export const latestReleaseUrl = (app) =>
+  `https://api.github.com/repos/sasjs/${app.name}/releases/latest`
+
+/**
+ * GitHub's answer, as JSON, with the token CI already has.
+ *
+ * Unauthenticated calls to the API are rate limited by IP, and a shared runner's
+ * IP is not ours; the token is what keeps a build from failing for that. It is
+ * optional, because a local build usually has none and three calls are nothing.
+ */
+const fetchJson = async (url) => {
+  const headers = { accept: 'application/vnd.github+json' }
+  if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+
+  const response = await fetch(url, { headers })
+
+  if (!response.ok)
+    throw new Error(
+      `Could not read ${url}: ${response.status} ${response.statusText}`
+    )
+
+  return response.json()
+}
+
+/**
+ * A descriptor with its release resolved: `latest` becomes the tag the repository
+ * currently calls its newest release, and a stated tag is returned untouched.
+ *
+ * `getJson` is injected so the resolution can be tested without the network, the
+ * same way `fetchPack` is tested against a packed archive.
+ */
+export const resolveRelease = async (app, getJson = fetchJson) => {
+  if (app.release !== LATEST) return app
+
+  const release = await getJson(latestReleaseUrl(app))
+  const tag = release && release.tag_name
+
+  if (!tag)
+    throw new Error(
+      `Could not read the newest release of sasjs/${app.name}: ${latestReleaseUrl(app)} answered no tag_name`
+    )
+
+  return { ...app, release: tag }
+}
 
 /**
  * Where `@sasjs/api` keeps a drive-backed app index - `APP_STREAM_INDEX` in that

@@ -9,7 +9,10 @@ name: Mock site
 # publish any more: two jobs writing one branch meant whichever ran last decided
 # whether server.sasjs.io served the app or the pages.
 #
-# Runs on every push to main, and by hand. It is deliberately NOT part of the
+# Runs on every push to main, by hand, and once a day. The daily run exists
+# because the three apps it publishes follow their repositories' newest releases
+# (see mock/apps.mjs): a release should reach the demo on its own, and a rebuild
+# is the only thing that picks it up. It is deliberately NOT part of the
 # pull-request pipeline: it needs the released @sasjs/cli (see mock/build.mjs),
 # and a demo that breaks CI is a demo someone will disable.
 #
@@ -27,6 +30,11 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # A daily rebuild, because the apps this site publishes follow each
+    # repository's newest release rather than a tag pinned here: without it a
+    # release would reach the demo only when somebody happened to push.
+    - cron: '17 5 * * *'
 
 permissions:
   contents: write

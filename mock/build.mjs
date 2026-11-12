@@ -33,7 +33,8 @@ import {
   fetchPack,
   withPublishedApps,
   PUBLISHED_APPS,
-  releaseUrl
+  releaseUrl,
+  resolveRelease
 } from './apps.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -109,8 +110,14 @@ sasjs('compile -t mock')
 const snapshot = JSON.parse(
   readFileSync(path.join(root, 'mock', 'drive.json'), 'utf8')
 )
+/* `latest` is resolved first: what a rebuild publishes is whatever each repository
+ * calls its newest release at that moment, and the tag is logged below so the site
+ * can be traced to three releases rather than to a commit. */
+const resolvedApps = await Promise.all(
+  PUBLISHED_APPS.map(async (app) => await resolveRelease(app))
+)
 const published = await Promise.all(
-  PUBLISHED_APPS.map(async (app) => ({
+  resolvedApps.map(async (app) => ({
     app,
     pack: await fetchPack(releaseUrl(app))
   }))

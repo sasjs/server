@@ -14,13 +14,17 @@ import { deflateRawSync } from 'node:zlib'
 import test from 'node:test'
 
 import {
+  LATEST,
   MACRO_DASH,
+  PUBLISHED_APPS,
   MINIMAL_SEED_APP,
   REACT_SEED_APP,
   appEntry,
   appVersion,
   packFiles,
+  latestReleaseUrl,
   releaseUrl,
+  resolveRelease,
   unzipEntry,
   withPublishedApp,
   withPublishedApps
@@ -486,23 +490,57 @@ test('the React seed app publishes its JS services, dataset and bundle', () => {
   )
 })
 
-test('each app is downloaded from its own release asset', () => {
-  assert.equal(
-    releaseUrl(MACRO_DASH),
-    'https://github.com/sasjs/macro-dash/releases/download/v1.7.0/macro-dash-server.json.zip'
+test('every app follows its repository\'s newest release, unless it pins one', async () => {
+  const asked = []
+  const getJson = async (url) => {
+    asked.push(url)
+    return { tag_name: 'v9.9.9' }
+  }
+
+  // all three descriptors say `latest`, so all three are resolved
+  assert.deepEqual(
+    PUBLISHED_APPS.map((app) => app.release),
+    [LATEST, LATEST, LATEST]
   )
 
-  // the seed app's asset is a bare server.json.zip, which is why the asset is
-  // stated in the descriptor rather than derived from the app's name
+  const resolved = await Promise.all(
+    PUBLISHED_APPS.map(async (app) => await resolveRelease(app, getJson))
+  )
+
+  assert.deepEqual(
+    asked.sort(),
+    [
+      latestReleaseUrl(MACRO_DASH),
+      latestReleaseUrl(MINIMAL_SEED_APP),
+      latestReleaseUrl(REACT_SEED_APP)
+    ].sort()
+  )
+
+  resolved.forEach((app) => assert.equal(app.release, 'v9.9.9'))
+
+  // a stated tag is a pin: nothing is asked about it, and the URL keeps the tag
+  const pinned = await resolveRelease(
+    { ...MINIMAL_SEED_APP, release: 'v1.6.1' },
+    getJson
+  )
+  assert.equal(pinned.release, 'v1.6.1')
   assert.equal(
-    releaseUrl(MINIMAL_SEED_APP),
+    releaseUrl(pinned),
     'https://github.com/sasjs/minimal-seed-app/releases/download/v1.6.1/server.json.zip'
   )
 
-  // the React seed app pins the release that carries its JS services
+  // and the resolved tag is what the asset URL and the version placeholder use
   assert.equal(
-    releaseUrl(REACT_SEED_APP),
-    'https://github.com/sasjs/react-seed-app/releases/download/v1.8.0/server.json.zip'
+    releaseUrl({ ...MACRO_DASH, release: 'v2.0.0' }),
+    'https://github.com/sasjs/macro-dash/releases/download/v2.0.0/macro-dash-server.json.zip'
+  )
+  assert.equal(appVersion({ ...MACRO_DASH, release: 'v2.0.0' }), '2.0.0')
+})
+
+test('a release that reports no tag fails the build by name', async () => {
+  await assert.rejects(
+    () => resolveRelease(MINIMAL_SEED_APP, async () => ({})),
+    /Could not read the newest release of sasjs\/minimal-seed-app/
   )
 })
 
