@@ -19,6 +19,7 @@ import {
   PUBLISHED_APPS,
   MINIMAL_SEED_APP,
   REACT_SEED_APP,
+  ANGULAR_SEED_APP,
   appEntry,
   appVersion,
   packFiles,
@@ -491,6 +492,90 @@ test('the React seed app publishes its JS services, dataset and bundle', () => {
   )
 })
 
+/**
+ * The Angular seed app's shape: the same three JavaScript twins and the dataset
+ * they read, with the frontend its own build emits - a handful of hashed files
+ * under `web/` rather than one bundle.
+ *
+ * As with the React app, the SAS service of each name travels as a `service`
+ * member, and this host runs the `.js` twin instead.
+ */
+const angularPack = {
+  appLoc: '/Public/app/angular-seed-app',
+  streamWebFolder: 'web',
+  streamServiceName: 'Angular',
+  streamLogo: 'assets/angular-logo.png',
+  fileTree: {
+    name: 'files',
+    members: [
+      {
+        name: 'services',
+        type: 'folder',
+        members: [
+          {
+            name: 'common',
+            type: 'folder',
+            members: [
+              { name: 'appinit', type: 'service', code: '%macro appinit;%mend;' },
+              { name: 'appinit.js', type: 'file', code: code('webout("OPEN")') },
+              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
+              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
+              { name: 'springs.json', type: 'file', code: code('[{"AREA":"Adak"}]') }
+            ]
+          },
+          {
+            name: 'files',
+            type: 'folder',
+            members: [
+              { name: 'upload', type: 'service', code: '%macro upload;%mend;' },
+              { name: 'upload.js', type: 'file', code: code('webout("OPEN")') }
+            ]
+          },
+          {
+            name: 'web',
+            type: 'folder',
+            members: [
+              {
+                name: 'index.html',
+                type: 'file',
+                code: code('<!doctype html><title>Angular Seed</title>')
+              },
+              {
+                name: 'main-K4JT6XUZ.js',
+                type: 'file',
+                code: code('console.log("main")')
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+test('the Angular seed app publishes its JS services and bundle', () => {
+  const byPath = Object.fromEntries(
+    packFiles(angularPack, ANGULAR_SEED_APP).map((file) => [
+      file.path,
+      file.contents
+    ])
+  )
+
+  assert.deepEqual(Object.keys(byPath).sort(), [
+    '/Public/app/angular-seed-app/services/common/appinit.js',
+    '/Public/app/angular-seed-app/services/common/getdata.js',
+    '/Public/app/angular-seed-app/services/common/springs.json',
+    '/Public/app/angular-seed-app/services/files/upload.js',
+    '/Public/app/angular-seed-app/services/web/index.html',
+    '/Public/app/angular-seed-app/services/web/main-K4JT6XUZ.js'
+  ])
+
+  assert.equal(
+    byPath['/Public/app/angular-seed-app/services/common/springs.json'],
+    '[{"AREA":"Adak"}]'
+  )
+})
+
 test('every app follows its repository\'s newest release, unless it pins one', async () => {
   const asked = []
   const getJson = async (url) => {
@@ -498,10 +583,10 @@ test('every app follows its repository\'s newest release, unless it pins one', a
     return { tag_name: 'v9.9.9' }
   }
 
-  // all three descriptors say `latest`, so all three are resolved
+  // all four descriptors say `latest`, so all four are resolved
   assert.deepEqual(
     PUBLISHED_APPS.map((app) => app.release),
-    [LATEST, LATEST, LATEST]
+    [LATEST, LATEST, LATEST, LATEST]
   )
 
   const resolved = await Promise.all(
@@ -513,7 +598,8 @@ test('every app follows its repository\'s newest release, unless it pins one', a
     [
       latestReleaseUrl(MACRO_DASH),
       latestReleaseUrl(MINIMAL_SEED_APP),
-      latestReleaseUrl(REACT_SEED_APP)
+      latestReleaseUrl(REACT_SEED_APP),
+      latestReleaseUrl(ANGULAR_SEED_APP)
     ].sort()
   )
 
@@ -576,7 +662,8 @@ test('every app is published into one index, and each keeps its own files', () =
     [
       { app: MACRO_DASH, pack },
       { app: MINIMAL_SEED_APP, pack: seedPack },
-      { app: REACT_SEED_APP, pack: reactPack }
+      { app: REACT_SEED_APP, pack: reactPack },
+      { app: ANGULAR_SEED_APP, pack: angularPack }
     ],
     '2026-11-11T00:00:00.000Z'
   )
@@ -588,7 +675,8 @@ test('every app is published into one index, and each keeps its own files', () =
     [
       ['macro-dash', '/Public/app/macrodash'],
       ['minimal-seed-app', '/Public/app/minimal-seed-app'],
-      ['react-seed-app', '/Public/app/react-seed-app']
+      ['react-seed-app', '/Public/app/react-seed-app'],
+      ['angular-seed-app', '/Public/app/angular-seed-app']
     ]
   )
 

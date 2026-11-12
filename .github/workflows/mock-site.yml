@@ -10,7 +10,7 @@ name: Mock site
 # whether server.sasjs.io served the app or the pages.
 #
 # Runs on every push to main, by hand, and once a day. The daily run exists
-# because the three apps it publishes follow their repositories' newest releases
+# because the apps it publishes follow their repositories' newest releases
 # (see mock/apps.mjs): a release should reach the demo on its own, and a rebuild
 # is the only thing that picks it up. It is deliberately NOT part of the
 # pull-request pipeline: it needs the released @sasjs/cli (see mock/build.mjs),
