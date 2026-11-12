@@ -67,6 +67,21 @@ export const graftLevel = (
 }
 
 /**
+ * Whether a node is the drive root.
+ *
+ * Both spellings are the root, because the two hosts answer differently:
+ * sasjs/server's `buildDirectoryLevel` answers `''` (which is what ROOT_PATH
+ * holds), while the browser host answers `/SASjsApi/drive/*` from @sasjs/api,
+ * whose `normaliseDrivePath` returns `/` for the root. A tree that keys on one
+ * spelling alone starts with the other node out of its expanded list - which is
+ * how the root row came to be collapsed on the published site.
+ */
+export const isDriveRootPath = (
+  relativePath: string,
+  isFolder: boolean
+): boolean => isFolder && (relativePath === ROOT_PATH || relativePath === '/')
+
+/**
  * The expanded folders underneath `folderPath`, nearest first.
  *
  * Replacing a folder level drops the loaded levels beneath it, but the folders

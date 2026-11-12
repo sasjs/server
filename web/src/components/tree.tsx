@@ -9,7 +9,12 @@ import FileTypeIcon from './fileTypeIcon'
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
-import { LOADING_SUFFIX, ROOT_PATH, childrenOf } from '../utils/driveTree'
+import {
+  LOADING_SUFFIX,
+  ROOT_PATH,
+  childrenOf,
+  isDriveRootPath
+} from '../utils/driveTree'
 import { TreeNode } from '../utils/types'
 
 interface Props {
@@ -210,9 +215,9 @@ const TreeView = ({
   // `expandedItems` on the browser host, which is why the row was collapsed
   // there (measured on server.sasjs.io: the root listed as
   // `{ name: 'files', relativePath: '/', isFolder: true }`).
-  const isDriveRoot =
-    node.isFolder && (node.relativePath === '' || node.relativePath === '/')
-  const tops = isDriveRoot ? childrenOf(node) : [node]
+  const tops = isDriveRootPath(node.relativePath, node.isFolder)
+    ? childrenOf(node)
+    : [node]
 
   return (
     <>
