@@ -1,0 +1,48 @@
+/**
+ * The page's canvas, painted before any script runs.
+ *
+ * The interface is themed from a setting the application reads, so the page has
+ * no background of its own until React mounts - and a browser paints an unset
+ * canvas white. On the server that window is one blocking script wide; on the
+ * browser-hosted site every script waits for the service worker to claim the
+ * page, which measured at ~3 seconds of white before the first pixel of the
+ * interface. At night, with a dark machine, that is a flash of a blank white page
+ * on every load and every refresh.
+ *
+ * A stylesheet is applied by the parser, before the first paint, so this is the
+ * only place the canvas can be painted in time. The rules resolve the scheme the
+ * same way `theme-boot.js` and `useColorMode` do:
+ *
+ *   - the OS preference decides, because `system` is the default setting;
+ *   - a stored `light` or `dark` choice beats it, through the
+ *     `data-color-scheme` attribute `theme-boot.js` sets as soon as it runs.
+ *
+ * The base rule is the fallback for a browser that states no preference - one too
+ * old to answer the media query - and it is light because that is what
+ * `resolveColorMode` and `theme-boot.js` answer for the same browser. The two have
+ * to agree: a canvas painted dark above an interface that resolved light is the
+ * same flash in the other direction, which is what this file exists to remove.
+ */
+html {
+  background-color: #ffffff;
+  color-scheme: light;
+}
+
+/* `system`, the default setting: the OS decides. */
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: #121212;
+    color-scheme: dark;
+  }
+}
+
+/* An explicit choice wins over the OS, exactly as `resolveColorMode` says. */
+html[data-color-scheme='dark'] {
+  background-color: #121212;
+  color-scheme: dark;
+}
+
+html[data-color-scheme='light'] {
+  background-color: #ffffff;
+  color-scheme: light;
+}

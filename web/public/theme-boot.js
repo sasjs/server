@@ -15,6 +15,14 @@
  *
  * `system` (and an absent or unreadable setting) follows the operating system,
  * which is what the application does with the same value.
+ *
+ * The background itself is painted by `theme-boot.css`, not here: a stylesheet is
+ * applied by the parser and so covers the first paint, while this script cannot
+ * be the first thing that runs on the browser-hosted site - every script there
+ * waits for the service worker to claim the page, which measured at ~3 seconds of
+ * an unpainted (white) canvas before this file ran. What this script adds is what
+ * CSS cannot know: the stored choice. It becomes `data-color-scheme` on the root,
+ * which the stylesheet's rules defer to.
  */
 !(function () {
   try {
@@ -48,11 +56,10 @@
 
     var element = document.documentElement
 
-    element.style.colorScheme = mode
-    element.style.backgroundColor = {
-      light: '#ffffff',
-      dark: '#121212'
-    }[mode]
+    // The attribute only. `theme-boot.css` owns the colour and the `color-scheme`
+    // that goes with it, keyed on this attribute - an inline background here
+    // would outrank those rules, and then the stylesheet could never repaint the
+    // canvas when the reader switches scheme at runtime.
     element.setAttribute('data-color-scheme', mode)
   } catch (error) {
     // a page that cannot read its setting still has to render
