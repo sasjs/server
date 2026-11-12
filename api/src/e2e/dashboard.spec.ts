@@ -176,6 +176,21 @@ describe('Home dashboard and Apps tab', () => {
       await page.getByText('Files you open in Studio appear here.').count()
     ).toBe(1)
 
+    // The banner names the screens it describes, and each name is the way there.
+    // Clicked rather than navigated to, so a link pointing at the wrong route
+    // fails here instead of shipping: the paragraph is the one place in the
+    // interface where these routes are offered as text.
+    const banner = page.locator('p', { hasText: 'runs ad hoc code' })
+
+    await banner.locator('a', { hasText: 'Studio' }).click()
+    await page.waitForURL(/\/studio/, { timeout: 30000 })
+    expect(await selectedTab(page)).toBe('studio')
+
+    await page.goBack()
+    await page.waitForSelector('text=Apps you open appear here.', {
+      timeout: 30000
+    })
+
     // Apps live on their own tab now - clicked, not navigated to, so the tab is
     // known to work. It lists published apps and nothing else: Studio and the
     // API explorer are header tabs on every screen.

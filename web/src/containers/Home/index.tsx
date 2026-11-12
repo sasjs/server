@@ -193,9 +193,16 @@ const ScreenLink = ({ to, children }: { to: string; children: ReactNode }) => (
     sx={{
       color: 'inherit',
       fontWeight: 600,
-      textDecorationColor: 'divider',
+      /* The palette entries are read from the theme rather than named as paths:
+         sx only resolves a theme path for the keys in its own config, and
+         `textDecorationColor` is not one of them - 'divider' would be emitted as
+         CSS and dropped, leaving the underline at currentColor and the hover
+         change with nothing to change. */
+      textDecorationColor: (theme) => theme.palette.divider,
       textUnderlineOffset: '0.2em',
-      '&:hover, &:focus-visible': { textDecorationColor: 'text.primary' }
+      '&:hover, &:focus-visible': {
+        textDecorationColor: (theme) => theme.palette.text.primary
+      }
     }}
   >
     {children}
