@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { Button, DialogActions, DialogContent, TextField } from '@mui/material'
 
@@ -19,6 +19,22 @@ const FilePathInputModal = ({
   const [filePath, setFilePath] = useState('')
   const [hasError, setHasError] = useState(false)
   const [errorText, setErrorText] = useState('')
+
+  /**
+   * Start from nothing every time the dialog opens.
+   *
+   * The field used to keep whatever was typed last, so a second "Save as" came up with the
+   * previous path already filled in - and Save, which is enabled as soon as there is text,
+   * wrote over that file instead of asking for a new one. Clearing on open also clears the
+   * validation beside it, so an error from the last attempt does not greet the next.
+   */
+  useEffect(() => {
+    if (!open) return
+
+    setFilePath('')
+    setHasError(false)
+    setErrorText('')
+  }, [open])
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
