@@ -38,12 +38,22 @@ export const isSafeHref = (href: string): boolean =>
 /** Inline markup: code spans first, so their contents are not re-read. */
 const inline = (text: string): string => {
   const code: string[] = []
+  const images: string[] = []
 
-  let out = escapeHtml(text).replace(/`([^`]+)`/g, (_, span: string) => {
-    code.push(span)
+  // Images are not rendered, and their markdown is left as the text it was: the
+  // link rule below would otherwise turn `![alt](src)` into a stray `!` and a
+  // live link, which is neither what the file says nor what the header promises.
+  let out = escapeHtml(text)
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (whole) => {
+      images.push(whole)
 
-    return `\u0000${code.length - 1}\u0000`
-  })
+      return `\u0001${images.length - 1}\u0001`
+    })
+    .replace(/`([^`]+)`/g, (_, span: string) => {
+      code.push(span)
+
+      return `\u0000${code.length - 1}\u0000`
+    })
 
   out = out
     .replace(
@@ -59,8 +69,12 @@ const inline = (text: string): string => {
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
 
-  return out.replace(/\u0000(\d+)\u0000/g, (_, index: string) => {
+  out = out.replace(/\u0000(\d+)\u0000/g, (_, index: string) => {
     return `<code>${code[Number(index)]}</code>`
+  })
+
+  return out.replace(/\u0001(\d+)\u0001/g, (_, index: string) => {
+    return images[Number(index)]
   })
 }
 

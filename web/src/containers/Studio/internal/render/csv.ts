@@ -12,18 +12,24 @@
  * to refuse it.
  */
 
-/** Rows kept for the preview: a 200k-row export must not lock the tab. */
+/**
+ * Rows kept for the preview.
+ *
+ * The parse stops here too, one record past the cap so `truncated` is known: a
+ * 200k-row export is a hundred milliseconds of work per pass, and the pane runs
+ * on every keystroke in the buffer. The count of a file longer than the cap is
+ * therefore not carried - the view says "first 200 rows" rather than a total it
+ * would have to read the whole file to know.
+ */
 export const MAX_PREVIEW_ROWS = 200
 
 export interface CsvTable {
   /** The first row, which the view renders as a header. */
   header: string[]
   rows: string[][]
-  /** How many rows the file holds, whatever the preview kept. */
-  totalRows: number
   /** Columns the header declares - the widest row is not used. */
   columns: number
-  /** True when the preview stopped before the file did. */
+  /** True when the file has more rows than the preview kept. */
   truncated: boolean
 }
 
@@ -36,7 +42,7 @@ const stripBom = (text: string): string =>
  * A quote only opens a quoted field at the START of one, which is what makes an
  * apostrophe in `O'Brien` a character rather than the beginning of a quoted run.
  */
-export const parseCsv = (text: string): string[][] => {
+export const parseCsv = (text: string, maxRecords = Infinity): string[][] => {
   const body = stripBom(text.replace(/\r\n/g, '\n'))
   const records: string[][] = []
 
@@ -63,7 +69,11 @@ export const parseCsv = (text: string): string[][] => {
       continue
     }
 
-    if (character === '"' && field === '') {
+    // A space after the delimiter is what hand-edited and several exported CSVs
+    // contain, so a quote opens a field that is still blank - the space before it
+    // is not part of the value.
+    if (character === '"' && field.trim() === '') {
+      field = ''
       quoted = true
       continue
     }
@@ -79,6 +89,10 @@ export const parseCsv = (text: string): string[][] => {
       records.push(record)
       record = []
       field = ''
+
+      // one record past the limit is all the caller needs to know there is more
+      if (records.length > maxRecords) return records
+
       continue
     }
 
@@ -106,13 +120,12 @@ export const csvTable = (
   text: string,
   maxRows: number = MAX_PREVIEW_ROWS
 ): CsvTable => {
-  const records = parseCsv(text)
+  const records = parseCsv(text, maxRows + 1)
   const [header = [], ...body] = records
 
   return {
     header,
     rows: body.slice(0, maxRows),
-    totalRows: body.length,
     columns: header.length,
     truncated: body.length > maxRows
   }

@@ -80,6 +80,18 @@ check('a zip is an archive', kind('/data/archive.zip') === 'archive')
 check('a tarball is an archive', kind('/data/src.tgz') === 'archive')
 
 check('an unknown extension has no icon', kind('/data/blob.weird') === null)
+
+// Dotless names: the lists are extensions, so a file merely CALLED key, r or
+// pages is not a document, an R script or a Pages document.
+check(
+  'a dotless name called key is not a document',
+  kind('/home/me/key') === null
+)
+check('a dotless name called r is not a script', kind('/home/me/r') === null)
+check(
+  'a dotless name called pages is not a document',
+  kind('/etc/pages') === null
+)
 check('a path with no extension has no icon', kind('/sasjs/README') === null)
 check('a dotfile with no extension has no icon', kind('/.gitignore') === null)
 check(

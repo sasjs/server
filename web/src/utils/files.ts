@@ -40,22 +40,6 @@ export const extensionOf = (filePath: string): string => {
   return dot > 0 ? name.slice(dot + 1).toLowerCase() : ''
 }
 
-/**
- * The last dot-separated segment of a path, lower-cased - a *suffix*, not an extension.
- *
- * The difference is deliberate and is the only place it is wanted: the drive's own rules file
- * is `.sasjslint`, whose suffix is `sasjslint` and which the tree shows as a config file, where
- * its *extension* - the part after a dot that is not the first character - is nothing at all.
- * Everything else asks `extensionOf`.
- */
-const suffixOf = (filePath: string): string =>
-  String(filePath || '')
-    .split('/')
-    .pop()
-    ?.split('.')
-    .pop()
-    ?.toLowerCase() ?? ''
-
 /** Whether a drive path is a picture, judged by its extension. */
 export const isImageFile = (filePath: string) =>
   IMAGE_EXTENSIONS.includes(extensionOf(filePath))
@@ -97,7 +81,7 @@ const EXTENSIONS_BY_KIND: {
   script: ['js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'py', 'r', 'sh', 'bash'],
   markup: ['html', 'htm', 'css', 'scss', 'less', 'xml', 'yml', 'yaml'],
   // `.sasjslint` is the drive's own rules file, and JSON like the rest
-  config: ['json', 'sasjslint', 'toml', 'ini', 'conf', 'env'],
+  config: ['json', 'toml', 'ini', 'conf', 'env'],
   data: ['sas7bdat', 'sas7bcat', 'xpt', 'parquet', 'dta', 'rds', 'sav'],
   table: ['csv', 'tsv', 'xls', 'xlsx', 'xlsm'],
   log: ['log'],
@@ -116,7 +100,15 @@ const EXTENSIONS_BY_KIND: {
 export const driveFileKindOf = (filePath: string): DriveFileKind | null => {
   if (isImageFile(filePath)) return 'image'
 
-  const extension = suffixOf(filePath)
+  // `.sasjslint` is the drive's own rules file: JSON, and a dotfile, so it names
+  // no extension. Everything else is judged by the extension alone - a file
+  // called `key` or `r` is not a document or an R script, which is what asking
+  // for the whole name would have answered once the lists grew.
+  const name = (filePath.split('/').pop() ?? '').toLowerCase()
+
+  if (name === '.sasjslint') return 'config'
+
+  const extension = extensionOf(filePath)
 
   const kinds = Object.keys(EXTENSIONS_BY_KIND) as Array<
     Exclude<DriveFileKind, 'image'>

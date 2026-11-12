@@ -83,14 +83,25 @@ export const displayModeStorageKey = (filePath: string): string =>
  */
 export const storedDisplayMode = (
   filePath: string,
-  storage: Pick<Storage, 'getItem'> | undefined = globalThis.localStorage
+  storage?: Pick<Storage, 'getItem'>
 ): DisplayMode => {
   const modes = displayModesFor(filePath)
   if (!modes.length) return 'source'
 
-  const stored = storage?.getItem(displayModeStorageKey(filePath))
+  /*
+   * The lookup is inside the try, and `globalThis.localStorage` with it: a page
+   * that refuses storage - blocked cookies, a sandboxed frame - throws on the
+   * PROPERTY ACCESS, not only on the call, so a default parameter would throw
+   * before this body ran and take the editor down with it.
+   */
+  try {
+    const store = storage ?? globalThis.localStorage
+    const stored = store?.getItem(displayModeStorageKey(filePath))
 
-  return modes.includes(stored as DisplayMode)
-    ? (stored as DisplayMode)
-    : 'source'
+    return modes.includes(stored as DisplayMode)
+      ? (stored as DisplayMode)
+      : 'source'
+  } catch {
+    return 'source'
+  }
 }

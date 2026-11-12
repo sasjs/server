@@ -10,7 +10,7 @@
  * lives here rather than in the editor because it is a property of the view, not
  * of the file.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Box, Typography } from '@mui/material'
 
@@ -57,7 +57,9 @@ const MarkdownPane = ({ text }: { text: string }) => (
 
 /** A CSV document as a table, with the header row the file declares. */
 const CsvPane = ({ text }: { text: string }) => {
-  const table: CsvTable = csvTable(text)
+  // Parsed once per buffer text rather than once per render: the pane redraws on
+  // every keystroke.
+  const table: CsvTable = useMemo(() => csvTable(text), [text])
 
   if (!table.columns) return placeholder('This file has no rows to show.')
 
@@ -110,8 +112,8 @@ const CsvPane = ({ text }: { text: string }) => {
       </Box>
       <Typography variant="caption" color="text.secondary">
         {table.truncated
-          ? `${table.rows.length} of ${table.totalRows} rows shown`
-          : `${table.totalRows} ${table.totalRows === 1 ? 'row' : 'rows'}`}
+          ? `First ${table.rows.length} rows - the file is longer`
+          : `${table.rows.length} ${table.rows.length === 1 ? 'row' : 'rows'}`}
       </Typography>
     </Box>
   )
@@ -237,7 +239,10 @@ export const DisplayPane = ({
 
   if (kind === 'markdown') return <MarkdownPane text={text} />
   if (kind === 'csv') return <CsvPane text={text} />
-  if (kind === 'json') return <JsonPane text={text} />
+  // Keyed on the file: the open-branch set is state of the view, and carrying it
+  // across a switch would show the next document with the last one's branches
+  // already collapsed.
+  if (kind === 'json') return <JsonPane key={filePath} text={text} />
 
   return placeholder('This file has no rendered view.')
 }

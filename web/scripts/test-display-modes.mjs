@@ -119,6 +119,26 @@ check(
   storedDisplayMode('/a/run.sas', storageOf('rendered')) === 'source'
 )
 
+// A page that refuses storage throws on the property ACCESS, not only on the call,
+// so the lookup has to be guarded rather than defaulted.
+const throwingStorage = {
+  getItem() {
+    throw new Error('SecurityError')
+  }
+}
+check(
+  'a storage that refuses reads still opens on the source',
+  storedDisplayMode('/a/x.csv', throwingStorage) === 'source'
+)
+check(
+  'a storage whose access throws still opens on the source',
+  storedDisplayMode('/a/x.csv', {
+    get getItem() {
+      throw new Error('SecurityError')
+    }
+  }) === 'source'
+)
+
 // --- markdown --------------------------------------------------------------
 
 const html = markdownToHtml(
@@ -144,6 +164,12 @@ check(
 check(
   'markup in the file is escaped, not run',
   markdownToHtml('<script>alert(1)</script>').includes('&lt;script&gt;')
+)
+check(
+  'an image stays the text it was written as',
+  markdownToHtml('![shot](https://e.com/a.png)').includes(
+    '![shot](https://e.com/a.png)'
+  ) && !markdownToHtml('![shot](https://e.com/a.png)').includes('<a href')
 )
 check(
   'an unclosed fence still shows its body',
@@ -172,6 +198,13 @@ check(
   'a newline inside quotes stays in the cell',
   parseCsv('a,b\n"line one\nline two",x\n')[1][0] === 'line one\nline two'
 )
+check(
+  'a space before a quote does not split the row',
+  // the quoted field loses the space that preceded its quote; the space before
+  // the last, unquoted field is part of that value
+  JSON.stringify(parseCsv('a, "b,c", d')) ===
+    JSON.stringify([['a', 'b,c', ' d']])
+)
 check('CRLF is one line ending', parseCsv('a,b\r\n1,2\r\n').length === 2)
 check(
   'no trailing newline still yields the last row',
@@ -195,7 +228,7 @@ check(
 check("the column count is the header's", table.columns === 2)
 check(
   'nothing is truncated',
-  table.truncated === false && table.totalRows === 2
+  table.truncated === false && table.rows.length === 2
 )
 
 const many = ['h']
@@ -204,8 +237,8 @@ const many = ['h']
 const capped = csvTable(many, 3)
 check('the cap keeps the rows asked for', capped.rows.length === 3)
 check(
-  'and says how many there were',
-  capped.totalRows === 5 && capped.truncated === true
+  'and says the file is longer',
+  capped.rows.length === 3 && capped.truncated === true
 )
 check('the default cap is the constant', MAX_PREVIEW_ROWS === 200)
 check('an empty file is an empty table', csvTable('').columns === 0)
