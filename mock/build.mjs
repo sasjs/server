@@ -48,13 +48,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // paint-critical script marker: before 6.27.1 the browser host answered an empty
 // listing by design, so the Apps screen was blank however the drive was seeded;
 // before 6.27.2 its `/info` answer stated `['js']` while its runtime served
-// `sas`; and before 6.27.3 it deferred every script behind the service worker, so
-// the canvas stylesheet was the only thing painted for the seconds the worker
-// took to claim the page, and a stored colour choice arrived too late to matter.
+// `sas`; before 6.27.3 it deferred every script behind the service worker, so the
+// canvas stylesheet was the only thing painted for the seconds the worker took to
+// claim the page, and a stored colour choice arrived too late to matter; and
+// before 6.28.0 its page bridge answered a `blob` request with the body decoded as
+// text, so every picture in the drive failed to render.
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.27.3'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.28.0'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
