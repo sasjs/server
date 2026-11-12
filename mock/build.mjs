@@ -44,15 +44,17 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * deploy log says what built the site rather than what the range hoped for.
  */
 // Pinned to the release that carries the sas-transcript support (sasjs/cli#1575),
-// the drive-backed App Stream, and the run times this host actually answers:
-// before 6.27.1 the browser host answered an empty listing by design, so the Apps
-// screen was blank however the drive was seeded, and before 6.27.2 its `/info`
-// answer stated `['js']` while its runtime served `sas` - so the Studio drew no
-// Run control on the demo's .sas program and the recording could not be reached
-// from it. `^6` resolved to whatever 6.x npm served at build time, which could be
-// a CLI that refuses the recording, one that serves no apps, or one whose run
-// times hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.27.2'
+// the drive-backed App Stream, the run times this host actually answers, and the
+// paint-critical script marker: before 6.27.1 the browser host answered an empty
+// listing by design, so the Apps screen was blank however the drive was seeded;
+// before 6.27.2 its `/info` answer stated `['js']` while its runtime served
+// `sas`; and before 6.27.3 it deferred every script behind the service worker, so
+// the canvas stylesheet was the only thing painted for the seconds the worker
+// took to claim the page, and a stored colour choice arrived too late to matter.
+// `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
+// that refuses the recording, one that serves no apps, or one whose run times
+// hide the program this site exists to show.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.27.3'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
