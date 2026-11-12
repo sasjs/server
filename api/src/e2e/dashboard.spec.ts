@@ -178,17 +178,15 @@ describe('Home dashboard and Apps tab', () => {
 
     // The banner names the screens it describes, and each name is the way there.
     // Clicked rather than navigated to, so a link pointing at the wrong route
-    // fails here instead of shipping: the paragraph is the one place in the
-    // interface where these routes are offered as text.
-    const banner = page.locator('p', { hasText: 'runs ad hoc code' })
+    // fails here instead of shipping. The paragraph is found by its test id, not
+    // by its copy: the wording differs between the two hosts (this suite renders
+    // the server's), and a reworded sentence must not turn a broken link into a
+    // locator timeout. `waitForURL` is the assertion - the tab underline is not,
+    // because the Studio tab only exists on a host that offers a run time for it.
+    const banner = page.getByTestId('dashboard-banner')
 
-    await banner.locator('a', { hasText: 'Studio' }).click()
+    await banner.getByRole('link', { name: 'Studio' }).click()
     await page.waitForURL(/\/studio/, { timeout: 30000 })
-
-    // The route, not the tab underline: the Studio tab is only rendered on a host
-    // that offers a run time for it, and this suite's host need not. The link
-    // states a route, so a route is what the assertion reads.
-    expect(page.url()).toContain('/studio')
 
     await page.goBack()
     await page.waitForSelector('text=Apps you open appear here.', {
@@ -361,6 +359,20 @@ describe('Home dashboard and Apps tab', () => {
     expect(await page.getByText('A service worker in this page').count()).toBe(
       1
     )
+
+    // This wording is the one the demo site renders, and it names five screens.
+    // One of them is clicked: a `to` that points elsewhere fails here rather than
+    // on the published site. 'the apps' is the label to pick - the paragraph
+    // carries two Studio links, so a click by that name would be ambiguous.
+    const banner = page.getByTestId('dashboard-banner')
+
+    await banner.getByRole('link', { name: 'the apps' }).click()
+    await page.waitForURL(/\/apps/, { timeout: 30000 })
+
+    await page.goBack()
+    await page.waitForSelector('text=running in this browser', {
+      timeout: 30000
+    })
 
     await page.screenshot({
       path: path.join(screenshotDir, 'dashboard-browser-host.png')

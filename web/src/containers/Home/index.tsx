@@ -182,7 +182,9 @@ const destinations = [
  * A screen named in the dashboard's banner, linked where it is named.
  *
  * The paragraph describes the interface the reader is standing in, so each name
- * in it is also the way there. The underline is the sentence's own colour until
+ * in it is also the way there. It carries `data-testid="dashboard-banner"` (the
+ * wording differs between the two hosts, the element does not), so the browser
+ * test can drive a link without locating the sentence by its copy. The underline is the sentence's own colour until
  * the pointer arrives: five permanent underlines in one paragraph read as noise,
  * and a name with no mark at all is not a link a reader can find.
  */
@@ -710,7 +712,11 @@ const Home = () => {
                 You are looking at SASjs Server running in this browser - there
                 is no server behind this page.
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                data-testid="dashboard-banner"
+              >
                 A service worker answers every API call, the drive is a snapshot
                 built into the site, the programs that run are JavaScript, and
                 the sign-in is a seeded demo identity. Every screen here -{' '}
@@ -732,7 +738,11 @@ const Home = () => {
               >
                 You are talking to SASjs Server on this host.
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                data-testid="dashboard-banner"
+              >
                 The API answers from the server process, the drive is its
                 filesystem, programs run in the run times it reports, and your
                 sign-in is this server's own account.{' '}
