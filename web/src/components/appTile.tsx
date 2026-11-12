@@ -2,6 +2,8 @@ import { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Paper, Typography } from '@mui/material'
 
+import { wrapperProps } from './appTileLayout'
+
 const defaultAppLogo = '/sasjs-logo.svg'
 
 /**
@@ -92,19 +94,13 @@ const AppTile = (props: {
 
   if (href)
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        style={{ textDecoration: 'none' }}
-        onClick={onOpen}
-      >
+      <a href={href} {...wrapperProps(true)} onClick={onOpen}>
         {content}
       </a>
     )
 
   return (
-    <Link to={to ?? '/'} style={{ textDecoration: 'none' }} onClick={onOpen}>
+    <Link to={to ?? '/'} {...wrapperProps(false)} onClick={onOpen}>
       {content}
     </Link>
   )
