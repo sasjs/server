@@ -4,24 +4,16 @@ import { LintConfig } from '@sasjs/lint'
 import { getFilesFolder } from './file'
 import { resolveWithinDrive } from './resolveWithinDrive'
 
-const defaultLintConfiguration = {
-  lineEndings: 'off',
-  noTrailingSpaces: true,
-  noEncodedPasswords: true,
-  hasDoxygenHeader: false,
-  noSpacesInFileNames: true,
-  lowerCaseFileNames: true,
-  maxLineLength: 80,
-  maxHeaderLineLength: 80,
-  maxDataLineLength: 80,
-  noTabIndentation: true,
-  indentationMultiple: 2,
-  hasMacroNameInMend: true,
-  noNestedMacros: true,
-  hasMacroParentheses: true,
-  strictMacroDefinition: true,
-  noGremlins: true
-}
+/**
+ * The rules a drive with no `.sasjslint` of its own is seeded with.
+ *
+ * A JSON file rather than an object literal here, because two builds write it:
+ * this one seeds it onto a server's drive at startup, and `mock/build.mjs` puts
+ * the same file on the demonstration site's drive - where a visitor looks at the
+ * file tree and expects the root to carry what a real installation carries. One
+ * file is the only way the two cannot drift.
+ */
+import defaultLintConfiguration from './defaultLintConfiguration.json'
 
 const lintFileName = '.sasjslint'
 

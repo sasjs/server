@@ -29,6 +29,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
+import { withServerSeededFiles } from './driveSeed.mjs'
 import {
   fetchPack,
   withPublishedApps,
@@ -110,6 +111,7 @@ sasjs('compile -t mock')
 const snapshot = JSON.parse(
   readFileSync(path.join(root, 'mock', 'drive.json'), 'utf8')
 )
+
 /* `latest` is resolved first: what a rebuild publishes is whatever each repository
  * calls its newest release at that moment, and the tag is logged below so the site
  * can be traced to three releases rather than to a commit. */
@@ -122,7 +124,18 @@ const published = await Promise.all(
     pack: await fetchPack(releaseUrl(app))
   }))
 )
-const drive = withPublishedApps(snapshot, published, new Date().toISOString())
+// A server seeds the drive root's `.sasjslint` at startup and the Studio tree
+// shows it; the captured snapshot does not carry it, so the build puts the API's
+// own rules file there rather than restating the rules in the demo's data.
+const seeded = withServerSeededFiles(
+  snapshot,
+  readFileSync(
+    path.join(root, 'api', 'src', 'utils', 'defaultLintConfiguration.json'),
+    'utf8'
+  )
+)
+
+const drive = withPublishedApps(seeded, published, new Date().toISOString())
 
 writeFileSync(
   path.join(root, 'sasjsbuild', 'mock-snapshot.json'),
