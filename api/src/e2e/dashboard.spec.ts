@@ -176,6 +176,23 @@ describe('Home dashboard and Apps tab', () => {
       await page.getByText('Files you open in Studio appear here.').count()
     ).toBe(1)
 
+    // The banner names the screens it describes, and each name is the way there.
+    // Clicked rather than navigated to, so a link pointing at the wrong route
+    // fails here instead of shipping. The paragraph is found by its test id, not
+    // by its copy: the wording differs between the two hosts (this suite renders
+    // the server's), and a reworded sentence must not turn a broken link into a
+    // locator timeout. `waitForURL` is the assertion - the tab underline is not,
+    // because the Studio tab only exists on a host that offers a run time for it.
+    const banner = page.getByTestId('dashboard-banner')
+
+    await banner.getByRole('link', { name: 'Studio' }).click()
+    await page.waitForURL(/\/studio/, { timeout: 30000 })
+
+    await page.goBack()
+    await page.waitForSelector('text=Apps you open appear here.', {
+      timeout: 30000
+    })
+
     // Apps live on their own tab now - clicked, not navigated to, so the tab is
     // known to work. It lists published apps and nothing else: Studio and the
     // API explorer are header tabs on every screen.
@@ -342,6 +359,20 @@ describe('Home dashboard and Apps tab', () => {
     expect(await page.getByText('A service worker in this page').count()).toBe(
       1
     )
+
+    // This wording is the one the demo site renders, and it names five screens.
+    // One of them is clicked: a `to` that points elsewhere fails here rather than
+    // on the published site. 'the apps' is the label to pick - the paragraph
+    // carries two Studio links, so a click by that name would be ambiguous.
+    const banner = page.getByTestId('dashboard-banner')
+
+    await banner.getByRole('link', { name: 'the apps' }).click()
+    await page.waitForURL(/\/apps/, { timeout: 30000 })
+
+    await page.goBack()
+    await page.waitForSelector('text=running in this browser', {
+      timeout: 30000
+    })
 
     await page.screenshot({
       path: path.join(screenshotDir, 'dashboard-browser-host.png')

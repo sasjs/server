@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { ReactNode, useContext, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import axios from 'axios'
@@ -177,6 +177,39 @@ const destinations = [
     Icon: MenuBookIcon
   }
 ]
+
+/**
+ * A screen named in the dashboard's banner, linked where it is named.
+ *
+ * The paragraph describes the interface the reader is standing in, so each name
+ * in it is also the way there. It carries `data-testid="dashboard-banner"` (the
+ * wording differs between the two hosts, the element does not), so the browser
+ * test can drive a link without locating the sentence by its copy. The underline is the sentence's own colour until
+ * the pointer arrives: five permanent underlines in one paragraph read as noise,
+ * and a name with no mark at all is not a link a reader can find.
+ */
+const ScreenLink = ({ to, children }: { to: string; children: ReactNode }) => (
+  <Box
+    component={Link}
+    to={to}
+    sx={{
+      color: 'inherit',
+      fontWeight: 600,
+      /* The palette entries are read from the theme rather than named as paths:
+         sx only resolves a theme path for the keys in its own config, and
+         `textDecorationColor` is not one of them - 'divider' would be emitted as
+         CSS and dropped, leaving the underline at currentColor and the hover
+         change with nothing to change. */
+      textDecorationColor: (theme) => theme.palette.divider,
+      textUnderlineOffset: '0.2em',
+      '&:hover, &:focus-visible': {
+        textDecorationColor: (theme) => theme.palette.text.primary
+      }
+    }}
+  >
+    {children}
+  </Box>
+)
 
 /** A destination card: the icon, the name, and one line of what it is for. */
 const DestinationCard = (props: {
@@ -679,15 +712,22 @@ const Home = () => {
                 You are looking at SASjs Server running in this browser - there
                 is no server behind this page.
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                data-testid="dashboard-banner"
+              >
                 A service worker answers every API call, the drive is a snapshot
                 built into the site, the programs that run are JavaScript, and
-                the sign-in is a seeded demo identity. Every screen here - this
-                dashboard, <strong>Studio</strong>, the API explorer,{' '}
-                <strong>Docs</strong> and the apps - is the real interface,
-                running against a host of its own. Open <strong>Studio</strong>{' '}
-                and press Run to watch a program execute against a recorded SAS
-                session.
+                the sign-in is a seeded demo identity. Every screen here -{' '}
+                <ScreenLink to="/">this dashboard</ScreenLink>,{' '}
+                <ScreenLink to="/studio">Studio</ScreenLink>, the{' '}
+                <ScreenLink to="/api">API explorer</ScreenLink>,{' '}
+                <ScreenLink to="/docs">Docs</ScreenLink> and{' '}
+                <ScreenLink to="/apps">the apps</ScreenLink> - is the real
+                interface, running against a host of its own. Open{' '}
+                <ScreenLink to="/studio">Studio</ScreenLink> and press Run to
+                watch a program execute against a recorded SAS session.
               </Typography>
             </>
           ) : (
@@ -698,11 +738,16 @@ const Home = () => {
               >
                 You are talking to SASjs Server on this host.
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                data-testid="dashboard-banner"
+              >
                 The API answers from the server process, the drive is its
                 filesystem, programs run in the run times it reports, and your
-                sign-in is this server's own account. <strong>Studio</strong>{' '}
-                runs ad hoc code and <strong>Apps</strong> lists everything
+                sign-in is this server's own account.{' '}
+                <ScreenLink to="/studio">Studio</ScreenLink> runs ad hoc code
+                and <ScreenLink to="/apps">Apps</ScreenLink> lists everything
                 published here that you can open.
               </Typography>
             </>
