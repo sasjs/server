@@ -199,11 +199,17 @@ const TreeView = ({
   // The drive root is the level the sidebar starts at, not a folder a reader
   // navigates into: its row said "files" and wrapped a single level whose own
   // names are the ones a reader is looking for. Its children are the top-level
-  // rows, which also means the first level is already open on load.
-  // The API names the drive root's relativePath '/', while `driveTree`'s
-  // ROOT_PATH is '': the two spellings mean the same node, and this used to
-  // compare against neither, so the root row never matched the expanded list and
-  // started collapsed.
+  // rows, so the first level is open on load.
+  //
+  // The root is matched by BOTH spellings because the two hosts disagree about
+  // it: `normaliseDrivePath` in @sasjs/api answers `/` for the drive root (the
+  // document says "the root is '/'"), which is what the browser host serves, so
+  // on the published site the root's relativePath is `/` - while sasjs/server's
+  // own `buildDirectoryLevel` answers `''`, and `driveTree`'s ROOT_PATH is `''`
+  // to match. A tree keyed on `''` alone therefore left the root row out of
+  // `expandedItems` on the browser host, which is why the row was collapsed
+  // there (measured on server.sasjs.io: the root listed as
+  // `{ name: 'files', relativePath: '/', isFolder: true }`).
   const isDriveRoot =
     node.isFolder && (node.relativePath === '' || node.relativePath === '/')
   const tops = isDriveRoot ? childrenOf(node) : [node]
@@ -226,14 +232,16 @@ const TreeView = ({
             collapseIcon: ExpandMoreIcon,
             expandIcon: ChevronRightIcon
           }}
-          // the root is not a row any more, so it cannot be an expanded item
+          // the root is not a row any more, so neither spelling of it can be an
+          // expanded item
           expandedItems={expanded
             .filter((path) => path !== ROOT_PATH && path !== '/')
             .map(itemIdFor)}
           onExpandedItemsChange={(_event, itemIds) =>
             onExpandedChange(itemIds.map(relativePathFor))
           }
-          sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
+          // no `sx` here: the Box above is the one that scrolls, and a second
+          // scroll container inside it would only be `flexGrow`-inert
         >
           {tops.map((top) => renderTree(top))}
         </SimpleTreeView>
