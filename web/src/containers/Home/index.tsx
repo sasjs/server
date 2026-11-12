@@ -9,7 +9,13 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
+  Fab,
   Grid,
   List,
   ListItemButton,
@@ -426,6 +432,9 @@ const Home = () => {
       cancelled = true
     }
   }, [username])
+
+  /* The wipe asks first: it is the one control here that throws state away. */
+  const [confirmingWipe, setConfirmingWipe] = useState(false)
 
   const clearHistory = () => {
     clearDashboardHistory(username)
@@ -912,16 +921,8 @@ const Home = () => {
         </Grid>
       </Grid>
 
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          gap: 1,
-          flexWrap: 'wrap'
-        }}
-      >
-        {apps.length + files.length > 0 && (
+      {apps.length + files.length > 0 && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             size="small"
             startIcon={<DeleteSweep />}
@@ -929,19 +930,62 @@ const Home = () => {
           >
             Clear this browser's history
           </Button>
-        )}
-        {host === 'browser' && (
-          <Tooltip title="Unregisters the service worker, deletes the cached responses and the IndexedDB databases, clears this site's local and session storage, then loads the page afresh - the fix for a browser holding an old version of this site">
-            <Button
+        </Box>
+      )}
+
+      {/*
+        Pinned to the corner rather than sitting at the end of the page: the
+        reader who needs it is looking at a build that is wrong, and a control
+        below two cards is below the fold on the screen they land on.
+
+        It asks before it acts because it throws the site's local state away, and
+        a corner button is the kind that gets clicked by accident.
+      */}
+      {host === 'browser' && (
+        <>
+          <Tooltip title="Wipe this browser's copy of the site">
+            <Fab
               size="small"
-              startIcon={<DeleteForever />}
-              onClick={wipeCachedSite}
+              aria-label="Wipe this browser's copy of the site"
+              onClick={() => setConfirmingWipe(true)}
+              data-testid="wipe-site"
+              sx={{
+                position: 'fixed',
+                right: 24,
+                bottom: 24,
+                zIndex: (theme) => theme.zIndex.snackbar
+              }}
             >
-              Wipe this browser's copy
-            </Button>
+              <DeleteForever />
+            </Fab>
           </Tooltip>
-        )}
-      </Box>
+
+          <Dialog
+            open={confirmingWipe}
+            onClose={() => setConfirmingWipe(false)}
+            aria-labelledby="wipe-site-title"
+          >
+            <DialogTitle id="wipe-site-title">
+              Wipe this browser's copy of the site?
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                The service worker, the cached responses, the IndexedDB
+                databases and this site's local and session storage will be
+                deleted, and the page will reload. Anything you have set in this
+                browser for this site - including the dashboard's recent files -
+                goes with it.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConfirmingWipe(false)}>Cancel</Button>
+              <Button color="error" onClick={wipeCachedSite}>
+                Wipe and reload
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
     </Box>
   )
 }

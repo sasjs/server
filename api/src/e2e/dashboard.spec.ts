@@ -374,6 +374,24 @@ describe('Home dashboard and Apps tab', () => {
       timeout: 30000
     })
 
+    // The wipe control exists where there is something to wipe, and it asks
+    // first. The cancel path is taken on purpose: the suite must not wipe the
+    // state the rest of it has just built up.
+    const wipe = page.getByTestId('wipe-site')
+
+    expect(await wipe.count()).toBe(1)
+
+    await wipe.click()
+
+    const confirmation = page.getByRole('heading', {
+      name: "Wipe this browser's copy of the site?"
+    })
+
+    await confirmation.waitFor({ timeout: 30000 })
+
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await confirmation.waitFor({ state: 'detached', timeout: 30000 })
+
     await page.screenshot({
       path: path.join(screenshotDir, 'dashboard-browser-host.png')
     })
@@ -397,6 +415,10 @@ describe('Home dashboard and Apps tab', () => {
     expect(
       await page.getByText('The server process', { exact: true }).count()
     ).toBe(1)
+
+    // Nothing to wipe on a server: the answer does not come from the browser, so
+    // offering the button there would be a reload with a misleading name.
+    expect(await page.getByTestId('wipe-site').count()).toBe(0)
 
     await context.close()
   }, 120000)
