@@ -29,7 +29,8 @@ import {
   LogObject,
   parseExecutionResponse
 } from '../../../../utils'
-import { lintModel } from '../lint'
+import { clearLintModel, lintModel } from '../lint'
+import { lintAppliesTo } from '../lintScope'
 import { formatSasCode } from '../format'
 import { prettyJson } from '../pretty'
 import { guardMousePaste } from '../mousePasteGuard'
@@ -642,6 +643,11 @@ const useEditor = ({
     }
     setWebout('')
     setTab('code')
+    /* And the lint panel empties with the file. It lists findings about the
+       buffer that was open, so leaving it up describes the new file in the old
+       file's terms - the case that reported a .js file with "Line exceeds
+       maximum length by 1 characters", which is a SAS column rule. */
+    setLintMarkers([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
 
@@ -664,14 +670,20 @@ const useEditor = ({
    * The endpoint applies SAS rules, so a program in another runtime is left
    * unmarked rather than reported against rules that do not apply to it. A
    * buffer with no path is judged by the run time the user selected.
+   *
+   * A buffer the rules do not apply to CLEARS what the panel holds rather than
+   * returning quietly: the panel is state, so it outlives the file the findings
+   * described, and a .js file opened after a .sas program was reported with that
+   * program's findings.
    */
   const lint = useCallback(
     (code: string, filePath?: string) => {
-      const isSas = filePath
-        ? extensionOf(filePath) === 'sas'
-        : selectedRunTime === RunTimeType.SAS
+      if (!lintAppliesTo(filePath ?? '', selectedRunTime) || !code) {
+        clearLintModel(editorRef.current?.getModel() ?? null)
+        setLintMarkers([])
 
-      if (!isSas || !code) return
+        return
+      }
 
       // The file's own path drives the `.sasjslint` resolution on the server,
       // so the buffer is judged by the rules that apply where it lives.

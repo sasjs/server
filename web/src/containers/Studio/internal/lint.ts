@@ -38,3 +38,19 @@ export const lintModel = async (
     return []
   }
 }
+
+/**
+ * Takes the markers off a model, so nothing the panel no longer lists keeps a
+ * squiggle under the code.
+ *
+ * A model's markers outlive the buffer being open: Monaco holds them until
+ * something replaces them, and a buffer the rules do not apply to never gets a
+ * second lint to write over them.
+ */
+export const clearLintModel = (
+  model: monaco.editor.ITextModel | null
+): void => {
+  if (!model) return
+
+  monaco.editor.setModelMarkers(model, LINT_MARKER_OWNER, [])
+}
