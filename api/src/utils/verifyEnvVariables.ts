@@ -23,6 +23,25 @@ export enum CorsType {
   DISABLED = 'disable'
 }
 
+/**
+ * The CORS mode the server actually runs in: `CORS` when the operator set it,
+ * and otherwise the default for the mode - disabled for a server deployment,
+ * enabled for a desktop one.
+ *
+ * Derived rather than written into `process.env`, so a second caller (startup
+ * validation, the middleware, the info endpoint) reads the operator's value
+ * rather than a default one of them stored earlier: a written default is
+ * indistinguishable from an explicit instruction on the next call.
+ */
+export const getEffectiveCors = (): CorsType => {
+  const { CORS, MODE } = process.env
+
+  if (Object.values(CorsType).includes(CORS as CorsType))
+    return CORS as CorsType
+
+  return MODE === ModeType.Server ? CorsType.DISABLED : CorsType.ENABLED
+}
+
 export enum HelmetCoepType {
   TRUE = 'true',
   FALSE = 'false'
@@ -260,18 +279,13 @@ const verifyCORS = (): string[] => {
   if (CORS && !Object.values(CorsType).includes(CORS as CorsType))
     errors.push(`- CORS '${CORS}'\n - valid options ${Object.values(CorsType)}`)
 
-  if (!CORS) {
-    const { MODE } = process.env
-    process.env.CORS =
-      MODE === ModeType.Server ? CorsType.DISABLED : CorsType.ENABLED
-  }
-
-  // Checked against the value in effect, not only when the operator set CORS:
-  // a desktop install leaves it unset and gets the enabled default above, so a
-  // malformed entry would otherwise reach the middleware on that path too. The
-  // list itself is only mandatory when CORS was enabled explicitly - the
-  // desktop default answers same-origin requests without one.
-  if (process.env.CORS === CorsType.ENABLED) {
+  // The allow-list is checked against the value in effect, which includes the
+  // desktop default that getEffectiveCors derives - a desktop install never
+  // writes CORS into its environment, and a malformed entry there would
+  // otherwise reach the middleware unchecked. The list itself is only
+  // mandatory when CORS was set explicitly: the desktop default answers
+  // same-origin requests without one.
+  if (getEffectiveCors() === CorsType.ENABLED) {
     const { origins, invalid } = parseCorsWhiteList(process.env.WHITELIST)
 
     invalid.forEach((url) =>

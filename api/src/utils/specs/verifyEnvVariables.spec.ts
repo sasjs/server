@@ -7,7 +7,8 @@ import {
   isLocalLoginEnabled,
   AuthProviderType,
   ModeType,
-  CorsType
+  CorsType,
+  getEffectiveCors
 } from '../verifyEnvVariables'
 import { userInfo } from 'os'
 
@@ -446,7 +447,21 @@ describe('verifyEnvVariables', () => {
       process.env.WHITELIST = 'http://one.example.com,http://two.example.com'
 
       expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
-      expect(process.env.CORS).toEqual(CorsType.ENABLED)
+      // the default is derived, not written: what the operator set is still all
+      // that the environment holds afterwards
+      expect(process.env.CORS).toBeUndefined()
+      expect(getEffectiveCors()).toEqual(CorsType.ENABLED)
+    })
+
+    // The default is derived on every call, so a second call in the same
+    // process must answer the same way as the first.
+    it('accepts an empty list twice on the desktop default', () => {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.CORS
+      delete process.env.WHITELIST
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
     })
   })
 })

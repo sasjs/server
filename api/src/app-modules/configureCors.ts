@@ -1,12 +1,10 @@
 import { Express } from 'express'
 import cors from 'cors'
-import { CorsType, parseCorsWhiteList } from '../utils'
+import { CorsType, getEffectiveCors, parseCorsWhiteList } from '../utils'
 
 export const configureCors = (app: Express) => {
-  const { CORS, WHITELIST } = process.env
-
-  if (CORS === CorsType.ENABLED) {
-    const { origins } = parseCorsWhiteList(WHITELIST)
+  if (getEffectiveCors() === CorsType.ENABLED) {
+    const { origins } = parseCorsWhiteList(process.env.WHITELIST)
 
     process.logger.info('All CORS Requests are enabled for:', origins)
     app.use(cors({ credentials: true, origin: origins }))
