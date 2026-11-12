@@ -29,7 +29,8 @@ import {
   LogObject,
   parseExecutionResponse
 } from '../../../../utils'
-import { lintModel } from '../lint'
+import { applyLintMarkers, clearLintModel, lintModel } from '../lint'
+import { lintAppliesTo } from '../lintScope'
 import { formatSasCode } from '../format'
 import { prettyJson } from '../pretty'
 import { guardMousePaste } from '../mousePasteGuard'
@@ -75,6 +76,14 @@ const useEditor = ({
   const [lintMarkers, setLintMarkers] = useState<monaco.editor.IMarkerData[]>(
     []
   )
+
+  /**
+   * The file the panel describes.
+   *
+   * A lint request outlives the switch that follows it, so the answer is checked
+   * against this before it is shown - see `lint`.
+   */
+  const selectedFilePathRef = useRef(selectedFilePath)
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   // Detaches the mouse-paste guard from the editor that was unmounted, so a
@@ -353,22 +362,18 @@ const useEditor = ({
   }
 
   /**
-   * Whether the buffer holds a SAS program. The model's language tells it for
-   * a file opened from the drive; an untitled buffer mounts as plaintext, so
-   * there the selected runtime decides - the same signal the lint flow uses.
+   * Whether the buffer holds a SAS program.
+   *
+   * The same question the lint flow asks, from the same helper: the model's
+   * language id is not consulted, because the editor sets it from the extension
+   * (`getLanguageFromExtension`) - a second copy of an answer that would then
+   * drift from this one. An untitled buffer mounts as plaintext, which is the
+   * case the selected run time covers.
    */
-  const isSasBuffer = useCallback(() => {
-    const model = editorRef.current?.getModel()
-    if (model && model.getLanguageId() !== 'plaintext') {
-      return model.getLanguageId() === 'sas'
-    }
-
-    if (selectedFilePath) {
-      return extensionOf(selectedFilePath) === 'sas'
-    }
-
-    return selectedRunTime === RunTimeType.SAS
-  }, [selectedFilePath, selectedRunTime])
+  const isSasBuffer = useCallback(
+    () => lintAppliesTo(selectedFilePath, selectedRunTime),
+    [selectedFilePath, selectedRunTime]
+  )
 
   /**
    * Formats the buffer and applies the result to the editor model, returning
@@ -640,8 +645,14 @@ const useEditor = ({
       setFileContent(content)
       setImageUrl('')
     }
+    selectedFilePathRef.current = selectedFilePath
     setWebout('')
     setTab('code')
+    /* And the lint panel empties with the file. It lists findings about the
+       buffer that was open, so leaving it up describes the new file in the old
+       file's terms - the case that reported a .js file with "Line exceeds
+       maximum length by 1 characters", which is a SAS column rule. */
+    setLintMarkers([])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilePath])
 
@@ -664,22 +675,35 @@ const useEditor = ({
    * The endpoint applies SAS rules, so a program in another runtime is left
    * unmarked rather than reported against rules that do not apply to it. A
    * buffer with no path is judged by the run time the user selected.
+   *
+   * A buffer the rules do not apply to CLEARS what the panel holds rather than
+   * returning quietly: the panel is state, so it outlives the file the findings
+   * described, and a .js file opened after a .sas program was reported with that
+   * program's findings.
    */
   const lint = useCallback(
     (code: string, filePath?: string) => {
-      const isSas = filePath
-        ? extensionOf(filePath) === 'sas'
-        : selectedRunTime === RunTimeType.SAS
+      if (!lintAppliesTo(filePath ?? '', selectedRunTime) || !code) {
+        clearLintModel(editorRef.current?.getModel() ?? null)
+        setLintMarkers([])
 
-      if (!isSas || !code) return
+        return
+      }
 
       // The file's own path drives the `.sasjslint` resolution on the server,
       // so the buffer is judged by the rules that apply where it lives.
-      void lintModel(
-        editorRef.current?.getModel() ?? null,
-        code,
-        filePath || undefined
-      ).then(setLintMarkers)
+      const requestedFor = filePath ?? ''
+
+      void lintModel(code, filePath || undefined).then((markers) => {
+        /* A lint outlives a file switch: the answer for the previous buffer can
+           arrive after the next one is open, and painting it would put that
+           file's findings back for a debounce - the symptom this flow exists to
+           avoid. The answer is dropped unless it describes what is open now. */
+        if (requestedFor !== selectedFilePathRef.current) return
+
+        applyLintMarkers(editorRef.current?.getModel() ?? null, markers)
+        setLintMarkers(markers)
+      })
     },
     [selectedRunTime]
   )

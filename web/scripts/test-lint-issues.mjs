@@ -1,6 +1,7 @@
 /**
  * Asserts how the Code tab's lint list reads the editor's markers: the counts,
- * the order the findings keep, and the one-line summary.
+ * the order the findings keep, the one-line summary, and which buffers the SAS
+ * rules judge at all.
  *
  * The list and the squiggles come from one marker set, so this is a view of what
  * Monaco was handed - a wrong count here is a panel that disagrees with the code
@@ -20,6 +21,9 @@ const {
   describeLintSummary,
   summariseLintIssues
 } = await import('../src/containers/Studio/internal/lintIssues.ts')
+
+const { lintAppliesTo } =
+  await import('../src/containers/Studio/internal/lintScope.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -79,6 +83,29 @@ check(
   summariseLintIssues([]).issues.length === 0 &&
     describeLintSummary(summariseLintIssues([])) === ''
 )
+
+// The SAS rules are the only rules the endpoint applies, so a buffer in another
+// run time is left unmarked - and, in the hook, clears what the panel held. A
+// .js file open beside a .sas program was reported with that program's findings
+// before the buffer was asked this question at all.
+check(
+  'a .sas file is judged by the SAS rules',
+  lintAppliesTo('/a/b/run.sas', 'js')
+)
+check(
+  'a .js file is not, whatever run time is selected',
+  !lintAppliesTo('/a/b/run.js', 'sas')
+)
+check('a .py file is not', !lintAppliesTo('/a/b/run.py', 'sas'))
+check(
+  'an untitled buffer follows the selected run time',
+  lintAppliesTo('', 'sas')
+)
+check(
+  'an untitled buffer is left alone when the selection is not SAS',
+  !lintAppliesTo('', 'js')
+)
+check('upper case still names SAS', lintAppliesTo('/a/b/RUN.SAS', 'js'))
 
 if (failures.length) {
   console.error(`lint issues: ${failures.length} check(s) failed`)
