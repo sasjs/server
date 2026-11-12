@@ -18,17 +18,47 @@ export const IMAGE_EXTENSIONS = [
 ]
 
 /**
- * Whether a drive path is a picture, judged by its extension.
+ * The extension of a drive path, lower-cased, or '' when it has none.
  *
- * A path with no extension, or a directory whose name contains a dot, is not an
- * image: `split('.').pop()` returns the whole segment in the first case, and the
- * extension of the last segment in the second, which is what is wanted either way.
+ * The one definition of "the extension of this path", because the alternatives disagree on
+ * exactly the inputs that matter. `split('.').pop()` answers the whole path for `/a/program`,
+ * `sasjsrc` for `/a/b/.sasjsrc` and `b/program` for `/a.b/program` - none of which is an
+ * extension, and the first of which is a path. Every question about a file's format goes
+ * through here: which icon it gets, whether it is a picture, which run time runs it, whether
+ * the Studio offers Run on it at all.
  */
-export const isImageFile = (filePath: string) => {
-  const extension = filePath.split('.').pop()?.toLowerCase() ?? ''
+export const extensionOf = (filePath: string): string => {
+  const name = String(filePath || '')
+    .split('/')
+    .pop()
 
-  return IMAGE_EXTENSIONS.includes(extension)
+  if (!name) return ''
+
+  const dot = name.lastIndexOf('.')
+
+  // `.sasjsrc` names no extension; a leading dot is part of the name
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : ''
 }
+
+/**
+ * The last dot-separated segment of a path, lower-cased - a *suffix*, not an extension.
+ *
+ * The difference is deliberate and is the only place it is wanted: the drive's own rules file
+ * is `.sasjslint`, whose suffix is `sasjslint` and which the tree shows as a config file, where
+ * its *extension* - the part after a dot that is not the first character - is nothing at all.
+ * Everything else asks `extensionOf`.
+ */
+const suffixOf = (filePath: string): string =>
+  String(filePath || '')
+    .split('/')
+    .pop()
+    ?.split('.')
+    .pop()
+    ?.toLowerCase() ?? ''
+
+/** Whether a drive path is a picture, judged by its extension. */
+export const isImageFile = (filePath: string) =>
+  IMAGE_EXTENSIONS.includes(extensionOf(filePath))
 
 /**
  * What a drive entry is, as far as the tree's icon column is concerned.
@@ -61,7 +91,7 @@ const EXTENSIONS_BY_KIND: {
 export const driveFileKindOf = (filePath: string): DriveFileKind | null => {
   if (isImageFile(filePath)) return 'image'
 
-  const extension = filePath.split('.').pop()?.toLowerCase() ?? ''
+  const extension = suffixOf(filePath)
 
   const kinds = Object.keys(EXTENSIONS_BY_KIND) as Array<
     Exclude<DriveFileKind, 'image'>
@@ -97,8 +127,7 @@ const IMAGE_CONTENT_TYPES: { [extension: string]: string } = {
  * uploaded SVG run script on it.
  */
 export const imageContentTypeFor = (filePath: string) =>
-  IMAGE_CONTENT_TYPES[filePath.split('.').pop()?.toLowerCase() ?? ''] ??
-  'application/octet-stream'
+  IMAGE_CONTENT_TYPES[extensionOf(filePath)] ?? 'application/octet-stream'
 
 /**
  * A fetched picture's bytes as a blob the browser will draw.

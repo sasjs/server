@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:saveshortcut",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:saveshortcut && npm run test:runtime",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -31,7 +31,8 @@
     "test:appgrants": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-app-grants.mjs",
     "test:appurl": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-app-url.mjs",
     "test:appslayout": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-apps-layout.mjs",
-    "test:saveshortcut": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-save-shortcut.mjs"
+    "test:saveshortcut": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-save-shortcut.mjs",
+    "test:runtime": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-run-time.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
