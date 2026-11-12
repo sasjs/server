@@ -11,6 +11,7 @@ import {
 import { EditorDidMount, monaco } from 'react-monaco-editor'
 import { SelectChangeEvent } from '@mui/material'
 import { getSelection, programPathInjection } from '../helper'
+import { bindSaveShortcut, createSaveKeyHandler } from '../saveShortcut'
 import { AppContext, RunTimeType } from '../../../../context/appContext'
 import { AlertSeverityType } from '../../../../components/snackbar'
 import {
@@ -434,6 +435,22 @@ const useEditor = ({
       saveFile(undefined, text)
   }, [selectedFilePath, formatBuffer, prevFileContent, saveFile])
 
+  /**
+   * Ctrl+S anywhere in Studio.
+   *
+   * Monaco's action covers the key while the editor has focus; with focus in the file tree,
+   * the log or a dialog it reached the browser instead, which offered to save the page. This
+   * listener covers those, and `createSaveKeyHandler` keeps the two from both firing.
+   */
+  useEffect(() => {
+    const onKeyDown = createSaveKeyHandler({
+      save: () => void saveBuffer(),
+      hasFocus: () => editorRef.current?.hasTextFocus() ?? false
+    })
+
+    return bindSaveShortcut(document, onKeyDown)
+  }, [saveBuffer])
+
   useEffect(() => {
     const saveFileAction = editorRef.current?.addAction({
       // An unique identifier of the contributed action.
@@ -590,6 +607,10 @@ const useEditor = ({
 
           setPrevFileContent(content)
           setFileContent(content)
+
+          // Opening a file is opening it for typing: with focus left on the tree the next
+          // keystroke goes nowhere, which is what made a newly added file feel inert.
+          editorRef.current?.focus()
         })
         .catch((err) => {
           setModalTitle('Abort')

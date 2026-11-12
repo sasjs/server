@@ -101,6 +101,9 @@ const SideBar = ({
         setSnackbarSeverity(AlertSeverityType.Success)
         setOpenSnackbar(true)
         refreshFolder(parentPathOf(filePath))
+        // the point of adding a file is to put something in it: open it, so the buffer and
+        // the focus are in the file the visitor just named rather than the one left behind
+        handleSelect(filePath)
       })
       .catch((err) => {
         setModalTitle('Abort')
