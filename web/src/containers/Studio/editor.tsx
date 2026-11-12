@@ -252,6 +252,64 @@ const SASjsEditor = ({
   // empty - saving would truncate the file.
   const isImage = isImageFile(selectedFilePath)
 
+  const displayToggle = displayModes.length > 0 && (
+    <ToggleButtonGroup
+      size="small"
+      exclusive
+      value={displayMode}
+      onChange={(_event, mode: DisplayMode | null) => chooseDisplayMode(mode)}
+      aria-label="Display mode"
+    >
+      {displayModes.map((mode) => (
+        <ToggleButton
+          key={mode}
+          value={mode}
+          sx={{ textTransform: 'none', px: 1.5, py: 0.25 }}
+        >
+          {displayModeLabel(mode, selectedFileExtension)}
+        </ToggleButton>
+      ))}
+    </ToggleButtonGroup>
+  )
+
+  /**
+   * The editor, and the rendered view beside it or instead of it.
+   *
+   * One element used by both layouts: a `.md`, `.csv` or `.json` file is not
+   * runnable, so it renders in the simpler branch, and the pair has to behave the
+   * same there. Monaco stays mounted in the rendered mode - hidden rather than
+   * unmounted - so the buffer, its undo history and the cursor survive a look at
+   * the preview.
+   */
+  const codeAndPreview = (
+    <Box sx={{ display: 'flex', gap: 1, height: '100%', minHeight: 0 }}>
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          height: '100%',
+          display: displayMode === 'rendered' ? 'none' : 'block'
+        }}
+      >
+        {monacoEditor}
+      </Box>
+      {displayMode !== 'source' && (
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            height: '100%',
+            overflow: 'auto',
+            borderLeft: displayMode === 'split' ? 1 : 0,
+            borderColor: 'divider'
+          }}
+        >
+          <DisplayPane extension={selectedFileExtension} text={fileContent} />
+        </Box>
+      )}
+    </Box>
+  )
+
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
@@ -263,7 +321,15 @@ const SASjsEditor = ({
       {selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
         <Box sx={{ marginTop: '10px' }}>
           {!isImage && (
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              {displayToggle}
               {fileMenu}
             </Box>
           )}
@@ -292,7 +358,7 @@ const SASjsEditor = ({
                 />
               ) : null
             ) : (
-              monacoEditor
+              codeAndPreview
             )}
           </Paper>
         </Box>
@@ -427,42 +493,7 @@ const SASjsEditor = ({
                 }}
                 elevation={3}
               >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    gap: 1,
-                    height: '100%',
-                    minHeight: 0
-                  }}
-                >
-                  <Box
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
-                      height: '100%',
-                      display: displayMode === 'rendered' ? 'none' : 'block'
-                    }}
-                  >
-                    {monacoEditor}
-                  </Box>
-                  {displayMode !== 'source' && (
-                    <Box
-                      sx={{
-                        flex: 1,
-                        minWidth: 0,
-                        height: '100%',
-                        overflow: 'auto',
-                        borderLeft: displayMode === 'split' ? 1 : 0,
-                        borderColor: 'divider'
-                      }}
-                    >
-                      <DisplayPane
-                        extension={selectedFileExtension}
-                        text={fileContent}
-                      />
-                    </Box>
-                  )}
-                </Box>
+                {codeAndPreview}
                 <p
                   style={{
                     position: 'absolute',
