@@ -4,11 +4,12 @@
  * The Apps screen lists what a server has published, so a demo with nothing
  * published shows an empty page and a sentence about an administrator - true of
  * this host, and useless to a reader who came to see what the screen looks like
- * with an app on it. Three apps are published: Macro Dash, a game with a set of
+ * with an app on it. Four apps are published: Macro Dash, a game with a set of
  * SAS services behind it, the Minimal Seed App, which is the template a reader
- * setting out to build one is pointed at, and the React Seed App, which is the
- * one the SAS Apps team starts from. Each is streamed from SAS on a real
- * deployment, which is exactly the shape the App Stream serves, and each is
+ * setting out to build one is pointed at, the React Seed App, which is the one
+ * the SAS Apps team starts from, and the Angular Seed App, the Angular template
+ * of the same kind. Each is streamed from SAS on a real deployment, which is
+ * exactly the shape the App Stream serves, and each is
  * packaged here from its release rather than rebuilt, so this build carries
  * versions someone can name instead of a copy of another repository's source.
  *
@@ -104,8 +105,27 @@ export const REACT_SEED_APP = {
   asset: 'server.json.zip'
 }
 
+export const ANGULAR_SEED_APP = {
+  id: '064a9dec-48c0-4d19-9176-534a7951644e',
+  name: 'angular-seed-app',
+  // latest resolves to a release that carries the JavaScript twin of each service
+  // (appinit.js, getdata.js, upload.js, and the springs.json dataset they read),
+  // which is what v1.3.0 ships. This host runs JavaScript, so a release without
+  // those twins would publish a tile that loads and then cannot answer anything,
+  // which is why the fallback is v1.3.0: a build that cannot read `latest` still
+  // ships a release that works.
+  release: LATEST,
+  fallback: 'v1.3.0',
+  asset: 'server.json.zip'
+}
+
 /** The apps the demo drive carries, in the order the build publishes them. */
-export const PUBLISHED_APPS = [MACRO_DASH, MINIMAL_SEED_APP, REACT_SEED_APP]
+export const PUBLISHED_APPS = [
+  MACRO_DASH,
+  MINIMAL_SEED_APP,
+  REACT_SEED_APP,
+  ANGULAR_SEED_APP
+]
 
 /**
  * The version an app displays, without the tag's `v`.

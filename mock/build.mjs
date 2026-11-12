@@ -114,7 +114,7 @@ const snapshot = JSON.parse(
 
 /* `latest` is resolved first: what a rebuild publishes is whatever each repository
  * calls its newest release at that moment, and the tag is logged below so the site
- * can be traced to three releases rather than to a commit. */
+ * can be traced to each app's release rather than to a commit. */
 const resolvedApps = await Promise.all(
   PUBLISHED_APPS.map(async (app) => await resolveRelease(app))
 )
