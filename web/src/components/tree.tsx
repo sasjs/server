@@ -11,9 +11,9 @@ import NameInputModal from './nameInputModal'
 
 import {
   LOADING_SUFFIX,
-  ROOT_PATH,
   childrenOf,
-  isDriveRootPath
+  isDriveRootPath,
+  isRootPath
 } from '../utils/driveTree'
 import { TreeNode } from '../utils/types'
 
@@ -240,7 +240,7 @@ const TreeView = ({
           // the root is not a row any more, so neither spelling of it can be an
           // expanded item
           expandedItems={expanded
-            .filter((path) => path !== ROOT_PATH && path !== '/')
+            .filter((path) => !isRootPath(path))
             .map(itemIdFor)}
           onExpandedItemsChange={(_event, itemIds) =>
             onExpandedChange(itemIds.map(relativePathFor))
@@ -279,7 +279,6 @@ const TreeView = ({
               Add Folder
             </MenuItem>
             <MenuItem
-              disabled={!menuNode.relativePath}
               onClick={() => {
                 setContextMenu(null)
                 setDialog({

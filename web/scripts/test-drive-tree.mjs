@@ -182,11 +182,14 @@ check('isRootPath accepts either spelling of the root', () => {
   assert.equal(isRootPath('/'), true)
 })
 
-check('isRootPath is false for a folder, a file, and a double separator', () => {
-  assert.equal(isRootPath('/Public'), false)
-  assert.equal(isRootPath('/x.sas'), false)
-  assert.equal(isRootPath('//'), false)
-})
+check(
+  'isRootPath is false for a folder, a file, and a double separator',
+  () => {
+    assert.equal(isRootPath('/Public'), false)
+    assert.equal(isRootPath('/x.sas'), false)
+    assert.equal(isRootPath('//'), false)
+  }
+)
 
 check('childPrefixOf gives the root children their own separator, once', () => {
   // '//' would match nothing: the root's children are '/Public', not '//Public'
@@ -212,7 +215,10 @@ check('withRootPath keys the browser host root the way the screen asks', () => {
   assert.equal(withRootPath(node('files', '/', true)).relativePath, '')
 
   // and nothing else is rewritten - the folders under the root already agree
-  assert.equal(withRootPath(node('Public', '/Public', true)).relativePath, '/Public')
+  assert.equal(
+    withRootPath(node('Public', '/Public', true)).relativePath,
+    '/Public'
+  )
 
   // a file is never the root, whatever its path
   assert.equal(withRootPath(node('x.sas', '/', false)).relativePath, '/')
