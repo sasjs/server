@@ -40,22 +40,6 @@ export const extensionOf = (filePath: string): string => {
   return dot > 0 ? name.slice(dot + 1).toLowerCase() : ''
 }
 
-/**
- * The last dot-separated segment of a path, lower-cased - a *suffix*, not an extension.
- *
- * The difference is deliberate and is the only place it is wanted: the drive's own rules file
- * is `.sasjslint`, whose suffix is `sasjslint` and which the tree shows as a config file, where
- * its *extension* - the part after a dot that is not the first character - is nothing at all.
- * Everything else asks `extensionOf`.
- */
-const suffixOf = (filePath: string): string =>
-  String(filePath || '')
-    .split('/')
-    .pop()
-    ?.split('.')
-    .pop()
-    ?.toLowerCase() ?? ''
-
 /** Whether a drive path is a picture, judged by its extension. */
 export const isImageFile = (filePath: string) =>
   IMAGE_EXTENSIONS.includes(extensionOf(filePath))
@@ -67,18 +51,42 @@ export const isImageFile = (filePath: string) =>
  * `IMAGE_EXTENSIONS`, so the two cannot drift.
  */
 export type DriveFileKind =
-  'program' | 'data' | 'log' | 'config' | 'table' | 'image'
+  | 'program'
+  | 'script'
+  | 'markup'
+  | 'config'
+  | 'data'
+  | 'table'
+  | 'log'
+  | 'text'
+  | 'document'
+  | 'archive'
+  | 'image'
 
-/** The extensions behind every kind but `image`, which reuses the image list. */
+/**
+ * The extensions behind every kind but `image`, which reuses the image list.
+ *
+ * The list is the set of files a drive actually holds rather than every format
+ * in existence: a program the host can run, the scripts beside it, the markup a
+ * streamed app is built from, the config a project carries, SAS datasets and the
+ * exports an analyst puts next to them, logs, text, office documents and
+ * archives. An extension in none of them gets the reserved blank column, which is
+ * the same treatment as a name with no extension at all.
+ */
 const EXTENSIONS_BY_KIND: {
   [kind in Exclude<DriveFileKind, 'image'>]: string[]
 } = {
+  // SAS is the one kind with its own mark; the others are glyphs
   program: ['sas'],
-  data: ['sas7bdat', 'sas7bcat'],
+  script: ['js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'py', 'r', 'sh', 'bash'],
+  markup: ['html', 'htm', 'css', 'scss', 'less', 'xml', 'yml', 'yaml'],
+  config: ['json', 'sasjslint', 'toml', 'ini', 'conf', 'env'],
+  data: ['sas7bdat', 'sas7bcat', 'xpt', 'parquet', 'dta', 'rds', 'sav'],
+  table: ['csv', 'tsv', 'xls', 'xlsx', 'xlsm'],
   log: ['log'],
-  // `.sasjslint` is the drive's own rules file, and JSON like the rest
-  config: ['json', 'sasjslint'],
-  table: ['csv', 'xls', 'xlsx']
+  text: ['txt', 'md', 'markdown', 'rst'],
+  document: ['doc', 'docx', 'odt', 'rtf', 'pdf', 'ppt', 'pptx', 'key', 'pages'],
+  archive: ['zip', 'gz', 'tgz', 'tar', '7z', 'rar']
 }
 
 /**
@@ -91,7 +99,20 @@ const EXTENSIONS_BY_KIND: {
 export const driveFileKindOf = (filePath: string): DriveFileKind | null => {
   if (isImageFile(filePath)) return 'image'
 
-  const extension = suffixOf(filePath)
+  // `.sasjslint` is the drive's own rules file, and it is a DOTFILE: the dot is
+  // the first character of the name, so its extension is nothing at all and the
+  // list cannot catch it. A file that merely carries the extension -
+  // `my.sasjslint` - is in the list like any other JSON, and this line is not
+  // what answers for it.
+  //
+  // Everything else is judged by the extension alone: a file called `key` or `r`
+  // is not a document or an R script, which is what asking for the whole name
+  // answered once the lists grew.
+  const name = (filePath.split('/').pop() ?? '').toLowerCase()
+
+  if (name === '.sasjslint') return 'config'
+
+  const extension = extensionOf(filePath)
 
   const kinds = Object.keys(EXTENSIONS_BY_KIND) as Array<
     Exclude<DriveFileKind, 'image'>

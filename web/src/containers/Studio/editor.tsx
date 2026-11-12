@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 
 import {
   Backdrop,
@@ -7,6 +7,8 @@ import {
   IconButton,
   Paper,
   Tab,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography
 } from '@mui/material'
@@ -17,6 +19,14 @@ import Editor from 'react-monaco-editor'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import FilePathInputModal from '../../components/filePathInputModal'
+import { DisplayPane } from './internal/components/displayPane'
+import {
+  DisplayMode,
+  displayModeLabel,
+  displayModeStorageKey,
+  displayModesFor,
+  storedDisplayMode
+} from './internal/displayMode'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
 import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
@@ -124,6 +134,7 @@ const SASjsEditor = ({
     fileContent,
     imageUrl,
     lintMarkers,
+    relayout,
     revealLine,
     isLoading,
     log,
@@ -156,6 +167,31 @@ const SASjsEditor = ({
   // The dot on the save icon is the same news the unsaved-changes prompt
   // guards: the buffer holds edits the drive does not.
   const isDirty = prevFileContent !== fileContent
+
+  /* Which of the file's views is showing: the text, a rendering, or both. Only
+     the files with a rendering offer the choice (displayMode.ts), and the choice
+     is remembered per file type. */
+  const displayModes = displayModesFor(selectedFilePath)
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('source')
+
+  useEffect(() => {
+    setDisplayMode(storedDisplayMode(selectedFilePath))
+  }, [selectedFilePath])
+
+  const chooseDisplayMode = (mode: DisplayMode | null) => {
+    if (!mode) return
+
+    setDisplayMode(mode)
+
+    try {
+      localStorage.setItem(displayModeStorageKey(selectedFilePath), mode)
+    } catch {
+      // a browser with storage refused keeps the choice for this session only
+    }
+  }
+
+  // The editor's width changes with the pane, and Monaco only measures when told.
+  useEffect(relayout, [displayMode, relayout])
 
   /**
    * Why the format button cannot be used, or undefined when it can.
@@ -216,6 +252,64 @@ const SASjsEditor = ({
   // empty - saving would truncate the file.
   const isImage = isImageFile(selectedFilePath)
 
+  const displayToggle = displayModes.length > 0 && (
+    <ToggleButtonGroup
+      size="small"
+      exclusive
+      value={displayMode}
+      onChange={(_event, mode: DisplayMode | null) => chooseDisplayMode(mode)}
+      aria-label="Display mode"
+    >
+      {displayModes.map((mode) => (
+        <ToggleButton
+          key={mode}
+          value={mode}
+          sx={{ textTransform: 'none', px: 1.5, py: 0.25 }}
+        >
+          {displayModeLabel(mode, selectedFilePath)}
+        </ToggleButton>
+      ))}
+    </ToggleButtonGroup>
+  )
+
+  /**
+   * The editor, and the rendered view beside it or instead of it.
+   *
+   * One element used by both layouts: a `.md`, `.csv` or `.json` file is not
+   * runnable, so it renders in the simpler branch, and the pair has to behave the
+   * same there. Monaco stays mounted in the rendered mode - hidden rather than
+   * unmounted - so the buffer, its undo history and the cursor survive a look at
+   * the preview.
+   */
+  const codeAndPreview = (
+    <Box sx={{ display: 'flex', gap: 1, height: '100%', minHeight: 0 }}>
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          height: '100%',
+          display: displayMode === 'rendered' ? 'none' : 'block'
+        }}
+      >
+        {monacoEditor}
+      </Box>
+      {displayMode !== 'source' && (
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            height: '100%',
+            overflow: 'auto',
+            borderLeft: displayMode === 'split' ? 1 : 0,
+            borderColor: 'divider'
+          }}
+        >
+          <DisplayPane filePath={selectedFilePath} text={fileContent} />
+        </Box>
+      )}
+    </Box>
+  )
+
   return (
     <Box sx={{ width: '100%', typography: 'body1', marginTop: '50px' }}>
       <Backdrop
@@ -227,7 +321,15 @@ const SASjsEditor = ({
       {selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
         <Box sx={{ marginTop: '10px' }}>
           {!isImage && (
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              {displayToggle}
               {fileMenu}
             </Box>
           )}
@@ -256,7 +358,7 @@ const SASjsEditor = ({
                 />
               ) : null
             ) : (
-              monacoEditor
+              codeAndPreview
             )}
           </Paper>
         </Box>
@@ -340,7 +442,14 @@ const SASjsEditor = ({
                 height: 'calc(100vh - 170px)'
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
                 <RunMenu
                   fileContent={fileContent}
                   prevFileContent={prevFileContent}
@@ -350,6 +459,7 @@ const SASjsEditor = ({
                   handleChangeRunTime={handleChangeRunTime}
                   handleRunBtnClick={handleRunBtnClick}
                 />
+                {displayToggle}
                 {fileMenu}
               </Box>
               <LintIssues markers={lintMarkers} onSelectLine={revealLine} />
@@ -363,7 +473,7 @@ const SASjsEditor = ({
                 }}
                 elevation={3}
               >
-                {monacoEditor}
+                {codeAndPreview}
                 <p
                   style={{
                     position: 'absolute',

@@ -728,10 +728,22 @@ const useEditor = ({
     return () => clearTimeout(timer)
   }, [fileContent, selectedFilePath, lint])
 
+  /**
+   * Re-measures the editor.
+   *
+   * Monaco caches its container's size, so a pane opening beside it - the display
+   * modes split the width - leaves it drawing at the old width until something
+   * tells it to measure again. A window resize is not coming, so the caller says.
+   */
+  const relayout = useCallback(() => {
+    editorRef.current?.layout()
+  }, [])
+
   return {
     fileContent,
     imageUrl,
     lintMarkers,
+    relayout,
     revealLine,
     isLoading,
     log,
