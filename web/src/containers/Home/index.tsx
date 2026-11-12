@@ -17,6 +17,7 @@ import {
   ListItemText,
   Paper,
   Stack,
+  Tooltip,
   Typography
 } from '@mui/material'
 import {
@@ -24,6 +25,7 @@ import {
   Apps as AppsIcon,
   ArrowForward,
   Code as CodeIcon,
+  DeleteForever,
   DeleteSweep,
   InfoOutlined,
   InsertDriveFileOutlined,
@@ -35,6 +37,7 @@ import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
 import { brand } from '../../theme/palette'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
+import { clearCachedSite } from '../../utils/cachedSite'
 import { ApiHost, apiHost } from '../../utils/host'
 import {
   RecentApp,
@@ -427,6 +430,22 @@ const Home = () => {
   const clearHistory = () => {
     clearDashboardHistory(username)
     setHistoryVersion((version) => version + 1)
+  }
+
+  /**
+   * Takes this browser's cached copy of the site off it, then reloads.
+   *
+   * Only the demonstration site has a service worker - that is how it answers
+   * `/SASjsApi` with no server - so only there is there anything to wipe; on a
+   * server every response already comes from the process.
+   */
+  const wipeCachedSite = () => {
+    void clearCachedSite({
+      serviceWorker: globalThis.navigator?.serviceWorker,
+      caches: globalThis.caches,
+      href: window.location.href,
+      navigate: (url) => window.location.replace(url)
+    })
   }
 
   const runTimes = appContext.runTimes.length
@@ -897,8 +916,16 @@ const Home = () => {
         </Grid>
       </Grid>
 
-      {apps.length + files.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          gap: 1,
+          flexWrap: 'wrap'
+        }}
+      >
+        {apps.length + files.length > 0 && (
           <Button
             size="small"
             startIcon={<DeleteSweep />}
@@ -907,8 +934,20 @@ const Home = () => {
           >
             Clear this browser's history
           </Button>
-        </Box>
-      )}
+        )}
+        {host === 'browser' && (
+          <Tooltip title="Unregisters the service worker, deletes the cached responses and reloads - the fix for a browser holding an old version of this site">
+            <Button
+              size="small"
+              startIcon={<DeleteForever />}
+              onClick={wipeCachedSite}
+              aria-label="Wipe this browser's cached copy of the site"
+            >
+              Wipe the cached site
+            </Button>
+          </Tooltip>
+        )}
+      </Box>
     </Box>
   )
 }
