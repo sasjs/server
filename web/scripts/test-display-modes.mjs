@@ -17,6 +17,7 @@ registerHooks(tsResolverHooks)
 
 const {
   DISPLAY_MODES,
+  displayKindOf,
   displayModeLabel,
   displayModeStorageKey,
   displayModesFor,
@@ -37,52 +38,85 @@ const check = (label, condition) => {
 
 // --- which files get the choice -------------------------------------------
 
-check('markdown offers three modes', displayModesFor('md').length === 3)
+check(
+  'markdown offers three modes',
+  displayModesFor('/a/README.md').length === 3
+)
 check(
   'markdown, spelled out, is the same',
-  displayModesFor('markdown').length === 3
+  displayModesFor('/a/notes.markdown').length === 3
 )
-check('csv offers three modes', displayModesFor('csv').length === 3)
-check('json offers three modes', displayModesFor('json').length === 3)
-check('case does not matter', displayModesFor('JSON').length === 3)
+check('csv offers three modes', displayModesFor('/a/orders.csv').length === 3)
+check(
+  'json offers three modes',
+  displayModesFor('/a/sasjsconfig.json').length === 3
+)
+check('case does not matter', displayModesFor('/a/CONFIG.JSON').length === 3)
+check(
+  'the lint rules file is JSON, though it names no extension',
+  displayModesFor('/.sasjslint').length === 3
+)
 check(
   'a SAS program keeps the editor alone',
-  displayModesFor('sas').length === 0
+  displayModesFor('/a/run.sas').length === 0
 )
-check('a JS program keeps the editor alone', displayModesFor('js').length === 0)
+check(
+  'a JS program keeps the editor alone',
+  displayModesFor('/a/run.js').length === 0
+)
+check(
+  'an image keeps the editor alone',
+  displayModesFor('/a/logo.png').length === 0
+)
 check(
   'the modes are source, split, rendered',
   DISPLAY_MODES.join(',') === 'source,split,rendered'
 )
 
-check('the source label', displayModeLabel('source', 'md') === 'Source')
-check('the split label', displayModeLabel('split', 'md') === 'Split')
-check('markdown previews', displayModeLabel('rendered', 'md') === 'Preview')
-check('csv is a table', displayModeLabel('rendered', 'csv') === 'Table')
-check('json is a tree', displayModeLabel('rendered', 'json') === 'Tree')
+check('the source label', displayModeLabel('source', '/a/x.md') === 'Source')
+check('the split label', displayModeLabel('split', '/a/x.md') === 'Split')
+check(
+  'markdown previews',
+  displayModeLabel('rendered', '/a/x.md') === 'Preview'
+)
+check('csv is a table', displayModeLabel('rendered', '/a/x.csv') === 'Table')
+check('json is a tree', displayModeLabel('rendered', '/a/x.json') === 'Tree')
+check(
+  'and so is the lint file',
+  displayModeLabel('rendered', '/.sasjslint') === 'Tree'
+)
 
 check(
-  'the stored key is per extension',
-  displayModeStorageKey('CSV') === 'studio.displayMode.csv'
+  'the stored key is per kind, not per file',
+  displayModeStorageKey('/a/orders.csv') === 'studio.displayMode.csv' &&
+    displayModeStorageKey('/b/people.csv') === 'studio.displayMode.csv'
 )
+check(
+  'the lint file stores under json',
+  displayModeStorageKey('/.sasjslint') === 'studio.displayMode.json'
+)
+
+check('the kind of a markdown file', displayKindOf('/a/x.md') === 'markdown')
+check('the kind of the lint file', displayKindOf('/.sasjslint') === 'json')
+check('the kind of a program is none', displayKindOf('/a/x.sas') === null)
 
 const storageOf = (value) => ({ getItem: () => value })
 
 check(
   'nothing stored means the source',
-  storedDisplayMode('csv', storageOf(null)) === 'source'
+  storedDisplayMode('/a/x.csv', storageOf(null)) === 'source'
 )
 check(
   'a stored mode is honoured',
-  storedDisplayMode('csv', storageOf('rendered')) === 'rendered'
+  storedDisplayMode('/a/x.csv', storageOf('rendered')) === 'rendered'
 )
 check(
   'a stored mode that is not offered is ignored',
-  storedDisplayMode('csv', storageOf('tree')) === 'source'
+  storedDisplayMode('/a/x.csv', storageOf('tree')) === 'source'
 )
 check(
-  'a type with no modes is always the source',
-  storedDisplayMode('sas', storageOf('rendered')) === 'source'
+  'a kind with no modes is always the source',
+  storedDisplayMode('/a/run.sas', storageOf('rendered')) === 'source'
 )
 
 // --- markdown --------------------------------------------------------------

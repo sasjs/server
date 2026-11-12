@@ -14,6 +14,7 @@ import { useState } from 'react'
 
 import { Box, Typography } from '@mui/material'
 
+import { displayKindOf } from '../displayMode'
 import { CsvTable, csvTable } from '../render/csv'
 import { JsonNode, jsonTreeOf } from '../render/jsonTree'
 import { markdownToHtml } from '../render/markdown'
@@ -224,18 +225,19 @@ const JsonPane = ({ text }: { text: string }) => {
   )
 }
 
-/** The rendered view of a file, by extension. */
+/** The rendered view of a file, by what it is. */
 export const DisplayPane = ({
-  extension,
+  filePath,
   text
 }: {
-  extension: string
+  filePath: string
   text: string
 }) => {
-  if (extension === 'md' || extension === 'markdown')
-    return <MarkdownPane text={text} />
-  if (extension === 'csv') return <CsvPane text={text} />
-  if (extension === 'json') return <JsonPane text={text} />
+  const kind = displayKindOf(filePath)
+
+  if (kind === 'markdown') return <MarkdownPane text={text} />
+  if (kind === 'csv') return <CsvPane text={text} />
+  if (kind === 'json') return <JsonPane text={text} />
 
   return placeholder('This file has no rendered view.')
 }

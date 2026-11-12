@@ -171,12 +171,12 @@ const SASjsEditor = ({
   /* Which of the file's views is showing: the text, a rendering, or both. Only
      the files with a rendering offer the choice (displayMode.ts), and the choice
      is remembered per file type. */
-  const displayModes = displayModesFor(selectedFileExtension)
+  const displayModes = displayModesFor(selectedFilePath)
   const [displayMode, setDisplayMode] = useState<DisplayMode>('source')
 
   useEffect(() => {
-    setDisplayMode(storedDisplayMode(selectedFileExtension))
-  }, [selectedFileExtension])
+    setDisplayMode(storedDisplayMode(selectedFilePath))
+  }, [selectedFilePath])
 
   const chooseDisplayMode = (mode: DisplayMode | null) => {
     if (!mode) return
@@ -184,7 +184,7 @@ const SASjsEditor = ({
     setDisplayMode(mode)
 
     try {
-      localStorage.setItem(displayModeStorageKey(selectedFileExtension), mode)
+      localStorage.setItem(displayModeStorageKey(selectedFilePath), mode)
     } catch {
       // a browser with storage refused keeps the choice for this session only
     }
@@ -266,7 +266,7 @@ const SASjsEditor = ({
           value={mode}
           sx={{ textTransform: 'none', px: 1.5, py: 0.25 }}
         >
-          {displayModeLabel(mode, selectedFileExtension)}
+          {displayModeLabel(mode, selectedFilePath)}
         </ToggleButton>
       ))}
     </ToggleButtonGroup>
@@ -304,7 +304,7 @@ const SASjsEditor = ({
             borderColor: 'divider'
           }}
         >
-          <DisplayPane extension={selectedFileExtension} text={fileContent} />
+          <DisplayPane filePath={selectedFilePath} text={fileContent} />
         </Box>
       )}
     </Box>
@@ -459,27 +459,7 @@ const SASjsEditor = ({
                   handleChangeRunTime={handleChangeRunTime}
                   handleRunBtnClick={handleRunBtnClick}
                 />
-                {displayModes.length > 0 && (
-                  <ToggleButtonGroup
-                    size="small"
-                    exclusive
-                    value={displayMode}
-                    onChange={(_event, mode: DisplayMode | null) =>
-                      chooseDisplayMode(mode)
-                    }
-                    aria-label="Display mode"
-                  >
-                    {displayModes.map((mode) => (
-                      <ToggleButton
-                        key={mode}
-                        value={mode}
-                        sx={{ textTransform: 'none', px: 1.5, py: 0.25 }}
-                      >
-                        {displayModeLabel(mode, selectedFileExtension)}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                )}
+                {displayToggle}
                 {fileMenu}
               </Box>
               <LintIssues markers={lintMarkers} onSelectLine={revealLine} />
