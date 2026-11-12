@@ -6,7 +6,9 @@ import {
   isAuthProviderEnabled,
   isLocalLoginEnabled,
   AuthProviderType,
-  ModeType
+  ModeType,
+  CorsType,
+  getEffectiveCors
 } from '../verifyEnvVariables'
 import { userInfo } from 'os'
 
@@ -14,6 +16,8 @@ import { userInfo } from 'os'
 // that exercise it temporarily switch NODE_ENV and restore it afterwards.
 const managedEnvVars = [
   'MODE',
+  'CORS',
+  'WHITELIST',
   'NODE_ENV',
   'DB_CONNECT',
   'ADMIN_USERNAME',
@@ -367,6 +371,96 @@ describe('verifyEnvVariables', () => {
       process.env.MODE = ModeType.Desktop
       delete process.env.OIDC_CLIENT_ID
 
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+  })
+
+  describe('CORS', () => {
+    /**
+     * A CORS allow-list entry is compared against the `Origin` header, which a
+     * browser sends as a bare origin. An entry carrying a path, a query or no
+     * scheme can therefore never match, and the server would start up answering
+     * no cross-origin request at all - so those are refused here.
+     */
+    it('accepts a space separated WHITELIST', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com http://two.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+
+    it('accepts a comma separated WHITELIST', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com,http://two.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+    })
+
+    it('rejects an entry that carries a path', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com/app'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('rejects an entry with no scheme', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'one.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('names the offending entry and what a valid one looks like', () => {
+      const error = jest.fn()
+      process.logger = { error, info: jest.fn() } as any
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = 'http://one.example.com/app'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+
+      const message = String(error.mock.calls[0]?.[0])
+      expect(message).toContain('http://one.example.com/app')
+      expect(message).toContain('http://localhost:3000')
+    })
+
+    it('still requires at least one URL when CORS is enabled', () => {
+      process.env.CORS = CorsType.ENABLED
+      process.env.WHITELIST = ' '
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    // A desktop install leaves CORS unset and takes the enabled default, so the
+    // allow-list has to be checked against the value in effect rather than only
+    // when the operator set CORS explicitly.
+    it('rejects a bad entry on the desktop default, where CORS is unset', () => {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.CORS
+      process.env.WHITELIST = 'http://one.example.com/app'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
+    })
+
+    it('accepts a valid list on the desktop default, where CORS is unset', () => {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.CORS
+      process.env.WHITELIST = 'http://one.example.com,http://two.example.com'
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
+      // the default is derived, not written: what the operator set is still all
+      // that the environment holds afterwards
+      expect(process.env.CORS).toBeUndefined()
+      expect(getEffectiveCors()).toEqual(CorsType.ENABLED)
+    })
+
+    // The default is derived on every call, so a second call in the same
+    // process must answer the same way as the first.
+    it('accepts an empty list twice on the desktop default', () => {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.CORS
+      delete process.env.WHITELIST
+
+      expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
       expect(verifyEnvVariables()).toEqual(ReturnCode.Success)
     })
   })

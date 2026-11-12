@@ -1,6 +1,7 @@
 import os from 'os'
 
 import { resolveListeners } from './resolveListeners'
+import { parseCorsWhiteList } from './parseCorsWhiteList'
 
 export enum MOCK_SERVERTYPEType {
   SAS9 = 'sas9',
@@ -20,6 +21,25 @@ export enum AuthProviderType {
 export enum CorsType {
   ENABLED = 'enable',
   DISABLED = 'disable'
+}
+
+/**
+ * The CORS mode the server actually runs in: `CORS` when the operator set it,
+ * and otherwise the default for the mode - disabled for a server deployment,
+ * enabled for a desktop one.
+ *
+ * Derived rather than written into `process.env`, so a second caller (startup
+ * validation, the middleware, the info endpoint) reads the operator's value
+ * rather than a default one of them stored earlier: a written default is
+ * indistinguishable from an explicit instruction on the next call.
+ */
+export const getEffectiveCors = (): CorsType => {
+  const { CORS, MODE } = process.env
+
+  if (Object.values(CorsType).includes(CORS as CorsType))
+    return CORS as CorsType
+
+  return MODE === ModeType.Server ? CorsType.DISABLED : CorsType.ENABLED
 }
 
 export enum HelmetCoepType {
@@ -256,33 +276,28 @@ const verifyCORS = (): string[] => {
   const errors: string[] = []
   const { CORS } = process.env
 
-  if (CORS) {
-    const corsTypes = Object.values(CorsType)
+  if (CORS && !Object.values(CorsType).includes(CORS as CorsType))
+    errors.push(`- CORS '${CORS}'\n - valid options ${Object.values(CorsType)}`)
 
-    if (!corsTypes.includes(CORS as CorsType))
-      errors.push(`- CORS '${CORS}'\n - valid options ${corsTypes}`)
+  // The allow-list is checked against the value in effect, which includes the
+  // desktop default that getEffectiveCors derives - a desktop install never
+  // writes CORS into its environment, and a malformed entry there would
+  // otherwise reach the middleware unchecked. The list itself is only
+  // mandatory when CORS was set explicitly: the desktop default answers
+  // same-origin requests without one.
+  if (getEffectiveCors() === CorsType.ENABLED) {
+    const { origins, invalid } = parseCorsWhiteList(process.env.WHITELIST)
 
-    if (CORS === CorsType.ENABLED) {
-      const { WHITELIST } = process.env
+    invalid.forEach((url) =>
+      errors.push(
+        `- CORS '${CorsType.ENABLED}'\n - provided WHITELIST ${url} is not valid\n - use an http(s) origin, such as http://localhost:3000`
+      )
+    )
 
-      const urls = WHITELIST?.trim()
-        .split(' ')
-        .filter((url) => !!url)
-      if (urls?.length) {
-        urls.forEach((url) => {
-          if (!url.startsWith('http://') && !url.startsWith('https://'))
-            errors.push(
-              `- CORS '${CORS}'\n - provided WHITELIST ${url} is not valid`
-            )
-        })
-      } else {
-        errors.push(`- CORS '${CORS}'\n - provide at least one WHITELIST URL`)
-      }
-    }
-  } else {
-    const { MODE } = process.env
-    process.env.CORS =
-      MODE === ModeType.Server ? CorsType.DISABLED : CorsType.ENABLED
+    if (CORS && !origins.length && !invalid.length)
+      errors.push(
+        `- CORS '${CorsType.ENABLED}'\n - provide at least one WHITELIST URL`
+      )
   }
 
   return errors

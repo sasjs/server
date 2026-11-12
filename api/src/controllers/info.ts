@@ -13,7 +13,11 @@ import {
 // them rather than through the barrel: `../utils/index` reaches these
 // controllers through `isPublicRoute`, and a cycle leaves the enum undefined at
 // decorator evaluation time, which fails the whole app at load.
-import { CorsType, ModeType } from '../utils/verifyEnvVariables'
+import {
+  CorsType,
+  ModeType,
+  getEffectiveCors
+} from '../utils/verifyEnvVariables'
 import { createInfoService } from '@sasjs/api'
 export interface AuthorizedRoutesResponse {
   paths: string[]
@@ -112,11 +116,7 @@ export class InfoController {
       // both are constrained to their enum members by verifyEnvVariables, which
       // has already run by the time a request reaches here
       mode: (process.env.MODE as ModeType) ?? ModeType.Desktop,
-      cors:
-        (process.env.CORS as CorsType) ||
-        (process.env.MODE === ModeType.Server
-          ? CorsType.DISABLED
-          : CorsType.ENABLED),
+      cors: getEffectiveCors(),
       httpPort: listeners.config?.httpPort || null,
       httpsPort: listeners.config?.httpsPort || null,
       runTimes: process.runTimes || [],

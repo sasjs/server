@@ -654,8 +654,15 @@ STATIC_MOCK_LOCATION=mocks
 ```
 
 ### WHITELIST
-Space separated urls, eg: `WHITELIST=http://localhost:3000 https://abc.com`.  
-  
+
+The browser origins that may call the server cross-origin, comma or space separated. Each entry is an origin - scheme, host and port only, with no path, query or trailing slash:
+
+```
+WHITELIST=http://localhost:3000,https://abc.com
+```
+
+A browser sends an `Origin` header that is a bare origin, so an entry carrying a path or a query can never match a request. The server refuses to start rather than register an allow-list entry that would answer nobody.
+
 See also:
 
 * [`CORS`](settings.md#cors)
