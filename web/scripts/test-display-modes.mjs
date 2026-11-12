@@ -32,6 +32,8 @@ const { jsonTreeOf } =
   await import('../src/containers/Studio/internal/render/jsonTree.ts')
 const { formatJson } =
   await import('../src/containers/Studio/internal/render/jsonFormat.ts')
+const { languageForFile } =
+  await import('../src/containers/Studio/internal/language.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -275,6 +277,30 @@ check(
 check(
   'an empty document is neither',
   jsonTreeOf('  ').root === null && jsonTreeOf('  ').error === null
+)
+
+// ---- which Monaco language a file is handed to -----------------------------
+
+check(
+  'a .sas file is SAS',
+  languageForFile('/home/me/run.sas', 'sas') === 'sas'
+)
+check('a .json file is JSON', languageForFile('/a/b.json', 'json') === 'json')
+check(
+  'the rules dotfile is JSON too, though it names no extension',
+  languageForFile('/sasjs/drive/files/.sasjslint', '') === 'json'
+)
+check(
+  'and so is a copy of it anywhere else on the drive',
+  languageForFile('/home/me/.sasjslint', '') === 'json'
+)
+check(
+  'an unknown extension stays plain text',
+  languageForFile('/a/blob.weird', 'weird') === 'plaintext'
+)
+check(
+  'a dotless name called sasjslint is not the rules file',
+  languageForFile('/a/sasjslint', '') === 'plaintext'
 )
 
 // ---- the JSON format action ------------------------------------------------

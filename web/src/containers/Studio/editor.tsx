@@ -37,7 +37,7 @@ import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 import WebOutPreview from './internal/components/webout/weboutPreview'
 
 import { usePrompt } from '../../utils/hooks'
-import { getLanguageFromExtension } from './internal/helper'
+import { languageForFile } from './internal/helper'
 import {
   registerSasCompletions,
   registerSasHover,
@@ -231,7 +231,7 @@ const SASjsEditor = ({
       // prop defaults to null, so a theme defined ahead of the editor is
       // replaced with the default as soon as the editor mounts.
       theme={editorThemeFor(colorMode)}
-      language={getLanguageFromExtension(selectedFileExtension)}
+      language={languageForFile(selectedFilePath, selectedFileExtension)}
       value={fileContent}
       // Monaco measures its container once and only when told. `relayout` below
       // covers the mode switch, but it runs before the split has finished
