@@ -88,3 +88,35 @@ for (const [file, source] of programs) {
     }
   })
 }
+
+/*
+ * A server writes a few files of its own onto the drive at startup, and the
+ * Studio tree shows them: the root's `.sasjslint` is the rules file every SAS
+ * file with no nearer one is linted against. The captured snapshot carries only
+ * what someone put there by hand, so the build seeds the rest - from the API's
+ * own JSON, so the demo cannot advertise different rules from a server.
+ */
+const { withServerSeededFiles, DRIVE_ROOT } = await import('./driveSeed.mjs')
+
+const apiLintConfiguration = JSON.parse(
+  readFileSync(
+    path.join(root, 'api', 'src', 'utils', 'defaultLintConfiguration.json'),
+    'utf8'
+  )
+)
+
+test('the built drive carries the lint rules file a server seeds', () => {
+  const seeded = withServerSeededFiles(
+    drive,
+    JSON.stringify(apiLintConfiguration, null, 2)
+  )
+
+  const entry = seeded.files[`${DRIVE_ROOT}/.sasjslint`]
+
+  assert.ok(entry, 'the drive root has no .sasjslint')
+  // the same rules the API writes, not a second copy that can drift
+  assert.deepEqual(JSON.parse(entry), apiLintConfiguration)
+
+  // the snapshot passed in is not mutated: the build writes one drive from one read
+  assert.equal(drive.files[`${DRIVE_ROOT}/.sasjslint`], undefined)
+})
