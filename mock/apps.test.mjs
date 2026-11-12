@@ -16,6 +16,7 @@ import test from 'node:test'
 import {
   MACRO_DASH,
   MINIMAL_SEED_APP,
+  REACT_SEED_APP,
   appEntry,
   appVersion,
   packFiles,
@@ -401,6 +402,90 @@ test('a data file beside a program travels with it, so the program can read it',
   )
 })
 
+/**
+ * The React seed app's shape: a JavaScript twin of each of its three services -
+ * two under `services/common` and `upload` under `services/files` - the dataset
+ * the twins read, and the built frontend: one bundle, since its webpack config
+ * emits a single `index.bundle.js` rather than the seed app's handful of files.
+ *
+ * The SAS service of the same name travels as a `service` member, which this host
+ * cannot run: `RUN_TIMES` here is JavaScript, so the `.js` twin is what answers.
+ */
+const reactPack = {
+  appLoc: '/Public/app/react-seed-app',
+  streamWebFolder: 'web',
+  streamServiceName: 'React',
+  streamLogo: 'logo512.png',
+  fileTree: {
+    name: 'files',
+    members: [
+      {
+        name: 'services',
+        type: 'folder',
+        members: [
+          {
+            name: 'common',
+            type: 'folder',
+            members: [
+              { name: 'appinit', type: 'service', code: '%macro appinit;%mend;' },
+              { name: 'appinit.js', type: 'file', code: code('webout("OPEN")') },
+              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
+              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
+              { name: 'springs.json', type: 'file', code: code('[{"AREA":"Adak"}]') }
+            ]
+          },
+          {
+            // the release's twins are not all in one folder: upload lives under
+            // services/files, so the walk has to reach a second level
+            name: 'files',
+            type: 'folder',
+            members: [
+              { name: 'upload', type: 'service', code: '%macro upload;%mend;' },
+              { name: 'upload.js', type: 'file', code: code('webout("OPEN")') }
+            ]
+          },
+          {
+            name: 'web',
+            type: 'folder',
+            members: [
+              {
+                name: 'index.html',
+                type: 'file',
+                code: code('<!doctype html><title>React Seed</title>')
+              },
+              {
+                name: 'index.bundle.js',
+                type: 'file',
+                code: code('console.log("bundle")')
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+test('the React seed app publishes its JS services, dataset and bundle', () => {
+  const byPath = Object.fromEntries(
+    packFiles(reactPack, REACT_SEED_APP).map((file) => [file.path, file.contents])
+  )
+
+  assert.deepEqual(Object.keys(byPath).sort(), [
+    '/Public/app/react-seed-app/services/common/appinit.js',
+    '/Public/app/react-seed-app/services/common/getdata.js',
+    '/Public/app/react-seed-app/services/common/springs.json',
+    '/Public/app/react-seed-app/services/files/upload.js',
+    '/Public/app/react-seed-app/services/web/index.bundle.js',
+    '/Public/app/react-seed-app/services/web/index.html'
+  ])
+
+  assert.equal(
+    byPath['/Public/app/react-seed-app/services/common/springs.json'],
+    '[{"AREA":"Adak"}]'
+  )
+})
+
 test('each app is downloaded from its own release asset', () => {
   assert.equal(
     releaseUrl(MACRO_DASH),
@@ -413,6 +498,12 @@ test('each app is downloaded from its own release asset', () => {
     releaseUrl(MINIMAL_SEED_APP),
     'https://github.com/sasjs/minimal-seed-app/releases/download/v1.6.1/server.json.zip'
   )
+
+  // the React seed app pins the release that carries its JS services
+  assert.equal(
+    releaseUrl(REACT_SEED_APP),
+    'https://github.com/sasjs/react-seed-app/releases/download/v1.8.0/server.json.zip'
+  )
 })
 
 test('every app is published into one index, and each keeps its own files', () => {
@@ -420,7 +511,8 @@ test('every app is published into one index, and each keeps its own files', () =
     { format: 1, files: {} },
     [
       { app: MACRO_DASH, pack },
-      { app: MINIMAL_SEED_APP, pack: seedPack }
+      { app: MINIMAL_SEED_APP, pack: seedPack },
+      { app: REACT_SEED_APP, pack: reactPack }
     ],
     '2026-11-11T00:00:00.000Z'
   )
@@ -431,11 +523,12 @@ test('every app is published into one index, and each keeps its own files', () =
     index.map((entry) => [entry.name, entry.appLoc]),
     [
       ['macro-dash', '/Public/app/macrodash'],
-      ['minimal-seed-app', '/Public/app/minimal-seed-app']
+      ['minimal-seed-app', '/Public/app/minimal-seed-app'],
+      ['react-seed-app', '/Public/app/react-seed-app']
     ]
   )
 
-  // both apps' files are on the drive, and neither overwrote the other
+  // each app's files are on the drive, and none overwrote another
   assert.equal(
     published.files['/sasjs/drive/files/Public/app/macrodash/services/web/index.html'],
     '<!doctype html><title>Macro Dash</title>'
@@ -443,5 +536,9 @@ test('every app is published into one index, and each keeps its own files', () =
   assert.equal(
     published.files['/sasjs/drive/files/Public/app/minimal-seed-app/services/common/springs.json'],
     '[{"AREA":"x"}]'
+  )
+  assert.equal(
+    published.files['/sasjs/drive/files/Public/app/react-seed-app/services/web/index.bundle.js'],
+    'console.log("bundle")'
   )
 })

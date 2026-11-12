@@ -4,11 +4,12 @@
  * The Apps screen lists what a server has published, so a demo with nothing
  * published shows an empty page and a sentence about an administrator - true of
  * this host, and useless to a reader who came to see what the screen looks like
- * with an app on it. Two apps are published: Macro Dash, a game with a set of SAS
- * services behind it, and the Minimal Seed App, which is the template a reader
- * setting out to build one is pointed at. Both are streamed from SAS on a real
- * deployment, which is exactly the shape the App Stream serves, and both are
- * packaged here from their releases rather than rebuilt, so this build carries
+ * with an app on it. Three apps are published: Macro Dash, a game with a set of
+ * SAS services behind it, the Minimal Seed App, which is the template a reader
+ * setting out to build one is pointed at, and the React Seed App, which is the
+ * one the SAS Apps team starts from. Each is streamed from SAS on a real
+ * deployment, which is exactly the shape the App Stream serves, and each is
+ * packaged here from its release rather than rebuilt, so this build carries
  * versions someone can name instead of a copy of another repository's source.
  *
  * The packaging is the release's own `server.json`, the file a `sasjs deploy`
@@ -72,8 +73,19 @@ export const MINIMAL_SEED_APP = {
   asset: 'server.json.zip'
 }
 
+export const REACT_SEED_APP = {
+  id: 'd4e7a1b9-2c56-4f03-8a71-9b5c2e6d4f18',
+  name: 'react-seed-app',
+  // v1.8.0 is the first release that carries the JavaScript twin of each service
+  // (appinit.js, getdata.js, upload.js and the dataset they read). This host runs
+  // JavaScript, so an earlier release - SAS services only - would publish a tile
+  // that loads and then cannot answer anything.
+  release: 'v1.8.0',
+  asset: 'server.json.zip'
+}
+
 /** The apps the demo drive carries, in the order the build publishes them. */
-export const PUBLISHED_APPS = [MACRO_DASH, MINIMAL_SEED_APP]
+export const PUBLISHED_APPS = [MACRO_DASH, MINIMAL_SEED_APP, REACT_SEED_APP]
 
 /**
  * The version an app displays, without the tag's `v`.
