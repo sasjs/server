@@ -13,6 +13,8 @@ import { SelectChangeEvent } from '@mui/material'
 import { getSelection, programPathInjection } from '../helper'
 import { bindSaveShortcut, createSaveKeyHandler } from '../saveShortcut'
 import { AppContext, RunTimeType } from '../../../../context/appContext'
+import { applyRunTimeSelection } from '../runTime'
+import { extensionOf } from '../../../../utils/files'
 import { AlertSeverityType } from '../../../../components/snackbar'
 import {
   useModal,
@@ -362,7 +364,7 @@ const useEditor = ({
     }
 
     if (selectedFilePath) {
-      return selectedFilePath.split('.').pop()?.toLowerCase() === 'sas'
+      return extensionOf(selectedFilePath) === 'sas'
     }
 
     return selectedRunTime === RunTimeType.SAS
@@ -538,16 +540,23 @@ const useEditor = ({
     setRunTimes(Object.values(appContext.runTimes))
   }, [appContext.runTimes])
 
+  // The file in front of the user decides its run time, not a remembered selection and not
+  // whichever run time happens to arrive first: a host that offers `js,sas` would otherwise
+  // run a `.sas` file as JavaScript whenever the list refreshed after the file was opened.
+  // An extension the host does not offer falls back to its first run time, which is the
+  // priority `RUN_TIMES` documents.
   useEffect(() => {
-    if (runTimes.length) setSelectedRunTime(runTimes[0] as RunTimeType)
-  }, [runTimes])
+    applyRunTimeSelection(
+      (runTime) => setSelectedRunTime(runTime as RunTimeType),
+      selectedFilePath,
+      runTimes
+    )
+  }, [selectedFilePath, runTimes])
 
   useEffect(() => {
     if (selectedFilePath) {
       setIsLoading(true)
-      setSelectedFileExtension(
-        selectedFilePath.split('.').pop()?.toLowerCase() ?? ''
-      )
+      setSelectedFileExtension(extensionOf(selectedFilePath))
 
       if (isImageFile(selectedFilePath)) {
         // A picture is shown, not edited: its bytes become a blob URL and the
@@ -601,7 +610,7 @@ const useEditor = ({
           // holds, so the buffer starts clean and the drive keeps the file it
           // has until the user saves.
           const content =
-            selectedFilePath.split('.').pop()?.toLowerCase() === 'json'
+            extensionOf(selectedFilePath) === 'json'
               ? prettyJson(res.data)
               : res.data
 
@@ -649,13 +658,6 @@ const useEditor = ({
     }
   }, [fileContent, selectedFilePath])
 
-  useEffect(() => {
-    const fileExtension = selectedFileExtension.toLowerCase()
-
-    if (runTimes.includes(fileExtension))
-      setSelectedRunTime(fileExtension as RunTimeType)
-  }, [selectedFileExtension, runTimes])
-
   /**
    * Lints SAS code and marks the editor with the findings.
    *
@@ -666,7 +668,7 @@ const useEditor = ({
   const lint = useCallback(
     (code: string, filePath?: string) => {
       const isSas = filePath
-        ? filePath.split('.').pop()?.toLowerCase() === 'sas'
+        ? extensionOf(filePath) === 'sas'
         : selectedRunTime === RunTimeType.SAS
 
       if (!isSas || !code) return
