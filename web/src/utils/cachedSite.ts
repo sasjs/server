@@ -50,6 +50,23 @@ export const cacheBust = (href: string, stamp: number): string => {
   return url.toString()
 }
 
+/**
+ * The value, or `undefined` when the call was refused.
+ *
+ * Every step here talks to an API a browser may forbid - the worker in a
+ * sandboxed frame, Cache Storage under a policy - and each one is guarded on its
+ * own so that a refusal costs one item rather than the rest of the sweep.
+ */
+const settle = async <T>(
+  call: () => T | Promise<T>
+): Promise<T | undefined> => {
+  try {
+    return await call()
+  } catch {
+    return undefined
+  }
+}
+
 export interface CacheWipe {
   /** How many service worker registrations were removed. */
   workers: number
@@ -58,33 +75,32 @@ export interface CacheWipe {
 }
 
 /**
- * Everything the browser kept for this site, gone, then a fresh page.
+ * The site's workers and the caches they filled, gone, then a fresh page.
  *
- * Each step is guarded on its own: a browser that refuses one - a page in a
- * sandboxed frame can refuse the worker - must still have the other attempted and
- * still be reloaded, because half a wipe that stops is a page that looks stuck.
+ * This is the browser's copy of the SITE, not of the application's data:
+ * `localStorage` (where the dashboard history lives), `sessionStorage` and any
+ * IndexedDB are untouched, which is why the history button remains its own.
+ *
+ * Every refusal is caught where it happens - inside each loop, and around each
+ * phase - because half a wipe that stops is a page that looks stuck: a browser
+ * that refuses one unregister - a sandboxed frame, a policy - must not leave the
+ * other registrations standing, and must still leave for a fresh page.
  */
 export const clearCachedSite = async (host: CacheHost): Promise<CacheWipe> => {
   const wiped: CacheWipe = { workers: 0, caches: 0 }
 
-  try {
-    const registrations = (await host.serviceWorker?.getRegistrations()) ?? []
+  const registrations =
+    (await settle(() => host.serviceWorker?.getRegistrations())) ?? []
 
-    for (const registration of registrations) {
-      if (await registration.unregister()) wiped.workers++
-    }
-  } catch {
-    // refused: the reload below is still the reader's way out
+  for (const registration of registrations) {
+    // one refusal must not abandon the registrations after it
+    if (await settle(() => registration.unregister())) wiped.workers++
   }
 
-  try {
-    const names = (await host.caches?.keys()) ?? []
+  const names = (await settle(() => host.caches?.keys())) ?? []
 
-    for (const name of names) {
-      if (await host.caches?.delete(name)) wiped.caches++
-    }
-  } catch {
-    // as above
+  for (const name of names) {
+    if (await settle(() => host.caches?.delete(name))) wiped.caches++
   }
 
   host.navigate(cacheBust(host.href, Date.now()))

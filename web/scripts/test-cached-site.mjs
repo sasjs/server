@@ -22,11 +22,18 @@ const check = (label, condition) => {
   if (!condition) failures.push(label)
 }
 
-/** A host with the registrations and cache names a browser would report. */
+/**
+ * A host with the registrations and cache names a browser would report.
+ *
+ * `refuse` names the one registration and the one cache that reject, so a refusal
+ * is a single item rather than the whole sweep - which is the case the code has
+ * to survive, and the case a fixture with one of each cannot see.
+ */
 const hostWith = ({
   registrations = [],
   caches = [],
-  unregister = true
+  refuseRegistration = '',
+  refuseCache = ''
 } = {}) => {
   const state = { unregistered: [], deleted: [], reloads: 0, went: '' }
 
@@ -38,7 +45,7 @@ const hostWith = ({
           registrations.map((name) => ({
             name,
             unregister: async () => {
-              if (!unregister) throw new Error('refused')
+              if (name === refuseRegistration) throw new Error('refused')
               state.unregistered.push(name)
 
               return true
@@ -49,6 +56,7 @@ const hostWith = ({
         keys: async () => caches,
         delete: async (name) => {
           state.deleted.push(name)
+          if (name === refuseCache) throw new Error('refused')
 
           return true
         }
@@ -94,16 +102,25 @@ check(
 )
 
 const refused = await run({
-  registrations: ['/'],
-  caches: ['x'],
-  unregister: false
+  registrations: ['/first/', '/second/'],
+  caches: ['first-cache', 'second-cache'],
+  refuseRegistration: '/first/',
+  refuseCache: 'first-cache'
 })
 check(
-  'a refused unregister does not stop the caches',
-  refused.state.deleted.join(',') === 'x'
+  'a refused unregister does not abandon the next registration',
+  refused.state.unregistered.join(',') === '/second/'
 )
+check(
+  'a refused cache delete does not abandon the next cache',
+  refused.state.deleted.join(',') === 'first-cache,second-cache'
+)
+check('only what succeeded is counted', refused.wiped.caches === 1)
 check('and the page still reloads', refused.state.reloads === 1)
-check('a refused worker is not counted', refused.wiped.workers === 0)
+check(
+  'only the registration that succeeded is counted',
+  refused.wiped.workers === 1
+)
 
 // A host with no worker at all (a server page) must not throw on the way to the
 // reload - the button is hidden there, but the function is not allowed to assume it.

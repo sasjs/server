@@ -930,7 +930,6 @@ const Home = () => {
             size="small"
             startIcon={<DeleteSweep />}
             onClick={clearHistory}
-            aria-label="Clear this browser's dashboard history"
           >
             Clear this browser's history
           </Button>
@@ -941,7 +940,6 @@ const Home = () => {
               size="small"
               startIcon={<DeleteForever />}
               onClick={wipeCachedSite}
-              aria-label="Wipe this browser's cached copy of the site"
             >
               Wipe the cached site
             </Button>
