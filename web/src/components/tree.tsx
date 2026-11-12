@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Menu, MenuItem, Typography } from '@mui/material'
+import { Box, Menu, MenuItem, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
@@ -9,7 +9,7 @@ import FileTypeIcon from './fileTypeIcon'
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
-import { LOADING_SUFFIX, childrenOf } from '../utils/driveTree'
+import { LOADING_SUFFIX, ROOT_PATH, childrenOf } from '../utils/driveTree'
 import { TreeNode } from '../utils/types'
 
 interface Props {
@@ -196,21 +196,48 @@ const TreeView = ({
 
   const menuNode = contextMenu?.node
 
+  // The drive root is the level the sidebar starts at, not a folder a reader
+  // navigates into: its row said "files" and wrapped a single level whose own
+  // names are the ones a reader is looking for. Its children are the top-level
+  // rows, which also means the first level is already open on load.
+  // The API names the drive root's relativePath '/', while `driveTree`'s
+  // ROOT_PATH is '': the two spellings mean the same node, and this used to
+  // compare against neither, so the root row never matched the expanded list and
+  // started collapsed.
+  const isDriveRoot =
+    node.isFolder && (node.relativePath === '' || node.relativePath === '/')
+  const tops = isDriveRoot ? childrenOf(node) : [node]
+
   return (
     <>
-      <SimpleTreeView
-        slots={{
-          collapseIcon: ExpandMoreIcon,
-          expandIcon: ChevronRightIcon
-        }}
-        expandedItems={expanded.map(itemIdFor)}
-        onExpandedItemsChange={(_event, itemIds) =>
-          onExpandedChange(itemIds.map(relativePathFor))
-        }
+      <Box
         sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
+        // The root's own actions (add a file or a folder at the top of the
+        // drive) used to live on the root row's context menu. With the row gone
+        // they are here: a right-click on the empty part of the tree, below the
+        // last row, is the drive itself.
+        onContextMenu={(event) => {
+          if (event.target !== event.currentTarget) return
+          openContextMenu(event, node)
+        }}
       >
-        {renderTree(node)}
-      </SimpleTreeView>
+        <SimpleTreeView
+          slots={{
+            collapseIcon: ExpandMoreIcon,
+            expandIcon: ChevronRightIcon
+          }}
+          // the root is not a row any more, so it cannot be an expanded item
+          expandedItems={expanded
+            .filter((path) => path !== ROOT_PATH && path !== '/')
+            .map(itemIdFor)}
+          onExpandedItemsChange={(_event, itemIds) =>
+            onExpandedChange(itemIds.map(relativePathFor))
+          }
+          sx={{ flexGrow: 1, maxWidth: 400, overflowY: 'auto' }}
+        >
+          {tops.map((top) => renderTree(top))}
+        </SimpleTreeView>
+      </Box>
 
       <Menu
         open={contextMenu !== null}
