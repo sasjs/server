@@ -306,7 +306,7 @@ describe('Home dashboard and Apps tab', () => {
     await page.goto(`${baseUrl()}/`)
     await page.waitForSelector('text=Recently used apps', { timeout: 30000 })
     await page
-      .getByRole('button', { name: "Clear this browser's dashboard history" })
+      .getByRole('button', { name: "Clear this browser's history" })
       .click()
 
     await page.waitForSelector('text=Apps you open appear here.', {
