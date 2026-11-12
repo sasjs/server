@@ -1,26 +1,28 @@
 /**
- * The packaged app, tested without the network.
+ * The packaged apps, tested without the network.
  *
  * Every failure this guards against is one that publishes quietly: an archive
  * read through the central directory's offsets (which yields garbage from a
  * working zip), a page written to the drive still base64-encoded (a blank app and
- * no error), a PNG written as text (a broken image), an index written twice (two
- * tiles for one app), or a snapshot that drops the files the site already
- * shipped. None of those fail a build; all of them fail the page, which is why
- * the pieces are asserted here.
+ * no error), a PNG written as text (a broken image), a data file left behind so a
+ * program cannot read it, an index written twice (two tiles for one app), or a
+ * snapshot that drops the files the site already shipped. None of those fail a
+ * build; all of them fail the page, which is why the pieces are asserted here.
  */
 import assert from 'node:assert/strict'
 import { deflateRawSync } from 'node:zlib'
 import test from 'node:test'
 
 import {
+  MACRO_DASH,
+  MINIMAL_SEED_APP,
   appEntry,
+  appVersion,
   packFiles,
+  releaseUrl,
   unzipEntry,
   withPublishedApp,
-  MACRO_DASH_APP_ID,
-  MACRO_DASH_NAME,
-  MACRO_DASH_VERSION
+  withPublishedApps
 } from './apps.mjs'
 
 /** A file member's `code`, which is base64 in this format for every file. */
@@ -148,7 +150,7 @@ test('refuses an archive with no such member, and one that is not a zip', () => 
 })
 
 test('decodes the file tree, and writes the app under its appLoc', () => {
-  const files = packFiles(pack)
+  const files = packFiles(pack, MACRO_DASH)
   const byPath = Object.fromEntries(files.map((file) => [file.path, file.contents]))
 
   // the app's assets, plus the JS program beside them that the host runs: the
@@ -193,7 +195,7 @@ test('a text file that begins with the marker is escaped, not misread as bytes',
     }
   }
 
-  const [file] = packFiles(leading)
+  const [file] = packFiles(leading, MACRO_DASH)
   assert.equal(file.contents, '\u0000text:\u0000text:hello')
 })
 
@@ -213,16 +215,16 @@ test('the version placeholder the release ships is filled in', () => {
     }
   }
 
-  const [file] = packFiles(placeholder)
+  const [file] = packFiles(placeholder, MACRO_DASH)
 
   // the version the module was pinned to, not a literal: a bump must not need
   // this assertion edited
-  assert.equal(file.contents, `<p>v${MACRO_DASH_VERSION}</p>`)
+  assert.equal(file.contents, `<p>v${appVersion(MACRO_DASH)}</p>`)
 })
 
 test('a package with no streamed web folder is refused by name', () => {
   assert.throws(
-    () => packFiles({ ...pack, streamWebFolder: 'dist' }),
+    () => packFiles({ ...pack, streamWebFolder: 'dist' }, MACRO_DASH),
     /no dist folder under services/
   )
 })
@@ -246,7 +248,7 @@ test('a file member that is not base64 is refused by name, not published as moji
     }
   }
 
-  assert.throws(() => packFiles(raw), /index\.html does not carry base64/)
+  assert.throws(() => packFiles(raw, MACRO_DASH), /index\.html does not carry base64/)
 })
 
 test('a file member with no code is refused, while an empty one is a blank file', () => {
@@ -258,21 +260,21 @@ test('a file member with no code is refused, while an empty one is a blank file'
   // a missing `code` is a tree this build does not understand: coerced to '' it
   // would publish a zero-byte asset and report success
   assert.throws(
-    () => packFiles(tree({ name: 'empty.js', type: 'file' })),
+    () => packFiles(tree({ name: 'empty.js', type: 'file' }), MACRO_DASH),
     /empty\.js carries no code/
   )
 
   // what base64 calls an empty file is legitimate, and is an empty text entry
-  const [file] = packFiles(tree({ name: 'empty.js', type: 'file', code: '' }))
+  const [file] = packFiles(tree({ name: 'empty.js', type: 'file', code: '' }), MACRO_DASH)
   assert.equal(file.contents, '')
 })
 
 test('the index carries the registration a deploy would have written', () => {
-  const entry = appEntry(pack, '2026-11-11T00:00:00.000Z')
+  const entry = appEntry(pack, MACRO_DASH, '2026-11-11T00:00:00.000Z')
 
   assert.deepEqual(entry, {
-    id: MACRO_DASH_APP_ID,
-    name: MACRO_DASH_NAME,
+    id: MACRO_DASH.id,
+    name: MACRO_DASH.name,
     appLoc: '/Public/app/macrodash',
     streamWebFolder: 'web',
     logo: 'macrodash.png',
@@ -286,7 +288,7 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
     files: { '/sasjs/drive/files/Public/demo/orders.csv': 'order_id,customer\n1,Alice\n' }
   }
 
-  const published = withPublishedApp(snapshot, pack, '2026-11-11T00:00:00.000Z')
+  const published = withPublishedApp(snapshot, pack, MACRO_DASH, '2026-11-11T00:00:00.000Z')
   const index = JSON.parse(published.files['/sasjs/drive/files/.sasjs/apps.json'])
 
   assert.equal(published.format, 1)
@@ -299,7 +301,7 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
     '<!doctype html><title>Macro Dash</title>'
   )
   assert.equal(index.length, 1)
-  assert.equal(index[0].id, MACRO_DASH_APP_ID)
+  assert.equal(index[0].id, MACRO_DASH.id)
 
   // the input is not mutated: the build writes one snapshot from one read
   assert.equal(
@@ -309,8 +311,8 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
 })
 
 test('publishing twice replaces the entry rather than listing the app twice', () => {
-  const first = withPublishedApp({ format: 1, files: {} }, pack, '2026-11-11T00:00:00.000Z')
-  const second = withPublishedApp(first, pack, '2026-11-12T00:00:00.000Z')
+  const first = withPublishedApp({ format: 1, files: {} }, pack, MACRO_DASH, '2026-11-11T00:00:00.000Z')
+  const second = withPublishedApp(first, pack, MACRO_DASH, '2026-11-12T00:00:00.000Z')
   const index = JSON.parse(second.files['/sasjs/drive/files/.sasjs/apps.json'])
 
   assert.equal(index.length, 1)
@@ -324,9 +326,122 @@ test('an unreadable index is replaced, not carried forward', () => {
       files: { '/sasjs/drive/files/.sasjs/apps.json': '{not json' }
     },
     pack,
+    MACRO_DASH,
     '2026-11-11T00:00:00.000Z'
   )
 
   const index = JSON.parse(published.files['/sasjs/drive/files/.sasjs/apps.json'])
   assert.equal(index.length, 1)
+})
+
+/**
+ * The minimal seed app's shape: a JS program that reads a data file from beside
+ * itself, and a SAS service of the same name that this host cannot run.
+ *
+ * `getdata.js` resolves `<drive>/<appLoc>/services/common/springs.json` with
+ * `fs`, so a build that carried only `.js` files would publish an app whose data
+ * call throws - an empty table on a page that otherwise loaded.
+ */
+const seedPack = {
+  appLoc: '/Public/app/minimal-seed-app',
+  streamWebFolder: 'web',
+  streamServiceName: 'minimal-seed-app',
+  streamLogo: 'favicon.ico',
+  fileTree: {
+    name: 'files',
+    members: [
+      {
+        name: 'services',
+        type: 'folder',
+        members: [
+          {
+            name: 'common',
+            type: 'folder',
+            members: [
+              // the SAS service, which this host has no engine for
+              { name: 'getdata', type: 'service', code: '%macro getdata;%mend;' },
+              { name: 'getdata.js', type: 'file', code: code('webout("OPEN")') },
+              // and the dataset the JS program reads by path
+              { name: 'springs.json', type: 'file', code: code('[{"AREA":"x"}]') }
+            ]
+          },
+          {
+            name: 'web',
+            type: 'folder',
+            members: [
+              {
+                name: 'index.html',
+                type: 'file',
+                code: code('<!doctype html><title>Seed</title>')
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
+test('a data file beside a program travels with it, so the program can read it', () => {
+  const byPath = Object.fromEntries(
+    packFiles(seedPack, MINIMAL_SEED_APP).map((file) => [file.path, file.contents])
+  )
+
+  // the program, the data it reads, and nothing else: the SAS service is a
+  // `service` member, which this host cannot run
+  assert.deepEqual(Object.keys(byPath).sort(), [
+    '/Public/app/minimal-seed-app/services/common/getdata.js',
+    '/Public/app/minimal-seed-app/services/common/springs.json',
+    '/Public/app/minimal-seed-app/services/web/index.html'
+  ])
+
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/services/common/springs.json'],
+    '[{"AREA":"x"}]'
+  )
+})
+
+test('each app is downloaded from its own release asset', () => {
+  assert.equal(
+    releaseUrl(MACRO_DASH),
+    'https://github.com/sasjs/macro-dash/releases/download/v1.7.0/macro-dash-server.json.zip'
+  )
+
+  // the seed app's asset is a bare server.json.zip, which is why the asset is
+  // stated in the descriptor rather than derived from the app's name
+  assert.equal(
+    releaseUrl(MINIMAL_SEED_APP),
+    'https://github.com/sasjs/minimal-seed-app/releases/download/v1.6.1/server.json.zip'
+  )
+})
+
+test('every app is published into one index, and each keeps its own files', () => {
+  const published = withPublishedApps(
+    { format: 1, files: {} },
+    [
+      { app: MACRO_DASH, pack },
+      { app: MINIMAL_SEED_APP, pack: seedPack }
+    ],
+    '2026-11-11T00:00:00.000Z'
+  )
+
+  const index = JSON.parse(published.files['/sasjs/drive/files/.sasjs/apps.json'])
+
+  assert.deepEqual(
+    index.map((entry) => [entry.name, entry.appLoc]),
+    [
+      ['macro-dash', '/Public/app/macrodash'],
+      ['minimal-seed-app', '/Public/app/minimal-seed-app']
+    ]
+  )
+
+  // both apps' files are on the drive, and neither overwrote the other
+  assert.equal(
+    published.files['/sasjs/drive/files/Public/app/macrodash/services/web/index.html'],
+    '<!doctype html><title>Macro Dash</title>'
+  )
+  assert.equal(
+    published.files['/sasjs/drive/files/Public/app/minimal-seed-app/services/common/springs.json'],
+    '[{"AREA":"x"}]'
+  )
 })
