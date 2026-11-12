@@ -80,8 +80,7 @@ const EXTENSIONS_BY_KIND: {
   program: ['sas'],
   script: ['js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'py', 'r', 'sh', 'bash'],
   markup: ['html', 'htm', 'css', 'scss', 'less', 'xml', 'yml', 'yaml'],
-  // `.sasjslint` is the drive's own rules file, and JSON like the rest
-  config: ['json', 'toml', 'ini', 'conf', 'env'],
+  config: ['json', 'sasjslint', 'toml', 'ini', 'conf', 'env'],
   data: ['sas7bdat', 'sas7bcat', 'xpt', 'parquet', 'dta', 'rds', 'sav'],
   table: ['csv', 'tsv', 'xls', 'xlsx', 'xlsm'],
   log: ['log'],
@@ -100,10 +99,15 @@ const EXTENSIONS_BY_KIND: {
 export const driveFileKindOf = (filePath: string): DriveFileKind | null => {
   if (isImageFile(filePath)) return 'image'
 
-  // `.sasjslint` is the drive's own rules file: JSON, and a dotfile, so it names
-  // no extension. Everything else is judged by the extension alone - a file
-  // called `key` or `r` is not a document or an R script, which is what asking
-  // for the whole name would have answered once the lists grew.
+  // `.sasjslint` is the drive's own rules file, and it is a DOTFILE: the dot is
+  // the first character of the name, so its extension is nothing at all and the
+  // list cannot catch it. A file that merely carries the extension -
+  // `my.sasjslint` - is in the list like any other JSON, and this line is not
+  // what answers for it.
+  //
+  // Everything else is judged by the extension alone: a file called `key` or `r`
+  // is not a document or an R script, which is what asking for the whole name
+  // answered once the lists grew.
   const name = (filePath.split('/').pop() ?? '').toLowerCase()
 
   if (name === '.sasjslint') return 'config'
