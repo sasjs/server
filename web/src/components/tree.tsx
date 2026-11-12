@@ -9,7 +9,12 @@ import FileTypeIcon from './fileTypeIcon'
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
-import { LOADING_SUFFIX, ROOT_PATH, childrenOf } from '../utils/driveTree'
+import {
+  LOADING_SUFFIX,
+  childrenOf,
+  isDriveRootPath,
+  isRootPath
+} from '../utils/driveTree'
 import { TreeNode } from '../utils/types'
 
 interface Props {
@@ -210,9 +215,9 @@ const TreeView = ({
   // `expandedItems` on the browser host, which is why the row was collapsed
   // there (measured on server.sasjs.io: the root listed as
   // `{ name: 'files', relativePath: '/', isFolder: true }`).
-  const isDriveRoot =
-    node.isFolder && (node.relativePath === '' || node.relativePath === '/')
-  const tops = isDriveRoot ? childrenOf(node) : [node]
+  const tops = isDriveRootPath(node.relativePath, node.isFolder)
+    ? childrenOf(node)
+    : [node]
 
   return (
     <>
@@ -235,7 +240,7 @@ const TreeView = ({
           // the root is not a row any more, so neither spelling of it can be an
           // expanded item
           expandedItems={expanded
-            .filter((path) => path !== ROOT_PATH && path !== '/')
+            .filter((path) => !isRootPath(path))
             .map(itemIdFor)}
           onExpandedItemsChange={(_event, itemIds) =>
             onExpandedChange(itemIds.map(relativePathFor))
@@ -274,7 +279,6 @@ const TreeView = ({
               Add Folder
             </MenuItem>
             <MenuItem
-              disabled={!menuNode.relativePath}
               onClick={() => {
                 setContextMenu(null)
                 setDialog({

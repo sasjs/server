@@ -41,12 +41,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /**
  * The CLI that assembles the site.
  *
- * A RANGE, not an exact version: the site's worker, its boot loader and the
- * `@sasjs/api` browser build inside it all come from the CLI, and every release
- * of it that fixes the host is a release this site wants without a commit here
- * saying so. A major needs a deliberate change - that is where a version string
- * is worth pinning - and the build records which release it actually used, so a
- * deploy log says what built the site rather than what the range hoped for.
+ * An EXACT version, not a range: the site's worker, its boot loader, the page
+ * bridge and the `@sasjs/api` browser build inside it all come from the CLI, so
+ * a new release can change what a visitor sees without a commit here. That is
+ * the reason to pin - the build is reproducible from this file, and a host fix
+ * reaches the site when this number moves, in a commit that says which fix.
+ * `SASJS_CLI_VERSION` still overrides it for a one-off build.
  */
 // Pinned to the release that carries the sas-transcript support (sasjs/cli#1575),
 // the drive-backed App Stream, the run times this host actually answers, and the
@@ -133,11 +133,11 @@ process.stdout.write(
 // listing and webout instead of a refusal. A browser has no SAS binary; this is
 // the transcript of one run, with the licensee and site line removed.
 //
-// Only a CLI carrying the support reads it (sasjs/cli#1575), so the demo needs a
-// CLI at or above the release that contains it - CLI_VERSION above is `^6`, and
-// SASJS_CLI_VERSION overrides it. Until such a release exists this file travels
-// with the build and the demo keeps refusing the program, which is why the
-// README describes the behaviour only where the recording applies.
+// Only a CLI carrying the support reads it (sasjs/cli#1575 reads the file; the
+// pinned CLI_VERSION above is well past it), and SASJS_CLI_VERSION overrides the
+// pin for a one-off build. A CLI that predates it leaves the file travelling with
+// the build unread, and the demo refuses the program - which is why the README
+// describes the behaviour only where the recording applies.
 copyFileSync(
   path.join(root, 'mock', 'sas-transcript.json'),
   path.join(root, 'sasjsbuild', 'sas-transcript.json')

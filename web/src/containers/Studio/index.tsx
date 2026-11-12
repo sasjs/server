@@ -9,9 +9,12 @@ import CircularProgress from '@mui/material/CircularProgress'
 import {
   ROOT_PATH,
   ancestorPathsOf,
+  childPrefixOf,
   expandedDescendantsOf,
   graftLevel,
-  parentPathOf
+  isRootPath,
+  parentPathOf,
+  withRootPath
 } from '../../utils/driveTree'
 import { TreeNode } from '../../utils/types'
 import { homeFilePathFor } from '../../utils/userHome'
@@ -109,7 +112,13 @@ const Studio = () => {
           })
 
           if (res.data?.status === 'success') {
-            const level = { ...res.data.tree, childrenLoaded: true } as TreeNode
+            /* The root is keyed ROOT_PATH whatever the host called it: the browser
+               host answers @sasjs/api's '/' for the drive root while sasjs/server
+               answers '', and every later graft walks from the root's path. */
+            const level = withRootPath({
+              ...res.data.tree,
+              childrenLoaded: true
+            } as TreeNode)
             const previous = treeRef.current
 
             // A folder level arriving before the root must never BECOME the
@@ -120,7 +129,7 @@ const Studio = () => {
             // again instead of leaving a childless node for ever.
             const next =
               previous === null
-                ? folderPath === ROOT_PATH
+                ? isRootPath(folderPath)
                   ? level
                   : null
                 : graftLevel(previous, folderPath, level)
@@ -128,7 +137,7 @@ const Studio = () => {
             if (next !== null) {
               // Replacing a level replaces its whole subtree, so anything loaded
               // underneath it is now stale.
-              const prefix = folderPath === ROOT_PATH ? '/' : `${folderPath}/`
+              const prefix = childPrefixOf(folderPath)
 
               Array.from(loadedFolders.current).forEach((loaded) => {
                 if (loaded.startsWith(prefix))
