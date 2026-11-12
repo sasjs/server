@@ -2,7 +2,7 @@ import express, { Express } from 'express'
 import request from 'supertest'
 
 import { configureCors } from '../configureCors'
-import { CorsType } from '../../utils'
+import { CorsType, ModeType } from '../../utils'
 
 /**
  * WHITELIST decides which browser origins receive an
@@ -90,6 +90,35 @@ describe('configureCors', () => {
 
   it('does not answer anything when CORS is not enabled', async () => {
     process.env.CORS = CorsType.DISABLED
+    process.env.WHITELIST = 'http://one.example.com'
+
+    const res = await request(buildApp())
+      .get('/probe')
+      .set('Origin', 'http://one.example.com')
+      .expect(200)
+
+    expect(allowOriginOf(res)).toBe('')
+  })
+
+  // With CORS unset the mode is the one derived for the deployment, and a
+  // desktop install is the deployment that never writes the variable - so these
+  // two cases pin what the derived default decides, in both directions.
+  it('answers by default on a desktop install, where CORS is unset', async () => {
+    process.env.MODE = ModeType.Desktop
+    delete process.env.CORS
+    process.env.WHITELIST = 'http://one.example.com'
+
+    const res = await request(buildApp())
+      .get('/probe')
+      .set('Origin', 'http://one.example.com')
+      .expect(200)
+
+    expect(allowOriginOf(res)).toBe('http://one.example.com')
+  })
+
+  it('answers nothing by default on a server install, where CORS is unset', async () => {
+    process.env.MODE = ModeType.Server
+    delete process.env.CORS
     process.env.WHITELIST = 'http://one.example.com'
 
     const res = await request(buildApp())
