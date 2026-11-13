@@ -90,6 +90,29 @@ describe('session lifecycle', () => {
     expect(controller.getSessionById(session.id)).toBeUndefined()
   })
 
+  it('keeps a session whose death time moved while the timer was armed', async () => {
+    const session = makeSession(400, SessionState.completed)
+    await createFile(path.join(session.path, 'log.log'), 'some log')
+    track(controller, session)
+
+    scheduleDestroy(controller, session)
+
+    // a caller that keeps naming the session pushes its death time forward, and
+    // the timer that was armed before that must not delete the folder anyway -
+    // the folder holds the webout and the log the client's links point at
+    await delay(200)
+    session.deathTimeStamp = (new Date().getTime() + 400).toString()
+
+    await delay(300)
+    expect(await folderExists(session.path)).toEqual(true)
+    expect(controller.getSessionById(session.id)).toBeDefined()
+
+    // and it still goes when the new death time arrives, so the push is a delay
+    // and not a leak
+    await delay(700)
+    expect(await folderExists(session.path)).toEqual(false)
+  })
+
   /**
    * The destroy timer is due a quarter of an hour after the session is created,
    * and nothing waits for it. Armed with a reference, it keeps the event loop

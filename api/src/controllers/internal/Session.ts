@@ -149,7 +149,7 @@ export class SessionController {
   protected sessions: Session[] = []
 
   /**
-   * The server session each caller-named session id stands for.
+   * The server session each caller's own session id stands for, per caller.
    *
    * A caller may hold several sessions - that is how several jobs run at once -
    * and a pooled session is one folder per ACCOUNT, with one `webout.txt` and one
@@ -237,7 +237,8 @@ export class SessionController {
   }
 
   /**
-   * The session `id` stands for, created on first use and reused after.
+   * The session `id` stands for this caller, created on first use and reused
+   * after.
    *
    * A session outlives the job that opened it - a client submits several jobs to
    * one session in turn - so the id is remembered rather than a folder being
@@ -245,16 +246,29 @@ export class SessionController {
    * looked up in the live list each time: the destroy timer takes finished
    * sessions out of it, so an id pointing at a folder already deleted creates a
    * new one rather than handing out a dead path.
+   *
+   * The id is remembered under the ACCOUNT that named it, because the ids are the
+   * caller's to choose and two callers can pick the same one: a lookup by id alone
+   * would hand a second account the first one's folder.
+   *
+   * `idleMs`, when the caller states one, is how long the session survives
+   * without a job: it is pushed forward on every reuse, so a session in use does
+   * not expire under the client that is using it.
    */
-  public async getSessionForId(id: string, username: string) {
-    const known = this.sessionIds.get(id)
+  public async getSessionForId(id: string, username: string, idleMs?: number) {
+    const key = `${username}:${id}`
+    const known = this.sessionIds.get(key)
     const live = known ? this.getSessionById(known) : undefined
 
-    if (live) return live
+    if (live) {
+      if (idleMs) live.deathTimeStamp = (Date.now() + idleMs).toString()
+
+      return live
+    }
 
     const session = await this.createSession(username)
 
-    this.sessionIds.set(id, session.id)
+    this.sessionIds.set(key, session.id)
 
     return session
   }
@@ -267,6 +281,13 @@ export class SessionController {
     this.sessions = this.sessions.filter(
       (sess: Session) => sess.id !== session.id
     )
+
+    // and the caller's name for it, so the map does not grow for the life of the
+    // process and a later lookup creates a session rather than naming a folder
+    // that no longer exists
+    this.sessionIds.forEach((mapped, key) => {
+      if (mapped === session.id) this.sessionIds.delete(key)
+    })
   }
 
   /**
@@ -287,44 +308,52 @@ export class SessionController {
     // loop is alive when it fires; a test run - or anything that triggers a
     // session and then finishes - is not, and without this it sat there with an
     // open handle until it was killed (sasjs/server#577).
-    setTimeout(
-      async () => {
-        if (this.isSessionActive(session)) {
-          // adding 10 more minutes
+    const deathTimeStamp = parseInt(session.deathTimeStamp)
+
+    setTimeout(async () => {
+      // the death time is read again here because it can move while this timer
+      // is armed - a caller-named session is kept alive by the calls that use
+      // it - and a timer that fires before the new time is re-armed rather than
+      // deleting the folder under the client
+      if (Date.now() < parseInt(session.deathTimeStamp)) {
+        this.scheduleSessionDestroy(session)
+
+        return
+      }
+
+      if (this.isSessionActive(session)) {
+        // adding 10 more minutes
+        const newDeathTimeStamp =
+          parseInt(session.deathTimeStamp) + 10 * 60 * 1000
+        session.deathTimeStamp = newDeathTimeStamp.toString()
+
+        this.scheduleSessionDestroy(session)
+      } else {
+        const { expiresAfterMins } = session
+
+        // Delay the destroy when the caller asked for a retention window.
+        //
+        // The window is documented as counting from completion, so a
+        // *completed* session has to honour it - excluding that state, as an
+        // earlier version did, meant the request could never take effect: a
+        // finished session was deleted at creation + 15 minutes however long
+        // the caller asked to keep it, and a poller that followed a triggered
+        // program lost the log and the output
+        if (expiresAfterMins && !expiresAfterMins.used) {
+          // calculate session death time using expiresAfterMins
           const newDeathTimeStamp =
-            parseInt(session.deathTimeStamp) + 10 * 60 * 1000
+            parseInt(session.deathTimeStamp) + expiresAfterMins.mins * 60 * 1000
           session.deathTimeStamp = newDeathTimeStamp.toString()
+
+          // set expiresAfterMins to true to avoid using it again
+          session.expiresAfterMins!.used = true
 
           this.scheduleSessionDestroy(session)
         } else {
-          const { expiresAfterMins } = session
-
-          // Delay the destroy when the caller asked for a retention window.
-          //
-          // The window is documented as counting from completion, so a
-          // *completed* session has to honour it - excluding that state, as an
-          // earlier version did, meant the request could never take effect: a
-          // finished session was deleted at creation + 15 minutes however long
-          // the caller asked to keep it, and a poller that followed a triggered
-          // program lost the log and the output
-          if (expiresAfterMins && !expiresAfterMins.used) {
-            // calculate session death time using expiresAfterMins
-            const newDeathTimeStamp =
-              parseInt(session.deathTimeStamp) +
-              expiresAfterMins.mins * 60 * 1000
-            session.deathTimeStamp = newDeathTimeStamp.toString()
-
-            // set expiresAfterMins to true to avoid using it again
-            session.expiresAfterMins!.used = true
-
-            this.scheduleSessionDestroy(session)
-          } else {
-            await this.deleteSession(session)
-          }
+          await this.deleteSession(session)
         }
-      },
-      parseInt(session.deathTimeStamp) - new Date().getTime() - 100
-    ).unref()
+      }
+    }, deathTimeStamp - new Date().getTime()).unref()
   }
 
   /**

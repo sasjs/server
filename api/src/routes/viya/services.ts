@@ -29,6 +29,16 @@ let drive: ReturnType<typeof createDriveService> | undefined
 export const serverDrive = () =>
   (drive ??= createDriveService(nodeDriveStore()))
 
+/**
+ * How long an emulated session survives without a job.
+ *
+ * The estate tells a client `sessionInactiveTimeout: 3600` on every session, so
+ * that is the window this server keeps one for: a shorter one would delete the
+ * folder under a client that holds a session open, and its links - the job state,
+ * the log - would answer nothing.
+ */
+const VIYA_SESSION_IDLE_MS = 60 * 60 * 1000
+
 /** Whether the emulated estate answers on this server at all. */
 export const isViyaEmulationEnabled = (): boolean =>
   /^(1|true|yes|on)$/i.test(process.env.EMULATE_VIYA ?? '')
@@ -70,7 +80,8 @@ export const viyaServices = (req: Request): Services => ({
       const session = sessionId
         ? await getSessionController(RunTimeType.SAS).getSessionForId(
             sessionId,
-            preProgramVariables.username
+            preProgramVariables.username,
+            VIYA_SESSION_IDLE_MS
           )
         : undefined
 

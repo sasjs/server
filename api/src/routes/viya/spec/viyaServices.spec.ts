@@ -95,4 +95,20 @@ describe('the Viya execution port', () => {
 
     expect(executed[0].session!.path).toEqual(executed[1].session!.path)
   })
+
+  it('does not hand one caller the session another named', async () => {
+    // the id is the caller's to choose: two accounts naming the same one are two
+    // sessions, or the second reads and overwrites the first's webout
+    await viyaServices(requestAs('alice')).viya!.execute!({
+      program: 'data a; run;',
+      sessionId: 'shared'
+    })
+    await viyaServices(requestAs('bob')).viya!.execute!({
+      program: 'data b; run;',
+      sessionId: 'shared'
+    })
+
+    expect(executed[0].session!.path).not.toEqual(executed[1].session!.path)
+    expect(executed[1].session!.owner).toEqual('bob')
+  })
 })
