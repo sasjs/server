@@ -45,4 +45,33 @@ describe('the mount behind setupRoutes', () => {
     expect(answer.status).toBe(200)
     expect(answer.headers['content-type']).toMatch(/html|json/)
   })
+
+  it('does not mount the estate when the flag is unset', async () => {
+    // the compatibility promise the settings page makes, and the path every
+    // existing deployment takes: with no flag the Viya paths are not the
+    // emulator's, and `/compute/contexts` falls through to the web router
+    const enabled = process.env.EMULATE_VIYA
+
+    delete process.env.EMULATE_VIYA
+
+    try {
+      const server = await boot()
+
+      const answer = await request(server).get('/compute/contexts')
+      // a path nobody serves, as the control: with the flag unset a Viya path is
+      // answered exactly as any other path this server does not serve. Pinning a
+      // status alone would pin the web router's taste, and asserting only "no
+      // emulated header" would be satisfied by the guard's 401 or by a 500.
+      const control = await request(server).get('/not-a-route-at-all')
+
+      expect(answer.headers['x-sasjs-emulated']).toBeUndefined()
+      expect(control.status).toBe(404)
+      expect(answer.status).toEqual(control.status)
+      // express's own handler, naming the path: nothing answered it
+      expect(answer.text).toMatch(/Cannot GET \/compute\/contexts/)
+    } finally {
+      if (enabled === undefined) delete process.env.EMULATE_VIYA
+      else process.env.EMULATE_VIYA = enabled
+    }
+  })
 })
