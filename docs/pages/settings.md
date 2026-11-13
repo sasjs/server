@@ -190,7 +190,7 @@ Answers the Viya APIs an application built for `serverType=SASVIYA` calls - `/co
 
 What is emulated and what is real is worth knowing:
 
-* identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive` lists;
+* identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive/file` reads.
 * execution is real. A submitted service runs on this server's SAS engine and the client receives the `_webout` the program produced, and a program that fails fails.
 
 Every answer carries an `x-sasjs-emulated` header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one.
