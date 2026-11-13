@@ -73,10 +73,14 @@ webRouter.post(
       // usernames, and responding identically to both keeps the lockout
       // from leaking which name exists.
       //
-      // A sign-in that could not be ATTEMPTED is not one of them - local sign-in
-      // switched off, or an LDAP outage - or a caller typing the correct password
-      // walks the account into a lockout that then reads as a wrong password. The
-      // estate's password grant makes the same distinction.
+      // A sign-in that could not be ATTEMPTED is not one of them: with local
+      // sign-in switched off the stored hash is never reached, so a caller typing
+      // the correct password must not be walked into a lockout that then reads as
+      // a wrong password. The estate's password grant makes the same distinction.
+      //
+      // An LDAP failure IS counted, and deliberately: `LDAPClient.verifyUser`
+      // reports a rejected bind and a broken connection alike as
+      // `Invalid password.`, so the two cannot be told apart here.
       if (err instanceof WrongCredentials) recordLoginFailure(body.username)
 
       sendRefusal(res, err)

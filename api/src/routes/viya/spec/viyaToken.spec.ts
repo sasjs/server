@@ -20,6 +20,7 @@ import { UserController } from '../../../controllers/'
 import {
   generateAccessToken,
   generateAuthCode,
+  generateRefreshToken,
   SECRETS,
   resetLoginFailures
 } from '../../../utils'
@@ -84,7 +85,17 @@ describe('the estate token port', () => {
     await mongoServer.stop()
   })
 
-  beforeEach(() => resetLoginFailures(account.username))
+  beforeEach(async () => {
+    resetLoginFailures(account.username)
+
+    // no pair carried between cases: an exchange for a caller who already holds
+    // one reuses it and reports what is LEFT of it, so a case that asserts a full
+    // lifetime would otherwise depend on being the first in the file
+    await User.updateOne(
+      { username: account.username },
+      { $set: { tokens: [] } }
+    )
+  })
 
   const passwordGrant = () =>
     request(app)
@@ -241,8 +252,38 @@ describe('the estate token port', () => {
     expect(second.body.access_token).toBe(first.body.access_token)
     expect(second.body.refresh_token).toBe(first.body.refresh_token)
 
-    // what is left of the reused token, not a fresh lifetime
+    // what is left of the reused pair, not a fresh lifetime - both halves
     expect(second.body.expires_in).toBeLessThanOrEqual(CLIENT_EXPIRY)
+    expect(second.body.refresh_expires_in).toBeLessThanOrEqual(
+      CLIENT_EXPIRY * 4
+    )
+  })
+
+  it('states what is left of the reused pair, not a fresh lifetime', async () => {
+    const first = await codeGrant()
+
+    // a pair minted a while ago, in effect: short expiries on the stored tokens
+    const user = await User.findOne({ username: account.username })
+    const stored: any = user!.tokens.find(
+      (tokenObj: any) => tokenObj.clientId === CLIENT_ID
+    )
+    stored.accessToken = generateAccessToken(
+      { clientId: CLIENT_ID, userId: user!.uid },
+      100
+    )
+    stored.refreshToken = generateRefreshToken(
+      { clientId: CLIENT_ID, userId: user!.uid },
+      200
+    )
+    await user!.save()
+
+    const second = await codeGrant()
+
+    expect(second.body.access_token).toBe(stored.accessToken)
+    // a client that schedules re-authentication from these must not be late by
+    // the age of the pair
+    expect(second.body.expires_in).toBeLessThanOrEqual(100)
+    expect(second.body.refresh_expires_in).toBeLessThanOrEqual(200)
   })
 
   it('rotates the pair, and refuses the refresh token it replaced', async () => {

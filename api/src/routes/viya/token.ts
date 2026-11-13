@@ -187,9 +187,11 @@ const userForPasswordGrant = async (
 
     return user
   } catch (error) {
-    // only a credential that did not match is a failed sign-in: an LDAP outage or
-    // local sign-in being switched off refuses the request without counting it,
-    // or a correct password would walk the account toward the lockout
+    // only a credential that did not match is a failed sign-in: local sign-in
+    // being switched off refuses the request without counting it, or a correct
+    // password would walk the account toward the lockout. An LDAP failure is
+    // counted - `LDAPClient.verifyUser` reports a broken connection as a rejected
+    // password, so the two are the same event from here.
     if (error instanceof WrongCredentials) {
       recordLoginFailure(username)
 
@@ -344,17 +346,26 @@ const livePair = async (
     exp?: number
   } | null
 
-  // `expires_in` states what is LEFT of the reused token, not the client's
-  // configured lifetime: the pair answers for the same session, not a new one
-  const remaining = claims?.exp
-    ? Math.max(claims.exp - Math.floor(Date.now() / 1000), 0)
-    : expirations.accessTokenExpiration
+  // both lifetimes state what is LEFT of the reused pair, not the client's
+  // configured ones: a client that schedules re-authentication from
+  // `refresh_expires_in` would otherwise be late by the age of the pair
+  const remaining = (token: string, configured: number) => {
+    const { exp } = (jwt.decode(token) as { exp?: number } | null) ?? {}
+
+    return exp ? Math.max(exp - Math.floor(Date.now() / 1000), 0) : configured
+  }
 
   return {
     accessToken: stored.accessToken,
     refreshToken: stored.refreshToken,
-    accessTokenExpiration: remaining,
-    refreshTokenExpiration: expirations.refreshTokenExpiration,
+    accessTokenExpiration: remaining(
+      stored.accessToken,
+      expirations.accessTokenExpiration
+    ),
+    refreshTokenExpiration: remaining(
+      stored.refreshToken,
+      expirations.refreshTokenExpiration
+    ),
     jti: claims?.jti ?? ''
   }
 }
