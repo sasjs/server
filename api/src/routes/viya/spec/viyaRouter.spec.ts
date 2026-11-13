@@ -1,7 +1,7 @@
 import express from 'express'
 import request from 'supertest'
 
-import { createViyaRouter, isViyaPath } from '../index'
+import { createViyaRouter, isViyaPath, viyaGuard } from '../index'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -134,26 +134,47 @@ describe('the Viya mount', () => {
 })
 
 describe('who may reach the estate', () => {
-  it('refuses a caller the guard turns away, before any dispatch', async () => {
+  const guardApp = (authenticate: express.RequestHandler) => {
     const server = express()
-    let dispatched = false
 
     server.use(express.json())
     server.use(
       '/',
-      (_req, res, next) => res.status(401).json({ message: 'no token' }),
-      createViyaRouter(() => {
-        dispatched = true
+      viyaGuard(authenticate),
+      createViyaRouter(() => withExecution('[]', ''))
+    )
+    server.use('/', (_req, res) => res.status(200).send('the app shell'))
 
-        return withExecution('[]', '')
-      })
+    return server
+  }
+
+  const refuses = (req: express.Request, res: express.Response) =>
+    res.status(401).json({ message: 'no token' })
+
+  it('guards a path that runs caller code', async () => {
+    const answer = await request(guardApp(refuses)).post(
+      '/compute/contexts/x/sessions'
     )
 
-    const answer = await request(server).post('/compute/contexts/x/sessions')
-
-    // a job submitted here runs on this server engine, so the guard sits in
-    // front of the router exactly as it does in setupRoutes
     expect(answer.status).toBe(401)
-    expect(dispatched).toBe(false)
+  })
+
+  it('leaves the application shell to the web router, unauthenticated', async () => {
+    // the guard used to sit at the root, which turned `GET /` into a 401 and
+    // left a caller no way to reach the login page
+    const answer = await request(guardApp(refuses)).get('/')
+
+    expect(answer.status).toBe(200)
+    expect(answer.text).toBe('the app shell')
+  })
+
+  it('leaves the estate own login open, or nobody could ever sign in', async () => {
+    // a client that signs in the Viya way holds no sasjs/server token; guarding
+    // this path refused the very request that fetches one
+    const answer = await request(guardApp(refuses)).post(
+      '/SASLogon/oauth/token'
+    )
+
+    expect(answer.status).not.toBe(401)
   })
 })

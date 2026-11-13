@@ -21,6 +21,7 @@
  */
 import express from 'express'
 import { readFile } from 'fs/promises'
+import { deleteFile } from '@sasjs/utils'
 import { dispatchViya } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
@@ -33,6 +34,29 @@ export const VIYA_PREFIXES = [
   '/types',
   '/SASLogon'
 ]
+
+/**
+ * The guard, scoped to what it protects.
+ *
+ * Three paths matter and each is here for a reason:
+ *
+ * - a path outside the estate's prefixes is not the emulator's business, and the
+ *   web router behind it must still serve the application shell to a caller
+ *   who has not signed in yet;
+ * - `/SASLogon` is the estate's own login - a client that signs in the Viya way
+ *   never holds a sasjs/server token, so guarding it would mean nobody could
+ *   ever obtain one;
+ * - everything else runs caller code on this engine, so it is guarded.
+ */
+export const viyaGuard =
+  (authenticate: express.RequestHandler): express.RequestHandler =>
+  (req, res, next) => {
+    if (!isViyaPath(req.path)) return next()
+    if (req.path === LOGON_PATH || req.path.startsWith(`${LOGON_PATH}/`))
+      return next()
+
+    return authenticate(req, res, next)
+  }
 
 /**
  * The part a multipart request carried, in the shape the emulator reads.
@@ -50,8 +74,17 @@ const uploadOf = async (
 
   if (!part) return undefined
 
-  return { name: part.originalname, contents: await readFile(part.path) }
+  try {
+    return { name: part.originalname, contents: await readFile(part.path) }
+  } finally {
+    // the parser wrote this to the uploads folder; the emulator has the bytes,
+    // and every other route that uses the parser deletes its copy
+    await deleteFile(part.path).catch(() => undefined)
+  }
 }
+
+/** Where a Viya client signs in, which the guard leaves open. */
+export const LOGON_PATH = '/SASLogon'
 
 /** A request the emulator should not answer is left to the server's own routes. */
 export const isViyaPath = (path: string): boolean =>
@@ -81,9 +114,19 @@ export const createViyaRouter = (
     if (req.method === 'POST' && req.path === '/files/files') {
       const { multerSingle } = await import('../../middlewares/multer')
 
-      await new Promise<void>((resolve) =>
-        multerSingle('file', [req, res, resolve])
-      )
+      // the parser answers a refusal itself rather than calling the `next` it was
+      // given, so the promise settles on the response - waiting for `next` would
+      // leave the handler pending after the caller had been answered
+      await new Promise<void>((resolve) => {
+        res.once('finish', () => resolve())
+        res.once('close', () => resolve())
+
+        multerSingle('file', [req, res, () => resolve()])
+      })
+
+      // a refusal is already answered, in the parser's plain text; nothing below
+      // should write a second response
+      if (res.headersSent) return
     }
 
     let answer: ViyaResponse

@@ -32,12 +32,26 @@ export const isViyaEmulationEnabled = (): boolean =>
 
 /** The address clients reach this server at, which is the estate's seed. */
 const serverUrl = (req: Request): string =>
-  process.env.SASJS_SERVER_URL ??
+  process.env.API_SERVER_URL ??
   `${req.protocol}://${req.get('host') ?? 'localhost'}`
+
+/**
+ * The caller, as the guard resolved them.
+ *
+ * `desktopIdentity` answers as the process's own OS account, which in server mode
+ * is nobody the caller signed in as: the estate would report one account while
+ * running as another. The emulator asks identity one question - who is this token
+ * - and the guard has already answered it, so that is what this returns.
+ */
+const identityFor = (req: Request): Services['identity'] =>
+  Object.assign({}, desktopIdentity, {
+    authenticate: async () =>
+      req.user ? { userId: req.user.username } : undefined
+  })
 
 export const viyaServices = (req: Request): Services => ({
   drive: serverDrive(),
-  identity: desktopIdentity,
+  identity: identityFor(req),
   viya: {
     serverUrl: serverUrl(req),
     execute: async ({ program, variables, name }) => {

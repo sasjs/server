@@ -7,7 +7,7 @@ import appStreamRouter from './appStream'
 import { legacyRouteRedirects } from './legacyRouteRedirects'
 
 import { authenticateAccessToken, csrfProtection } from '../middlewares'
-import { createViyaRouter } from './viya'
+import { createViyaRouter, viyaGuard } from './viya'
 import { isViyaEmulationEnabled, viyaServices } from './viya/services'
 import { API_PREFIXES, APP_STREAM_PREFIXES } from '../utils/routePrefixes'
 
@@ -38,7 +38,14 @@ export const setupRoutes = (app: Express) => {
   // submitted here runs on this engine, so an unauthenticated caller must not
   // reach it, and the estate answers as the account the guard resolved
   if (isViyaEmulationEnabled())
-    app.use('/', authenticateAccessToken, createViyaRouter(viyaServices))
+    app.use(
+      '/',
+      // scoped: the guard protects the estate's code paths, and the web router
+      // behind it still serves the application shell to a caller who has not
+      // signed in - and never guards the estate's own login
+      viyaGuard(authenticateAccessToken),
+      createViyaRouter(viyaServices)
+    )
 
   // Registered before the web router, which serves the application for every
   // unmatched path.
