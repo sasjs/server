@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:displaymodes && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:saveshortcut && npm run test:runtime",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:cachedsite && npm run test:displaymodes && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:saveshortcut && npm run test:runtime",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -14,6 +14,7 @@
     "test:language-server": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-language-server.mjs",
     "test:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-studio-settings.mjs",
     "test:prettyjson": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-pretty-json.mjs",
+    "test:cachedsite": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-cached-site.mjs",
     "test:displaymodes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-display-modes.mjs",
     "test:mousepaste": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-mouse-paste-guard.mjs",
     "test:drivetree": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-drive-tree.mjs",
