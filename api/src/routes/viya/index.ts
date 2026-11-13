@@ -43,9 +43,9 @@ export const VIYA_PREFIXES = [
  * - a path outside the estate's prefixes is not the emulator's business, and the
  *   web router behind it must still serve the application shell to a caller
  *   who has not signed in yet;
- * - `/SASLogon` is the estate's own login - a client that signs in the Viya way
- *   never holds a sasjs/server token, so guarding it would mean nobody could
- *   ever obtain one;
+ * - `/SASLogon` is left open because the emulator answers it with a refusal that
+ *   names the host as the token issuer (501): guarding it would replace that
+ *   explanation with a 401 and leave a client with nothing to read;
  * - everything else runs caller code on this engine, so it is guarded.
  */
 export const viyaGuard =
@@ -69,17 +69,23 @@ export const viyaGuard =
       // `authorize` decides from `req.url`, so the equivalent API path is what it
       // is shown - a Viya path is not in its inventory and would pass unguarded
       const url = req.url
+      const baseUrl = req.baseUrl
 
+      // the gate composes `baseUrl + path`, so both halves are set: a rule that
+      // is only half-visible is a rule the permission lookup does not match
       req.url = rule
+      req.baseUrl = ''
 
       try {
         return decide(req, res, (error?: unknown) => {
           req.url = url
+          req.baseUrl = baseUrl
 
           next(error as Error | undefined)
         })
       } catch (error) {
         req.url = url
+        req.baseUrl = baseUrl
 
         throw error
       }

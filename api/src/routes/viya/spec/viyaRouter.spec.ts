@@ -259,7 +259,7 @@ describe('an upload over the Viya paths', () => {
     expect(left).toEqual([])
   })
 
-  it('answers a request with no part with the emulator error, not the parser text', async () => {
+  it('answers a request with no file part with the emulator own 400', async () => {
     const answer = await request(app(() => withExecution('[]', ''))).post(
       '/files/files'
     )
