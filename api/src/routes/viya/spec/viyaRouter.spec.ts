@@ -1,4 +1,7 @@
 import express from 'express'
+import { mkdtemp, readdir } from 'fs/promises'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import request from 'supertest'
 
 import { createViyaRouter, isViyaPath, ruleFor, viyaGuard } from '../index'
@@ -204,5 +207,64 @@ describe('the rule a Viya path is decided on', () => {
     )
 
     expect(requestRules).toContain('/SASjsApi/code/execute')
+  })
+})
+
+describe('an upload over the Viya paths', () => {
+  beforeAll(async () => {
+    // the app sets these at boot; a router spec has to stand in for that, or the
+    // multer helper has nowhere to put the part
+    const root = await mkdtemp(join(tmpdir(), 'viya-upload-'))
+
+    process.sasjsRoot = root
+    process.driveLoc = join(root, 'drive')
+  })
+
+  it('reaches the emulator as a file, and leaves no part behind', async () => {
+    const saved: string[] = []
+    const contents = 'data a; run;'
+
+    const mount = app(() => {
+      const services = withExecution('[]', '')
+
+      services.drive = {
+        tree: async () => ({
+          status: 'success',
+          tree: { name: '', relativePath: '/', isFolder: true, children: [] }
+        }),
+        save: async (path: string) => {
+          saved.push(path)
+
+          return { status: 'success' } as never
+        },
+        read: async () => ({ contents, binary: false })
+      } as never
+
+      return services
+    })
+
+    const answer = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.from(contents), 'program.sas')
+
+    expect(answer.status).toBe(201)
+    expect(saved).toEqual(['/program.sas'])
+
+    // the parser writes the part under uploads; the emulator already has the
+    // bytes, so the copy is removed rather than accumulating one per upload
+    const left = await readdir(
+      join(process.sasjsRoot as string, 'uploads')
+    ).catch(() => [] as string[])
+
+    expect(left).toEqual([])
+  })
+
+  it('answers a request with no part with the emulator error, not the parser text', async () => {
+    const answer = await request(app(() => withExecution('[]', ''))).post(
+      '/files/files'
+    )
+
+    expect(answer.status).toBe(400)
+    expect(answer.body.message).toMatch(/file/i)
   })
 })
