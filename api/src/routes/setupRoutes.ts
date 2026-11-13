@@ -7,6 +7,8 @@ import appStreamRouter from './appStream'
 import { legacyRouteRedirects } from './legacyRouteRedirects'
 
 import { csrfProtection } from '../middlewares'
+import { createViyaRouter } from './viya'
+import { isViyaEmulationEnabled, viyaServices } from './viya/services'
 import { API_PREFIXES, APP_STREAM_PREFIXES } from '../utils/routePrefixes'
 
 export const setupRoutes = (app: Express) => {
@@ -28,6 +30,11 @@ export const setupRoutes = (app: Express) => {
       appStreamRouter(req, res, next)
     })
   )
+
+  // The emulated Viya estate, when a host asks for one. Registered ahead of the
+  // web router, which would otherwise answer `/compute/...` with the app shell -
+  // and behind the legacy redirects, so a bookmarked old path still lands first.
+  if (isViyaEmulationEnabled()) app.use('/', createViyaRouter(viyaServices))
 
   // Registered before the web router, which serves the application for every
   // unmatched path.

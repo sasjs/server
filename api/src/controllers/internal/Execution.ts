@@ -20,6 +20,16 @@ export interface ExecutionVars {
 export interface ExecuteReturnRaw {
   httpHeaders: HTTPHeaders
   result: string | Buffer
+  /**
+   * The log the program wrote.
+   *
+   * `result` is the webout on a clean run and the webout-and-log bundle when the
+   * run is in debug mode or failed, so a caller that wants the log on its own -
+   * a Viya client reads it from a link, not from the result - had no way to ask
+   * for it. It is already read to build the debug bundle, so returning it costs
+   * nothing.
+   */
+  log: string
 }
 
 interface ExecuteFileParams {
@@ -171,6 +181,7 @@ export class ExecutionController {
 
     return {
       httpHeaders,
+      log,
       result:
         isDebugOn(vars) || session.failureReason
           ? resultParts.join(`\n`)

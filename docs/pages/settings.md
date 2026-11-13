@@ -184,6 +184,20 @@ See also:
 * [`SASJS_ROOT`](settings.md#sasjs_root)
 
 
+### EMULATE_VIYA
+
+Answers the Viya APIs an application built for `serverType=SASVIYA` calls - `/compute`, `/folders`, `/files`, `/identities` and `/types` - from an emulated estate, so such an application runs against this server with no Viya instance behind it.
+
+What is emulated and what is real is worth knowing:
+
+* identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive` lists;
+* execution is real. A submitted service runs on this server's SAS engine and the client receives the `_webout` the program produced, and a program that fails fails.
+
+Every answer carries an `x-sasjs-emulated` header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one.
+
+Unset, or set to anything other than `true`, `1`, `yes` or `on`, the Viya paths are not mounted and the server behaves exactly as before.
+
+
 ### HELMET_COEP
 
 HELMET Cross Origin Embedder Policy.  Sets the Cross-Origin-Embedder-Policy header to require-corp when `true`
