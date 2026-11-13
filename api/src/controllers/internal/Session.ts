@@ -149,6 +149,18 @@ export class SessionController {
   protected sessions: Session[] = []
 
   /**
+   * The server session each caller-named session id stands for.
+   *
+   * A caller may hold several sessions - that is how several jobs run at once -
+   * and a pooled session is one folder per ACCOUNT, with one `webout.txt` and one
+   * `log.log`. Two sessions sharing that folder overwrite each other's answer
+   * while it is being read, so a caller that names its sessions gets a folder per
+   * session. The emulated Viya estate is such a caller: a client opens a session,
+   * submits jobs to it, and opens another.
+   */
+  protected sessionIds = new Map<string, string>()
+
+  /**
    * Whether anything is still using this session.
    *
    * `state` on its own is not enough to decide that a session's folder can be
@@ -222,6 +234,29 @@ export class SessionController {
 
   public getSessionById(id: string) {
     return this.sessions.find((session) => session.id === id)
+  }
+
+  /**
+   * The session `id` stands for, created on first use and reused after.
+   *
+   * A session outlives the job that opened it - a client submits several jobs to
+   * one session in turn - so the id is remembered rather than a folder being
+   * re-created per run, and a second id gets a session of its own. The session is
+   * looked up in the live list each time: the destroy timer takes finished
+   * sessions out of it, so an id pointing at a folder already deleted creates a
+   * new one rather than handing out a dead path.
+   */
+  public async getSessionForId(id: string, username: string) {
+    const known = this.sessionIds.get(id)
+    const live = known ? this.getSessionById(known) : undefined
+
+    if (live) return live
+
+    const session = await this.createSession(username)
+
+    this.sessionIds.set(id, session.id)
+
+    return session
   }
 
   protected async deleteSession(session: Session) {

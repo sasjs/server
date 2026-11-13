@@ -15,7 +15,10 @@ import type { Request } from 'express'
 import type { Services } from '@sasjs/api'
 import { createDriveService } from '@sasjs/api'
 
-import { ExecutionController } from '../../controllers/internal'
+import {
+  ExecutionController,
+  getSessionController
+} from '../../controllers/internal'
 import { nodeDriveStore } from '../../controllers/internal/nodeDriveStore'
 import { desktopIdentity } from '../../utils/desktopIdentity'
 import { getPreProgramVariables, RunTimeType } from '../../utils'
@@ -54,16 +57,29 @@ export const viyaServices = (req: Request): Services => ({
   identity: identityFor(req),
   viya: {
     serverUrl: serverUrl(req),
-    execute: async ({ program, variables, name }) => {
+    execute: async ({ program, variables, name, sessionId }) => {
       const controller = new ExecutionController()
+
+      // every field a generated program reads, from the request: a service that
+      // cannot see its own `_sasjs_userid` or the API's address cannot call back
+      const preProgramVariables = getPreProgramVariables(req)
+
+      // the estate's session, not the account's: a user may hold several, and
+      // that is how several jobs run at once. One folder per account would mean
+      // the second run overwrites the first's `webout.txt` while it is being read
+      const session = sessionId
+        ? await getSessionController(RunTimeType.SAS).getSessionForId(
+            sessionId,
+            preProgramVariables.username
+          )
+        : undefined
 
       const { result, log, failureReason } = await controller.executeProgram({
         program: Array.isArray(program) ? program.join('\n') : program,
         runTime: RunTimeType.SAS,
         vars: (variables ?? {}) as Record<string, string | number>,
-        // every field a generated program reads, from the request: a service that
-        // cannot see its own `_sasjs_userid` or the API's address cannot call back
-        preProgramVariables: getPreProgramVariables(req)
+        session,
+        preProgramVariables
       })
 
       // a failed run's `result` is the webout-and-log bundle, which is for
