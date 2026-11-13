@@ -677,6 +677,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#emulate_viya">
+<span class="md-ellipsis">
+      
+        EMULATE_VIYA
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#helmet_coep">
 <span class="md-ellipsis">
       
@@ -1226,6 +1235,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#emulate_viya">
+<span class="md-ellipsis">
+      
+        EMULATE_VIYA
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#helmet_coep">
 <span class="md-ellipsis">
       
@@ -1738,6 +1756,16 @@ See also:</p>
 <li><a href="./#log_location"><code>LOG_LOCATION</code></a></li>
 <li><a href="./#sasjs_root"><code>SASJS_ROOT</code></a></li>
 </ul>
+<h3 id="emulate_viya">EMULATE_VIYA<a class="headerlink" href="#emulate_viya" title="Permanent link">¶</a></h3>
+<p>Answers the Viya APIs an application built for <code>serverType=SASVIYA</code> calls - <code>/compute</code>, <code>/folders</code>, <code>/files</code>, <code>/identities</code> and <code>/types</code> - from an emulated estate, so such an application runs against this server with no Viya instance behind it.</p>
+<p>What is emulated and what is real is worth knowing:</p>
+<ul>
+<li>identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file <code>GET /SASjsApi/drive/file</code> reads.</li>
+<li>execution is real. A submitted service runs on this server's SAS engine and the client receives the <code>_webout</code> the program produced, and a program that fails fails.</li>
+</ul>
+<p>A client authenticates exactly as it does against this server normally: the token it presents on the Viya paths is a sasjs/server access token, so an application built for <code>serverType=SASVIYA</code> is configured with one rather than signing in through <code>/SASLogon</code>. The emulator declines the OAuth token endpoint for that reason - the host owns the token port - and answers <code>501</code> naming it, so a client that tries the Viya login gets an answer that says where the credential comes from.</p>
+<p>Every answer carries an <code>x-sasjs-emulated</code> header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one.</p>
+<p>Unset, or set to anything other than <code>true</code>, <code>1</code>, <code>yes</code> or <code>on</code>, the Viya paths are not mounted and the server behaves exactly as before.</p>
 <h3 id="helmet_coep">HELMET_COEP<a class="headerlink" href="#helmet_coep" title="Permanent link">¶</a></h3>
 <p>HELMET Cross Origin Embedder Policy.  Sets the Cross-Origin-Embedder-Policy header to require-corp when <code>true</code></p>
 <p>Options: [true|false]</p>
