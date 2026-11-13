@@ -2,6 +2,7 @@
   "name": "api",
   "version": "0.0.2",
   "description": "Api of SASjs server",
+  "packageManager": "npm@10.9.9",
   "main": "./src/server.ts",
   "scripts": {
     "initial": "npm run buildInfo && npm run swagger && npm run operations && npm run swagger-ui:copy && npm run compileSysInit && npm run copySASjsCore && npm run downloadMacros",
