@@ -3,8 +3,8 @@
  *
  * The drive and the identity store are this server's own, so the two APIs see one
  * filesystem and one set of accounts: a file uploaded over the Viya paths appears
- * in `GET /SASjsApi/drive`, and the account that created it is the account the
- * server authenticated.
+ * in `GET /SASjsApi/drive/file`, and the account that created it is the account
+ * the server authenticated.
  *
  * Execution is this server's engine. The port hands the submitted program to
  * `ExecutionController`, which runs it exactly as a stored program is run, and

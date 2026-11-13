@@ -49,14 +49,59 @@ export const VIYA_PREFIXES = [
  * - everything else runs caller code on this engine, so it is guarded.
  */
 export const viyaGuard =
-  (authenticate: express.RequestHandler): express.RequestHandler =>
+  (
+    authenticate: express.RequestHandler,
+    /** The permission gate, run with `req.url` set to the API rule's path. */
+    decide: express.RequestHandler
+  ): express.RequestHandler =>
   (req, res, next) => {
     if (!isViyaPath(req.path)) return next()
     if (req.path === LOGON_PATH || req.path.startsWith(`${LOGON_PATH}/`))
       return next()
 
-    return authenticate(req, res, next)
+    return authenticate(req, res, () => {
+      const rule = ruleFor(req.path)
+
+      // a path with no API equivalent has no rule to decide on: the estate's
+      // identities and types are not files and do not run code
+      if (!rule) return next()
+
+      // `authorize` decides from `req.url`, so the equivalent API path is what it
+      // is shown - a Viya path is not in its inventory and would pass unguarded
+      const url = req.url
+
+      req.url = rule
+
+      try {
+        return decide(req, res, (error?: unknown) => {
+          req.url = url
+
+          next(error as Error | undefined)
+        })
+      } catch (error) {
+        req.url = url
+
+        throw error
+      }
+    })
   }
+
+/**
+ * The API rule a Viya path stands for.
+ *
+ * The estate's paths carry the same capability under different names: a job
+ * submission runs arbitrary code, which is `/SASjsApi/code/execute`; a file route
+ * reads or writes the drive, which is `/SASjsApi/drive/file`. Deciding on the
+ * Viya path itself would pass every caller, because it is in no rule's inventory.
+ */
+export const ruleFor = (path: string): string | undefined => {
+  if (path.startsWith('/files/')) return '/SASjsApi/drive/file'
+  if (path.startsWith('/folders/')) return '/SASjsApi/drive/folder'
+  if (/\/jobs$/.test(path)) return '/SASjsApi/code/execute'
+  if (path.startsWith('/compute/')) return '/SASjsApi/code/execute'
+
+  return undefined
+}
 
 /**
  * The part a multipart request carried, in the shape the emulator reads.

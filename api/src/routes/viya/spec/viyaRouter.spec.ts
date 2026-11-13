@@ -1,7 +1,7 @@
 import express from 'express'
 import request from 'supertest'
 
-import { createViyaRouter, isViyaPath, viyaGuard } from '../index'
+import { createViyaRouter, isViyaPath, ruleFor, viyaGuard } from '../index'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -133,24 +133,29 @@ describe('the Viya mount', () => {
   })
 })
 
+const requestRules: string[] = []
+
+const guardApp = (authenticate: express.RequestHandler) => {
+  const server = express()
+
+  server.use(express.json())
+  server.use(
+    '/',
+    viyaGuard(authenticate, (req, _res, next) => {
+      requestRules.push(req.url)
+      next()
+    }),
+    createViyaRouter(() => withExecution('[]', ''))
+  )
+  server.use('/', (_req, res) => res.status(200).send('the app shell'))
+
+  return server
+}
+
+const refuses = (req: express.Request, res: express.Response) =>
+  res.status(401).json({ message: 'no token' })
+
 describe('who may reach the estate', () => {
-  const guardApp = (authenticate: express.RequestHandler) => {
-    const server = express()
-
-    server.use(express.json())
-    server.use(
-      '/',
-      viyaGuard(authenticate),
-      createViyaRouter(() => withExecution('[]', ''))
-    )
-    server.use('/', (_req, res) => res.status(200).send('the app shell'))
-
-    return server
-  }
-
-  const refuses = (req: express.Request, res: express.Response) =>
-    res.status(401).json({ message: 'no token' })
-
   it('guards a path that runs caller code', async () => {
     const answer = await request(guardApp(refuses)).post(
       '/compute/contexts/x/sessions'
@@ -176,5 +181,28 @@ describe('who may reach the estate', () => {
     )
 
     expect(answer.status).not.toBe(401)
+  })
+})
+
+describe('the rule a Viya path is decided on', () => {
+  it('maps the estate paths onto the API rules that carry the same capability', () => {
+    // a job submission runs arbitrary code; a file route reads or writes the
+    // drive. The Viya paths are in no rule's inventory, so deciding on them
+    // would pass every caller
+    expect(ruleFor('/compute/sessions/x/jobs')).toBe('/SASjsApi/code/execute')
+    expect(ruleFor('/files/files/abc/content')).toBe('/SASjsApi/drive/file')
+    expect(ruleFor('/folders/folders/abc')).toBe('/SASjsApi/drive/folder')
+    expect(ruleFor('/identities/users/@currentUser')).toBeUndefined()
+  })
+
+  it('hands the mapped rule to the permission gate, not the Viya path', async () => {
+    requestRules.length = 0
+
+    // a caller the guard admits, so the decision itself is what runs
+    await request(guardApp((_req, _res, next) => next())).post(
+      '/compute/sessions/x/jobs'
+    )
+
+    expect(requestRules).toContain('/SASjsApi/code/execute')
   })
 })

@@ -6,7 +6,11 @@ import apiRouter from './api'
 import appStreamRouter from './appStream'
 import { legacyRouteRedirects } from './legacyRouteRedirects'
 
-import { authenticateAccessToken, csrfProtection } from '../middlewares'
+import {
+  authenticateAccessToken,
+  authorize,
+  csrfProtection
+} from '../middlewares'
 import { createViyaRouter, viyaGuard } from './viya'
 import { isViyaEmulationEnabled, viyaServices } from './viya/services'
 import { API_PREFIXES, APP_STREAM_PREFIXES } from '../utils/routePrefixes'
@@ -43,7 +47,9 @@ export const setupRoutes = (app: Express) => {
       // scoped: the guard protects the estate's code paths, and the web router
       // behind it still serves the application shell to a caller who has not
       // signed in - and never guards the estate's own login
-      viyaGuard(authenticateAccessToken),
+      // the guard rewrites `req.url` to the API path the Viya path stands for,
+      // so the same permission rules decide a job submission and a file write
+      viyaGuard(authenticateAccessToken, authorize),
       createViyaRouter(viyaServices)
     )
 

@@ -6,7 +6,7 @@ description: Configuring SASjs Server settings
 
 # Settings
 
-All settings in SASjs server are made by means of environment variables.  These can be set in the following places:
+All settings in SASjs server are made by means of environment variables. These can be set in the following places:
 
 - Configured globally in `/etc/environment` file
 - Export in terminal or shell script (export VAR=VALUE)
@@ -17,13 +17,13 @@ The usual / preferred method is to provide the variables in the `.env` file (whi
 
 ![The .env file, beside the server executable, holding the settings](img/env.png){ width="880" height="290" loading="lazy" decoding="async" }
 
-In a server environment, it is highly recommended to protect this file with appropriate permissions (eg, to prevent changes being made by the shared identity under which the server is launched) 
+In a server environment, it is highly recommended to protect this file with appropriate permissions (eg, to prevent changes being made by the shared identity under which the server is launched)
 
 ## Environment Variables
 
 ### ADMIN_PASSWORD_INITIAL
 
-Defines the initial (temporary) password for the `ADMIN_USERNAME`, which is in place until the first login.  There is no default: a default would ship a publicly-known credential.  In server mode it is required unless an external auth provider is enabled - with a provider, leaving it unset seeds no local admin at all, and access is decided by the provider's groups - see [Access policy](auth.md#access-policy).
+Defines the initial (temporary) password for the `ADMIN_USERNAME`, which is in place until the first login. There is no default: a default would ship a publicly-known credential. In server mode it is required unless an external auth provider is enabled - with a provider, leaving it unset seeds no local admin at all, and access is decided by the provider's groups - see [Access policy](auth.md#access-policy).
 
 Example:
 
@@ -33,19 +33,20 @@ ADMIN_PASSWORD_INITIAL=<a strong password>
 
 ### ADMIN_PASSWORD_RESET
 
-This option can be used to force a reset of the password of the `ADMIN_USERNAME`.  Default is NO.  Possible options are YES and NO.
+This option can be used to force a reset of the password of the `ADMIN_USERNAME`. Default is NO. Possible options are YES and NO.
 If `ADMIN_PASSWORD_RESET=YES` then the `ADMIN_USERNAME` will be prompted to change the password **from** `ADMIN_PASSWORD_INITIAL` on next login. This will repeat on every server restart, unless the option is removed / set to NO.
 
-If the `ADMIN_USERNAME` is an existing, non-admin user then the password will NOT be reset (only works for admins).  If the ADMIN_USERNAME uses an auth provider (eg LDAP) then again, this approach will not work. In this case, you can create a new admin user by setting a new ADMIN_USERNAME.
+If the `ADMIN_USERNAME` is an existing, non-admin user then the password will NOT be reset (only works for admins). If the ADMIN_USERNAME uses an auth provider (eg LDAP) then again, this approach will not work. In this case, you can create a new admin user by setting a new ADMIN_USERNAME.
 
 Example:
+
 ```
 ADMIN_PASSWORD_RESET=NO
 ```
 
 ### ADMIN_USERNAME
 
-Used to define the name of the local admin user.  The default value is `secretuser`.  The user is created on startup only when [ADMIN_PASSWORD_INITIAL](settings.md#admin_password_initial) is set.
+Used to define the name of the local admin user. The default value is `secretuser`. The user is created on startup only when [ADMIN_PASSWORD_INITIAL](settings.md#admin_password_initial) is set.
 
 Example:
 
@@ -55,23 +56,26 @@ ADMIN_USERNAME=secretuser
 
 ### AUTH_PROVIDERS
 
-Used to list the desired Authentication providers (space or comma separated).  Supported values are `ldap` and `oidc`, and more than one may be enabled at once - for example LDAP for directory users together with OpenID Connect for single sign-on.  See [Authentication](auth.md) for the detail of each.
+Used to list the desired Authentication providers (space or comma separated). Supported values are `ldap` and `oidc`, and more than one may be enabled at once - for example LDAP for directory users together with OpenID Connect for single sign-on. See [Authentication](auth.md) for the detail of each.
 
 Example:
+
 ```
 AUTH_PROVIDERS=ldap
 ```
 
 Combining providers:
+
 ```
 AUTH_PROVIDERS=ldap oidc
 ```
 
 ### ALLOWED_DOMAIN
 
-Prevent authentication from other domains by listing the primary domain here.  This will reject cookies arriving from any other domain.  Used only when `MODE=server`, and only relevant for SASjs Studio / SASjs Logon.  
+Prevent authentication from other domains by listing the primary domain here. This will reject cookies arriving from any other domain. Used only when `MODE=server`, and only relevant for SASjs Studio / SASjs Logon.
 
 Example:
+
 ```
 ALLOWED_DOMAIN=sas.company.com
 ```
@@ -96,9 +100,9 @@ Example: `CERT_CHAIN=localhost.crt`
 
 See also:
 
-* [`HTTPS_PORT`](settings.md#https_port)
-* [`CA_ROOT`](settings.md#ca_root)
-* [`PRIVATE_KEY`](settings.md#private_key)
+- [`HTTPS_PORT`](settings.md#https_port)
+- [`CA_ROOT`](settings.md#ca_root)
+- [`PRIVATE_KEY`](settings.md#private_key)
 
 Developer notes: processed internally as [`cert:` option](https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions) which has this description:
 
@@ -112,9 +116,9 @@ Example: `CA_ROOT=fullchain.pem`
 
 See also:
 
-* [`HTTPS_PORT`](settings.md#https_port)
-* [`PRIVATE_KEY`](settings.md#private_key)
-* [`CERT_CHAIN`](settings.md#cert_chain)
+- [`HTTPS_PORT`](settings.md#https_port)
+- [`PRIVATE_KEY`](settings.md#private_key)
+- [`CERT_CHAIN`](settings.md#cert_chain)
 
 Developer notes: processed internally as [`ca:` option](https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions) which has this description:
 
@@ -132,34 +136,36 @@ If enabled, it is also necessary to configure the [`WHITELIST`](settings.md#whit
 
 In server mode it is necessary to use a database to store a number of attributes, such as:
 
-* Users & Groups (if not using LDAP or other authentication source)
-* Clients / Secrets (to enable REST API connections)
-* Private keys (to spawn client ids, session tokens etc)
-* Permissions (which users / groups are authorised to access which resources)
+- Users & Groups (if not using LDAP or other authentication source)
+- Clients / Secrets (to enable REST API connections)
+- Private keys (to spawn client ids, session tokens etc)
+- Permissions (which users / groups are authorised to access which resources)
 
-This value contains the Connection string for the DB instance.  Example:
+This value contains the Connection string for the DB instance. Example:
+
 ```
 DB_CONNECT=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER>/<DB_NAME>?retryWrites=true&w=majority
 ```
+
 See also:
 
-* [`DB_TYPE`](settings.md#db_type)
+- [`DB_TYPE`](settings.md#db_type)
 
 ### DB_TYPE
-Specify the type of database.  When `DB_TYPE=cosmos_mongodb` the connection is made using [compatibility mode](https://www.npmjs.com/package/connect-mongo#set-the-compatibility-mode).
 
-Options: [mongodb|cosmos_mongodb] 
+Specify the type of database. When `DB_TYPE=cosmos_mongodb` the connection is made using [compatibility mode](https://www.npmjs.com/package/connect-mongo#set-the-compatibility-mode).
+
+Options: [mongodb|cosmos_mongodb]
 
 Default: mongodb
 
-
 ### DDC_HOST_ENABLED
 
-Serves a development page at `/ddc-host` that embeds an application the way SAS Visual Analytics embeds data-driven content: an iframe carrying VA's sandbox attribute set, and a message posted into it on a chosen timing.  Use it to check that an embedded application works inside that sandbox, which opening it as a top-level page does not exercise.  The page and its script are both served behind this setting.
+Serves a development page at `/ddc-host` that embeds an application the way SAS Visual Analytics embeds data-driven content: an iframe carrying VA's sandbox attribute set, and a message posted into it on a chosen timing. Use it to check that an embedded application works inside that sandbox, which opening it as a top-level page does not exercise. The page and its script are both served behind this setting.
 
 Options: [YES|NO]
 
-Default: NO.  The page frames whatever URL it is given, so it belongs on a development server rather than on one a browser user can reach.
+Default: NO. The page frames whatever URL it is given, so it belongs on a development server rather than on one a browser user can reach.
 
 Example:
 
@@ -167,8 +173,7 @@ Example:
 
 See also:
 
-* [Testing VA embedding](testing-va-embed.md)
-
+- [Testing VA embedding](testing-va-embed.md)
 
 ### DRIVE_LOCATION
 
@@ -176,13 +181,12 @@ This setting is useful if you are running multiple instances of SASjs Server and
 
 The DRIVE_LOCATION can be shared across instances, but the SASJS_ROOT can't - as it will cause conflicts with sessions / uploads etc.
 
-If using this feature, be aware that the index of published apps (`appStreamConfig.json`, in the drive folder) is read at server startup and refreshed when an instance publishes or removes an app - so a deploy made on one instance reaches the others on their next restart.   If this is problematic for your project, please raise an [issue](https://github.com/sasjs/server/issues/new).
+If using this feature, be aware that the index of published apps (`appStreamConfig.json`, in the drive folder) is read at server startup and refreshed when an instance publishes or removes an app - so a deploy made on one instance reaches the others on their next restart. If this is problematic for your project, please raise an [issue](https://github.com/sasjs/server/issues/new).
 
 See also:
 
-* [`LOG_LOCATION`](settings.md#log_location)
-* [`SASJS_ROOT`](settings.md#sasjs_root)
-
+- [`LOG_LOCATION`](settings.md#log_location)
+- [`SASJS_ROOT`](settings.md#sasjs_root)
 
 ### EMULATE_VIYA
 
@@ -190,17 +194,18 @@ Answers the Viya APIs an application built for `serverType=SASVIYA` calls - `/co
 
 What is emulated and what is real is worth knowing:
 
-* identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive/file` reads.
-* execution is real. A submitted service runs on this server's SAS engine and the client receives the `_webout` the program produced, and a program that fails fails.
+- identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive/file` reads.
+- execution is real. A submitted service runs on this server's SAS engine and the client receives the `_webout` the program produced, and a program that fails fails.
+
+A client authenticates exactly as it does against this server normally: the token it presents on the Viya paths is a sasjs/server access token, so an application built for `serverType=SASVIYA` is configured with one rather than signing in through `/SASLogon`. The emulator declines the OAuth token endpoint for that reason - the host owns the token port - and answers `501` naming it, so a client that tries the Viya login gets an answer that says where the credential comes from.
 
 Every answer carries an `x-sasjs-emulated` header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one.
 
 Unset, or set to anything other than `true`, `1`, `yes` or `on`, the Viya paths are not mounted and the server behaves exactly as before.
 
-
 ### HELMET_COEP
 
-HELMET Cross Origin Embedder Policy.  Sets the Cross-Origin-Embedder-Policy header to require-corp when `true`
+HELMET Cross Origin Embedder Policy. Sets the Cross-Origin-Embedder-Policy header to require-corp when `true`
 
 Options: [true|false]
 
@@ -208,7 +213,7 @@ Default: true
 
 Docs: [https://helmetjs.github.io/#reference](https://helmetjs.github.io/#reference) (`crossOriginEmbedderPolicy`)
 
-###  HELMET_CSP_CONFIG_PATH
+### HELMET_CSP_CONFIG_PATH
 
 HELMET Content Security Policy
 
@@ -221,6 +226,7 @@ An application deployed on the server that needs inline scripts or inline event 
 Docs: [https://helmetjs.github.io/#reference](https://helmetjs.github.io/#reference)
 
 Default config:
+
 ```
 {
   "frame-src": ["'self'"],
@@ -231,6 +237,7 @@ Default config:
 ```
 
 Loosened config for an app that requires inline scripts:
+
 ```
 {
   "frame-src": ["'self'"],
@@ -316,6 +323,7 @@ See also: [`HTTP_PORT`](settings.md#http_port), [`HTTPS_BIND_ADDRESS`](settings.
 The URL of the LDAP directory server.
 
 Example:
+
 ```
 LDAP_URL= ldaps://LDAP_SERVER_URL:PORT
 ```
@@ -323,15 +331,17 @@ LDAP_URL= ldaps://LDAP_SERVER_URL:PORT
 ### LDAP_BIND_DN
 
 Example:
+
 ```
 LDAP_BIND_DN=cn=admin,ou=system,dc=companyname
 ```
 
-### LDAP_BIND_PASSWORD 
+### LDAP_BIND_PASSWORD
 
 All LDAP queries have to be authenticated with this secret and the LDAP_USERS_BASE_DN
 
 Example:
+
 ```
 LDAP_BIND_PASSWORD = <password>
 ```
@@ -350,11 +360,11 @@ LDAP_GROUPS_BASE_DN = ou=groups,dc=companyname
 
 ### LOCAL_LOGIN_ENABLED
 
-Whether a local (database) account can sign in with its stored password.  Set to `false` and the password is never compared, so a local account cannot sign in at all - useful where every account lives in an identity provider instead.  On the Cloudron app package this defaults to `false` when single sign-on is configured and no break-glass admin is seeded.
+Whether a local (database) account can sign in with its stored password. Set to `false` and the password is never compared, so a local account cannot sign in at all - useful where every account lives in an identity provider instead. On the Cloudron app package this defaults to `false` when single sign-on is configured and no break-glass admin is seeded.
 
 The login screen follows it: with local sign-in off the password form is hidden, so a deployment that signs everyone in through a provider shows the provider's button alone.
 
-Accounts that authenticate through LDAP are unaffected: their password is verified against the directory.  OIDC users sign in through the provider.
+Accounts that authenticate through LDAP are unaffected: their password is verified against the directory. OIDC users sign in through the provider.
 
 It cannot be `false` while [AUTH_PROVIDERS](settings.md#auth_providers) is empty - with the local login gone and no provider to authenticate against, no account could sign in, so the server refuses to start rather than run unreachable.
 
@@ -373,7 +383,7 @@ Default: `common`
 
 ### LOG_LOCATION
 
-Location in which to write server logs (one file per day).  If not provided, logs are written in a `/logs` subfolder of the `SASJS_ROOT` location.  Can be a full path, else relative to the directory in which the server instance was launched.  More information on the behaviour (eg log rotation) is available in the underlying package ([rotating-file-stream](https://www.npmjs.com/package/rotating-file-stream)).
+Location in which to write server logs (one file per day). If not provided, logs are written in a `/logs` subfolder of the `SASJS_ROOT` location. Can be a full path, else relative to the directory in which the server instance was launched. More information on the behaviour (eg log rotation) is available in the underlying package ([rotating-file-stream](https://www.npmjs.com/package/rotating-file-stream)).
 
 Example: `LOG_LOCATION=./sasjs_root/logs`
 
@@ -393,13 +403,13 @@ Default: `5`
 
 ### MOCK_SERVERTYPE
 
-Used internally for CLI / Adapter testing - set to `SAS9` or `SASVIYA` when launching to enable responses in the format of alternative platforms.  These mocks are not functional, and have no use outside of development / testing purposes.
+Used internally for CLI / Adapter testing - set to `SAS9` or `SASVIYA` when launching to enable responses in the format of alternative platforms. These mocks are not functional, and have no use outside of development / testing purposes.
 
 Default: `SASJS`
 
 ### MODE
 
-Whether to launch the server in `desktop` (single user / workstation) or `server` mode (multi-user).  For server mode, a Mongo DB connection string must be provided in the [DB_CONNECT](#db_connect) variable.
+Whether to launch the server in `desktop` (single user / workstation) or `server` mode (multi-user). For server mode, a Mongo DB connection string must be provided in the [DB_CONNECT](#db_connect) variable.
 
 Default: `desktop`
 
@@ -411,107 +421,118 @@ Example: `NODE_PATH=~/.nvm/versions/node/v16.14.0/bin/node`
 
 See also:
 
-* [`PYTHON_PATH`](settings.md#python_path)
-* [`RUN_TIMES`](settings.md#run_times)
-* [`SAS_PATH`](settings.md#sas_path)
+- [`PYTHON_PATH`](settings.md#python_path)
+- [`RUN_TIMES`](settings.md#run_times)
+- [`SAS_PATH`](settings.md#sas_path)
 
 ### OIDC_ISSUER_URL
 
-The issuer URL of your OpenID Connect provider.  SASjs Server reads the provider's endpoints from `<OIDC_ISSUER_URL>/.well-known/openid-configuration`.  Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers), unless [OIDC_DISCOVERY_URL](settings.md#oidc_discovery_url) is given instead.
+The issuer URL of your OpenID Connect provider. SASjs Server reads the provider's endpoints from `<OIDC_ISSUER_URL>/.well-known/openid-configuration`. Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers), unless [OIDC_DISCOVERY_URL](settings.md#oidc_discovery_url) is given instead.
 
 Example:
+
 ```
 OIDC_ISSUER_URL=https://id.example.com
 ```
 
 ### OIDC_DISCOVERY_URL
 
-Use this instead of `OIDC_ISSUER_URL` when your provider does not serve its discovery document at the conventional path.  Optional.
+Use this instead of `OIDC_ISSUER_URL` when your provider does not serve its discovery document at the conventional path. Optional.
 
 Example:
+
 ```
 OIDC_DISCOVERY_URL=https://id.example.com/.well-known/openid-configuration
 ```
 
 ### OIDC_CLIENT_ID
 
-The client ID issued by your provider for SASjs Server.  Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers).
+The client ID issued by your provider for SASjs Server. Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers).
 
 Example:
+
 ```
 OIDC_CLIENT_ID=sasjs-server
 ```
 
 ### OIDC_CLIENT_SECRET
 
-The client secret issued by your provider.  Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers).
+The client secret issued by your provider. Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers).
 
 This value is write-only: it is read from the environment and used, but it is never returned by the API or shown in the settings screen.
 
 Example:
+
 ```
 OIDC_CLIENT_SECRET=<client secret>
 ```
 
 ### OIDC_REDIRECT_URI
 
-The callback URL, which must be registered with your provider and must match exactly.  Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers).  It must be an absolute `http` or `https` URL, and the path is fixed by the server.
+The callback URL, which must be registered with your provider and must match exactly. Required when `oidc` is listed in [AUTH_PROVIDERS](settings.md#auth_providers). It must be an absolute `http` or `https` URL, and the path is fixed by the server.
 
 Example:
+
 ```
 OIDC_REDIRECT_URI=https://sas.example.com/SASLogon/openid/callback
 ```
 
 ### OIDC_PROVIDER_NAME
 
-The label shown on the sign-in button, as in "Sign in with <name>".  Defaults to `OpenID Connect`.
+The label shown on the sign-in button, as in "Sign in with <name>". Defaults to `OpenID Connect`.
 
 Example:
+
 ```
 OIDC_PROVIDER_NAME=Example Identity
 ```
 
 ### OIDC_SCOPE
 
-The scopes requested from the provider.  Defaults to `openid profile email`, and must always include `openid`.
+The scopes requested from the provider. Defaults to `openid profile email`, and must always include `openid`.
 
 Example:
+
 ```
 OIDC_SCOPE=openid profile email
 ```
 
 ### OIDC_USERNAME_CLAIM
 
-The claim used to derive the SASjs username when provisioning a new user.  Defaults to `preferred_username`, falling back to `sub` when the claim is absent.  The value is normalised to a SASjs username - lowercase, alphanumeric, up to 16 characters.
+The claim used to derive the SASjs username when provisioning a new user. Defaults to `preferred_username`, falling back to `sub` when the claim is absent. The value is normalised to a SASjs username - lowercase, alphanumeric, up to 16 characters.
 
 Example:
+
 ```
 OIDC_USERNAME_CLAIM=email
 ```
 
 ### OIDC_SIGNING_ALG
 
-The algorithm used to verify the provider's `id_token` signature.  Defaults to `RS256`.  Valid options are `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512` and `EdDSA`.  Set this to match what your provider signs with.
+The algorithm used to verify the provider's `id_token` signature. Defaults to `RS256`. Valid options are `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512` and `EdDSA`. Set this to match what your provider signs with.
 
 Example:
+
 ```
 OIDC_SIGNING_ALG=RS256
 ```
 
 ### OIDC_JIT_PROVISION
 
-Whether a user who signs in successfully but has no SASjs account should have one created automatically.  Defaults to `true`.  Set to `false` to require that an admin creates the account first.  The new account's administrator status comes from the provider's groups, as described under [Access policy](auth.md#access-policy).
+Whether a user who signs in successfully but has no SASjs account should have one created automatically. Defaults to `true`. Set to `false` to require that an admin creates the account first. The new account's administrator status comes from the provider's groups, as described under [Access policy](auth.md#access-policy).
 
 Example:
+
 ```
 OIDC_JIT_PROVISION=true
 ```
 
 ### OIDC_POST_LOGOUT_REDIRECT_URI
 
-Where the provider should send the browser after the single sign-on session is closed.  Optional - when omitted, logout returns to the SASjs Server home page.
+Where the provider should send the browser after the single sign-on session is closed. Optional - when omitted, logout returns to the SASjs Server home page.
 
 Example:
+
 ```
 OIDC_POST_LOGOUT_REDIRECT_URI=https://sas.example.com/
 ```
@@ -528,9 +549,9 @@ Example: `PRIVATE_KEY=localhost.key`
 
 See also:
 
-* [`HTTPS_PORT`](settings.md#https_port)
-* [`CA_ROOT`](settings.md#ca_root)
-* [`CERT_CHAIN`](settings.md#cert_chain)
+- [`HTTPS_PORT`](settings.md#https_port)
+- [`CA_ROOT`](settings.md#ca_root)
+- [`CERT_CHAIN`](settings.md#cert_chain)
 
 Developer notes: processed internally as [`key:` option](https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions) which has this description:
 
@@ -542,10 +563,10 @@ Deprecated - the listeners a deployment serves are stated by [`HTTP_PORT`](setti
 
 If using https (strongly recommended), the following items should also be configured:
 
-* [`ALLOWED_DOMAIN`](settings.md#allowed_domain)
-* [`CA_ROOT`](settings.md#ca_root)
-* [`CERT_CHAIN`](settings.md#cert_chain)
-* [`PRIVATE_KEY`](settings.md#private_key)
+- [`ALLOWED_DOMAIN`](settings.md#allowed_domain)
+- [`CA_ROOT`](settings.md#ca_root)
+- [`CERT_CHAIN`](settings.md#cert_chain)
+- [`PRIVATE_KEY`](settings.md#private_key)
 
 ### PYTHON_PATH
 
@@ -555,22 +576,21 @@ Example: `PYTHON_PATH=/usr/bin/python`
 
 See also:
 
-* [`NODE_PATH`](settings.md#node_path)
-* [`R_PATH`](settings.md#r_path)
-* [`RUN_TIMES`](settings.md#run_times)
-* [`SAS_PATH`](settings.md#sas_path)
-  
+- [`NODE_PATH`](settings.md#node_path)
+- [`R_PATH`](settings.md#r_path)
+- [`RUN_TIMES`](settings.md#run_times)
+- [`SAS_PATH`](settings.md#sas_path)
+
 ### R_PATH
 
-The path to the R executable (for running R programs).  Installation guides for R are available for [Centos 7](https://linuxize.com/post/how-to-install-r-on-centos-7/), [ubuntu](https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-20-04) and [Debian](https://www.digitalocean.com/community/tutorials/how-to-install-r-on-debian-10).
-  
-Example: `R_PATH=/usr/bin/Rscript`
-  
-* [`NODE_PATH`](settings.md#node_path)
-* [`PYTHON_PATH`](settings.md#python_path)
-* [`RUN_TIMES`](settings.md#run_times)
-* [`SAS_PATH`](settings.md#sas_path)
+The path to the R executable (for running R programs). Installation guides for R are available for [Centos 7](https://linuxize.com/post/how-to-install-r-on-centos-7/), [ubuntu](https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-20-04) and [Debian](https://www.digitalocean.com/community/tutorials/how-to-install-r-on-debian-10).
 
+Example: `R_PATH=/usr/bin/Rscript`
+
+- [`NODE_PATH`](settings.md#node_path)
+- [`PYTHON_PATH`](settings.md#python_path)
+- [`RUN_TIMES`](settings.md#run_times)
+- [`SAS_PATH`](settings.md#sas_path)
 
 ### RUN_AS
 
@@ -587,22 +607,23 @@ Default: unset (root refused)
 See also: [Deployment](deployment.md)
 
 ### RUN_TIMES
+
 A comma separated string that defines the available runtimes.
 
 **Priority is given to the runtime that comes first in the string**.
 
 Given a `RUNTIME=js,sas,py`:
-  
-* If `_program=/some/program` then SASjs Server will first look for `program.js` in the `/some` folder, then `program.sas`, and finally `program.py`.
-* If `_program=/some/program.sas` then a SAS runtime will always be used.
-* If `_program=/some/program.r` then an R runtime will be used (and so-on)
+
+- If `_program=/some/program` then SASjs Server will first look for `program.js` in the `/some` folder, then `program.sas`, and finally `program.py`.
+- If `_program=/some/program.sas` then a SAS runtime will always be used.
+- If `_program=/some/program.r` then an R runtime will be used (and so-on)
 
 Supported runtimes:
 
-* `js` - JavaScript
-* `sas` - SAS
-* `py` - Python
-* `r` - R
+- `js` - JavaScript
+- `sas` - SAS
+- `py` - Python
+- `r` - R
 
 Default: `sas,js,py`
 
@@ -610,13 +631,13 @@ Example:
 
 `RUN_TIMES=js,sas,py`
 
-
 ### SAS_PATH
-The full path to the SAS executable (sas.exe / sas.sh).  It is highly recommended to provide an instance with UTF-8 encoding, for the following reasons:
 
-* SASjs Adapter compatibility
-* Broad language support
-* Viya compatibility
+The full path to the SAS executable (sas.exe / sas.sh). It is highly recommended to provide an instance with UTF-8 encoding, for the following reasons:
+
+- SASjs Adapter compatibility
+- Broad language support
+- Viya compatibility
 
 To force UTF-8 encoding, update the appropriate `sasv9.cfg` file with the following option:
 
@@ -630,22 +651,19 @@ Example:
 
 See also:
 
-* [`NODE_PATH`](settings.md#node_path)
-* [`PYTHON_PATH`](settings.md#python_path)
-* [`RUN_TIMES`](settings.md#run_times)
-
+- [`NODE_PATH`](settings.md#node_path)
+- [`PYTHON_PATH`](settings.md#python_path)
+- [`RUN_TIMES`](settings.md#run_times)
 
 ### SASJS_ROOT
 
-If omitted, this will be the SASjs Server installation directory.  The location is used for SAS WORK, staged files, DRIVE, configuration etc
+If omitted, this will be the SASjs Server installation directory. The location is used for SAS WORK, staged files, DRIVE, configuration etc
 
 A standalone executable also unpacks the assets it serves into a `tmp` subfolder here, and removes it when the process exits. A start also removes leftover folders from earlier runs once they are a day old, so a process that was killed does not leave one behind for good.
 
 Example:
 
 `SASJS_ROOT=./sasjs_root`
-
-
 
 ### SITE_ID
 
@@ -679,6 +697,4 @@ A browser sends an `Origin` header that is a bare origin, so an entry carrying a
 
 See also:
 
-* [`CORS`](settings.md#cors)
-
-
+- [`CORS`](settings.md#cors)
