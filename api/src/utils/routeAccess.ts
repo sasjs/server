@@ -159,10 +159,21 @@ export const isGrantedForRequest = async (
   // when it lists and serves the app. Comparing the id alone would show a caller
   // a tile it is then refused, and comparing the label alone would let a deny be
   // outweighed by a stream-wide grant.
+
+  // The top-level route is the router prefix the request is under. The gate
+  // normally runs on a sub-mounted router, where `baseUrl` names that prefix; a
+  // router mounted at `/` leaves it empty, and then the requested path is what
+  // names it - the emulated Viya estate is mounted that way and rewrites the
+  // request to the API rule it stands for, so `/SASjsApi/code/execute` must be
+  // governed by `/SASjsApi` and not by a top level of `''`, which no rule names.
+  const topLevelRoute =
+    topLevelRouteFor(canonicalPrefix(req.baseUrl)) ||
+    topLevelRouteFor(requested)
+
   return isRouteGranted(
     rules,
     entry ? appDecidingPath(entry, rules) : requested,
-    topLevelRouteFor(canonicalPrefix(req.baseUrl))
+    topLevelRoute
   )
 }
 

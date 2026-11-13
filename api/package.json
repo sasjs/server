@@ -2,6 +2,7 @@
   "name": "api",
   "version": "0.0.2",
   "description": "Api of SASjs server",
+  "packageManager": "npm@10.9.9",
   "main": "./src/server.ts",
   "scripts": {
     "initial": "npm run buildInfo && npm run swagger && npm run operations && npm run swagger-ui:copy && npm run compileSysInit && npm run copySASjsCore && npm run downloadMacros",
@@ -55,7 +56,7 @@
   "dependencies": {
     "adm-zip": "0.6.1",
     "@sasjs/adapter": "4.19.1",
-    "@sasjs/api": "0.31.0",
+    "@sasjs/api": "0.37.0",
     "@sasjs/core": "^6.1.2",
     "@sasjs/lint": "^5.1.1",
     "@sasjs/utils": "4.11.0",
