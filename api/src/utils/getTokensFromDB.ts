@@ -55,3 +55,23 @@ export const getTokensFromDB = async (userId: string, clientId: string) => {
     }
   }
 }
+
+/**
+ * The refresh token stored for one caller and client, on its own.
+ *
+ * `getTokensFromDB` answers only while BOTH stored tokens still verify, which is
+ * right for a caller presenting a live pair and wrong for a refresh grant: the
+ * moment the access token expires - exactly when a client needs to refresh - that
+ * helper answers nothing, and a grant built on it would refuse a valid refresh
+ * token and leave the client with no way back.
+ */
+export const getStoredRefreshToken = async (
+  userId: string,
+  clientId: string
+): Promise<string | undefined> => {
+  const user = await User.findOne({ _id: userId })
+  if (!user) return
+
+  return user.tokens.find((tokenObj: any) => tokenObj.clientId === clientId)
+    ?.refreshToken
+}

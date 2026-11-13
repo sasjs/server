@@ -14,9 +14,15 @@ import request from 'supertest'
 import jwt from 'jsonwebtoken'
 
 import Client from '../../../model/Client'
+import User from '../../../model/User'
 import { AuthController } from '../../../controllers/auth'
 import { UserController } from '../../../controllers/'
-import { generateAuthCode, SECRETS, resetLoginFailures } from '../../../utils'
+import {
+  generateAccessToken,
+  generateAuthCode,
+  SECRETS,
+  resetLoginFailures
+} from '../../../utils'
 import type { Services } from '@sasjs/api'
 import { createViyaRouter } from '../index'
 
@@ -253,6 +259,68 @@ describe('the estate token port', () => {
       .field('refresh_token', rotated.body.refresh_token)
 
     expect(next.status).toBe(200)
+  })
+
+  it('refreshes a pair whose access token has expired', async () => {
+    // what a client holds when it needs to refresh: a refresh token and an access
+    // token that is already dead. A stored-pair lookup that validates BOTH would
+    // answer nothing here and refuse the one request this grant exists for
+    const granted = await codeGrant()
+    const refreshToken = granted.body.refresh_token as string
+
+    const user = await User.findOne({ username: account.username })
+    const stored: any = user!.tokens.find(
+      (tokenObj: any) => tokenObj.clientId === CLIENT_ID
+    )
+    stored.accessToken = generateAccessToken(
+      { clientId: CLIENT_ID, userId: user!.uid },
+      -60
+    )
+    await user!.save()
+
+    const rotated = await request(app)
+      .post('/SASLogon/oauth/token')
+      .set('Authorization', basic(CLIENT_ID, CLIENT_SECRET))
+      .field('grant_type', 'refresh_token')
+      .field('refresh_token', refreshToken)
+
+    expect(rotated.status).toBe(200)
+    expect(typeof rotated.body.access_token).toBe('string')
+  })
+
+  it('does not count a sign-in that could not be attempted', async () => {
+    // six attempts is past the five-failure lockout: with local sign-in switched
+    // off the credential is never compared, so nothing here is a failed sign-in
+    // and the answer stays explanatory rather than becoming a 429
+    process.env.LOCAL_LOGIN_ENABLED = 'false'
+
+    try {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const answer = await request(app)
+          .post('/SASLogon/oauth/token')
+          .set('Authorization', basic('sas.cli', ''))
+          .type('form')
+          .send({
+            grant_type: 'password',
+            username: account.username,
+            password: account.password
+          })
+
+        expect(answer.status).toBe(401)
+        expect(answer.body.error_description).toMatch(/disabled/)
+      }
+    } finally {
+      delete process.env.LOCAL_LOGIN_ENABLED
+    }
+  })
+
+  it('tells a proxy not to cache the pair', async () => {
+    const answer = await passwordGrant()
+
+    // RFC 6749 section 5.1, and the reason it is a rule: a cached token response
+    // is a bearer token a proxy can replay
+    expect(answer.headers['cache-control']).toBe('no-store')
+    expect(answer.headers['pragma']).toBe('no-cache')
   })
 
   it('refuses a grant no client sends', async () => {

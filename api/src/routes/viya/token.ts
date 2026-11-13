@@ -36,12 +36,14 @@ import {
   generateAccessToken,
   generateRefreshToken,
   getLoginLockoutRemaining,
-  getTokensFromDB,
+  getStoredRefreshToken,
   recordLoginFailure,
   resetLoginFailures,
   saveTokensInDB,
-  verifyCredentials
+  verifyCredentials,
+  WrongCredentials
 } from '../../utils'
+import { HttpError } from '../../utils/httpError'
 import type { InfoJWT } from '../../types'
 
 /** The one path this module answers. */
@@ -182,10 +184,20 @@ const userForPasswordGrant = async (
     resetLoginFailures(username)
 
     return user
-  } catch {
-    recordLoginFailure(username)
+  } catch (error) {
+    // only a credential that did not match is a failed sign-in: an LDAP outage or
+    // local sign-in being switched off refuses the request without counting it,
+    // or a correct password would walk the account toward the lockout
+    if (error instanceof WrongCredentials) {
+      recordLoginFailure(username)
 
-    throw invalidGrant('Invalid username or password.')
+      throw invalidGrant('Invalid username or password.')
+    }
+
+    if (error instanceof HttpError)
+      throw new OAuthError(error.status, 'invalid_grant', error.message)
+
+    throw error
   }
 }
 
@@ -316,11 +328,14 @@ const rotateRefreshToken = async (
 
   const userInfo = verifyRefreshToken(refreshToken, clientId)
 
-  const stored = await getTokensFromDB(userInfo.userId, clientId)
+  // the stored REFRESH token alone, not the pair: a pair is only returned while
+  // both tokens verify, and a client refreshes precisely because its access token
+  // has expired
+  const stored = await getStoredRefreshToken(userInfo.userId, clientId)
 
-  // a token that no longer matches the stored pair has been rotated or revoked,
+  // a token that no longer matches what is stored has been rotated or revoked,
   // which is what makes this grant single-use
-  if (!stored || stored.refreshToken !== refreshToken)
+  if (!stored || stored !== refreshToken)
     throw invalidGrant('The refresh token is invalid, expired or already used.')
 
   return mint(userInfo, expirationsOf(client))
@@ -416,6 +431,11 @@ export const oauthToken = async (req: Request, res: Response) => {
             'The estate answers authorization_code, refresh_token and password.'
         })
     }
+
+    // RFC 6749 section 5.1: a token response must not be cached, or a proxy
+    // between the client and this server can replay a bearer token
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('Pragma', 'no-cache')
 
     return res.status(200).json(tokenResponse(pair))
   } catch (error) {

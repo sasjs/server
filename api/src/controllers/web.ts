@@ -409,13 +409,6 @@ interface AuthorizeResponse {
  * would carry the module's stack on every request that threw it.
  */
 const errors = {
-  invalidPassword: () => new HttpError(401, 'Invalid Password.'),
-  userNotFound: () => new HttpError(401, 'Username is not found.'),
-  localLoginDisabled: () =>
-    new HttpError(
-      401,
-      'Password sign-in is disabled for local accounts. Sign in with the configured identity provider.'
-    ),
   oidcInvalidState: () =>
     new HttpError(
       401,

@@ -21,8 +21,29 @@ import {
 } from './verifyEnvVariables'
 import { LDAPClient } from './ldapClient'
 
-export const invalidPassword = () => new HttpError(401, 'Invalid Password.')
-export const userNotFound = () => new HttpError(401, 'Username is not found.')
+/**
+ * A credential that did not match, as opposed to a sign-in that could not be
+ * attempted at all.
+ *
+ * The distinction matters to the token port, which counts the first toward the
+ * login lockout and must not count the second: an LDAP outage, or local sign-in
+ * being switched off, would otherwise walk a caller's CORRECT password toward a
+ * lockout that then reads as a wrong password.
+ */
+export class WrongCredentials extends HttpError {
+  constructor(message: string) {
+    super(401, message)
+
+    this.name = 'WrongCredentials'
+
+    // same reason as HttpError's own: extending a built-in under ES5 leaves
+    // `instanceof` false, and the caller branches on the class
+    Object.setPrototypeOf(this, WrongCredentials.prototype)
+  }
+}
+
+export const invalidPassword = () => new WrongCredentials('Invalid Password.')
+export const userNotFound = () => new WrongCredentials('Username is not found.')
 export const localLoginDisabled = () =>
   new HttpError(
     401,
