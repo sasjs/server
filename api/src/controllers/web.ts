@@ -21,10 +21,9 @@ import {
   generateAuthCode,
   AuthProviderType,
   isAuthProviderEnabled,
-  isLocalLoginEnabled,
-  LDAPClient,
   OIDCClient,
   resolveOidcUser,
+  verifyCredentials,
   webPageWithBundleVersion
 } from '../utils'
 import { InfoJWT } from '../types'
@@ -177,33 +176,9 @@ const login = async (
   req: express.Request,
   { username, password }: LoginPayload
 ): Promise<LoginResponse> => {
-  // Authenticate User
-  const user = await User.findOne({ username })
-
-  let validPass = false
-
-  if (user) {
-    if (
-      isAuthProviderEnabled(AuthProviderType.LDAP) &&
-      user.authProvider === AuthProviderType.LDAP
-    ) {
-      const ldapClient = await LDAPClient.init()
-      validPass = await ldapClient
-        .verifyUser(username, password)
-        .catch(() => false)
-    } else if (!isLocalLoginEnabled()) {
-      // The operator has switched local sign-in off, so the stored password is
-      // never compared: there is no credential here to attack. Accounts that
-      // authenticate through LDAP keep working, and provider accounts sign in
-      // through the provider.
-      throw errors.localLoginDisabled()
-    } else {
-      validPass = user.comparePassword(password)
-    }
-  }
-
-  if (!user) throw errors.userNotFound()
-  if (!validPass) throw errors.invalidPassword()
+  // The check itself is shared with the estate's `password` grant: a credential
+  // rule that lives in one sign-in path is a rule the others do not enforce.
+  const user = await verifyCredentials(username, password)
 
   req.session.loggedIn = true
   req.session.user = {

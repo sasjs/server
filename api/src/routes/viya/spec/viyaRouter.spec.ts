@@ -176,17 +176,16 @@ describe('who may reach the estate', () => {
     expect(answer.text).toBe('the app shell')
   })
 
-  it('leaves the estate own login open, so the client reads why it is declined', async () => {
-    // the emulator answers the token endpoint with a 501 that names the host as
-    // the issuer - guarding the path would replace that explanation with a 401
+  it('leaves the token port open, because the credentials are the request', async () => {
+    // a caller with no token is exactly who the token endpoint is for: guarding
+    // it would refuse the request that asks for the first one. The answer is the
+    // OAuth shape, from the server rather than from the guard
     const answer = await request(guardApp(refuses)).post(
       '/SASLogon/oauth/token'
     )
 
-    expect(answer.status).toBe(501)
-    expect(answer.body.message).toMatch(
-      /answered by the host that mounts the emulator/
-    )
+    expect(answer.status).toBe(401)
+    expect(answer.body.error).toBe('invalid_client')
   })
 })
 

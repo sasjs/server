@@ -193,7 +193,7 @@ What is emulated and what is real is worth knowing:
 - identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive/file` reads.
 - execution is real. A submitted service runs on this server's SAS engine and the client receives the `_webout` the program produced, and a program that fails fails.
 
-A client authenticates exactly as it does against this server normally: the token it presents on the Viya paths is a sasjs/server access token, so an application built for `serverType=SASVIYA` is configured with one rather than signing in through `/SASLogon`. The emulator declines the OAuth token endpoint for that reason - the host owns the token port - and answers `501` naming it, so a client that tries the Viya login gets an answer that says where the credential comes from.
+A client authenticates at `/SASLogon/oauth/token`, which this server answers with its own accounts and registered clients. The three grants a Viya client speaks are answered - `authorization_code` after a `/SASLogon/login` sign-in, `refresh_token` with single-use rotation, and the `password` grant for the secret-less `sas.cli` client - and the pair it returns is a sasjs/server token that the Viya paths accept. `client_credentials` is not answered, because neither `@sasjs/adapter` nor the CLI makes that call.
 
 Every answer carries an `x-sasjs-emulated` header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one.
 
