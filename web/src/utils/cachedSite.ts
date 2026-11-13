@@ -216,10 +216,13 @@ export const browserSite = (): SiteHost => ({
           list: async () =>
             (await globalThis.indexedDB.databases()).map((db) => db.name),
           /*
-           * A refusal REJECTS rather than resolving: `settle` turns that into a
+           * A refusal REJECTS rather than resolving: `succeeded` turns that into a
            * skipped item, which is the truth. Resolving here would have made a
-           * blocked delete - another tab holding the database - count as wiped,
-           * and the sweep would have reported work it had not done.
+           * blocked delete - another tab holding the database - count as wiped, and
+           * the sweep would have reported work it had not done. (`settle` cannot
+           * make that distinction: it answers undefined for a `Promise<void>` that
+           * resolves as well as for one that rejects, which is why `succeeded` is a
+           * separate guard.)
            */
           delete: (name: string) =>
             new Promise<void>((resolve, reject) => {
