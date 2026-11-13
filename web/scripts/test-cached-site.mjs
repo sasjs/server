@@ -139,8 +139,9 @@ check(
 )
 check('and reported', normal.wiped.stores === 2)
 
-// A tab that holds a database open answers `blocked` rather than deleting: the
-// adapter resolves it, and the sweep continues.
+// A host whose `delete` refuses: the sweep must carry on past it. This tests the
+// HOST refusing - the adapter's own handling of a blocked request is below, where
+// IndexedDB itself is stubbed, because a fixture that throws cannot see it.
 const blocked = await run({
   databases: ['held-open', 'free'],
   refuseDatabase: 'held-open'
@@ -213,6 +214,84 @@ check(
   cacheBust('https://demo.example/home?sasjs-cache-bust=1', 2) ===
     'https://demo.example/home?sasjs-cache-bust=2'
 )
+
+// ---- the adapter's IndexedDB handling ---------------------------------------
+
+// `deleteDatabase` answers a REQUEST, not a promise: success, `error` and
+// `blocked` are events on it. The adapter turns the first into a resolve and the
+// other two into a rejection, so `settle` skips that item and the sweep goes on -
+// which is what the reviewer could not see from a fixture that threw.
+const requests = []
+
+globalThis.indexedDB = {
+  databases: async () => [{ name: 'held-open' }, { name: 'free' }],
+  deleteDatabase: (name) => {
+    const request = {}
+
+    requests.push(name)
+
+    setTimeout(() => {
+      if (name === 'held-open') request.onblocked?.()
+      else request.onsuccess?.()
+    }, 0)
+
+    return request
+  }
+}
+
+const adapterSite = browserSite()
+
+check(
+  'the adapter lists the databases a browser reports',
+  JSON.stringify(await adapterSite.databases.list()) === '["held-open","free"]'
+)
+check(
+  'a blocked delete rejects rather than resolving',
+  await adapterSite.databases.delete('held-open').then(
+    () => false,
+    () => true
+  )
+)
+check(
+  'an allowed one resolves',
+  await adapterSite.databases.delete('free').then(
+    () => true,
+    () => false
+  )
+)
+
+// and through the sweep: the blocked one is not counted, the free one is
+const viaAdapter = await clearSite({
+  ...browserSite(),
+  href: 'https://demo.example/home',
+  navigate: () => void 0
+})
+
+check('a blocked database is not counted as wiped', viaAdapter.databases === 1)
+
+globalThis.indexedDB = {
+  databases: async () => [{ name: 'broken' }, { name: 'fine' }],
+  deleteDatabase: (name) => {
+    const request = {}
+
+    setTimeout(() => {
+      if (name === 'broken') {
+        request.error = new Error('delete failed')
+        request.onerror?.()
+      } else request.onsuccess?.()
+    }, 0)
+
+    return request
+  }
+}
+
+const viaError = await clearSite({
+  ...browserSite(),
+  href: 'https://demo.example/home',
+  navigate: () => void 0
+})
+
+check('a failed delete is not counted either', viaError.databases === 1)
 
 // ---- the browser adapter ---------------------------------------------------
 

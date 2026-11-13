@@ -99,6 +99,23 @@ const settle = async <T>(
   }
 }
 
+/**
+ * Whether the call succeeded.
+ *
+ * `settle` cannot answer this: it returns the value, and a `Promise<void>` that
+ * RESOLVES also yields undefined - so counting on `!== undefined` counted nothing
+ * that did not throw, which is the opposite of the truth.
+ */
+const succeeded = async (call: () => unknown): Promise<boolean> => {
+  try {
+    await call()
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Whether a store was cleared - `settle` cannot tell, since `clear` answers nothing. */
 const cleared = async (store?: { clear(): void }): Promise<boolean> => {
   if (!store) return false
@@ -149,8 +166,7 @@ export const clearSite = async (host: SiteHost): Promise<SiteWipe> => {
     // `deleteDatabase` answers a request rather than a promise, so the adapter
     // resolves it; what matters here is that a blocked delete does not stop the
     // ones after it.
-    if ((await settle(() => host.databases?.delete(name))) !== undefined)
-      wiped.databases++
+    if (await succeeded(() => host.databases?.delete(name))) wiped.databases++
   }
 
   // Clearing is the whole of the two stores this page can reach: it is per
