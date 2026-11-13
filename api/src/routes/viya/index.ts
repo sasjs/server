@@ -66,13 +66,12 @@ export const viyaGuard =
       // identities and types are not files and do not run code
       if (!rule) return next()
 
-      // `authorize` decides from `req.url`, so the equivalent API path is what it
-      // is shown - a Viya path is not in its inventory and would pass unguarded
+      // `authorize` decides from `baseUrl + req.url`, so the rule is made the
+      // whole path: a Viya path is not in the gate's inventory, and a rule left
+      // as a suffix of the mount's would be a path the lookup does not match
       const url = req.url
       const baseUrl = req.baseUrl
 
-      // the gate composes `baseUrl + path`, so both halves are set: a rule that
-      // is only half-visible is a rule the permission lookup does not match
       req.url = rule
       req.baseUrl = ''
 
