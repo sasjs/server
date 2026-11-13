@@ -12,7 +12,7 @@ import {
   Produces,
   Response
 } from 'tsoa'
-import { randomBytes, timingSafeEqual } from 'crypto'
+import { randomBytes } from 'crypto'
 
 import User from '../model/User'
 import Client from '../model/Client'
@@ -23,6 +23,7 @@ import {
   isAuthProviderEnabled,
   OIDCClient,
   resolveOidcUser,
+  safeEqual,
   verifyCredentials,
   webPageWithBundleVersion
 } from '../utils'
@@ -330,19 +331,6 @@ const oidcLogout = async (req: express.Request): Promise<{ url: string }> => {
   )
 
   return { url: endSessionUrl ?? '/' }
-}
-
-/**
- * Constant-time string comparison. timingSafeEqual throws on differing lengths,
- * which would itself disclose the length, so lengths are compared first.
- */
-const safeEqual = (a: string, b: string): boolean => {
-  const bufferA = Buffer.from(a)
-  const bufferB = Buffer.from(b)
-
-  if (bufferA.length !== bufferB.length) return false
-
-  return timingSafeEqual(bufferA, bufferB)
 }
 
 const authorize = async (

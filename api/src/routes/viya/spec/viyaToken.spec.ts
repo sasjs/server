@@ -407,6 +407,49 @@ describe('the estate token port', () => {
     }
   })
 
+  it('refreshes the pair the password grant issued, for the public client', async () => {
+    // `sas.cli` is not a Client record, and its pair is the one a deployment with
+    // no registered client actually holds - the adapter refreshes exactly this
+    // client, so a refresh that resolves a registration first refuses the only
+    // pair that exists
+    const granted = await passwordGrant()
+    const first = granted.body.refresh_token as string
+
+    const rotated = await request(app)
+      .post('/SASLogon/oauth/token')
+      .set('Authorization', basic('sas.cli', ''))
+      .field('grant_type', 'refresh_token')
+      .field('refresh_token', first)
+
+    expect(rotated.status).toBe(200)
+    expect(typeof rotated.body.access_token).toBe('string')
+    expect(rotated.body.refresh_token).not.toEqual(first)
+  })
+
+  it('lets one of two concurrent refreshes win, and refuses the other', async () => {
+    const granted = await codeGrant()
+    const refreshToken = granted.body.refresh_token as string
+
+    const exchange = () =>
+      request(app)
+        .post('/SASLogon/oauth/token')
+        .set('Authorization', basic(CLIENT_ID, CLIENT_SECRET))
+        .field('grant_type', 'refresh_token')
+        .field('refresh_token', refreshToken)
+
+    // both requests carry the same token, and both reach the store before either
+    // writes: a compare followed by a write hands each caller its own new pair,
+    // so the loser holds a token the estate has already replaced
+    const answers = await Promise.all([exchange(), exchange()])
+
+    const statuses = answers.map((answer) => answer.status).sort()
+
+    expect(statuses).toEqual([200, 401])
+    expect(answers.find((answer) => answer.status === 401)!.body.error).toBe(
+      'invalid_grant'
+    )
+  })
+
   it('refuses a grant no client sends', async () => {
     const answer = await request(app)
       .post('/SASLogon/oauth/token')

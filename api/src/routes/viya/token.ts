@@ -31,6 +31,7 @@ import { randomBytes } from 'crypto'
 import jwt from 'jsonwebtoken'
 
 import type { IUserDocument } from '../../model/User'
+import UserModel from '../../model/User'
 import Client, { NUMBER_OF_SECONDS_IN_A_DAY } from '../../model/Client'
 import { AuthController } from '../../controllers/auth'
 import {
@@ -41,6 +42,7 @@ import {
   getTokensFromDB,
   recordLoginFailure,
   resetLoginFailures,
+  safeEqual,
   saveTokensInDB,
   verifyCredentials,
   WrongCredentials
@@ -222,45 +224,53 @@ const registeredClient = async (clientId: string, clientSecret: string) => {
 
   // one description for both halves: RFC 6749 section 5.2 specifies a single
   // `invalid_client`, and telling a caller which half was wrong also tells them
-  // whether an id is registered - the password grant already withholds that
-  if (!client || client.clientSecret !== clientSecret) throw invalidClient()
+  // whether an id is registered - the password grant already withholds that.
+  // Constant-time, like every other secret comparison in the tree.
+  if (!client || !safeEqual(client.clientSecret, clientSecret))
+    throw invalidClient()
 
   return client
 }
 
-const mint = async (
-  userInfo: InfoJWT,
-  expirations: { accessTokenExpiration: number; refreshTokenExpiration: number }
-): Promise<TokenPair> => {
+type Expirations = {
+  accessTokenExpiration: number
+  refreshTokenExpiration: number
+}
+
+/** A pair for this caller, not yet written anywhere. */
+const mintTokens = (userInfo: InfoJWT, expirations: Expirations): TokenPair => {
   // `jti` is what makes two pairs minted in the same second differ: the payload
   // is otherwise identical, and single-use rotation would answer with the token
   // it was asked to replace
   const jti = randomBytes(16).toString('hex')
   const withId = { ...userInfo, jti } as InfoJWT
 
-  const accessToken = generateAccessToken(
-    withId,
-    expirations.accessTokenExpiration
-  )
-  const refreshToken = generateRefreshToken(
-    withId,
-    expirations.refreshTokenExpiration
-  )
-
-  await saveTokensInDB(
-    userInfo.userId,
-    userInfo.clientId,
-    accessToken,
-    refreshToken
-  )
-
   return {
-    accessToken,
-    refreshToken,
+    accessToken: generateAccessToken(withId, expirations.accessTokenExpiration),
+    refreshToken: generateRefreshToken(
+      withId,
+      expirations.refreshTokenExpiration
+    ),
     accessTokenExpiration: expirations.accessTokenExpiration,
     refreshTokenExpiration: expirations.refreshTokenExpiration,
     jti
   }
+}
+
+const mint = async (
+  userInfo: InfoJWT,
+  expirations: Expirations
+): Promise<TokenPair> => {
+  const pair = mintTokens(userInfo, expirations)
+
+  await saveTokensInDB(
+    userInfo.userId,
+    userInfo.clientId,
+    pair.accessToken,
+    pair.refreshToken
+  )
+
+  return pair
 }
 
 /** The expirations a client's tokens carry, with the public client's defaults. */
@@ -388,7 +398,13 @@ const rotateRefreshToken = async (
 ): Promise<TokenPair> => {
   if (!refreshToken) throw invalidRequest('A `refresh_token` is required.')
 
-  const client = await registeredClient(clientId, clientSecret)
+  // the public client's pair comes FROM the password grant, so it is the one pair
+  // that has to be refreshable without a registration - and `@sasjs/adapter`
+  // refreshes exactly that client
+  const expirations =
+    clientId === SAS_CLI_CLIENT_ID && clientSecret === ''
+      ? PUBLIC_CLIENT_EXPIRATIONS
+      : expirationsOf(await registeredClient(clientId, clientSecret))
 
   const userInfo = verifyRefreshToken(refreshToken, clientId)
 
@@ -402,7 +418,28 @@ const rotateRefreshToken = async (
   if (!stored || stored !== refreshToken)
     throw invalidGrant('The refresh token is invalid, expired or already used.')
 
-  return mint(userInfo, expirationsOf(client))
+  const pair = mintTokens(userInfo, expirations)
+
+  // the replace is CONDITIONAL on the token this request presented, so two
+  // requests carrying the same refresh token cannot both win: the second finds
+  // nothing to match and is refused, rather than overwriting the first answer
+  const replaced = await UserModel.findOneAndUpdate(
+    {
+      _id: userInfo.userId,
+      tokens: { $elemMatch: { clientId, refreshToken } }
+    },
+    {
+      $set: {
+        'tokens.$.accessToken': pair.accessToken,
+        'tokens.$.refreshToken': pair.refreshToken
+      }
+    }
+  )
+
+  if (!replaced)
+    throw invalidGrant('The refresh token is invalid, expired or already used.')
+
+  return pair
 }
 
 const passwordGrant = async (
