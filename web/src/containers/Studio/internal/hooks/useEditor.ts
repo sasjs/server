@@ -32,6 +32,8 @@ import {
 import { applyLintMarkers, clearLintModel, lintModel } from '../lint'
 import { lintAppliesTo } from '../lintScope'
 import { formatSasCode } from '../format'
+import { displayKindOf } from '../displayMode'
+import { formatJson } from '../render/jsonFormat'
 import { prettyJson } from '../pretty'
 import { guardMousePaste } from '../mousePasteGuard'
 import { readSettings } from '../settings'
@@ -131,7 +133,26 @@ const useEditor = ({
     setFormatting(true)
 
     try {
-      const formatted = await formatSasCode(sent, selectedFilePath || undefined)
+      /* Two formatters, because two languages: the SAS one asks the language
+         server, and JSON is parsed and re-emitted here. */
+      let formatted: string
+
+      if (displayKindOf(selectedFilePath) === 'json') {
+        const result = formatJson(sent)
+
+        if (!result.ok) {
+          // the message names the refusal and what would have been lost
+          setSnackbarMessage(result.error)
+          setSnackbarSeverity(AlertSeverityType.Error)
+          setOpenSnackbar(true)
+
+          return
+        }
+
+        formatted = result.text
+      } else {
+        formatted = await formatSasCode(sent, selectedFilePath || undefined)
+      }
 
       if (formatted === sent) {
         setSnackbarMessage('Already formatted.')

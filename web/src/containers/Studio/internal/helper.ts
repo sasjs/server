@@ -1,28 +1,8 @@
 import { RunTimeType } from '../../../context/appContext'
 
-/**
- * Monaco language ids, keyed by file extension. Monaco falls back to plain text
- * for any extension that is not listed here.
- */
-const languageByExtension: Record<string, string> = {
-  sas: 'sas',
-  js: 'javascript',
-  ts: 'typescript',
-  py: 'python',
-  r: 'r',
-  sql: 'sql',
-  md: 'markdown',
-  mdx: 'markdown',
-  json: 'json',
-  html: 'html',
-  css: 'css',
-  yaml: 'yaml',
-  xml: 'xml',
-  sh: 'shell'
-}
-
-export const getLanguageFromExtension = (extension: string) =>
-  languageByExtension[extension] ?? 'plaintext'
+// The languages live in language.ts: the drive's `.sasjslint` is JSON with no
+// extension, so the decision needs the file name as well as the extension.
+export { languageForFile } from './language'
 
 export const getSelection = (editor: any) => {
   const selection = editor?.getModel().getValueInRange(editor?.getSelection())

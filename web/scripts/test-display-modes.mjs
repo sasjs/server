@@ -30,6 +30,10 @@ const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
   await import('../src/containers/Studio/internal/render/csv.ts')
 const { jsonTreeOf } =
   await import('../src/containers/Studio/internal/render/jsonTree.ts')
+const { formatJson } =
+  await import('../src/containers/Studio/internal/render/jsonFormat.ts')
+const { languageForFile } =
+  await import('../src/containers/Studio/internal/language.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -273,6 +277,171 @@ check(
 check(
   'an empty document is neither',
   jsonTreeOf('  ').root === null && jsonTreeOf('  ').error === null
+)
+
+// ---- which Monaco language a file is handed to -----------------------------
+
+check(
+  'a .sas file is SAS',
+  languageForFile('/home/me/run.sas', 'sas') === 'sas'
+)
+check('a .json file is JSON', languageForFile('/a/b.json', 'json') === 'json')
+check(
+  'the rules dotfile is JSON too, though it names no extension',
+  languageForFile('/sasjs/drive/files/.sasjslint', '') === 'json'
+)
+check(
+  'and so is a copy of it anywhere else on the drive',
+  languageForFile('/home/me/.sasjslint', '') === 'json'
+)
+check(
+  'an unknown extension stays plain text',
+  languageForFile('/a/blob.weird', 'weird') === 'plaintext'
+)
+check(
+  'a dotless name called sasjslint is not the rules file',
+  languageForFile('/a/sasjslint', '') === 'plaintext'
+)
+
+// ---- the JSON format action ------------------------------------------------
+
+const minified = '{"a":1,"b":[1,2],"c":{"d":true}}'
+const tidy = formatJson(minified)
+check(
+  'a minified document is indented',
+  tidy.ok &&
+    tidy.text ===
+      [
+        '{',
+        '  "a": 1,',
+        '  "b": [',
+        '    1,',
+        '    2',
+        '  ],',
+        '  "c": {',
+        '    "d": true',
+        '  }',
+        '}',
+        ''
+      ].join('\n')
+)
+
+const again = formatJson(tidy.text)
+check(
+  'a tidy document is left exactly as it is',
+  again.ok && again.text === tidy.text
+)
+check(
+  'four spaces are rewritten to the house indent',
+  formatJson('{\n    "a": 1\n}\n').ok &&
+    formatJson('{\n    "a": 1\n}\n').text === '{\n  "a": 1\n}'.concat('\n')
+)
+check(
+  "key order is the file's order",
+  formatJson('{"b":1,"a":2}').text.indexOf('"b"') <
+    formatJson('{"b":1,"a":2}').text.indexOf('"a"')
+)
+
+// Two documents a parse-and-re-emit would silently change: a double that cannot
+// hold the integer, and a key written twice.
+const bigId = formatJson('{"id": 9007199254740993}')
+check(
+  'an integer past the safe range is refused rather than rounded',
+  bigId.ok === false && /9007199254740993/.test(bigId.error)
+)
+
+const duplicated = formatJson('{"a": 1, "a": 2}')
+check(
+  'a key written twice is refused rather than collapsed',
+  duplicated.ok === false && /"a"/.test(duplicated.error)
+)
+
+const nestedDuplicate = formatJson('{"outer": {"k": 1, "k": 2}}')
+check(
+  'and a duplicate is found inside an object, not only at the top',
+  nestedDuplicate.ok === false
+)
+check(
+  'the same key in two different objects is not a duplicate',
+  formatJson('{"a": {"k": 1}, "b": {"k": 2}}').ok === true
+)
+check(
+  'a number inside a string is not a number',
+  formatJson('{"a": "9007199254740993"}').ok === true
+)
+check(
+  'and an index in an array is still a value, not a key',
+  formatJson('{"a": ["x", "y"], "b": 1}').ok === true
+)
+
+// The same class reached by other spellings: the guard is on the value, not on the
+// literal's shape.
+check(
+  'an exponent form of an unsafe integer is refused',
+  formatJson('{"n": 9007199254740993e0}').ok === false
+)
+check(
+  'a number that parses to infinity is refused rather than written as null',
+  formatJson('{"a": 1e400}').ok === false
+)
+check(
+  'a fraction a double cannot hold is refused',
+  formatJson('{"a": 1.0000000000000000001}').ok === false
+)
+check(
+  'while 1E3 is the same value as 1000',
+  formatJson('{"a": 1E3}').ok === true
+)
+
+// The uppercase marker is legal JSON and what a Jackson writer emits: taking only
+// 'e' dropped it and glued the digits either side together, so `1E3` was read as
+// `13` - green for the wrong reason - `1E400` as `1400` and `1E-3` as `1-3`.
+check(
+  'and 1E3 formats to 1000, not to the token 13',
+  formatJson('{"a": 1E3}').text === '{\n  "a": 1000\n}\n'
+)
+check(
+  'an uppercase exponent that overflows is refused',
+  formatJson('{"a": 1E400}').ok === false
+)
+check(
+  'a negative uppercase exponent formats',
+  formatJson('{"a": 1E-3}').text === '{\n  "a": 0.001\n}\n'
+)
+check(
+  'a fraction with an uppercase exponent formats',
+  formatJson('{"x": 2.5E-2}').text === '{\n  "x": 0.025\n}\n'
+)
+check('and 1.0 is the same value as 1', formatJson('{"a": 1.0}').ok === true)
+check('and -0 stays a number', formatJson('{"a": -0}').ok === true)
+
+// A key that escapes its own name is still the same key.
+const escapedDuplicate = formatJson('{"a\\u0062": 1, "ab": 2}')
+check(
+  'an escaped key collides with its literal spelling',
+  escapedDuplicate.ok === false && /"ab"/.test(escapedDuplicate.error)
+)
+check(
+  'while a differently-named escaped key does not',
+  formatJson('{"a\\u0063": 1, "ab": 2}').ok === true
+)
+
+const invalidJson = formatJson('{"a": 1,}')
+check(
+  'a syntax error is reported rather than guessed at',
+  invalidJson.ok === false
+)
+check(
+  'and the reason travels with it',
+  invalidJson.ok === false && /JSON|token|position/i.test(invalidJson.error)
+)
+check(
+  'an empty document stays empty',
+  formatJson('   ').ok && formatJson('   ').text === '   '
+)
+check(
+  'a value that is not an object formats too',
+  formatJson('[1,2]').text === '[\n  1,\n  2\n]\n'
 )
 
 if (failures.length) {

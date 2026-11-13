@@ -22,6 +22,7 @@ import FilePathInputModal from '../../components/filePathInputModal'
 import { DisplayPane } from './internal/components/displayPane'
 import {
   DisplayMode,
+  displayKindOf,
   displayModeLabel,
   displayModeStorageKey,
   displayModesFor,
@@ -36,7 +37,7 @@ import LogTabWithIcons from './internal/components/log/logTabWithIcons'
 import WebOutPreview from './internal/components/webout/weboutPreview'
 
 import { usePrompt } from '../../utils/hooks'
-import { getLanguageFromExtension } from './internal/helper'
+import { languageForFile } from './internal/helper'
 import {
   registerSasCompletions,
   registerSasHover,
@@ -205,8 +206,9 @@ const SASjsEditor = ({
       ? 'Nothing to format yet'
       : isImageFile(selectedFilePath)
         ? 'A picture cannot be formatted'
-        : selectedFileExtension !== 'sas'
-          ? 'Formatting applies to .sas files'
+        : selectedFileExtension !== 'sas' &&
+            displayKindOf(selectedFilePath) !== 'json'
+          ? 'Formatting applies to .sas and .json files'
           : undefined
 
   const fileMenu = (
@@ -229,8 +231,15 @@ const SASjsEditor = ({
       // prop defaults to null, so a theme defined ahead of the editor is
       // replaced with the default as soon as the editor mounts.
       theme={editorThemeFor(colorMode)}
-      language={getLanguageFromExtension(selectedFileExtension)}
+      language={languageForFile(selectedFilePath, selectedFileExtension)}
       value={fileContent}
+      // Monaco measures its container once and only when told. `relayout` below
+      // covers the mode switch, but it runs before the split has finished
+      // flexing: the editor measured 594px in a 501px column, so it drew over
+      // the tree beside it. Reporting the real size is the one fix that cannot
+      // be early - the observer fires when the layout is final, for the mode
+      // switch, the drive explorer and a window resize alike.
+      options={{ automaticLayout: true }}
       editorDidMount={handleEditorDidMount}
       onChange={(val) => setFileContent(val)}
     />
