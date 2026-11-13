@@ -21,6 +21,28 @@ const withExecution = (webout: string, log: string): Services => ({
   }
 })
 
+/**
+ * The fileref, once the run behind the 201 has landed.
+ *
+ * A wall-clock sleep is a race with whatever else the runner is doing, so the
+ * wait is a bounded poll on the answer itself.
+ */
+const pollWebout = async (mount: express.Express, sessionId: string) => {
+  let last: request.Response | undefined
+
+  for (let attempt = 0; attempt < 100; attempt++) {
+    last = await request(mount).get(
+      `/compute/sessions/${sessionId}/filerefs/_webout/content`
+    )
+
+    if (last.status === 200) return last
+
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+
+  return last as request.Response
+}
+
 const app = (services: (req: express.Request) => Services) => {
   const server = express()
 
@@ -85,12 +107,7 @@ describe('the Viya mount', () => {
 
     expect(submitted.status).toBe(201)
 
-    // the run answers behind the 201, so settle before reading the answer
-    await new Promise((resolve) => setTimeout(resolve, 10))
-
-    const webout = await request(mount).get(
-      `/compute/sessions/${sessionId}/filerefs/_webout/content`
-    )
+    const webout = await pollWebout(mount, sessionId)
 
     expect(webout.status).toBe(200)
     expect(webout.text).toBe('[{"COL1":"real"}]')
@@ -109,13 +126,34 @@ describe('the Viya mount', () => {
       .post(`/compute/sessions/${created.body.id}/jobs`)
       .send({ code: ['data a; run;'] })
 
-    await new Promise((resolve) => setTimeout(resolve, 10))
-
-    const answer = await request(mount).get(
-      `/compute/sessions/${created.body.id}/filerefs/_webout/content`
-    )
+    const answer = await pollWebout(mount, created.body.id)
 
     // a host that mapped `body` would answer "\"line one\\nline two\""
     expect(answer.text).toBe('line one\nline two')
+  })
+})
+
+describe('who may reach the estate', () => {
+  it('refuses a caller the guard turns away, before any dispatch', async () => {
+    const server = express()
+    let dispatched = false
+
+    server.use(express.json())
+    server.use(
+      '/',
+      (_req, res, next) => res.status(401).json({ message: 'no token' }),
+      createViyaRouter(() => {
+        dispatched = true
+
+        return withExecution('[]', '')
+      })
+    )
+
+    const answer = await request(server).post('/compute/contexts/x/sessions')
+
+    // a job submitted here runs on this server engine, so the guard sits in
+    // front of the router exactly as it does in setupRoutes
+    expect(answer.status).toBe(401)
+    expect(dispatched).toBe(false)
   })
 })

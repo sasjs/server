@@ -30,6 +30,14 @@ export interface ExecuteReturnRaw {
    * nothing.
    */
   log: string
+  /**
+   * Why the run failed, when it did.
+   *
+   * A caller that answers a client decides success from this - the bundle in
+   * `result` is for reading, not for parsing - so the controller that knows the
+   * outcome states it rather than leaving the caller to infer it.
+   */
+  failureReason?: string
 }
 
 interface ExecuteFileParams {
@@ -182,6 +190,9 @@ export class ExecutionController {
     return {
       httpHeaders,
       log,
+      ...(session.failureReason
+        ? { failureReason: session.failureReason }
+        : {}),
       result:
         isDebugOn(vars) || session.failureReason
           ? resultParts.join(`\n`)

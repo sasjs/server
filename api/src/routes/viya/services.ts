@@ -18,7 +18,7 @@ import { createDriveService } from '@sasjs/api'
 import { ExecutionController } from '../../controllers/internal'
 import { nodeDriveStore } from '../../controllers/internal/nodeDriveStore'
 import { desktopIdentity } from '../../utils/desktopIdentity'
-import { RunTimeType } from '../../utils'
+import { getPreProgramVariables, RunTimeType } from '../../utils'
 
 /** The one drive the server serves, whichever API is asked for it. */
 let drive: ReturnType<typeof createDriveService> | undefined
@@ -43,26 +43,26 @@ export const viyaServices = (req: Request): Services => ({
     execute: async ({ program, variables, name }) => {
       const controller = new ExecutionController()
 
-      const { result, log } = await controller.executeProgram({
+      const { result, log, failureReason } = await controller.executeProgram({
         program: Array.isArray(program) ? program.join('\n') : program,
         runTime: RunTimeType.SAS,
         vars: (variables ?? {}) as Record<string, string | number>,
-        preProgramVariables: {
-          username: req.user?.username ?? 'sasjs',
-          httpHeaders: []
-        } as never
+        // every field a generated program reads, from the request: a service that
+        // cannot see its own `_sasjs_userid` or the API's address cannot call back
+        preProgramVariables: getPreProgramVariables(req)
       })
 
+      // a failed run's `result` is the webout-and-log bundle, which is for
+      // reading: the webout is left absent so a client cannot parse it as data
       const webout =
         typeof result === 'string' ? result : result.toString('utf-8')
 
       // the run's own log, from the controller that wrote it: a failed program
       // says so in the log, and the emulator serves this where a client reads it
-      return {
-        webout,
-        log,
-        ...(req.sasjsSession?.failureReason ? { state: 'failed' as const } : {})
-      }
+      if (failureReason)
+        return { webout: undefined, log, state: 'failed' as const }
+
+      return { webout, log }
     }
   }
 })

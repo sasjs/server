@@ -20,6 +20,7 @@
  * server talking to a real estate is unchanged.
  */
 import express from 'express'
+import { readFile } from 'fs/promises'
 import { dispatchViya } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
@@ -32,6 +33,25 @@ export const VIYA_PREFIXES = [
   '/types',
   '/SASLogon'
 ]
+
+/**
+ * The part a multipart request carried, in the shape the emulator reads.
+ *
+ * `multerSingle` puts the part on disk and describes it; the emulator wants the
+ * name the client sent and the bytes, so the file is read back here. Reading it
+ * eagerly is what makes an upload visible to the drive before the answer.
+ */
+const uploadOf = async (
+  req: express.Request
+): Promise<{ name: string; contents: string | Uint8Array } | undefined> => {
+  const part = (
+    req as express.Request & { file?: { originalname: string; path: string } }
+  ).file
+
+  if (!part) return undefined
+
+  return { name: part.originalname, contents: await readFile(part.path) }
+}
 
 /** A request the emulator should not answer is left to the server's own routes. */
 export const isViyaPath = (path: string): boolean =>
@@ -54,19 +74,28 @@ export const createViyaRouter = (
   router.use(async (req, res, next) => {
     if (!isViyaPath(req.path)) return next()
 
+    // the emulator answers `POST /files/files` from the multipart part, and this
+    // is the parser the rest of the server uses for one. Imported here rather
+    // than at the top: the multer helper reads the server's folder layout at
+    // module load, and a host that never receives an upload should not need that.
+    if (req.method === 'POST' && req.path === '/files/files') {
+      const { multerSingle } = await import('../../middlewares/multer')
+
+      await new Promise<void>((resolve) =>
+        multerSingle('file', [req, res, resolve])
+      )
+    }
+
     let answer: ViyaResponse
 
     try {
       answer = await dispatchViya(services(req), req.method, req.path, {
         query: req.query as Record<string, string | undefined>,
         body: req.body as Record<string, unknown> | undefined,
-        // a host that parses multipart puts the part here; nothing else does
-        file: (
-          req as express.Request & {
-            file?: { name: string; contents: string | Uint8Array }
-          }
-        ).file,
-        token: (req.headers.authorization ?? '').replace(/^Bearer /, '')
+        file: await uploadOf(req),
+        // the scheme is case-insensitive (RFC 7235 2.1), so `bearer <tok>` is a
+        // bearer token and not a token that happens to start with the word
+        token: (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '')
       })
     } catch (error) {
       return next(error)
