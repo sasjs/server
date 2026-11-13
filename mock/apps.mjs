@@ -247,6 +247,24 @@ const isText = (bytes) =>
  * length that decodes. A member that fails is refused by name, as every other
  * shape this module does not speak is.
  */
+/**
+ * A `service` or `job` member's compiled program, which is TEXT rather than the
+ * base64 a file member carries.
+ *
+ * The missing-`code` check is the same one `decodeCode` makes, and for the same
+ * reason: coercing a missing program to '' publishes a zero-byte `.sas` that looks
+ * like a service nobody wrote, where the truth is a tree this build does not
+ * understand. One helper because the three call sites must not drift.
+ */
+const programCode = (member) => {
+  if (typeof member.code !== 'string')
+    throw new Error(
+      `The packaged app's ${member.name} carries no code, so its program cannot be read.`
+    )
+
+  return Buffer.from(member.code, 'utf8')
+}
+
 const decodeCode = (member) => {
   // a member with no `code` is not an empty file, it is a tree this build does
   // not understand: coercing it to '' passes the check below and publishes a
@@ -444,6 +462,14 @@ export const packFiles = (pack, app) => {
 
       if (member.type === 'folder') {
         if (name === `/${pack.streamWebFolder}`) continue
+
+        /* A pack laid out at the root rather than under `services/` (the fallback
+           above) has `jobs/` and `tests/` as its own members, and those are walked
+           below at the root. Skipping them here is what stops every job and test
+           being written twice - once under `services/`, once where it belongs. */
+        if (services === pack.fileTree && ['/jobs', '/tests'].includes(name))
+          continue
+
         walkServices(member, name)
         continue
       }
@@ -454,7 +480,7 @@ export const packFiles = (pack, app) => {
            than replacing it. */
         files.push({
           path: `${appLoc}/services${name}.sas`,
-          ...entryFor(Buffer.from(member.code ?? '', 'utf8'))
+          ...entryFor(programCode(member))
         })
 
         continue
@@ -486,7 +512,7 @@ export const packFiles = (pack, app) => {
       if (member.type === 'service' || member.type === 'job') {
         files.push({
           path: `${appLoc}${name}.sas`,
-          ...entryFor(Buffer.from(member.code ?? '', 'utf8'))
+          ...entryFor(programCode(member))
         })
 
         continue

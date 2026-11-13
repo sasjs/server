@@ -286,6 +286,121 @@ test('decodes the file tree, and writes the app under its appLoc', () => {
   )
 })
 
+test('a service with no code is refused by name, like a file with none', () => {
+  const nameless = {
+    ...pack,
+    fileTree: {
+      name: 'files',
+      members: [
+        {
+          name: 'services',
+          type: 'folder',
+          members: [
+            { name: 'getdata', type: 'service' },
+            {
+              name: 'web',
+              type: 'folder',
+              members: [
+                { name: 'index.html', type: 'file', code: code('<p>x</p>') }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+  // an untitled program is not an empty one: publishing a zero-byte .sas is a
+  // service nobody can explain, where the truth is a tree this build cannot read
+  assert.throws(
+    () => packFiles(nameless, MACRO_DASH),
+    /getdata carries no code/
+  )
+})
+
+test('a job with no code is refused too, not published blank', () => {
+  const jobless = {
+    ...pack,
+    fileTree: {
+      name: 'files',
+      members: [
+        {
+          name: 'services',
+          type: 'folder',
+          members: [
+            {
+              name: 'web',
+              type: 'folder',
+              members: [
+                { name: 'index.html', type: 'file', code: code('<p>x</p>') }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'jobs',
+          type: 'folder',
+          members: [{ name: 'nightly', type: 'job' }]
+        }
+      ]
+    }
+  }
+
+  assert.throws(() => packFiles(jobless, MACRO_DASH), /nightly carries no code/)
+})
+
+test('a pack laid out at the root publishes its jobs and tests once', () => {
+  // the fallback layout: no `services/` folder, everything at the top - which the
+  // walk takes for the services tree. The jobs and tests are then walked at the
+  // root as well, and used to be written twice: under services/ AND where they
+  // belong.
+  const rootLayout = {
+    appLoc: '/Public/app/rooty',
+    streamWebFolder: 'web',
+    streamServiceName: 'Rooty',
+    fileTree: {
+      name: 'files',
+      members: [
+        {
+          name: 'web',
+          type: 'folder',
+          members: [
+            { name: 'index.html', type: 'file', code: code('<p>x</p>') }
+          ]
+        },
+        {
+          name: 'jobs',
+          type: 'folder',
+          members: [
+            { name: 'nightly', type: 'job', code: '%macro nightly;%mend;' }
+          ]
+        },
+        {
+          name: 'tests',
+          type: 'folder',
+          members: [
+            {
+              name: 'testSetup.sas',
+              type: 'file',
+              code: code('%let setup = 1;')
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+  const paths = packFiles(rootLayout, MACRO_DASH).map((file) => file.path)
+
+  // the web folder keeps its `services/web` address even at the root - that is the
+  // path the App Stream serves - and each job and test appears exactly once
+  assert.deepEqual(paths.sort(), [
+    '/Public/app/rooty/jobs/nightly.sas',
+    '/Public/app/rooty/services/web/index.html',
+    '/Public/app/rooty/tests/testSetup.sas'
+  ])
+})
+
 test('a text file that begins with the marker is escaped, not misread as bytes', () => {
   const leading = {
     ...pack,
