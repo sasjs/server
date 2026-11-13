@@ -1,4 +1,4 @@
-/* @sasjs/api 0.28.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.38.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -25,6 +25,7 @@ var SASjsApi = (() => {
     ADMIN_CORPUS: () => ADMIN_CORPUS,
     ADMIN_SIGNED_IN: () => ADMIN_SIGNED_IN,
     ALWAYS_VISIBLE_ROUTES: () => ALWAYS_VISIBLE_ROUTES,
+    APP_CORPUS: () => APP_CORPUS,
     APP_MANIFEST: () => APP_MANIFEST,
     APP_STREAM_INDEX: () => APP_STREAM_INDEX,
     AUTH_CONFIG_CORPUS: () => AUTH_CONFIG_CORPUS,
@@ -45,6 +46,8 @@ var SASjsApi = (() => {
     DIRECTORY_CORPUS: () => DIRECTORY_CORPUS,
     DOCUMENTED_RUN_TIMES: () => DOCUMENTED_RUN_TIMES,
     DRIVE_CORPUS: () => DRIVE_CORPUS,
+    EMULATED_HEADER: () => EMULATED_HEADER,
+    EMULATED_HEADER_VALUE: () => EMULATED_HEADER_VALUE,
     HANDLED_ROUTES: () => HANDLED_ROUTES,
     HOME_CORPUS: () => HOME_CORPUS,
     IDENTITY_CORPUS: () => IDENTITY_CORPUS,
@@ -65,8 +68,17 @@ var SASjsApi = (() => {
     RUNTIME_CORPUS: () => RUNTIME_CORPUS,
     SESSION_CORPUS: () => SESSION_CORPUS,
     STATIC_AUTHORIZED_ROUTES: () => STATIC_AUTHORIZED_ROUTES,
+    SURFACE: () => SURFACE,
+    SURFACE_ADAPTER_VERSION: () => SURFACE_ADAPTER_VERSION,
     TAG_CAPABILITIES: () => TAG_CAPABILITIES,
     TOP_LEVEL_ROUTES: () => TOP_LEVEL_ROUTES,
+    UNRECORDED: () => UNRECORDED,
+    VIYA_CAPTURED_AT: () => VIYA_CAPTURED_AT,
+    VIYA_CORPUS: () => VIYA_CORPUS,
+    VIYA_HANDLERS: () => VIYA_HANDLERS,
+    VIYA_OVERLAY: () => VIYA_OVERLAY,
+    VIYA_TABLE: () => VIYA_TABLE,
+    VIYA_TARGET_VERSION: () => VIYA_TARGET_VERSION,
     appSummary: () => appSummary,
     basename: () => basename,
     cacheControlFor: () => cacheControlFor,
@@ -92,8 +104,11 @@ var SASjsApi = (() => {
     deployTree: () => deployTree,
     dirname: () => dirname,
     dispatch: () => dispatch,
+    dispatchViya: () => dispatchViya,
+    emulatedHeaders: () => emulatedHeaders,
     escapeHtml: () => escapeHtml,
     findRoute: () => findRoute,
+    findViyaOperation: () => findViyaOperation,
     hasBlockedExtension: () => hasBlockedExtension,
     isApiError: () => isApiError,
     isAppId: () => isAppId,
@@ -111,9 +126,12 @@ var SASjsApi = (() => {
     normaliseLogFiles: () => normaliseLogFiles,
     parseAppManifest: () => parseAppManifest,
     parseIdentity: () => parseIdentity,
+    programNotFound: () => programNotFound,
     publishRequestFor: () => publishRequestFor,
+    resolveProgram: () => resolveProgram,
     routeById: () => routeById,
     runCase: () => runCase,
+    runTimeOfPath: () => runTimeOfPath,
     sanitiseDisplayName: () => sanitiseDisplayName,
     servicesFor: () => servicesFor,
     splitAppBundle: () => splitAppBundle,
@@ -725,6 +743,40 @@ var SASjsApi = (() => {
         {
           status: 500,
           description: "The log file could not be read"
+        }
+      ]
+    },
+    {
+      id: "GET /SASjsApi/app/{id}",
+      method: "GET",
+      path: "/SASjsApi/app/{id}",
+      tag: "App Stream",
+      summary: "Get a published app by id",
+      params: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          type: "string"
+        }
+      ],
+      requestBodies: [],
+      responses: [
+        {
+          status: 200,
+          description: "Ok"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
+        },
+        {
+          status: 404,
+          description: "No App Stream is registered with that id."
+        },
+        {
+          status: 500,
+          description: "Internal Server Error"
         }
       ]
     },
@@ -2723,7 +2775,9 @@ var SASjsApi = (() => {
     Group: ["identity"],
     Permission: ["identity"],
     Client: ["identity"],
-    Web: ["identity"]
+    Web: ["identity"],
+    // an app's entry is indexed, and the file it is served from is read off the drive
+    "App Stream": ["storage"]
   };
   var success = { status: "success" };
   var user = {
@@ -2954,6 +3008,37 @@ var SASjsApi = (() => {
     // `404` is an id the index does not hold - the id is the app, and its label and
     // folder are not handles - and the drive's content is deliberately left alone.
     "DELETE /SASjsApi/drive/deploy": { implemented: true },
+    // App Stream - what is published under one app's id.
+    //
+    // Carried here: the answer is the app index plus the drive, and `APP_CORPUS` pins
+    // its shape. The mock build (`sasjs/cli`) still answers the App Stream surface by
+    // hand; consuming this operation from the table is its next step on
+    // sasjs/cli#1550, not this package's.
+    "GET /SASjsApi/app/{id}": {
+      implemented: true,
+      // the caller's token is the host's middleware, and a failure that is not the
+      // index refusing the id - a drive read that broke - is the host's to answer
+      hostResponses: [401, 500],
+      // the shape a client reads: the entry as registered, the file it is served from,
+      // and whether that file is there
+      responses: {
+        404: {
+          status: "failure",
+          message: "No App Stream is registered with that id."
+        },
+        200: {
+          id: "",
+          name: "",
+          appLoc: "",
+          streamWebFolder: "",
+          publishedAt: null,
+          entryFile: "index.html",
+          entryFileExists: false,
+          lastModified: null,
+          url: ""
+        }
+      }
+    },
     // Group - members and the groups themselves
     "GET /SASjsApi/group": { implemented: true },
     "GET /SASjsApi/group/{uid}": { implemented: true },
@@ -3132,6 +3217,2817 @@ var SASjsApi = (() => {
     return void 0;
   };
 
+  // src/viya/surface.ts
+  var SURFACE_ADAPTER_VERSION = "6.0.2";
+  var SURFACE = [
+    // sas9
+    {
+      path: "/Public/seedapp",
+      family: "sas9",
+      decision: "declined",
+      reason: "a default config value the client falls back to, not a call"
+    },
+    {
+      path: "/SASJobExecution",
+      family: "sas9",
+      decision: "declined",
+      reason: "SAS 9 and SASjs surfaces: the emulator answers Viya, and the same client reaches these on an EBI deployment"
+    },
+    // viya-auth
+    {
+      path: "/SASLogon",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/login",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/login.do",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/logout",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/logout.do",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/oauth/authorize",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/oauth/token",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    // sas9
+    {
+      path: "/SASStoredProcess",
+      family: "sas9",
+      decision: "declined",
+      reason: "SAS 9 and SASjs surfaces: the emulator answers Viya, and the same client reaches these on an EBI deployment"
+    },
+    {
+      path: "/SASStoredProcess/do",
+      family: "sas9",
+      decision: "declined",
+      reason: "SAS 9 and SASjs surfaces: the emulator answers Viya, and the same client reaches these on an EBI deployment"
+    },
+    {
+      path: "/SASStoredProcess/j_spring_cas_security_check",
+      family: "sas9",
+      decision: "declined",
+      reason: "SAS 9 and SASjs surfaces: the emulator answers Viya, and the same client reaches these on an EBI deployment"
+    },
+    // sasjs-api
+    {
+      path: "/SASjsApi",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    // sas9
+    {
+      path: "/User Folders/{}/My Folder/sasjs/runner",
+      family: "sas9",
+      decision: "declined",
+      reason: "SAS 9 and SASjs surfaces: the emulator answers Viya, and the same client reaches these on an EBI deployment"
+    },
+    // sasjs-api
+    {
+      path: "/auth/refresh",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/auth/token",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/code/execute",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    // viya-compute
+    {
+      path: "/compute/contexts",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/contexts/{}",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/contexts/{}/sessions",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/sessions/{}",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/sessions/{}/filerefs/_webout/content",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/sessions/{}/jobs",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/sessions/{}/jobs/{}",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    {
+      path: "/compute/sessions/{}/variables/{}",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    // viya-files
+    {
+      path: "/content",
+      family: "viya-files",
+      decision: "declined",
+      reason: "not a route: a suffix the client appends to a file or log URI, which is why the file-content and job-log entries above carry it"
+    },
+    // sasjs-api
+    {
+      path: "/drive/deploy",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/drive/deploy/upload",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    // viya-files
+    {
+      path: "/files/files",
+      family: "viya-files",
+      decision: "in",
+      reason: "file create, read and replace, which the emulator backs with DriveService"
+    },
+    {
+      path: "/files/files/{}",
+      family: "viya-files",
+      decision: "in",
+      reason: "file create, read and replace, which the emulator backs with DriveService"
+    },
+    // viya-folders
+    {
+      path: "/folders/folders",
+      family: "viya-folders",
+      decision: "in",
+      reason: "content structure, which the emulator backs with DriveService"
+    },
+    {
+      path: "/folders/folders/@item",
+      family: "viya-folders",
+      decision: "in",
+      reason: "content structure, which the emulator backs with DriveService"
+    },
+    {
+      path: "/folders/folders/@myRecycleBin",
+      family: "viya-folders",
+      decision: "in",
+      reason: "content structure, which the emulator backs with DriveService"
+    },
+    {
+      path: "/folders/folders/{}",
+      family: "viya-folders",
+      decision: "in",
+      reason: "content structure, which the emulator backs with DriveService"
+    },
+    {
+      path: "/folders/folders/{}/members",
+      family: "viya-folders",
+      decision: "in",
+      reason: "content structure, which the emulator backs with DriveService"
+    },
+    // viya-identity
+    {
+      path: "/identities/users/@currentUser",
+      family: "viya-identity",
+      decision: "in",
+      reason: "who the caller is; every session and folder answer is scoped to it"
+    },
+    // viya-jobs
+    {
+      path: "/jobDefinitions/definitions",
+      family: "viya-jobs",
+      decision: "in",
+      reason: "the job path a deployed service runs through"
+    },
+    {
+      path: "/jobExecution/jobs",
+      family: "viya-jobs",
+      decision: "in",
+      reason: "the job path a deployed service runs through"
+    },
+    {
+      path: "/jobExecution/jobs/{}",
+      family: "viya-jobs",
+      decision: "in",
+      reason: "the job path a deployed service runs through"
+    },
+    // viya-compute
+    {
+      path: "/launcher/contexts",
+      family: "viya-compute",
+      decision: "in",
+      reason: "contexts, sessions, jobs and the webout fileref, which the emulator backs with SessionService and RuntimeService"
+    },
+    // viya-files
+    {
+      path: "/log",
+      family: "viya-files",
+      decision: "declined",
+      reason: "not a route: a suffix the client appends to a file or log URI, which is why the file-content and job-log entries above carry it"
+    },
+    // viya-auth
+    {
+      path: "/oauth/clients/{}",
+      family: "viya-auth",
+      decision: "declined",
+      reason: "client registration is an identity-provider admin action; the emulated estate accepts the public `sas.cli` client and mints its own tokens"
+    },
+    // sasjs-api
+    {
+      path: "/session/{}",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/session/{}/log",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/session/{}/state",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/stp/execute",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    {
+      path: "/stp/trigger",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the SASjs API surface, answered by the server's own registered routes, not by a Viya-shaped one"
+    },
+    // viya-files
+    {
+      path: "/types/types",
+      family: "viya-files",
+      decision: "in",
+      reason: "read before every file create, to find the type definition for the extension"
+    }
+  ];
+
+  // src/viya/table.ts
+  var VIYA_TABLE = [
+    {
+      id: "GET /compute/contexts",
+      method: "GET",
+      path: "/compute/contexts",
+      steps: [
+        "compute/context-by-name",
+        "compute/contexts",
+        "compute/execute-script",
+        "compute/session-create"
+      ],
+      statuses: [200],
+      queries: ["filter", "limit"],
+      request: {
+        queries: ["filter", "limit"],
+        body: void 0
+      },
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            createdBy: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            name: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
+      id: "POST /compute/contexts/{}/sessions",
+      method: "POST",
+      path: "/compute/contexts/{}/sessions",
+      steps: ["compute/execute-script", "compute/session-create"],
+      statuses: [201],
+      queries: [],
+      request: {
+        queries: [],
+        body: {}
+      },
+      shape: {
+        applicationName: "string",
+        attributes: {
+          homeDirectory: "string",
+          sessionInactiveTimeout: "number"
+        },
+        creationTimeStamp: "string",
+        environment: {
+          autoExecLines: ["string"]
+        },
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        owner: "string",
+        serverId: "string",
+        serviceAPIVersion: "number",
+        sessionConditionCode: "number",
+        state: "string",
+        stateElapsedTime: "number",
+        version: "number"
+      }
+    },
+    {
+      id: "DELETE /compute/sessions/{}",
+      method: "DELETE",
+      path: "/compute/sessions/{}",
+      steps: ["compute/session-delete"],
+      statuses: [204],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: void 0
+    },
+    {
+      id: "POST /compute/sessions/{}/jobs",
+      method: "POST",
+      path: "/compute/sessions/{}/jobs",
+      steps: ["compute/execute-script"],
+      statuses: [201],
+      queries: [],
+      request: {
+        queries: [],
+        body: {
+          code: "string",
+          description: "string",
+          name: "string",
+          variables: {
+            SYS_JES_JOB_URI: "string",
+            _DEBUG: "number",
+            _program: "string"
+          },
+          version: "number"
+        }
+      },
+      shape: {
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        sessionId: "string",
+        state: "string",
+        stateElapsedTime: "number",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /compute/sessions/{}/jobs/{}",
+      method: "GET",
+      path: "/compute/sessions/{}/jobs/{}",
+      steps: ["compute/execute-script"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        completedTimeStamp: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        jobConditionCode: "number",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        listingStatistics: {
+          lineCount: "number",
+          modifiedTimeStamp: "string"
+        },
+        logStatistics: {
+          lineCount: "number",
+          modifiedTimeStamp: "string"
+        },
+        sessionId: "string",
+        state: "string",
+        stateElapsedTime: "number",
+        statistics: {
+          systemCpuTime: "number",
+          userCpuTime: "number"
+        },
+        version: "number"
+      }
+    },
+    {
+      id: "GET /compute/sessions/{}/jobs/{}/log/content",
+      method: "GET",
+      path: "/compute/sessions/{}/jobs/{}/log/content",
+      steps: ["compute/execute-script"],
+      statuses: [200],
+      queries: ["limit", "start"],
+      request: {
+        queries: ["limit", "start"],
+        body: void 0
+      },
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            line: "string",
+            type: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /compute/sessions/{}/jobs/{}/state",
+      method: "GET",
+      path: "/compute/sessions/{}/jobs/{}/state",
+      steps: ["compute/execute-script"],
+      statuses: [200],
+      queries: ["_action", "wait"],
+      request: {
+        queries: ["_action", "wait"],
+        body: void 0
+      },
+      shape: void 0
+    },
+    {
+      id: "GET /compute/sessions/{}/state",
+      method: "GET",
+      path: "/compute/sessions/{}/state",
+      steps: ["compute/execute-script", "compute/session-state"],
+      statuses: [200],
+      queries: ["wait"],
+      request: {
+        queries: ["wait"],
+        body: void 0
+      },
+      shape: void 0
+    },
+    {
+      id: "POST /files/files",
+      method: "POST",
+      path: "/files/files",
+      steps: ["files/create"],
+      statuses: [201],
+      queries: ["parentFolderUri", "typeDefName"],
+      request: {
+        queries: ["parentFolderUri", "typeDefName"],
+        body: {
+          multipart: ["file"]
+        }
+      },
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {},
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      id: "GET /files/files/{}",
+      method: "GET",
+      path: "/files/files/{}",
+      steps: ["files/replace"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {
+          "content.download": "string",
+          "content.openInBrowser": "string",
+          "content.preview": "string",
+          sasIconKey: "string",
+          typeRegistrant: "string"
+        },
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      id: "PATCH /files/files/{}",
+      method: "PATCH",
+      path: "/files/files/{}",
+      steps: ["files/create"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: {
+          name: "string",
+          properties: {
+            "content.download": "string",
+            "content.openInBrowser": "string",
+            "content.preview": "string",
+            sasIconKey: "string",
+            typeRegistrant: "string"
+          }
+        }
+      },
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {
+          "content.download": "string",
+          "content.openInBrowser": "string",
+          "content.preview": "string",
+          sasIconKey: "string",
+          typeRegistrant: "string"
+        },
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      id: "GET /files/files/{}/content",
+      method: "GET",
+      path: "/files/files/{}/content",
+      steps: ["files/content"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: void 0
+    },
+    {
+      id: "PUT /files/files/{}/content",
+      method: "PUT",
+      path: "/files/files/{}/content",
+      steps: ["files/replace"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {
+          "content.download": "string",
+          "content.openInBrowser": "string",
+          "content.preview": "string",
+          sasIconKey: "string",
+          typeRegistrant: "string"
+        },
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      id: "POST /folders/folders",
+      method: "POST",
+      path: "/folders/folders",
+      steps: ["folders/create"],
+      statuses: [201],
+      queries: ["parentFolderUri"],
+      request: {
+        queries: ["parentFolderUri"],
+        body: {
+          name: "string",
+          type: "string"
+        }
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /folders/folders/{}",
+      method: "GET",
+      path: "/folders/folders/{}",
+      steps: ["folders/delete"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        description: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        properties: {
+          allowMove: "string"
+        },
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "PATCH /folders/folders/{}",
+      method: "PATCH",
+      path: "/folders/folders/{}",
+      steps: ["folders/delete"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: {
+          id: "string",
+          name: "string",
+          parentFolderUri: "string"
+        }
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /folders/folders/{}/members",
+      method: "GET",
+      path: "/folders/folders/{}/members",
+      steps: [
+        "files/content",
+        "files/replace",
+        "folders/create",
+        "folders/members"
+      ],
+      statuses: [200],
+      queries: ["limit"],
+      request: {
+        queries: ["limit"],
+        body: void 0
+      },
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            added: "string",
+            contentType: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parentFolderUri: "string",
+            type: "string",
+            uri: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /folders/folders/@item",
+      method: "GET",
+      path: "/folders/folders/@item",
+      steps: [
+        "files/content",
+        "files/create",
+        "files/replace",
+        "folders/create",
+        "folders/delete",
+        "folders/item",
+        "folders/members"
+      ],
+      statuses: [200, 401, 404],
+      queries: ["path"],
+      request: {
+        queries: ["path"],
+        body: void 0
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        description: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /folders/folders/@myRecycleBin",
+      method: "GET",
+      path: "/folders/folders/@myRecycleBin",
+      steps: ["folders/delete"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        description: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        properties: {
+          allowMove: "string"
+        },
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /identities/users/@currentUser",
+      method: "GET",
+      path: "/identities/users/@currentUser",
+      steps: ["identities/current-user"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        addresses: [
+          {
+            locality: "string",
+            type: "string"
+          }
+        ],
+        emailAddresses: [
+          {
+            type: "string",
+            value: "string"
+          }
+        ],
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        providerId: "string",
+        state: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "POST /SASLogon/oauth/token",
+      method: "POST",
+      path: "/SASLogon/oauth/token",
+      steps: ["auth/token-refresh", "auth/token-refresh-refused"],
+      statuses: [200, 401],
+      queries: [],
+      request: {
+        queries: [],
+        body: {
+          multipart: ["grant_type", "refresh_token"]
+        }
+      },
+      shape: {
+        access_token: "string",
+        expires_in: "number",
+        id_token: "string",
+        jti: "string",
+        refresh_expires_in: "number",
+        refresh_revocable: "boolean",
+        refresh_token: "string",
+        revocable: "boolean",
+        scope: "string",
+        token_type: "string"
+      }
+    },
+    {
+      id: "GET /types/types",
+      method: "GET",
+      path: "/types/types",
+      steps: ["files/create"],
+      statuses: [200],
+      queries: ["limit"],
+      request: {
+        queries: ["limit"],
+        body: void 0
+      },
+      shape: void 0
+    }
+  ];
+
+  // src/viya/unrecorded.ts
+  var UNRECORDED = [
+    // The recorder hands the adapter a token it obtained itself, so the calls that
+    // obtain one never pass through the proxy. The capture tool records them as a
+    // separate pass, which needs a client id and secret.
+    {
+      path: "/SASLogon",
+      reason: "no capture: the pass authenticates outside the adapter, so the login root is never requested through the client"
+    },
+    {
+      path: "/SASLogon/login",
+      reason: "no capture: an interactive login; the pass presents a token instead of a form"
+    },
+    {
+      path: "/SASLogon/login.do",
+      reason: "no capture: an interactive login; the pass presents a token instead of a form"
+    },
+    {
+      path: "/SASLogon/logout",
+      reason: "no capture: the pass never signs out, because a capture run must leave the estate as it found it"
+    },
+    {
+      path: "/SASLogon/logout.do",
+      reason: "no capture: the pass never signs out, because a capture run must leave the estate as it found it"
+    },
+    {
+      path: "/SASLogon/oauth/authorize",
+      reason: "no capture: the authorisation-code step needs a browser; the pass uses the password grant"
+    },
+    // Compute operations the scripted passes do not reach.
+    {
+      path: "/compute/sessions/{}/variables/{}",
+      reason: "no capture: the adapter reads a session variable only to report a submitted job's pid (`printPid`), which the pass does not set"
+    },
+    {
+      path: "/launcher/contexts",
+      reason: "no capture: the fallback list, asked for only when the compute context list fails; a healthy estate never reaches it"
+    },
+    // The job path needs something deployed to run.
+    {
+      path: "/jobDefinitions/definitions",
+      reason: "no capture: needs a job definition on the estate. The next pass deploys a service pack under its own app folder and reads the definition back"
+    },
+    {
+      path: "/jobExecution/jobs",
+      reason: "no capture: needs a deployed service to submit. The next pass deploys a service pack under its own app folder"
+    },
+    {
+      path: "/jobExecution/jobs/{}",
+      reason: "no capture: follows a submission, so it arrives with the same pass as POST /jobExecution/jobs"
+    }
+  ];
+
+  // src/viya/version.ts
+  var VIYA_TARGET_VERSION = "V.04.00M0P100526";
+  var VIYA_CAPTURED_AT = "2026-11-12";
+  var EMULATED_HEADER = "x-sasjs-emulated";
+  var EMULATED_HEADER_VALUE = `viya@${VIYA_TARGET_VERSION}`;
+  var emulatedHeaders = () => ({
+    [EMULATED_HEADER]: EMULATED_HEADER_VALUE,
+    "Access-Control-Expose-Headers": EMULATED_HEADER
+  });
+
+  // src/viya/declared.ts
+  var DECLARED = [
+    {
+      id: "GET /compute/sessions/{}/filerefs/_webout/content",
+      method: "GET",
+      path: "/compute/sessions/{}/filerefs/_webout/content",
+      steps: [],
+      // what this emulator answers, not what an estate did: 200 with the webout,
+      // 404 when no program has run in the session
+      statuses: [200, 404],
+      queries: [],
+      request: { queries: [], body: void 0 },
+      // the body is the program's `_webout`, which is whatever the program wrote:
+      // there is no JSON shape to record
+      shape: void 0,
+      declared: "The adapter fetches this only when a run expects a webout (`expectWebout`), and the recording pass submits a `%put` and reads the log instead. Without it an application cannot receive the data its service returns, so the emulator answers it from the job it just ran."
+    }
+  ];
+  var VIYA_OPERATIONS = [...VIYA_TABLE, ...DECLARED];
+
+  // src/viya/overlay.ts
+  var NEEDS_AUTH = "The token endpoint is answered by the host that mounts the emulator, which owns the token port.";
+  var VIYA_OVERLAY = {
+    // answered here
+    "POST /folders/folders": { implemented: true },
+    "GET /folders/folders/{}": { implemented: true },
+    "PATCH /folders/folders/{}": { implemented: true },
+    "GET /folders/folders/{}/members": { implemented: true },
+    "GET /folders/folders/@item": { implemented: true },
+    "GET /folders/folders/@myRecycleBin": { implemented: true },
+    "GET /identities/users/@currentUser": { implemented: true },
+    "GET /types/types": { implemented: true },
+    // answered here: compute
+    "GET /compute/contexts": { implemented: true },
+    "POST /compute/contexts/{}/sessions": { implemented: true },
+    "DELETE /compute/sessions/{}": { implemented: true },
+    "POST /compute/sessions/{}/jobs": { implemented: true },
+    "GET /compute/sessions/{}/jobs/{}": { implemented: true },
+    "GET /compute/sessions/{}/jobs/{}/log/content": { implemented: true },
+    "GET /compute/sessions/{}/jobs/{}/state": { implemented: true },
+    "GET /compute/sessions/{}/state": { implemented: true },
+    // answered here: files
+    "POST /files/files": { implemented: true },
+    "GET /files/files/{}": { implemented: true },
+    "PATCH /files/files/{}": { implemented: true },
+    "GET /files/files/{}/content": { implemented: true },
+    "PUT /files/files/{}/content": { implemented: true },
+    // declined: the host owns the token port
+    "POST /SASLogon/oauth/token": { implemented: false, reason: NEEDS_AUTH },
+    // declared, not captured: the webout an application's service returns
+    "GET /compute/sessions/{}/filerefs/_webout/content": { implemented: true }
+  };
+  var assertOverlayEntries = (overlay, operations = VIYA_OPERATIONS) => {
+    const known2 = new Set(operations.map((operation) => operation.id));
+    for (const id of Object.keys(overlay))
+      if (!known2.has(id))
+        throw new Error(
+          `src/viya/overlay.ts names an operation the table does not have: ${id}. The table is generated from a capture, so an entry for an operation nobody observed is a claim about a call no client makes.`
+        );
+    for (const operation of operations)
+      if (!(operation.id in overlay))
+        throw new Error(
+          `src/viya/overlay.ts has no decision for ${operation.id}. Every captured operation states whether this package implements it and, when it does not, the reason it does not: add \`{ implemented: false, reason: '...' }\` until a handler exists.`
+        );
+  };
+  assertOverlayEntries(VIYA_OVERLAY);
+
+  // src/viya/ports.ts
+  var requireDrive = (services) => services.drive;
+
+  // src/viya/seed.ts
+  var DEFAULT_SEED = "emulated";
+  var normaliseServerUrl = (url) => {
+    if (!url) return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    const match = /^(?:([a-z][a-z0-9+.-]*):\/\/)?([^/?#]+)/i.exec(trimmed);
+    if (!match) return trimmed.replace(/\/+$/, "").toLowerCase();
+    const scheme = (match[1] ?? "http").toLowerCase();
+    let authority = match[2].toLowerCase();
+    const credentials = authority.lastIndexOf("@");
+    if (credentials >= 0) authority = authority.slice(credentials + 1);
+    let host = authority;
+    let port = "";
+    if (authority.startsWith("[")) {
+      const close = authority.indexOf("]");
+      if (close >= 0) {
+        host = authority.slice(0, close + 1);
+        if (authority[close + 1] === ":") port = authority.slice(close + 2);
+      }
+    } else {
+      const colon = authority.lastIndexOf(":");
+      if (colon >= 0) {
+        host = authority.slice(0, colon);
+        port = authority.slice(colon + 1);
+      }
+    }
+    const isDefault = scheme === "http" && port === "80" || scheme === "https" && port === "443";
+    return `${scheme}://${host}${port && !isDefault ? `:${port}` : ""}`;
+  };
+  var hash = (input) => {
+    let value = 2166136261;
+    for (let index = 0; index < input.length; index++) {
+      value ^= input.charCodeAt(index);
+      value = Math.imul(value, 16777619) >>> 0;
+    }
+    return value >>> 0;
+  };
+  var seedOf = (settings = {}) => {
+    if (settings.seed !== void 0 && settings.seed !== "")
+      return hash(`seed:${settings.seed}`);
+    const address = normaliseServerUrl(settings.serverUrl);
+    return hash(`url:${address || DEFAULT_SEED}`);
+  };
+  var generator = (seed) => {
+    let state = seed >>> 0;
+    return () => {
+      state = state + 1831565813 >>> 0;
+      let value = state;
+      value = Math.imul(value ^ value >>> 15, value | 1);
+      value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+      return ((value ^ value >>> 14) >>> 0) / 4294967296;
+    };
+  };
+  var drawInt = (next, bound) => Math.floor(next() * bound);
+  var drawFrom = (next, values) => values[drawInt(next, values.length)];
+
+  // src/viya/sessions.ts
+  var logFor = (seed, program) => {
+    const code = Array.isArray(program) ? program.join("\n") : program;
+    const next = generator(seed ^ hash(`code:${code}`));
+    const rows = drawInt(next, 900) + 100;
+    const seconds = (drawInt(next, 90) + 10) / 100;
+    const lines = code.split("\n").map((line, index) => `${String(index + 1).padStart(3, " ")}    ${line}`);
+    return [
+      "NOTE: Emulated compute engine - this log is generated, not produced by SAS.",
+      "NOTE:  No library was touched: the emulated engine has none.",
+      ...lines,
+      `NOTE: The data set WORK.EMULATED has ${rows} observations and 3 variables.`,
+      `NOTE:  DATA statement used (Total process time):`,
+      `NOTE:      real time           ${seconds.toFixed(2)} seconds`,
+      `NOTE:      user cpu time       ${(seconds / 2).toFixed(2)} seconds`,
+      `NOTE:  ${drawFrom(next, ["The emulated run completed.", "Emulation complete - no SAS was executed."])}`
+    ];
+  };
+  var EmulatedEstate = class {
+    constructor(seed) {
+      this.seed = seed;
+      this.sessions = /* @__PURE__ */ new Map();
+      this.created = 0;
+    }
+    /** A new session: deterministic id, no jobs. */
+    create() {
+      const session = {
+        id: `emulated-${this.seed.toString(16)}-ses${String(this.created++).padStart(4, "0")}`,
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        jobs: /* @__PURE__ */ new Map(),
+        submitted: 0
+      };
+      this.sessions.set(session.id, session);
+      return session;
+    }
+    session(id) {
+      return this.sessions.get(id);
+    }
+    remove(id) {
+      return this.sessions.delete(id);
+    }
+    /** A job accepted into a session, with the log the emulator generated for it. */
+    submit(session, job) {
+      const id = `${session.id}-job${String(session.submitted++).padStart(4, "0")}`;
+      const code = job.code ?? "";
+      const submitted = {
+        id,
+        name: job.name ?? id,
+        // the log is a function of the seed and the program alone, so the same
+        // program answers the same lines whatever session it was submitted in
+        log: logFor(this.seed, code),
+        state: "running",
+        // the real clock, unlike a folder's: a client computes a session's age
+        // from this stamp and expires it, so a fixed instant in the past is a
+        // session that is born expired
+        creationTimeStamp: (/* @__PURE__ */ new Date()).toISOString(),
+        // no completion stamp here: a job is finished when something finished it,
+        // and the handler that knows whether anything will run sets both
+        sessionId: session.id
+      };
+      session.jobs.set(id, submitted);
+      return submitted;
+    }
+  };
+  var estates = /* @__PURE__ */ new Map();
+  var estateFor = (seed) => {
+    const existing = estates.get(seed);
+    if (existing) return existing;
+    const estate = new EmulatedEstate(seed);
+    estates.set(seed, estate);
+    return estate;
+  };
+
+  // src/viya/ids.ts
+  var EMULATED_NOW = "2026-01-01T00:00:00.000Z";
+  var EMULATED_USER = { id: "emulated-user", name: "Emulated User" };
+  var idFor = (path, kind = "folder") => {
+    const hash2 = (input, seed) => {
+      let value = seed;
+      for (let index = 0; index < input.length; index++) {
+        value ^= input.charCodeAt(index);
+        value = Math.imul(value, 16777619) >>> 0;
+      }
+      return value.toString(16).padStart(8, "0");
+    };
+    const raw = hash2(`${kind}:${path}`, 2166136261) + hash2(`${kind}:${path}`, 2246822519) + hash2(`${kind}:${path}`, 3266489917) + hash2(`${kind}:${path}`, 668265263);
+    const hex = raw.slice(0, 32);
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      `4${hex.slice(13, 16)}`,
+      `a${hex.slice(17, 20)}`,
+      hex.slice(20, 32)
+    ].join("-");
+  };
+  var normalisePath = (path) => {
+    const collapsed = `/${path}`.replace(/\/{2,}/g, "/");
+    return collapsed.length > 1 ? collapsed.replace(/\/+$/, "") : collapsed;
+  };
+
+  // src/viya/compute.ts
+  var DEFAULT_CONTEXT_NAME = "Emulated Compute Context";
+  var EMULATED_CONTEXT_ID = idFor("emulated-context", "context");
+  var relLinks = (type, rels) => rels.map(([rel, href]) => ({ href, uri: href, rel, method: "GET", type }));
+  var linksFor = (uri, type, collection = false, itemType = false) => [
+    // the collection link comes first, because that is the order the capture
+    // recorded and the item shape assertion walks the first element
+    ...collection ? [
+      {
+        href: `${uri}/members`,
+        uri: `${uri}/members`,
+        rel: "members",
+        method: "GET",
+        type,
+        itemType: type
+      }
+    ] : [],
+    {
+      href: uri,
+      uri,
+      rel: "self",
+      method: "GET",
+      type,
+      // the log's capture records itemType on its first link, so it is stamped
+      // there rather than invented as a members link the estate does not have
+      ...itemType ? { itemType: type } : {}
+    }
+  ];
+  var estateOf = (services) => estateFor(seedOf(services.viya));
+  var contextNameFrom = (filter) => {
+    if (!filter) return DEFAULT_CONTEXT_NAME;
+    const match = /name\s*,\s*'([^']*)'|name\s*,\s*"([^"]*)"/i.exec(filter);
+    return match?.[1] ?? match?.[2] ?? DEFAULT_CONTEXT_NAME;
+  };
+  var contextBody = (name) => ({
+    id: EMULATED_CONTEXT_ID,
+    name,
+    createdBy: EMULATED_USER.id,
+    version: 2,
+    links: linksFor(
+      `/compute/contexts/${EMULATED_CONTEXT_ID}`,
+      "application/vnd.sas.compute.context"
+    )
+  });
+  var sessionBody = (services, session, autoExecLines) => {
+    const { id } = session;
+    const uri = `/compute/sessions/${id}`;
+    return {
+      id,
+      applicationName: "emulated",
+      owner: EMULATED_USER.id,
+      serverId: idFor(
+        normaliseServerUrl(services.viya?.serverUrl) || "emulated",
+        "server"
+      ),
+      state: "idle",
+      attributes: {
+        homeDirectory: "/tmp/emulated",
+        sessionInactiveTimeout: 3600
+      },
+      environment: { autoExecLines },
+      // the real clock: the adapter computes a session's age from this stamp and
+      // expires it against sessionInactiveTimeout
+      creationTimeStamp: session.createdAt,
+      serviceAPIVersion: 1,
+      sessionConditionCode: 0,
+      stateElapsedTime: 0,
+      version: 2,
+      links: relLinks("application/vnd.sas.compute.session", [
+        ["self", uri],
+        ["state", `${uri}/state`],
+        ["log", `${uri}/log`],
+        ["jobs", `${uri}/jobs`]
+      ])
+    };
+  };
+  var jobBody = (job) => {
+    const uri = `/compute/sessions/${job.sessionId}/jobs/${job.id}`;
+    return {
+      id: job.id,
+      name: job.name,
+      sessionId: job.sessionId,
+      state: job.state,
+      creationTimeStamp: job.creationTimeStamp,
+      ...job.completedTimeStamp ? { completedTimeStamp: job.completedTimeStamp } : {},
+      jobConditionCode: 0,
+      stateElapsedTime: 1,
+      listingStatistics: {
+        lineCount: job.log.length,
+        modifiedTimeStamp: job.completedTimeStamp ?? job.creationTimeStamp
+      },
+      logStatistics: {
+        lineCount: job.log.length,
+        modifiedTimeStamp: job.completedTimeStamp ?? job.creationTimeStamp
+      },
+      statistics: { systemCpuTime: 0.01, userCpuTime: 0.02 },
+      version: 2,
+      links: relLinks("application/vnd.sas.compute.job", [
+        ["self", uri],
+        ["state", `${uri}/state`],
+        ["log", `${uri}/log`],
+        ["up", `/compute/sessions/${job.sessionId}`]
+      ])
+    };
+  };
+  var sessionOf = (services, id) => {
+    const session = estateOf(services).session(id);
+    if (!session)
+      throw new ApiError(404, `Session with ID '${id}' was not found.`);
+    return session;
+  };
+  var jobOf = (services, sessionId, jobId) => {
+    const job = sessionOf(services, sessionId).jobs.get(jobId);
+    if (!job) throw new ApiError(404, `Job with ID '${jobId}' was not found.`);
+    return job;
+  };
+  var segmentsOf = (params) => params.segments;
+  var COMPUTE_HANDLERS = {
+    "GET /compute/contexts": async ({ request }) => {
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      return {
+        status: 200,
+        body: {
+          accept: "application/json",
+          name: "contexts",
+          start: 0,
+          limit,
+          count: 1,
+          version: 2,
+          items: [contextBody(contextNameFrom(request.query?.filter))],
+          links: linksFor(
+            "/compute/contexts",
+            "application/vnd.sas.compute.context",
+            true
+          )
+        }
+      };
+    },
+    "POST /compute/contexts/{}/sessions": async ({
+      services,
+      params,
+      request
+    }) => {
+      if (params.id !== EMULATED_CONTEXT_ID)
+        throw new ApiError(404, `Context with ID '${params.id}' was not found.`);
+      const body = request.body ?? {};
+      const session = estateOf(services).create();
+      return {
+        status: 201,
+        body: sessionBody(
+          services,
+          session,
+          body.environment?.autoExecLines ?? []
+        )
+      };
+    },
+    "GET /compute/sessions/{}/state": async ({ services, params }) => {
+      sessionOf(services, params.id);
+      return { status: 200, body: "idle" };
+    },
+    "DELETE /compute/sessions/{}": async ({ services, params }) => {
+      sessionOf(services, params.id);
+      estateOf(services).remove(params.id);
+      return { status: 204, body: void 0 };
+    },
+    "POST /compute/sessions/{}/jobs": async ({ services, params, request }) => {
+      const session = sessionOf(services, params.id);
+      const body = request.body ?? {};
+      const job = estateOf(services).submit(session, body);
+      const execute = services.viya?.execute;
+      if (!execute) {
+        job.state = "completed";
+        job.completedTimeStamp = (/* @__PURE__ */ new Date()).toISOString();
+        return { status: 201, body: jobBody(job) };
+      }
+      job.state = "running";
+      job.log = [];
+      void execute({
+        program: body.code ?? "",
+        variables: body.variables,
+        name: body.name,
+        sessionId: session.id
+      }).then((ran) => {
+        job.log = ran.log.split("\n");
+        job.state = ran.state ?? "completed";
+        if (ran.webout !== void 0) job.webout = ran.webout;
+        job.completedTimeStamp = (/* @__PURE__ */ new Date()).toISOString();
+      }).catch((error) => {
+        job.state = "failed";
+        job.log = [`ERROR: ${error.message}`];
+        job.completedTimeStamp = (/* @__PURE__ */ new Date()).toISOString();
+      });
+      return { status: 201, body: jobBody(job) };
+    },
+    "GET /compute/sessions/{}/filerefs/_webout/content": async ({
+      services,
+      params
+    }) => {
+      const session = sessionOf(services, params.id);
+      const last = [...session.jobs.values()].pop();
+      if (!last)
+        throw new ApiError(
+          404,
+          "This session has no `_webout` yet: nothing has run in it."
+        );
+      if (last.webout === void 0)
+        throw new ApiError(
+          404,
+          last.state === "running" ? `This session has no \`_webout\` yet: job '${last.id}' has not finished.` : services.viya?.execute ? `This session has no \`_webout\`: job '${last.id}' ran and produced none.` : `This session has no \`_webout\`: the host supplied no engine, so no program has run.`
+        );
+      return {
+        status: 200,
+        contents: last.webout,
+        headers: { "content-type": "text/plain" }
+      };
+    },
+    "GET /compute/sessions/{}/jobs/{}": async ({ services, params }) => {
+      const [sessionId, jobId] = segmentsOf(params);
+      return { status: 200, body: jobBody(jobOf(services, sessionId, jobId)) };
+    },
+    "GET /compute/sessions/{}/jobs/{}/state": async ({ services, params }) => {
+      const [sessionId, jobId] = segmentsOf(params);
+      return {
+        status: 200,
+        body: jobOf(services, sessionId, jobId).state
+      };
+    },
+    "GET /compute/sessions/{}/jobs/{}/log/content": async ({
+      services,
+      params,
+      request
+    }) => {
+      const [sessionId, jobId] = segmentsOf(params);
+      const job = jobOf(services, sessionId, jobId);
+      const start = Number(request.query?.start ?? 0) || 0;
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const lines = job.log.slice(start, limit ? start + limit : void 0);
+      return {
+        status: 200,
+        body: {
+          accept: "application/json",
+          name: "content",
+          start,
+          limit: limit || lines.length,
+          count: job.log.length,
+          version: 2,
+          items: lines.map((line) => ({ line, type: "NOTE", version: 2 })),
+          links: linksFor(
+            `/compute/sessions/${job.sessionId}/jobs/${job.id}/log`,
+            "application/vnd.sas.compute.job.log",
+            false,
+            true
+          )
+        }
+      };
+    }
+  };
+
+  // src/viya/files.ts
+  var contentTypeOf = (name) => {
+    if (/\.sas$/i.test(name)) return "text/plain";
+    if (/\.(json)$/i.test(name)) return "application/json";
+    if (/\.(csv|txt|log)$/i.test(name)) return "text/plain";
+    if (/\.(html?)$/i.test(name)) return "text/html";
+    if (/\.(png)$/i.test(name)) return "image/png";
+    if (/\.(jpe?g)$/i.test(name)) return "image/jpeg";
+    return "application/octet-stream";
+  };
+  var fileBody = (file) => {
+    const id = idFor(file.path, "file");
+    const uri = `/files/files/${id}`;
+    const contentType = contentTypeOf(file.name);
+    return {
+      id,
+      name: file.name,
+      contentType,
+      contentDisposition: `attachment; filename="${file.name}"`,
+      encoding: "UTF-8",
+      size: file.size,
+      fileStatus: "complete",
+      fileVersion: 1,
+      version: 2,
+      typeDefName: "file",
+      createdBy: EMULATED_USER.id,
+      modifiedBy: EMULATED_USER.id,
+      creationTimeStamp: EMULATED_NOW,
+      modifiedTimeStamp: EMULATED_NOW,
+      quarantine: false,
+      searchable: true,
+      virusDetected: false,
+      urlDetected: false,
+      properties: {
+        "content.download": "true",
+        "content.openInBrowser": "true",
+        "content.preview": "false",
+        sasIconKey: "file",
+        typeRegistrant: EMULATED_USER.id
+      },
+      links: [
+        {
+          href: uri,
+          uri,
+          rel: "self",
+          method: "GET",
+          type: "application/vnd.sas.file"
+        },
+        {
+          href: `${uri}/content`,
+          uri: `${uri}/content`,
+          rel: "content",
+          method: "GET",
+          type: "application/vnd.sas.file.content"
+        }
+      ]
+    };
+  };
+  var utf8Length2 = (text2) => {
+    let bytes3 = 0;
+    for (const character of text2) {
+      const point = character.codePointAt(0);
+      bytes3 += point < 128 ? 1 : point < 2048 ? 2 : point < 65536 ? 3 : 4;
+    }
+    return bytes3;
+  };
+  var sizeOf = (contents) => typeof contents === "string" ? utf8Length2(contents) : contents.byteLength;
+  var filesIn = async (drive) => {
+    const walk2 = (node, found) => {
+      if (!node.isFolder)
+        found.push({ name: node.name, path: node.relativePath, size: 0 });
+      for (const child of node.children) walk2(child, found);
+      return found;
+    };
+    return walk2((await drive.tree("/")).tree, []);
+  };
+  var pathForFileId = async (drive, id) => {
+    const file = (await filesIn(drive)).find(
+      (candidate) => idFor(candidate.path, "file") === id
+    );
+    if (!file) throw new ApiError(404, `File with ID '${id}' was not found.`);
+    return file.path;
+  };
+  var bodyOf = async (drive, path) => {
+    const read = await drive.read(path);
+    return {
+      name: path.split("/").pop(),
+      path,
+      size: sizeOf(read.contents)
+    };
+  };
+  var parentOf = async (drive, uri) => {
+    if (!uri) return "/";
+    const id = uri.split("/").pop();
+    const tree = await drive.tree("/");
+    const walk2 = (node) => {
+      if (node.isFolder && idFor(node.relativePath, "folder") === id)
+        return node.relativePath;
+      for (const child of node.children) {
+        const hit = walk2(child);
+        if (hit !== void 0) return hit;
+      }
+      return void 0;
+    };
+    const found = walk2(tree.tree);
+    if (found === void 0)
+      throw new ApiError(404, `Folder with ID '${id}' was not found.`);
+    return found;
+  };
+  var FILE_HANDLERS = {
+    "POST /files/files": async ({ services, request }) => {
+      const drive = requireDrive(services);
+      const upload = request.file;
+      if (!upload?.name)
+        throw new ApiError(400, "A file named `file` is required.");
+      const parent = await parentOf(drive, request.query?.parentFolderUri);
+      const path = `${parent}/${upload.name}`.replace(/\/{2,}/g, "/");
+      await drive.save(path, upload.contents);
+      return { status: 201, body: fileBody(await bodyOf(drive, path)) };
+    },
+    "GET /files/files/{}": async ({ services, params }) => {
+      const drive = requireDrive(services);
+      const path = await pathForFileId(drive, params.id);
+      return { status: 200, body: fileBody(await bodyOf(drive, path)) };
+    },
+    "PATCH /files/files/{}": async ({ services, params, request }) => {
+      const drive = requireDrive(services);
+      const path = await pathForFileId(drive, params.id);
+      const body = request.body ?? {};
+      const name = body.name ?? path.split("/").pop();
+      const target = `${path.split("/").slice(0, -1).join("/")}/${name}`.replace(
+        /\/{2,}/g,
+        "/"
+      );
+      if (target !== path) await drive.rename(path, target);
+      return { status: 200, body: fileBody(await bodyOf(drive, target)) };
+    },
+    "GET /files/files/{}/content": async ({ services, params }) => {
+      const drive = requireDrive(services);
+      const path = await pathForFileId(drive, params.id);
+      const read = await drive.read(path);
+      return {
+        status: 200,
+        contents: read.contents,
+        headers: {
+          "content-type": contentTypeOf(path.split("/").pop())
+        }
+      };
+    },
+    "PUT /files/files/{}/content": async ({ services, params, request }) => {
+      const drive = requireDrive(services);
+      const path = await pathForFileId(drive, params.id);
+      const body = request.body;
+      const contents = request.file?.contents ?? (typeof body === "string" ? body : body?.contents);
+      if (contents === void 0 || contents === null)
+        throw new ApiError(400, "File content is required.");
+      await drive.update(path, contents);
+      return { status: 200, body: fileBody(await bodyOf(drive, path)) };
+    }
+  };
+
+  // src/viya/service.ts
+  var linksFor2 = (uri, collection = false) => {
+    const self = {
+      href: uri,
+      uri,
+      rel: "self",
+      method: "GET",
+      type: "application/vnd.sas.folder"
+    };
+    const members = {
+      href: `${uri}/members`,
+      uri: `${uri}/members`,
+      rel: "members",
+      method: "GET",
+      type: "application/vnd.sas.collection",
+      itemType: "folder"
+    };
+    return collection ? [members, self] : [self, members];
+  };
+  var folderBody = async (drive, path) => {
+    const listing = await drive.list(path);
+    const id = idFor(path);
+    const name = path.split("/").filter(Boolean).pop() ?? "";
+    const parent = path.split("/").slice(0, -1).join("/") || "/";
+    return {
+      id,
+      name,
+      description: "",
+      type: "folder",
+      version: 1,
+      createdBy: EMULATED_USER.id,
+      modifiedBy: EMULATED_USER.id,
+      creationTimeStamp: EMULATED_NOW,
+      modifiedTimeStamp: EMULATED_NOW,
+      memberCount: listing.files.length + listing.folders.length,
+      parentFolderUri: `/folders/folders/${idFor(parent)}`,
+      links: linksFor2(`/folders/folders/${id}`)
+    };
+  };
+  var recycleBin = () => {
+    const path = "@myRecycleBin";
+    const id = idFor(path);
+    return {
+      id,
+      name: "Recycle Bin",
+      description: "Recycle Bin",
+      type: "trashFolder",
+      version: 1,
+      createdBy: EMULATED_USER.id,
+      modifiedBy: EMULATED_USER.id,
+      creationTimeStamp: EMULATED_NOW,
+      modifiedTimeStamp: EMULATED_NOW,
+      memberCount: 0,
+      parentFolderUri: "",
+      properties: { allowMove: "false" },
+      links: linksFor2(`/folders/folders/${id}`)
+    };
+  };
+  var pathFromQuery = (request) => {
+    const path = request.query?.path;
+    if (!path) throw new ApiError(400, "The path parameter is required.");
+    return normalisePath(path);
+  };
+  var RECYCLE_BIN_ALIAS = "/folders/folders/@myRecycleBin";
+  var isRecycleBin = (uri) => !!uri && (uri === RECYCLE_BIN_ALIAS || uri.endsWith(`/${idFor("@myRecycleBin")}`));
+  var pathForId = async (drive, id) => {
+    const walk2 = (node) => {
+      if (node.isFolder && idFor(node.relativePath) === id)
+        return node.relativePath;
+      for (const child of node.children) {
+        const hit = walk2(child);
+        if (hit) return hit;
+      }
+      return void 0;
+    };
+    const { tree } = await drive.tree("/");
+    const path = walk2(tree);
+    if (!path)
+      throw new ApiError(
+        404,
+        `No folder matches the id ${id}. Ids are derived from paths, so an id that names no folder is one no folder ever had.`
+      );
+    return path;
+  };
+  var VIYA_HANDLERS = {
+    "GET /identities/users/@currentUser": async ({ services, request }) => {
+      const subject = request.subject ?? await services.identity?.authenticate(request.token);
+      const id = subject?.userId ?? EMULATED_USER.id;
+      return {
+        status: 200,
+        body: {
+          id,
+          name: subject?.userId ?? EMULATED_USER.name,
+          providerId: "sas",
+          state: "active",
+          version: 1,
+          addresses: [],
+          emailAddresses: [],
+          links: [
+            {
+              href: `/identities/users/${id}`,
+              uri: `/identities/users/${id}`,
+              rel: "self",
+              method: "GET",
+              type: "application/vnd.sas.identity.user"
+            }
+          ]
+        }
+      };
+    },
+    "GET /types/types": async () => ({
+      status: 200,
+      body: {
+        count: 1,
+        items: [
+          {
+            name: "file",
+            type: "typeDef",
+            version: 1,
+            links: [{ href: "/types/types/file", rel: "self", method: "GET" }]
+          }
+        ]
+      }
+    }),
+    "GET /folders/folders/@item": async ({ services, request }) => ({
+      status: 200,
+      body: await folderBody(requireDrive(services), pathFromQuery(request))
+    }),
+    "GET /folders/folders/@myRecycleBin": async () => ({
+      status: 200,
+      body: recycleBin()
+    }),
+    "GET /folders/folders/{}": async ({ services, params }) => {
+      if (params.id === idFor("@myRecycleBin"))
+        return { status: 200, body: recycleBin() };
+      const drive = requireDrive(services);
+      return {
+        status: 200,
+        body: await folderBody(drive, await pathForId(drive, params.id))
+      };
+    },
+    "GET /folders/folders/{}/members": async ({ services, params, request }) => {
+      const drive = requireDrive(services);
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      if (params.id === idFor("@myRecycleBin"))
+        return {
+          status: 200,
+          body: {
+            accept: "application/json",
+            name: "members",
+            start: 0,
+            // the query value is echoed as the sibling branch echoes it: a caller
+            // that asked for five and is told zero cannot tell what happened
+            limit,
+            count: 0,
+            version: 2,
+            items: [],
+            links: linksFor2(`/folders/folders/${idFor("@myRecycleBin")}`, true)
+          }
+        };
+      const path = await pathForId(drive, params.id);
+      const listing = await drive.list(path);
+      const items = [
+        ...listing.folders.map((name) => ({
+          id: idFor(`${path}/${name}`.replace(/\/{2,}/g, "/")),
+          name,
+          type: "folder",
+          version: 1,
+          createdBy: EMULATED_USER.id,
+          modifiedBy: EMULATED_USER.id,
+          creationTimeStamp: EMULATED_NOW,
+          modifiedTimeStamp: EMULATED_NOW,
+          parentFolderUri: `/folders/folders/${idFor(path)}`,
+          uri: `${path}/${name}`.replace(/\/{2,}/g, "/"),
+          links: linksFor2(
+            `/folders/folders/${idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"))}`
+          )
+        })),
+        ...listing.files.map((name) => ({
+          id: idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"), "file"),
+          name,
+          type: "file",
+          version: 1,
+          contentType: "text/plain",
+          createdBy: EMULATED_USER.id,
+          modifiedBy: EMULATED_USER.id,
+          creationTimeStamp: EMULATED_NOW,
+          modifiedTimeStamp: EMULATED_NOW,
+          parentFolderUri: `/folders/folders/${idFor(path)}`,
+          added: EMULATED_NOW,
+          uri: `${path}/${name}`.replace(/\/{2,}/g, "/"),
+          links: linksFor2(
+            `/files/files/${idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"), "file")}`
+          )
+        }))
+      ];
+      const page = limit > 0 ? items.slice(0, limit) : items;
+      return {
+        status: 200,
+        body: {
+          accept: "application/json",
+          name: "members",
+          start: 0,
+          limit: limit || page.length,
+          count: page.length,
+          version: 2,
+          items: page,
+          links: linksFor2(`/folders/folders/${idFor(path)}`, true)
+        }
+      };
+    },
+    "POST /folders/folders": async ({ services, request }) => {
+      const drive = requireDrive(services);
+      const body = request.body ?? {};
+      if (!body.name) throw new ApiError(400, "A folder name is required.");
+      const parentUri = request.query?.parentFolderUri ?? body.parentFolderUri;
+      const parent = parentUri ? await pathForId(drive, String(parentUri).split("/").pop()) : "/";
+      const path = normalisePath(`${parent}/${body.name}`);
+      await drive.mkdir(path);
+      return { status: 201, body: await folderBody(drive, path) };
+    },
+    "PATCH /folders/folders/{}": async ({ services, request, params }) => {
+      const drive = requireDrive(services);
+      if (params.id === idFor("@myRecycleBin"))
+        throw new ApiError(400, "The recycle bin cannot be moved or renamed.");
+      const path = await pathForId(drive, params.id);
+      const body = request.body ?? {};
+      if (isRecycleBin(body.parentFolderUri)) {
+        const removed = await folderBody(drive, path);
+        await drive.rmdir(path);
+        return {
+          status: 200,
+          body: { ...removed, parentFolderUri: String(body.parentFolderUri) }
+        };
+      }
+      const name = body.name ?? path.split("/").pop();
+      const parent = body.parentFolderUri === void 0 ? path.split("/").slice(0, -1).join("/") || "/" : body.parentFolderUri === "" ? "/" : await pathForId(
+        drive,
+        body.parentFolderUri.split("/").pop()
+      );
+      const target = normalisePath(`${parent}/${name}`);
+      if (target !== path) await drive.rename(path, target);
+      return { status: 200, body: await folderBody(drive, target) };
+    },
+    ...COMPUTE_HANDLERS,
+    ...FILE_HANDLERS
+  };
+
+  // src/viya/dispatch.ts
+  var escape2 = (segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  var compiled2 = VIYA_OPERATIONS.filter(
+    (operation) => operation.path.includes("{}")
+  ).map((operation) => ({
+    operation,
+    pattern: new RegExp(
+      "^" + operation.path.split("/").map((segment) => segment === "{}" ? "([^/]+)" : escape2(segment)).join("/") + "$",
+      // the static segments ignore case, as the hosts do
+      "i"
+    )
+  }));
+  var exact2 = /* @__PURE__ */ new Map();
+  for (const operation of VIYA_OPERATIONS)
+    if (!operation.path.includes("{}"))
+      exact2.set(`${operation.method} ${operation.path}`.toLowerCase(), operation);
+  var findViyaOperation = (method, path) => {
+    const verb = method.toUpperCase();
+    const clean = path.split("?")[0].replace(/\/+$/, "") || "/";
+    const staticHit = exact2.get(`${verb} ${clean}`.toLowerCase());
+    if (staticHit) return { operation: staticHit, segments: [] };
+    for (const candidate of compiled2) {
+      if (candidate.operation.method !== verb) continue;
+      const match = candidate.pattern.exec(clean);
+      if (match)
+        return {
+          operation: candidate.operation,
+          segments: match.slice(1).map((segment) => {
+            try {
+              return decodeURIComponent(segment);
+            } catch {
+              return segment;
+            }
+          })
+        };
+    }
+    return void 0;
+  };
+  var dispatchViya = async (services, method, path, request = {}) => {
+    const headers = emulatedHeaders();
+    const found = findViyaOperation(method, path);
+    if (!found)
+      return {
+        status: 404,
+        headers,
+        body: {
+          version: 2,
+          httpStatusCode: 404,
+          errorCode: 404,
+          message: `No operation is emulated at ${method.toUpperCase()} ${path}. The emulated estate answers the client's call surface and nothing else.`
+        }
+      };
+    const entry = VIYA_OVERLAY[found.operation.id];
+    if (!entry)
+      return {
+        status: 501,
+        headers,
+        body: { message: `${found.operation.id} has no decision in the overlay.` }
+      };
+    if (!entry.implemented)
+      return {
+        status: 501,
+        headers,
+        body: {
+          message: `${found.operation.id} is not emulated. ${entry.reason ?? ""}`.trim()
+        }
+      };
+    const handler = VIYA_HANDLERS[found.operation.id];
+    if (!handler)
+      return {
+        status: 501,
+        headers,
+        body: {
+          message: `${found.operation.id} is marked implemented, but no handler answers it.`
+        }
+      };
+    try {
+      const answer = await handler({
+        services,
+        request,
+        params: {
+          id: found.segments[0],
+          segments: found.segments
+        }
+      });
+      return {
+        ...answer,
+        // the emulated headers are spread LAST: they are the invariant this module
+        // exists to guarantee, so a handler cannot overwrite the stamp even by
+        // returning headers of its own
+        headers: { ...answer.headers, ...headers }
+      };
+    } catch (error) {
+      if (isApiError(error))
+        return {
+          status: error.status,
+          headers,
+          body: error.body ?? {
+            version: 2,
+            httpStatusCode: error.status,
+            errorCode: error.status,
+            message: error.message
+          }
+        };
+      return {
+        status: 500,
+        headers,
+        body: {
+          version: 2,
+          httpStatusCode: 500,
+          errorCode: 500,
+          message: String(error?.message ?? error)
+        }
+      };
+    }
+  };
+
+  // src/corpus/viya/operations.ts
+  var VIYA_CORPUS = [
+    {
+      route: "GET /compute/contexts",
+      step: "compute/context-by-name",
+      queries: ["filter", "limit"],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            createdBy: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            name: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
+      route: "POST /compute/contexts/{}/sessions",
+      step: "compute/execute-script",
+      queries: [],
+      statuses: [201],
+      expected: 201,
+      shape: {
+        applicationName: "string",
+        attributes: {
+          homeDirectory: "string",
+          sessionInactiveTimeout: "number"
+        },
+        creationTimeStamp: "string",
+        environment: {
+          autoExecLines: ["string"]
+        },
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        owner: "string",
+        serverId: "string",
+        serviceAPIVersion: "number",
+        sessionConditionCode: "number",
+        state: "string",
+        stateElapsedTime: "number",
+        version: "number"
+      }
+    },
+    {
+      route: "DELETE /compute/sessions/{}",
+      step: "compute/session-delete",
+      queries: [],
+      statuses: [204],
+      expected: 204,
+      shape: void 0
+    },
+    {
+      route: "POST /compute/sessions/{}/jobs",
+      step: "compute/execute-script",
+      queries: [],
+      statuses: [201],
+      expected: 201,
+      shape: {
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        sessionId: "string",
+        state: "string",
+        stateElapsedTime: "number",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /compute/sessions/{}/jobs/{}",
+      step: "compute/execute-script",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        completedTimeStamp: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        jobConditionCode: "number",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        listingStatistics: {
+          lineCount: "number",
+          modifiedTimeStamp: "string"
+        },
+        logStatistics: {
+          lineCount: "number",
+          modifiedTimeStamp: "string"
+        },
+        sessionId: "string",
+        state: "string",
+        stateElapsedTime: "number",
+        statistics: {
+          systemCpuTime: "number",
+          userCpuTime: "number"
+        },
+        version: "number"
+      }
+    },
+    {
+      route: "GET /compute/sessions/{}/jobs/{}/log/content",
+      step: "compute/execute-script",
+      queries: ["limit", "start"],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            line: "string",
+            type: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /compute/sessions/{}/jobs/{}/state",
+      step: "compute/execute-script",
+      queries: ["_action", "wait"],
+      statuses: [200],
+      expected: 200,
+      shape: void 0
+    },
+    {
+      route: "GET /compute/sessions/{}/state",
+      step: "compute/execute-script",
+      queries: ["wait"],
+      statuses: [200],
+      expected: 200,
+      shape: void 0
+    },
+    {
+      route: "POST /files/files",
+      step: "files/create",
+      queries: ["parentFolderUri", "typeDefName"],
+      statuses: [201],
+      expected: 201,
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {},
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      route: "GET /files/files/{}",
+      step: "files/replace",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {
+          "content.download": "string",
+          "content.openInBrowser": "string",
+          "content.preview": "string",
+          sasIconKey: "string",
+          typeRegistrant: "string"
+        },
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      route: "PATCH /files/files/{}",
+      step: "files/create",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {
+          "content.download": "string",
+          "content.openInBrowser": "string",
+          "content.preview": "string",
+          sasIconKey: "string",
+          typeRegistrant: "string"
+        },
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      route: "GET /files/files/{}/content",
+      step: "files/content",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: void 0
+    },
+    {
+      route: "PUT /files/files/{}/content",
+      step: "files/replace",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        contentDisposition: "string",
+        contentType: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        encoding: "string",
+        fileStatus: "string",
+        fileVersion: "number",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        properties: {
+          "content.download": "string",
+          "content.openInBrowser": "string",
+          "content.preview": "string",
+          sasIconKey: "string",
+          typeRegistrant: "string"
+        },
+        quarantine: "boolean",
+        searchable: "boolean",
+        size: "number",
+        typeDefName: "string",
+        urlDetected: "boolean",
+        version: "number",
+        virusDetected: "boolean"
+      }
+    },
+    {
+      route: "POST /folders/folders",
+      step: "folders/create",
+      queries: ["parentFolderUri"],
+      statuses: [201],
+      expected: 201,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /folders/folders/{}",
+      step: "folders/delete",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        description: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        properties: {
+          allowMove: "string"
+        },
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "PATCH /folders/folders/{}",
+      step: "folders/delete",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /folders/folders/{}/members",
+      step: "files/content",
+      queries: ["limit"],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            added: "string",
+            contentType: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parentFolderUri: "string",
+            type: "string",
+            uri: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /folders/folders/@item",
+      step: "files/content",
+      queries: ["path"],
+      statuses: [200, 401, 404],
+      expected: 200,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        description: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /folders/folders/@myRecycleBin",
+      step: "folders/delete",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        description: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        memberCount: "number",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parentFolderUri: "string",
+        properties: {
+          allowMove: "string"
+        },
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /identities/users/@currentUser",
+      step: "identities/current-user",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        addresses: [
+          {
+            locality: "string",
+            type: "string"
+          }
+        ],
+        emailAddresses: [
+          {
+            type: "string",
+            value: "string"
+          }
+        ],
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        providerId: "string",
+        state: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "POST /SASLogon/oauth/token",
+      step: "auth/token-refresh",
+      queries: [],
+      statuses: [200, 401],
+      expected: 200,
+      shape: {
+        access_token: "string",
+        expires_in: "number",
+        id_token: "string",
+        jti: "string",
+        refresh_expires_in: "number",
+        refresh_revocable: "boolean",
+        refresh_token: "string",
+        revocable: "boolean",
+        scope: "string",
+        token_type: "string"
+      }
+    },
+    {
+      route: "GET /types/types",
+      step: "files/create",
+      queries: ["limit"],
+      statuses: [200],
+      expected: 200,
+      shape: void 0
+    }
+  ];
+
   // src/appstream/identity.ts
   var normaliseAppLoc = (appLoc) => {
     if (typeof appLoc !== "string" || appLoc === "")
@@ -3231,7 +6127,28 @@ var SASjsApi = (() => {
     if (value === void 0) return defaultAppName(appLoc);
     if (typeof value !== "string" || value.trim() === "")
       throw new ApiError(400, '"name" must be a non-empty string');
-    return value.trim();
+    return urlSafeName(value.trim());
+  };
+  var NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/;
+  var NAME_MAX_LENGTH = 64;
+  var RESERVED_NAMES = ["apps.json", "index.html"];
+  var urlSafeName = (name) => {
+    if (name.length > NAME_MAX_LENGTH)
+      throw new ApiError(
+        400,
+        `"name" must be at most ${NAME_MAX_LENGTH} characters, and "${name}" is ${name.length}.`
+      );
+    if (!NAME_PATTERN.test(name))
+      throw new ApiError(
+        400,
+        `"name" must be usable as a URL segment - letters, digits, dot, dash, underscore or tilde, starting with a letter or digit - so "/app/${name}" can be opened. "${name}" is not, because it carries a character that has to be percent-encoded, or a space.`
+      );
+    if (RESERVED_NAMES.includes(name.toLowerCase()))
+      throw new ApiError(
+        400,
+        `"name" cannot be "${name}": the App Stream answers /app/${name} itself, so an app with that name could never be opened by name.`
+      );
+    return name;
   };
   var logoOf = (value) => {
     if (value === void 0) return void 0;
@@ -3291,11 +6208,23 @@ var SASjsApi = (() => {
           );
           const logo = checked.logo;
           const frameAncestors = checked.frameAncestors;
+          const statedName = checked.name;
+          const name = statedName !== void 0 ? nameOf(statedName, appLoc) : existing?.name ?? nameOf(void 0, appLoc);
+          if (statedName !== void 0) {
+            const clash = entries.find(
+              (candidate) => !sameAppLoc(candidate.appLoc, appLoc) && candidate.name.toLowerCase() === name.toLowerCase()
+            );
+            if (clash)
+              throw new ApiError(
+                409,
+                `The name "${name}" is already the address of the app published at ${clash.appLoc}. A stated name is how the app opens (/app/${name}), and two apps holding one name would answer an ambiguous lookup with nothing, so publish this one under a different name.`
+              );
+          }
           const entry = {
             id: existing ? existing.id : newAppId(),
             // the label is the one field a redeploy inherits: everything else is
             // what this publish states
-            name: nameOf(checked.name ?? existing?.name, appLoc),
+            name,
             appLoc,
             streamWebFolder,
             ...logo === void 0 ? {} : { logo },
@@ -3446,6 +6375,12 @@ var SASjsApi = (() => {
         throw new ApiError(400, `"${param.name}" is not allowed to be empty`);
     }
   };
+  var APP_ENTRY_FILE = "index.html";
+  var APP_NOT_REGISTERED = "No App Stream is registered with that id.";
+  var appNotRegistered = () => new ApiError(404, APP_NOT_REGISTERED, {
+    status: "failure",
+    message: APP_NOT_REGISTERED
+  });
   var targetPath = (request) => {
     const fromQuery = request.query?._filePath;
     const fromBody = request.body?.filePath;
@@ -3710,6 +6645,52 @@ var SASjsApi = (() => {
           status: 200,
           body: { status: "success", app: appSummary(removed) }
         };
+      }
+      // --------------------------------------------------- what an app *is*
+      //
+      // The surface serves an app's files; this describes the app itself - the entry
+      // as registered, and whether the file it is served from is there. Addressed by id,
+      // which is what a publish answers with and what the app's URL carries: a label is
+      // shared by design, so "the app with this name" is not one app.
+      case "GET /SASjsApi/app/{id}": {
+        if (!services.appStream)
+          throw new ApiError(
+            501,
+            `This host has no app stream, so it cannot answer ${routeId}.`
+          );
+        const entry = await services.appStream.get(String(params.id ?? "")).catch((err) => {
+          if (isApiError(err) && err.status === 404) throw appNotRegistered();
+          throw err;
+        });
+        const folder = `${entry.appLoc}/services/${entry.streamWebFolder}`;
+        let entryFileExists = false;
+        let lastModified = null;
+        try {
+          const { tree } = await drive.tree(folder);
+          const file = tree.children.find(
+            (child) => child.name === APP_ENTRY_FILE && !child.isFolder
+          );
+          entryFileExists = file !== void 0;
+          lastModified = file?.modified ?? null;
+        } catch (err) {
+          if (!isApiError(err) || err.status !== 404) throw err;
+          entryFileExists = false;
+        }
+        const body2 = {
+          id: entry.id,
+          name: entry.name,
+          appLoc: entry.appLoc,
+          streamWebFolder: entry.streamWebFolder,
+          publishedAt: entry.publishedAt ?? null,
+          entryFile: APP_ENTRY_FILE,
+          entryFileExists,
+          lastModified,
+          url: `/app/${entry.id}/`
+        };
+        if (entry.logo !== void 0) body2.logo = entry.logo;
+        if (entry.frameAncestors !== void 0)
+          body2.frameAncestors = entry.frameAncestors;
+        return { status: 200, body: body2 };
       }
       case "GET /SASjsApi/drive/filetree":
         return { status: 200, body: await drive.tree(query._folderPath) };
@@ -4050,6 +7031,7 @@ var SASjsApi = (() => {
     "DELETE /SASjsApi/drive/folder",
     "POST /SASjsApi/drive/rename",
     "GET /SASjsApi/drive/filetree",
+    "GET /SASjsApi/app/{id}",
     "POST /SASjsApi/drive/deploy",
     "POST /SASjsApi/auth/token",
     "POST /SASjsApi/auth/refresh",
@@ -6858,6 +9840,478 @@ var SASjsApi = (() => {
     }
   ];
 
+  // src/session/service.ts
+  var createSessionService = (directory, host) => {
+    const notFound2 = (id) => `Session with ID '${id}' was not found.`;
+    const visible = async (caller, id) => {
+      if (!caller) throw new ApiError(401, "Unauthorized");
+      const reader = await directory.userById(
+        caller.userId
+      );
+      if (!reader || !reader.isActive) throw new ApiError(401, "Unauthorized");
+      const session = await host.session(id);
+      if (!session) throw new ApiError(404, notFound2(id));
+      const owner = session.owner;
+      if (owner !== reader.uid && owner !== reader.username && !reader.isAdmin)
+        throw new ApiError(404, notFound2(id));
+      return session;
+    };
+    return {
+      async summary(caller, id) {
+        const session = await visible(caller, id);
+        return session.summary;
+      },
+      async state(caller, id) {
+        await visible(caller, id);
+        const state = await host.state(id);
+        if (!state) throw new ApiError(404, notFound2(id));
+        return state;
+      },
+      async log(caller, id) {
+        await visible(caller, id);
+        const log = await host.log(id);
+        if (log === void 0) throw new ApiError(404, notFound2(id));
+        return log;
+      },
+      async output(caller, id) {
+        await visible(caller, id);
+        const output = await host.output(id);
+        if (output === void 0) throw new ApiError(404, notFound2(id));
+        return output;
+      }
+    };
+  };
+
+  // src/runtime/runTimes.ts
+  var DOCUMENTED_RUN_TIMES = ["sas", "js", "py", "r", "sasviya"];
+
+  // src/runtime/program.ts
+  var programNotFound = (given2) => `The Program at (${given2}) does not exist.`;
+  var notThere = (given2) => new ApiError(400, programNotFound(given2));
+  var runTimeOfPath = (path) => {
+    const file = path.split(/[\\/]/).pop() || "";
+    const dot = file.lastIndexOf(".");
+    const extension = dot > 0 ? file.slice(dot + 1).toLowerCase() : "";
+    return DOCUMENTED_RUN_TIMES.includes(extension) ? extension : void 0;
+  };
+  var resolveProgram = async (given2, deps) => {
+    const resolved = deps.resolve(given2);
+    if (resolved === null) throw notThere(given2);
+    const extension = runTimeOfPath(resolved);
+    if (extension !== void 0) {
+      if (await deps.exists(resolved))
+        return { path: resolved, runTime: extension };
+    } else {
+      for (const runTime of deps.runTimes) {
+        const candidate = `${resolved}.${runTime}`;
+        if (await deps.exists(candidate)) return { path: candidate, runTime };
+      }
+    }
+    throw notThere(given2);
+  };
+
+  // src/runtime/service.ts
+  var CODE_DEBUG = 131;
+  var parseDebugValue = (value) => {
+    if (value === void 0 || value === null || value === "") return void 0;
+    if (typeof value === "number")
+      return Number.isFinite(value) ? value : void 0;
+    const text2 = String(value).trim();
+    if (!text2) return void 0;
+    return /^[+-]?\d+$/.test(text2) ? Number(text2) : CODE_DEBUG;
+  };
+  var pad = (value) => String(value).padStart(2, "0");
+  var timestamp = (now) => [
+    now.getFullYear(),
+    pad(now.getMonth() + 1),
+    pad(now.getDate()),
+    pad(now.getHours()),
+    pad(now.getMinutes()),
+    pad(now.getSeconds())
+  ].join("");
+  var newSessionId = (now) => `${timestamp(now)}-${Math.round(Math.random() * 1e5)}-${now.getTime()}`;
+  var notThere2 = (programPath) => programNotFound(programPath);
+  var failedRun = (error) => {
+    const message = "Job execution failed.";
+    throw new ApiError(400, message, {
+      status: "failure",
+      message,
+      error: String(error)
+    });
+  };
+  var createRuntimeService = (directory, runner, options = {}) => {
+    const runTimes = options.runTimes || DOCUMENTED_RUN_TIMES;
+    const callerOf = async (caller) => {
+      if (!caller) throw new ApiError(401, "Unauthorized");
+      const reader = await directory.userById(caller.userId);
+      if (!reader || !reader.isActive) throw new ApiError(401, "Unauthorized");
+      return reader;
+    };
+    const programOf2 = (request) => {
+      if (request.source === "code") {
+        if (request.code === void 0)
+          throw new ApiError(400, '"code" is required');
+        if (typeof request.code !== "string")
+          throw new ApiError(400, '"code" must be a string');
+        if (request.code === "")
+          throw new ApiError(400, '"code" is not allowed to be empty');
+        return { code: request.code };
+      }
+      if (request.program === void 0)
+        throw new ApiError(400, '"_program" is required');
+      if (typeof request.program !== "string")
+        throw new ApiError(400, '"_program" must be a string');
+      if (request.program === "")
+        throw new ApiError(400, '"_program" is not allowed to be empty');
+      const resolved = normaliseDrivePath(request.program);
+      if (resolved === null) return failedRun(notThere2(request.program));
+      return { path: resolved };
+    };
+    const runTimeForPath = (path, request) => (
+      // the extension rule is `resolveProgram`'s; this asks it and falls back to what
+      // the request stated, which is the part that is this route's
+      runTimeOfPath(path) ?? runTimeOf(request)
+    );
+    const runTimeOf = (request) => {
+      if (request.runTime === void 0) {
+        if (request.source === "code")
+          throw new ApiError(400, '"runTime" is required');
+        return void 0;
+      }
+      if (typeof request.runTime !== "string")
+        throw new ApiError(400, '"runTime" must be a string');
+      if (!runTimes.includes(request.runTime))
+        throw new ApiError(
+          400,
+          `"runTime" must be one of [${runTimes.join(", ")}]`
+        );
+      return request.runTime;
+    };
+    const expiryOf = (request) => {
+      const value = request.expiresAfterMins;
+      if (value === void 0) return void 0;
+      const minutes = typeof value === "number" ? value : typeof value === "string" && /^\s*[+-]?\d+(\.\d+)?\s*$/.test(value) ? Number(value) : NaN;
+      if (Number.isNaN(minutes))
+        throw new ApiError(400, '"expiresAfterMins" must be a number');
+      if (minutes <= 0)
+        throw new ApiError(400, '"expiresAfterMins" must be greater than 0');
+      return minutes;
+    };
+    const prepare = async (caller, request) => {
+      const reader = await callerOf(caller);
+      const program = programOf2(request);
+      const vars = { ...request.vars || {} };
+      const debug = "code" in program ? CODE_DEBUG : parseDebugValue(vars._debug);
+      if (debug === void 0) delete vars._debug;
+      else vars._debug = debug;
+      return {
+        reader,
+        program,
+        vars,
+        // a code route's run time is the one it named; a stored program's is the
+        // one its extension names, when it names one at all
+        runTime: "code" in program ? runTimeOf(request) : runTimeForPath(program.path, request)
+      };
+    };
+    return {
+      async execute(caller, request) {
+        const prepared = await prepare(caller, request);
+        let outcome;
+        try {
+          outcome = await runner.run({
+            program: prepared.program,
+            vars: prepared.vars,
+            runTime: prepared.runTime,
+            files: request.files
+          });
+        } catch (error) {
+          return failedRun(error);
+        }
+        return outcome.output || { contents: "" };
+      },
+      async trigger(caller, request) {
+        const prepared = await prepare(caller, request);
+        const expiresAfterMins = expiryOf(request);
+        const session = {
+          sessionId: newSessionId(/* @__PURE__ */ new Date()),
+          owner: prepared.reader.uid,
+          ...prepared.runTime === void 0 ? {} : { runTime: prepared.runTime },
+          ...expiresAfterMins === void 0 ? {} : { expiresAfterMins }
+        };
+        let outcome;
+        try {
+          outcome = await runner.run({
+            program: prepared.program,
+            vars: prepared.vars,
+            runTime: prepared.runTime,
+            session,
+            files: request.files
+          });
+        } catch (error) {
+          return failedRun(error);
+        }
+        return outcome.pid === void 0 ? { sessionId: session.sessionId } : { sessionId: session.sessionId, pid: outcome.pid };
+      }
+    };
+  };
+
+  // src/session/memory-host.ts
+  var DEFAULT_SESSIONS = {
+    "sess-admin": {
+      owner: "user-admin",
+      summary: {
+        sessionId: "sess-admin",
+        state: "completed",
+        pid: 4242,
+        creationTimeStamp: "2026-11-07T09:00:00.000Z",
+        deathTimeStamp: "2026-11-07T09:00:04.000Z",
+        expiresAfterMins: { mins: 60, used: false }
+      }
+    },
+    "sess-restricted": {
+      owner: "user-restricted",
+      summary: {
+        sessionId: "sess-restricted",
+        state: "running",
+        pid: 4243,
+        creationTimeStamp: "2026-11-07T09:05:00.000Z",
+        // the document makes both stamps required, and a real session carries
+        // the death stamp from the moment it is created: sasjs/server writes
+        // creation + its default lifetime, which is what a poller reads to know
+        // when the folder will be gone. A running session without one is a shape
+        // no host produces.
+        deathTimeStamp: "2026-11-07T09:20:00.000Z"
+      }
+    },
+    "sess-silent": {
+      owner: "user-admin",
+      summary: {
+        sessionId: "sess-silent",
+        state: "running",
+        pid: 4244,
+        creationTimeStamp: "2026-11-07T09:10:00.000Z"
+      }
+    }
+  };
+  var STATES = {
+    // `state` alone: the document's SessionStateResponse allows no other property,
+    // and a mock that answered `pid` or a line count would let a case pass here
+    // and fail against a server that answers the shape the document states
+    "sess-admin": { state: "completed" },
+    "sess-restricted": { state: "running" }
+  };
+  var LOGS = {
+    "sess-admin": "NOTE: session started\nNOTE: session completed\n",
+    "sess-restricted": "NOTE: session started\n",
+    "sess-silent": ""
+  };
+  var OUTPUTS = {
+    "sess-admin": {
+      contents: "<html><body>42</body></html>",
+      contentType: "text/html"
+    },
+    "sess-restricted": { contents: "" },
+    "sess-silent": { contents: "" }
+  };
+  var MemorySessionHost = class {
+    constructor(sessions = {
+      ...DEFAULT_SESSIONS
+    }, states = {
+      ...STATES
+    }, logs = { ...LOGS }, outputs = {
+      ...OUTPUTS
+    }) {
+      this.sessions = sessions;
+      this.states = states;
+      this.logs = logs;
+      this.outputs = outputs;
+    }
+    async session(id) {
+      return this.sessions[id];
+    }
+    async state(id) {
+      return this.states[id];
+    }
+    async log(id) {
+      return this.logs[id];
+    }
+    async output(id) {
+      return this.outputs[id];
+    }
+  };
+
+  // src/runtime/memory-runner.ts
+  var MemorySessionRunner = class extends MemorySessionHost {
+    constructor(options = {}) {
+      super();
+      this.options = options;
+    }
+    async run(request) {
+      if (this.options.fail) throw new Error("the mock run failed");
+      const key = "code" in request.program ? request.program.code : request.program.path;
+      const output = this.options.outputs?.[key] || { contents: "" };
+      const pid = this.options.pid;
+      if (request.session) {
+        const { sessionId, owner, expiresAfterMins } = request.session;
+        const started = (/* @__PURE__ */ new Date()).toISOString();
+        const summary = {
+          sessionId,
+          // the work is finished by the time this returns: a memory runner has
+          // nothing to wait for, and the session routes report what it did
+          state: "completed",
+          creationTimeStamp: started,
+          deathTimeStamp: started
+        };
+        if (pid !== void 0) summary.pid = pid;
+        if (expiresAfterMins !== void 0)
+          summary.expiresAfterMins = { mins: expiresAfterMins, used: false };
+        this.sessions[sessionId] = { owner, summary };
+        this.states[sessionId] = { state: "completed" };
+        this.logs[sessionId] = "";
+        this.outputs[sessionId] = output;
+      }
+      return pid === void 0 ? { output } : { output, pid };
+    }
+  };
+
+  // src/corpus/runner.ts
+  var CORPUS_APP = {
+    id: "6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60",
+    name: "myApp",
+    appLoc: "/Public/myApp",
+    streamWebFolder: "web",
+    publishedAt: "2026-01-01T00:00:00.000Z"
+  };
+  var servicesFor = (testCase) => {
+    const identity = new MemoryIdentityStore(
+      testCase.identity || DEFAULT_IDENTITY
+    );
+    const runner = new MemorySessionRunner({
+      fail: testCase.failingRun,
+      outputs: testCase.runOutput ? { [programOf(testCase)]: testCase.runOutput } : void 0
+    });
+    return {
+      drive: createDriveService(
+        testCase.unwritable ? new RefusingDriveStore(testCase.seed || {}) : new MemoryDriveStore(testCase.seed || {})
+      ),
+      info: createInfoService(BROWSER_INFO),
+      home: createHomeService(async () => CORPUS_WEB_PAGE),
+      authConfig: createAuthConfigService(CORPUS_AUTH_CONFIG),
+      admin: createAdminService({
+        diagnostics: async () => CORPUS_DIAGNOSTICS,
+        logs: async () => [CORPUS_LOG],
+        logTail: async (fileName) => fileName === CORPUS_LOG.name ? CORPUS_LOG_TAIL : void 0
+      }),
+      directory: createDirectoryService(identity, CORPUS_DIRECTORY),
+      identity: createIdentityService(identity),
+      records: createRecordService(identity),
+      appStream: createAppStreamService(new MemoryAppStreamStore([CORPUS_APP])),
+      session: createSessionService(identity, runner),
+      // no `runTimes` option: the default is the five the document names, so a
+      // case is never refused for a reason that belongs to one host's install
+      runtime: createRuntimeService(identity, runner)
+    };
+  };
+  var programOf = (testCase) => String(
+    testCase.request.query?._program ?? testCase.request.body?._program ?? testCase.request.body?.code ?? ""
+  );
+  var RefusingDriveStore = class extends MemoryDriveStore {
+    async write() {
+      throw new Error("the store refused the write");
+    }
+    async mkdirp() {
+      throw new Error("the store refused the write");
+    }
+  };
+  var checkDrive = async (testCase, services) => {
+    if (!testCase.expectDrive || !services.drive) return;
+    const holds = async (path) => {
+      try {
+        await services.drive.read(path);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+    for (const path of testCase.expectDrive.present || [])
+      if (!await holds(path))
+        throw new Error(
+          `${testCase.id}: expected a file at ${path}, and the drive has none`
+        );
+    for (const path of testCase.expectDrive.missing || [])
+      if (await holds(path))
+        throw new Error(
+          `${testCase.id}: expected no file at ${path}, and the drive still holds one`
+        );
+  };
+  var runCase = async (testCase, services = servicesFor(testCase)) => {
+    try {
+      const response = await dispatch(services, testCase.route, testCase.request);
+      await checkDrive(testCase, services);
+      return {
+        status: response.status,
+        body: response.body,
+        contents: response.contents
+      };
+    } catch (error) {
+      if (isApiError(error))
+        return { status: error.status, body: error.body, error: error.message };
+      throw error;
+    }
+  };
+
+  // src/corpus/app.ts
+  var SUBJECT2 = { userId: "user-admin", clientId: "web_app" };
+  var ENTRY_FILE_PATH = `${CORPUS_APP.appLoc}/services/${CORPUS_APP.streamWebFolder}/index.html`;
+  var APP_CORPUS = [
+    {
+      id: "app-detail-published",
+      route: "GET /SASjsApi/app/{id}",
+      description: "describes the app the id names, and the entry file it is served from",
+      // the deployment the index entry points at: the entry file is on the drive, so
+      // `entryFileExists` is the answer this case is really about
+      seed: { [ENTRY_FILE_PATH]: "<!doctype html><title>app</title>" },
+      request: { subject: SUBJECT2, params: { id: CORPUS_APP.id } },
+      expect: {
+        status: 200,
+        // the entry as registered, and the file it is served from. `lastModified` is
+        // the host's clock and not pinned: a drive with no clock answers `null`, one
+        // with a filesystem answers the time the seed was written.
+        partial: {
+          id: CORPUS_APP.id,
+          name: CORPUS_APP.name,
+          appLoc: CORPUS_APP.appLoc,
+          streamWebFolder: CORPUS_APP.streamWebFolder,
+          publishedAt: CORPUS_APP.publishedAt,
+          entryFile: "index.html",
+          entryFileExists: true,
+          url: `/app/${CORPUS_APP.id}/`
+        }
+      }
+    },
+    {
+      id: "app-detail-entry-file-missing",
+      route: "GET /SASjsApi/app/{id}",
+      description: "answers the entry as registered with no file and no date, for a deployment that is gone",
+      // the index entry outlived its folder: no seed, so nothing is deployed
+      request: { subject: SUBJECT2, params: { id: CORPUS_APP.id } },
+      expect: {
+        status: 200,
+        partial: { entryFileExists: false, lastModified: null }
+      }
+    },
+    {
+      id: "app-detail-unknown-id",
+      route: "GET /SASjsApi/app/{id}",
+      description: "refuses an id the index does not hold, in the route’s own wording",
+      request: {
+        subject: SUBJECT2,
+        params: { id: "9a9a9a9a-9a9a-4a9a-8a9a-9a9a9a9a9a9a" }
+      },
+      expect: { status: 404, error: "No App Stream is registered with that id." }
+    }
+  ];
+
   // src/corpus/session.ts
   var ADMIN = { userId: "user-admin", clientId: "web_app" };
   var RESTRICTED = { userId: "user-restricted", clientId: "web_app" };
@@ -7001,315 +10455,6 @@ var SASjsApi = (() => {
       expect: { status: 404, error: notFound("sess-admin") }
     }
   ];
-
-  // src/session/service.ts
-  var createSessionService = (directory, host) => {
-    const notFound2 = (id) => `Session with ID '${id}' was not found.`;
-    const visible = async (caller, id) => {
-      if (!caller) throw new ApiError(401, "Unauthorized");
-      const reader = await directory.userById(
-        caller.userId
-      );
-      if (!reader || !reader.isActive) throw new ApiError(401, "Unauthorized");
-      const session = await host.session(id);
-      if (!session) throw new ApiError(404, notFound2(id));
-      const owner = session.owner;
-      if (owner !== reader.uid && owner !== reader.username && !reader.isAdmin)
-        throw new ApiError(404, notFound2(id));
-      return session;
-    };
-    return {
-      async summary(caller, id) {
-        const session = await visible(caller, id);
-        return session.summary;
-      },
-      async state(caller, id) {
-        await visible(caller, id);
-        const state = await host.state(id);
-        if (!state) throw new ApiError(404, notFound2(id));
-        return state;
-      },
-      async log(caller, id) {
-        await visible(caller, id);
-        const log = await host.log(id);
-        if (log === void 0) throw new ApiError(404, notFound2(id));
-        return log;
-      },
-      async output(caller, id) {
-        await visible(caller, id);
-        const output = await host.output(id);
-        if (output === void 0) throw new ApiError(404, notFound2(id));
-        return output;
-      }
-    };
-  };
-
-  // src/session/memory-host.ts
-  var DEFAULT_SESSIONS = {
-    "sess-admin": {
-      owner: "user-admin",
-      summary: {
-        sessionId: "sess-admin",
-        state: "completed",
-        pid: 4242,
-        creationTimeStamp: "2026-11-07T09:00:00.000Z",
-        deathTimeStamp: "2026-11-07T09:00:04.000Z",
-        expiresAfterMins: { mins: 60, used: false }
-      }
-    },
-    "sess-restricted": {
-      owner: "user-restricted",
-      summary: {
-        sessionId: "sess-restricted",
-        state: "running",
-        pid: 4243,
-        creationTimeStamp: "2026-11-07T09:05:00.000Z",
-        // the document makes both stamps required, and a real session carries
-        // the death stamp from the moment it is created: sasjs/server writes
-        // creation + its default lifetime, which is what a poller reads to know
-        // when the folder will be gone. A running session without one is a shape
-        // no host produces.
-        deathTimeStamp: "2026-11-07T09:20:00.000Z"
-      }
-    },
-    "sess-silent": {
-      owner: "user-admin",
-      summary: {
-        sessionId: "sess-silent",
-        state: "running",
-        pid: 4244,
-        creationTimeStamp: "2026-11-07T09:10:00.000Z"
-      }
-    }
-  };
-  var STATES = {
-    // `state` alone: the document's SessionStateResponse allows no other property,
-    // and a mock that answered `pid` or a line count would let a case pass here
-    // and fail against a server that answers the shape the document states
-    "sess-admin": { state: "completed" },
-    "sess-restricted": { state: "running" }
-  };
-  var LOGS = {
-    "sess-admin": "NOTE: session started\nNOTE: session completed\n",
-    "sess-restricted": "NOTE: session started\n",
-    "sess-silent": ""
-  };
-  var OUTPUTS = {
-    "sess-admin": {
-      contents: "<html><body>42</body></html>",
-      contentType: "text/html"
-    },
-    "sess-restricted": { contents: "" },
-    "sess-silent": { contents: "" }
-  };
-  var MemorySessionHost = class {
-    constructor(sessions = {
-      ...DEFAULT_SESSIONS
-    }, states = {
-      ...STATES
-    }, logs = { ...LOGS }, outputs = {
-      ...OUTPUTS
-    }) {
-      this.sessions = sessions;
-      this.states = states;
-      this.logs = logs;
-      this.outputs = outputs;
-    }
-    async session(id) {
-      return this.sessions[id];
-    }
-    async state(id) {
-      return this.states[id];
-    }
-    async log(id) {
-      return this.logs[id];
-    }
-    async output(id) {
-      return this.outputs[id];
-    }
-  };
-
-  // src/runtime/service.ts
-  var CODE_DEBUG = 131;
-  var DOCUMENTED_RUN_TIMES = ["sas", "js", "py", "r", "sasviya"];
-  var parseDebugValue = (value) => {
-    if (value === void 0 || value === null || value === "") return void 0;
-    if (typeof value === "number")
-      return Number.isFinite(value) ? value : void 0;
-    const text2 = String(value).trim();
-    if (!text2) return void 0;
-    return /^[+-]?\d+$/.test(text2) ? Number(text2) : CODE_DEBUG;
-  };
-  var pad = (value) => String(value).padStart(2, "0");
-  var timestamp = (now) => [
-    now.getFullYear(),
-    pad(now.getMonth() + 1),
-    pad(now.getDate()),
-    pad(now.getHours()),
-    pad(now.getMinutes()),
-    pad(now.getSeconds())
-  ].join("");
-  var newSessionId = (now) => `${timestamp(now)}-${Math.round(Math.random() * 1e5)}-${now.getTime()}`;
-  var notThere = (programPath) => `The Program at (${programPath}) does not exist.`;
-  var failedRun = (error) => {
-    const message = "Job execution failed.";
-    throw new ApiError(400, message, {
-      status: "failure",
-      message,
-      error: String(error)
-    });
-  };
-  var createRuntimeService = (directory, runner, options = {}) => {
-    const runTimes = options.runTimes || DOCUMENTED_RUN_TIMES;
-    const callerOf = async (caller) => {
-      if (!caller) throw new ApiError(401, "Unauthorized");
-      const reader = await directory.userById(caller.userId);
-      if (!reader || !reader.isActive) throw new ApiError(401, "Unauthorized");
-      return reader;
-    };
-    const programOf2 = (request) => {
-      if (request.source === "code") {
-        if (request.code === void 0)
-          throw new ApiError(400, '"code" is required');
-        if (typeof request.code !== "string")
-          throw new ApiError(400, '"code" must be a string');
-        if (request.code === "")
-          throw new ApiError(400, '"code" is not allowed to be empty');
-        return { code: request.code };
-      }
-      if (request.program === void 0)
-        throw new ApiError(400, '"_program" is required');
-      if (typeof request.program !== "string")
-        throw new ApiError(400, '"_program" must be a string');
-      if (request.program === "")
-        throw new ApiError(400, '"_program" is not allowed to be empty');
-      const resolved = normaliseDrivePath(request.program);
-      if (resolved === null) return failedRun(notThere(request.program));
-      return { path: resolved };
-    };
-    const runTimeForPath = (path, request) => {
-      const file = path.split("/").pop() || "";
-      const dot = file.lastIndexOf(".");
-      const extension = dot > 0 ? file.slice(dot + 1).toLowerCase() : "";
-      if (DOCUMENTED_RUN_TIMES.includes(extension)) return extension;
-      return runTimeOf(request);
-    };
-    const runTimeOf = (request) => {
-      if (request.runTime === void 0) {
-        if (request.source === "code")
-          throw new ApiError(400, '"runTime" is required');
-        return void 0;
-      }
-      if (typeof request.runTime !== "string")
-        throw new ApiError(400, '"runTime" must be a string');
-      if (!runTimes.includes(request.runTime))
-        throw new ApiError(
-          400,
-          `"runTime" must be one of [${runTimes.join(", ")}]`
-        );
-      return request.runTime;
-    };
-    const expiryOf = (request) => {
-      const value = request.expiresAfterMins;
-      if (value === void 0) return void 0;
-      const minutes = typeof value === "number" ? value : typeof value === "string" && /^\s*[+-]?\d+(\.\d+)?\s*$/.test(value) ? Number(value) : NaN;
-      if (Number.isNaN(minutes))
-        throw new ApiError(400, '"expiresAfterMins" must be a number');
-      if (minutes <= 0)
-        throw new ApiError(400, '"expiresAfterMins" must be greater than 0');
-      return minutes;
-    };
-    const prepare = async (caller, request) => {
-      const reader = await callerOf(caller);
-      const program = programOf2(request);
-      const vars = { ...request.vars || {} };
-      const debug = "code" in program ? CODE_DEBUG : parseDebugValue(vars._debug);
-      if (debug === void 0) delete vars._debug;
-      else vars._debug = debug;
-      return {
-        reader,
-        program,
-        vars,
-        // a code route's run time is the one it named; a stored program's is the
-        // one its extension names, when it names one at all
-        runTime: "code" in program ? runTimeOf(request) : runTimeForPath(program.path, request)
-      };
-    };
-    return {
-      async execute(caller, request) {
-        const prepared = await prepare(caller, request);
-        let outcome;
-        try {
-          outcome = await runner.run({
-            program: prepared.program,
-            vars: prepared.vars,
-            runTime: prepared.runTime,
-            files: request.files
-          });
-        } catch (error) {
-          return failedRun(error);
-        }
-        return outcome.output || { contents: "" };
-      },
-      async trigger(caller, request) {
-        const prepared = await prepare(caller, request);
-        const expiresAfterMins = expiryOf(request);
-        const session = {
-          sessionId: newSessionId(/* @__PURE__ */ new Date()),
-          owner: prepared.reader.uid,
-          ...prepared.runTime === void 0 ? {} : { runTime: prepared.runTime },
-          ...expiresAfterMins === void 0 ? {} : { expiresAfterMins }
-        };
-        let outcome;
-        try {
-          outcome = await runner.run({
-            program: prepared.program,
-            vars: prepared.vars,
-            runTime: prepared.runTime,
-            session,
-            files: request.files
-          });
-        } catch (error) {
-          return failedRun(error);
-        }
-        return outcome.pid === void 0 ? { sessionId: session.sessionId } : { sessionId: session.sessionId, pid: outcome.pid };
-      }
-    };
-  };
-
-  // src/runtime/memory-runner.ts
-  var MemorySessionRunner = class extends MemorySessionHost {
-    constructor(options = {}) {
-      super();
-      this.options = options;
-    }
-    async run(request) {
-      if (this.options.fail) throw new Error("the mock run failed");
-      const key = "code" in request.program ? request.program.code : request.program.path;
-      const output = this.options.outputs?.[key] || { contents: "" };
-      const pid = this.options.pid;
-      if (request.session) {
-        const { sessionId, owner, expiresAfterMins } = request.session;
-        const started = (/* @__PURE__ */ new Date()).toISOString();
-        const summary = {
-          sessionId,
-          // the work is finished by the time this returns: a memory runner has
-          // nothing to wait for, and the session routes report what it did
-          state: "completed",
-          creationTimeStamp: started,
-          deathTimeStamp: started
-        };
-        if (pid !== void 0) summary.pid = pid;
-        if (expiresAfterMins !== void 0)
-          summary.expiresAfterMins = { mins: expiresAfterMins, used: false };
-        this.sessions[sessionId] = { owner, summary };
-        this.states[sessionId] = { state: "completed" };
-        this.logs[sessionId] = "";
-        this.outputs[sessionId] = output;
-      }
-      return pid === void 0 ? { output } : { output, pid };
-    }
-  };
 
   // src/corpus/runtime.ts
   var ADMIN2 = { userId: "user-admin", clientId: "web_app" };
@@ -8790,92 +11935,6 @@ var SASjsApi = (() => {
       }
     }
   ];
-
-  // src/corpus/runner.ts
-  var CORPUS_APP = {
-    id: "6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60",
-    name: "myApp",
-    appLoc: "/Public/myApp",
-    streamWebFolder: "web",
-    publishedAt: "2026-01-01T00:00:00.000Z"
-  };
-  var servicesFor = (testCase) => {
-    const identity = new MemoryIdentityStore(
-      testCase.identity || DEFAULT_IDENTITY
-    );
-    const runner = new MemorySessionRunner({
-      fail: testCase.failingRun,
-      outputs: testCase.runOutput ? { [programOf(testCase)]: testCase.runOutput } : void 0
-    });
-    return {
-      drive: createDriveService(
-        testCase.unwritable ? new RefusingDriveStore(testCase.seed || {}) : new MemoryDriveStore(testCase.seed || {})
-      ),
-      info: createInfoService(BROWSER_INFO),
-      home: createHomeService(async () => CORPUS_WEB_PAGE),
-      authConfig: createAuthConfigService(CORPUS_AUTH_CONFIG),
-      admin: createAdminService({
-        diagnostics: async () => CORPUS_DIAGNOSTICS,
-        logs: async () => [CORPUS_LOG],
-        logTail: async (fileName) => fileName === CORPUS_LOG.name ? CORPUS_LOG_TAIL : void 0
-      }),
-      directory: createDirectoryService(identity, CORPUS_DIRECTORY),
-      identity: createIdentityService(identity),
-      records: createRecordService(identity),
-      appStream: createAppStreamService(new MemoryAppStreamStore([CORPUS_APP])),
-      session: createSessionService(identity, runner),
-      // no `runTimes` option: the default is the five the document names, so a
-      // case is never refused for a reason that belongs to one host's install
-      runtime: createRuntimeService(identity, runner)
-    };
-  };
-  var programOf = (testCase) => String(
-    testCase.request.query?._program ?? testCase.request.body?._program ?? testCase.request.body?.code ?? ""
-  );
-  var RefusingDriveStore = class extends MemoryDriveStore {
-    async write() {
-      throw new Error("the store refused the write");
-    }
-    async mkdirp() {
-      throw new Error("the store refused the write");
-    }
-  };
-  var checkDrive = async (testCase, services) => {
-    if (!testCase.expectDrive || !services.drive) return;
-    const holds = async (path) => {
-      try {
-        await services.drive.read(path);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    };
-    for (const path of testCase.expectDrive.present || [])
-      if (!await holds(path))
-        throw new Error(
-          `${testCase.id}: expected a file at ${path}, and the drive has none`
-        );
-    for (const path of testCase.expectDrive.missing || [])
-      if (await holds(path))
-        throw new Error(
-          `${testCase.id}: expected no file at ${path}, and the drive still holds one`
-        );
-  };
-  var runCase = async (testCase, services = servicesFor(testCase)) => {
-    try {
-      const response = await dispatch(services, testCase.route, testCase.request);
-      await checkDrive(testCase, services);
-      return {
-        status: response.status,
-        body: response.body,
-        contents: response.contents
-      };
-    } catch (error) {
-      if (isApiError(error))
-        return { status: error.status, body: error.body, error: error.message };
-      throw error;
-    }
-  };
 
   // src/appstream/store.ts
   var APP_STREAM_INDEX = "/.sasjs/apps.json";
