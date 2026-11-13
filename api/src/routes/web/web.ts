@@ -19,7 +19,7 @@ import {
   AuthProviderType
 } from '../../utils'
 import { NO_WEB_BUILD } from '@sasjs/api'
-import { sendRefusal } from '../refusal'
+import { refusalFor, sendRefusal } from '../refusal'
 
 const webRouter = express.Router()
 const controller = new WebController()
@@ -122,6 +122,11 @@ webRouter.get(
           'The estate answers this route with response_type=code and a client_id.'
         )
 
+    // a code is a bearer credential, single-use by design: a proxy, or the
+    // browser's back-forward cache, must not be able to replay this page
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('Pragma', 'no-cache')
+
     try {
       const { code } = await controller.authorize(req, { clientId })
 
@@ -134,12 +139,12 @@ webRouter.get(
             `</body></html>`
         )
     } catch (err: any) {
-      // plain text on purpose: the caller parses this answer as a page, and a JSON
-      // refusal here would be a page with no infobox in it
-      return res
-        .status(err?.status ?? 500)
-        .type('text/plain')
-        .send(err?.message ?? 'Refused.')
+      // the same decision every sibling route makes, written as a page: the
+      // caller parses this answer as one, and a 5xx body must not carry a driver
+      // message or a non-HTTP `status`
+      const refusal = refusalFor(err)
+
+      return res.status(refusal.status).type('text/plain').send(refusal.message)
     }
   }
 )

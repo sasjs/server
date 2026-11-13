@@ -22,7 +22,16 @@ const isRefusalStatus = (value: unknown): value is number =>
   value >= 400 &&
   value <= 599
 
-export const sendRefusal = (res: Response, error: any) => {
+/**
+ * The status and body a refusal answers with, for a caller that writes its own
+ * response.
+ *
+ * A route that answers a page rather than JSON - the estate's authorization URL
+ * is one, because a Viya client parses it - still has to make the same decision:
+ * only this API's own refusals answer a 4xx, and a 5xx body carries no driver
+ * message.
+ */
+export const refusalFor = (error: any): { status: number; message: string } => {
   // Only this API's own refusals answer a 4xx. A library or a driver error may
   // carry its own `status` or `code` (0, 200, a non-HTTP enum, or a 4xx that
   // means something else entirely), and rendering one as a client refusal would
@@ -35,12 +44,19 @@ export const sendRefusal = (res: Response, error: any) => {
 
   if (status >= 500) {
     process.logger?.error?.(error)
-    return res.status(status).send('Internal Server Error')
+
+    return { status, message: 'Internal Server Error' }
   }
 
-  return res
-    .status(status)
-    .send(
+  return {
+    status,
+    message:
       error instanceof Error ? error.message : String(error?.message ?? error)
-    )
+  }
+}
+
+export const sendRefusal = (res: Response, error: any) => {
+  const { status, message } = refusalFor(error)
+
+  return res.status(status).send(message)
 }

@@ -24,7 +24,7 @@ import request from 'supertest'
 import Client from '../../../model/Client'
 import { configureExpressSession } from '../../../app-modules'
 import { ModeType, SECRETS } from '../../../utils'
-import { UserController } from '../../../controllers/'
+import { UserController, WebController } from '../../../controllers/'
 
 const CLIENT_ID = 'flowClient'
 const CLIENT_SECRET = 'flowClientSecret'
@@ -103,6 +103,10 @@ describe('the Viya sign-in flow, with the estate mounted', () => {
     expect(page.status).toBe(200)
     expect(page.headers['content-type']).toMatch(/html/)
 
+    // a code is a bearer credential, single-use: a proxy must not replay the page
+    expect(page.headers['cache-control']).toBe('no-store')
+    expect(page.headers['pragma']).toBe('no-cache')
+
     // the adapter's own parse, rather than a JSON field this server invented
     const body = page.text.split('<body>')[1].split('</body>')[0]
     const code = /<h4>(.*?)<\/h4>/.exec(body)?.[1]
@@ -125,13 +129,64 @@ describe('the Viya sign-in flow, with the estate mounted', () => {
 
   it('refuses the authorize URL to a caller with no session', async () => {
     // the estate renders its own login page for this case; this server does not,
-    // so the answer says what is missing rather than serving an empty form
+    // so the answer says exactly what is missing rather than serving an empty form
     const answer = await request(app).get(
       `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
     )
 
     expect(answer.status).toBe(401)
-    expect(answer.text).toMatch(/userId|session/i)
+    expect(answer.text).toBe('Invalid userId.')
+  })
+
+  it('refuses the authorize URL to an unknown client', async () => {
+    // the other refusal this route carries to a browser, and the one no case
+    // exercised on this verb: the caller is signed in, the client is not on the
+    // estate
+    const agent = request.agent(app)
+    const csrf = extractCSRF((await agent.get('/')).headers)
+
+    await agent
+      .post('/SASLogon/login')
+      .set('x-xsrf-token', csrf)
+      .send({ username: account.username, password: account.password })
+
+    const answer = await agent.get(
+      '/SASLogon/oauth/authorize?client_id=notRegistered&response_type=code'
+    )
+
+    expect(answer.status).toBe(403)
+    expect(answer.text).toBe('Invalid clientId.')
+  })
+
+  it('answers an unexpected failure as a 500 with no driver message', async () => {
+    // the route answers a page, but the decision is the shared one: a driver
+    // error's own status and message must not reach the browser
+    const agent = request.agent(app)
+    const csrf = extractCSRF((await agent.get('/')).headers)
+
+    await agent
+      .post('/SASLogon/login')
+      .set('x-xsrf-token', csrf)
+      .send({ username: account.username, password: account.password })
+
+    const spy = jest
+      .spyOn(WebController.prototype, 'authorize')
+      .mockRejectedValueOnce({
+        code: 'ENOENT',
+        status: 0,
+        message: 'mongodb: internal detail'
+      } as never)
+
+    try {
+      const answer = await agent.get(
+        `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
+      )
+
+      expect(answer.status).toBe(500)
+      expect(answer.text).toBe('Internal Server Error')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('signs in, takes a code, and exchanges it for a pair', async () => {
