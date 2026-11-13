@@ -16,7 +16,8 @@ import {
   authorizeValidation,
   loginWebValidation,
   isAuthProviderEnabled,
-  AuthProviderType
+  AuthProviderType,
+  WrongCredentials
 } from '../../utils'
 import { NO_WEB_BUILD } from '@sasjs/api'
 import { refusalFor, sendRefusal } from '../refusal'
@@ -71,7 +72,13 @@ webRouter.post(
       // counting: the lockout must also cover an attacker who is guessing
       // usernames, and responding identically to both keeps the lockout
       // from leaking which name exists.
-      recordLoginFailure(body.username)
+      //
+      // A sign-in that could not be ATTEMPTED is not one of them - local sign-in
+      // switched off, or an LDAP outage - or a caller typing the correct password
+      // walks the account into a lockout that then reads as a wrong password. The
+      // estate's password grant makes the same distinction.
+      if (err instanceof WrongCredentials) recordLoginFailure(body.username)
+
       sendRefusal(res, err)
     }
   }

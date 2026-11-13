@@ -1,15 +1,19 @@
 /**
- * The password check behind every sign-in this server performs.
+ * The password check behind the two sign-ins this server performs with one.
  *
- * Three places take a username and a password - the browser's
- * `POST /SASLogon/login`, the estate's `password` grant, and the SAS9 mock - and
- * a credential rule that lives in only one of them is a rule the others do not
- * enforce. LDAP accounts are verified by their provider, local accounts against
- * the stored hash, and with local sign-in switched off there is no stored
- * password to compare at all.
+ * The browser's `POST /SASLogon/login` and the estate's `password` grant both take
+ * a username and a password, and a credential rule that lives in only one of them
+ * is a rule the other does not enforce. LDAP accounts are verified by their
+ * provider, local accounts against the stored hash, and with local sign-in
+ * switched off there is no stored password to compare at all.
+ *
+ * The SAS9 mock is NOT a third consumer: it holds no accounts and accepts any
+ * non-empty pair (`controllers/mock-sas9.ts`), which is what a mock of SAS 9's
+ * login is for.
  *
  * The refusals are the ones the browser already shows, so the two paths cannot
- * disagree about what a wrong password is.
+ * disagree about what a wrong password is - and `WrongCredentials` marks the two
+ * that really are a failed sign-in, for the callers that count them.
  */
 import type { IUserDocument } from '../model/User'
 import User from '../model/User'

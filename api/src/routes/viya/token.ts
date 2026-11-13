@@ -38,6 +38,7 @@ import {
   generateRefreshToken,
   getLoginLockoutRemaining,
   getStoredRefreshToken,
+  getTokensFromDB,
   recordLoginFailure,
   resetLoginFailures,
   saveTokensInDB,
@@ -206,10 +207,10 @@ const userForPasswordGrant = async (
 const registeredClient = async (clientId: string, clientSecret: string) => {
   const client = await Client.findOne({ clientId })
 
-  if (!client) throw invalidClient(`Unknown client: ${clientId}.`)
-
-  if (client.clientSecret !== clientSecret)
-    throw invalidClient('Invalid client secret.')
+  // one description for both halves: RFC 6749 section 5.2 specifies a single
+  // `invalid_client`, and telling a caller which half was wrong also tells them
+  // whether an id is registered - the password grant already withholds that
+  if (!client || client.clientSecret !== clientSecret) throw invalidClient()
 
   return client
 }
@@ -315,7 +316,47 @@ const exchangeCode = async (
 
   AuthController.deleteCode(userInfo.userId, clientId)
 
-  return mint(userInfo, expirationsOf(client))
+  const expirations = expirationsOf(client)
+  const live = await livePair(userInfo, expirations)
+
+  // a second exchange for the same caller and client reuses the pair that is still
+  // live rather than replacing it: `saveTokensInDB` overwrites, and the token the
+  // first tab holds is matched against that single entry - so minting here would
+  // sign the first session out, which the API's own exchange avoids for the same
+  // reason. A pair whose access token has expired is not reused: `getTokensFromDB`
+  // answers only while both are valid, and that caller needs a new one.
+  if (live) return live
+
+  return mint(userInfo, expirations)
+}
+
+/** The pair already live for this caller and client, if there is one. */
+const livePair = async (
+  userInfo: InfoJWT,
+  expirations: { accessTokenExpiration: number; refreshTokenExpiration: number }
+): Promise<TokenPair | undefined> => {
+  const stored = await getTokensFromDB(userInfo.userId, userInfo.clientId)
+
+  if (!stored) return undefined
+
+  const claims = jwt.decode(stored.accessToken) as {
+    jti?: string
+    exp?: number
+  } | null
+
+  // `expires_in` states what is LEFT of the reused token, not the client's
+  // configured lifetime: the pair answers for the same session, not a new one
+  const remaining = claims?.exp
+    ? Math.max(claims.exp - Math.floor(Date.now() / 1000), 0)
+    : expirations.accessTokenExpiration
+
+  return {
+    accessToken: stored.accessToken,
+    refreshToken: stored.refreshToken,
+    accessTokenExpiration: remaining,
+    refreshTokenExpiration: expirations.refreshTokenExpiration,
+    jti: claims?.jti ?? ''
+  }
 }
 
 const rotateRefreshToken = async (
@@ -363,7 +404,17 @@ const passwordGrant = async (
   return mint({ clientId, userId: user.uid }, PUBLIC_CLIENT_EXPIRATIONS)
 }
 
-/** The pair, in the answer shape the estate's capture records. */
+/**
+ * The pair, in the answer shape the estate's capture records - minus `id_token`.
+ *
+ * The recorded shape has ten keys and one of them is `id_token`; this server mints
+ * none, because an ID token is an assertion about an OpenID Connect identity and
+ * this estate answers "who is this" with `GET /identities/users/@currentUser`
+ * (see the module doc). Two of the fields that are emitted - `refresh_expires_in`
+ * and `jti` - are quoted for the code and password grants as well, though the
+ * capture only exercised the refresh grant (`steps: ['auth/token-refresh',
+ * 'auth/token-refresh-refused']`): the shape is the estate's, the grants are ours.
+ */
 export const tokenResponse = (pair: TokenPair) => ({
   access_token: pair.accessToken,
   refresh_token: pair.refreshToken,

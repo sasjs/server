@@ -226,6 +226,23 @@ describe('the estate token port', () => {
 
     expect(answer.status).toBe(401)
     expect(answer.body.error).toBe('invalid_client')
+    // one description for both halves: naming the half would say whether the id
+    // is registered, which the password grant already withholds
+    expect(answer.body.error_description).toBe('Invalid client id or secret.')
+  })
+
+  it('reuses the live pair on a second exchange, so the first tab stays signed in', async () => {
+    const first = await codeGrant()
+    const second = await codeGrant()
+
+    // `saveTokensInDB` overwrites the single entry per caller and client, so
+    // minting here would sign the first tab out on every estate path
+    expect(second.status).toBe(200)
+    expect(second.body.access_token).toBe(first.body.access_token)
+    expect(second.body.refresh_token).toBe(first.body.refresh_token)
+
+    // what is left of the reused token, not a fresh lifetime
+    expect(second.body.expires_in).toBeLessThanOrEqual(CLIENT_EXPIRY)
   })
 
   it('rotates the pair, and refuses the refresh token it replaced', async () => {
