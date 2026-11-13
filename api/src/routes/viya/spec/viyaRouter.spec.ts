@@ -176,14 +176,17 @@ describe('who may reach the estate', () => {
     expect(answer.text).toBe('the app shell')
   })
 
-  it('leaves the estate own login open, or nobody could ever sign in', async () => {
-    // a client that signs in the Viya way holds no sasjs/server token; guarding
-    // this path refused the very request that fetches one
+  it('leaves the estate own login open, so the client reads why it is declined', async () => {
+    // the emulator answers the token endpoint with a 501 that names the host as
+    // the issuer - guarding the path would replace that explanation with a 401
     const answer = await request(guardApp(refuses)).post(
       '/SASLogon/oauth/token'
     )
 
-    expect(answer.status).not.toBe(401)
+    expect(answer.status).toBe(501)
+    expect(answer.body.message).toMatch(
+      /answered by the host that mounts the emulator/
+    )
   })
 })
 
