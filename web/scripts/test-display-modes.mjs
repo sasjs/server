@@ -374,6 +374,38 @@ check(
   formatJson('{"a": ["x", "y"], "b": 1}').ok === true
 )
 
+// The same class reached by other spellings: the guard is on the value, not on the
+// literal's shape.
+check(
+  'an exponent form of an unsafe integer is refused',
+  formatJson('{"n": 9007199254740993e0}').ok === false
+)
+check(
+  'a number that parses to infinity is refused rather than written as null',
+  formatJson('{"a": 1e400}').ok === false
+)
+check(
+  'a fraction a double cannot hold is refused',
+  formatJson('{"a": 1.0000000000000000001}').ok === false
+)
+check(
+  'while 1E3 is the same value as 1000',
+  formatJson('{"a": 1E3}').ok === true
+)
+check('and 1.0 is the same value as 1', formatJson('{"a": 1.0}').ok === true)
+check('and -0 stays a number', formatJson('{"a": -0}').ok === true)
+
+// A key that escapes its own name is still the same key.
+const escapedDuplicate = formatJson('{"a\\u0062": 1, "ab": 2}')
+check(
+  'an escaped key collides with its literal spelling',
+  escapedDuplicate.ok === false && /"ab"/.test(escapedDuplicate.error)
+)
+check(
+  'while a differently-named escaped key does not',
+  formatJson('{"a\\u0063": 1, "ab": 2}').ok === true
+)
+
 const invalidJson = formatJson('{"a": 1,}')
 check(
   'a syntax error is reported rather than guessed at',

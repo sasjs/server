@@ -75,6 +75,83 @@ interface Losses {
   duplicate?: string
 }
 
+/**
+ * A JSON string's contents, unescaped - `"a\u0062"` and `"ab"` name the same key,
+ * and a duplicate that escaped its name is still a duplicate.
+ */
+const decodeKey = (raw: string): string => {
+  if (!raw.includes('\\')) return raw
+
+  try {
+    return JSON.parse(`"${raw}"`) as string
+  } catch {
+    // not a valid escape: JSON.parse refused the document already, so this is a
+    // key compared as written rather than one this formatter could mis-name
+    return raw
+  }
+}
+
+/**
+ * A decimal literal split into its digits and a power of ten, with the zeros that
+ * carry no information removed.
+ *
+ * Digits are a STRING rather than a BigInt: the app targets a JavaScript level
+ * without BigInt literals, and comparing two digit strings costs nothing.
+ */
+interface Decimal {
+  negative: boolean
+  digits: string
+  exponent: number
+}
+
+const DECIMAL = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/
+
+const asDecimal = (token: string): Decimal | undefined => {
+  const match = DECIMAL.exec(token)
+
+  if (!match) return undefined
+
+  const [, sign, whole, fraction = '', exponent = '0'] = match
+
+  let digits = (whole + fraction).replace(/^0+/, '')
+  let scale = Number(exponent) - fraction.length
+
+  if (!digits) return { negative: false, digits: '', exponent: 0 }
+
+  while (digits.endsWith('0')) {
+    digits = digits.slice(0, -1)
+    scale += 1
+  }
+
+  // zero is zero: `-0` and `0` are the same number however they are written
+  return { negative: sign === '-', digits, exponent: scale }
+}
+
+/**
+ * Whether a numeric literal survives the round trip through a double.
+ *
+ * The comparison is between the literal's exact value and the exact value of the
+ * literal `Number` writes back for it, not between their spellings: `1e3` and
+ * `1000` are the same decimal and both are fine, `1e400` is not finite at all, and
+ * `9007199254740993e0` names a decimal a double cannot hold.
+ */
+const keepsItsValue = (token: string): boolean => {
+  const value = Number(token)
+
+  if (!Number.isFinite(value)) return false
+
+  const written = asDecimal(token)
+  const canonical = asDecimal(String(value))
+
+  if (!written || !canonical) return false
+
+  return (
+    written.negative === canonical.negative &&
+    written.digits === canonical.digits &&
+    written.exponent === canonical.exponent
+  )
+}
+
 const isWhitespace = (character: string) =>
   character === ' ' ||
   character === '\t' ||
@@ -114,26 +191,18 @@ const lossesIn = (text: string): Losses => {
     number = ''
     inNumber = false
 
-    // Only integers: `1e3` and `0.5` reformat without changing their value, and
-    // are not the case this guard is for.
-    if (!/^-?\d+$/.test(token)) return
-
-    try {
-      if (BigInt(token) !== BigInt(Number(token))) {
-        losses.number ??= token
-      }
-    } catch {
-      // beyond what both a double and a BigInt will take: not a number this
-      // formatter should be quietly rewriting either
-      losses.number ??= token
-    }
+    // The VALUE, not the shape of the literal: `9007199254740993e0` is the same
+    // loss as the integer spelled out, and `1e400` parses to Infinity, which
+    // `JSON.stringify` writes as `null`.
+    if (!keepsItsValue(token)) losses.number ??= token
   }
 
   for (const character of text) {
     if (inString) {
       if (escaped) {
         escaped = false
-        string += character
+        // kept WITH its backslash: a key's escapes are how it is compared
+        string += `\\${character}`
 
         continue
       }
@@ -150,9 +219,12 @@ const lossesIn = (text: string): Losses => {
         const top = stack[stack.length - 1]
 
         if (stringIsKey && top?.isObject) {
-          if (top.keys.has(string)) losses.duplicate ??= string
+          // decoded, so that `"a\u0062"` and `"ab"` are the same key
+          const key = decodeKey(string)
 
-          top.keys.add(string)
+          if (top.keys.has(key)) losses.duplicate ??= key
+
+          top.keys.add(key)
           top.expectingKey = false
         }
 
