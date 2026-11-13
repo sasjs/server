@@ -252,8 +252,8 @@ export class SessionController {
    * would hand a second account the first one's folder.
    *
    * `idleMs`, when the caller states one, is how long the session survives
-   * without a job: it is pushed forward on every reuse, so a session in use does
-   * not expire under the client that is using it.
+   * without a job: it is set on creation and pushed forward on every reuse, so a
+   * session in use does not expire under the client that is using it.
    */
   public async getSessionForId(id: string, username: string, idleMs?: number) {
     const key = `${username}:${id}`
@@ -267,6 +267,13 @@ export class SessionController {
     }
 
     const session = await this.createSession(username)
+
+    // the stated window applies to the session this call creates as well as to
+    // one it reuses: `createSession` stamps a pooled 15-minute death, and a
+    // client that holds the session open for longer would find its folder gone
+    // on the first read after that. The timer `createSession` arms re-arms to
+    // this time rather than deleting.
+    if (idleMs) session.deathTimeStamp = (Date.now() + idleMs).toString()
 
     this.sessionIds.set(key, session.id)
 

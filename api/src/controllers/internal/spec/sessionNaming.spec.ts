@@ -52,6 +52,23 @@ describe('sessions named by the caller', () => {
     expect(second.id).toEqual(first.id)
   })
 
+  it('opens a new session with the idle window the caller states', async () => {
+    const idleMs = 60 * 60 * 1000
+    const before = Date.now()
+
+    const session = await controller.getSessionForId(
+      'session-0',
+      'alice',
+      idleMs
+    )
+
+    // the window covers the session's first job too, not only the ones that
+    // reuse it: `createSession` stamps a pooled 15-minute death of its own
+    expect(parseInt(session.deathTimeStamp)).toBeGreaterThanOrEqual(
+      before + idleMs - 1000
+    )
+  })
+
   it('keeps the session for the idle window the caller states', async () => {
     const idleMs = 60 * 60 * 1000
     const first = await controller.getSessionForId('session-3', 'alice', idleMs)
