@@ -189,9 +189,11 @@ const userForPasswordGrant = async (
   } catch (error) {
     // only a credential that did not match is a failed sign-in: local sign-in
     // being switched off refuses the request without counting it, or a correct
-    // password would walk the account toward the lockout. An LDAP failure is
-    // counted - `LDAPClient.verifyUser` reports a broken connection as a rejected
-    // password, so the two are the same event from here.
+    // password would walk the account toward the lockout. An LDAP failure after
+    // the connection is up is counted - `verifyUser` reports a broken search as a
+    // rejected password, so the two are the same event from here. A connection
+    // that cannot be opened fails in `LDAPClient.init()`, which is neither a
+    // `WrongCredentials` nor an `HttpError`, and falls through to the 500 below.
     if (error instanceof WrongCredentials) {
       recordLoginFailure(username)
 
@@ -201,7 +203,16 @@ const userForPasswordGrant = async (
     if (error instanceof HttpError)
       throw new OAuthError(error.status, 'invalid_grant', error.message)
 
-    throw error
+    // this server's own failure - an LDAP connection that cannot be opened, a
+    // database error - answers a 500 in the OAuth shape rather than express's
+    // HTML page, so a client parses one body shape whichever way the request ends
+    process.logger?.error?.(String((error as any)?.message ?? error))
+
+    throw new OAuthError(
+      500,
+      'server_error',
+      'The token port could not complete the request.'
+    )
   }
 }
 

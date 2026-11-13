@@ -252,11 +252,8 @@ describe('the estate token port', () => {
     expect(second.body.access_token).toBe(first.body.access_token)
     expect(second.body.refresh_token).toBe(first.body.refresh_token)
 
-    // what is left of the reused pair, not a fresh lifetime - both halves
-    expect(second.body.expires_in).toBeLessThanOrEqual(CLIENT_EXPIRY)
-    expect(second.body.refresh_expires_in).toBeLessThanOrEqual(
-      CLIENT_EXPIRY * 4
-    )
+    // the lifetimes are checked by the aged-pair case below: a bound against the
+    // configured value holds for a fresh pair as readily as for a reused one
   })
 
   it('states what is left of the reused pair, not a fresh lifetime', async () => {
@@ -280,10 +277,13 @@ describe('the estate token port', () => {
     const second = await codeGrant()
 
     expect(second.body.access_token).toBe(stored.accessToken)
+
     // a client that schedules re-authentication from these must not be late by
-    // the age of the pair
+    // the age of the pair - nor told the pair is spent when it is not
     expect(second.body.expires_in).toBeLessThanOrEqual(100)
+    expect(second.body.expires_in).toBeGreaterThan(90)
     expect(second.body.refresh_expires_in).toBeLessThanOrEqual(200)
+    expect(second.body.refresh_expires_in).toBeGreaterThan(180)
   })
 
   it('rotates the pair, and refuses the refresh token it replaced', async () => {
@@ -379,6 +379,32 @@ describe('the estate token port', () => {
     // is a bearer token a proxy can replay
     expect(answer.headers['cache-control']).toBe('no-store')
     expect(answer.headers['pragma']).toBe('no-cache')
+  })
+
+  it('answers this server own failure in the OAuth shape', async () => {
+    // an LDAP connection that cannot be opened, a database error: neither is a
+    // credential refusal, and neither should reach the client as express's HTML
+    // error page on a port that answers JSON
+    const spy = jest.spyOn(User, 'findOne').mockImplementationOnce(() => {
+      throw new Error('connection refused')
+    })
+
+    try {
+      const answer = await request(app)
+        .post('/SASLogon/oauth/token')
+        .set('Authorization', basic('sas.cli', ''))
+        .type('form')
+        .send({
+          grant_type: 'password',
+          username: account.username,
+          password: account.password
+        })
+
+      expect(answer.status).toBe(500)
+      expect(answer.body.error).toBe('server_error')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('refuses a grant no client sends', async () => {

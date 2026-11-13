@@ -78,9 +78,12 @@ webRouter.post(
       // the correct password must not be walked into a lockout that then reads as
       // a wrong password. The estate's password grant makes the same distinction.
       //
-      // An LDAP failure IS counted, and deliberately: `LDAPClient.verifyUser`
-      // reports a rejected bind and a broken connection alike as
-      // `Invalid password.`, so the two cannot be told apart here.
+      // An LDAP failure after the connection is up IS counted: `verifyUser`
+      // reports a rejected bind and a broken search alike as `Invalid password.`,
+      // so neither can be told from a wrong password here. A connection that
+      // cannot be opened at all fails in `LDAPClient.init()`, which is not a
+      // `WrongCredentials` - that one escapes uncounted, and is the one LDAP
+      // failure this handler distinguishes.
       if (err instanceof WrongCredentials) recordLoginFailure(body.username)
 
       sendRefusal(res, err)
