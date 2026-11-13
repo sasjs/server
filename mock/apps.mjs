@@ -247,24 +247,6 @@ const isText = (bytes) =>
  * length that decodes. A member that fails is refused by name, as every other
  * shape this module does not speak is.
  */
-/**
- * A `service` or `job` member's compiled program, which is TEXT rather than the
- * base64 a file member carries.
- *
- * The missing-`code` check is the same one `decodeCode` makes, and for the same
- * reason: coercing a missing program to '' publishes a zero-byte `.sas` that looks
- * like a service nobody wrote, where the truth is a tree this build does not
- * understand. One helper because the three call sites must not drift.
- */
-const programCode = (member) => {
-  if (typeof member.code !== 'string')
-    throw new Error(
-      `The packaged app's ${member.name} carries no code, so its program cannot be read.`
-    )
-
-  return Buffer.from(member.code, 'utf8')
-}
-
 const decodeCode = (member) => {
   // a member with no `code` is not an empty file, it is a tree this build does
   // not understand: coercing it to '' passes the check below and publishes a
@@ -285,6 +267,24 @@ const decodeCode = (member) => {
     )
 
   return Buffer.from(code, 'base64')
+}
+
+/**
+ * A `service` or `job` member's compiled program, which is TEXT rather than the
+ * base64 a file member carries.
+ *
+ * The missing-`code` check is the same one `decodeCode` makes, and for the same
+ * reason: coercing a missing program to '' publishes a zero-byte `.sas` that looks
+ * like a service nobody wrote, where the truth is a tree this build does not
+ * understand. One helper because both call sites must not drift.
+ */
+const programCode = (member) => {
+  if (typeof member.code !== 'string')
+    throw new Error(
+      `The packaged app's ${member.name} carries no code, so its program cannot be read.`
+    )
+
+  return Buffer.from(member.code, 'utf8')
 }
 
 /**
