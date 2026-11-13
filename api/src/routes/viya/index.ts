@@ -14,7 +14,10 @@
  *   uploaded file is the same file both APIs see;
  * - **execution is real.** The `execute` port runs the submitted program on this
  *   server's engine, so a service returns its own `_webout` and a program that
- *   fails fails.
+ *   fails fails;
+ * - **the token port is the server's own.** `/SASLogon/oauth/token` is answered
+ *   here (see `token.ts`) rather than by the emulator: the credential is this
+ *   server's, and the emulator has no account to check it against.
  *
  * With the flag unset the router passes every request through untouched, so a
  * server talking to a real estate is unchanged.
@@ -25,14 +28,24 @@ import { deleteFile } from '@sasjs/utils'
 import { dispatchViya } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
-/** The paths a Viya client uses, and the only ones this router answers. */
+import { oauthToken, TOKEN_PATH } from './token'
+
+/**
+ * The paths a Viya client uses, and the only ones this router answers.
+ *
+ * `/SASLogon` is deliberately not among them. The emulator carries one operation
+ * under that prefix - the token port - and this server answers that itself, while
+ * the sign-in routes beside it (`/SASLogon/login`, `/SASLogon/authorize`) are the
+ * web router's. Listing the prefix here would swallow them and answer `404 No
+ * operation is emulated`, which leaves a client unable to obtain the code the
+ * `authorization_code` grant exchanges.
+ */
 export const VIYA_PREFIXES = [
   '/compute',
   '/folders',
   '/files',
   '/identities',
-  '/types',
-  '/SASLogon'
+  '/types'
 ]
 
 /**
@@ -43,9 +56,9 @@ export const VIYA_PREFIXES = [
  * - a path outside the estate's prefixes is not the emulator's business, and the
  *   web router behind it must still serve the application shell to a caller
  *   who has not signed in yet;
- * - `/SASLogon` is left open because the emulator answers it with a refusal that
- *   names the host as the token issuer (501): guarding it would replace that
- *   explanation with a 401 and leave a client with nothing to read;
+ * - `/SASLogon` is not the estate's path at all (see `VIYA_PREFIXES`): the login
+ *   and the token port are this server's own routes, and the sign-in is exactly
+ *   the caller who holds no token yet;
  * - everything else runs caller code on this engine, so it is guarded.
  */
 export const viyaGuard =
@@ -56,8 +69,6 @@ export const viyaGuard =
   ): express.RequestHandler =>
   (req, res, next) => {
     if (!isViyaPath(req.path)) return next()
-    if (req.path === LOGON_PATH || req.path.startsWith(`${LOGON_PATH}/`))
-      return next()
 
     return authenticate(req, res, () => {
       const rule = ruleFor(req.path)
@@ -133,9 +144,6 @@ const uploadOf = async (
   }
 }
 
-/** Where a Viya client signs in, which the guard leaves open. */
-export const LOGON_PATH = '/SASLogon'
-
 /** A request the emulator should not answer is left to the server's own routes. */
 export const isViyaPath = (path: string): boolean =>
   VIYA_PREFIXES.some(
@@ -155,6 +163,14 @@ export const createViyaRouter = (
   const router = express.Router()
 
   router.use(async (req, res, next) => {
+    // the token port is this server's, not the emulator's: the credential in the
+    // request is a sasjs/server account, which the emulator has no view of
+    if (req.method === 'POST' && req.path === TOKEN_PATH)
+      return oauthToken(req, res)
+
+    // everything else under `/SASLogon` is the web router's - login, authorize,
+    // logout - so the emulator never sees a sign-in path. It carries no operation
+    // for one, and a client that cannot sign in cannot reach the code grant
     if (!isViyaPath(req.path)) return next()
 
     // the emulator answers `POST /files/files` from the multipart part, and this

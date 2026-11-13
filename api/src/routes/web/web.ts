@@ -16,10 +16,11 @@ import {
   authorizeValidation,
   loginWebValidation,
   isAuthProviderEnabled,
-  AuthProviderType
+  AuthProviderType,
+  WrongCredentials
 } from '../../utils'
 import { NO_WEB_BUILD } from '@sasjs/api'
-import { sendRefusal } from '../refusal'
+import { refusalFor, sendRefusal } from '../refusal'
 
 const webRouter = express.Router()
 const controller = new WebController()
@@ -71,7 +72,20 @@ webRouter.post(
       // counting: the lockout must also cover an attacker who is guessing
       // usernames, and responding identically to both keeps the lockout
       // from leaking which name exists.
-      recordLoginFailure(body.username)
+      //
+      // A sign-in that could not be ATTEMPTED is not one of them: with local
+      // sign-in switched off the stored hash is never reached, so a caller typing
+      // the correct password must not be walked into a lockout that then reads as
+      // a wrong password. The estate's password grant makes the same distinction.
+      //
+      // An LDAP failure after the connection is up IS counted: `verifyUser`
+      // reports a rejected bind and a broken search alike as `Invalid password.`,
+      // so neither can be told from a wrong password here. A connection that
+      // cannot be opened at all fails in `LDAPClient.init()`, which is not a
+      // `WrongCredentials` - that one escapes uncounted, and is the one LDAP
+      // failure this handler distinguishes.
+      if (err instanceof WrongCredentials) recordLoginFailure(body.username)
+
       sendRefusal(res, err)
     }
   }
@@ -91,6 +105,60 @@ webRouter.post(
       res.send(response)
     } catch (err: any) {
       sendRefusal(res, err)
+    }
+  }
+)
+
+/**
+ * The authorization route in the shape a Viya client asks for it.
+ *
+ * `@sasjs/adapter` opens this URL in a popup and reads the code out of the page
+ * it renders - `.infobox h4` inside the body - so an estate has to answer a page,
+ * not JSON. The POST above is this server's own API; this is the estate's.
+ *
+ * The SIGN-IN page itself is the host's: this answers a session that already
+ * exists (the SPA signed in, or `POST /SASLogon/login` was called), and a caller
+ * with no session is told so rather than being handed a login form this server
+ * does not render.
+ */
+webRouter.get(
+  '/SASLogon/oauth/authorize',
+  desktopRestrict,
+  async (req, res) => {
+    const clientId = String(req.query.client_id ?? '')
+    const responseType = String(req.query.response_type ?? '')
+
+    if (responseType !== 'code' || !clientId)
+      return res
+        .status(400)
+        .type('text/plain')
+        .send(
+          'The estate answers this route with response_type=code and a client_id.'
+        )
+
+    // a code is a bearer credential, single-use by design: a proxy, or the
+    // browser's back-forward cache, must not be able to replay this page
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('Pragma', 'no-cache')
+
+    try {
+      const { code } = await controller.authorize(req, { clientId })
+
+      return res
+        .status(200)
+        .type('html')
+        .send(
+          `<!DOCTYPE html><html lang="en"><head><title>Authorized</title></head><body>` +
+            `<div class="infobox"><h4>${code}</h4></div>` +
+            `</body></html>`
+        )
+    } catch (err: any) {
+      // the same decision every sibling route makes, written as a page: the
+      // caller parses this answer as one, and a 5xx body must not carry a driver
+      // message or a non-HTTP `status`
+      const refusal = refusalFor(err)
+
+      return res.status(refusal.status).type('text/plain').send(refusal.message)
     }
   }
 )

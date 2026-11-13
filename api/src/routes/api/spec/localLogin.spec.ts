@@ -4,6 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import appPromise from '../../../app'
 import { UserController } from '../../../controllers/'
+import { resetLoginFailures } from '../../../utils'
 
 /**
  * LOCAL_LOGIN_ENABLED=false closes the local (database) password path: the
@@ -108,6 +109,28 @@ describe('local login toggle', () => {
     expect(wrong.status).toBe(401)
     expect(right.status).toBe(401)
     expect(right.text).toEqual(wrong.text)
+  })
+
+  it('does not count a sign-in that could not be attempted', async () => {
+    // six attempts is past the five-failure lockout. With local sign-in switched
+    // off the stored hash is never reached, so none of these is a failed sign-in,
+    // and a caller typing the CORRECT password must not be walked into a lockout
+    // that then reads as a wrong password
+    process.env.LOCAL_LOGIN_ENABLED = 'false'
+    resetLoginFailures(user.username)
+
+    try {
+      const { agent, csrfToken } = await newAgentWithToken()
+
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const res = await attemptLogin(agent, csrfToken, user.password)
+
+        expect(res.status).toBe(401)
+        expect(res.text).toContain('disabled for local accounts')
+      }
+    } finally {
+      delete process.env.LOCAL_LOGIN_ENABLED
+    }
   })
 
   it('does not start a session for a refused local login', async () => {
