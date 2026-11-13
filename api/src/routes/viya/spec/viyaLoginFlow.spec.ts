@@ -84,6 +84,56 @@ describe('the Viya sign-in flow, with the estate mounted', () => {
     await mongoServer.stop()
   })
 
+  it('answers the authorize URL with the page the adapter parses', async () => {
+    // `@sasjs/adapter` does not post: it opens
+    // `/SASLogon/oauth/authorize?client_id=...&response_type=code` and reads the
+    // code out of `.infobox h4` in the page it gets back
+    const agent = request.agent(app)
+    const csrf = extractCSRF((await agent.get('/')).headers)
+
+    await agent
+      .post('/SASLogon/login')
+      .set('x-xsrf-token', csrf)
+      .send({ username: account.username, password: account.password })
+
+    const page = await agent.get(
+      `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
+    )
+
+    expect(page.status).toBe(200)
+    expect(page.headers['content-type']).toMatch(/html/)
+
+    // the adapter's own parse, rather than a JSON field this server invented
+    const body = page.text.split('<body>')[1].split('</body>')[0]
+    const code = /<h4>(.*?)<\/h4>/.exec(body)?.[1]
+
+    expect(code).toBeTruthy()
+
+    const exchanged = await request(app)
+      .post('/SASLogon/oauth/token')
+      .set(
+        'Authorization',
+        'Basic ' +
+          Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
+      )
+      .type('form')
+      .send({ grant_type: 'authorization_code', code })
+
+    expect(exchanged.status).toBe(200)
+    expect(typeof exchanged.body.access_token).toBe('string')
+  })
+
+  it('refuses the authorize URL to a caller with no session', async () => {
+    // the estate renders its own login page for this case; this server does not,
+    // so the answer says what is missing rather than serving an empty form
+    const answer = await request(app).get(
+      `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
+    )
+
+    expect(answer.status).toBe(401)
+    expect(answer.text).toMatch(/userId|session/i)
+  })
+
   it('signs in, takes a code, and exchanges it for a pair', async () => {
     // one agent: the CSRF token and the session that mints it travel together
     const agent = request.agent(app)

@@ -4,9 +4,10 @@
  * A Viya client does not present a sasjs/server token; it asks for one the Viya
  * way. `@sasjs/adapter` and the CLI speak three grants, and all three are here:
  *
- * - `authorization_code` - the client signs a user in at `POST /SASLogon/login`,
- *   takes the single-use code `POST /SASLogon/authorize` issues, and exchanges
- *   it here with its client id and secret;
+ * - `authorization_code` - the client signs a user in at `POST /SASLogon/login`
+ *   (or the SPA does), takes the single-use code from `POST /SASLogon/authorize`
+ *   as JSON or from the page `GET /SASLogon/oauth/authorize` renders for
+ *   `@sasjs/adapter`, and exchanges it here with its client id and secret;
  * - `refresh_token` - the client rotates the pair it holds. The refresh token is
  *   single-use: the pair in the database is replaced, so a replayed one is
  *   refused, as it is on a real estate;

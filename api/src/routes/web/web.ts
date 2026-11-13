@@ -95,6 +95,55 @@ webRouter.post(
   }
 )
 
+/**
+ * The authorization route in the shape a Viya client asks for it.
+ *
+ * `@sasjs/adapter` opens this URL in a popup and reads the code out of the page
+ * it renders - `.infobox h4` inside the body - so an estate has to answer a page,
+ * not JSON. The POST above is this server's own API; this is the estate's.
+ *
+ * The SIGN-IN page itself is the host's: this answers a session that already
+ * exists (the SPA signed in, or `POST /SASLogon/login` was called), and a caller
+ * with no session is told so rather than being handed a login form this server
+ * does not render.
+ */
+webRouter.get(
+  '/SASLogon/oauth/authorize',
+  desktopRestrict,
+  async (req, res) => {
+    const clientId = String(req.query.client_id ?? '')
+    const responseType = String(req.query.response_type ?? '')
+
+    if (responseType !== 'code' || !clientId)
+      return res
+        .status(400)
+        .type('text/plain')
+        .send(
+          'The estate answers this route with response_type=code and a client_id.'
+        )
+
+    try {
+      const { code } = await controller.authorize(req, { clientId })
+
+      return res
+        .status(200)
+        .type('html')
+        .send(
+          `<!DOCTYPE html><html lang="en"><head><title>Authorized</title></head><body>` +
+            `<div class="infobox"><h4>${code}</h4></div>` +
+            `</body></html>`
+        )
+    } catch (err: any) {
+      // plain text on purpose: the caller parses this answer as a page, and a JSON
+      // refusal here would be a page with no infobox in it
+      return res
+        .status(err?.status ?? 500)
+        .type('text/plain')
+        .send(err?.message ?? 'Refused.')
+    }
+  }
+)
+
 webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
   try {
     await controller.logout(req)
