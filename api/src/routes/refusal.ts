@@ -48,7 +48,12 @@ export const refusalFor = (error: any): { status: number; message: string } => {
   }
 }
 
-/** The decision above, written to a response: every JSON route's refusal. */
+/**
+ * The decision above, written to a response: the plain-text body a refusal sends.
+ *
+ * The OAuth token port is the exception and answers its own refusals, in the
+ * RFC 6749 shape a Viya client parses - see `routes/viya/token.ts`.
+ */
 export const sendRefusal = (res: Response, error: any) => {
   const { status, message } = refusalFor(error)
 
