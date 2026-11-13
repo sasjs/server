@@ -392,6 +392,26 @@ check(
   'while 1E3 is the same value as 1000',
   formatJson('{"a": 1E3}').ok === true
 )
+
+// The uppercase marker is legal JSON and what a Jackson writer emits: taking only
+// 'e' dropped it and glued the digits either side together, so `1E3` was read as
+// `13` - green for the wrong reason - `1E400` as `1400` and `1E-3` as `1-3`.
+check(
+  'and 1E3 formats to 1000, not to the token 13',
+  formatJson('{"a": 1E3}').text === '{\n  "a": 1000\n}\n'
+)
+check(
+  'an uppercase exponent that overflows is refused',
+  formatJson('{"a": 1E400}').ok === false
+)
+check(
+  'a negative uppercase exponent formats',
+  formatJson('{"a": 1E-3}').text === '{\n  "a": 0.001\n}\n'
+)
+check(
+  'a fraction with an uppercase exponent formats',
+  formatJson('{"x": 2.5E-2}').text === '{\n  "x": 0.025\n}\n'
+)
 check('and 1.0 is the same value as 1', formatJson('{"a": 1.0}').ok === true)
 check('and -0 stays a number', formatJson('{"a": -0}').ok === true)
 

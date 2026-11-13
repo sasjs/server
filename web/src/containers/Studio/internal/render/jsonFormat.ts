@@ -283,7 +283,13 @@ const lossesIn = (text: string): Losses => {
       continue
     }
 
-    if (/[0-9+\-.]/.test(character) || (character === 'e' && inNumber)) {
+    // RFC 8259 allows either case for the exponent marker, and a Jackson or Java
+    // writer emits the upper one; taking only 'e' dropped the marker and glued the
+    // digits either side of it together - `1E400` became `1400`, `1E-3` became `1-3`.
+    if (
+      /[0-9+\-.]/.test(character) ||
+      ((character === 'e' || character === 'E') && inNumber)
+    ) {
       number += character
       inNumber = true
 
