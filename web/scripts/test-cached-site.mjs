@@ -18,8 +18,8 @@ const { browserSite, cacheBust, clearSite } =
   await import('../src/utils/cachedSite.ts')
 
 const failures = []
-const check = (label, condition) => {
-  if (!condition) failures.push(label)
+const check = (label, condition, detail = '') => {
+  if (!condition) failures.push(detail ? `${label} (${detail})` : label)
 }
 
 /**

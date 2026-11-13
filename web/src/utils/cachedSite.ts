@@ -163,9 +163,10 @@ export const clearSite = async (host: SiteHost): Promise<SiteWipe> => {
 
   for (const name of databases) {
     if (!name) continue
-    // `deleteDatabase` answers a request rather than a promise, so the adapter
-    // resolves it; what matters here is that a blocked delete does not stop the
-    // ones after it.
+    // `deleteDatabase` answers a request rather than a promise, and the adapter
+    // rejects when that request reports an error or `blocked`. `succeeded` is what
+    // turns the rejection into a skipped item, so a database another tab holds open
+    // is not counted as wiped and the ones after it are still attempted.
     if (await succeeded(() => host.databases?.delete(name))) wiped.databases++
   }
 
