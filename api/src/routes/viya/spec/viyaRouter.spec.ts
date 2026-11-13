@@ -176,6 +176,17 @@ describe('who may reach the estate', () => {
     expect(answer.text).toBe('the app shell')
   })
 
+  it('leaves the estate sign-in paths to the web router', async () => {
+    // the emulator carries one /SASLogon operation, and this server answers it
+    // itself. A prefix match on /SASLogon would swallow login and authorize and
+    // answer `404 No operation is emulated`, so the code grant could never be fed
+    const answer = await request(app(() => withExecution('[]', '')))
+      .post('/SASLogon/login')
+      .send({})
+
+    expect(answer.status).toBe(418)
+  })
+
   it('leaves the token port open, because the credentials are the request', async () => {
     // a caller with no token is exactly who the token endpoint is for: guarding
     // it would refuse the request that asks for the first one. The answer is the
