@@ -311,15 +311,31 @@ const collectDocRoutes = (folder, prefix) => {
 
 if (existsSync(docsSite)) collectDocRoutes(docsSite, '')
 
-for (const route of [
-  'api',
-  ...documentationRoutes.map((path) => `docs/${path}`.replace(/\/$/, ''))
-]) {
+// `api` is deliberately NOT in this list, and it is the one route the app answers
+// that must not get the shell: on a browser host `/api` is the API console the
+// mock build writes (sasjs/cli's `writeApiConsole`), and the app's own API screen
+// frames it. A shell written there would be served in that frame - the
+// application rendering the application - so the console keeps the path, and a
+// fresh load of /api lands on the page that documents the API.
+for (const route of documentationRoutes.map((path) =>
+  `docs/${path}`.replace(/\/$/, '')
+)) {
   const folder = path.join(site, route)
 
   mkdirSync(folder, { recursive: true })
   writeFileSync(path.join(folder, 'index.html'), shell)
 }
+
+// Whatever wrote to /api while this build ran, the page served there has to be
+// the console: the pane frames it, and a shell in its place is the application
+// inside itself.
+const consoleHtml = readFileSync(consolePage, 'utf8')
+
+if (!/api console/i.test(consoleHtml))
+  throw new Error(
+    `${consolePage} is not the API console - something wrote over it. The pane ` +
+      `frames that path, and a shell there renders the application inside itself.`
+  )
 
 // A path that names a file is an asset request, not a route - so the folders
 // above are all that the build writes.
