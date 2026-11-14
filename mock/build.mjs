@@ -63,11 +63,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // text, so every picture in the drive failed to render; and before 6.30.0 it
 // passed the linter no configuration at all, so the Studio linted and formatted
 // against @sasjs/lint's defaults and a `.sasjslint` edited on the drive changed
-// nothing - the file was displayed and never read.
+// nothing - the file was displayed and never read; and before 6.31.0 it wrote no
+// API console, so the API screen framed the application itself (the console is
+// `<base>/api/`, written by the same build, and the screen picks it by host).
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.30.0'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.31.0'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
@@ -177,6 +179,22 @@ const index = path.join(site, 'index.html')
 
 if (!existsSync(index))
   throw new Error(`The mock site has no index.html: expected ${index}`)
+
+// The page the API screen frames on this site. Absent, that screen frames the
+// application inside itself - worse than the refusal it replaced - so a CLI that
+// does not write one has to fail the build rather than the visitor.
+const consolePage = path.join(site, 'api', 'index.html')
+
+if (!existsSync(consolePage))
+  // The absence has three causes and the message names all three: a pin that
+  // predates the console, a target that turns it off, and a site that already
+  // carries one of its files (the build leaves those alone and warns).
+  throw new Error(
+    `The mock site has no API console: expected ${consolePage}. ` +
+      `Either the target sets streamConfig.mockApi: false, or the site already ` +
+      `carries one of the console's four files so the build kept them (it warns ` +
+      `when it does), or @sasjs/cli ${CLI_VERSION} predates the console.`
+  )
 
 // GitHub Pages answers an unknown path from 404.html, and a static host cannot
 // rewrite. Without this copy, a bookmark of /studio - or a reload on it -
