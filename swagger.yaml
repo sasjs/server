@@ -263,13 +263,16 @@ components:
                     description: 'The app''s identifier, which is what a publish answers with and its URL carries.'
                 name:
                     type: string
-                    description: 'The name the app is published under. A name may be shared; the id may not.'
+                    description: 'The name the app is published under: its folder under `apps/` and its address.'
                 appLoc:
                     type: string
-                    description: 'The folder within SASjs Drive the app was published from.'
+                    description: "The backend the app's frontend calls, when it names one. Metadata: several\napps may name the same folder, and a frontend-only app names none."
+                frontendFolder:
+                    type: string
+                    description: 'Where the frontend is read from: `apps/<name>`, or a legacy deployment.'
                 streamWebFolder:
                     type: string
-                    description: 'The folder inside `appLoc` holding the streamed web assets.'
+                    description: "The legacy folder inside `appLoc` holding the streamed web assets - present\nonly for an entry published before apps were frontends."
                 logo:
                     type: string
                     description: 'A logo to show on the app''s tile, when one was registered.'
@@ -298,8 +301,7 @@ components:
             required:
                 - id
                 - name
-                - appLoc
-                - streamWebFolder
+                - frontendFolder
                 - publishedAt
                 - entryFile
                 - entryFileExists
@@ -692,13 +694,16 @@ components:
             properties:
                 appLoc:
                     type: string
-                    description: 'The folder to deploy into; `/Public/apps/myapp`'
+                    description: "The folder to deploy into; `/Public/apps/myapp`. Optional: a bundle that\nnames its app is published to `apps/<name>`, and the `appLoc` it states is\nthe backend its frontend calls rather than where the files go."
+                name:
+                    type: string
+                    description: 'The app''s name, for a bundle that does not carry one in `sasjs.app.json`.'
                 streamWebFolder:
                     type: string
                     description: 'A folder of web assets inside the app to publish, e.g. `web`'
                 streamServiceName:
                     type: string
-                    description: "The name the app is published under. Derived from the last segment of\n`appLoc` when absent, with a short digest of the folder when that name is\nalready held by a different app."
+                    description: "The name the app is published under, in the older payload vocabulary.\nDerived from the last segment of `appLoc` when absent."
                 streamLogo:
                     type: string
                     description: 'A logo to show on the app''s tile'
@@ -708,7 +713,6 @@ components:
                 fileTree:
                     $ref: '#/components/schemas/FileTree'
             required:
-                - appLoc
                 - fileTree
             type: object
             additionalProperties: false
@@ -1812,7 +1816,7 @@ paths:
                                     value: {status: failure, message: 'Unpublishing failed!'}
                 '404':
                     description: 'No app is published with that id'
-            description: "Removes a published app.\n\nThe body names the app by **id** - the value the publish answered with - and\nnothing else. An app's label is shared by design (two folders may both be\ncalled \"report\") and its folder is where it was published rather than what it\nis, so neither is an identity: a removal that named a label could take down\nan app nobody meant, and a removal that named a folder would miss an app\nwhose deployment has since gone. The id removes exactly the app it names,\nwhatever the app is currently called.\n\nThe entry stops being advertised - the landing page and `/app/apps.json` are\nboth built from the index - and stops being served, because the id leaves the\nroute inventory as well. The drive content is left alone: deleting the folder\nis `DELETE /SASjsApi/drive/folder`, so unpublishing never destroys a\ndeployment, and publishing created no permission rule, so there is none to\nwithdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this route\nalready requires.\n\nAn id the index does not hold answers `404`; a body that names no id answers\n`400`."
+            description: "Removes a published app.\n\nThe body names the app by **id** - the value the publish answered with - and\nnothing else. An app's label is shared by design (two folders may both be\ncalled \"report\") and its folder is where it was published rather than what it\nis, so neither is an identity: a removal that named a label could take down\nan app nobody meant, and a removal that named a folder would miss an app\nwhose deployment has since gone. The id removes exactly the app it names,\nwhatever the app is currently called.\n\nThe entry stops being advertised - the landing page and `/app/apps.json` are\nboth built from the index - and stops being served, because the id leaves the\nroute inventory as well. Publishing created no permission rule, so there is\nnone to withdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this\nroute already requires.\n\nWhat happens to the files depends on the shape the app was published in. An\napp published as a frontend IS its folder, so `apps/<name>` is removed with\nit. A deployment published the older way keeps its files where they are - they\nsit inside a folder that may serve other apps - and its folder is removed with\n`DELETE /SASjsApi/drive/folder` by whoever owns it.\n\nAn id the index does not hold answers `404`; a body that names no id answers\n`400`."
             summary: 'Remove an app'
             tags:
                 - Drive
@@ -1875,7 +1879,14 @@ paths:
                     bearerAuth: []
             parameters:
                 -
-                    description: 'The folder to deploy into. Required when the archive is the app''s own files.'
+                    description: 'The app''s name, for an archive that carries no `sasjs.app.json`.'
+                    in: query
+                    name: name
+                    required: false
+                    schema:
+                        type: string
+                -
+                    description: 'The folder to deploy into, when the archive is files rather than an app.'
                     in: query
                     name: appLoc
                     required: false
@@ -1889,7 +1900,7 @@ paths:
                     schema:
                         type: string
                 -
-                    description: 'The name to publish under. Derived from the last segment of `appLoc` when absent.'
+                    description: 'The name to publish under, in the older payload vocabulary.'
                     in: query
                     name: streamServiceName
                     required: false

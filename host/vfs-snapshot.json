@@ -6,7 +6,7 @@
   "entries": {
     "/sasjs/drive/files/.sasjslint": {
       "shard": 0,
-      "bytes": 2023
+      "bytes": 2122
     },
     "/sasjs/drive/files/.sasjs/apps.json": {
       "shard": 0,
@@ -1725,7 +1725,7 @@
     {
       "id": 0,
       "file": "host/vfs-snapshot-0.json",
-      "bytes": 136077,
+      "bytes": 136176,
       "files": 43
     },
     {

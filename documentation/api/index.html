@@ -644,7 +644,7 @@
 <article class="md-content__inner md-typeset">
 <h1 id="api">API<a class="headerlink" href="#api" title="Permanent link">¶</a></h1>
 <p>SASjs Server speaks REST under <code>/SASjsApi</code>, and the specification below is the same one a running server publishes at <code>/swagger.yaml</code> (and renders at <code>/SASjsApi/</code>). Every release ships its own copy, so the reference always describes the endpoints that release actually has.</p>
-<p>The specification is checked in as <code>docs/pages/swagger.yaml</code> and rendered here at build time. <code>docs/scripts/check-server-docs.mjs</code> fails the build when that copy has drifted from the release these pages document, so the reference cannot quietly fall behind the code.</p>
+<p>The specification is generated, not checked in: the docs build copies <code>api/public/swagger.yaml</code> - the document tsoa generates from the controllers - to <code>docs/pages/swagger.yaml</code> and renders it. There is one authored copy, so the reference cannot quietly fall behind the code.</p>
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">¶</a></h2>
 <p>In <code>MODE=server</code> every endpoint except <code>/SASjsApi/info</code> and <code>/SASjsApi/auth/*</code> needs a credential:</p>
 <table>

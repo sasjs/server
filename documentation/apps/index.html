@@ -419,20 +419,38 @@
 </nav>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#publishing-a-folder-of-files">
+<a class="md-nav__link" href="#publishing-an-app">
 <span class="md-ellipsis">
       
-        Publishing a folder of files
+        Publishing an app
       
     </span>
 </a>
-<nav aria-label="Publishing a folder of files" class="md-nav">
-<ul class="md-nav__list">
+</li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#the-apps-id-and-the-label-it-is-known-by">
+<a class="md-nav__link" href="#publishing-a-frontend-and-its-backend">
 <span class="md-ellipsis">
       
-        The app's id, and the label it is known by
+        Publishing a frontend and its backend
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-older-shape">
+<span class="md-ellipsis">
+      
+        The older shape
+      
+    </span>
+</a>
+<nav aria-label="The older shape" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-apps-id-and-the-name-it-is-known-by">
+<span class="md-ellipsis">
+      
+        The app's id, and the name it is known by
       
     </span>
 </a>
@@ -851,20 +869,38 @@
 </nav>
 </li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#publishing-a-folder-of-files">
+<a class="md-nav__link" href="#publishing-an-app">
 <span class="md-ellipsis">
       
-        Publishing a folder of files
+        Publishing an app
       
     </span>
 </a>
-<nav aria-label="Publishing a folder of files" class="md-nav">
-<ul class="md-nav__list">
+</li>
 <li class="md-nav__item">
-<a class="md-nav__link" href="#the-apps-id-and-the-label-it-is-known-by">
+<a class="md-nav__link" href="#publishing-a-frontend-and-its-backend">
 <span class="md-ellipsis">
       
-        The app's id, and the label it is known by
+        Publishing a frontend and its backend
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-older-shape">
+<span class="md-ellipsis">
+      
+        The older shape
+      
+    </span>
+</a>
+<nav aria-label="The older shape" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#the-apps-id-and-the-name-it-is-known-by">
+<span class="md-ellipsis">
+      
+        The app's id, and the name it is known by
       
     </span>
 </a>
@@ -1106,55 +1142,81 @@
 <p>The refusal names the limit and the figure it reached, for example <code>The file tree exceeds the deploy limit: 10001 entries (maximum 10000).</code> Nothing is written before the checks pass, so a refused deploy leaves the drive exactly as it was.</p>
 <p>Sizes are decoded bytes. A file member travels as its own text, or as base64 when it says <code>encoding: "base64"</code> - four characters for every three bytes - so a tree at the total limit with binary members is up to a third larger on the wire than on the drive, and the transport admits that much. <code>POST /SASjsApi/drive/deploy/upload</code> applies the same limits to the tree it unpacks from the archive, not to the archive itself.</p>
 <p>Member names are checked in the same pass: a name carrying <code>/</code>, <code>\</code> or <code>..</code> would write outside the deployment folder, so the tree is refused with <code>400</code> instead.</p>
-<h2 id="publishing-a-folder-of-files">Publishing a folder of files<a class="headerlink" href="#publishing-a-folder-of-files" title="Permanent link">¶</a></h2>
-<p>An app does not need a compiled service pack. <code>POST /SASjsApi/drive/deploy/upload</code> takes a zip whose entries are the files to serve:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># the archive holds the app's files, rooted where the server serves them from:</span>
-</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="c1">#   services/web/index.html, services/web/app.js, assets/logo.png</span>
-</span><span id="__span-0-3"><a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&amp;streamWebFolder=web"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-5"><a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">  </span>-F<span class="w"> </span><span class="s2">"file=@harness.zip"</span>
+<h2 id="publishing-an-app">Publishing an app<a class="headerlink" href="#publishing-an-app" title="Permanent link">¶</a></h2>
+<p>The simplest publish is the compiled frontend itself: a zip of the folder a browser opens, with <code>name</code> giving the app its identity.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># the archive holds what the browser is served - index.html, app.js, assets/logo.png</span>
+</span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"https://my-server/SASjsApi/drive/deploy/upload?name=harness"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ***"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4"><a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">  </span>-F<span class="w"> </span><span class="s2">"file=@harness.zip"</span>
 </span></code></pre></div>
-<p>The archive's structure is kept under <code>appLoc</code>. What a deploy document would have said comes from the query: <code>appLoc</code> is required, <code>streamWebFolder</code> publishes that folder as an App Stream app, and <code>streamServiceName</code> sets its label.</p>
-<p>An app is served from <code>&lt;appLoc&gt;/services/&lt;streamWebFolder&gt;</code>, so that is where its entry page lives - the example above holds <code>services/web/index.html</code>. The same rule holds for <code>POST /SASjsApi/drive/deploy</code> with a JSON tree: a request that names <code>streamWebFolder</code> must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.</p>
-<p>A zip that contains a deploy document - a root-level JSON file naming <code>appLoc</code> or <code>fileTree</code> - is read as a document instead, so the route answers both shapes. A file naming only one of the two is refused with the missing field named. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.</p>
+<p>The entries become <code>apps/&lt;name&gt;</code> on the drive, and the app opens at <code>/app/&lt;name&gt;/</code>. The name is the app's key, its folder and its address, so it has to be usable as one URL segment - see <a href="#the-apps-id-and-the-name-it-is-known-by">The app's id, and the name it is known by</a>.</p>
+<h2 id="publishing-a-frontend-and-its-backend">Publishing a frontend and its backend<a class="headerlink" href="#publishing-a-frontend-and-its-backend" title="Permanent link">¶</a></h2>
+<p>A bundle can carry both halves, and that is what <code>sasjs build</code> writes for a server target:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a>macrodash.zip
+</span><span id="__span-1-2"><a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a>  sasjs.app.json        {"name": "macrodash", "appLoc": "/Public/app/macrodash"}
+</span><span id="__span-1-3"><a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a>  web/                  the compiled frontend
+</span><span id="__span-1-4"><a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a>  backend/              the services the frontend calls (optional)
+</span></code></pre></div>
+<p>One upload deploys the backend and publishes the frontend:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"https://my-server/SASjsApi/drive/deploy/upload"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ***"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">  </span>-F<span class="w"> </span><span class="s2">"file=@macrodash.zip"</span>
+</span></code></pre></div>
+<ul>
+<li>The CONTENTS of <code>web/</code> become <code>apps/&lt;name&gt;</code>: the folder is the container, not part of the app.</li>
+<li>The CONTENTS of <code>backend/</code> are written to <code>appLoc</code>, <strong>additively</strong>. A deploy writes what it carries and deletes nothing, because one backend may serve several frontends - a replacing write would delete the services another app put there.</li>
+<li><code>sasjs.app.json</code> is metadata: it is read before anything is written, and it is never served with the app.</li>
+</ul>
+<p>Two frontends can share one backend. Publish each with the same <code>appLoc</code> and a different <code>name</code>: each is its own app with its own id and URL, and the services are deployed by whichever bundle carries them.</p>
+<h2 id="the-older-shape">The older shape<a class="headerlink" href="#the-older-shape" title="Permanent link">¶</a></h2>
+<p>A deployment built before apps were frontends is published with the folder and the stream in the query, and keeps working unchanged:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="c1"># the archive holds services/web/index.html, services/web/app.js, assets/logo.png</span>
+</span><span id="__span-3-2"><a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&amp;streamWebFolder=web"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ***"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">  </span>-F<span class="w"> </span><span class="s2">"file=@harness.zip"</span>
+</span></code></pre></div>
+<p>The archive's structure is kept under <code>appLoc</code>, <code>streamWebFolder</code> publishes that folder as an App Stream app, and <code>streamServiceName</code> sets its label. Such an app is served from <code>&lt;appLoc&gt;/services/&lt;streamWebFolder&gt;</code>, so that is where its entry page lives - the example above holds <code>services/web/index.html</code> - and a request that names <code>streamWebFolder</code> must carry that folder, or it is refused with a message naming it rather than deployed.</p>
+<p>A zip that contains a deploy document - a root-level JSON file naming <code>appLoc</code> and <code>fileTree</code> - is read as a document instead, so the route answers both shapes. <code>sasjs.app.json</code> is never read as one, even though it names an <code>appLoc</code>: it is the bundle's own manifest. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.</p>
 <p>Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under <code>__MACOSX/</code>, and <code>.DS_Store</code>.</p>
-<h3 id="the-apps-id-and-the-label-it-is-known-by">The app's id, and the label it is known by<a class="headerlink" href="#the-apps-id-and-the-label-it-is-known-by" title="Permanent link">¶</a></h3>
-<p>A publish gives an app its identity. The first publish of a deployment mints a UUID, and that id is the app: its URL is <code>/app/&lt;id&gt;/</code>, a removal names it, and a redeploy of the same folder keeps it - so a new bundle never moves an app's URL. The deploy answer states it as <code>app: { id, name, url }</code>.</p>
-<p>The name is a label and only a label. It is what the tile says, and it may be shared: two folders may both be called <code>report</code>, because nothing addresses an app by its name. When <code>streamServiceName</code> is absent the label is the last segment of <code>appLoc</code> as it is spelled - <code>/Public/apps/dashdemo</code> publishes as <code>dashdemo</code>.</p>
+<h3 id="the-apps-id-and-the-name-it-is-known-by">The app's id, and the name it is known by<a class="headerlink" href="#the-apps-id-and-the-name-it-is-known-by" title="Permanent link">¶</a></h3>
+<p>A publish gives an app its identity. The first publish of an app mints a UUID, and that id is the app: its URL is <code>/app/&lt;id&gt;/</code>, a removal names it, and a redeploy keeps it - so a new bundle never moves an app's URL. The deploy answer states it as <code>app: { id, name, url }</code>.</p>
+<p>For an app published as a frontend the name is the key as well as the label: it is the folder (<code>apps/&lt;name&gt;</code>), the address (<code>/app/&lt;name&gt;/</code>) and what the tile says, so it has to be usable as one URL segment - letters, digits, dot, dash, underscore or tilde, starting with a letter or digit, at most 64 characters, and not <code>apps.json</code> or <code>index.html</code>, which the App Stream answers itself. A publish that states anything else is refused with <code>400</code>, and one that names an app another app already holds is refused with <code>409</code>. A rename is therefore a new app: publish under the new name, delete the old one.</p>
+<p>A legacy entry is keyed by its folder, and its name is a label and only a label: <code>streamServiceName</code> sets it, two folders may both be called <code>report</code>, and the name is derived from the last segment of <code>appLoc</code> when the publish states none.</p>
 <h3 id="the-bundles-manifest">The bundle's manifest<a class="headerlink" href="#the-bundles-manifest" title="Permanent link">¶</a></h3>
-<p>A compiled app may describe itself, in <code>sasjs.app.json</code> at the root of the archive:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span>
-</span><span id="__span-1-2"><a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dashboard"</span><span class="p">,</span>
-</span><span id="__span-1-3"><a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">  </span><span class="nt">"streamWebFolder"</span><span class="p">:</span><span class="w"> </span><span class="s2">"web"</span><span class="p">,</span>
-</span><span id="__span-1-4"><a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">  </span><span class="nt">"logo"</span><span class="p">:</span><span class="w"> </span><span class="s2">"assets/logo.png"</span><span class="p">,</span>
-</span><span id="__span-1-5"><a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">  </span><span class="nt">"frameAncestors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"https://example.com"</span><span class="p">]</span>
-</span><span id="__span-1-6"><a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="p">}</span>
+<p>A bundle may describe itself, in <code>sasjs.app.json</code> at the root of the archive:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="p">{</span>
+</span><span id="__span-4-2"><a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dashboard"</span><span class="p">,</span>
+</span><span id="__span-4-3"><a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">  </span><span class="nt">"appLoc"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/Public/app/dashboard"</span><span class="p">,</span>
+</span><span id="__span-4-4"><a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">  </span><span class="nt">"logo"</span><span class="p">:</span><span class="w"> </span><span class="s2">"assets/logo.png"</span><span class="p">,</span>
+</span><span id="__span-4-5"><a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">  </span><span class="nt">"frameAncestors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"https://example.com"</span><span class="p">]</span>
+</span><span id="__span-4-6"><a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>streamWebFolder</code> is the folder under <code>&lt;appLoc&gt;/services</code> holding the app's web assets; <code>name</code>, <code>logo</code> and <code>frameAncestors</code> are optional. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak - a caller naming a folder or a label is correcting the archive. The SASjs CLI writes the manifest into the deploy tree when a target has a stream configuration.</p>
+<p><code>name</code> says which app the frontend is and <code>appLoc</code> which backend it calls; both are optional in the file, because the request may state them instead. <code>streamWebFolder</code> states the older shape - a manifest carrying it publishes the legacy way, with the web assets under <code>&lt;appLoc&gt;/services/&lt;streamWebFolder&gt;</code> - and is what an older CLI writes. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak: a caller naming a folder, a name or a label is correcting the archive.</p>
 <h3 id="removing-an-app">Removing an app<a class="headerlink" href="#removing-an-app" title="Permanent link">¶</a></h3>
-<p><code>DELETE /SASjsApi/drive/deploy</code> takes <code>{ "id": "&lt;id&gt;" }</code> and nothing else. The app stops being advertised and stops being served; the deployment's files stay in the drive, because deleting those is <code>DELETE /SASjsApi/drive/folder</code>.</p>
+<p><code>DELETE /AppStream/&lt;id&gt;</code> - or <code>/app/&lt;id&gt;</code>, which is the same surface - and <code>DELETE /SASjsApi/drive/deploy</code> with <code>{ "id": "&lt;id&gt;" }</code> do the same thing: the app stops being advertised and stops being served.</p>
+<p>An app published as a frontend is its folder, so unpublishing removes <code>apps/&lt;name&gt;</code> with the entry. A legacy entry's files sit inside a backend folder that may serve other apps, so those are left where they are, and the folder goes with <code>DELETE /SASjsApi/drive/folder</code> by whoever owns the deployment.</p>
 <h3 id="replacing-the-folder">Replacing the folder<a class="headerlink" href="#replacing-the-folder" title="Permanent link">¶</a></h3>
-<p><code>POST /SASjsApi/drive/deploy</code> takes <code>replace: true</code> to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a folder means the folder is what the archive says it is - and <code>?replace=false</code> keeps what is already there.</p>
-<p>The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder, not just the app being deployed.</p>
+<p><code>POST /SASjsApi/drive/deploy</code> takes <code>replace: true</code> to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a frontend means <code>apps/&lt;name&gt;</code> is what the archive says it is - and <code>?replace=false</code> keeps what is already there.</p>
+<p>A package's backend is the exception: it is written additively however <code>replace</code> is set, because one backend may serve several frontends.</p>
+<p>The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder rather than just the app being deployed - which is why a backend several frontends share is written additively instead.</p>
 <h3 id="text-and-binary-file-members">Text and binary file members<a class="headerlink" href="#text-and-binary-file-members" title="Permanent link">¶</a></h3>
 <p>A <code>file</code> member carries the caller's own text by default. An asset that is not text states <code>encoding: "base64"</code>, and its <code>code</code> is base64 of the bytes to write:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="p">{</span>
-</span><span id="__span-2-2"><a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="nt">"members"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-2-3"><a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"index.html"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;h1&gt;Hello&lt;/h1&gt;"</span><span class="w"> </span><span class="p">},</span>
-</span><span id="__span-2-4"><a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"logo.png"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span><span class="w"> </span><span class="nt">"encoding"</span><span class="p">:</span><span class="w"> </span><span class="s2">"base64"</span><span class="p">,</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"iVBORw0..."</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-2-5"><a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-2-6"><a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="p">{</span>
+</span><span id="__span-5-2"><a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="w">  </span><span class="nt">"members"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-5-3"><a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"index.html"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;h1&gt;Hello&lt;/h1&gt;"</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-4"><a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"logo.png"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file"</span><span class="p">,</span><span class="w"> </span><span class="nt">"encoding"</span><span class="p">:</span><span class="w"> </span><span class="s2">"base64"</span><span class="p">,</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"iVBORw0..."</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-5"><a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-5-6"><a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Nothing is guessed from the contents: <code>test</code> and <code>data</code> are both valid base64, so a guess would corrupt short text rather than decode a file. An archive upload marks every entry <code>base64</code>, because an archive holds bytes.</p>
 <p>A deploy document written by a client older than <code>@sasjs/api</code> 0.24 states no <code>encoding</code> and carries its files as base64, which this server now reads as text - so such a document has to add <code>encoding: "base64"</code> to each <code>file</code> member. The CLI states it for the assets it builds.</p>
 <h2 id="the-apps-url">The app's URL<a class="headerlink" href="#the-apps-url" title="Permanent link">¶</a></h2>
 <p>An app answers on two URLs.</p>
 <ul>
-<li><code>/AppStream/&lt;id&gt;</code> - the id is a UUID, minted when the folder is first published and kept when it is published again, so this URL survives a redeploy and a rename.</li>
-<li><code>/AppStream/&lt;name&gt;</code> - the readable form, which is what a person shares. It is resolved only when exactly one app holds that name; an ambiguous name answers <code>404</code> rather than guessing which app was meant.</li>
+<li><code>/AppStream/&lt;id&gt;</code> - the id is a UUID, minted at the first publish and kept when the app is published again, so this URL survives a redeploy.</li>
+<li><code>/AppStream/&lt;name&gt;</code> - the readable form, which is what a person shares. An app published as a frontend holds its name uniquely, so this address is always available to it. A legacy entry's name may be shared, and an ambiguous one answers <code>404</code> rather than guessing which app was meant.</li>
 </ul>
-<p>A name a deploy <em>states</em> (<code>streamServiceName</code> in a compiled pack, <code>name</code> on the deploy routes) is the app's address as well as its label, so it has to be spellable as one URL segment: letters, digits, dot, dash, underscore or tilde, starting with a letter or digit, at most 64 characters, and not <code>apps.json</code> or <code>index.html</code> - which the App Stream answers itself. A publish that states anything else is refused with <code>400</code>, and one that states a name another app already answers on is refused with <code>409</code>, naming the folder that holds it.</p>
-<p>A name derived from the folder carries no such rule: it is what a first publish that states no name gets, it is a label rather than an address, and two folders may share a leaf name. Such an app opens by id, or by name through percent-encoding when the name is unique. A later publish that states nothing inherits the name the app already has - stated or derived - so a deploy never renames an app back to its folder.</p>
+<p>The id is what the permission model speaks, and it is the handle every removal names. A rename does not exist: an app published as a frontend IS its name, so a new name is a new app.</p>
 <h2 id="one-pack-either-run-time">One pack, either run time<a class="headerlink" href="#one-pack-either-run-time" title="Permanent link">¶</a></h2>
 <p>A SASjs Server runs programs as SAS or as JavaScript, chosen by <code>RUN_TIMES</code>. A deployment can carry both: the SAS service <code>services/common/configure</code> and the JS program <code>services/common/configure.js</code> sit side by side under the app's folder, and the run time decides which one runs. A pack built for a server that runs JS - the <code>server</code> target of a SASjs app with its JS mocks in <code>serviceFolders</code> - therefore works on either without a second build, and a browser-hosted site (which is a JS host) runs the same programs.</p>
 <h2 id="securing-apps">Securing Apps<a class="headerlink" href="#securing-apps" title="Permanent link">¶</a></h2>
