@@ -80,6 +80,34 @@ describe('what a deploy publishes', () => {
     ])
   })
 
+  it('deploys one tree when the manifest names the older shape, whatever it holds', () => {
+    // a deployment may simply contain a folder called `web`. `streamWebFolder` is
+    // the field that says the whole tree goes to `appLoc`, so it decides - reading
+    // the folder as a package frontend would deploy half a tree and publish the
+    // other half
+    const withWeb = bundle({
+      name: 'Older',
+      appLoc: '/Public/app/older',
+      streamWebFolder: 'web'
+    })
+
+    withWeb.members.push({
+      name: 'web',
+      type: 'folder',
+      members: [{ name: 'index.html', type: 'file', code: '<h1/>' }]
+    } as any)
+
+    const prepared = prepareDeploy({ fileTree: withWeb })
+
+    expect(prepared.frontend).toBeUndefined()
+
+    expect(prepared.request).toMatchObject({ streamWebFolder: 'web' })
+
+    expect(
+      (prepared.tree as any).members.map((member: any) => member.name)
+    ).toEqual(['services', 'web'])
+  })
+
   it('lets the request correct the archive where both speak', () => {
     const { request } = prepareDeploy({
       appLoc: '/Public/apps/mario',
