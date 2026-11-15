@@ -35,8 +35,8 @@
  * services are the package's; this file supplies the transport, the worker's own
  * activity, and the browser's answers to questions a server asks its process.
  */
-importScripts('host/runtime-core.js?v=4f54de23c9')
-importScripts('host/api-browser.js?v=4f54de23c9')
+importScripts('host/runtime-core.js?v=6fdacf6bab')
+importScripts('host/api-browser.js?v=6fdacf6bab')
 
 const R = self.SASjsMockRuntime
 
@@ -979,7 +979,7 @@ let linter
 
 const code = () => {
   if (codeService) return codeService
-  importScripts('host/lint-browser.js?v=4f54de23c9')
+  importScripts('host/lint-browser.js?v=6fdacf6bab')
   linter = self.SASjsCode
   codeService = linter.createCodeService({ lintConfig })
   return codeService
