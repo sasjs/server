@@ -36,7 +36,7 @@ export const apiHost = (): ApiHost => {
  * out` works because the frame's calls reach the server that answered it.
  *
  * A browser host serves a console instead - `sasjs/cli`'s mock build writes one at
- * `<base>/api/`: the route table the worker answers, one form per operation - so
+ * `<base>/api-console/`: the route table the worker answers, one form per operation - so
  * that is what documents the API that is running. There is no other page to show.
  *
  * The folder is the site's, and the page does not carry it in its markup: the
@@ -46,13 +46,71 @@ export const apiHost = (): ApiHost => {
  * controller is one whose API answers nothing, where the origin root is the only
  * answer worth giving.
  */
-export const apiDocsUrl = (serverPath: string): string => {
-  if (apiHost() === 'server') return serverPath
-  if (typeof navigator === 'undefined') return '/api/'
+export interface ApiDocsTarget {
+  /** Same-origin path of the console the pane should frame. */
+  url: string
+  /**
+   * Whether `url` came from the worker, or is the origin root guessed.
+   *
+   * It decides what a `404` means. A path derived from the controller is what the
+   * site registered, so a 404 there is the build saying it wrote no console. The
+   * root fallback is a guess made before the worker took control - a first visit to
+   * a site published in a folder reaches the pane before `clients.claim()` - and a
+   * 404 against it says nothing about the site's own console.
+   */
+  fromWorker: boolean
+}
+
+/** The console the pane would frame, and how sure the address is. */
+export const apiDocsTarget = (serverPath: string): ApiDocsTarget => {
+  if (apiHost() === 'server') return { url: serverPath, fromWorker: true }
+  if (typeof navigator === 'undefined')
+    return { url: '/api-console/', fromWorker: false }
 
   const script = navigator.serviceWorker?.controller?.scriptURL
-  if (!script) return '/api/'
+  if (!script) return { url: '/api-console/', fromWorker: false }
 
   const path = new URL(script).pathname
-  return path.replace(/sw\.js$/, '') + 'api/'
+  return { url: path.replace(/sw\.js$/, '') + 'api-console/', fromWorker: true }
+}
+
+/**
+ * Whether a probe's answer means the build wrote no console.
+ *
+ * Only a `404` or a `410` does - anything else is a page that is merely
+ * unreachable, and saying "this build carries no console" about one sends the
+ * reader to the wrong place.
+ *
+ * And only when the address was the worker's: the origin-root fallback is a guess
+ * made before the worker took control, so a 404 against it is the absence of a
+ * path this site never had, not of the console it wrote under its own folder.
+ */
+export const consoleAbsent = (status: number, fromWorker: boolean): boolean =>
+  fromWorker && (status === 404 || status === 410)
+
+/**
+ * Whether the page at `url` is there at all.
+ *
+ * A browser host frames the console its build wrote, but a build may not have
+ * written one: `mockApi: false` leaves it out, and so does a project that already
+ * ships files at that folder. The pane cannot tell a missing page from a slow one
+ * after the fact - both leave an empty frame - so it asks first, once.
+ *
+ * `fromWorker` is the target's own word on whether the address can be trusted to
+ * mean something, and a probe that cannot conclude answers "there" so the frame is
+ * left to report what it finds.
+ */
+export const consolePresent = async (
+  url: string,
+  fromWorker: boolean
+): Promise<boolean> => {
+  if (!fromWorker) return true
+  if (typeof fetch !== 'function') return true
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' })
+    return !consoleAbsent(response.status, fromWorker)
+  } catch (e) {
+    return true
+  }
 }

@@ -2,6 +2,8 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Box, Button, Typography } from '@mui/material'
 import { OpenInNew } from '@mui/icons-material'
 
+import { expiredReason, mirroredReason } from '../utils/frame'
+
 import { useColorMode } from '../utils/hooks'
 
 /** The header's dense toolbar, which this pane sits below. */
@@ -25,7 +27,7 @@ const FRAME_TIMEOUT_MS = 10000
  * slow first request, a proxy, or a framing header of its own - where telling
  * them to edit the policy sends them to the wrong place.
  */
-export type BlockedReason = 'refused' | 'unavailable'
+export type BlockedReason = 'refused' | 'unavailable' | 'absent'
 
 export interface FramedPaneProps {
   /** Same-origin path of the document to show. */
@@ -40,6 +42,21 @@ export interface FramedPaneProps {
   refusalHelp: ReactNode
   /** What the reader is told when the page never arrives. */
   unavailableHelp: ReactNode
+  /**
+   * The page this pane would show was never written.
+   *
+   * The caller cannot know this before the frame mounts - it is a request away - so
+   * the verdict arrives after, and the timer carries it: `expiredReason` answers
+   * `absent` before it answers `unavailable`. It is read as the prop's current
+   * value rather than remembered, because the caller can withdraw it: a probe made
+   * before the site's worker controls the page is provisional, and the site's own
+   * answer replaces it.
+   */
+  absent?: boolean
+  /** The heading shown in place of `blockedHeading` when `absent` is set. */
+  absentHeading?: string
+  /** What the reader is told when the page was never written. */
+  absentHelp?: ReactNode
   /**
    * How the framed document takes the app's colour scheme.
    *
@@ -87,12 +104,24 @@ const FramedPane = ({
   blockedHeading,
   refusalHelp,
   unavailableHelp,
+  absent = false,
+  absentHeading,
+  absentHelp,
   themeSync = 'none',
   onNavigate
 }: FramedPaneProps) => {
   const [colorMode] = useColorMode()
   const [frameSrc, setFrameSrc] = useState(src)
-  const [blocked, setBlocked] = useState<BlockedReason | null>(null)
+  const [blocked, setBlocked] = useState<BlockedReason | null>(
+    absent ? 'absent' : null
+  )
+
+  // the reason follows the prop in both directions: the caller learns the page was
+  // never written after this pane mounted, and can withdraw it when a later probe
+  // finds the console
+  useEffect(() => {
+    setBlocked((current) => mirroredReason(absent, current))
+  }, [absent])
   const frameRef = useRef<HTMLIFrameElement>(null)
   /** Set by the frame's own load event; read by the refusal backstop. */
   const loadedRef = useRef(false)
@@ -249,14 +278,15 @@ const FramedPane = ({
     // mismatch raises none - and for a page that never arrives. The frame
     // reports its own load, so a slow proxy is not mistaken for a refusal.
     timer = window.setTimeout(() => {
-      if (!loadedRef.current) setBlocked('unavailable')
+      const reason = expiredReason(loadedRef.current, absent)
+      if (reason) setBlocked(reason)
     }, FRAME_TIMEOUT_MS)
 
     return () => {
       document.removeEventListener('securitypolicyviolation', onViolation)
       window.clearTimeout(timer)
     }
-  }, [src])
+  }, [src, absent])
 
   return (
     <Box
@@ -273,10 +303,16 @@ const FramedPane = ({
       {blocked ? (
         <Box sx={{ p: 3, maxWidth: 640 }}>
           <Typography variant="subtitle1" gutterBottom>
-            {blockedHeading}
+            {blocked === 'absent' && absentHeading
+              ? absentHeading
+              : blockedHeading}
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            {blocked === 'refused' ? refusalHelp : unavailableHelp}
+            {blocked === 'refused'
+              ? refusalHelp
+              : blocked === 'absent'
+                ? absentHelp
+                : unavailableHelp}
           </Typography>
           <Button
             variant="outlined"
