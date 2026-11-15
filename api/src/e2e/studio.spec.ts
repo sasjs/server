@@ -323,23 +323,22 @@ describe('Studio in a browser', () => {
 
     if (tokens.length === 0) {
       const dump = await page.evaluate(() => {
-        const lines = document.querySelectorAll('.view-line')
-        const backdrop = document.querySelector('.MuiBackdrop-root')
-        const editor = document.querySelector('.monaco-editor')
-        const root = document.getElementById('root')
+        const tabs = Array.from(document.querySelectorAll('[role="tab"]')).map(
+          (t) => `${t.textContent}:${t.getAttribute('aria-selected')}`
+        )
         return {
-          lines: lines.length,
-          viewLines: document.querySelector('.view-lines')?.innerHTML.slice(0, 300) ?? 'none',
-          backdrop: backdrop ? (backdrop as HTMLElement).outerHTML.slice(0, 200) : 'none',
-          editorPresent: Boolean(editor),
-          editorBox: editor ? JSON.stringify(editor.getBoundingClientRect()) : 'none',
-          rootChildren: root?.childElementCount ?? -1,
-          bodyText: (document.body.innerText || '').slice(0, 200)
+          href: window.location.href,
+          lines: document.querySelectorAll('.view-line').length,
+          editorPresent: Boolean(document.querySelector('.monaco-editor')),
+          tabs,
+          paper: Boolean(document.querySelector('.MuiPaper-root')),
+          tablists: document.querySelectorAll('[role="tablist"]').length,
+          bodyText: (document.body.innerText || '').replace(/\n+/g, ' | ').slice(0, 700)
         }
       })
       console.log('DEBUG-EMPTY ' + JSON.stringify(dump))
       console.log('DEBUG-PAGEERRORS ' + JSON.stringify(pageErrors))
-      await page.screenshot({ path: path.join(screenshotDir, 'zz-debug.png'), fullPage: false })
+      await page.screenshot({ path: path.join(screenshotDir, 'zz-debug.png') })
     }
 
     const colourOf = (text: string) =>
