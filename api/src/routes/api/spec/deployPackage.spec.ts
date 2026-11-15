@@ -5,7 +5,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import AdmZip from 'adm-zip'
 
-import { deleteFolder, fileExists, readFile, createFile } from '@sasjs/utils'
+import { readdirSync } from 'fs'
+
+import { deleteFolder, fileExists, readFile } from '@sasjs/utils'
 import * as fileUtilModules from '../../../utils/file'
 
 const tmpFolder = path.join(process.cwd(), `tmp-app-package-${process.pid}`)
@@ -80,6 +82,15 @@ const packageTree = (
 
 const onDisk = (...segments: string[]) =>
   path.join(getFilesFolder(), ...segments)
+
+/** What `apps/` holds, for a case that asserts nothing was written. */
+const frontends = (): string[] => {
+  try {
+    return readdirSync(onDisk('apps')).sort()
+  } catch (_) {
+    return []
+  }
+}
 
 describe('a deploy of a package', () => {
   let app: Express
@@ -317,17 +328,19 @@ describe('a deploy of a package', () => {
   })
 
   it('refuses a package with no name, and writes nothing', async () => {
-    await createFile(path.join(tmpFolder, 'probe.txt'), 'x')
-
-    const res = await deploy({
+    // what the drive holds before, and not a path guessed from the fixture: a
+    // folder named after a page's CONTENTS would never be written, so asserting
+    // its absence proved nothing
+    const before = frontends()
+    const entry = await deploy({
       fileTree: {
         members: [folder('web', [file('index.html', '<h1>anon</h1>')])]
       }
     })
 
-    expect(res.status).toBe(400)
-    expect(res.body.message).toMatch(/"name" is required/)
-    expect(await fileExists(onDisk('apps', 'anon'))).toBe(false)
+    expect(entry.status).toBe(400)
+    expect(entry.body.message).toMatch(/"name" is required/)
+    expect(frontends()).toEqual(before)
   })
 
   it('removes the frontend through the deploy route too, so both removals agree', async () => {
@@ -351,5 +364,30 @@ describe('a deploy of a package', () => {
         (candidate) => candidate.id === entry.id
       )
     ).toBeUndefined()
+  })
+
+  it('refuses a bundle that carries web/ and names the older shape', async () => {
+    const before = frontends()
+
+    const res = await deploy({
+      fileTree: {
+        members: [
+          {
+            name: 'sasjs.app.json',
+            type: 'file',
+            code: JSON.stringify({
+              name: 'both-shapes',
+              appLoc: '/Public/app/both',
+              streamWebFolder: 'web'
+            })
+          },
+          folder('web', [file('index.html', '<h1>both</h1>')])
+        ]
+      }
+    })
+
+    expect(res.status).toBe(400)
+    expect(res.body.message).toMatch(/cannot also state "streamWebFolder"/)
+    expect(frontends()).toEqual(before)
   })
 })
