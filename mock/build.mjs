@@ -50,6 +50,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * reaches the site when this number moves, in a commit that says which fix.
  * `SASJS_CLI_VERSION` still overrides it for a one-off build.
  */
+// 6.32.0 is the release that writes the API console to `<base>/api-console/`
+// (sasjs/cli#1603); before it the console was written to `<base>/api/`, where the
+// shell copy this file writes for the app's own route covered it up, and the API
+// screen then framed the application inside itself.
+//
 // Pinned to the release that carries the sas-transcript support (sasjs/cli#1575),
 // the drive-backed App Stream, the run times this host actually answers, the
 // paint-critical script marker, and the drive's own lint rules: before 6.27.1 the
@@ -69,7 +74,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.31.0'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.32.0'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
@@ -183,7 +188,7 @@ if (!existsSync(index))
 // The page the API screen frames on this site. Absent, that screen frames the
 // application inside itself - worse than the refusal it replaced - so a CLI that
 // does not write one has to fail the build rather than the visitor.
-const consolePage = path.join(site, 'api', 'index.html')
+const consolePage = path.join(site, 'api-console', 'index.html')
 
 if (!existsSync(consolePage))
   // The absence has three causes and the message names all three: a pin that
@@ -193,7 +198,8 @@ if (!existsSync(consolePage))
     `The mock site has no API console: expected ${consolePage}. ` +
       `Either the target sets streamConfig.mockApi: false, or the site already ` +
       `carries one of the console's four files so the build kept them (it warns ` +
-      `when it does), or @sasjs/cli ${CLI_VERSION} predates the console.`
+      `when it does), or @sasjs/cli ${CLI_VERSION} predates the console, which ` +
+      `wrote it to api/ until 6.32.0.`
   )
 
 // GitHub Pages answers an unknown path from 404.html, and a static host cannot
