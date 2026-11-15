@@ -257,6 +257,27 @@ check(
   markdownToHtml('[site](https://example.com)\n').includes('target="_blank"')
 )
 
+check(
+  'an anchor on its own line names the heading below it',
+  markdownToHtml('<a name="helpinfo"></a>\n\n## Help\n').includes(
+    '<h2 id="helpinfo">Help</h2>'
+  )
+)
+check(
+  'an anchor on its own line is not printed as text',
+  !markdownToHtml('<a name="helpinfo"></a>\n\n## Help\n').includes('&lt;a name')
+)
+check(
+  'an anchor that names no heading still exists',
+  markdownToHtml('<a name="orphan"></a>\n').includes('<a id="orphan"></a>')
+)
+check(
+  'a repeated heading does not repeat an id',
+  markdownToHtml('## Usage\n\ntext\n\n## Usage\n').includes(
+    '<h2 id="usage-1">Usage</h2>'
+  )
+)
+
 // --- markdown --------------------------------------------------------------
 
 const html = markdownToHtml(

@@ -68,3 +68,25 @@ export const requireWebBuild = () => {
       `No web build at ${folder}. Run \`npm run build\` in web/ before the browser test.`
     )
 }
+
+/**
+ * A Markdown file on the drive, for the preview pane.
+ *
+ * Two headings and a link between them: enough to open the file in the split
+ * view, and enough to say that a `#section` link lands on the section.
+ */
+export const NOTES_NAME = 'notes.md'
+
+export const NOTES = [
+  '# Studio notes',
+  '',
+  'Some prose, so the file is not only headings.',
+  '',
+  '## First section',
+  '',
+  'Read the [second section](#second-section) next.',
+  '',
+  '## Second section <a name="second"></a>',
+  '',
+  'The end.'
+].join('\n')

@@ -931,4 +931,64 @@ describe('Studio in a browser', () => {
 
     await page.unroute(check)
   }, 120000)
+
+  it('links a folder, and opens the way to it', async () => {
+    const asked: string[] = []
+
+    page.on('request', (request) => {
+      if (!request.url().includes('/SASjsApi/drive/fileTree')) return
+
+      const askedFor = new URL(request.url()).searchParams.get('_folderPath')
+      if (askedFor !== null) asked.push(askedFor)
+    })
+
+    await page.goto(`${baseUrl()}/studio?folderPath=${encodeURIComponent('/')}`)
+
+    // The URL is the folder's address, and the panel says so rather than showing
+    // an empty editor over it.
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('folderPath=/'),
+      { timeout: 30000 }
+    )
+    await page.waitForSelector('text=A folder. Its address is the URL', {
+      timeout: 30000
+    })
+
+    expect(asked.length).toBeGreaterThan(0)
+
+    // A folder in a nested path is opened by walking to it, one level at a time.
+    asked.length = 0
+    await page.goto(
+      `${baseUrl()}/studio?folderPath=${encodeURIComponent('/Public/demo')}`
+    )
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('/Public/demo'),
+      { timeout: 30000 }
+    )
+    await page.waitForTimeout(1500)
+
+    expect(asked).toContain('/')
+    expect(asked).toContain('/Public')
+  }, 120000)
+
+  it('opens a markdown file in the split view, at this window width', async () => {
+    // The viewport this suite runs at is 1280x800, above SPLIT_VIEW_MIN_WIDTH, so
+    // the text and the rendering arrive together - the default this change made,
+    // and one no other test would notice going back to source-only.
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(`/${NOTES_NAME}`)}`
+    )
+
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('notes.md'),
+      { timeout: 30000 }
+    )
+
+    const split = page.locator('button[value="split"]')
+    await split.waitFor({ timeout: 30000 })
+
+    expect(await split.getAttribute('aria-pressed')).toBe('true')
+    // and the rendering is there, not only the toggle
+    await page.waitForSelector('text=First section', { timeout: 30000 })
+  }, 120000)
 })

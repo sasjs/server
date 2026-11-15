@@ -67,6 +67,9 @@ export const headingAnchor = (text: string): { id: string; text: string } => {
   return { id: slugifyHeading(text), text }
 }
 
+/** A line that is nothing but an anchor: it names the section that follows it. */
+const ANCHOR_ONLY_LINE = /^\s*<a\s+(?:name|id)\s*=\s*"([^"]+)"\s*>\s*<\/a>\s*$/i
+
 /** Inline markup: code spans first, so their contents are not re-read. */
 const inline = (text: string): string => {
   const code: string[] = []
@@ -134,6 +137,17 @@ export const markdownToHtml = (markdown: string): string => {
 
   let paragraph: string[] = []
   let list: { tag: 'ul' | 'ol'; items: string[] } | null = null
+  /** An id an anchor-only line set aside for the heading below it. */
+  let pendingAnchor = ''
+  /** Ids already used, so a repeated heading does not repeat an id. */
+  const usedIds = new Map<string, number>()
+
+  const uniqueId = (id: string) => {
+    const seen = usedIds.get(id) ?? 0
+    usedIds.set(id, seen + 1)
+
+    return seen === 0 ? id : `${id}-${seen}`
+  }
 
   const closeParagraph = () => {
     if (!paragraph.length) return
@@ -177,6 +191,17 @@ export const markdownToHtml = (markdown: string): string => {
       continue
     }
 
+    const anchorOnly = ANCHOR_ONLY_LINE.exec(line)
+
+    if (anchorOnly) {
+      // Not rendered as text: it is the section's name, and it belongs on the
+      // heading underneath - which is why the anchor is held until one arrives.
+      closeParagraph()
+      closeList()
+      pendingAnchor = anchorOnly[1]
+      continue
+    }
+
     const heading = /^\s*(#{1,6})\s+(.*)$/.exec(line)
 
     if (heading) {
@@ -184,12 +209,15 @@ export const markdownToHtml = (markdown: string): string => {
       closeList()
 
       const level = heading[1].length
-      const { id, text } = headingAnchor(heading[2].trim())
+      const anchor = headingAnchor(heading[2].trim())
+      const id = pendingAnchor || anchor.id
+      const text = anchor.text
+      pendingAnchor = ''
       // An id on every heading: `#anything` in a README is a link someone may
       // arrive on, and an id is what the pane scrolls to.
       html.push(
         id
-          ? `<h${level} id="${escapeHtml(id)}">${inline(text)}</h${level}>`
+          ? `<h${level} id="${escapeHtml(uniqueId(id))}">${inline(text)}</h${level}>`
           : `<h${level}>${inline(text)}</h${level}>`
       )
       continue
@@ -240,6 +268,11 @@ export const markdownToHtml = (markdown: string): string => {
 
   closeParagraph()
   closeList()
+
+  // An anchor that named no heading still has to exist: a link to it is a link
+  // someone may follow.
+  if (pendingAnchor)
+    html.push(`<a id="${escapeHtml(uniqueId(pendingAnchor))}"></a>`)
 
   return html.join('\n')
 }
