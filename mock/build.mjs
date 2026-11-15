@@ -50,10 +50,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * reaches the site when this number moves, in a commit that says which fix.
  * `SASJS_CLI_VERSION` still overrides it for a one-off build.
  */
-// 6.32.0 is the release that writes the API console to `<base>/api-console/`
-// (sasjs/cli#1603); before it the console was written to `<base>/api/`, where the
-// shell copy this file writes for the app's own route covered it up, and the API
-// screen then framed the application inside itself.
+// 6.32.0 writes the API console to `<base>/api-console/` (sasjs/cli#1603), which is
+// where the screen frames it; 6.32.1 imports the linter with the host
+// (sasjs/cli#1608), without which `code/lint` and `code/format` answer 500 in every
+// browser build and the Studio shows no markers at all.
 //
 // Pinned to the release that carries the sas-transcript support (sasjs/cli#1575),
 // the drive-backed App Stream, the run times this host actually answers, the
@@ -68,13 +68,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // text, so every picture in the drive failed to render; and before 6.30.0 it
 // passed the linter no configuration at all, so the Studio linted and formatted
 // against @sasjs/lint's defaults and a `.sasjslint` edited on the drive changed
-// nothing - the file was displayed and never read; and before 6.31.0 it wrote no
-// API console, so the API screen framed the application itself (the console is
-// `<base>/api/`, written by the same build, and the screen picks it by host).
+// nothing - the file was displayed and never read; before 6.31.0 it wrote no API
+// console, so the API screen framed the application itself; and before 6.32.0 it
+// wrote the console to `<base>/api/`, where this build's shell for the app's own
+// route covered it, so the screen reported a build that carries no console.
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.32.0'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.32.1'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
