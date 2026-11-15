@@ -26,7 +26,7 @@ const {
   storedDisplayMode
 } = await import('../src/containers/Studio/internal/displayMode.ts')
 
-const { markdownToHtml, isSafeHref } =
+const { headingAnchor, markdownToHtml, isSafeHref, slugifyHeading } =
   await import('../src/containers/Studio/internal/render/markdown.ts')
 const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
   await import('../src/containers/Studio/internal/render/csv.ts')
@@ -208,13 +208,65 @@ check(
   }) === 'source'
 )
 
+/*
+ * Anchors in a Markdown document: a section someone links to, and the links a
+ * reader follows to it. The SAS Packages framework's own markdown carries
+ * `<a name="helpinfo"></a>` inside a heading, which the renderer used to show as
+ * text - so a `#helpinfo` link had nowhere to land.
+ */
+check(
+  'an inline anchor becomes the heading id',
+  headingAnchor('This is short help information <a name="helpinfo"></a>').id ===
+    'helpinfo'
+)
+check(
+  'the inline anchor is not left in the text',
+  headingAnchor('This is short help information <a name="helpinfo"></a>')
+    .text === 'This is short help information'
+)
+check(
+  'a plain heading is slugified',
+  slugifyHeading('Tutorial on SAS Packages') === 'tutorial-on-sas-packages'
+)
+check(
+  'punctuation does not reach the id',
+  slugifyHeading('Parameters:') === 'parameters'
+)
+check(
+  'the heading carries the id in the output',
+  markdownToHtml('## Help <a name="helpinfo"></a>\n').includes(
+    '<h2 id="helpinfo">Help</h2>'
+  )
+)
+check(
+  'a bare heading gets a slug id',
+  markdownToHtml('### Parameters:\n').includes('<h3 id="parameters">')
+)
+check(
+  'a link to a section stays in the pane',
+  markdownToHtml('[help](#helpinfo)\n').includes(
+    '<a href="#helpinfo" data-anchor="1">'
+  )
+)
+check(
+  'a link to a section does not open a tab',
+  !markdownToHtml('[help](#helpinfo)\n').includes('target="_blank"')
+)
+check(
+  'an external link still opens one',
+  markdownToHtml('[site](https://example.com)\n').includes('target="_blank"')
+)
+
 // --- markdown --------------------------------------------------------------
 
 const html = markdownToHtml(
   '# Title\n\nSome **bold** and `code`.\n\n```\ndata x; run;\n```\n\n- one\n- two\n\n[ok](https://example.com)\n[bad](javascript:alert(1))\n'
 )
 
-check('a heading renders', html.includes('<h1>Title</h1>'))
+check(
+  'a heading renders, with the id a link needs',
+  html.includes('<h1 id="title">Title</h1>')
+)
 check('bold renders', html.includes('<strong>bold</strong>'))
 check('inline code renders', html.includes('<code>code</code>'))
 check(
