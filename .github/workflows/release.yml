@@ -290,24 +290,73 @@ jobs:
           sha256sum linux.zip macos.zip windows.zip > SHA256SUMS
           cat SHA256SUMS
 
+      # A version on npm with no tag for it means the two records already
+      # disagree: the next release numbers itself from the tags, so it would ship
+      # a version that is not the one users have. Refuse rather than paper over it,
+      # and say what to do - this is the state a published-but-untagged run leaves.
+      - name: Is this version already on npm?
+        if: steps.pending.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.pending.outputs.version }}
+        run: |
+          set -euo pipefail
+          V="${VERSION#v}"
+          if npm view "@sasjs/server@${V}" version >/dev/null 2>&1; then
+            echo "::error::@sasjs/server@${V} is already on npm, but no tag points at it. The release record and the registry disagree, so this run refuses to release: either tag the commit that produced ${V}, or merge something that produces a new version."
+            exit 1
+          fi
+          echo "@sasjs/server@${V} is not on npm yet: safe to release."
+
       # Deliberately ungated: the dry run above is a cost gate, while this is
       # the real release. Running it unconditionally keeps one source of truth,
       # and means a change to semantic-release's log wording can never silently
       # suppress a release.
       - name: Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.pending.outputs.version }}
         run: |
-          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} semantic-release
+          set -euo pipefail
+          semantic-release
+
+          # Exit 0 is not the same as "released". semantic-release declines and
+          # succeeds when the checkout is behind the branch it releases from -
+          # "The local branch main is behind the remote one, therefore a new
+          # version won't be published" - which is what a second merge reaching
+          # main does to a run that is still waiting its turn in the concurrency
+          # queue. The tag is the evidence, so ask it: if v$VERSION does not point
+          # at this commit, this run released nothing and may publish nothing.
+          #
+          # Reading the tag rather than the log keeps the decision on an artefact
+          # rather than on wording that semantic-release may change.
+          git fetch --tags --force --quiet
+          if git tag --points-at "$GITHUB_SHA" | grep -qx "v${VERSION#v}"; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "released=false" >> "$GITHUB_OUTPUT"
+          if [ -n "${VERSION}" ]; then
+            echo "::warning::semantic-release did not release ${VERSION} at ${GITHUB_SHA}, so this run publishes nothing. Usually a newer commit reached main while this run waited; the run queued behind it releases both."
+          fi
 
       # Publishing after the tag exists keeps the published version and the tag in
       # step: a publish failure then leaves a release without its npm entry, which
       # is visible and retryable, rather than an npm version with no tag.
+      #
+      # Gated on what `Release` did, not on the dry run five minutes earlier. The
+      # dry run answered "a release is pending" for a commit that semantic-release
+      # then declined to release, and the publish went ahead anyway: 7.20.0 reached
+      # npm at 21:36:22 from a run whose next log line said "therefore a new
+      # version won't be published". The tag below is what that gate reads.
       #
       # Requires npm trusted publishing configured for @sasjs/server against this
       # repository and this workflow file. The FIRST publish of a new name needs a
       # token-authenticated run, because npm only offers the trusted-publisher
       # setting once the package exists.
       - name: Publish to npm
-        if: steps.pending.outputs.release == 'true'
+        if: steps.release.outputs.released == 'true'
         env:
           VERSION: ${{ steps.pending.outputs.version }}
         run: |
@@ -324,6 +373,7 @@ jobs:
           npm publish ./npm-package --provenance --access public --tag "$TAG"
 
       - name: Document the checksums on the release
+        if: steps.release.outputs.released == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
