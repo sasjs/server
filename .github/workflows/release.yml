@@ -301,11 +301,23 @@ jobs:
         run: |
           set -euo pipefail
           V="${VERSION#v}"
-          if npm view "@sasjs/server@${V}" version >/dev/null 2>&1; then
+          # Three answers, not two. A registry that timed out, answered 5xx or
+          # refused us exits non-zero exactly like a version that is not there, and
+          # reading that as "not published" would send this gate green in the one
+          # case where it could not check - the mismatch it exists to catch, unseen.
+          if asked=$(npm view "@sasjs/server@${V}" version 2>&1); then
             echo "::error::@sasjs/server@${V} is already on npm, but no tag points at it. The release record and the registry disagree, so this run refuses to release: either tag the commit that produced ${V}, or merge something that produces a new version."
             exit 1
           fi
-          echo "@sasjs/server@${V} is not on npm yet: safe to release."
+          case "${asked}" in
+            *E404*|*"404 Not Found"*)
+              echo "@sasjs/server@${V} is not on npm yet: safe to release."
+              ;;
+            *)
+              echo "::error::could not ask the registry whether @sasjs/server@${V} exists, so this run cannot tell whether releasing it is safe: ${asked}"
+              exit 1
+              ;;
+          esac
 
       # Deliberately ungated: the dry run above is a cost gate, while this is
       # the real release. Running it unconditionally keeps one source of truth,
@@ -338,18 +350,18 @@ jobs:
 
           echo "released=false" >> "$GITHUB_OUTPUT"
           if [ -n "${VERSION}" ]; then
-            echo "::warning::semantic-release did not release ${VERSION} at ${GITHUB_SHA}, so this run publishes nothing. Usually a newer commit reached main while this run waited; the run queued behind it releases both."
+            echo "::warning::semantic-release did not release ${VERSION} at ${GITHUB_SHA}, so this run publishes nothing. Usually a newer commit reached main while this run waited; the version is released by the next run that gets as far as this step."
           fi
 
       # Publishing after the tag exists keeps the published version and the tag in
       # step: a publish failure then leaves a release without its npm entry, which
       # is visible and retryable, rather than an npm version with no tag.
       #
-      # Gated on what `Release` did, not on the dry run five minutes earlier. The
-      # dry run answered "a release is pending" for a commit that semantic-release
-      # then declined to release, and the publish went ahead anyway: 7.20.0 reached
-      # npm at 21:36:22 from a run whose next log line said "therefore a new
-      # version won't be published". The tag below is what that gate reads.
+      # Gated on what `Release` did, not on the dry run earlier in the job: the dry
+      # run answers whether a release is PENDING, and a run can be told that and
+      # then be declined by semantic-release - a newer commit reaching main while
+      # this one waited does it. Publishing on the strength of the earlier answer
+      # put a version on npm that no tag named. The tag is what this reads.
       #
       # Requires npm trusted publishing configured for @sasjs/server against this
       # repository and this workflow file. The FIRST publish of a new name needs a
