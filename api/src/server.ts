@@ -2,6 +2,7 @@
 // first, and deliberately: it installs the fatal guards as a side effect, before
 // ./app and its dependency graph initialise (see the module's own note)
 import './fatalGuards'
+import { warmFormatEngine } from './utils/formatEngine'
 
 import { Express } from 'express'
 import appPromise from './app'
@@ -54,6 +55,11 @@ appPromise.then(async (app: Express) => {
   }
 
   process.logger.info(`⚡️[server]: listening: ${listeners.description}`)
+
+  // After the listeners, deliberately: the formatter's engine is ~25 ms of module
+  // graph that nothing needs until the first format request, so it is warmed while
+  // the server is already answering rather than in front of its first impression.
+  void warmFormatEngine()
 
   const stop = async (signal: string) => {
     process.logger.info(`[server] ${signal} received, closing listeners`)

@@ -1,6 +1,7 @@
 import express from 'express'
 import { Request, Response, Security, Route, Tags, Post, Body } from 'tsoa'
 import { Diagnostic, formatText } from '@sasjs/lint'
+import { getFormatEngine } from '../utils/formatEngine'
 import { ExecutionController, getSessionController } from './internal'
 import { TriggerResponse } from '../types'
 import {
@@ -197,7 +198,21 @@ export class CodeController {
   @Response(401, 'Unauthorized')
   @Post('/format')
   public async formatCode(@Body() body: FormatCodePayload): Promise<string> {
-    return formatText(body.code, await getDriveLintConfig(body.filePath))
+    const lintConfig = await getDriveLintConfig(body.filePath)
+
+    // The engine gives the formatter its layout - indentation, statement breaks,
+    // keyword case from the drive's .sasjslint. It is loaded on first use, so a
+    // server that never formats pays nothing for it, and a load that fails leaves
+    // the rules alone rather than failing the request: the header and the wrapping
+    // are still worth having.
+    let reprint
+    try {
+      reprint = await getFormatEngine()
+    } catch (error) {
+      reprint = undefined
+    }
+
+    return formatText(body.code, lintConfig, reprint ? { reprint } : {})
   }
 }
 
