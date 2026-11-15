@@ -1,4 +1,5 @@
 import {
+  ApiError,
   appSummary,
   checkPublishRequest,
   frontendFolderOf,
@@ -42,6 +43,16 @@ export interface PreparedDeploy {
   request?: CheckedPublish
 }
 
+/**
+ * The refusal a tree earns when it names no folder to be deployed to.
+ *
+ * One string, because two routes answer it - the package's refusal envelope on the
+ * deploy routes, and this server's `HttpError` from the controller - and a message
+ * a client matches on cannot be written twice.
+ */
+export const DEPLOY_NEEDS_FOLDER =
+  '"appLoc" is required to deploy files that do not name an app.'
+
 /** What a published app is reported as, on the deploy answer. */
 export interface PublishedApp {
   id: string
@@ -67,6 +78,16 @@ export interface PublishedApp {
 export const prepareDeploy = (deploy: DeployPublishFields): PreparedDeploy => {
   const bundle = splitAppBundle(deploy.fileTree)
   const packaged = bundle.frontend !== undefined
+
+  // a bundle that names its halves is published as a frontend. `streamWebFolder`
+  // describes the older shape, where the web assets live inside the backend's
+  // folder, so a bundle carrying both would be published one way and deployed the
+  // other - refused rather than guessed at
+  if (packaged && bundle.manifest?.streamWebFolder !== undefined)
+    throw new ApiError(
+      400,
+      'This bundle carries a "web" folder, so it is published as a frontend, and sasjs.app.json cannot also state "streamWebFolder": that field describes the older shape, where the web assets live inside the backend folder.'
+    )
 
   const requested = publishRequestFor(
     {
@@ -144,10 +165,29 @@ export const publishDeployedApp = async (
  * deployment - someone deleted the folder by hand - and the app is unpublished
  * either way, so the absence is logged rather than answered as an error.
  */
+/**
+ * Whether a name can be the single folder segment `apps/<name>`.
+ *
+ * The same rule a publish applies, repeated where a folder is DELETED: an index
+ * that was restored, hand-edited or written by something other than this server is
+ * read back without it being anybody's decision, and a name carrying a separator
+ * or `..` would otherwise build a deletion path outside `apps/`.
+ */
+const isDeletableName = (name: string): boolean =>
+  name.length <= 64 && /^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(name)
+
 export const removeFrontendFolder = async (
   entry: AppStreamEntry
 ): Promise<void> => {
   if (entry.streamWebFolder !== undefined) return
+
+  if (!isDeletableName(entry.name)) {
+    process.logger?.warn?.(
+      `The app "${entry.name}" was unpublished, but its name is not a folder this server publishes, so nothing was removed.`
+    )
+
+    return
+  }
 
   const folder = frontendFolderOf(entry.name)
 

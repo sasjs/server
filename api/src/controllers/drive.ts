@@ -32,7 +32,12 @@ import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
 import { HttpError } from '../utils'
-import { appStreamService, unpublishApp, type PublishedApp } from '../utils'
+import {
+  appStreamService,
+  DEPLOY_NEEDS_FOLDER,
+  unpublishApp,
+  type PublishedApp
+} from '../utils'
 import { appSummary, type AppStreamEntry } from '@sasjs/api'
 
 interface DeployPayload {
@@ -664,11 +669,7 @@ const deploy = async (data: DeployPayload) => {
   // The routes decide where a bundle goes - a package's frontend to `apps/<name>`,
   // a legacy tree to the `appLoc` it names - and this method writes one tree to one
   // folder. A call that names no folder is a route that skipped that decision.
-  if (data.appLoc === undefined)
-    throw new HttpError(
-      400,
-      '"appLoc" is required to deploy files that do not name an app.'
-    )
+  if (data.appLoc === undefined) throw new HttpError(400, DEPLOY_NEEDS_FOLDER)
 
   // The tree's shape, the appLoc's containment, the cap and the member names are
   // @sasjs/api's - it refuses all four with this route's own envelope, and it

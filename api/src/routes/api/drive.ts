@@ -4,7 +4,11 @@ import type { FileTree, FolderMember } from '@sasjs/utils'
 
 import { ApiError, frontendFolderOf, isApiError } from '@sasjs/api'
 
-import { prepareDeploy, publishDeployedApp } from '../../utils'
+import {
+  DEPLOY_NEEDS_FOLDER,
+  prepareDeploy,
+  publishDeployedApp
+} from '../../utils'
 import type { PreparedDeploy } from '../../utils'
 
 import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
@@ -147,17 +151,18 @@ const writeDeploy = async (
     })
   }
 
+  // the folder this deploy writes to, from one source: a legacy bundle may name
+  // it in its manifest, where `publishRequestFor` found it, and the folder written
+  // has to be the folder indexed
+  const destination = request?.appLoc ?? options.appLoc
+
   // an ApiError rather than an HttpError, because both deploy routes render this
   // family of refusal through `sendPublishRefusal`: one wording whether the
   // refusal came from the package's checks or from this file's
-  if (options.appLoc === undefined)
-    throw new ApiError(
-      400,
-      '"appLoc" is required to deploy files that do not name an app.'
-    )
+  if (destination === undefined) throw new ApiError(400, DEPLOY_NEEDS_FOLDER)
 
   return controller.deploy({
-    appLoc: options.appLoc,
+    appLoc: destination,
     fileTree: tree as any,
     replace: options.replace
   })
