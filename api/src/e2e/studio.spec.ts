@@ -321,6 +321,27 @@ describe('Studio in a browser', () => {
       )
     )
 
+    if (tokens.length === 0) {
+      const dump = await page.evaluate(() => {
+        const lines = document.querySelectorAll('.view-line')
+        const backdrop = document.querySelector('.MuiBackdrop-root')
+        const editor = document.querySelector('.monaco-editor')
+        const root = document.getElementById('root')
+        return {
+          lines: lines.length,
+          viewLines: document.querySelector('.view-lines')?.innerHTML.slice(0, 300) ?? 'none',
+          backdrop: backdrop ? (backdrop as HTMLElement).outerHTML.slice(0, 200) : 'none',
+          editorPresent: Boolean(editor),
+          editorBox: editor ? JSON.stringify(editor.getBoundingClientRect()) : 'none',
+          rootChildren: root?.childElementCount ?? -1,
+          bodyText: (document.body.innerText || '').slice(0, 200)
+        }
+      })
+      console.log('DEBUG-EMPTY ' + JSON.stringify(dump))
+      console.log('DEBUG-PAGEERRORS ' + JSON.stringify(pageErrors))
+      await page.screenshot({ path: path.join(screenshotDir, 'zz-debug.png'), fullPage: false })
+    }
+
     const colourOf = (text: string) =>
       tokens.find((token) => token.text.trim() === text)?.colour
 
