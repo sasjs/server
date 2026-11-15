@@ -316,11 +316,15 @@ export class DriveController {
    *
    * The entry stops being advertised - the landing page and `/app/apps.json` are
    * both built from the index - and stops being served, because the id leaves the
-   * route inventory as well. The drive content is left alone: deleting the folder
-   * is `DELETE /SASjsApi/drive/folder`, so unpublishing never destroys a
-   * deployment, and publishing created no permission rule, so there is none to
-   * withdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this route
-   * already requires.
+   * route inventory as well. Publishing created no permission rule, so there is
+   * none to withdraw. A caller needs the same `/SASjsApi/drive/deploy` grant this
+   * route already requires.
+   *
+   * What happens to the files depends on the shape the app was published in. An
+   * app published as a frontend IS its folder, so `apps/<name>` is removed with
+   * it. A deployment published the older way keeps its files where they are - they
+   * sit inside a folder that may serve other apps - and its folder is removed with
+   * `DELETE /SASjsApi/drive/folder` by whoever owns it.
    *
    * An id the index does not hold answers `404`; a body that names no id answers
    * `400`.

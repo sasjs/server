@@ -181,6 +181,19 @@ export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
   }).validate(data)
 
 /**
+ * A name that becomes a folder: `apps/<name>`.
+ *
+ * Letters, digits, dot, dash, underscore or tilde, starting with a letter or
+ * digit, at most 64 characters - the rule `@sasjs/api` states, repeated here so a
+ * value this route writes and later deletes is bounded before it reaches the
+ * drive.
+ */
+const appNameSchema = () =>
+  Joi.string()
+    .max(64)
+    .pattern(/^[A-Za-z0-9][A-Za-z0-9._~-]*$/)
+
+/**
  * A deploy document - the JSON a build writes, or the one a zip carries.
  *
  * `appLoc` is where a deployment goes, and it is now optional: a bundle that
@@ -192,7 +205,10 @@ export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
 export const deployValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     appLoc: Joi.string().pattern(/^\//).min(2),
-    name: Joi.string(),
+    // the app's folder, written and later removed: the package holds this same
+    // rule and refuses a name it cannot spell as a URL segment, and stating it
+    // here too means a value that becomes a path is bounded twice
+    name: appNameSchema(),
     streamServiceName: Joi.string(),
     streamWebFolder: Joi.string(),
     streamLogo: Joi.string(),
@@ -216,7 +232,7 @@ export const deployValidation = (data: any): Joi.ValidationResult =>
  */
 export const deployAssetsValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    name: Joi.string(),
+    name: appNameSchema(),
     appLoc: Joi.string().pattern(/^\//).min(2),
     streamServiceName: Joi.string(),
     streamWebFolder: Joi.string(),

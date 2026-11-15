@@ -86,8 +86,16 @@ const sendArchiveRefusal = (res: express.Response, err: any) => {
  * app put there. The frontend then replaces `apps/<name>`, which is the whole
  * point of publishing it: the folder is what the bundle says it is.
  *
+ * Additive has a consequence worth knowing: a service a later bundle drops keeps
+ * being served until someone removes the file, because the deploy cannot tell a
+ * service this app stopped carrying from one another app added. Pruning a shared
+ * backend is `DELETE /SASjsApi/drive/file`.
+ *
  * A bare tree that a publish names is the frontend itself, so it goes to
  * `apps/<name>` too. Everything else is the older shape, deployed to `appLoc`.
+ *
+ * Every refusal here happens before the first write, so a bundle that cannot be
+ * deployed whole leaves the drive as it was.
  */
 const writeDeploy = async (
   prepared: PreparedDeploy,
@@ -95,27 +103,49 @@ const writeDeploy = async (
 ) => {
   const { tree, frontend, backend, request } = prepared
 
+  // a bundle that carries services has to say where they go: skipping the write
+  // would answer `200` for a deployment whose backend is simply missing, which is
+  // the one thing a caller cannot see from the response
+  if (backend !== undefined && request?.appLoc === undefined)
+    throw new ApiError(
+      400,
+      'This bundle carries a "backend" folder but names no "appLoc" for it: state the backend folder in sasjs.app.json, or in the request.'
+    )
+
   if (frontend !== undefined) {
-    if (backend !== undefined && request?.appLoc !== undefined)
+    // the package requires a name of a frontend publish, so this is the type
+    // saying what the code already knows - and a guard rather than `String()`,
+    // which would write the frontend to a folder called "undefined"
+    if (request?.name === undefined)
+      throw new ApiError(
+        400,
+        '"name" is required to publish the frontend this bundle carries.'
+      )
+
+    if (backend !== undefined)
       await controller.deploy({
-        appLoc: request.appLoc,
+        appLoc: request.appLoc as string,
         fileTree: backend as any,
         replace: false
       })
 
     return controller.deploy({
-      appLoc: frontendFolderOf(String(request?.name)),
+      appLoc: frontendFolderOf(request.name),
       fileTree: frontend as any,
       replace: true
     })
   }
 
-  if (request !== undefined && request.streamWebFolder === undefined)
+  if (request !== undefined && request.streamWebFolder === undefined) {
+    if (request.name === undefined)
+      throw new ApiError(400, '"name" is required to publish this bundle.')
+
     return controller.deploy({
-      appLoc: frontendFolderOf(String(request.name)),
+      appLoc: frontendFolderOf(request.name),
       fileTree: tree as any,
       replace: true
     })
+  }
 
   // an ApiError rather than an HttpError, because both deploy routes render this
   // family of refusal through `sendPublishRefusal`: one wording whether the
@@ -291,12 +321,15 @@ const deployArchive = async (
 }
 
 /**
- * Removes a published app stream entry, so it stops being advertised and stops
- * being served. Both fields are required: `appLoc` is what tells a name that has
- * been republished elsewhere from the entry the caller means to remove. The drive
- * content is untouched - that is `DELETE /SASjsApi/drive/folder` - so this route
- * cannot destroy a deployment. The permission gate is the one already on
- * `/SASjsApi/drive/deploy` for publishing: rules are per path, not per method.
+ * Removes a published app, so it stops being advertised and stops being served.
+ * The id is the handle: a name may be shared and a folder is where an app was
+ * published rather than what it is.
+ *
+ * An app published as a frontend is its folder, so `apps/<name>` is removed with
+ * it - see `unpublishApp`. A deployment published the older way keeps its files,
+ * because they sit inside a folder that may serve other apps. The permission gate
+ * is the one already on `/SASjsApi/drive/deploy` for publishing: rules are per
+ * path, not per method.
  */
 driveRouter.delete('/deploy', async (req, res) => {
   const { error, value: body } = unpublishValidation(req.body || {})
