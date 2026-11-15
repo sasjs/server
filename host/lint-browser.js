@@ -29,9 +29,9 @@
     mod
   ));
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/asyncForEach.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/asyncForEach.js
   var require_asyncForEach = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/asyncForEach.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/asyncForEach.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -72,9 +72,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-UjGPGJ/path.js
+  // ../../../../../tmp/sasjs-lint-nFmUpl/path.js
   var require_path = __commonJS({
-    "../../../../../tmp/sasjs-lint-UjGPGJ/path.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-nFmUpl/path.js"(exports, module) {
       var SEP = String.fromCharCode(92);
       var clean = (value) => String(value).split(SEP).join("/").replace(/\/+/g, "/");
       var strip = (value) => clean(value).replace(/\/+$/, "");
@@ -112,9 +112,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-UjGPGJ/os.js
+  // ../../../../../tmp/sasjs-lint-nFmUpl/os.js
   var require_os = __commonJS({
-    "../../../../../tmp/sasjs-lint-UjGPGJ/os.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-nFmUpl/os.js"(exports, module) {
       module.exports = {
         homedir: () => "/",
         platform: () => "browser",
@@ -124,33 +124,33 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/Diagnostic.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/Diagnostic.js
   var require_Diagnostic = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/Diagnostic.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/Diagnostic.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/FormatResult.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/FormatResult.js
   var require_FormatResult = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/FormatResult.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/FormatResult.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LintRule.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LintRule.js
   var require_LintRule = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LintRule.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LintRule.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LintRuleType.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LintRuleType.js
   var require_LintRuleType = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LintRuleType.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LintRuleType.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LintRuleType = void 0;
@@ -163,9 +163,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/Severity.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/Severity.js
   var require_Severity = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/Severity.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/Severity.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.Severity = void 0;
@@ -178,17 +178,17 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/Macro.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/Macro.js
   var require_Macro = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/Macro.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/Macro.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/index.js
   var require_types = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -217,9 +217,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LineEndings.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LineEndings.js
   var require_LineEndings = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LineEndings.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LineEndings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LineEndings = void 0;
@@ -232,9 +232,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/splitLines.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/splitLines.js
   var require_splitLines = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/splitLines.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/splitLines.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitLines = void 0;
@@ -243,9 +243,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getPosition.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getPosition.js
   var require_getPosition = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getPosition.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getPosition.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getPosition = void 0;
@@ -263,9 +263,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getSeverity.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getSeverity.js
   var require_getSeverity = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getSeverity.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getSeverity.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getSeverity = void 0;
@@ -277,9 +277,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js
   var require_hasDoxygenHeader = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasDoxygenHeader = void 0;
@@ -295,16 +295,22 @@
       var message = "File missing Doxygen header";
       var messageForSingleAsterisk = "File not following Doxygen header style, use double asterisks";
       var messageForSingleAsteriskClose = "File not following Doxygen header style, close with double asterisks";
+      var messageForCloseNotOnOwnLine = "File not following Doxygen header style, close with the marker on a line of its own";
+      var messageForUnclosedHeader = "File not following Doxygen header style, header is never closed";
       var CLOSE = "*/";
-      var singleAsteriskClose = (value, start) => {
+      var findHeaderClose = (value, start) => {
         const close = value.indexOf(CLOSE, start + 2);
         if (close === -1)
-          return null;
-        if (value[close - 1] === "*")
-          return null;
+          return { kind: "none" };
         if (value.slice(start + 2, close).includes("/*"))
           return null;
-        return close;
+        if (value[close - 1] !== "*")
+          return { kind: "single", index: close };
+        const lineStart = value.lastIndexOf("\n", close - 1) + 1;
+        const lineEnd = value.indexOf("\n", close);
+        const before = value.slice(lineStart, close - 1);
+        const after = value.slice(close + 2, lineEnd === -1 ? value.length : lineEnd);
+        return before.trim() === "" && after.trim() === "" ? { kind: "own-line", index: close } : { kind: "inline", index: close };
       };
       var diagnose = (value, config) => {
         var _a;
@@ -312,17 +318,29 @@
         try {
           const start = value.search(/\S/);
           if (value.trimStart().startsWith("/**")) {
-            const close = singleAsteriskClose(value, start);
-            if (close === null)
+            const close = findHeaderClose(value, start);
+            if (close === null || close.kind === "own-line")
               return null;
-            const { lineNumber, columnNumber } = (0, getPosition_1.getPosition)(value, close);
+            if (close.kind === "none") {
+              const { lineNumber: lineNumber2, columnNumber: columnNumber2 } = (0, getPosition_1.getPosition)(value, start);
+              return {
+                message: messageForUnclosedHeader,
+                lineNumber: lineNumber2,
+                startColumnNumber: columnNumber2,
+                endColumnNumber: columnNumber2 + 3,
+                severity,
+                close: null
+              };
+            }
+            const { lineNumber, columnNumber } = (0, getPosition_1.getPosition)(value, close.index);
+            const inline = close.kind === "inline";
             return {
-              message: messageForSingleAsteriskClose,
+              message: inline ? messageForCloseNotOnOwnLine : messageForSingleAsteriskClose,
               lineNumber,
               startColumnNumber: columnNumber,
-              endColumnNumber: columnNumber + 1,
+              endColumnNumber: columnNumber + (inline ? 2 : 1),
               severity,
-              close
+              close: close.index
             };
           }
           const hasFileHeaderWithSingleAsterisk = value.trimStart().startsWith("/*");
@@ -333,7 +351,7 @@
               startColumnNumber: 1,
               endColumnNumber: 1,
               severity,
-              close: -1
+              close: null
             };
           return {
             message,
@@ -341,7 +359,7 @@
             startColumnNumber: 1,
             endColumnNumber: 1,
             severity,
-            close: -1
+            close: null
           };
         } catch (e) {
           return {
@@ -350,7 +368,7 @@
             startColumnNumber: 1,
             endColumnNumber: 1,
             severity,
-            close: -1
+            close: null
           };
         }
       };
@@ -368,18 +386,46 @@
           }
         ];
       };
-      var fix = (value, config) => {
-        const diagnosis = diagnose(value, config);
-        if (!diagnosis)
-          return value;
+      var expandClose = (value, close, start) => {
+        const lineEnding = value.includes("\r\n") ? "\r\n" : "\n";
+        if (close <= start + 2) {
+          return `${value.slice(0, start)}/**${lineEnding}**/${value.slice(close + 2)}`;
+        }
+        const markerStart = close - 1;
+        const head = value.slice(0, markerStart).replace(/[ \t]+$/, "");
+        const lineEnd = value.indexOf("\n", close);
+        const after = value.slice(close + 2, lineEnd === -1 ? value.length : lineEnd);
+        if (after.trim() === "")
+          return `${head}${lineEnding}${value.slice(markerStart)}`;
+        const rest = value.slice(lineEnd === -1 ? value.length : lineEnd);
+        return `${head}${lineEnding}${value.slice(markerStart, close + 2)}${lineEnding}${after.trimStart()}${rest}`;
+      };
+      var repair = (value, diagnosis, config) => {
         if (diagnosis.message == messageForSingleAsterisk)
           return value.replace("/*", "/**");
         if (diagnosis.message == messageForSingleAsteriskClose)
           return `${value.slice(0, diagnosis.close)}*${value.slice(diagnosis.close)}`;
-        config = config || new types_1.LintConfig(getLintConfig_1.DefaultLintConfiguration);
-        const lineEndingConfig = (config === null || config === void 0 ? void 0 : config.lineEndings) || LineEndings_1.LineEndings.LF;
+        if (diagnosis.message == messageForCloseNotOnOwnLine)
+          return expandClose(value, diagnosis.close, value.search(/\S/));
+        if (diagnosis.message == messageForUnclosedHeader)
+          return value;
+        const cfg = config || new types_1.LintConfig(getLintConfig_1.DefaultLintConfiguration);
+        const lineEndingConfig = (cfg === null || cfg === void 0 ? void 0 : cfg.lineEndings) || LineEndings_1.LineEndings.LF;
         const lineEnding = lineEndingConfig === LineEndings_1.LineEndings.LF ? "\n" : "\r\n";
-        return `${config === null || config === void 0 ? void 0 : config.defaultHeader.replace(/{lineEnding}/g, lineEnding)}${lineEnding}${value}`;
+        return `${cfg === null || cfg === void 0 ? void 0 : cfg.defaultHeader.replace(/{lineEnding}/g, lineEnding)}${lineEnding}${value}`;
+      };
+      var fix = (value, config) => {
+        let repaired = value;
+        for (let step = 0; step < 3; step++) {
+          const diagnosis = diagnose(repaired, config);
+          if (!diagnosis)
+            return repaired;
+          const next = repair(repaired, diagnosis, config);
+          if (next === repaired)
+            return repaired;
+          repaired = next;
+        }
+        return repaired;
       };
       exports.hasDoxygenHeader = {
         type: LintRuleType_1.LintRuleType.File,
@@ -392,9 +438,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/escapeRegExp.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/escapeRegExp.js
   var require_escapeRegExp = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/escapeRegExp.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/escapeRegExp.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.escapeRegExp = void 0;
@@ -403,9 +449,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getColumnNumber.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getColumnNumber.js
   var require_getColumnNumber = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getColumnNumber.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getColumnNumber.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getColumnNumber = void 0;
@@ -422,9 +468,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/trimComments.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/trimComments.js
   var require_trimComments = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/trimComments.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/trimComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.trimComments = void 0;
@@ -470,9 +516,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseMacros.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseMacros.js
   var require_parseMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseMacros.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacros = void 0;
@@ -593,9 +639,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js
   var require_hasMacroNameInMend = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasMacroNameInMend = void 0;
@@ -701,20 +747,46 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getIndex.js
+  var require_getIndex = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getIndex.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.getIndex = void 0;
+      var splitLines_1 = require_splitLines();
+      var getIndex = (text, lineNumber, columnNumber) => {
+        if (lineNumber <= 1)
+          return Math.max(columnNumber - 1, 0);
+        const lines = (0, splitLines_1.splitLines)(text);
+        let index = 0;
+        for (let line = 1; line < lineNumber && line <= lines.length; line++) {
+          const terminator = text.startsWith("\r\n", index + lines[line - 1].length) ? 2 : 1;
+          index += lines[line - 1].length + terminator;
+        }
+        return Math.min(index + Math.max(columnNumber - 1, 0), text.length);
+      };
+      exports.getIndex = getIndex;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js
   var require_hasMacroParentheses = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasMacroParentheses = void 0;
       var LintRuleType_1 = require_LintRuleType();
       var Severity_1 = require_Severity();
       var getColumnNumber_1 = require_getColumnNumber();
+      var getIndex_1 = require_getIndex();
       var parseMacros_1 = require_parseMacros();
+      var utils_1 = require_utils();
       var getSeverity_1 = require_getSeverity();
       var name = "hasMacroParentheses";
       var description = "Enforces the presence of parentheses in macro definitions.";
       var message = "Macro definition missing parentheses";
+      var parameterlessDeclaration = (macroName) => new RegExp(`(%macro\\s+${(0, utils_1.escapeRegExp)(macroName)})((?:\\s*/\\*.*?\\*/)?\\s*;)`, "i");
+      var nameLine = (macro) => macro.declarationLines.findIndex((declarationLine) => declarationLine.includes(macro.name));
       var test = (value, config) => {
         const diagnostics = [];
         const macros = (0, parseMacros_1.parseMacros)(value, config);
@@ -731,7 +803,7 @@
               severity
             });
           } else if (!macro.declarationLines.find((dl) => dl.includes("("))) {
-            const macroNameLineIndex = macro.declarationLines.findIndex((dl) => dl.includes(macro.name));
+            const macroNameLineIndex = nameLine(macro);
             diagnostics.push({
               message,
               lineNumber: macro.startLineNumbers[macroNameLineIndex],
@@ -743,19 +815,35 @@
         });
         return diagnostics;
       };
+      var fix = (value, config) => {
+        if (!value)
+          return value;
+        const declarations = (0, parseMacros_1.parseMacros)(value, config).filter((macro) => !!macro.name).map((macro) => ({ macro, index: nameLine(macro) })).filter(({ index }) => index !== -1);
+        return declarations.reduce((text, { macro, index }) => {
+          const lineNumber = macro.startLineNumbers[index];
+          const start = (0, getIndex_1.getIndex)(text, lineNumber, 1);
+          const end = (0, getIndex_1.getIndex)(text, lineNumber + 1, 1);
+          const line = text.slice(start, end);
+          const pattern = parameterlessDeclaration(macro.name);
+          if (!pattern.test(line))
+            return text;
+          return text.slice(0, start) + line.replace(pattern, "$1()$2") + text.slice(end);
+        }, value);
+      };
       exports.hasMacroParentheses = {
         type: LintRuleType_1.LintRuleType.File,
         name,
         description,
         message,
-        test
+        test,
+        fix
       };
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/lineEndings.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/lineEndings.js
   var require_lineEndings = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/lineEndings.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/lineEndings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lineEndings = void 0;
@@ -835,9 +923,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js
   var require_minMacroNameLength = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.minMacroNameLength = void 0;
@@ -923,9 +1011,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseMacroCalls.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseMacroCalls.js
   var require_parseMacroCalls = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseMacroCalls.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseMacroCalls.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacroCalls = void 0;
@@ -1160,9 +1248,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js
   var require_noMacroIfInOpenCode = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noMacroIfInOpenCode = void 0;
@@ -1211,9 +1299,373 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/sasMacros.generated.js
+  var require_sasMacros_generated = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/sasMacros.generated.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.sasMacros = void 0;
+      exports.sasMacros = [
+        "abort",
+        "armconv",
+        "armend",
+        "armgtid",
+        "arminit",
+        "armjoin",
+        "armproc",
+        "armstop",
+        "armstrt",
+        "armupdt",
+        "bquote",
+        "by",
+        "cmpres",
+        "colormac",
+        "compstor",
+        "copy",
+        "datatyp",
+        "dequote",
+        "display",
+        "do",
+        "dqload",
+        "dqputloc",
+        "dqunload",
+        "else",
+        "end",
+        "eval",
+        "global",
+        "goto",
+        "helpclr",
+        "if",
+        "inc",
+        "include",
+        "index",
+        "indexc",
+        "indexw",
+        "input",
+        "kcmpres",
+        "kindex",
+        "kleft",
+        "klength",
+        "klowcase",
+        "kscan",
+        "ksubstr",
+        "ktrim",
+        "kupcase",
+        "kverify",
+        "left",
+        "length",
+        "let",
+        "list",
+        "local",
+        "lowcase",
+        "macro",
+        "mend",
+        "nrbquote",
+        "nrquote",
+        "nrstr",
+        "perfend",
+        "perfinit",
+        "perfstop",
+        "perfstrt",
+        "put",
+        "qbquote",
+        "qcmpres",
+        "qdequote",
+        "qindex",
+        "qindexc",
+        "qindexw",
+        "qkcmpres",
+        "qkleft",
+        "qklowcas",
+        "qklowcase",
+        "qkscan",
+        "qksubstr",
+        "qktrim",
+        "qkupcase",
+        "qleft",
+        "qlowcase",
+        "qscan",
+        "qsubstr",
+        "qsysfunc",
+        "qtrim",
+        "quote",
+        "qupcase",
+        "return",
+        "run",
+        "scan",
+        "str",
+        "substr",
+        "superq",
+        "symdel",
+        "symexist",
+        "symglobl",
+        "symlocal",
+        "syscall",
+        "sysevalf",
+        "sysexec",
+        "sysfunc",
+        "sysget",
+        "syslput",
+        "sysmacdelete",
+        "sysmacexec",
+        "sysmacexist",
+        "sysmexecdepth",
+        "sysmexecname",
+        "sysmstoreclear",
+        "sysprod",
+        "sysrc",
+        "sysrput",
+        "then",
+        "to",
+        "tplot",
+        "translate",
+        "tranwrd",
+        "trim",
+        "trimn",
+        "unquote",
+        "until",
+        "upcase",
+        "validchs",
+        "verify",
+        "while",
+        "window"
+      ];
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/sasMacros.js
+  var require_sasMacros = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/sasMacros.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.isSasMacro = exports.sasMacros = void 0;
+      var sasMacros_generated_1 = require_sasMacros_generated();
+      exports.sasMacros = new Set(sasMacros_generated_1.sasMacros);
+      var isSasMacro = (name) => exports.sasMacros.has(name.toLowerCase());
+      exports.isSasMacro = isSasMacro;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js
+  var require_parseMacroCallArguments = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.parseMacroCallArguments = exports.hasMaskedName = void 0;
+      var getIndex_1 = require_getIndex();
+      var maskingFunction = /%(nrstr|str|bquote|quote|superq|qsysfunc|qcmpres|qleft|qlowcase|qscan|qsubstr|qtrim|qupcase|qverify)\s*\(/iy;
+      var keywordParameter = /^\s*(?:&+[a-z_][a-z0-9_.]*|[a-z_][a-z0-9_]*)\s*=/i;
+      var leadingComment = /^(?:\s*\/\*[\s\S]*?\*\/)*\s*/;
+      var skipMasked = (text, openParen) => {
+        let depth = 1;
+        let index = openParen + 1;
+        while (index < text.length && depth) {
+          if (text[index] === "%" && (text[index + 1] === "(" || text[index + 1] === ")")) {
+            index += 2;
+            continue;
+          }
+          if (text[index] === "(")
+            depth++;
+          if (text[index] === ")")
+            depth--;
+          index++;
+        }
+        return index;
+      };
+      var hasMaskedName = (parameter) => {
+        const start = parameter.length - parameter.trimStart().length;
+        maskingFunction.lastIndex = start;
+        if (!maskingFunction.test(parameter))
+          return false;
+        const end = skipMasked(parameter, maskingFunction.lastIndex - 1);
+        return /^\s*=/.test(parameter.slice(end));
+      };
+      exports.hasMaskedName = hasMaskedName;
+      var parseMacroCallArguments = (text, call) => {
+        if (!text)
+          return null;
+        let openParen = (0, getIndex_1.getIndex)(text, call.lineNumber, call.endColumnNumber);
+        while (openParen < text.length && /\s/.test(text[openParen]))
+          openParen++;
+        if (text[openParen] !== "(")
+          return null;
+        const parameters = [];
+        let depth = 0;
+        let quote = null;
+        let inComment = false;
+        let parameterStart = openParen + 1;
+        let index = openParen + 1;
+        const closeParameter = (end) => {
+          const parameter = text.slice(parameterStart, end);
+          parameters.push({
+            text: parameter,
+            isKeyword: keywordParameter.test(parameter.replace(leadingComment, "")),
+            start: parameterStart,
+            end
+          });
+        };
+        while (index < text.length) {
+          const char = text[index];
+          if (inComment) {
+            if (text.startsWith("*/", index)) {
+              inComment = false;
+              index += 2;
+              continue;
+            }
+            index++;
+            continue;
+          }
+          if (quote) {
+            if (char === quote)
+              quote = null;
+            index++;
+            continue;
+          }
+          maskingFunction.lastIndex = index;
+          if (maskingFunction.test(text)) {
+            index = skipMasked(text, maskingFunction.lastIndex - 1);
+            continue;
+          }
+          if (text.startsWith("/*", index)) {
+            inComment = true;
+            index += 2;
+            continue;
+          }
+          if (char === "'" || char === '"') {
+            quote = char;
+            index++;
+            continue;
+          }
+          if (char === "(") {
+            depth++;
+            index++;
+            continue;
+          }
+          if (char === ")") {
+            if (depth) {
+              depth--;
+              index++;
+              continue;
+            }
+            closeParameter(index);
+            const lineEnd = text.indexOf("\n", index);
+            const afterClose = text.slice(index + 1, lineEnd === -1 ? text.length : lineEnd);
+            return {
+              openParen,
+              closeParen: index,
+              unclosed: null,
+              parameters,
+              afterClose
+            };
+          }
+          if (char === "," && !depth) {
+            closeParameter(index);
+            parameterStart = index + 1;
+            index++;
+            continue;
+          }
+          index++;
+        }
+        return {
+          openParen,
+          closeParen: -1,
+          unclosed: inComment ? "comment" : quote ? "quote" : "parenthesis",
+          parameters,
+          afterClose: ""
+        };
+      };
+      exports.parseMacroCallArguments = parseMacroCallArguments;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js
+  var require_noMalformedMacroCalls = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.noMalformedMacroCalls = void 0;
+      var LintRuleType_1 = require_LintRuleType();
+      var Severity_1 = require_Severity();
+      var getIndex_1 = require_getIndex();
+      var getPosition_1 = require_getPosition();
+      var getSeverity_1 = require_getSeverity();
+      var sasMacros_1 = require_sasMacros();
+      var parseMacroCallArguments_1 = require_parseMacroCallArguments();
+      var parseMacroCalls_1 = require_parseMacroCalls();
+      var name = "noMalformedMacroCalls";
+      var message = "Macro call arguments: {reason}";
+      var description = "Reports macro calls whose argument list does not parse as written: a call that never closes, or text spilled after a keyword parameter.";
+      var reasons = {
+        quote: "unclosed quote - the rest of the file is read as part of the value; quote it with %str()",
+        parenthesis: "unclosed parenthesis - the call never closes; quote the value with %str()",
+        comment: "unterminated comment - the rest of the call is read as a comment",
+        spill: '"%s" is not a name=value parameter and follows one - a comma inside a value? quote it with %str()',
+        empty: "an empty parameter follows a comma - remove it; the engine reads it as a positional parameter",
+        quotedName: 'a parameter name cannot be quoted - the engine answers "Invalid macro parameter name"; drop the quotes',
+        maskedName: "a parameter name cannot be masked - the engine reads it as a positional parameter; drop the %str() and name the parameter directly"
+      };
+      var quotedParameterName = /^\s*(['"])[^'"]*\1\s*=/;
+      var test = (value, config) => {
+        const diagnostics = [];
+        const severity = (0, getSeverity_1.getSeverity)(config, name, Severity_1.Severity.Warning);
+        const at = (start, end, reason) => {
+          const from = (0, getPosition_1.getPosition)(value, start);
+          const to = (0, getPosition_1.getPosition)(value, end);
+          return {
+            message: message.replace("{reason}", reason),
+            lineNumber: from.lineNumber,
+            startColumnNumber: from.columnNumber,
+            endColumnNumber: to.columnNumber,
+            severity
+          };
+        };
+        (0, parseMacroCalls_1.parseMacroCalls)(value, config).filter((call) => !call.quoted && !(0, sasMacros_1.isSasMacro)(call.name)).forEach((call) => {
+          const args = (0, parseMacroCallArguments_1.parseMacroCallArguments)(value, call);
+          if (!args)
+            return;
+          const callStart = (0, getIndex_1.getIndex)(value, call.lineNumber, call.startColumnNumber);
+          if (args.unclosed) {
+            diagnostics.push(at(callStart, callStart + call.name.length + 1, reasons[args.unclosed]));
+            return;
+          }
+          const firstKeyword = args.parameters.findIndex((parameter) => parameter.isKeyword);
+          if (firstKeyword === -1)
+            return;
+          const stray = args.parameters.slice(firstKeyword + 1).find((parameter) => !parameter.isKeyword);
+          if (stray) {
+            const visible = stray.text.replace(/\/\*[\s\S]*?\*\//g, " ").trim().replace(/\s+/g, " ");
+            const textStart = stray.start + (stray.text.length - stray.text.trimStart().length);
+            const textEnd = stray.end - (stray.text.length - stray.text.trimEnd().length);
+            if ((0, parseMacroCallArguments_1.hasMaskedName)(stray.text)) {
+              diagnostics.push(at(textStart, textEnd, reasons.maskedName));
+              return;
+            }
+            if (quotedParameterName.test(stray.text)) {
+              diagnostics.push(at(textStart, textEnd, reasons.quotedName));
+              return;
+            }
+            if (!visible) {
+              diagnostics.push(at(Math.max(stray.start - 1, 0), stray.start, reasons.empty));
+              return;
+            }
+            diagnostics.push(at(textStart, textEnd, reasons.spill.replace("%s", visible)));
+          }
+        });
+        return diagnostics;
+      };
+      exports.noMalformedMacroCalls = {
+        type: LintRuleType_1.LintRuleType.File,
+        name,
+        description,
+        message,
+        test
+      };
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js
   var require_noNestedCommentsInHeader = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noNestedCommentsInHeader = void 0;
@@ -1280,9 +1732,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noNestedMacros.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noNestedMacros.js
   var require_noNestedMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noNestedMacros.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noNestedMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noNestedMacros = void 0;
@@ -1321,9 +1773,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noXcmd.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noXcmd.js
   var require_noXcmd = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noXcmd.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noXcmd.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noXcmd = void 0;
@@ -1672,9 +2124,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/splitText.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/splitText.js
   var require_splitText = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/splitText.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/splitText.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitText = void 0;
@@ -1691,9 +2143,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js
   var require_getHeaderLinesCount = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getHeaderLinesCount = void 0;
@@ -1715,9 +2167,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/headerMacros.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/headerMacros.js
   var require_headerMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/headerMacros.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/headerMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.removeMacrosFromHeader = exports.repairHeaderList = exports.addMacrosToHeader = exports.getHeaderMacros = void 0;
@@ -1984,164 +2436,55 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/sasMacros.generated.js
-  var require_sasMacros_generated = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/sasMacros.generated.js"(exports) {
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/isDoxygenHeader.js
+  var require_isDoxygenHeader = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/isDoxygenHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.sasMacros = void 0;
-      exports.sasMacros = [
-        "abort",
-        "armconv",
-        "armend",
-        "armgtid",
-        "arminit",
-        "armjoin",
-        "armproc",
-        "armstop",
-        "armstrt",
-        "armupdt",
-        "bquote",
-        "by",
-        "cmpres",
-        "colormac",
-        "compstor",
-        "copy",
-        "datatyp",
-        "dequote",
-        "display",
-        "do",
-        "dqload",
-        "dqputloc",
-        "dqunload",
-        "else",
-        "end",
-        "eval",
-        "global",
-        "goto",
-        "helpclr",
-        "if",
-        "inc",
-        "include",
-        "index",
-        "indexc",
-        "indexw",
-        "input",
-        "kcmpres",
-        "kindex",
-        "kleft",
-        "klength",
-        "klowcase",
-        "kscan",
-        "ksubstr",
-        "ktrim",
-        "kupcase",
-        "kverify",
-        "left",
-        "length",
-        "let",
-        "list",
-        "local",
-        "lowcase",
-        "macro",
-        "mend",
-        "nrbquote",
-        "nrquote",
-        "nrstr",
-        "perfend",
-        "perfinit",
-        "perfstop",
-        "perfstrt",
-        "put",
-        "qbquote",
-        "qcmpres",
-        "qdequote",
-        "qindex",
-        "qindexc",
-        "qindexw",
-        "qkcmpres",
-        "qkleft",
-        "qklowcas",
-        "qklowcase",
-        "qkscan",
-        "qksubstr",
-        "qktrim",
-        "qkupcase",
-        "qleft",
-        "qlowcase",
-        "qscan",
-        "qsubstr",
-        "qsysfunc",
-        "qtrim",
-        "quote",
-        "qupcase",
-        "return",
-        "run",
-        "scan",
-        "str",
-        "substr",
-        "superq",
-        "symdel",
-        "symexist",
-        "symglobl",
-        "symlocal",
-        "syscall",
-        "sysevalf",
-        "sysexec",
-        "sysfunc",
-        "sysget",
-        "syslput",
-        "sysmacdelete",
-        "sysmacexec",
-        "sysmacexist",
-        "sysmexecdepth",
-        "sysmexecname",
-        "sysmstoreclear",
-        "sysprod",
-        "sysrc",
-        "sysrput",
-        "then",
-        "to",
-        "tplot",
-        "translate",
-        "tranwrd",
-        "trim",
-        "trimn",
-        "unquote",
-        "until",
-        "upcase",
-        "validchs",
-        "verify",
-        "while",
-        "window"
-      ];
+      exports.isDoxygenHeader = void 0;
+      var doxygenHeaderClose = "**/";
+      var isDoxygenHeader = (text) => {
+        if (!text)
+          return false;
+        const lines = text.split(/\r\n|\n/);
+        let first = -1;
+        for (let index = 0; index < lines.length; index++) {
+          if (lines[index].trim() !== "") {
+            first = index;
+            break;
+          }
+        }
+        if (first === -1)
+          return false;
+        const opener = lines[first].trimStart();
+        if (!opener.startsWith("/**"))
+          return false;
+        if (opener.includes("*/"))
+          return false;
+        for (let index = first + 1; index < lines.length; index++) {
+          const line = lines[index];
+          if (line.trim() === doxygenHeaderClose)
+            return true;
+          if (line.includes("*/"))
+            return false;
+        }
+        return false;
+      };
+      exports.isDoxygenHeader = isDoxygenHeader;
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/sasMacros.js
-  var require_sasMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/sasMacros.js"(exports) {
-      "use strict";
-      Object.defineProperty(exports, "__esModule", { value: true });
-      exports.isSasMacro = exports.sasMacros = void 0;
-      var sasMacros_generated_1 = require_sasMacros_generated();
-      exports.sasMacros = new Set(sasMacros_generated_1.sasMacros);
-      var isSasMacro = (name) => exports.sasMacros.has(name.toLowerCase());
-      exports.isSasMacro = isSasMacro;
-    }
-  });
-
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js
   var require_noUndeclaredMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUndeclaredMacros = void 0;
       var types_1 = require_types();
       var LintRuleType_1 = require_LintRuleType();
       var Severity_1 = require_Severity();
-      var getHeaderLinesCount_1 = require_getHeaderLinesCount();
       var headerMacros_1 = require_headerMacros();
+      var isDoxygenHeader_1 = require_isDoxygenHeader();
       var parseMacroCalls_1 = require_parseMacroCalls();
       var parseMacros_1 = require_parseMacros();
       var sasMacros_1 = require_sasMacros();
@@ -2152,7 +2495,7 @@
       var getUndeclaredCalls = (value, config) => {
         if (!value)
           return [];
-        if (!(0, getHeaderLinesCount_1.getHeaderLinesCount)(value, config))
+        if (!(0, isDoxygenHeader_1.isDoxygenHeader)(value))
           return [];
         const declared = /* @__PURE__ */ new Set();
         (0, parseMacros_1.parseMacros)(value, config).forEach((macro) => {
@@ -2220,9 +2563,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js
   var require_noUnusedMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUnusedMacros = void 0;
@@ -2280,9 +2623,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseLibnames.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseLibnames.js
   var require_parseLibnames = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseLibnames.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseLibnames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getUnusedLibnames = exports.parseLibnames = void 0;
@@ -2459,9 +2802,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js
   var require_noUnusedLibnames = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUnusedLibnames = void 0;
@@ -2500,9 +2843,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js
   var require_strictMacroDefinition = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.strictMacroDefinition = void 0;
@@ -2661,9 +3004,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js
   var require_hasRequiredMacroOptions = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasRequiredMacroOptions = void 0;
@@ -2708,9 +3051,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js
   var require_noSingleAsteriskComments = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noSingleAsteriskComments = void 0;
@@ -2893,9 +3236,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js
   var require_lowerCaseMacroNames = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lowerCaseMacroNames = void 0;
@@ -3015,12 +3358,12 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/index.js
   var require_file = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/file/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/file/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.lowerCaseMacroNames = exports.noSingleAsteriskComments = exports.hasRequiredMacroOptions = exports.strictMacroDefinition = exports.noUnusedLibnames = exports.noUnusedMacros = exports.noUndeclaredMacros = exports.noXcmd = exports.noNestedMacros = exports.noNestedCommentsInHeader = exports.noMacroIfInOpenCode = exports.minMacroNameLength = exports.lineEndings = exports.hasMacroParentheses = exports.hasMacroNameInMend = exports.hasDoxygenHeader = void 0;
+      exports.lowerCaseMacroNames = exports.noSingleAsteriskComments = exports.hasRequiredMacroOptions = exports.strictMacroDefinition = exports.noUnusedLibnames = exports.noUnusedMacros = exports.noUndeclaredMacros = exports.noXcmd = exports.noNestedMacros = exports.noNestedCommentsInHeader = exports.noMalformedMacroCalls = exports.noMacroIfInOpenCode = exports.minMacroNameLength = exports.lineEndings = exports.hasMacroParentheses = exports.hasMacroNameInMend = exports.hasDoxygenHeader = void 0;
       var hasDoxygenHeader_1 = require_hasDoxygenHeader();
       Object.defineProperty(exports, "hasDoxygenHeader", { enumerable: true, get: function() {
         return hasDoxygenHeader_1.hasDoxygenHeader;
@@ -3044,6 +3387,10 @@
       var noMacroIfInOpenCode_1 = require_noMacroIfInOpenCode();
       Object.defineProperty(exports, "noMacroIfInOpenCode", { enumerable: true, get: function() {
         return noMacroIfInOpenCode_1.noMacroIfInOpenCode;
+      } });
+      var noMalformedMacroCalls_1 = require_noMalformedMacroCalls();
+      Object.defineProperty(exports, "noMalformedMacroCalls", { enumerable: true, get: function() {
+        return noMalformedMacroCalls_1.noMalformedMacroCalls;
       } });
       var noNestedCommentsInHeader_1 = require_noNestedCommentsInHeader();
       Object.defineProperty(exports, "noNestedCommentsInHeader", { enumerable: true, get: function() {
@@ -3088,9 +3435,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noBannedStrings.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noBannedStrings.js
   var require_noBannedStrings = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noBannedStrings.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noBannedStrings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noBannedStrings = void 0;
@@ -3146,9 +3493,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noGremlins.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noGremlins.js
   var require_noGremlins = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noGremlins.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noGremlins.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.charFromHex = exports.noGremlins = void 0;
@@ -3198,9 +3545,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/indentationMultiple.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/indentationMultiple.js
   var require_indentationMultiple = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/indentationMultiple.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/indentationMultiple.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.indentationMultiple = void 0;
@@ -3240,9 +3587,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/maxLineLength.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/maxLineLength.js
   var require_maxLineLength = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/maxLineLength.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/maxLineLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.maxLineLength = void 0;
@@ -3287,9 +3634,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js
   var require_noEncodedPasswords = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noEncodedPasswords = void 0;
@@ -3323,9 +3670,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noTabs.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noTabs.js
   var require_noTabs = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noTabs.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noTabs.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTabs = void 0;
@@ -3358,9 +3705,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js
   var require_noTrailingSpaces = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTrailingSpaces = void 0;
@@ -3394,9 +3741,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/index.js
   var require_line = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/line/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/line/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTrailingSpaces = exports.noTabs = exports.noEncodedPasswords = exports.maxLineLength = exports.indentationMultiple = exports.noGremlins = exports.noBannedStrings = void 0;
@@ -3431,9 +3778,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js
   var require_lowerCaseFileNames = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js"(exports) {
       "use strict";
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -3472,9 +3819,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js
   var require_noSpacesInFileNames = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js"(exports) {
       "use strict";
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -3514,9 +3861,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/path/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/path/index.js
   var require_path2 = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/rules/path/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/rules/path/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noSpacesInFileNames = exports.lowerCaseFileNames = void 0;
@@ -3531,9 +3878,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/mergeLintConfig.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/mergeLintConfig.js
   var require_mergeLintConfig = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/mergeLintConfig.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/mergeLintConfig.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.mergeLintConfig = void 0;
@@ -3579,9 +3926,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LintConfig.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LintConfig.js
   var require_LintConfig = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/types/LintConfig.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/types/LintConfig.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LintConfig = void 0;
@@ -3703,6 +4050,9 @@
           }
           if ((json === null || json === void 0 ? void 0 : json.hasMacroNameInMend) !== false) {
             this.fileLintRules.push(file_1.hasMacroNameInMend);
+          }
+          if (json === null || json === void 0 ? void 0 : json.noMalformedMacroCalls) {
+            this.fileLintRules.push(file_1.noMalformedMacroCalls);
           }
           if ((json === null || json === void 0 ? void 0 : json.noNestedCommentsInHeader) !== false) {
             this.fileLintRules.push(file_1.noNestedCommentsInHeader);
@@ -3830,9 +4180,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-UjGPGJ/utils-file.js
+  // ../../../../../tmp/sasjs-lint-nFmUpl/utils-file.js
   var require_utils_file = __commonJS({
-    "../../../../../tmp/sasjs-lint-UjGPGJ/utils-file.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-nFmUpl/utils-file.js"(exports, module) {
       var unavailable = (name) => async () => {
         throw new Error(name + " is not available in the browser host");
       };
@@ -3845,9 +4195,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getProjectRoot.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getProjectRoot.js
   var require_getProjectRoot = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getProjectRoot.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getProjectRoot.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -3909,9 +4259,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/defaultBannedStrings.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/defaultBannedStrings.js
   var require_defaultBannedStrings = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/defaultBannedStrings.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/defaultBannedStrings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.defaultBannedStrings = void 0;
@@ -3919,9 +4269,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js
   var require_defaultIgnoredMacros = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.defaultIgnoredMacros = void 0;
@@ -3929,9 +4279,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getLintConfig.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getLintConfig.js
   var require_getLintConfig = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getLintConfig.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getLintConfig.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -3964,7 +4314,7 @@
         return mod && mod.__esModule ? mod : { "default": mod };
       };
       Object.defineProperty(exports, "__esModule", { value: true });
-      exports.DefaultLintConfiguration = exports.getDefaultHeader = void 0;
+      exports.parseLintConfig = exports.DefaultLintConfiguration = exports.getDefaultHeader = void 0;
       exports.getLintConfig = getLintConfig;
       var path_1 = __importDefault(require_path());
       var os_1 = __importDefault(require_os());
@@ -3999,6 +4349,7 @@
         noEncodedPasswords: true,
         noGremlins: true,
         noMacroIfInOpenCode: false,
+        noMalformedMacroCalls: false,
         noNestedCommentsInHeader: true,
         noNestedMacros: true,
         noSingleAsteriskComments: false,
@@ -4017,18 +4368,30 @@
         return __awaiter(this, void 0, void 0, function* () {
           const projectRoot = yield (0, getProjectRoot_1.getProjectRoot)();
           const lintFileLocation = projectRoot || os_1.default.homedir();
-          const configuration = yield (0, file_1.readFile)(path_1.default.join(lintFileLocation, ".sasjslint")).catch((_) => {
-            return JSON.stringify(exports.DefaultLintConfiguration);
-          });
-          return new LintConfig_1.LintConfig(JSON.parse(configuration));
+          const lintFilePath = path_1.default.join(lintFileLocation, ".sasjslint");
+          const configuration = yield (0, file_1.readFile)(lintFilePath).catch((_) => null);
+          if (configuration === null) {
+            return new LintConfig_1.LintConfig(exports.DefaultLintConfiguration);
+          }
+          return new LintConfig_1.LintConfig((0, exports.parseLintConfig)(configuration, lintFilePath));
         });
       }
+      var parseLintConfig = (configuration, filePath) => {
+        try {
+          return JSON.parse(configuration);
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : String(error);
+          throw new Error(`${filePath} is not valid JSON (${reason}).
+The file is read as strict JSON, so it cannot carry comments. Every setting, its type and its default are documented in the schema: https://cli.sasjs.io/sasjslint-schema.json`);
+        }
+      };
+      exports.parseLintConfig = parseLintConfig;
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/gremlinCharacters.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/gremlinCharacters.js
   var require_gremlinCharacters = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/gremlinCharacters.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/gremlinCharacters.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.gremlinCharacters = void 0;
@@ -4349,9 +4712,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/ignore/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/ignore/index.js
   var require_ignore = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/ignore/index.js"(exports, module) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/ignore/index.js"(exports, module) {
       function makeArray(subject) {
         return Array.isArray(subject) ? subject : [subject];
       }
@@ -5199,9 +5562,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/isIgnored.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/isIgnored.js
   var require_isIgnored = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/isIgnored.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/isIgnored.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5259,9 +5622,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/listSasFiles.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/listSasFiles.js
   var require_listSasFiles = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/listSasFiles.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/listSasFiles.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5301,9 +5664,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getIndicesOf.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getIndicesOf.js
   var require_getIndicesOf = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getIndicesOf.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getIndicesOf.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getIndicesOf = void 0;
@@ -5327,20 +5690,107 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/scanLine.js
+  var require_scanLine = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/scanLine.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.scanLine = exports.noScan = exports.cleanState = void 0;
+      var cleanState = () => ({
+        quote: "",
+        inComment: false,
+        maskedDepth: 0
+      });
+      exports.cleanState = cleanState;
+      var maskStart = /%n?r?(?:str|bquote|superq|quote|unquote)\s*\(|%q?sysfunc\s*\(/iy;
+      var noScan = () => ({
+        positions: [],
+        code: "",
+        hasComment: false,
+        comments: [],
+        endState: (0, exports.cleanState)()
+      });
+      exports.noScan = noScan;
+      var scanLine = (line, state) => {
+        const positions = [];
+        const code = new Array(line.length).fill(" ");
+        const comments = [];
+        let { quote, inComment, maskedDepth } = state;
+        let hasComment = inComment;
+        let commentStart = inComment ? 0 : -1;
+        for (let index = 0; index < line.length; index++) {
+          const character = line[index];
+          if (inComment) {
+            if (character === "*" && line[index + 1] === "/") {
+              inComment = false;
+              comments.push({ start: commentStart, end: index });
+              index++;
+              continue;
+            }
+            continue;
+          }
+          if (maskedDepth) {
+            if (character === "(")
+              maskedDepth++;
+            else if (character === ")")
+              maskedDepth--;
+            continue;
+          }
+          if (quote) {
+            if (character === quote)
+              quote = "";
+            continue;
+          }
+          if (character === "'" || character === '"') {
+            quote = character;
+            continue;
+          }
+          if (character === "/" && line[index + 1] === "*") {
+            inComment = true;
+            hasComment = true;
+            commentStart = index;
+            index++;
+            continue;
+          }
+          maskStart.lastIndex = index;
+          if (maskStart.test(line)) {
+            maskedDepth = 1;
+            index = maskStart.lastIndex - 1;
+            continue;
+          }
+          if (character === " ")
+            positions.push(index);
+          code[index] = character;
+        }
+        if (inComment)
+          comments.push({ start: commentStart, end: line.length });
+        return {
+          positions,
+          code: code.join(""),
+          hasComment,
+          comments,
+          endState: { quote, inComment, maskedDepth }
+        };
+      };
+      exports.scanLine = scanLine;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js
   var require_getDataSectionsDetail = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.checkIsDataLine = exports.getDataSectionsDetail = void 0;
+      var scanLine_1 = require_scanLine();
       var splitText_1 = require_splitText();
       var getDataSectionsDetail = (text, config) => {
         const dataSections = [];
         const lines = (0, splitText_1.splitText)(text, config);
-        const dataSectionStartRegex1 = new RegExp("^(datalines;)|(cards;)|(parmcards;)");
+        const opener = /(?:^|;)\s*(datalines|cards|parmcards)(4?);/i;
         const dataSectionEndRegex1 = new RegExp(";");
-        const dataSectionStartRegex2 = new RegExp("^(datalines4;)|(cards4;)|(parmcards4;)");
         const dataSectionEndRegex2 = new RegExp(";;;;");
+        let state = (0, scanLine_1.cleanState)();
         let dataSectionStarted = false;
         let dataSectionStartIndex = -1;
         let dataSectionEndRegex = dataSectionEndRegex1;
@@ -5349,17 +5799,18 @@
             if (dataSectionEndRegex.test(line)) {
               dataSections.push({ start: dataSectionStartIndex, end: index });
               dataSectionStarted = false;
+              state = (0, scanLine_1.cleanState)();
             }
-          } else {
-            if (dataSectionStartRegex1.test(line)) {
-              dataSectionStarted = true;
-              dataSectionStartIndex = index;
-              dataSectionEndRegex = dataSectionEndRegex1;
-            } else if (dataSectionStartRegex2.test(line)) {
-              dataSectionStarted = true;
-              dataSectionStartIndex = index;
-              dataSectionEndRegex = dataSectionEndRegex2;
-            }
+            return;
+          }
+          const scanned = (0, scanLine_1.scanLine)(line, state);
+          state = scanned.endState;
+          const match = opener.exec(scanned.code);
+          if (match) {
+            dataSectionStarted = true;
+            dataSectionStartIndex = index;
+            dataSectionEndRegex = match[2] ? dataSectionEndRegex2 : dataSectionEndRegex1;
+            state = (0, scanLine_1.cleanState)();
           }
         });
         return dataSections;
@@ -5376,9 +5827,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseLintOverride.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseLintOverride.js
   var require_parseLintOverride = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/parseLintOverride.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/parseLintOverride.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.applyLintOverride = exports.getLintOverride = void 0;
@@ -5441,9 +5892,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/index.js
   var require_utils = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/utils/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/utils/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -5473,6 +5924,8 @@
       __exportStar(require_splitLines(), exports);
       __exportStar(require_getIndicesOf(), exports);
       __exportStar(require_getHeaderLinesCount(), exports);
+      __exportStar(require_getIndex(), exports);
+      __exportStar(require_isDoxygenHeader(), exports);
       __exportStar(require_getDataSectionsDetail(), exports);
       __exportStar(require_defaultBannedStrings(), exports);
       __exportStar(require_defaultIgnoredMacros(), exports);
@@ -5482,29 +5935,661 @@
       __exportStar(require_mergeLintConfig(), exports);
       __exportStar(require_parseLibnames(), exports);
       __exportStar(require_parseLintOverride(), exports);
+      __exportStar(require_parseMacroCallArguments(), exports);
       __exportStar(require_parseMacroCalls(), exports);
       __exportStar(require_sasMacros(), exports);
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/shared.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/longLines.js
+  var require_longLines = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/longLines.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.breakAwareState = exports.indentationMultipleOf = exports.continuationIndentFor = exports.firstNonSpace = exports.putTextStart = exports.breakAwareStatement = exports.macroComment = exports.macroDeclaration = void 0;
+      exports.macroDeclaration = /^\s*%(?:macro|mend)\b/i;
+      exports.macroComment = /^\s*%\*/;
+      exports.breakAwareStatement = /^\s*%?(?:&?[\w.]*\.)?(?:put|putlog|window|display)\b|\b(?:then|else)\s+%?put\b|^\s*%let\b/i;
+      var putTextStart = (line) => {
+        const match = exports.breakAwareStatement.exec(line);
+        if (!match)
+          return (0, exports.firstNonSpace)(line, 0);
+        const afterKeyword = match.index + match[0].length;
+        if (/^\s*%let\b/i.test(line)) {
+          const equals = line.indexOf("=", afterKeyword);
+          if (equals > -1)
+            return equals + 1;
+        }
+        return afterKeyword;
+      };
+      exports.putTextStart = putTextStart;
+      var firstNonSpace = (line, from) => {
+        const rest = line.slice(from);
+        return from + rest.length - rest.trimStart().length;
+      };
+      exports.firstNonSpace = firstNonSpace;
+      var continuationIndentFor = (indent, multiple) => indent + " ".repeat(multiple - indent.length % multiple);
+      exports.continuationIndentFor = continuationIndentFor;
+      var indentationMultipleOf = (configuration) => configuration.indentationMultiple > 0 ? configuration.indentationMultiple : 2;
+      exports.indentationMultipleOf = indentationMultipleOf;
+      var breakAwareState = (code, open) => {
+        const statements = code.split(";");
+        const at = statements.findIndex((statement) => exports.breakAwareStatement.test(statement));
+        return {
+          line: open || at > -1,
+          open: open ? statements.length === 1 : at > -1 && at === statements.length - 1
+        };
+      };
+      exports.breakAwareState = breakAwareState;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/rewrapText.js
+  var require_rewrapText = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/rewrapText.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.rewrapText = exports.splitWithTerminators = void 0;
+      var LineEndings_1 = require_LineEndings();
+      var getDataSectionsDetail_1 = require_getDataSectionsDetail();
+      var scanLine_1 = require_scanLine();
+      var longLines_1 = require_longLines();
+      var leadingKeyword = /(?:^|[\s(;,=]|%)%?(?:let|global|local|then|else|do|to|by)$/i;
+      var lastPositionAtMost = (positions, maximum, lastIndex, firstIndex = 0) => {
+        let low = firstIndex;
+        let high = lastIndex;
+        let found = -1;
+        while (low <= high) {
+          const middle = low + high >> 1;
+          if (positions[middle] <= maximum) {
+            found = middle;
+            low = middle + 1;
+          } else {
+            high = middle - 1;
+          }
+        }
+        return found;
+      };
+      var lastBreakBefore = (line, positions, maximum, start) => {
+        const last = lastPositionAtMost(positions, maximum, positions.length - 1);
+        let fallback = -1;
+        for (let index = last; index >= 0; index--) {
+          const position = positions[index];
+          if (position <= start)
+            break;
+          if (!leadingKeyword.test(line.slice(0, position).trimEnd()))
+            return position;
+          if (fallback < 0)
+            fallback = position;
+        }
+        return fallback;
+      };
+      var statementBoundaries = (code, positions) => positions.filter((position) => code.slice(0, position).trimEnd().endsWith(";"));
+      var firstPositionAtLeast = (positions, minimum) => {
+        let low = 0;
+        let high = positions.length - 1;
+        let found = -1;
+        while (low <= high) {
+          const middle = low + high >> 1;
+          if (positions[middle] >= minimum) {
+            found = middle;
+            high = middle - 1;
+          } else {
+            low = middle + 1;
+          }
+        }
+        return found;
+      };
+      var splitMacroDeclaration = (line, code, limit, multiple) => {
+        const opening = /^\s*%macro\s+[\w.]+\s*\(/i.exec(code);
+        if (!opening)
+          return null;
+        const open = opening[0].length - 1;
+        let depth = 0;
+        let close = -1;
+        for (let index = open; index < code.length; index++) {
+          if (code[index] === "(")
+            depth++;
+          else if (code[index] === ")" && --depth === 0) {
+            close = index;
+            break;
+          }
+        }
+        if (close < 0)
+          return null;
+        const inside = code.slice(open + 1, close);
+        const commas = [];
+        depth = 0;
+        for (let index = 0; index < inside.length; index++) {
+          if (inside[index] === "(")
+            depth++;
+          else if (inside[index] === ")")
+            depth--;
+          else if (inside[index] === "," && depth === 0)
+            commas.push(index + open + 1);
+        }
+        if (!commas.length)
+          return null;
+        const indent = /^\s*/.exec(line)[0];
+        const continuationIndent = (0, longLines_1.continuationIndentFor)(indent, multiple);
+        const parameters = [];
+        let from = open + 1;
+        commas.forEach((comma) => {
+          parameters.push(line.slice(from, comma));
+          from = comma + 1;
+        });
+        parameters.push(line.slice(from, close));
+        const tail = line.slice(close);
+        const pieces = [];
+        let current = line.slice(0, open + 1) + parameters[0];
+        for (const parameter of parameters.slice(1)) {
+          const candidate = current + "," + parameter;
+          if (candidate.length <= limit)
+            current = candidate;
+          else {
+            pieces.push(current);
+            current = continuationIndent + "," + parameter;
+          }
+          if (current.length > limit)
+            return null;
+        }
+        if (current.length + tail.length <= limit) {
+          pieces.push(current + tail);
+        } else {
+          pieces.push(current);
+          pieces.push(continuationIndent + tail);
+        }
+        return pieces.length > 1 && pieces.every((piece) => piece.length <= limit) ? pieces : null;
+      };
+      var splitWithTrim = (line, limit, multiple, positions, from, boundaries) => {
+        const indent = /^\s*/.exec(line)[0];
+        const continuationIndent = (0, longLines_1.continuationIndentFor)(indent, multiple);
+        const opening = "%trim(";
+        const pieces = [];
+        let prefix = "";
+        let start = (0, longLines_1.firstNonSpace)(line, 0);
+        let textFrom = from;
+        for (; ; ) {
+          const tail = line.slice(start);
+          if (prefix.length + tail.length <= limit) {
+            pieces.push((pieces.length ? prefix : "") + tail);
+            return pieces.length > 1 ? pieces : null;
+          }
+          const boundaryFrom = pieces.length ? start : 0;
+          const boundary = boundaries.filter((position) => position > start && prefix.length + position - boundaryFrom <= limit);
+          if (boundary.length) {
+            const at2 = boundary[boundary.length - 1];
+            pieces.push(pieces.length ? prefix + line.slice(start, at2) : line.slice(0, at2));
+            start = at2 + 1;
+            textFrom = start;
+            prefix = continuationIndent;
+            continue;
+          }
+          const pieceFrom = pieces.length ? start : 0;
+          const maximum = pieceFrom + limit - prefix.length - opening.length;
+          const firstIndex = firstPositionAtLeast(positions, textFrom);
+          if (firstIndex < 0)
+            return null;
+          const cut = lastPositionAtMost(positions, maximum, positions.length - 1, firstIndex);
+          const at = cut >= 0 ? positions[cut] : -1;
+          if (at < 0)
+            return null;
+          pieces.push((pieces.length ? prefix + line.slice(start, at) : line.slice(0, at)) + opening);
+          start = at + 1;
+          textFrom = start;
+          prefix = continuationIndent + ") ";
+        }
+      };
+      var wrapLine = (line, limit, multiple, positions, boundaries) => {
+        const indent = /^\s*/.exec(line)[0];
+        const continuationIndent = (0, longLines_1.continuationIndentFor)(indent, multiple);
+        const continuationWidth = continuationIndent.length;
+        const lines = [];
+        let start = (0, longLines_1.firstNonSpace)(line, 0);
+        let first = true;
+        while (line.length - start + (first ? start : continuationWidth) > limit) {
+          const maximum = first ? limit : start + limit - continuationWidth;
+          const boundary = lastBreakBefore(line, boundaries, maximum, start);
+          const cut = boundary >= 0 ? boundary : lastBreakBefore(line, positions, maximum, start);
+          if (cut < 0)
+            return null;
+          lines.push(first ? line.slice(0, cut).trimEnd() : continuationIndent + line.slice(start, cut).trimEnd());
+          start = (0, longLines_1.firstNonSpace)(line, cut);
+          first = false;
+        }
+        lines.push(first ? line : continuationIndent + line.slice(start));
+        return lines;
+      };
+      var splitWithTerminators = (text) => {
+        var _a;
+        const parts = text.split(/(\r\n|\n)/);
+        const lines = [];
+        for (let index = 0; index < parts.length; index += 2) {
+          lines.push({ line: parts[index], ending: (_a = parts[index + 1]) !== null && _a !== void 0 ? _a : "" });
+        }
+        return lines;
+      };
+      exports.splitWithTerminators = splitWithTerminators;
+      var rewrapText = (text, configuration) => {
+        if (!text)
+          return text;
+        if (!configuration.lineLintRules.some((rule) => rule.name === "maxLineLength"))
+          return text;
+        const entries = (0, exports.splitWithTerminators)(text);
+        const dataSections = (0, getDataSectionsDetail_1.getDataSectionsDetail)(text, configuration);
+        const multiple = (0, longLines_1.indentationMultipleOf)(configuration);
+        const defaultEnding = configuration.lineEndings === LineEndings_1.LineEndings.CRLF ? "\r\n" : "\n";
+        const result = [];
+        let state = (0, scanLine_1.cleanState)();
+        let breakAwareOpen = false;
+        let changed = false;
+        entries.forEach(({ line, ending }, index) => {
+          const isData = (0, getDataSectionsDetail_1.checkIsDataLine)(dataSections, index);
+          const scanned = isData ? (0, scanLine_1.noScan)() : (0, scanLine_1.scanLine)(line, state);
+          state = scanned.endState;
+          const breakAware = isData ? { line: false, open: false } : (0, longLines_1.breakAwareState)(scanned.code, breakAwareOpen);
+          breakAwareOpen = breakAware.open;
+          const boundaries = statementBoundaries(scanned.code, scanned.positions);
+          const fits = line.trimEnd().length <= configuration.maxLineLength;
+          const wrapped = isData || longLines_1.macroComment.test(line) || fits ? null : longLines_1.macroDeclaration.test(line) ? splitMacroDeclaration(line, scanned.code, configuration.maxLineLength, multiple) : breakAware.line && !scanned.hasComment ? splitWithTrim(line, configuration.maxLineLength, multiple, scanned.positions, (0, longLines_1.putTextStart)(line), boundaries) : scanned.hasComment ? null : wrapLine(line, configuration.maxLineLength, multiple, scanned.positions, boundaries);
+          if (!wrapped) {
+            result.push(line + ending);
+            return;
+          }
+          changed = true;
+          const breakEnding = ending || defaultEnding;
+          wrapped.forEach((piece, pieceIndex) => {
+            result.push(piece + (pieceIndex === wrapped.length - 1 ? ending : breakEnding));
+          });
+        });
+        return changed ? result.join("") : text;
+      };
+      exports.rewrapText = rewrapText;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/adjustLineLength.js
+  var require_adjustLineLength = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/adjustLineLength.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.lineEndingOf = exports.adjustLineLength = void 0;
+      var LineEndings_1 = require_LineEndings();
+      var getDataSectionsDetail_1 = require_getDataSectionsDetail();
+      var getHeaderLinesCount_1 = require_getHeaderLinesCount();
+      var parseLintOverride_1 = require_parseLintOverride();
+      var scanLine_1 = require_scanLine();
+      var longLines_1 = require_longLines();
+      var rewrapText_1 = require_rewrapText();
+      var overrideTag = /^(\s*)@sasjslint\s*(\{.*\})\s*$/;
+      var adjustLineLength = (text, configuration) => {
+        if (!text)
+          return text;
+        if (!configuration.lineLintRules.some((rule) => rule.name === "maxLineLength"))
+          return text;
+        const headerLinesCount = (0, getHeaderLinesCount_1.getHeaderLinesCount)(text, configuration);
+        if (!headerLinesCount)
+          return text;
+        const entries = (0, rewrapText_1.splitWithTerminators)(text);
+        const lines = entries.map((entry) => entry.line);
+        const dataSections = (0, getDataSectionsDetail_1.getDataSectionsDetail)(text, configuration);
+        const headerLimit = Math.max(configuration.maxLineLength, configuration.maxHeaderLineLength);
+        const dataLimit = Math.max(configuration.maxLineLength, configuration.maxDataLineLength);
+        const needed = {
+          maxLineLength: 0,
+          maxHeaderLineLength: 0,
+          maxDataLineLength: 0
+        };
+        let state = (0, scanLine_1.cleanState)();
+        let breakAwareOpen = false;
+        lines.forEach((line, index) => {
+          const isHeader = index < headerLinesCount;
+          const isData = (0, getDataSectionsDetail_1.checkIsDataLine)(dataSections, index);
+          const scanned = isData ? (0, scanLine_1.noScan)() : (0, scanLine_1.scanLine)(line, state);
+          state = scanned.endState;
+          const breakAware = isData ? { line: false, open: false } : (0, longLines_1.breakAwareState)(scanned.code, breakAwareOpen);
+          breakAwareOpen = breakAware.open;
+          const limit = isData ? dataLimit : isHeader ? headerLimit : configuration.maxLineLength;
+          if (line.length <= limit)
+            return;
+          if (breakAware.line || longLines_1.macroComment.test(line) || longLines_1.macroDeclaration.test(line))
+            return;
+          const codeEnd = scanned.code.trimEnd().length;
+          if (!isHeader && !isData && scanned.hasComment && codeEnd <= limit)
+            return;
+          const key = isData ? "maxDataLineLength" : isHeader ? "maxHeaderLineLength" : "maxLineLength";
+          needed[key] = Math.max(needed[key], line.length);
+        });
+        const raised = Object.keys(needed).filter((key) => needed[key] > configuration[key]);
+        if (!raised.length)
+          return text;
+        const override = (0, parseLintOverride_1.getLintOverride)(text, configuration);
+        const existing = lines.slice(0, headerLinesCount).find((line) => overrideTag.test(line));
+        if (existing && !override)
+          return text;
+        const merged = Object.assign({}, override !== null && override !== void 0 ? override : {});
+        raised.forEach((key) => {
+          var _a;
+          merged[key] = Math.max((_a = merged[key]) !== null && _a !== void 0 ? _a : 0, needed[key]);
+        });
+        const json = "{" + Object.keys(merged).map((key) => `"${key}": ${JSON.stringify(merged[key])}`).join(", ") + "}";
+        if (existing) {
+          const match = overrideTag.exec(existing);
+          if (match[2] === json)
+            return text;
+          const at = lines.indexOf(existing);
+          const rewritten = [...lines];
+          rewritten[at] = `${match[1]}@sasjslint ${json}`;
+          return rewritten.map((line, index) => line + entries[index].ending).join("");
+        }
+        const closingIndex = headerLinesCount - 1;
+        const closing = lines[closingIndex];
+        if (!/^\s*[*]{2}\/\s*$/.test(closing))
+          return text;
+        const previous = lines[closingIndex - 1];
+        const indent = /^\s*/.exec(previous)[0] || "  ";
+        const ending = entries[closingIndex].ending || (0, exports.lineEndingOf)(configuration);
+        const separator = previous.trim() === "" ? [] : [""];
+        const inserted = [...separator, `${indent}@sasjslint ${json}`];
+        const out = lines.slice(0, closingIndex).map((line, index) => line + entries[index].ending);
+        inserted.forEach((line) => out.push(line + ending));
+        lines.slice(closingIndex).forEach((line, index) => {
+          out.push(line + entries[closingIndex + index].ending);
+        });
+        return out.join("");
+      };
+      exports.adjustLineLength = adjustLineLength;
+      var lineEndingOf = (configuration) => configuration.lineEndings === LineEndings_1.LineEndings.CRLF ? "\r\n" : "\n";
+      exports.lineEndingOf = lineEndingOf;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/reflowComments.js
+  var require_reflowComments = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/reflowComments.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.reflowComments = void 0;
+      var LineEndings_1 = require_LineEndings();
+      var getDataSectionsDetail_1 = require_getDataSectionsDetail();
+      var getHeaderLinesCount_1 = require_getHeaderLinesCount();
+      var scanLine_1 = require_scanLine();
+      var longLines_1 = require_longLines();
+      var rewrapText_1 = require_rewrapText();
+      var startsParagraph = /^(?:@|<|[-*+]\s|\d+[.)]\s|\||#|%|`)/i;
+      var lineOriented = /^(?:@li\b|@sasjslint\b|<|[-*+]\s|\d+[.)]\s|\||#|%|`)/i;
+      var codeTag = /@(?:example|code|verbatim)\b/i;
+      var macrosHeading = /<h4>\s*SAS Macros\s*<\/h4>/i;
+      var indentOf = (text) => /^\s*/.exec(text)[0].length;
+      var wrapWords = (content, limit, lead, continuationIndent, trail) => {
+        const words = content.split(/\s+/).filter(Boolean);
+        const lines = [];
+        let line = lead;
+        let empty = true;
+        for (const word of words) {
+          const candidate = empty ? lead + word : line + " " + word;
+          if (empty || candidate.length <= limit) {
+            line = candidate;
+            empty = false;
+            continue;
+          }
+          lines.push(line);
+          line = continuationIndent + word;
+        }
+        lines.push(line);
+        while (lines[lines.length - 1].length + trail.length > limit) {
+          const last = lines[lines.length - 1];
+          const cut = last.lastIndexOf(" ");
+          if (cut < 1 || !last.slice(0, cut).trim())
+            return null;
+          lines[lines.length - 1] = last.slice(0, cut);
+          lines.push(continuationIndent + last.slice(cut + 1));
+        }
+        lines[lines.length - 1] += trail;
+        return lines.every((wrapped) => wrapped.length <= limit) ? lines : null;
+      };
+      var collectBlocks = (lines, configuration) => {
+        const blocks = [];
+        const dataSections = (0, getDataSectionsDetail_1.getDataSectionsDetail)(lines.join("\n"), configuration);
+        let state = (0, scanLine_1.cleanState)();
+        let index = 0;
+        while (index < lines.length) {
+          if ((0, getDataSectionsDetail_1.checkIsDataLine)(dataSections, index)) {
+            state = (0, scanLine_1.cleanState)();
+            index++;
+            continue;
+          }
+          const scanned = (0, scanLine_1.scanLine)(lines[index], state);
+          state = scanned.endState;
+          const span = scanned.comments[0];
+          const opensHere = !!span && scanned.comments.length === 1 && lines[index].slice(0, span.start).trim() === "";
+          if (!opensHere) {
+            index++;
+            continue;
+          }
+          if (span.end < lines[index].length) {
+            if (lines[index].slice(span.end + 2).trim() === "") {
+              blocks.push({ open: index, close: index });
+            }
+            index++;
+            continue;
+          }
+          let close = index;
+          let closed = false;
+          let usable = true;
+          while (usable && !closed && close < lines.length - 1) {
+            close++;
+            if ((0, getDataSectionsDetail_1.checkIsDataLine)(dataSections, close)) {
+              usable = false;
+              break;
+            }
+            const next = (0, scanLine_1.scanLine)(lines[close], state);
+            state = next.endState;
+            if (next.code.trim() !== "") {
+              usable = false;
+              break;
+            }
+            const closing = next.comments[0];
+            if (closing && closing.end < lines[close].length) {
+              closed = true;
+              usable = lines[close].slice(closing.end + 2).trim() === "";
+            }
+          }
+          if (usable && closed)
+            blocks.push({ open: index, close });
+          index = close + 1;
+        }
+        return blocks;
+      };
+      var readBlock = (lines, block, multiple) => {
+        const openLine = lines[block.open];
+        const marker = openLine.indexOf("/*");
+        const afterMarker = marker + 2 + (openLine[marker + 2] === "*" ? 1 : 0);
+        const openRest = openLine.slice(afterMarker);
+        const openLead = afterMarker + indentOf(openRest);
+        const closer = block.open === block.close ? openLine.indexOf("*/") : -1;
+        const openBody = openLine.slice(openLead, closer > -1 ? closer : void 0);
+        const openContent = openBody.trimEnd();
+        const read = [
+          {
+            raw: openLine,
+            lead: openLine.slice(0, openLead),
+            content: openContent,
+            trail: openBody.slice(openContent.length) + (closer > -1 ? openLine.slice(closer) : ""),
+            indent: indentOf(openLine)
+          }
+        ];
+        for (let index = block.open + 1; index <= block.close; index++) {
+          const line = lines[index];
+          const lead = /^\s*/.exec(line)[0];
+          const close = index === block.close ? line.indexOf("*/") : -1;
+          const body = line.slice(lead.length, close > -1 ? close : void 0);
+          const content = body.trimEnd();
+          read.push({
+            raw: line,
+            lead,
+            content,
+            trail: body.slice(content.length) + (close > -1 ? line.slice(close) : ""),
+            indent: lead.length
+          });
+        }
+        const below = read[1];
+        const contentIndent = below !== void 0 && below.content !== "" ? below.indent : indentOf(openLine) + (multiple - indentOf(openLine) % multiple);
+        return { read, contentIndent };
+      };
+      var reflowComments = (text, configuration) => {
+        if (!text)
+          return text;
+        if (!configuration.lineLintRules.some((rule) => rule.name === "maxLineLength"))
+          return text;
+        const entries = (0, rewrapText_1.splitWithTerminators)(text);
+        const lines = entries.map((entry) => entry.line);
+        const headerLinesCount = (0, getHeaderLinesCount_1.getHeaderLinesCount)(text, configuration);
+        const multiple = (0, longLines_1.indentationMultipleOf)(configuration);
+        const headerLimit = Math.max(configuration.maxLineLength, configuration.maxHeaderLineLength);
+        const defaultEnding = configuration.lineEndings === LineEndings_1.LineEndings.CRLF ? "\r\n" : "\n";
+        const output = [];
+        let cursor = 0;
+        const emitTo = (index) => {
+          while (cursor < index && cursor < lines.length) {
+            output.push(lines[cursor] + entries[cursor].ending);
+            cursor++;
+          }
+        };
+        for (const block of collectBlocks(lines, configuration)) {
+          const { read, contentIndent } = readBlock(lines, block, multiple);
+          const limit = block.open < headerLinesCount ? headerLimit : configuration.maxLineLength;
+          const blockText = read.map((line) => line.raw).join("\n");
+          const refused = macrosHeading.test(blockText) || codeTag.test(blockText) || read.some((line) => /@sasjslint\b/.test(line.content));
+          if (refused)
+            continue;
+          emitTo(block.open);
+          const emitted = [];
+          let paragraph = [];
+          let paragraphIndent = -1;
+          const flush = () => {
+            if (!paragraph.length)
+              return;
+            const last = paragraph[paragraph.length - 1];
+            const overlong = !lineOriented.test(paragraph[0].content) && paragraph.some((line) => line.lead.length + line.content.length + line.trail.length > limit);
+            const content = paragraph.map((line) => line.content).join(" ");
+            const wrapped = overlong ? wrapWords(content, limit, paragraph[0].lead, " ".repeat(paragraphIndent), last.trail) : null;
+            if (wrapped)
+              emitted.push(...wrapped);
+            else
+              emitted.push(...paragraph.map((line) => line.raw));
+            paragraph = [];
+            paragraphIndent = -1;
+          };
+          read.forEach((line, index) => {
+            if (line.content === "") {
+              flush();
+              emitted.push(line.raw);
+              return;
+            }
+            if (paragraph.length) {
+              const continues = index > 0 && line.indent === paragraphIndent && !startsParagraph.test(line.content);
+              if (!continues)
+                flush();
+            }
+            if (!paragraph.length)
+              paragraphIndent = index === 0 ? contentIndent : line.indent;
+            paragraph.push(line);
+          });
+          flush();
+          const blockEnding = entries[block.close].ending || defaultEnding;
+          emitted.forEach((line, index) => {
+            const ending = index === emitted.length - 1 ? entries[block.close].ending : blockEnding;
+            output.push(line + ending);
+          });
+          cursor = block.close + 1;
+        }
+        emitTo(lines.length);
+        const result = output.join("");
+        return result === text ? text : result;
+      };
+      exports.reflowComments = reflowComments;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/splitTrailingComments.js
+  var require_splitTrailingComments = __commonJS({
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/splitTrailingComments.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.splitTrailingComments = void 0;
+      var getDataSectionsDetail_1 = require_getDataSectionsDetail();
+      var scanLine_1 = require_scanLine();
+      var adjustLineLength_1 = require_adjustLineLength();
+      var rewrapText_1 = require_rewrapText();
+      var splitTrailingComments = (text, configuration) => {
+        if (!text)
+          return text;
+        if (!configuration.lineLintRules.some((rule) => rule.name === "maxLineLength"))
+          return text;
+        const entries = (0, rewrapText_1.splitWithTerminators)(text);
+        const dataSections = (0, getDataSectionsDetail_1.getDataSectionsDetail)(text, configuration);
+        const output = [];
+        let state = (0, scanLine_1.cleanState)();
+        let changed = false;
+        entries.forEach(({ line, ending }, index) => {
+          const isData = (0, getDataSectionsDetail_1.checkIsDataLine)(dataSections, index);
+          const scanned = isData ? (0, scanLine_1.noScan)() : (0, scanLine_1.scanLine)(line, state);
+          state = scanned.endState;
+          const span = scanned.comments[0];
+          const code = span ? line.slice(0, span.start) : "";
+          const splits = !isData && !!span && line.length > configuration.maxLineLength && code.trim() !== "";
+          if (!splits) {
+            output.push(line + ending);
+            return;
+          }
+          changed = true;
+          const indent = /^\s*/.exec(line)[0];
+          const breakEnding = ending || (0, adjustLineLength_1.lineEndingOf)(configuration);
+          output.push(code.trimEnd() + breakEnding);
+          output.push(indent + line.slice(span.start) + ending);
+        });
+        return changed ? output.join("") : text;
+      };
+      exports.splitTrailingComments = splitTrailingComments;
+    }
+  });
+
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/shared.js
   var require_shared = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/shared.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/shared.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.processLine = exports.processText = void 0;
-      var LineEndings_1 = require_LineEndings();
+      var parseLintOverride_1 = require_parseLintOverride();
       var splitText_1 = require_splitText();
+      var adjustLineLength_1 = require_adjustLineLength();
+      var reflowComments_1 = require_reflowComments();
+      var rewrapText_1 = require_rewrapText();
+      var splitTrailingComments_1 = require_splitTrailingComments();
+      var maxPasses = 3;
       var processText = (text, config) => {
-        const processedText = processContent(config, text);
+        let current = text;
+        let effective = (0, parseLintOverride_1.applyLintOverride)(current, config);
+        for (let pass = 0; pass < maxPasses; pass++) {
+          const next = processOnce(current, effective);
+          if (next === current)
+            break;
+          current = next;
+          effective = (0, parseLintOverride_1.applyLintOverride)(current, config);
+        }
+        return current;
+      };
+      exports.processText = processText;
+      var processOnce = (text, config) => {
+        const rewrapped = (0, rewrapText_1.rewrapText)((0, splitTrailingComments_1.splitTrailingComments)(processContent(config, text), config), config);
+        const processedText = (0, adjustLineLength_1.adjustLineLength)((0, reflowComments_1.reflowComments)(rewrapped, config), config);
         const lines = (0, splitText_1.splitText)(processedText, config);
         const formattedLines = lines.map((line) => {
           return (0, exports.processLine)(config, line);
         });
-        const configuredLineEnding = config.lineEndings === LineEndings_1.LineEndings.LF ? "\n" : "\r\n";
-        return formattedLines.join(configuredLineEnding);
+        return formattedLines.join((0, adjustLineLength_1.lineEndingOf)(config));
       };
-      exports.processText = processText;
       var processContent = (config, content) => {
         let processedContent = content;
         config.fileLintRules.filter((r) => !!r.fix).forEach((rule) => {
@@ -5523,9 +6608,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatText.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatText.js
   var require_formatText = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatText.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatText.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5566,9 +6651,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/shared.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/shared.js
   var require_shared2 = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/shared.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/shared.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.processLine = exports.processFile = exports.processText = void 0;
@@ -5614,9 +6699,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintText.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintText.js
   var require_lintText = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintText.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintText.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5657,9 +6742,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintFile.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintFile.js
   var require_lintFile = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintFile.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintFile.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5707,9 +6792,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintFolder.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintFolder.js
   var require_lintFolder = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintFolder.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintFolder.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5777,9 +6862,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintProject.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintProject.js
   var require_lintProject = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/lintProject.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/lintProject.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5824,9 +6909,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/index.js
   var require_lint = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/lint/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/lint/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -5852,9 +6937,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatFile.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatFile.js
   var require_formatFile = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatFile.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatFile.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5914,9 +6999,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatFolder.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatFolder.js
   var require_formatFolder = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatFolder.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatFolder.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5999,9 +7084,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatProject.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatProject.js
   var require_formatProject = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/formatProject.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/formatProject.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -6046,9 +7131,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/index.js
   var require_format = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/format/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/format/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -6074,9 +7159,9 @@
     }
   });
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/index.js
   var require_lint2 = __commonJS({
-    "../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/node_modules/@sasjs/lint/index.js"(exports) {
+    "../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/lint/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -6102,7 +7187,7 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-UjGPGJ/process.js
+  // ../../../../../tmp/sasjs-lint-nFmUpl/process.js
   if (typeof globalThis.process === "undefined")
     globalThis.process = {
       env: {},
@@ -6113,10 +7198,10 @@
       version: "v0"
     };
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/build/esm/code/service.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/api/build/esm/code/service.js
   var import_lint = __toESM(require_lint2(), 1);
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/build/esm/types.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/api/build/esm/types.js
   var ApiError = class extends Error {
     constructor(status, message, body) {
       super(message);
@@ -6127,7 +7212,7 @@
     }
   };
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/build/esm/code/service.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/api/build/esm/code/service.js
   var codeOf = (body) => {
     const value = body.code;
     if (value === void 0)
@@ -6156,9 +7241,9 @@
     };
   };
 
-  // ../../../.npm/_npx/feb2b1bd46fcf80a/node_modules/@sasjs/api/build/esm/code/index.js
+  // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/api/build/esm/code/index.js
   var import_lint2 = __toESM(require_lint2(), 1);
 
-  // ../../../../../tmp/sasjs-lint-UjGPGJ/entry.js
+  // ../../../../../tmp/sasjs-lint-nFmUpl/entry.js
   globalThis.SASjsCode = { createCodeService, LintConfig: import_lint2.LintConfig };
 })();
