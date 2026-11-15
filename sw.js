@@ -35,8 +35,9 @@
  * services are the package's; this file supplies the transport, the worker's own
  * activity, and the browser's answers to questions a server asks its process.
  */
-importScripts('host/runtime-core.js?v=8a6b701013')
-importScripts('host/api-browser.js?v=8a6b701013')
+importScripts('host/runtime-core.js?v=31804961c7')
+importScripts('host/api-browser.js?v=31804961c7')
+importScripts('host/lint-browser.js?v=31804961c7')
 
 const R = self.SASjsMockRuntime
 
@@ -967,19 +968,18 @@ const LINT_CONFIG_FILE = '.sasjslint'
  * The linter, bundled at build time from the installed @sasjs/api/code and
  * @sasjs/lint (see mockSite.ts).
  *
- * Imported on the first code route rather than by the worker at boot: it is
- * around 40KB of the worker's payload for two routes (`code/lint` and
- * `code/format`), and the install has to finish before the page may make its
- * first request - so every visit pays it, including the ones that never open the
- * editor. The build stamps the version into the URL below, so the copy fetched
- * here is cache-busted with the rest of the host.
+ * Imported with the rest of the host, not on the first code route: a service
+ * worker may only `importScripts` while its own script is being evaluated, so a
+ * call made from a request handler fails with "The script at ... failed to load"
+ * - the linter would be missing exactly where it is needed. What stays lazy is the
+ * service built from it: `createCodeService` is cheap, and only a code route
+ * calls it.
  */
 let codeService
 let linter
 
 const code = () => {
   if (codeService) return codeService
-  importScripts('host/lint-browser.js?v=8a6b701013')
   linter = self.SASjsCode
   codeService = linter.createCodeService({ lintConfig })
   return codeService
