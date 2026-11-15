@@ -14,12 +14,12 @@ import {
   API_PREFIX,
   APP_STREAM_ALIAS,
   appEntryForPath,
-  removeFrontendFolder,
   appIsGranted,
   appStreamDrive,
   appStreamEntries,
   appStreamService,
   applyAppFraming,
+  forgetPublishedApp,
   isRouteGranted,
   loadRouteRules,
   ModeType,
@@ -219,13 +219,9 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
       allow: () => true
     })
 
-    // the inventory is what the gate and the permission editor read, so an app
-    // that is no longer published must leave it now, not at the next restart
-    if (page.status === 200) {
-      await refreshAppStreamIndex()
-
-      if (entry) await removeFrontendFolder(entry)
-    }
+    // the package performed the unpublish, so this route hands the entry it read
+    // to the step both removal routes share
+    if (page.status === 200) await forgetPublishedApp(entry)
 
     return render(req, res, page)
   }

@@ -194,19 +194,38 @@ export const removeFrontendFolder = async (
 }
 
 /**
- * Unpublishes an app and removes the frontend it published.
+ * Drops an unpublish from the inventory, and removes the folder it published.
  *
- * Every route that removes an app goes through this: the id is the handle, the
- * index forgets it, and what is left on the drive is decided by the shape the
- * entry had. Two removals that disagreed about the files would be one removal and
- * one surprise.
+ * The two routes that unpublish an app differ in who forgets the entry - the
+ * service for `DELETE /SASjsApi/app/:id`, the package's own handler for
+ * `DELETE /app/:id` - and agree on what follows it. This is that agreement in one
+ * place: the inventory is what the gate and the permission editor read, so the
+ * entry leaves it now rather than at the next restart, and the drive loses the
+ * folder the entry published. Two removals that disagreed about the files would
+ * be one removal and one surprise.
+ *
+ * The entry is optional because the app route reports an unpublish that answered
+ * anything other than 200 as well, and an app it could not name leaves nothing to
+ * remove.
+ */
+export const forgetPublishedApp = async (
+  entry?: AppStreamEntry
+): Promise<void> => {
+  await refreshAppStreamIndex()
+
+  if (entry) await removeFrontendFolder(entry)
+}
+
+/**
+ * Unpublishes an app by id and cleans up after it.
+ *
+ * The id is the handle: the service forgets the entry, and what is left on the
+ * drive is decided by the shape the entry had.
  */
 export const unpublishApp = async (id: string): Promise<AppStreamEntry> => {
   const removed = await appStreamService().unpublish(id)
 
-  await refreshAppStreamIndex()
-
-  await removeFrontendFolder(removed)
+  await forgetPublishedApp(removed)
 
   return removed
 }
