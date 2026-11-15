@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Alert, Box, Button, Typography } from '@mui/material'
 import axios from 'axios'
 
-import { deployFormFor } from './deployForm'
+import { ACCEPTED_BUILDS, deployFormFor } from './deployForm'
 
 interface PublishedApp {
   id: string
@@ -60,15 +60,16 @@ const PublishApp = () => {
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Choose a <code>build.json</code> or a zip from a compiled SASjs app. The
-        app is deployed to the drive and streamed at{' '}
-        <code>/app/&lt;id&gt;/</code>, where the id is assigned on the first
-        publish and kept on every redeploy - so the URL survives a new bundle.
+        Choose a zip from a compiled SASjs app - the package a build produces -
+        or the older <code>build.json</code> deploy document. Either is deployed
+        to the drive and streamed at <code>/app/&lt;id&gt;/</code>, where the id
+        is assigned on the first publish and kept on every redeploy - so the URL
+        survives a new bundle.
       </Typography>
       <input
         ref={input}
         type="file"
-        accept="application/json,.json"
+        accept={ACCEPTED_BUILDS}
         hidden
         data-testid="publish-app-input"
         onChange={(event) => {
@@ -82,7 +83,7 @@ const PublishApp = () => {
         disabled={publishing}
         onClick={() => input.current?.click()}
       >
-        {publishing ? 'Publishing...' : 'Upload build.json'}
+        {publishing ? 'Publishing...' : 'Upload a build'}
       </Button>
       {result && (
         <Alert severity="success" sx={{ mt: 1 }}>
