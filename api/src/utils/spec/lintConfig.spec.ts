@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import os from 'os'
 import path from 'path'
 
-import { LintConfig, Severity } from '@sasjs/lint'
+import { LintConfig, Severity, lintSchemaUrl } from '@sasjs/lint'
 import { createFile, createFolder } from '@sasjs/utils'
 
 import defaultLintConfiguration from '../defaultLintConfiguration.json'
@@ -90,8 +90,12 @@ describe('the seeded lint configuration', () => {
     expect(enabled.has('noTabs')).toEqual(true)
   })
 
-  it('points an editor at the published schema', () => {
-    expect(seed.$schema).toEqual('https://cli.sasjs.io/sasjslint-schema.json')
+  it('points an editor at the schema the linter itself names', () => {
+    // Not the cli.sasjs.io address: that one only $refs the raw document, and an
+    // editor that will not follow a ref to another host reports it as untrusted.
+    // Comparing against the linter's own export means a move or a rename fails
+    // here rather than reaching a user's drive as a stale address.
+    expect(seed.$schema).toEqual(lintSchemaUrl)
   })
 })
 
