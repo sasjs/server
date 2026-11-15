@@ -41,56 +41,97 @@ Sizes are decoded bytes. A file member travels as its own text, or as base64 whe
 
 Member names are checked in the same pass: a name carrying `/`, `\` or `..` would write outside the deployment folder, so the tree is refused with `400` instead.
 
-## Publishing a folder of files
+## Publishing an app
 
-An app does not need a compiled service pack. `POST /SASjsApi/drive/deploy/upload` takes a zip whose entries are the files to serve:
+The simplest publish is the compiled frontend itself: a zip of the folder a browser opens, with `name` giving the app its identity.
 
 ```bash
-# the archive holds the app's files, rooted where the server serves them from:
-#   services/web/index.html, services/web/app.js, assets/logo.png
-curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&streamWebFolder=web" \
-  -H "Authorization: Bearer $TOKEN" \
+# the archive holds what the browser is served - index.html, app.js, assets/logo.png
+curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?name=harness" \
+  -H "Authorization: Bearer ***" \
   -F "file=@harness.zip"
 ```
 
-The archive's structure is kept under `appLoc`. What a deploy document would have said comes from the query: `appLoc` is required, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` sets its label.
+The entries become `apps/<name>` on the drive, and the app opens at `/app/<name>/`. The name is the app's key, its folder and its address, so it has to be usable as one URL segment - see [The app's id, and the name it is known by](#the-apps-id-and-the-name-it-is-known-by).
 
-An app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html`. The same rule holds for `POST /SASjsApi/drive/deploy` with a JSON tree: a request that names `streamWebFolder` must carry that folder, and is refused with a message naming it rather than deployed, because publishing it would advertise an app that resolves to nothing.
+## Publishing a frontend and its backend
 
-A zip that contains a deploy document - a root-level JSON file naming `appLoc` or `fileTree` - is read as a document instead, so the route answers both shapes. A file naming only one of the two is refused with the missing field named. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.
+A bundle can carry both halves, and that is what `sasjs build` writes for a server target:
+
+```
+macrodash.zip
+  sasjs.app.json        {"name": "macrodash", "appLoc": "/Public/app/macrodash"}
+  web/                  the compiled frontend
+  backend/              the services the frontend calls (optional)
+```
+
+One upload deploys the backend and publishes the frontend:
+
+```bash
+curl -X POST "https://my-server/SASjsApi/drive/deploy/upload" \
+  -H "Authorization: Bearer ***" \
+  -F "file=@macrodash.zip"
+```
+
+* The CONTENTS of `web/` become `apps/<name>`: the folder is the container, not part of the app.
+* The CONTENTS of `backend/` are written to `appLoc`, **additively**. A deploy writes what it carries and deletes nothing, because one backend may serve several frontends - a replacing write would delete the services another app put there.
+* `sasjs.app.json` is metadata: it is read before anything is written, and it is never served with the app.
+
+Two frontends can share one backend. Publish each with the same `appLoc` and a different `name`: each is its own app with its own id and URL, and the services are deployed by whichever bundle carries them.
+
+## The older shape
+
+A deployment built before apps were frontends is published with the folder and the stream in the query, and keeps working unchanged:
+
+```bash
+# the archive holds services/web/index.html, services/web/app.js, assets/logo.png
+curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps/harness&streamWebFolder=web" \
+  -H "Authorization: Bearer ***" \
+  -F "file=@harness.zip"
+```
+
+The archive's structure is kept under `appLoc`, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` sets its label. Such an app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html` - and a request that names `streamWebFolder` must carry that folder, or it is refused with a message naming it rather than deployed.
+
+A zip that contains a deploy document - a root-level JSON file naming `appLoc` and `fileTree` - is read as a document instead, so the route answers both shapes. `sasjs.app.json` is never read as one, even though it names an `appLoc`: it is the bundle's own manifest. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.
 
 Two kinds of entry are dropped, because macOS adds them to an archive of a folder and they are not part of the app: anything under `__MACOSX/`, and `.DS_Store`.
 
-### The app's id, and the label it is known by
+### The app's id, and the name it is known by
 
-A publish gives an app its identity. The first publish of a deployment mints a UUID, and that id is the app: its URL is `/app/<id>/`, a removal names it, and a redeploy of the same folder keeps it - so a new bundle never moves an app's URL. The deploy answer states it as `app: { id, name, url }`.
+A publish gives an app its identity. The first publish of an app mints a UUID, and that id is the app: its URL is `/app/<id>/`, a removal names it, and a redeploy keeps it - so a new bundle never moves an app's URL. The deploy answer states it as `app: { id, name, url }`.
 
-The name is a label and only a label. It is what the tile says, and it may be shared: two folders may both be called `report`, because nothing addresses an app by its name. When `streamServiceName` is absent the label is the last segment of `appLoc` as it is spelled - `/Public/apps/dashdemo` publishes as `dashdemo`.
+For an app published as a frontend the name is the key as well as the label: it is the folder (`apps/<name>`), the address (`/app/<name>/`) and what the tile says, so it has to be usable as one URL segment - letters, digits, dot, dash, underscore or tilde, starting with a letter or digit, at most 64 characters, and not `apps.json` or `index.html`, which the App Stream answers itself. A publish that states anything else is refused with `400`, and one that names an app another app already holds is refused with `409`. A rename is therefore a new app: publish under the new name, delete the old one.
+
+A legacy entry is keyed by its folder, and its name is a label and only a label: `streamServiceName` sets it, two folders may both be called `report`, and the name is derived from the last segment of `appLoc` when the publish states none.
 
 ### The bundle's manifest
 
-A compiled app may describe itself, in `sasjs.app.json` at the root of the archive:
+A bundle may describe itself, in `sasjs.app.json` at the root of the archive:
 
 ```json
 {
   "name": "Dashboard",
-  "streamWebFolder": "web",
+  "appLoc": "/Public/app/dashboard",
   "logo": "assets/logo.png",
   "frameAncestors": ["https://example.com"]
 }
 ```
 
-`streamWebFolder` is the folder under `<appLoc>/services` holding the app's web assets; `name`, `logo` and `frameAncestors` are optional. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak - a caller naming a folder or a label is correcting the archive. The SASjs CLI writes the manifest into the deploy tree when a target has a stream configuration.
+`name` says which app the frontend is and `appLoc` which backend it calls; both are optional in the file, because the request may state them instead. `streamWebFolder` states the older shape - a manifest carrying it publishes the legacy way, with the web assets under `<appLoc>/services/<streamWebFolder>` - and is what an older CLI writes. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak: a caller naming a folder, a name or a label is correcting the archive.
 
 ### Removing an app
 
-`DELETE /SASjsApi/drive/deploy` takes `{ "id": "<id>" }` and nothing else. The app stops being advertised and stops being served; the deployment's files stay in the drive, because deleting those is `DELETE /SASjsApi/drive/folder`.
+`DELETE /AppStream/<id>` - or `/app/<id>`, which is the same surface - and `DELETE /SASjsApi/drive/deploy` with `{ "id": "<id>" }` do the same thing: the app stops being advertised and stops being served.
+
+An app published as a frontend is its folder, so unpublishing removes `apps/<name>` with the entry. A legacy entry's files sit inside a backend folder that may serve other apps, so those are left where they are, and the folder goes with `DELETE /SASjsApi/drive/folder` by whoever owns the deployment.
 
 ### Replacing the folder
 
-`POST /SASjsApi/drive/deploy` takes `replace: true` to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a folder means the folder is what the archive says it is - and `?replace=false` keeps what is already there.
+`POST /SASjsApi/drive/deploy` takes `replace: true` to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a frontend means `apps/<name>` is what the archive says it is - and `?replace=false` keeps what is already there.
 
-The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder, not just the app being deployed.
+A package's backend is the exception: it is written additively however `replace` is set, because one backend may serve several frontends.
+
+The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything.
 
 ### Text and binary file members
 
@@ -113,12 +154,10 @@ A deploy document written by a client older than `@sasjs/api` 0.24 states no `en
 
 An app answers on two URLs.
 
-- `/AppStream/<id>` - the id is a UUID, minted when the folder is first published and kept when it is published again, so this URL survives a redeploy and a rename.
-- `/AppStream/<name>` - the readable form, which is what a person shares. It is resolved only when exactly one app holds that name; an ambiguous name answers `404` rather than guessing which app was meant.
+- `/AppStream/<id>` - the id is a UUID, minted at the first publish and kept when the app is published again, so this URL survives a redeploy.
+- `/AppStream/<name>` - the readable form, which is what a person shares. An app published as a frontend holds its name uniquely, so this address is always available to it. A legacy entry's name may be shared, and an ambiguous one answers `404` rather than guessing which app was meant.
 
-A name a deploy *states* (`streamServiceName` in a compiled pack, `name` on the deploy routes) is the app's address as well as its label, so it has to be spellable as one URL segment: letters, digits, dot, dash, underscore or tilde, starting with a letter or digit, at most 64 characters, and not `apps.json` or `index.html` - which the App Stream answers itself. A publish that states anything else is refused with `400`, and one that states a name another app already answers on is refused with `409`, naming the folder that holds it.
-
-A name derived from the folder carries no such rule: it is what a first publish that states no name gets, it is a label rather than an address, and two folders may share a leaf name. Such an app opens by id, or by name through percent-encoding when the name is unique. A later publish that states nothing inherits the name the app already has - stated or derived - so a deploy never renames an app back to its folder.
+The id is what the permission model speaks, and it is the handle every removal names. A rename does not exist: an app published as a frontend IS its name, so a new name is a new app.
 
 ## One pack, either run time
 
