@@ -73,20 +73,43 @@ export const displayModeStorageKey = (filePath: string): string =>
   `studio.displayMode.${displayKindOf(filePath) ?? 'none'}`
 
 /**
- * The mode to open a file in: the one last chosen for its kind, else the source.
+ * The width a window needs before two panes are worth it.
  *
- * The source is the default on purpose. A file opened to be edited must open on
- * the text - a preview that hides the text would be a mode the user has to leave
- * before typing - and only a rendering with no edits in it is worth remembering.
- * The choice is per kind rather than per file, so a reader who reads CSVs as
- * tables gets the next CSV as a table.
+ * The Studio's sidebar takes ~250px and the line numbers another ~60, so below
+ * this a split leaves two columns of about forty characters - narrower than the
+ * `.sasjslint` this repository lints at.
+ */
+export const SPLIT_VIEW_MIN_WIDTH = 1200
+
+/** Whether the window is wide enough for the editor and a rendering side by side. */
+export const hasRoomForSplit = (width: number | undefined): boolean =>
+  typeof width === 'number' && width >= SPLIT_VIEW_MIN_WIDTH
+
+/**
+ * The mode to open a file in: the one last chosen for its kind, else a default.
+ *
+ * The default is `split` on a window with room for it, and `source` otherwise: a
+ * reader opening a README or a JSON document wants the text and the rendering at
+ * once, and the toggle is one click away when the window is narrow. CSV keeps the
+ * same default - a table beside its columns is how a CSV is read.
+ *
+ * A choice the user made is never overruled by the default, including a choice of
+ * `source` on a wide window: the toggle's answer is remembered per kind, and this
+ * only decides what an unanswered kind opens as.
  */
 export const storedDisplayMode = (
   filePath: string,
-  storage?: Pick<Storage, 'getItem'>
+  options: {
+    storage?: Pick<Storage, 'getItem'>
+    width?: number
+  } = {}
 ): DisplayMode => {
   const modes = displayModesFor(filePath)
   if (!modes.length) return 'source'
+
+  const fallback: DisplayMode = hasRoomForSplit(options.width)
+    ? 'split'
+    : 'source'
 
   /*
    * The lookup is inside the try, and `globalThis.localStorage` with it: a page
@@ -95,13 +118,13 @@ export const storedDisplayMode = (
    * before this body ran and take the editor down with it.
    */
   try {
-    const store = storage ?? globalThis.localStorage
+    const store = options.storage ?? globalThis.localStorage
     const stored = store?.getItem(displayModeStorageKey(filePath))
 
     return modes.includes(stored as DisplayMode)
       ? (stored as DisplayMode)
-      : 'source'
+      : fallback
   } catch {
-    return 'source'
+    return fallback
   }
 }

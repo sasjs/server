@@ -230,7 +230,22 @@ describe('Studio in a browser', () => {
     // The nested program exists but has never been requested into the tree.
     const requestsBefore = fileTreeRequests.length
 
-    await page.click('text=e2eFolder')
+    // The chevron, not the label. A folder's label is its ADDRESS as well as a
+    // row: clicking it opens /studio?folderPath=<path>, which shows the folder's
+    // placeholder in place of the editor. Expanding a folder to read what is
+    // inside it therefore goes through the control that only expands - and every
+    // test after this one reads the editor.
+    const folderRow = page
+      .getByText('e2eFolder', { exact: true })
+      .first()
+      .locator('xpath=ancestor::*[@role="treeitem"][1]')
+
+    const expander = folderRow.locator('.MuiTreeItem-iconContainer')
+
+    // One control, or the click below would land on the label and navigate
+    expect(await expander.count()).toBe(1)
+
+    await expander.click()
     await page.waitForSelector('text=nested.sas', { timeout: 30000 })
 
     // Expanding the folder asked for that folder alone, once.

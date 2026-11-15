@@ -35,6 +35,38 @@ export const isSafeHref = (href: string): boolean =>
   /^(https?:\/\/|mailto:|#|\/|\.{0,2}\/)/i.test(href.trim()) &&
   !/^\s*javascript:/i.test(href)
 
+/**
+ * The anchor a heading carries: `## Help <a name="helpinfo"></a>`.
+ *
+ * Files like the SAS Packages framework's markdown use an inline HTML anchor to
+ * give a section a stable name, and the renderer shows that HTML as text - so the
+ * anchor is lifted out and becomes the heading's own id, which is what a link to
+ * `#helpinfo` needs.
+ */
+const INLINE_ANCHOR = /<a\s+(?:name|id)\s*=\s*"([^"]+)"\s*>\s*<\/a>/i
+
+/** The id a heading gets when it carries no anchor of its own. */
+export const slugifyHeading = (text: string): string =>
+  text
+    .replace(/<[^>]*>/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s_-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+
+/** A heading's id and the text to render, with any inline anchor taken out. */
+export const headingAnchor = (text: string): { id: string; text: string } => {
+  const anchor = INLINE_ANCHOR.exec(text)
+
+  if (anchor)
+    return {
+      id: anchor[1],
+      text: text.replace(INLINE_ANCHOR, '').trim()
+    }
+
+  return { id: slugifyHeading(text), text }
+}
+
 /** Inline markup: code spans first, so their contents are not re-read. */
 const inline = (text: string): string => {
   const code: string[] = []
@@ -63,7 +95,9 @@ const inline = (text: string): string => {
         // target would leave half a link on the page, and a reader seeing the
         // brackets is a reader who can see the file said something odd.
         isSafeHref(href) && !href.includes('\u0000')
-          ? `<a href="${href}" target="_blank" rel="noreferrer noopener">${label}</a>`
+          ? href.startsWith('#')
+            ? `<a href="${href}" data-anchor="1">${label}</a>`
+            : `<a href="${href}" target="_blank" rel="noreferrer noopener">${label}</a>`
           : whole
     )
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -150,7 +184,14 @@ export const markdownToHtml = (markdown: string): string => {
       closeList()
 
       const level = heading[1].length
-      html.push(`<h${level}>${inline(heading[2].trim())}</h${level}>`)
+      const { id, text } = headingAnchor(heading[2].trim())
+      // An id on every heading: `#anything` in a README is a link someone may
+      // arrive on, and an id is what the pane scrolls to.
+      html.push(
+        id
+          ? `<h${level} id="${escapeHtml(id)}">${inline(text)}</h${level}>`
+          : `<h${level}>${inline(text)}</h${level}>`
+      )
       continue
     }
 

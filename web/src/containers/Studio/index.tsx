@@ -9,6 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import {
   ROOT_PATH,
   ancestorPathsOf,
+  folderAndAncestorsOf,
   childPrefixOf,
   expandedDescendantsOf,
   graftLevel,
@@ -34,6 +35,13 @@ const Studio = () => {
   const { username } = React.useContext(AppContext)
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedFilePath, setSelectedFilePath] = useState('')
+  /**
+   * The folder the URL names, when it names one instead of a file.
+   *
+   * A folder is a place people share - "the macros are in /code/macro-core" - so
+   * it needs an address of its own, and the tree is where that address is made.
+   */
+  const [selectedFolderPath, setSelectedFolderPath] = useState('')
   const [directoryData, setDirectoryData] = useState<TreeNode | null>(null)
   const [expanded, setExpanded] = useState<string[]>([ROOT_PATH])
   const [tab, setTab] = useState('code')
@@ -74,8 +82,10 @@ const Studio = () => {
 
   useEffect(() => {
     const fromUrl = searchParams.get('filePath') ?? ''
+    const folderFromUrl = searchParams.get('folderPath') ?? ''
 
     setSelectedFilePath(fromUrl)
+    setSelectedFolderPath(fromUrl ? '' : folderFromUrl)
 
     // Whatever the user opens is what they expect to find again - and a file
     // can arrive two ways: from the tree (handleSelect) or from the URL (a
@@ -211,6 +221,42 @@ const Studio = () => {
     }
   }, [selectedFilePath, fetchFolder])
 
+  // A deep link to a folder (?folderPath=/code/macro-core) opens the way to it,
+  // the same walk a file's link does - the folder itself is expanded, because the
+  // reason to link a folder is to show what is in it.
+  useEffect(() => {
+    if (!selectedFolderPath) return
+
+    let cancelled = false
+
+    const openFolder = async () => {
+      const ancestors = folderAndAncestorsOf(selectedFolderPath).slice(0, -1)
+
+      await fetchFolder(ROOT_PATH)
+
+      for (const ancestor of ancestors) {
+        if (cancelled) return
+        await fetchFolder(ancestor)
+      }
+
+      if (cancelled) return
+      await fetchFolder(selectedFolderPath)
+      if (cancelled) return
+
+      const next = new Set(
+        Array.from(expandedRef.current).concat(ancestors, [selectedFolderPath])
+      )
+      expandedRef.current = next
+      setExpanded(Array.from(next))
+    }
+
+    openFolder()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedFolderPath, fetchFolder])
+
   const handleExpandedChange = useCallback(
     (expandedPaths: string[]) => {
       const newlyExpanded = expandedPaths.filter(
@@ -226,8 +272,16 @@ const Studio = () => {
     [fetchFolder]
   )
 
+  /** Opens a folder: the URL names it, and the editor stops showing a file. */
+  const handleFolderSelect = (folderPath: string) => {
+    setSearchParams({ folderPath })
+    setSelectedFolderPath(folderPath)
+    setSelectedFilePath('')
+  }
+
   const handleSelect = (filePath: string, refreshSideBar?: boolean) => {
     setSearchParams({ filePath })
+    setSelectedFolderPath('')
     if (refreshSideBar) fetchFolder(parentPathOf(filePath), true)
   }
 
@@ -264,6 +318,7 @@ const Studio = () => {
     if (
       selectedFilePath ||
       searchParams.get('filePath') ||
+      searchParams.get('folderPath') ||
       defaultFileRequested.current
     ) {
       setInitialising(false)
@@ -442,6 +497,7 @@ const Studio = () => {
           expanded={expanded}
           onExpandedChange={handleExpandedChange}
           handleSelect={handleSelect}
+          handleFolderSelect={handleFolderSelect}
           removeFileFromTree={removeFileFromTree}
           refreshFolder={(folderPath: string) => fetchFolder(folderPath, true)}
         />
@@ -457,6 +513,7 @@ const Studio = () => {
       ) : (
         <SASjsEditor
           selectedFilePath={selectedFilePath}
+          selectedFolderPath={selectedFolderPath}
           setSelectedFilePath={handleSelect}
           tab={tab}
           setTab={setTab}

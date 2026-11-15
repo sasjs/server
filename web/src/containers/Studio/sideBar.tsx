@@ -26,6 +26,7 @@ type Props = {
   expanded: string[]
   onExpandedChange: (expandedPaths: string[]) => void
   handleSelect: (filePath: string) => void
+  handleFolderSelect?: (folderPath: string) => void
   removeFileFromTree: (filePath: string) => void
   /** Re-reads one folder from the server, leaving the rest of the tree alone. */
   refreshFolder: (folderPath: string) => void
@@ -37,6 +38,7 @@ const SideBar = ({
   expanded,
   onExpandedChange,
   handleSelect,
+  handleFolderSelect,
   removeFileFromTree,
   refreshFolder
 }: Props) => {
@@ -178,6 +180,7 @@ const SideBar = ({
           <TreeView
             node={directoryData}
             handleSelect={handleFileSelect}
+            handleFolderSelect={handleFolderSelect}
             deleteNode={deleteNode}
             addFile={addFile}
             addFolder={addFolder}

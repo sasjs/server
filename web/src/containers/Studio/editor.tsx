@@ -106,6 +106,8 @@ const StyledTab = styled(Tab)(({ theme }) => ({
 
 type SASjsEditorProps = {
   selectedFilePath: string
+  /** The folder the URL names, when it names a folder instead of a file. */
+  selectedFolderPath?: string
   setSelectedFilePath: (filePath: string, refreshSideBar?: boolean) => void
   tab: string
   setTab: Dispatch<SetStateAction<string>>
@@ -120,6 +122,7 @@ defineEditorThemes()
 
 const SASjsEditor = ({
   selectedFilePath,
+  selectedFolderPath,
   setSelectedFilePath,
   tab,
   setTab,
@@ -176,7 +179,9 @@ const SASjsEditor = ({
   const [displayMode, setDisplayMode] = useState<DisplayMode>('source')
 
   useEffect(() => {
-    setDisplayMode(storedDisplayMode(selectedFilePath))
+    setDisplayMode(
+      storedDisplayMode(selectedFilePath, { width: window.innerWidth })
+    )
   }, [selectedFilePath])
 
   const chooseDisplayMode = (mode: DisplayMode | null) => {
@@ -327,7 +332,20 @@ const SASjsEditor = ({
       >
         <CircularProgress color="inherit" />
       </Backdrop>
-      {selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
+      {selectedFolderPath && !selectedFilePath ? (
+        <Box sx={{ marginTop: '10px', p: 2, maxWidth: 720 }}>
+          <Typography variant="h6" gutterBottom>
+            {selectedFolderPath.split('/').pop() || selectedFolderPath}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {selectedFolderPath}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            A folder. Its address is the URL - open a file in the tree to edit
+            one, or share this link to send someone here.
+          </Typography>
+        </Box>
+      ) : selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
         <Box sx={{ marginTop: '10px' }}>
           {!isImage && (
             <Box

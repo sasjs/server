@@ -15,13 +15,14 @@
  * version it actually used is written into the output, so a published site can
  * always be traced back to the release that assembled it.
  */
-import { execSync } from 'child_process'
+import { execFileSync, execSync } from 'child_process'
 import {
   existsSync,
   copyFileSync,
   mkdirSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync
 } from 'fs'
@@ -29,7 +30,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
-import { withServerSeededFiles } from './driveSeed.mjs'
+import { withCodeSources, withServerSeededFiles } from './driveSeed.mjs'
 import {
   fetchPack,
   withPublishedApps,
@@ -75,7 +76,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.32.1'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '6.33.0'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
@@ -147,7 +148,169 @@ const seeded = withServerSeededFiles(
   )
 )
 
-const drive = withPublishedApps(seeded, published, new Date().toISOString())
+/**
+ * The code the demo's drive carries, at whatever is newest when the site is built.
+ *
+ * Nothing here is pinned: the macro core follows `@sasjs/core` on npm's `latest`
+ * tag, the SAS Packages framework follows its default branch, and the apps below
+ * follow their newest releases. A demo that named versions would be describing a
+ * library nobody installs today - the daily rebuild exists so a release reaches
+ * the site without anyone remembering to move a number.
+ *
+ * So the core on the drive is NOT the core this server bundles: `api/package.json`
+ * pins the range that the server's own programs are written against, which may be
+ * older. That is deliberate - the tree is a library to read, not the server's
+ * runtime - and it is why the resolved version is recorded rather than assumed.
+ *
+ * `code-macro-core.txt` and `code-sas-packages.txt` sit beside `cli-version.txt`,
+ * so a published tree can be traced to what built it.
+ */
+
+/** Fetches with a deadline and one retry, so a stalled host cannot hang a rebuild. */
+const fetchWithRetry = async (url, { headers = {}, attempts = 2 } = {}) => {
+  let lastError
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(120000)
+      })
+
+      if (!response.ok)
+        throw new Error(`${response.status} ${response.statusText} for ${url}`)
+
+      return Buffer.from(await response.arrayBuffer())
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw new Error(`Could not fetch ${url}: ${lastError?.message}`)
+}
+
+const fetchSasPackages = async () => {
+  const target = path.join(root, 'sasjsbuild', 'sas-packages')
+  const record = path.join(root, 'sasjsbuild', 'sas-packages.txt')
+
+  // the record as well as the tree: a build interrupted between the extraction
+  // and the write leaves a tree with no version, and the site copy then fails
+  if (existsSync(path.join(target, 'SPF')) && existsSync(record))
+    return { target, record }
+
+  // the default branch, whatever it points at now
+  const head = JSON.parse(
+    (
+      await fetchWithRetry(
+        'https://api.github.com/repos/yabwon/SAS_PACKAGES/commits/HEAD',
+        {
+          headers: process.env.GITHUB_TOKEN
+            ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+            : {}
+        }
+      )
+    ).toString('utf8')
+  )
+
+  const sha = head.sha
+  const tarball = path.join(root, 'sasjsbuild', 'sas-packages.tar.gz')
+
+  writeFileSync(
+    tarball,
+    await fetchWithRetry(
+      `https://codeload.github.com/yabwon/SAS_PACKAGES/tar.gz/${sha}`
+    )
+  )
+
+  rmSync(target, { recursive: true, force: true })
+  mkdirSync(target, { recursive: true })
+
+  // one top-level folder in the archive, named after the commit
+  execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', target], {
+    cwd: root
+  })
+
+  if (!existsSync(path.join(target, 'SPF')))
+    throw new Error(
+      `The SAS Packages tarball did not unpack an SPF folder: expected ${path.join(target, 'SPF')}`
+    )
+
+  writeFileSync(
+    record,
+    `yabwon/SAS_PACKAGES ${sha} (default branch at build time)\n`
+  )
+
+  return { target, record }
+}
+
+/** The macro core, from npm's newest release of the package. */
+const fetchMacroCore = () => {
+  const target = path.join(root, 'sasjsbuild', 'macro-core')
+  const record = path.join(root, 'sasjsbuild', 'macro-core.txt')
+  const pack = path.join(root, 'sasjsbuild')
+
+  if (existsSync(path.join(target, 'package.json')) && existsSync(record))
+    return { target, record }
+
+  // an archive from an earlier build would be picked up by the find below and
+  // written to the record as this build's core, so they all go first
+  for (const name of readdirSync(pack))
+    if (name.startsWith('sasjs-core-') && name.endsWith('.tgz'))
+      rmSync(path.join(pack, name), { force: true })
+
+  runWhenTheRegistryIsReady(
+    `npm pack @sasjs/core@latest --silent --pack-destination ${pack}`,
+    { cwd: root }
+  )
+
+  const archives = readdirSync(pack).filter(
+    (name) => name.startsWith('sasjs-core-') && name.endsWith('.tgz')
+  )
+
+  if (archives.length !== 1)
+    throw new Error(
+      `npm pack @sasjs/core@latest left ${archives.length} archives in ${pack}, expected one, so the drive would carry the wrong macro core.`
+    )
+
+  rmSync(target, { recursive: true, force: true })
+  mkdirSync(target, { recursive: true })
+
+  execFileSync(
+    'tar',
+    ['xzf', path.join(pack, archives[0]), '--strip-components=1', '-C', target],
+    { cwd: root }
+  )
+
+  const core = JSON.parse(
+    readFileSync(path.join(target, 'package.json'), 'utf8')
+  )
+
+  writeFileSync(
+    record,
+    `@sasjs/core ${core.version} (npm latest at build time)\n`
+  )
+
+  return { target, record }
+}
+
+const macroCore = fetchMacroCore()
+const sasPackages = await fetchSasPackages()
+
+const drive = withCodeSources(
+  withPublishedApps(seeded, published, new Date().toISOString()),
+  [
+    // the library half of SASjs uses, and the framework the other half arrives
+    // with; both are read at build time, so the site describes today
+    { folder: 'macro-core', root: macroCore.target },
+    {
+      folder: 'sas-packages',
+      root: sasPackages.target,
+      // the papers and the logos: 12MB of PDFs and screenshots, and a visitor who
+      // opens `/code` is there for the SAS
+      skip: ['SPF/Documentation/', 'SPF/Logo/']
+    }
+  ]
+)
 
 writeFileSync(
   path.join(root, 'sasjsbuild', 'mock-snapshot.json'),
@@ -341,5 +504,10 @@ writeFileSync(
   path.join(site, 'cli-version.txt'),
   `@sasjs/cli ${cliUsed} (resolved from ${CLI_VERSION} at build time)\n`
 )
+
+// The two libraries the drive carries under /code, at whatever they were when the
+// site was built: the tree a visitor browses should be traceable the same way.
+copyFileSync(macroCore.record, path.join(site, 'code-macro-core.txt'))
+copyFileSync(sasPackages.record, path.join(site, 'code-sas-packages.txt'))
 
 process.stdout.write(`\nMock site written to ${site}\n`)

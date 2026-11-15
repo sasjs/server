@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { isHtmlOutput, prettyJsonOutput } from '../../../../../utils'
+import { JsonTreePane } from '../jsonTreePane'
 
 interface WebOutPreviewProps {
   /** What the program wrote to the `_webout` fileref. */
@@ -49,7 +50,9 @@ const WebOutPreview = (props: WebOutPreviewProps) => {
     () => (isPage ? null : prettyJsonOutput(output)),
     [isPage, output]
   )
-  const [showSource, setShowSource] = useState(false)
+  // Three views for a JSON document: as written, indented, and as a tree with
+  // branches that open. A page keeps two - it has no shape to open.
+  const [view, setView] = useState<'formatted' | 'tree' | 'raw'>('formatted')
 
   const hasToggle = isPage || pretty !== null
 
@@ -66,18 +69,19 @@ const WebOutPreview = (props: WebOutPreviewProps) => {
       <ToggleButtonGroup
         size="small"
         exclusive
-        value={showSource ? 'raw' : 'formatted'}
-        onChange={(_, value: string | null) => {
-          if (value) setShowSource(value === 'raw')
+        value={view}
+        onChange={(_, value: 'formatted' | 'tree' | 'raw' | null) => {
+          if (value) setView(value)
         }}
         sx={{ mb: 1 }}
       >
         <ToggleButton value="formatted">
           {isPage ? 'Preview' : 'Formatted'}
         </ToggleButton>
+        {!isPage && <ToggleButton value="tree">Tree</ToggleButton>}
         <ToggleButton value="raw">{isPage ? 'Source' : 'Raw'}</ToggleButton>
       </ToggleButtonGroup>
-      {showSource ? (
+      {view === 'raw' ? (
         source
       ) : isPage ? (
         <Box
@@ -94,6 +98,10 @@ const WebOutPreview = (props: WebOutPreviewProps) => {
             bgcolor: 'background.paper'
           }}
         />
+      ) : view === 'tree' ? (
+        <Box sx={{ ...textPane(true), p: 0 }}>
+          <JsonTreePane text={output} />
+        </Box>
       ) : (
         <Box component="pre" sx={textPane(true)}>
           {pretty}

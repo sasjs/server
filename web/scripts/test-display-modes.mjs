@@ -17,6 +17,8 @@ registerHooks(tsResolverHooks)
 
 const {
   DISPLAY_MODES,
+  SPLIT_VIEW_MIN_WIDTH,
+  hasRoomForSplit,
   displayKindOf,
   displayModeLabel,
   displayModeStorageKey,
@@ -24,7 +26,7 @@ const {
   storedDisplayMode
 } = await import('../src/containers/Studio/internal/displayMode.ts')
 
-const { markdownToHtml, isSafeHref } =
+const { headingAnchor, markdownToHtml, isSafeHref, slugifyHeading } =
   await import('../src/containers/Studio/internal/render/markdown.ts')
 const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
   await import('../src/containers/Studio/internal/render/csv.ts')
@@ -108,19 +110,21 @@ const storageOf = (value) => ({ getItem: () => value })
 
 check(
   'nothing stored means the source',
-  storedDisplayMode('/a/x.csv', storageOf(null)) === 'source'
+  storedDisplayMode('/a/x.csv', { storage: storageOf(null) }) === 'source'
 )
 check(
   'a stored mode is honoured',
-  storedDisplayMode('/a/x.csv', storageOf('rendered')) === 'rendered'
+  storedDisplayMode('/a/x.csv', { storage: storageOf('rendered') }) ===
+    'rendered'
 )
 check(
   'a stored mode that is not offered is ignored',
-  storedDisplayMode('/a/x.csv', storageOf('tree')) === 'source'
+  storedDisplayMode('/a/x.csv', { storage: storageOf('tree') }) === 'source'
 )
 check(
   'a kind with no modes is always the source',
-  storedDisplayMode('/a/run.sas', storageOf('rendered')) === 'source'
+  storedDisplayMode('/a/run.sas', { storage: storageOf('rendered') }) ===
+    'source'
 )
 
 // A page that refuses storage throws on the property ACCESS, not only on the call,
@@ -132,15 +136,125 @@ const throwingStorage = {
 }
 check(
   'a storage that refuses reads still opens on the source',
-  storedDisplayMode('/a/x.csv', throwingStorage) === 'source'
+  storedDisplayMode('/a/x.csv', { storage: throwingStorage }) === 'source'
 )
 check(
   'a storage whose access throws still opens on the source',
   storedDisplayMode('/a/x.csv', {
-    get getItem() {
-      throw new Error('SecurityError')
+    storage: {
+      get getItem() {
+        throw new Error('SecurityError')
+      }
     }
   }) === 'source'
+)
+
+/*
+ * The default a file opens in: a window with room shows the text and its
+ * rendering together, a narrow one shows the text alone. A remembered choice wins
+ * over both - including a remembered `source`, which is why the checks above pass
+ * no width and still expect what was stored.
+ */
+const wide = { width: 1600 }
+const narrow = { width: 1000 }
+
+check('an unknown width is not room', hasRoomForSplit(undefined) === false)
+check(
+  'one pixel short is not room',
+  hasRoomForSplit(SPLIT_VIEW_MIN_WIDTH - 1) === false
+)
+check('the threshold is room', hasRoomForSplit(SPLIT_VIEW_MIN_WIDTH) === true)
+
+check(
+  'a README on a wide window opens beside its preview',
+  storedDisplayMode('/Public/x/README.md', {
+    storage: storageOf(null),
+    ...wide
+  }) === 'split'
+)
+check(
+  'a JSON document opens beside its tree',
+  storedDisplayMode('/Public/x/data.json', {
+    storage: storageOf(null),
+    ...wide
+  }) === 'split'
+)
+check(
+  'a narrow window keeps the editor alone',
+  storedDisplayMode('/Public/x/table.csv', {
+    storage: storageOf(null),
+    ...narrow
+  }) === 'source'
+)
+check(
+  'a chosen source stays source, however wide the window',
+  storedDisplayMode('/Public/x/README.md', {
+    storage: storageOf('source'),
+    ...wide
+  }) === 'source'
+)
+check(
+  'a chosen rendering stays, however narrow',
+  storedDisplayMode('/Public/x/README.md', {
+    storage: storageOf('rendered'),
+    ...narrow
+  }) === 'rendered'
+)
+check(
+  'a program has no rendering, so the width is irrelevant',
+  storedDisplayMode('/Public/x/program.sas', {
+    storage: storageOf(null),
+    ...wide
+  }) === 'source'
+)
+
+/*
+ * Anchors in a Markdown document: a section someone links to, and the links a
+ * reader follows to it. The SAS Packages framework's own markdown carries
+ * `<a name="helpinfo"></a>` inside a heading, which the renderer used to show as
+ * text - so a `#helpinfo` link had nowhere to land.
+ */
+check(
+  'an inline anchor becomes the heading id',
+  headingAnchor('This is short help information <a name="helpinfo"></a>').id ===
+    'helpinfo'
+)
+check(
+  'the inline anchor is not left in the text',
+  headingAnchor('This is short help information <a name="helpinfo"></a>')
+    .text === 'This is short help information'
+)
+check(
+  'a plain heading is slugified',
+  slugifyHeading('Tutorial on SAS Packages') === 'tutorial-on-sas-packages'
+)
+check(
+  'punctuation does not reach the id',
+  slugifyHeading('Parameters:') === 'parameters'
+)
+check(
+  'the heading carries the id in the output',
+  markdownToHtml('## Help <a name="helpinfo"></a>\n').includes(
+    '<h2 id="helpinfo">Help</h2>'
+  )
+)
+check(
+  'a bare heading gets a slug id',
+  markdownToHtml('### Parameters:\n').includes('<h3 id="parameters">')
+)
+check(
+  'a link to a section stays in the pane',
+  markdownToHtml('[help](#helpinfo)\n').includes(
+    '<a href="#helpinfo" data-anchor="1">'
+  )
+)
+check(
+  'a link to a section does not open a tab',
+  !markdownToHtml('[help](#helpinfo)\n').includes('target="_blank"')
+)
+check(
+  'an external link still opens one',
+  markdownToHtml('[site](https://example.com)\n').includes('target="_blank"')
 )
 
 // --- markdown --------------------------------------------------------------
@@ -149,7 +263,10 @@ const html = markdownToHtml(
   '# Title\n\nSome **bold** and `code`.\n\n```\ndata x; run;\n```\n\n- one\n- two\n\n[ok](https://example.com)\n[bad](javascript:alert(1))\n'
 )
 
-check('a heading renders', html.includes('<h1>Title</h1>'))
+check(
+  'a heading renders, with the id a link needs',
+  html.includes('<h1 id="title">Title</h1>')
+)
 check('bold renders', html.includes('<strong>bold</strong>'))
 check('inline code renders', html.includes('<code>code</code>'))
 check(
