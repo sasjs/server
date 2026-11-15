@@ -5,7 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 import AdmZip from 'adm-zip'
 
-import { readdirSync } from 'fs'
+import { existsSync, readdirSync } from 'fs'
 
 import { deleteFolder, fileExists, readFile } from '@sasjs/utils'
 import * as fileUtilModules from '../../../utils/file'
@@ -83,13 +83,20 @@ const packageTree = (
 const onDisk = (...segments: string[]) =>
   path.join(getFilesFolder(), ...segments)
 
-/** What `apps/` holds, for a case that asserts nothing was written. */
+/**
+ * What `apps/` holds, for a case that asserts nothing was written.
+ *
+ * A missing folder answers `[]`, because that is what a server that has published
+ * nothing has. Anything else - a permission error, a drive that is not mounted -
+ * propagates: answering `[]` there would make a failed read look like a deploy that
+ * wrote nothing, which is the assertion these cases exist to make.
+ */
 const frontends = (): string[] => {
-  try {
-    return readdirSync(onDisk('apps')).sort()
-  } catch (_) {
-    return []
-  }
+  const folder = onDisk('apps')
+
+  if (!existsSync(folder)) return []
+
+  return readdirSync(folder).sort()
 }
 
 describe('a deploy of a package', () => {

@@ -188,10 +188,12 @@ export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
  * value this route writes and later deletes is bounded before it reaches the
  * drive.
  */
+export const APP_NAME_MAX_LENGTH = 64
+
+export const APP_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/
+
 const appNameSchema = () =>
-  Joi.string()
-    .max(64)
-    .pattern(/^[A-Za-z0-9][A-Za-z0-9._~-]*$/)
+  Joi.string().max(APP_NAME_MAX_LENGTH).pattern(APP_NAME_PATTERN)
 
 /**
  * A deploy document - the JSON a build writes, or the one a zip carries.

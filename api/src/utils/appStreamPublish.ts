@@ -16,6 +16,7 @@ import {
   appStreamService,
   refreshAppStreamIndex
 } from './appStreamConfig'
+import { APP_NAME_MAX_LENGTH, APP_NAME_PATTERN } from './validation'
 
 /** What a deploy route sends: the fields that decide whether it publishes. */
 export interface DeployPublishFields {
@@ -143,6 +144,17 @@ export const publishDeployedApp = async (
 }
 
 /**
+ * Whether a name can be the single folder segment `apps/<name>`.
+ *
+ * The rule a publish applies, asked again where a folder is DELETED: an index
+ * that was restored, hand-edited or written by something other than this server is
+ * read back without it being anybody's decision, and a name carrying a separator
+ * or `..` would otherwise build a deletion path outside `apps/`.
+ */
+const isDeletableName = (name: string): boolean =>
+  name.length <= APP_NAME_MAX_LENGTH && APP_NAME_PATTERN.test(name)
+
+/**
  * Removes an app's frontend folder, once the index has forgotten it.
  *
  * An app published as a frontend IS its folder - `apps/<name>` - so unpublishing
@@ -155,17 +167,6 @@ export const publishDeployedApp = async (
  * deployment - someone deleted the folder by hand - and the app is unpublished
  * either way, so the absence is logged rather than answered as an error.
  */
-/**
- * Whether a name can be the single folder segment `apps/<name>`.
- *
- * The same rule a publish applies, repeated where a folder is DELETED: an index
- * that was restored, hand-edited or written by something other than this server is
- * read back without it being anybody's decision, and a name carrying a separator
- * or `..` would otherwise build a deletion path outside `apps/`.
- */
-const isDeletableName = (name: string): boolean =>
-  name.length <= 64 && /^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(name)
-
 export const removeFrontendFolder = async (
   entry: AppStreamEntry
 ): Promise<void> => {
