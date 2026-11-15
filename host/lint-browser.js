@@ -72,9 +72,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-tOHTex/path.js
+  // ../../../../../tmp/sasjs-lint-Z2SxPe/path.js
   var require_path = __commonJS({
-    "../../../../../tmp/sasjs-lint-tOHTex/path.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-Z2SxPe/path.js"(exports, module) {
       var SEP = String.fromCharCode(92);
       var clean = (value) => String(value).split(SEP).join("/").replace(/\/+/g, "/");
       var strip = (value) => clean(value).replace(/\/+$/, "");
@@ -112,9 +112,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-tOHTex/os.js
+  // ../../../../../tmp/sasjs-lint-Z2SxPe/os.js
   var require_os = __commonJS({
-    "../../../../../tmp/sasjs-lint-tOHTex/os.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-Z2SxPe/os.js"(exports, module) {
       module.exports = {
         homedir: () => "/",
         platform: () => "browser",
@@ -4180,9 +4180,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-tOHTex/utils-file.js
+  // ../../../../../tmp/sasjs-lint-Z2SxPe/utils-file.js
   var require_utils_file = __commonJS({
-    "../../../../../tmp/sasjs-lint-tOHTex/utils-file.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-Z2SxPe/utils-file.js"(exports, module) {
       var unavailable = (name) => async () => {
         throw new Error(name + " is not available in the browser host");
       };
@@ -7187,7 +7187,7 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-tOHTex/process.js
+  // ../../../../../tmp/sasjs-lint-Z2SxPe/process.js
   if (typeof globalThis.process === "undefined")
     globalThis.process = {
       env: {},
@@ -7244,6 +7244,6 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
   // ../../../.npm/_npx/4841cfdec7e0a36a/node_modules/@sasjs/api/build/esm/code/index.js
   var import_lint2 = __toESM(require_lint2(), 1);
 
-  // ../../../../../tmp/sasjs-lint-tOHTex/entry.js
+  // ../../../../../tmp/sasjs-lint-Z2SxPe/entry.js
   globalThis.SASjsCode = { createCodeService, LintConfig: import_lint2.LintConfig };
 })();
