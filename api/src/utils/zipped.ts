@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import AdmZip from 'adm-zip'
 import unZipper from 'unzipper'
-import { DEPLOY_LIMITS } from '@sasjs/api'
+import { DEPLOY_LIMITS, APP_MANIFEST } from '@sasjs/api'
 import type { DeployLimits } from '@sasjs/api'
 import { MemberType } from '@sasjs/utils'
 import type {
@@ -92,6 +92,12 @@ export const extractDeployDocumentFromZip = async (
     if (entry.isDirectory) continue
     if (entry.entryName.includes('/')) continue
     if (!entry.entryName.toUpperCase().endsWith('.JSON')) continue
+
+    // `sasjs.app.json` is the bundle's own manifest, not a deploy document. It
+    // names an `appLoc` too, so without this it is read as a document and then
+    // refused for having no `fileTree` - the app's own metadata taking the whole
+    // archive down with it.
+    if (entry.entryName.toLowerCase() === APP_MANIFEST) continue
 
     if (entry.header.size > limits.totalBytes)
       throw new DeployRefusal(

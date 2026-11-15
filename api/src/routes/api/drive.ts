@@ -2,9 +2,10 @@ import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
 import type { FileTree, FolderMember } from '@sasjs/utils'
 
-import { isApiError } from '@sasjs/api'
+import { ApiError, frontendFolderOf, isApiError } from '@sasjs/api'
 
 import { prepareDeploy, publishDeployedApp } from '../../utils'
+import type { PreparedDeploy } from '../../utils'
 
 import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 import { multerSingle } from '../../middlewares/multer'
@@ -76,17 +77,76 @@ const sendArchiveRefusal = (res: express.Response, err: any) => {
   return res.status(statusCode).send(err)
 }
 
+/**
+ * The writes a prepared deploy makes, in the order that keeps a bundle coherent.
+ *
+ * A package writes its backend first - so a frontend is never live against
+ * services that are not deployed yet - and additively, because one backend may
+ * serve several frontends and a replacing write would delete the services another
+ * app put there. The frontend then replaces `apps/<name>`, which is the whole
+ * point of publishing it: the folder is what the bundle says it is.
+ *
+ * A bare tree that a publish names is the frontend itself, so it goes to
+ * `apps/<name>` too. Everything else is the older shape, deployed to `appLoc`.
+ */
+const writeDeploy = async (
+  prepared: PreparedDeploy,
+  options: { appLoc?: string; replace?: boolean }
+) => {
+  const { tree, frontend, backend, request } = prepared
+
+  if (frontend !== undefined) {
+    if (backend !== undefined && request?.appLoc !== undefined)
+      await controller.deploy({
+        appLoc: request.appLoc,
+        fileTree: backend as any,
+        replace: false
+      })
+
+    return controller.deploy({
+      appLoc: frontendFolderOf(String(request?.name)),
+      fileTree: frontend as any,
+      replace: true
+    })
+  }
+
+  if (request !== undefined && request.streamWebFolder === undefined)
+    return controller.deploy({
+      appLoc: frontendFolderOf(String(request.name)),
+      fileTree: tree as any,
+      replace: true
+    })
+
+  // an ApiError rather than an HttpError, because both deploy routes render this
+  // family of refusal through `sendPublishRefusal`: one wording whether the
+  // refusal came from the package's checks or from this file's
+  if (options.appLoc === undefined)
+    throw new ApiError(
+      400,
+      '"appLoc" is required to deploy files that do not name an app.'
+    )
+
+  return controller.deploy({
+    appLoc: options.appLoc,
+    fileTree: tree as any,
+    replace: options.replace
+  })
+}
+
 driveRouter.post('/deploy', async (req, res) => {
   const { error, value: body } = deployValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
 
   try {
     // every reason to refuse the app is decided before the drive is written
-    const { tree, request } = prepareDeploy(body)
+    const prepared = prepareDeploy(body)
 
-    const response = await controller.deploy({ ...body, fileTree: tree as any })
+    const response = await writeDeploy(prepared, {
+      appLoc: body.appLoc,
+      replace: body.replace
+    })
 
-    await publishDeployedApp(response as any, request)
+    await publishDeployedApp(response as any, prepared.request)
 
     res.send(response)
   } catch (err: any) {
@@ -148,14 +208,14 @@ driveRouter.post(
     try {
       // the document is an archive's deploy request, so it publishes exactly as
       // the JSON route does - one implementation of when a bundle is an app
-      const { tree, request } = prepareDeploy(body)
+      const prepared = prepareDeploy(body)
 
-      const response = await controller.deploy({
-        ...body,
-        fileTree: tree as any
+      const response = await writeDeploy(prepared, {
+        appLoc: body.appLoc,
+        replace: body.replace
       })
 
-      await publishDeployedApp(response as any, request)
+      await publishDeployedApp(response as any, prepared.request)
 
       res.send(response)
     } catch (err: any) {
@@ -182,9 +242,11 @@ driveRouter.post(
  * implementation.
  *
  * What a deploy document would have said arrives in the QUERY, because the body
- * is the archive: `appLoc` is required, `streamWebFolder` publishes the folder
- * as an App Stream app, and `replace` defaults to true - publishing a folder
- * means the folder is what the archive says it is.
+ * is the archive. `name` publishes the entries as the app of that name, which is
+ * how a bare folder of compiled web assets becomes `apps/<name>` without a
+ * manifest; `appLoc` deploys to a folder, `streamWebFolder` publishes the older
+ * shape, and `replace` defaults to true - publishing a folder means the folder is
+ * what the archive says it is.
  */
 const deployArchive = async (
   req: express.Request,
@@ -203,6 +265,7 @@ const deployArchive = async (
     const fileTree = await extractFileTreeFromZip(zipFile)
 
     const deploy = {
+      name: value.name,
       appLoc: value.appLoc,
       fileTree,
       streamWebFolder: value.streamWebFolder,
@@ -210,15 +273,14 @@ const deployArchive = async (
       streamLogo: value.streamLogo
     }
 
-    const { tree, request } = prepareDeploy(deploy as any)
+    const prepared = prepareDeploy(deploy as any)
 
-    const response = await controller.deploy({
+    const response = await writeDeploy(prepared, {
       appLoc: value.appLoc,
-      fileTree: tree as any,
       replace: value.replace
     })
 
-    await publishDeployedApp(response as any, request)
+    await publishDeployedApp(response as any, prepared.request)
 
     res.send(response)
   } catch (err: any) {

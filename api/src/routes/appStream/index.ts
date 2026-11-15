@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express'
 import { authenticateAccessToken, generateCSRFToken } from '../../middlewares'
 import {
   createAppStreamWebService,
+  frontendFolderOf,
   isAppId,
   NO_SUCH_APP,
   type AppStreamEntry,
@@ -175,6 +176,35 @@ const router = express.Router()
 router.use(authenticateAccessToken)
 
 /**
+ * Removes an app's frontend once the index has forgotten it.
+ *
+ * The app IS its folder, so unpublishing removes `apps/<name>`. Only for an app
+ * published as a frontend, though: a legacy entry's files sit inside its backend
+ * folder, and deleting that would delete the services it shares with everything
+ * else - so those are left where they are, and the folder goes with
+ * `DELETE /SASjsApi/drive/folder` by whoever owns the deployment.
+ *
+ * A folder that is already gone is not a failure. An index entry can outlive its
+ * deployment (someone deleted the folder by hand), and the app is unpublished
+ * either way; the absence is logged rather than answered as an error.
+ */
+const removeFrontend = async (entry: AppStreamEntry): Promise<void> => {
+  if (entry.streamWebFolder !== undefined) return
+
+  const folder = frontendFolderOf(entry.name)
+
+  try {
+    await appStreamDrive().rmdir(folder)
+  } catch (error) {
+    process.logger?.warn?.(
+      `The app "${entry.name}" was unpublished, but its frontend at ${folder} could not be removed: ${
+        (error as Error)?.message ?? error
+      }`
+    )
+  }
+}
+
+/**
  * The request's path as the package reads it.
  *
  * The surface is mounted at both spellings, and the package knows one base path,
@@ -204,6 +234,10 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
 
     if (refusal) return res.status(refusal.status).send(refusal.body)
 
+    // read before the removal: the package forgets the entry, and what is left to
+    // delete is decided by the shape it had
+    const entry = appEntryForPath(path)
+
     // The caller holds the permission a removal takes, and `removalRefusal` has
     // already decided it: handing the package the VIEW predicate here would
     // refuse them again - the package resolves the app through it - and answer
@@ -216,7 +250,11 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
 
     // the inventory is what the gate and the permission editor read, so an app
     // that is no longer published must leave it now, not at the next restart
-    if (page.status === 200) await refreshAppStreamIndex()
+    if (page.status === 200) {
+      await refreshAppStreamIndex()
+
+      if (entry) await removeFrontend(entry)
+    }
 
     return render(req, res, page)
   }

@@ -44,12 +44,27 @@ const isEntry = (value: unknown): value is AppStreamEntry => {
 
   const entry = value as Record<string, unknown>
 
-  return (
+  const idNameAndDate =
     isAppId(entry.id) &&
     typeof entry.name === 'string' &&
-    typeof entry.appLoc === 'string' &&
-    typeof entry.streamWebFolder === 'string' &&
     typeof entry.publishedAt === 'string'
+
+  if (!idNameAndDate) return false
+
+  // `appLoc` is the backend an app's frontend calls, and it is optional: an app
+  // with no backend names none, and several apps may name one folder.
+  if (entry.appLoc !== undefined && typeof entry.appLoc !== 'string') return false
+
+  // `streamWebFolder` marks the shape written before apps were frontends, and it
+  // is only readable with the folder it is relative to
+  if (
+    entry.streamWebFolder !== undefined &&
+    typeof entry.streamWebFolder !== 'string'
+  )
+    return false
+
+  return !(
+    entry.streamWebFolder !== undefined && entry.appLoc === undefined
   )
 }
 

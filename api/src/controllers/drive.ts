@@ -40,14 +40,19 @@ import {
 import { appSummary, type AppStreamEntry } from '@sasjs/api'
 
 interface DeployPayload {
-  /** The folder to deploy into; `/Public/apps/myapp` */
-  appLoc: string
+  /**
+   * The folder to deploy into; `/Public/apps/myapp`. Optional: a bundle that
+   * names its app is published to `apps/<name>`, and the `appLoc` it states is
+   * the backend its frontend calls rather than where the files go.
+   */
+  appLoc?: string
+  /** The app's name, for a bundle that does not carry one in `sasjs.app.json`. */
+  name?: string
   /** A folder of web assets inside the app to publish, e.g. `web` */
   streamWebFolder?: string
   /**
-   * The name the app is published under. Derived from the last segment of
-   * `appLoc` when absent, with a short digest of the folder when that name is
-   * already held by a different app.
+   * The name the app is published under, in the older payload vocabulary.
+   * Derived from the last segment of `appLoc` when absent.
    */
   streamServiceName?: string
   /** A logo to show on the app's tile */
@@ -280,11 +285,13 @@ export class DriveController {
   @Post('/deploy/upload')
   public async deployUpload(
     @UploadedFile() file: Express.Multer.File,
-    /** The folder to deploy into. Required when the archive is the app's own files. */
+    /** The app's name, for an archive that carries no `sasjs.app.json`. */
+    @Query() name?: string,
+    /** The folder to deploy into, when the archive is files rather than an app. */
     @Query() appLoc?: string,
     /** A folder under `services/` to publish as an App Stream app, e.g. `web`. */
     @Query() streamWebFolder?: string,
-    /** The name to publish under. Derived from the last segment of `appLoc` when absent. */
+    /** The name to publish under, in the older payload vocabulary. */
     @Query() streamServiceName?: string,
     /** A logo to show on the app's tile. */
     @Query() streamLogo?: string,
@@ -658,6 +665,15 @@ const getFileTree = (folderPath?: string) => {
 }
 
 const deploy = async (data: DeployPayload) => {
+  // The routes decide where a bundle goes - a package's frontend to `apps/<name>`,
+  // a legacy tree to the `appLoc` it names - and this method writes one tree to one
+  // folder. A call that names no folder is a route that skipped that decision.
+  if (data.appLoc === undefined)
+    throw new HttpError(
+      400,
+      '"appLoc" is required to deploy files that do not name an app.'
+    )
+
   // The tree's shape, the appLoc's containment, the cap and the member names are
   // @sasjs/api's - it refuses all four with this route's own envelope, and it
   // writes nothing until each has passed, so a refused deploy leaves the drive
