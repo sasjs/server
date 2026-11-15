@@ -1,7 +1,7 @@
 {
   "appLoc": "/Public/server",
   "seedPath": "host/vfs-seed.json",
-  "driveEntries": 0,
+  "driveEntries": 353,
   "jsPrograms": 0,
   "programFolders": [
     "services",
@@ -9,9 +9,9 @@
     "tests"
   ],
   "snapshot": true,
-  "snapshotShards": 10,
+  "snapshotShards": 17,
   "sasTranscript": true,
   "identity": "default",
-  "buildStamp": "6e37a1b75a",
-  "builtAt": "2026-11-15T17:31:46.793Z"
+  "buildStamp": "72fe2c465b",
+  "builtAt": "2026-11-15T18:37:53.712Z"
 }
