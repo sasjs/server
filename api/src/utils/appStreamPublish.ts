@@ -38,8 +38,16 @@ export interface PreparedDeploy {
   tree: DeployTree
   /** The compiled frontend of a package, written to `apps/<name>`. */
   frontend?: DeployTree
-  /** The backend a package carries, written to `appLoc` additively. */
+  /** The backend a package carries, written to `appLoc`, replacing it. */
   backend?: DeployTree
+  /**
+   * The folder the bundle itself names, when it names one.
+   *
+   * A bundle that carries only a backend publishes no app, so there is no checked
+   * request to read a folder from - and the manifest is the only place such a
+   * bundle can say where its services go.
+   */
+  appLoc?: string
   /** The app to index, when this deploy publishes one. */
   request?: CheckedPublish
 }
@@ -92,11 +100,14 @@ export const prepareDeploy = (deploy: DeployPublishFields): PreparedDeploy => {
     { packaged }
   )
 
+  const manifestAppLoc = (bundle.manifest as AppManifest | undefined)?.appLoc
+
   if (!requested)
     return {
       tree: bundle.tree,
       ...(bundle.frontend === undefined ? {} : { frontend: bundle.frontend }),
-      ...(bundle.backend === undefined ? {} : { backend: bundle.backend })
+      ...(bundle.backend === undefined ? {} : { backend: bundle.backend }),
+      ...(manifestAppLoc === undefined ? {} : { appLoc: manifestAppLoc })
     }
 
   // every refusal is the package's: the name is validated as the folder and the

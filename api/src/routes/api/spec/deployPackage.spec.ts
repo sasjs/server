@@ -250,6 +250,94 @@ describe('a deploy of a package', () => {
     ).toBe(true)
   })
 
+  it('replaces the folder a backend lands in, so a service it dropped stops being served', async () => {
+    const withTwo = zipOf(
+      packageTree('replaces', {
+        appLoc: '/Public/app/replaces',
+        backend: [folder('services', [file('run', ''), file('dropped', '')])]
+      })
+    )
+
+    await upload(withTwo).expect(200)
+
+    expect(
+      await fileExists(
+        onDisk('Public', 'app', 'replaces', 'services', 'dropped')
+      )
+    ).toBe(true)
+
+    // the same bundle, one service lighter: the folder becomes what it carries,
+    // rather than keeping a file nothing serves any more
+    const withOne = zipOf(
+      packageTree('replaces', {
+        appLoc: '/Public/app/replaces',
+        backend: [folder('services', [file('run', '')])]
+      })
+    )
+
+    await upload(withOne).expect(200)
+
+    expect(
+      await fileExists(onDisk('Public', 'app', 'replaces', 'services', 'run'))
+    ).toBe(true)
+    expect(
+      await fileExists(
+        onDisk('Public', 'app', 'replaces', 'services', 'dropped')
+      )
+    ).toBe(false)
+  })
+
+  it('deploys a bundle that carries only a backend, and publishes no app', async () => {
+    const before = frontends()
+
+    const zip = zipOf({
+      members: [
+        {
+          name: 'sasjs.app.json',
+          type: 'file',
+          code: JSON.stringify({ appLoc: '/Public/app/backendonly' })
+        },
+        folder('backend', [folder('services', [file('only', '')])])
+      ]
+    })
+
+    const res = await upload(zip).expect(200)
+
+    // nothing to serve means nothing to index
+    expect(res.body.app).toBeUndefined()
+    expect(
+      await fileExists(
+        onDisk('Public', 'app', 'backendonly', 'services', 'only')
+      )
+    ).toBe(true)
+    expect(frontends()).toEqual(before)
+  })
+
+  it('takes the folder of a backend-only bundle from the query when no manifest names one', async () => {
+    const zip = zipOf({
+      members: [folder('backend', [folder('services', [file('named', '')])])]
+    })
+
+    const res = await upload(zip, '?appLoc=%2FPublic%2Fapp%2Fqueryloc').expect(
+      200
+    )
+
+    expect(res.body.app).toBeUndefined()
+    expect(
+      await fileExists(onDisk('Public', 'app', 'queryloc', 'services', 'named'))
+    ).toBe(true)
+  })
+
+  it('refuses a backend that names no folder for it', async () => {
+    const zip = zipOf({
+      members: [folder('backend', [folder('services', [file('run', '')])])]
+    })
+
+    const res = await upload(zip).expect(400)
+
+    expect(String(res.body.message ?? res.body)).toContain('appLoc')
+  })
+
   it('publishes a bare zip of a built web folder, named by the query', async () => {
     const zip = new AdmZip()
     zip.addFile('index.html', Buffer.from('<h1>bare</h1>', 'utf8'))
@@ -261,7 +349,7 @@ describe('a deploy of a package', () => {
     expect(await fileExists(onDisk('apps', 'bare', 'index.html'))).toBe(true)
   })
 
-  it('leaves a shared backend alone: two apps, one appLoc, both sets of services', async () => {
+  it('replaces a shared backend: the last bundle to carry it is what the folder holds', async () => {
     await deploy({
       fileTree: packageTree('left', {
         appLoc: '/Public/app/shared',
@@ -276,18 +364,21 @@ describe('a deploy of a package', () => {
       })
     }).expect(200)
 
-    // a replacing write would have removed the other app's service
+    // each deploy replaces the folder it lands in, so the folder becomes what the
+    // last bundle carries - a service it dropped stops being served, rather than
+    // staying reachable with nothing naming it
     expect(
       await fileExists(
         onDisk('Public', 'app', 'shared', 'services', 'left-service')
       )
-    ).toBe(true)
+    ).toBe(false)
     expect(
       await fileExists(
         onDisk('Public', 'app', 'shared', 'services', 'right-service')
       )
     ).toBe(true)
 
+    // both apps stay published: an app is its frontend, and the folder is shared
     const entries = await readStoredAppStreamEntries()
 
     expect(
@@ -320,10 +411,11 @@ describe('a deploy of a package', () => {
 
     expect(await fileExists(onDisk('apps', 'right'))).toBe(false)
 
-    // the backend is shared with the app that is still published
+    // the backend survives: it is a folder an app names, not a folder an app owns,
+    // and the app that is still published reads the same one
     expect(
       await fileExists(
-        onDisk('Public', 'app', 'shared', 'services', 'left-service')
+        onDisk('Public', 'app', 'shared', 'services', 'right-service')
       )
     ).toBe(true)
 
