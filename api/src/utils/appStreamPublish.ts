@@ -1,14 +1,20 @@
 import {
   appSummary,
   checkPublishRequest,
+  frontendFolderOf,
   publishRequestFor,
   splitAppBundle,
   type AppManifest,
+  type AppStreamEntry,
   type CheckedPublish,
   type DeployTree
 } from '@sasjs/api'
 
-import { appStreamService, refreshAppStreamIndex } from './appStreamConfig'
+import {
+  appStreamDrive,
+  appStreamService,
+  refreshAppStreamIndex
+} from './appStreamConfig'
 
 /** What a deploy route sends: the fields that decide whether it publishes. */
 export interface DeployPublishFields {
@@ -123,4 +129,53 @@ export const publishDeployedApp = async (
   await refreshAppStreamIndex()
 
   answer.app = appSummary(entry)
+}
+
+/**
+ * Removes an app's frontend folder, once the index has forgotten it.
+ *
+ * An app published as a frontend IS its folder - `apps/<name>` - so unpublishing
+ * removes it: an app that is no longer published should not leave a page on the
+ * drive that nothing links to and nothing serves. A legacy entry is left alone,
+ * because its files sit inside a backend folder that may serve other apps, and
+ * deleting that would take their services with it.
+ *
+ * A folder that is already gone is not a failure. An index entry can outlive its
+ * deployment - someone deleted the folder by hand - and the app is unpublished
+ * either way, so the absence is logged rather than answered as an error.
+ */
+export const removeFrontendFolder = async (
+  entry: AppStreamEntry
+): Promise<void> => {
+  if (entry.streamWebFolder !== undefined) return
+
+  const folder = frontendFolderOf(entry.name)
+
+  try {
+    await appStreamDrive().rmdir(folder)
+  } catch (error) {
+    process.logger?.warn?.(
+      `The app "${entry.name}" was unpublished, but its frontend at ${folder} could not be removed: ${
+        (error as Error)?.message ?? error
+      }`
+    )
+  }
+}
+
+/**
+ * Unpublishes an app and removes the frontend it published.
+ *
+ * Every route that removes an app goes through this: the id is the handle, the
+ * index forgets it, and what is left on the drive is decided by the shape the
+ * entry had. Two removals that disagreed about the files would be one removal and
+ * one surprise.
+ */
+export const unpublishApp = async (id: string): Promise<AppStreamEntry> => {
+  const removed = await appStreamService().unpublish(id)
+
+  await refreshAppStreamIndex()
+
+  await removeFrontendFolder(removed)
+
+  return removed
 }

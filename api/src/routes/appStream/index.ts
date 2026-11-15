@@ -3,7 +3,6 @@ import express, { Request, Response } from 'express'
 import { authenticateAccessToken, generateCSRFToken } from '../../middlewares'
 import {
   createAppStreamWebService,
-  frontendFolderOf,
   isAppId,
   NO_SUCH_APP,
   type AppStreamEntry,
@@ -15,6 +14,7 @@ import {
   API_PREFIX,
   APP_STREAM_ALIAS,
   appEntryForPath,
+  removeFrontendFolder,
   appIsGranted,
   appStreamDrive,
   appStreamEntries,
@@ -176,35 +176,6 @@ const router = express.Router()
 router.use(authenticateAccessToken)
 
 /**
- * Removes an app's frontend once the index has forgotten it.
- *
- * The app IS its folder, so unpublishing removes `apps/<name>`. Only for an app
- * published as a frontend, though: a legacy entry's files sit inside its backend
- * folder, and deleting that would delete the services it shares with everything
- * else - so those are left where they are, and the folder goes with
- * `DELETE /SASjsApi/drive/folder` by whoever owns the deployment.
- *
- * A folder that is already gone is not a failure. An index entry can outlive its
- * deployment (someone deleted the folder by hand), and the app is unpublished
- * either way; the absence is logged rather than answered as an error.
- */
-const removeFrontend = async (entry: AppStreamEntry): Promise<void> => {
-  if (entry.streamWebFolder !== undefined) return
-
-  const folder = frontendFolderOf(entry.name)
-
-  try {
-    await appStreamDrive().rmdir(folder)
-  } catch (error) {
-    process.logger?.warn?.(
-      `The app "${entry.name}" was unpublished, but its frontend at ${folder} could not be removed: ${
-        (error as Error)?.message ?? error
-      }`
-    )
-  }
-}
-
-/**
  * The request's path as the package reads it.
  *
  * The surface is mounted at both spellings, and the package knows one base path,
@@ -253,7 +224,7 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
     if (page.status === 200) {
       await refreshAppStreamIndex()
 
-      if (entry) await removeFrontend(entry)
+      if (entry) await removeFrontendFolder(entry)
     }
 
     return render(req, res, page)

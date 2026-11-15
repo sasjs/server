@@ -32,11 +32,7 @@ import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
 import { HttpError } from '../utils'
-import {
-  appStreamService,
-  refreshAppStreamIndex,
-  type PublishedApp
-} from '../utils'
+import { appStreamService, unpublishApp, type PublishedApp } from '../utils'
 import { appSummary, type AppStreamEntry } from '@sasjs/api'
 
 interface DeployPayload {
@@ -345,11 +341,7 @@ export class DriveController {
     // server cannot drift apart. What stays here is the port: the file the index
     // is kept in, and the inventory the permission gate reads.
     try {
-      const removed: AppStreamEntry = await appStreamService().unpublish(
-        body.id
-      )
-
-      await refreshAppStreamIndex()
+      const removed: AppStreamEntry = await unpublishApp(body.id)
 
       return { status: 'success', app: appSummary(removed) }
     } catch (error) {

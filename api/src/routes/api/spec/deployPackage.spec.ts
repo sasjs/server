@@ -67,7 +67,10 @@ const packageTree = (
     },
     folder(
       'web',
-      options.frontend ?? [file('index.html', `<h1>${name}</h1>`), file('app.js')]
+      options.frontend ?? [
+        file('index.html', `<h1>${name}</h1>`),
+        file('app.js')
+      ]
     ),
     ...(options.backend === undefined
       ? []
@@ -160,7 +163,9 @@ describe('a deploy of a package', () => {
       fileTree: packageTree('macrodash', {
         appLoc: '/Public/app/md',
         backend: [
-          folder('services', [folder('common', [file('getscores', '%put hi;')])])
+          folder('services', [
+            folder('common', [file('getscores', '%put hi;')])
+          ])
         ]
       })
     }).expect(200)
@@ -169,15 +174,17 @@ describe('a deploy of a package', () => {
     expect(res.body.app.url).toMatch(/^\/app\/[0-9a-f-]{36}\/$/)
 
     // the frontend is the CONTENTS of web/, so it lands at the app's root
-    expect(await fileExists(onDisk('apps', 'macrodash', 'index.html'))).toBe(true)
+    expect(await fileExists(onDisk('apps', 'macrodash', 'index.html'))).toBe(
+      true
+    )
     expect(await readFile(onDisk('apps', 'macrodash', 'index.html'))).toBe(
       '<h1>macrodash</h1>'
     )
 
     // the manifest is metadata, so it is not served as an app's file
-    expect(await fileExists(onDisk('apps', 'macrodash', 'sasjs.app.json'))).toBe(
-      false
-    )
+    expect(
+      await fileExists(onDisk('apps', 'macrodash', 'sasjs.app.json'))
+    ).toBe(false)
 
     // the backend is the CONTENTS of backend/, written to appLoc
     expect(
@@ -265,7 +272,9 @@ describe('a deploy of a package', () => {
 
     const entries = await readStoredAppStreamEntries()
 
-    expect(entries.filter((entry) => entry.appLoc === '/Public/app/shared')).toHaveLength(2)
+    expect(
+      entries.filter((entry) => entry.appLoc === '/Public/app/shared')
+    ).toHaveLength(2)
   })
 
   it('removes only the frontend when the app is deleted', async () => {
@@ -302,7 +311,9 @@ describe('a deploy of a package', () => {
 
     const entries = await readStoredAppStreamEntries()
 
-    expect(entries.find((candidate) => candidate.name === 'right')).toBeUndefined()
+    expect(
+      entries.find((candidate) => candidate.name === 'right')
+    ).toBeUndefined()
   })
 
   it('refuses a package with no name, and writes nothing', async () => {
@@ -317,5 +328,28 @@ describe('a deploy of a package', () => {
     expect(res.status).toBe(400)
     expect(res.body.message).toMatch(/"name" is required/)
     expect(await fileExists(onDisk('apps', 'anon'))).toBe(false)
+  })
+
+  it('removes the frontend through the deploy route too, so both removals agree', async () => {
+    await deploy({
+      fileTree: packageTree('both-ways', { appLoc: '/Public/app/both' })
+    }).expect(200)
+
+    const [entry] = (await readStoredAppStreamEntries()).filter(
+      (candidate) => candidate.name === 'both-ways'
+    )
+
+    await request(app)
+      .delete('/SASjsApi/drive/deploy')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ id: entry.id })
+      .expect(200)
+
+    expect(await fileExists(onDisk('apps', 'both-ways'))).toBe(false)
+    expect(
+      (await readStoredAppStreamEntries()).find(
+        (candidate) => candidate.id === entry.id
+      )
+    ).toBeUndefined()
   })
 })
