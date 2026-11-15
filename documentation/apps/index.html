@@ -1163,11 +1163,11 @@
 </span><span id="__span-2-3"><a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">  </span>-F<span class="w"> </span><span class="s2">"file=@macrodash.zip"</span>
 </span></code></pre></div>
 <ul>
-<li>The CONTENTS of <code>web/</code> become <code>apps/&lt;name&gt;</code>: the folder is the container, not part of the app.</li>
-<li>The CONTENTS of <code>backend/</code> are written to <code>appLoc</code>, <strong>additively</strong>. A deploy writes what it carries and deletes nothing, because one backend may serve several frontends - a replacing write would delete the services another app put there.</li>
+<li>The CONTENTS of <code>web/</code> become <code>apps/&lt;name&gt;</code>, replacing what that folder held: the folder is the container, not part of the app, and the bundle says what it holds.</li>
+<li>The CONTENTS of <code>backend/</code> are written to <code>appLoc</code>, <strong>replacing</strong> it. The folder becomes what this bundle carries, so a service the new bundle dropped stops being served rather than staying reachable with nothing naming it.</li>
 <li><code>sasjs.app.json</code> is metadata: it is read before anything is written, and it is never served with the app.</li>
 </ul>
-<p>Two frontends can share one backend. Publish each with the same <code>appLoc</code> and a different <code>name</code>: each is its own app with its own id and URL, and the services are deployed by whichever bundle carries them.</p>
+<p>Two frontends can share one backend. Publish each with the same <code>appLoc</code> and a different <code>name</code>: each is its own app with its own id and URL, and neither deploy touches the other's frontend. The backend itself is replaced by whichever bundle carries it, so a shared folder holds the services of the last bundle to deploy there - deploy them in order, and a service lost that way is one <code>DELETE /SASjsApi/drive/file</code> will not find.</p>
 <h2 id="the-older-shape">The older shape<a class="headerlink" href="#the-older-shape" title="Permanent link">¶</a></h2>
 <p>A deployment built before apps were frontends is published with the folder and the stream in the query, and keeps working unchanged:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="c1"># the archive holds services/web/index.html, services/web/app.js, assets/logo.png</span>
@@ -1197,8 +1197,8 @@
 <p>An app published as a frontend is its folder, so unpublishing removes <code>apps/&lt;name&gt;</code> with the entry. A legacy entry's files sit inside a backend folder that may serve other apps, so those are left where they are, and the folder goes with <code>DELETE /SASjsApi/drive/folder</code> by whoever owns the deployment.</p>
 <h3 id="replacing-the-folder">Replacing the folder<a class="headerlink" href="#replacing-the-folder" title="Permanent link">¶</a></h3>
 <p><code>POST /SASjsApi/drive/deploy</code> takes <code>replace: true</code> to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a frontend means <code>apps/&lt;name&gt;</code> is what the archive says it is - and <code>?replace=false</code> keeps what is already there.</p>
-<p>A package's backend is the exception: it is written additively however <code>replace</code> is set, because one backend may serve several frontends.</p>
-<p>The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder rather than just the app being deployed - which is why a backend several frontends share is written additively instead.</p>
+<p>A package's backend is written on the same terms whichever way <code>replace</code> is set: the bundle carries the folder's contents, so the folder is made to match it.</p>
+<p>The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder rather than just the app being deployed - so several frontends may name one <code>appLoc</code>, but each deploy of that backend rewrites it and the last bundle to carry it is what the folder holds. Keeping a folder two bundles both write is about deploying them in order, not merging them.</p>
 <h3 id="text-and-binary-file-members">Text and binary file members<a class="headerlink" href="#text-and-binary-file-members" title="Permanent link">¶</a></h3>
 <p>A <code>file</code> member carries the caller's own text by default. An asset that is not text states <code>encoding: "base64"</code>, and its <code>code</code> is base64 of the bytes to write:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="p">{</span>
