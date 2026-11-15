@@ -282,9 +282,11 @@ jobs:
           cache-dependency-path: docs/requirements.txt
 
       - name: Build the docs into the web build
+        # Through the wrapper, so the specification the API page renders is written
+        # into docs/pages/ first - it is generated, not committed.
         run: |
           pip install -r docs/requirements.txt
-          python3 -m mkdocs build --strict -f docs/mkdocs.yml
+          node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
 
       - name: Install api dependencies
         working-directory: ./api

@@ -12,7 +12,7 @@
  *   node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, rmSync } from 'node:fs'
 import path from 'node:path'
 
 const isWindows = process.platform === 'win32'
@@ -27,6 +27,27 @@ const python = existsSync(venvPython)
   : isWindows
     ? 'python'
     : 'python3'
+
+/**
+ * Writes the specification the API page renders.
+ *
+ * `docs/pages/swagger.yaml` is not in the repository: it is the document tsoa
+ * generates at `api/public/swagger.yaml`, copied here so the API page has it to
+ * render. A committed copy is one more thing to remember to refresh, and a stale
+ * one publishes a reference that describes a different API from the release.
+ * `serve` builds the same site, so it writes the same file.
+ */
+if (['build', 'serve'].includes(process.argv[2] ?? '')) {
+  const spec = path.join('api', 'public', 'swagger.yaml')
+  const mirror = path.join('docs', 'pages', 'swagger.yaml')
+
+  if (!existsSync(spec))
+    throw new Error(
+      `${spec} is missing, so the API page has nothing to render: run npm run swagger in api/ first.`
+    )
+
+  copyFileSync(spec, mirror)
+}
 
 // A build starts from nothing. MkDocs writes into the folder its `site_dir`
 // names and leaves whatever was there before, so a path the site used to be
