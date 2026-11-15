@@ -365,29 +365,4 @@ describe('a deploy of a package', () => {
       )
     ).toBeUndefined()
   })
-
-  it('refuses a bundle that carries web/ and names the older shape', async () => {
-    const before = frontends()
-
-    const res = await deploy({
-      fileTree: {
-        members: [
-          {
-            name: 'sasjs.app.json',
-            type: 'file',
-            code: JSON.stringify({
-              name: 'both-shapes',
-              appLoc: '/Public/app/both',
-              streamWebFolder: 'web'
-            })
-          },
-          folder('web', [file('index.html', '<h1>both</h1>')])
-        ]
-      }
-    })
-
-    expect(res.status).toBe(400)
-    expect(res.body.message).toMatch(/cannot also state "streamWebFolder"/)
-    expect(frontends()).toEqual(before)
-  })
 })

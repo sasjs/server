@@ -79,16 +79,6 @@ export const prepareDeploy = (deploy: DeployPublishFields): PreparedDeploy => {
   const bundle = splitAppBundle(deploy.fileTree)
   const packaged = bundle.frontend !== undefined
 
-  // a bundle that names its halves is published as a frontend. `streamWebFolder`
-  // describes the older shape, where the web assets live inside the backend's
-  // folder, so a bundle carrying both would be published one way and deployed the
-  // other - refused rather than guessed at
-  if (packaged && bundle.manifest?.streamWebFolder !== undefined)
-    throw new ApiError(
-      400,
-      'This bundle carries a "web" folder, so it is published as a frontend, and sasjs.app.json cannot also state "streamWebFolder": that field describes the older shape, where the web assets live inside the backend folder.'
-    )
-
   const requested = publishRequestFor(
     {
       name: deploy.name,
