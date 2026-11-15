@@ -131,7 +131,7 @@ An app published as a frontend is its folder, so unpublishing removes `apps/<nam
 
 A package's backend is the exception: it is written additively however `replace` is set, because one backend may serve several frontends.
 
-The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything.
+The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder rather than just the app being deployed - which is why a backend several frontends share is written additively instead.
 
 ### Text and binary file members
 
