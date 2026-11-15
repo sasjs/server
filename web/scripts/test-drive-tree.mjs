@@ -18,6 +18,8 @@ const {
   childPrefixOf,
   childrenOf,
   expandedDescendantsOf,
+  folderAndAncestorsOf,
+  ROOT_PATH,
   graftLevel,
   isDriveRootPath,
   isRootPath,
@@ -223,5 +225,23 @@ check('withRootPath keys the browser host root the way the screen asks', () => {
   // a file is never the root, whatever its path
   assert.equal(withRootPath(node('x.sas', '/', false)).relativePath, '/')
 })
+
+/*
+ * A folder link opens the way to the folder and the folder itself: two folders
+ * deep means the root is fetched first, then each level, and the last path is the
+ * folder the visitor asked for.
+ */
+assert.deepEqual(folderAndAncestorsOf('/code/macro-core'), [
+  ROOT_PATH,
+  '/code',
+  '/code/macro-core'
+])
+assert.deepEqual(folderAndAncestorsOf('/code'), [ROOT_PATH, '/code'])
+assert.deepEqual(folderAndAncestorsOf('/'), [ROOT_PATH])
+assert.deepEqual(
+  folderAndAncestorsOf('/a/b/c/'),
+  [ROOT_PATH, '/a', '/a/b', '/a/b/c'],
+  'a trailing slash is not a level'
+)
 
 console.log(`\n${checks} checks passed`)

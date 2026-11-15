@@ -20,6 +20,8 @@ import { TreeNode } from '../utils/types'
 interface Props {
   node: TreeNode
   handleSelect: (path: string) => void
+  /** Called when a folder is clicked: a folder has an address too. */
+  handleFolderSelect?: (path: string) => void
   deleteNode: (path: string, isFolder: boolean) => void
   addFile: (path: string) => void
   addFolder: (path: string) => void
@@ -66,6 +68,7 @@ const relativePathFor = (itemId: string) =>
 const TreeView = ({
   node,
   handleSelect,
+  handleFolderSelect,
   deleteNode,
   addFile,
   addFolder,
@@ -97,7 +100,11 @@ const TreeView = ({
   }
 
   const handleItemClick = (target: TreeNode) => {
-    if (target.isFolder) return
+    if (target.isFolder) {
+      handleFolderSelect?.(target.relativePath)
+
+      return
+    }
     if (target.relativePath.endsWith(LOADING_SUFFIX)) return
 
     handleSelect(target.relativePath)

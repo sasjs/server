@@ -26,6 +26,21 @@ export const parentPathOf = (relativePath: string) => {
   return segments.join('/')
 }
 
+/** A folder and the folders above it, the root first - what a folder link opens. */
+export const folderAndAncestorsOf = (folderPath: string) => {
+  const segments = folderPath.split('/').filter(Boolean)
+
+  const paths = [ROOT_PATH]
+  let current = ''
+
+  for (const segment of segments) {
+    current += '/' + segment
+    paths.push(current)
+  }
+
+  return paths
+}
+
 /** Every ancestor of a path, root first: '/a/b/c.sas' -> ['', '/a', '/a/b']. */
 export const ancestorPathsOf = (relativePath: string) => {
   const segments = relativePath.split('/').filter(Boolean)
