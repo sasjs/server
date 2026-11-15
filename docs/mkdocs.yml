@@ -63,9 +63,9 @@ extra_javascript:
 
 plugins:
   - search
-  # Renders docs/pages/api.md from docs/pages/swagger.yaml. The spec is a copy of the one
-  # the server serves at /swagger.yaml, and docs/scripts/check-server-docs.mjs fails
-  # the build when the copy has drifted from the release it documents.
+  # Renders docs/pages/api.md from docs/pages/swagger.yaml, which the docs build
+  # writes from api/public/swagger.yaml before mkdocs runs - the specification is
+  # generated, so there is no second copy to fall behind.
   - swagger-ui-tag
 
 # Repository

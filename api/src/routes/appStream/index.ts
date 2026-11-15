@@ -19,6 +19,7 @@ import {
   appStreamEntries,
   appStreamService,
   applyAppFraming,
+  forgetPublishedApp,
   isRouteGranted,
   loadRouteRules,
   ModeType,
@@ -204,6 +205,10 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
 
     if (refusal) return res.status(refusal.status).send(refusal.body)
 
+    // read before the removal: the package forgets the entry, and what is left to
+    // delete is decided by the shape it had
+    const entry = appEntryForPath(path)
+
     // The caller holds the permission a removal takes, and `removalRefusal` has
     // already decided it: handing the package the VIEW predicate here would
     // refuse them again - the package resolves the app through it - and answer
@@ -214,9 +219,9 @@ router.all(['/', '/*splat'], async (req: Request, res: Response) => {
       allow: () => true
     })
 
-    // the inventory is what the gate and the permission editor read, so an app
-    // that is no longer published must leave it now, not at the next restart
-    if (page.status === 200) await refreshAppStreamIndex()
+    // the package performed the unpublish, so this route hands the entry it read
+    // to the step both removal routes share
+    if (page.status === 200) await forgetPublishedApp(entry)
 
     return render(req, res, page)
   }

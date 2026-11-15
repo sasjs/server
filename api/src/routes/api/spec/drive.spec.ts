@@ -610,14 +610,18 @@ describe('drive', () => {
         await deleteFolder(path.join(getFilesFolder(), 'Public'))
       })
 
-      it('refuses an archive with no appLoc to deploy into', async () => {
+      it('refuses an archive that names no destination at all', async () => {
         const zip = new AdmZip()
         zip.addFile('index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
 
         const res = await postArchive(zip, '')
 
+        // neither a manifest, nor `name`, nor `appLoc`: the entries would have
+        // nowhere to go, and the refusal says which field names a destination
         expect(res.statusCode).toEqual(400)
-        expect(res.text).toEqual('"appLoc" is required')
+        expect(res.body.message).toEqual(
+          '"appLoc" is required to deploy files that do not name an app.'
+        )
       })
 
       it('deploys a JSON file the app itself ships', async () => {

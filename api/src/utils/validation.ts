@@ -180,9 +180,37 @@ export const updatePermissionValidation = (data: any): Joi.ValidationResult =>
       .valid(...Object.values(PermissionSettingForRoute))
   }).validate(data)
 
+/**
+ * A name that becomes a folder: `apps/<name>`.
+ *
+ * Letters, digits, dot, dash, underscore or tilde, starting with a letter or
+ * digit, at most 64 characters - the rule `@sasjs/api` states, repeated here so a
+ * value this route writes and later deletes is bounded before it reaches the
+ * drive.
+ */
+export const APP_NAME_MAX_LENGTH = 64
+
+export const APP_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/
+
+const appNameSchema = () =>
+  Joi.string().max(APP_NAME_MAX_LENGTH).pattern(APP_NAME_PATTERN)
+
+/**
+ * A deploy document - the JSON a build writes, or the one a zip carries.
+ *
+ * `appLoc` is where a deployment goes, and it is now optional: a bundle that
+ * names its app is published to `apps/<name>`, and its `appLoc` (the backend the
+ * frontend calls) is metadata the bundle may state instead. `name` is what a
+ * frontend publish is called; a request that carries neither is refused by the
+ * route, with a message naming the missing field.
+ */
 export const deployValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    appLoc: Joi.string().pattern(/^\//).required().min(2),
+    appLoc: Joi.string().pattern(/^\//).min(2),
+    // the app's folder, written and later removed: the package holds this same
+    // rule and refuses a name it cannot spell as a URL segment, and stating it
+    // here too means a value that becomes a path is bounded twice
+    name: appNameSchema(),
     streamServiceName: Joi.string(),
     streamWebFolder: Joi.string(),
     streamLogo: Joi.string(),
@@ -194,14 +222,20 @@ export const deployValidation = (data: any): Joi.ValidationResult =>
  * The query a published archive is deployed with.
  *
  * An archive of an app's own files carries no deploy document, so what the tree
- * says - the folder, the stream to publish and whether the folder is replaced -
- * arrives beside the upload. `replace` defaults to true here: the route's
- * promise is "publish this folder", and a file the new archive no longer carries
- * should stop being served.
+ * says arrives beside the upload. Nothing here is required: a package states its
+ * app in `sasjs.app.json`, a bare folder of compiled assets is named by `name`,
+ * and a plain deployment names its folder with `appLoc`. What the request states
+ * has to be usable, and the route refuses one that names no destination at all -
+ * with a message saying which field would have named one.
+ *
+ * `replace` defaults to true here: the route's promise is "publish this folder",
+ * and a file the new archive no longer carries should stop being served. A
+ * package's backend is the exception, written additively however this is set.
  */
 export const deployAssetsValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
-    appLoc: Joi.string().pattern(/^\//).required().min(2),
+    name: appNameSchema(),
+    appLoc: Joi.string().pattern(/^\//).min(2),
     streamServiceName: Joi.string(),
     streamWebFolder: Joi.string(),
     streamLogo: Joi.string(),

@@ -10,7 +10,7 @@ import {
 import { nodeDriveStore } from './internal/nodeDriveStore'
 import { HttpError } from '../utils'
 import User from '../model/User'
-import { isApiError, type AppStreamEntry } from '@sasjs/api'
+import { appRootOf, isApiError, type AppStreamEntry } from '@sasjs/api'
 
 /** The file the app stream serves for a directory request. */
 const ENTRY_FILE = 'index.html'
@@ -29,14 +29,23 @@ export interface AppDetailsResponse {
   /** The app's identifier, which is what a publish answers with and its URL carries. */
   id: string
 
-  /** The name the app is published under. A name may be shared; the id may not. */
+  /** The name the app is published under: its folder under `apps/` and its address. */
   name: string
 
-  /** The folder within SASjs Drive the app was published from. */
-  appLoc: string
+  /**
+   * The backend the app's frontend calls, when it names one. Metadata: several
+   * apps may name the same folder, and a frontend-only app names none.
+   */
+  appLoc?: string
 
-  /** The folder inside `appLoc` holding the streamed web assets. */
-  streamWebFolder: string
+  /** Where the frontend is read from: `apps/<name>`, or a legacy deployment. */
+  frontendFolder: string
+
+  /**
+   * The legacy folder inside `appLoc` holding the streamed web assets - present
+   * only for an entry published before apps were frontends.
+   */
+  streamWebFolder?: string
 
   /** A logo to show on the app's tile, when one was registered. */
   logo?: string
@@ -119,7 +128,7 @@ export class AppController {
     if (!(await this.mayOpen(req, entry)))
       throw new HttpError(404, NOT_REGISTERED)
 
-    const entryFilePath = `${entry.appLoc}/services/${entry.streamWebFolder}/${ENTRY_FILE}`
+    const entryFilePath = `${appRootOf(entry)}/${ENTRY_FILE}`
 
     // Stated rather than assumed: an index entry can outlive its deployment (a
     // folder deleted out from under the server), and reporting a file and a date
@@ -141,8 +150,11 @@ export class AppController {
     return {
       id: entry.id,
       name: entry.name,
-      appLoc: entry.appLoc,
-      streamWebFolder: entry.streamWebFolder,
+      ...(entry.appLoc === undefined ? {} : { appLoc: entry.appLoc }),
+      frontendFolder: appRootOf(entry),
+      ...(entry.streamWebFolder === undefined
+        ? {}
+        : { streamWebFolder: entry.streamWebFolder }),
       logo: entry.logo,
       frameAncestors: entry.frameAncestors,
       publishedAt: entry.publishedAt ?? null,
