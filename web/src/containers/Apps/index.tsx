@@ -47,7 +47,11 @@ interface StreamedApp {
   /** The app's identity, which is what an unpublish names and its URL carries. */
   id: string
   name: string
-  appLoc: string
+  /**
+   * The backend this frontend calls, or null when it names none: an app is a
+   * frontend, and its services live wherever it says they do.
+   */
+  appLoc: string | null
   logo: string | null
   url: string
   /** When the bundle was last published, or null for an older registry. */
@@ -164,7 +168,10 @@ const Apps = () => {
   // would open nothing.
   const entries: AppEntry[] = apps.map((app) => ({
     title: app.name,
-    subtitle: app.appLoc,
+    // the backend it calls, and - for an app that names none - where the app
+    // itself answers, so the line never disappears for the apps this server
+    // publishes as frontends
+    subtitle: app.appLoc ?? appHref(app, apps),
     logo: app.logo ?? defaultAppLogo,
     href: appHref(app, apps),
     publishedAt: app.publishedAt,
@@ -232,8 +239,11 @@ const Apps = () => {
 
   /**
    * Takes the app out of the registry, so it stops being advertised and stops
-   * being served. The bundle's files stay in the drive - removing those is a
-   * different, far more dangerous act - which is why the dialog says so.
+   * being served. What goes with it depends on the shape it was published in: an
+   * app published as a frontend is its folder, so `apps/<name>` is removed; a
+   * deployment published the older way keeps its files, because they may sit in a
+   * folder that serves other apps. The dialog says both, because the listing does
+   * not say which shape an app is.
    */
   const unpublish = async (app: StreamedApp) => {
     setDeleting(true)
@@ -389,10 +399,10 @@ const Apps = () => {
         <DialogContent>
           <DialogContentText>
             The app stops being advertised and stops being served at{' '}
-            <code>{pendingDelete?.url}</code>. The files in{' '}
-            <code>{pendingDelete?.appLoc}</code> stay in the drive, so it can be
-            published again - or the folder deleted, which is a separate and
-            irreversible act.
+            <code>{pendingDelete?.url}</code>. An app published as a frontend is
+            removed from <code>apps/{pendingDelete?.name}</code> along with its
+            entry. A deployment published the older way keeps its files, because
+            they may sit in a folder that serves other apps.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

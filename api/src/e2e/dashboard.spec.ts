@@ -250,17 +250,18 @@ describe('Home dashboard and Apps tab', () => {
         .count()
     ).toBeGreaterThan(0)
 
-    // The bin on the row unpublishes, and the dialog says what it leaves alone.
+    // The bin on the row unpublishes, and the dialog says what goes with it and
+    // what does not, because the listing does not say which shape an app is.
     await page
       .getByRole('button', { name: 'Unpublish Dashdemo', exact: true })
       .click()
     await page.waitForSelector('text=Unpublish Dashdemo?', { timeout: 30000 })
-    expect(await page.getByText(/stay in the drive/).count()).toBe(1)
+    expect(await page.getByText('apps/Dashdemo').count()).toBe(1)
     await page.getByRole('button', { name: 'Unpublish', exact: true }).click()
     await page.waitForSelector('text=No apps are published', { timeout: 30000 })
 
-    // Publishing it again brings it back, because the files were never the
-    // registry entry.
+    // Publishing it again brings it back: this fixture is the older shape, whose
+    // files stay where its deployment put them.
     await publishDemoApp()
     await page.reload()
     await appRow.first().waitFor({ timeout: 30000 })
