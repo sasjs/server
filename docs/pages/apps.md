@@ -73,11 +73,11 @@ curl -X POST "https://my-server/SASjsApi/drive/deploy/upload" \
   -F "file=@macrodash.zip"
 ```
 
-* The CONTENTS of `web/` become `apps/<name>`: the folder is the container, not part of the app.
-* The CONTENTS of `backend/` are written to `appLoc`, **additively**. A deploy writes what it carries and deletes nothing, because one backend may serve several frontends - a replacing write would delete the services another app put there.
+* The CONTENTS of `web/` become `apps/<name>`, replacing what that folder held: the folder is the container, not part of the app, and the bundle says what it holds.
+* The CONTENTS of `backend/` are written to `appLoc`, **replacing** it. The folder becomes what this bundle carries, so a service the new bundle dropped stops being served rather than staying reachable with nothing naming it.
 * `sasjs.app.json` is metadata: it is read before anything is written, and it is never served with the app.
 
-Two frontends can share one backend. Publish each with the same `appLoc` and a different `name`: each is its own app with its own id and URL, and the services are deployed by whichever bundle carries them.
+Two frontends can share one backend. Publish each with the same `appLoc` and a different `name`: each is its own app with its own id and URL, and neither deploy touches the other's frontend. The backend itself is replaced by whichever bundle carries it, so a shared folder holds the services of the last bundle to deploy there - deploy them in order, and a service lost that way is one `DELETE /SASjsApi/drive/file` will not find.
 
 ## The older shape
 
@@ -129,9 +129,9 @@ An app published as a frontend is its folder, so unpublishing removes `apps/<nam
 
 `POST /SASjsApi/drive/deploy` takes `replace: true` to write the tree as the folder's whole contents: the folder is removed before the tree is written, so a file the new version renamed or dropped stops being served. An archive upload replaces by default - publishing a frontend means `apps/<name>` is what the archive says it is - and `?replace=false` keeps what is already there.
 
-A package's backend is the exception: it is written additively however `replace` is set, because one backend may serve several frontends.
+A package's backend is written on the same terms whichever way `replace` is set: the bundle carries the folder's contents, so the folder is made to match it.
 
-The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder rather than just the app being deployed - which is why a backend several frontends share is written additively instead.
+The removal happens after the tree is accepted, so a request that is going to be refused never deletes anything. A folder can hold more than one published app, and replacing it empties the folder rather than just the app being deployed - so several frontends may name one `appLoc`, but each deploy of that backend rewrites it and the last bundle to carry it is what the folder holds. Keeping a folder two bundles both write is about deploying them in order, not merging them.
 
 ### Text and binary file members
 

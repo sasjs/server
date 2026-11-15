@@ -84,16 +84,19 @@ const sendArchiveRefusal = (res: express.Response, err: any) => {
 /**
  * The writes a prepared deploy makes, in the order that keeps a bundle coherent.
  *
- * A package writes its backend first - so a frontend is never live against
- * services that are not deployed yet - and additively, because one backend may
- * serve several frontends and a replacing write would delete the services another
- * app put there. The frontend then replaces `apps/<name>`, which is the whole
- * point of publishing it: the folder is what the bundle says it is.
+ * A package writes its backend first, so a frontend is never live against services
+ * that are not deployed yet, then its frontend.
  *
- * Additive has a consequence worth knowing: a service a later bundle drops keeps
- * being served until someone removes the file, because the deploy cannot tell a
- * service this app stopped carrying from one another app added. Pruning a shared
- * backend is `DELETE /SASjsApi/drive/file`.
+ * Each half REPLACES the folder it lands in: the folder becomes what the bundle
+ * says it holds, so a service the new bundle no longer carries stops being served
+ * and a page it dropped stops being reachable. Several frontends may name one
+ * backend - what an app is, is its frontend - but each deploy of that backend
+ * rewrites it, so the last bundle to carry it is what the folder holds. Keeping a
+ * folder two bundles both write to means deploying them in order, not merging
+ * them.
+ *
+ * A bundle that carries only a backend deploys it and publishes nothing: there is
+ * no frontend to serve, so there is no app to index.
  *
  * A bare tree that a publish names is the frontend itself, so it goes to
  * `apps/<name>` too. Everything else is the older shape, deployed to `appLoc`.
@@ -107,39 +110,52 @@ const writeDeploy = async (
 ) => {
   const { tree, frontend, backend, request } = prepared
 
+  // the folder this deploy writes to, from one source: a legacy bundle may name
+  // it in its manifest, where `publishRequestFor` found it, and the folder written
+  // has to be the folder indexed. A bundle carrying only a backend has no checked
+  // request, so its manifest is read directly - see `PreparedDeploy.appLoc`.
+  const appLoc = request?.appLoc ?? options.appLoc ?? prepared.appLoc
+
   // a bundle that carries services has to say where they go: skipping the write
   // would answer `200` for a deployment whose backend is simply missing, which is
   // the one thing a caller cannot see from the response
-  if (backend !== undefined && request?.appLoc === undefined)
+  if (backend !== undefined && appLoc === undefined)
     throw new ApiError(
       400,
       'This bundle carries a "backend" folder but names no "appLoc" for it: state the backend folder in sasjs.app.json, or in the request.'
     )
 
-  if (frontend !== undefined) {
-    // the package requires a name of a frontend publish, so this is the type
-    // saying what the code already knows - and a guard rather than `String()`,
-    // which would write the frontend to a folder called "undefined"
-    if (request?.name === undefined)
-      throw new ApiError(
-        400,
-        '"name" is required to publish the frontend this bundle carries.'
-      )
+  // the package requires a name of a frontend publish, so this is the type
+  // saying what the code already knows - and a guard rather than `String()`,
+  // which would write the frontend to a folder called "undefined"
+  if (frontend !== undefined && request?.name === undefined)
+    throw new ApiError(
+      400,
+      '"name" is required to publish the frontend this bundle carries.'
+    )
 
-    if (backend !== undefined)
-      await controller.deploy({
-        appLoc: request.appLoc as string,
-        fileTree: backend as any,
-        replace: false
-      })
+  let backendResponse: unknown
 
+  if (backend !== undefined)
+    backendResponse = await controller.deploy({
+      appLoc: appLoc as string,
+      fileTree: backend as any,
+      // replaces: the folder becomes what this bundle carries, so a service the
+      // bundle dropped stops being served
+      replace: true
+    })
+
+  if (frontend !== undefined)
     return controller.deploy({
-      appLoc: frontendFolderOf(request.name),
+      appLoc: frontendFolderOf(request!.name as string),
       fileTree: frontend as any,
       replace: true
     })
-  }
 
+  // backend only: the deploy is the answer, and there is no app to index
+  if (backend !== undefined) return backendResponse
+
+  // neither half: the older shapes, which deploy one tree to the folder they name
   if (request !== undefined && request.streamWebFolder === undefined) {
     if (request.name === undefined)
       throw new ApiError(400, '"name" is required to publish this bundle.')
@@ -151,18 +167,13 @@ const writeDeploy = async (
     })
   }
 
-  // the folder this deploy writes to, from one source: a legacy bundle may name
-  // it in its manifest, where `publishRequestFor` found it, and the folder written
-  // has to be the folder indexed
-  const destination = request?.appLoc ?? options.appLoc
-
   // an ApiError rather than an HttpError, because both deploy routes render this
   // family of refusal through `sendPublishRefusal`: one wording whether the
   // refusal came from the package's checks or from this file's
-  if (destination === undefined) throw new ApiError(400, DEPLOY_NEEDS_FOLDER)
+  if (appLoc === undefined) throw new ApiError(400, DEPLOY_NEEDS_FOLDER)
 
   return controller.deploy({
-    appLoc: destination,
+    appLoc,
     fileTree: tree as any,
     replace: options.replace
   })
