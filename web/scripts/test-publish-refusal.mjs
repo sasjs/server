@@ -38,7 +38,7 @@ const answered = (status, data, statusText = '') => ({
 })
 
 const refusal =
-  'The file "server.json.zip" is not a zip archive: it begins with "------formdata-undici-040361451847", where a zip archive begins with "PK".'
+  'The file "server.json.zip" is not a zip archive: it begins with "------formdata-undici-040361451847", where a zip archive begins with the four bytes "PK\\x03\\x04".'
 
 // ---- the deploy routes' envelope, which is what a refusal actually is
 const envelope = refusalText(
