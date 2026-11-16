@@ -1,5 +1,5 @@
 {
-  "$schema": "https://cli.sasjs.io/sasjslint-schema.json",
+  "$schema": "https://raw.githubusercontent.com/sasjs/lint/main/sasjslint-schema.json",
   "allowedGremlins": [],
   "bannedStrings": ["error ", "error:", "warning ", "warning:"],
   "defaultHeader": "/**{lineEnding}  @file{lineEnding}  @brief <Your brief here>{lineEnding}{lineEnding}  <h4> SAS Macros </h4>{lineEnding}{lineEnding}**/",
