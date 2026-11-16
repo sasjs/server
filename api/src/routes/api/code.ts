@@ -6,6 +6,7 @@ import {
   triggerCodeValidation
 } from '../../utils'
 import { CodeController } from '../../controllers/'
+import { sendRefusal } from '../refusal'
 
 const runRouter = express.Router()
 
@@ -15,16 +16,16 @@ const controller = new CodeController()
  * Answers with the error's own status when it carries one, and a 500 when it does
  * not.
  *
- * `err.code` is how the controllers signal a status (`UnauthorizedError` carries
- * 401, the drive readers 403 and 404). Anything else that throws on the way - a
- * drive root that is not set, a bug in a controller - has no `code`, and
- * `res.status(undefined)` itself throws ERR_HTTP_INVALID_STATUS_CODE from inside
- * the catch, so the client gets no response at all where a 500 is the honest
- * answer. The `code` is deleted so the status is not repeated in the body; every
- * handler in this file answers through here, so they cannot drift apart.
+ * The execute and trigger controllers throw response objects with a numeric
+ * `code`, as does DeployRefusal. Authentication failures are answered by the
+ * middleware before these handlers. Unexpected failures without a numeric code
+ * go through the shared refusal handler, which logs the error and returns a
+ * fixed 500 body without exposing internal details. The code is removed from
+ * expected responses so it is not repeated in the body.
  */
 const sendError = (res: express.Response, err: any) => {
-  const code = typeof err?.code === 'number' ? err.code : 500
+  if (typeof err?.code !== 'number') return sendRefusal(res, err)
+  const code = err.code
 
   if (err && typeof err === 'object') delete err.code
 

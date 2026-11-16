@@ -198,6 +198,8 @@ export class CodeController {
    * Nothing is executed and no SAS source is returned. The payload is the
    * parsed `.sasjslint` document, including any additional settings it contains.
    *
+   * @param filePath a drive-relative path as the Studio editor knows it, e.g.
+   * `/projects/app/run.sas`. Omitted for an untitled buffer.
    * @summary Get the lint rules that apply to a drive path
    */
   @Response(401, 'Unauthorized')

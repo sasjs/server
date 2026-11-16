@@ -109,6 +109,22 @@ describe('the lint-config response schema', () => {
     expect(description).toContain('no SAS source')
   })
 
+  it('documents the drive-relative file path parameter', () => {
+    const spec = parse(
+      fs.readFileSync(
+        path.join(__dirname, '../../../../public/swagger.yaml'),
+        'utf8'
+      )
+    )
+    const parameters = spec.paths['/SASjsApi/code/lint-config'].get.parameters
+    const filePath = parameters.find(
+      (p: { name: string }) => p.name === 'filePath'
+    )
+    expect(filePath.required).toBe(false)
+    expect(filePath.description).toContain('/projects/app/run.sas')
+    expect(filePath.description).toContain('untitled buffer')
+  })
+
   it('names every setting the linter documents', () => {
     expect(everySettingIsNamed).toBe(true)
 
@@ -245,14 +261,22 @@ describe('GET /SASjsApi/code/lint-config', () => {
   it('answers 500 when the failure carries no status of its own', async () => {
     // res.status(undefined) throws from inside the catch, which answers nothing at
     // all; an unexpected failure has to reach the client as a 500
+    const failure = new Error('the drive root is not set')
+    const logger = jest
+      .spyOn(process.logger, 'error')
+      .mockImplementation(() => {})
     const spy = jest
       .spyOn(CodeController.prototype, 'getLintConfig')
-      .mockRejectedValueOnce(new Error('the drive root is not set'))
+      .mockRejectedValueOnce(failure)
 
-    const res = await get().expect(500)
-
-    expect(spy).toHaveBeenCalledTimes(1)
-    expect(res.status).toEqual(500)
+    try {
+      const res = await get().expect(500)
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(res.text).toBe('Internal Server Error')
+      expect(logger).toHaveBeenCalledWith(failure)
+    } finally {
+      logger.mockRestore()
+    }
   })
 
   it("uses the error's own status when it carries one, and drops it from the body", async () => {

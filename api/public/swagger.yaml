@@ -1880,6 +1880,7 @@ paths:
                     bearerAuth: []
             parameters:
                 -
+                    description: "a drive-relative path as the Studio editor knows it, e.g.\n`/projects/app/run.sas`. Omitted for an untitled buffer."
                     in: query
                     name: filePath
                     required: false
