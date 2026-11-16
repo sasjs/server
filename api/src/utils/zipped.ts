@@ -107,14 +107,25 @@ const openingBytes = (bytes: Buffer, count = 32): string => {
  */
 const ZIP_OPENING = openingBytes(ZIP_SIGNATURES[0])
 
-/** Whether the file stops inside a signature: `PK` on its own, `PK` and one more byte. */
-const endsInsideSignature = (bytes: Buffer): boolean =>
-  bytes.length > 0 &&
-  ZIP_SIGNATURES.some(
-    (signature) =>
+/**
+ * The signature a file stops inside, quoted, or `undefined` when it does not.
+ *
+ * Which one matters: `PK\x05` is the beginning of the empty-archive signature and
+ * not of the local-file one, so a refusal that quoted the first signature for
+ * every short file would assert a prefix relation the file does not have.
+ */
+const stopsInsideSignature = (bytes: Buffer): string | undefined => {
+  if (!bytes.length) return undefined
+
+  for (const signature of ZIP_SIGNATURES)
+    if (
       bytes.length < signature.length &&
       signature.subarray(0, bytes.length).equals(bytes)
-  )
+    )
+      return openingBytes(signature)
+
+  return undefined
+}
 
 /**
  * Why a file that is not an archive is not one, in the file's own terms.
@@ -128,8 +139,10 @@ const notAnArchive = (name: string, bytes: Buffer): string => {
   if (bytes.length === 0)
     return `The file "${name}" is empty, where a zip archive begins with the four bytes "${ZIP_OPENING}".`
 
-  if (endsInsideSignature(bytes))
-    return `The file "${name}" is not a zip archive: it holds ${bytes.length} byte(s), so it ends inside "${ZIP_OPENING}", the four bytes a zip archive begins with.`
+  const stopped = stopsInsideSignature(bytes)
+
+  if (stopped)
+    return `The file "${name}" is not a zip archive: it holds ${bytes.length} byte(s), so it ends inside "${stopped}", the four bytes a zip archive begins with.`
 
   return `The file "${name}" is not a zip archive: it begins with "${openingBytes(
     bytes

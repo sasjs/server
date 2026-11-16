@@ -311,6 +311,23 @@ describe('a file that is not an archive', () => {
     expect(oneMore.message).toContain('it holds 3 byte(s)')
   })
 
+  it('quotes the signature the file actually stops inside', async () => {
+    // `PK\x05` begins the EMPTY-archive signature, not the local-file one: quoting
+    // the first signature for every short file would assert a prefix the file does
+    // not have
+    const empty = await extractFileTreeFromZip(
+      asFile(Buffer.from([0x50, 0x4b, 0x05]), 'empty-cut.zip')
+    ).catch((error) => error)
+
+    expect(empty.message).toContain('it ends inside "PK\\x05\\x06"')
+
+    const spanned = await extractFileTreeFromZip(
+      asFile(Buffer.from([0x50, 0x4b, 0x07]), 'spanned-cut.zip')
+    ).catch((error) => error)
+
+    expect(spanned.message).toContain('it ends inside "PK\\x07\\x08"')
+  })
+
   it('keeps the reader reason for an archive it cannot read, with the file name', async () => {
     // a zip whose central directory signature is damaged: it begins with PK, so
     // the opening check passes and the reader is the one that refuses it
