@@ -184,7 +184,7 @@ describe('Swagger documentation', () => {
     expect(yaml.includes('{@link')).toBe(false)
   }, 120000)
 
-  it('is regenerated when the controllers change', async () => {
+  it('is regenerated when the controllers or schema types change', async () => {
     const committed = fs.readFileSync(committedSpecPath, 'utf8')
     const fresh = await generate(true)
 

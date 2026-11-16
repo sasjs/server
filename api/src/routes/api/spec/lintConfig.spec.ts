@@ -70,7 +70,9 @@ describe('the lint-config response schema', () => {
       spec.components.schemas[settings.severityLevel.$ref.split('/').pop()]
     expect(severity.additionalProperties.type).toBe('string')
     expect(severity.additionalProperties.enum.sort()).toEqual(['error', 'warn'])
-    expect(severity.description).toContain('default')
+    expect(severity.description).toEqual(
+      lintSchema.properties.severityLevel.description.split('*/').join('*&#47;')
+    )
   })
 
   it('publishes the linter descriptions for every documented setting', () => {
