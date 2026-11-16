@@ -238,9 +238,11 @@ driveRouter.post(
     } else if (isArchiveName(req.file.originalname)) {
       // a file named .zip that the browser did not type as an archive: read as a
       // deploy document it is refused for "invalid JSON content", which names
-      // neither the file nor what is wrong with it
+      // neither the file nor what is wrong with it. Answered as the deploy routes'
+      // envelope rather than a bare string, because the sentence carries a name the
+      // caller chose - a string body is typed `text/html`, and a name is markup
       deleteFile(req.file.path)
-      return res.status(400).send(archiveError)
+      return res.status(400).send({ status: 'failure', message: archiveError })
     } else {
       fileContent = await readFile(req.file.path)
     }

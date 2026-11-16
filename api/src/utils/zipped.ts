@@ -187,6 +187,17 @@ const readArchive = async <T>(
   }
 }
 
+/**
+ * Whether a file is an archive, as far as its name and the type it arrived with
+ * say so.
+ *
+ * The refusal names the FILE and what it was uploaded as, because that is the
+ * sentence the caller can act on - `"file" has invalid type application/octet-stream`
+ * names the multipart field and not the build the admin chose. It does not claim
+ * the file is not an archive: the bytes have not been read here, and a `.zip` the
+ * browser typed as `application/octet-stream` may well be a perfectly good one.
+ * What the bytes are is `readArchive`'s answer, and it says so in its own sentence.
+ */
 export const isZipFile = (
   file: Express.Multer.File
 ): { error?: string; value?: Express.Multer.File } => {
@@ -198,7 +209,11 @@ export const isZipFile = (
   const allowedMimetypes = ['application/zip', 'application/x-zip-compressed']
 
   if (!allowedMimetypes.includes(file.mimetype))
-    return { error: `"file" has invalid type ${file.mimetype}` }
+    return {
+      error: `The file "${file.originalname}" arrived as "${file.mimetype}", where an archive arrives as "${allowedMimetypes.join(
+        '" or "'
+      )}".`
+    }
 
   return { value: file }
 }

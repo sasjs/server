@@ -475,7 +475,7 @@ describe('a deploy of a package', () => {
     expect(frontends()).toEqual(before)
   })
 
-  it('refuses a zip the browser did not type as one, stating the type', async () => {
+  it('refuses a zip the browser did not type as one, naming the file and its type', async () => {
     const zip = new AdmZip()
     zip.addFile('index.html', Buffer.from('<h1>typed</h1>', 'utf8'))
 
@@ -489,8 +489,13 @@ describe('a deploy of a package', () => {
       .expect(400)
 
     // read as a deploy document it would be refused for "invalid JSON content",
-    // which is not what is wrong with it
-    expect(res.text).toBe('"file" has invalid type application/octet-stream')
+    // which is not what is wrong with it - and the sentence names the build the
+    // admin chose rather than the multipart field it travelled in
+    expect(res.body).toEqual({
+      status: 'failure',
+      message:
+        'The file "bundle.zip" arrived as "application/octet-stream", where an archive arrives as "application/zip" or "application/x-zip-compressed".'
+    })
   })
 
   it('removes the frontend through the deploy route too, so both removals agree', async () => {
