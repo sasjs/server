@@ -19,6 +19,17 @@ import {
   APP_STREAM_PREFIXES
 } from '../utils/routePrefixes'
 
+/**
+ * The tier's refusal when a request names both of its parameters.
+ *
+ * One sentence, one place per side: this server mints it, and the mock host in
+ * sasjs/cli answers it verbatim so a page behaves here as it does there. Both
+ * are asserted, and `docs/pages/apps.md` names the other copy - a message that
+ * only has to change in one file is a message that changes in one file.
+ */
+export const TIER_NEEDS_ONE_PARAMETER =
+  'Exactly one of "_program" and "_FILE" may be given.'
+
 export const setupRoutes = (app: Express) => {
   // First, so a bookmark of an old path lands on the short one rather than on
   // the app shell (which would resolve it to Home).
@@ -56,11 +67,16 @@ export const setupRoutes = (app: Express) => {
 
       // one file, or one program, never both: the two answer different things,
       // and choosing silently would answer a question the caller did not ask -
-      // the same rule the drive read applies to its own two names
+      // the same rule the drive read applies to its own two names. The drive's
+      // pair has a constant in @sasjs/api (`ONE_NAME_ONLY`); this one is the
+      // tier's own routing rule, so it is minted here rather than in the
+      // package - and its one other copy is the sentence the mocked host answers
+      // on the same two parameters (sasjs/cli, mockSite/assets/sw.js, the
+      // constant `TIER_NEEDS_ONE_PARAMETER`). Both are pinned by a spec that
+      // asserts the exact wording, and docs/pages/apps.md says where the copy
+      // lives, so a rewording cannot pass one repo and miss the other silently.
       if (req.query._program !== undefined && req.query._FILE !== undefined)
-        return res
-          .status(400)
-          .send('Exactly one of "_program" and "_FILE" may be given.')
+        return res.status(400).send(TIER_NEEDS_ONE_PARAMETER)
 
       // a program to run: the estate's other parameter, on the tier that stands
       // where the estate's tiers stand. The method travels too - the adapter
