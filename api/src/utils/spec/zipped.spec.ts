@@ -12,7 +12,11 @@ import AdmZip from 'adm-zip'
 
 import { checkDeployTree } from '@sasjs/api'
 import type { DeployLimits } from '@sasjs/api'
-import { extractDeployDocumentFromZip, extractFileTreeFromZip } from '../zipped'
+import {
+  extractDeployDocumentFromZip,
+  extractFileTreeFromZip,
+  isZipFile
+} from '../zipped'
 
 let workdir: string
 
@@ -357,5 +361,40 @@ describe('a file that is not an archive', () => {
     expect(refusal.message).toContain(
       '"cut.zip" could not be read as a zip archive'
     )
+  })
+})
+
+/**
+ * The two questions `isZipFile` answers, each in the file's own terms.
+ *
+ * Both name the build the admin chose rather than the multipart field it travelled
+ * in: `"file" has invalid type application/octet-stream` is a sentence about the
+ * form, not about the upload. Only the type refusal is rendered by the deploy route
+ * - a name that does not end `.zip` is read as a deploy document - so these pin the
+ * wording of both rather than the route's rendering, which `deployPackage.spec.ts`
+ * covers.
+ */
+describe('whether an upload is an archive, by name and type', () => {
+  const upload = (originalname: string, mimetype: string) =>
+    ({ originalname, mimetype }) as Express.Multer.File
+
+  it('names the file a name did not make an archive', () => {
+    expect(isZipFile(upload('build.json', 'application/json')).error).toBe(
+      'The file "build.json" was not taken as an archive: its name ends ".json", where an archive\'s name ends ".zip".'
+    )
+  })
+
+  it('names the file and the type it arrived as', () => {
+    expect(
+      isZipFile(upload('bundle.zip', 'application/octet-stream')).error
+    ).toBe(
+      'The file "bundle.zip" arrived as "application/octet-stream", where an archive arrives as "application/zip" or "application/x-zip-compressed".'
+    )
+  })
+
+  it('takes a zip that is a zip by both', () => {
+    const file = upload('bundle.zip', 'application/x-zip-compressed')
+
+    expect(isZipFile(file).value).toBe(file)
   })
 })

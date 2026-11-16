@@ -189,14 +189,20 @@ const readArchive = async <T>(
 
 /**
  * Whether a file is an archive, as far as its name and the type it arrived with
- * say so.
+ * say so. Both refusals name the file, for the reason below.
  *
- * The refusal names the FILE and what it was uploaded as, because that is the
- * sentence the caller can act on - `"file" has invalid type application/octet-stream`
- * names the multipart field and not the build the admin chose. It does not claim
- * the file is not an archive: the bytes have not been read here, and a `.zip` the
- * browser typed as `application/octet-stream` may well be a perfectly good one.
- * What the bytes are is `readArchive`'s answer, and it says so in its own sentence.
+ * Each says what was FOUND and what was expected, because that is the sentence the
+ * caller can act on - `"file" has invalid type application/octet-stream` names the
+ * multipart field, not the build the admin chose. Neither claims the file is not an
+ * archive: the bytes have not been read here, and a `.zip` the browser typed as
+ * `application/octet-stream` may be a perfectly good one. What the bytes are is
+ * `readArchive`'s answer, and it says so in its own sentence.
+ *
+ * The deploy route renders only the TYPE refusal. A file whose name does not end
+ * `.zip` is read as a deploy document rather than refused as an archive - that is
+ * how the older `build.json` shape still works - so the extension sentence is for a
+ * caller asking `isZipFile` about a file the route would not treat as an archive at
+ * all, and it is written as a sentence for whoever asks.
  */
 export const isZipFile = (
   file: Express.Multer.File
@@ -204,7 +210,9 @@ export const isZipFile = (
   const fileExtension = path.extname(file.originalname)
 
   if (!isArchiveName(file.originalname))
-    return { error: `"file" has invalid extension ${fileExtension}` }
+    return {
+      error: `The file "${file.originalname}" was not taken as an archive: its name ends "${fileExtension}", where an archive's name ends ".zip".`
+    }
 
   const allowedMimetypes = ['application/zip', 'application/x-zip-compressed']
 
