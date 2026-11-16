@@ -73,7 +73,7 @@ describe('the lint-config response schema', () => {
     expect(severity.description).toContain('default')
   })
 
-  it('publishes complete descriptions for the previously truncated settings', () => {
+  it('publishes the linter descriptions for every documented setting', () => {
     const spec = parse(
       fs.readFileSync(
         path.join(__dirname, '../../../../public/swagger.yaml'),
@@ -81,39 +81,30 @@ describe('the lint-config response schema', () => {
       )
     )
     const settings = spec.components.schemas.LintConfigJson.properties
-    const keys = [
-      'noBannedStrings',
-      'hasDoxygenHeader',
-      'noGremlins',
-      'noMalformedMacroCalls',
-      'lowerCaseMacroNames',
-      'minMacroNameLength',
-      'noNestedCommentsInHeader',
-      'noSingleAsteriskComments',
-      'noUndeclaredMacros',
-      'noUnusedMacros',
-      'noXcmd',
-      'noUnusedLibnames',
-      'ignoredMacros'
-    ] as const
-    for (const key of keys) {
+    const descriptions = lintSchema.properties as Record<
+      string,
+      { description: string }
+    >
+    for (const key of Object.keys(settings)) {
+      if (key === '$schema' || key === 'severityLevel') continue
       expect(settings[key].description).toEqual(
-        lintSchema.properties[key].description.split('*/').join('*&#47;')
+        descriptions[key].description.split('*/').join('*&#47;')
       )
     }
   })
 
-  it('describes the returned configuration without claiming no file content', () => {
+  it('documents the parsed lint configuration as the response', () => {
     const spec = parse(
       fs.readFileSync(
         path.join(__dirname, '../../../../public/swagger.yaml'),
         'utf8'
       )
     )
-    const operation = spec.paths['/SASjsApi/code/lint-config'].get
-    const text = JSON.stringify(operation)
-    expect(text).not.toContain('no file content is returned')
-    expect(text).toContain('no SAS source')
+    const description = spec.paths['/SASjsApi/code/lint-config'].get.description
+    expect(description.replace(/\s+/g, ' ')).toContain(
+      'The payload is the parsed `.sasjslint` document, including any additional settings it contains.'
+    )
+    expect(description).toContain('no SAS source')
   })
 
   it('names every setting the linter documents', () => {
