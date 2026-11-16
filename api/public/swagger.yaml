@@ -557,6 +557,146 @@ components:
                 - code
             type: object
             additionalProperties: false
+        Record_string.warn-or-error_:
+            properties: {}
+            type: object
+            description: 'Construct a type with a set of properties K of type T'
+        LintConfigJson:
+            description: "A `.sasjslint` document: the rules as they sit on the drive.\n\nThis is the payload `GET /SASjsApi/code/lint-config` answers with, and the\ndocument a client hands to `new LintConfig(...)`. It is spelled out rather\nthan typed as `object` because tsoa reads this interface to write the\nresponse schema: `object` emits `additionalProperties: false` with no\nproperties, which leaves a generated client unable to read a single field.\n\nThe settings are `@sasjs/lint`'s own, so the schema they come from is the\none to compare against: `sasjslint-schema.json`. A spec does exactly that\n(lintConfigSchema.spec.ts), so a rule added upstream fails the suite until\nit is named here."
+            properties:
+                $schema:
+                    type: string
+                    description: 'The schema an editor validates the file against, when the file names one.'
+                noBannedStrings:
+                    type: boolean
+                    description: 'Reports lines that contain a string listed in bannedStrings, such as a word that looks like...'
+                noEncodedPasswords:
+                    type: boolean
+                    description: 'Enforces no encoded passwords such as {SAS001} or {SASENC} in lines of SAS code'
+                hasDoxygenHeader:
+                    type: boolean
+                    description: 'Enforces a Doxygen header at the start of each SAS file: a comment block that opens with...'
+                defaultHeader:
+                    type: string
+                    description: 'This sets the default program header - applies when a SAS program does NOT begin with `/**`'
+                noGremlins:
+                    type: boolean
+                    description: 'Captures problematic characters such as zero-width whitespace and others that look valid but...'
+                noMacroIfInOpenCode:
+                    type: boolean
+                    description: 'Reports %if used in open code - that is, outside every %macro definition in the file'
+                noMalformedMacroCalls:
+                    type: boolean
+                    description: 'Reports a macro call whose argument list does not parse as written: a call that never closes...'
+                bannedStrings:
+                    items:
+                        type: string
+                    type: array
+                    description: 'An array of strings for the noBannedStrings rule to report'
+                allowedGremlins:
+                    items:
+                        type: string
+                    type: array
+                    description: 'An array of hex codes that represents allowed gremlins'
+                hasMacroNameInMend:
+                    type: boolean
+                    description: 'Enforces the presence of macro names in %mend statements'
+                hasMacroParentheses:
+                    type: boolean
+                    description: 'Enforces the presence of parentheses in macro definitions'
+                indentationMultiple:
+                    type: number
+                    format: double
+                    description: 'Enforces a configurable multiple for the number of spaces for indentation'
+                keywordCase:
+                    type: string
+                    description: 'The case the formatter gives SAS keywords, once it is given a layout engine (see formatText)'
+                lowerCaseFileNames:
+                    type: boolean
+                    description: 'Enforces no uppercase characters in file names'
+                lowerCaseMacroNames:
+                    type: boolean
+                    description: 'Enforces no uppercase characters in macro names, in the <h4> SAS Macros </h4> header and in...'
+                maxLineLength:
+                    type: number
+                    format: double
+                    description: 'Enforces a configurable maximum line length'
+                maxHeaderLineLength:
+                    type: number
+                    format: double
+                    description: 'Enforces a configurable maximum line length for header section'
+                maxDataLineLength:
+                    type: number
+                    format: double
+                    description: 'Enforces a configurable maximum line length for data section'
+                minMacroNameLength:
+                    type: number
+                    format: double
+                    description: 'Sets the shortest macro name the linter treats as a macro name, and the shortest a file may...'
+                noNestedCommentsInHeader:
+                    type: boolean
+                    description: 'Disallows a close marker inside the Doxygen header, which SAS reads as the end of the header...'
+                noNestedMacros:
+                    type: boolean
+                    description: 'Enforces the absence of nested macro definitions'
+                noSingleAsteriskComments:
+                    type: boolean
+                    description: 'Enforces the absence of SAS comment statements that begin with a single asterisk, such as `*...'
+                noSpacesInFileNames:
+                    type: boolean
+                    description: 'Enforces no spaces in file names'
+                noTabs:
+                    type: boolean
+                    description: 'Enforces no indentation using tabs'
+                noTrailingSpaces:
+                    type: boolean
+                    description: 'Enforces no trailing spaces in lines of SAS code'
+                noUndeclaredMacros:
+                    type: boolean
+                    description: 'Reports a warning for each macro a file invokes without declaring it in the `<h4> SAS Macros...'
+                noUnusedMacros:
+                    type: boolean
+                    description: 'Reports a warning for each macro declared in the `<h4> SAS Macros </h4>` section of the...'
+                noXcmd:
+                    type: boolean
+                    description: 'Reports the statements and functions that run an operating system command, which need XCMD:...'
+                noUnusedLibnames:
+                    type: boolean
+                    description: 'Reports a warning for each libref a file assigns with a LIBNAME statement and never uses in...'
+                lineEndings:
+                    type: string
+                    description: 'Enforces the configured terminating character for each line, including the last one'
+                strictMacroDefinition:
+                    type: boolean
+                    description: 'Enforces Macro Definition syntax'
+                ignoreList:
+                    items:
+                        type: string
+                    type: array
+                    description: 'An array of paths or path patterns to ignore when linting'
+                ignoredLibnames:
+                    items:
+                        type: string
+                    type: array
+                    description: 'An array of librefs that `noUnusedLibnames` leaves alone'
+                ignoredMacros:
+                    items:
+                        type: string
+                    type: array
+                    description: 'An array of macros that `noUndeclaredMacros` treats as declared: an entry is neither...'
+                hasRequiredMacroOptions:
+                    type: boolean
+                    description: 'Enforces required macro options as defined by requiredMacroOptions'
+                requiredMacroOptions:
+                    items:
+                        type: string
+                    type: array
+                    description: 'An array of macro options to require all macros to include'
+                severityLevel:
+                    $ref: '#/components/schemas/Record_string.warn-or-error_'
+                    description: 'An object which specifies the severity level of each rule'
+            type: object
+            additionalProperties: false
         FormatCodePayload:
             properties:
                 code:
@@ -1723,8 +1863,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                additionalProperties: false
-                                type: object
+                                $ref: '#/components/schemas/LintConfigJson'
                 '401':
                     description: Unauthorized
             description: "Returns the lint rules that apply to a file on the drive, as JSON.\n\nThe Studio formats code in the browser, where the program already is; what\nit cannot decide for itself is which `.sasjslint` wins, so this answers that\nquestion with the rules rather than making the client ship the program to\nhave it formatted. The walk is the same one the lint and format routes use.\n\nNothing is executed and no file content is returned: the payload is a rules\nobject a few hundred bytes long."

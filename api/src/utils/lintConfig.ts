@@ -3,6 +3,7 @@ import { createFile, fileExists, readFile } from '@sasjs/utils'
 import { LintConfig } from '@sasjs/lint'
 import { getFilesFolder } from './file'
 import { resolveWithinDrive } from './resolveWithinDrive'
+import { LintConfigJson } from '../types'
 
 /**
  * The rules a drive with no `.sasjslint` of its own is seeded with.
@@ -78,7 +79,7 @@ export const getDriveLintConfig = async (
  */
 export const getDriveLintConfigObject = async (
   filePath?: string
-): Promise<object> => {
+): Promise<LintConfigJson> => {
   const rootConfig = await readConfigObject(getDefaultLintConfigPath())
 
   if (filePath) {
@@ -104,7 +105,7 @@ export const getDriveLintConfigObject = async (
   // No file named, a path that escapes the drive, no `.sasjslint` anywhere on
   // the walk, or an unparsable drive-root file: the drive-root rules apply,
   // with the package default standing in when even that file cannot be read.
-  return rootConfig ?? defaultLintConfiguration
+  return rootConfig ?? (defaultLintConfiguration as LintConfigJson)
 }
 
 /**
@@ -115,7 +116,9 @@ export const getDriveLintConfigObject = async (
  * the author wrote are not applied and nothing else says so. A file that is
  * merely absent is the normal case in the walk and stays quiet.
  */
-const readConfigObject = async (configPath: string): Promise<object | null> => {
+const readConfigObject = async (
+  configPath: string
+): Promise<LintConfigJson | null> => {
   const content = await readFile(configPath).catch(() => null)
   if (content === null) return null
 

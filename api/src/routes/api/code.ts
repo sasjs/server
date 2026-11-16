@@ -11,6 +11,26 @@ const runRouter = express.Router()
 
 const controller = new CodeController()
 
+/**
+ * Answers with the error's own status when it carries one, and a 500 when it does
+ * not.
+ *
+ * `err.code` is how the controllers signal a status (`UnauthorizedError` carries
+ * 401, the drive readers 403 and 404). Anything else that throws on the way - a
+ * drive root that is not set, a bug in a controller - has no `code`, and
+ * `res.status(undefined)` itself throws ERR_HTTP_INVALID_STATUS_CODE from inside
+ * the catch, so the client gets no response at all where a 500 is the honest
+ * answer. The `code` is deleted so the status is not repeated in the body; every
+ * handler in this file answers through here, so they cannot drift apart.
+ */
+const sendError = (res: express.Response, err: any) => {
+  const code = typeof err?.code === 'number' ? err.code : 500
+
+  if (err && typeof err === 'object') delete err.code
+
+  res.status(code).send(err)
+}
+
 runRouter.post('/execute', async (req, res) => {
   const { error, value: body } = runCodeValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
@@ -25,11 +45,7 @@ runRouter.post('/execute', async (req, res) => {
 
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err)
+    sendError(res, err)
   }
 })
 
@@ -43,11 +59,7 @@ runRouter.post('/trigger', async (req, res) => {
     res.status(200)
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err)
+    sendError(res, err)
   }
 })
 
@@ -59,11 +71,7 @@ runRouter.post('/lint', async (req, res) => {
     const response = await controller.lintCode(body)
     res.send(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err)
+    sendError(res, err)
   }
 })
 
@@ -74,11 +82,7 @@ runRouter.get('/lint-config', async (req, res) => {
 
     res.send(await controller.getLintConfig(filePath))
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err)
+    sendError(res, err)
   }
 })
 
@@ -94,11 +98,7 @@ runRouter.post('/format', async (req, res) => {
     // swagger spec declares nor one a JSON client parses.
     res.json(response)
   } catch (err: any) {
-    const statusCode = err.code
-
-    delete err.code
-
-    res.status(statusCode).send(err)
+    sendError(res, err)
   }
 })
 

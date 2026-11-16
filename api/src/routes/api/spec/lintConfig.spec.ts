@@ -8,8 +8,11 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import request from 'supertest'
 
+import lintSchema from '@sasjs/lint/sasjslint-schema.json'
+
 import appPromise from '../../../app'
-import { UserController } from '../../../controllers/'
+import { LintConfigJson } from '../../../types'
+import { CodeController, UserController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
 import {
   getDriveLintConfig,
@@ -37,6 +40,29 @@ const projectRules = {
   indentation: 2,
   severityLevel: { indentation: 'warn' }
 }
+
+/**
+ * The response schema is generated from `LintConfigJson`, so a setting the linter
+ * documents but the interface does not name is a field a generated client cannot
+ * read. This is a compile-time assertion rather than a runtime one: if
+ * `@sasjs/lint` adds a rule, `MissingSetting` stops being `never` and the
+ * assignment fails the suite's typecheck until the interface names it.
+ */
+type MissingSetting = Exclude<
+  keyof typeof lintSchema.properties,
+  keyof LintConfigJson
+>
+const everySettingIsNamed: MissingSetting extends never ? true : never = true
+
+describe('the lint-config response schema', () => {
+  it('names every setting the linter documents', () => {
+    expect(everySettingIsNamed).toBe(true)
+
+    // a silent zero would make the assertion above vacuous, so the count is
+    // checked too: the linter documents dozens of settings, not none
+    expect(Object.keys(lintSchema.properties).length).toBeGreaterThan(20)
+  })
+})
 
 describe('GET /SASjsApi/code/lint-config', () => {
   let app: Express
@@ -140,6 +166,32 @@ describe('GET /SASjsApi/code/lint-config', () => {
     expect(Object.keys(res.body).sort()).toEqual(
       Object.keys(projectRules).sort()
     )
+  })
+
+  it('answers 500 when the failure carries no status of its own', async () => {
+    // res.status(undefined) throws from inside the catch, which answers nothing at
+    // all; an unexpected failure has to reach the client as a 500
+    const spy = jest
+      .spyOn(CodeController.prototype, 'getLintConfig')
+      .mockRejectedValueOnce(new Error('the drive root is not set'))
+
+    const res = await get().expect(500)
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(res.status).toEqual(500)
+  })
+
+  it("uses the error's own status when it carries one, and drops it from the body", async () => {
+    const error: any = new Error('not allowed')
+    error.code = 403
+
+    jest
+      .spyOn(CodeController.prototype, 'getLintConfig')
+      .mockRejectedValueOnce(error)
+
+    const res = await get().expect(403)
+
+    expect(res.body.code).toBeUndefined()
   })
 
   it('is the same walk the lint and format routes use', async () => {

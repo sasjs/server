@@ -13,7 +13,7 @@ import {
 import { Diagnostic, formatText } from '@sasjs/lint'
 import { getFormatEngine } from '../utils/formatEngine'
 import { ExecutionController, getSessionController } from './internal'
-import { TriggerResponse } from '../types'
+import { LintConfigJson, TriggerResponse } from '../types'
 import {
   getPreProgramVariables,
   getUserAutoExec,
@@ -202,7 +202,9 @@ export class CodeController {
    */
   @Response(401, 'Unauthorized')
   @Get('/lint-config')
-  public async getLintConfig(@Query() filePath?: string): Promise<object> {
+  public async getLintConfig(
+    @Query() filePath?: string
+  ): Promise<LintConfigJson> {
     return getDriveLintConfigObject(filePath)
   }
 
