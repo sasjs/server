@@ -7,7 +7,8 @@ import { ApiError, frontendFolderOf, isApiError } from '@sasjs/api'
 import {
   DEPLOY_NEEDS_FOLDER,
   prepareDeploy,
-  publishDeployedApp
+  publishDeployedApp,
+  sendDeploymentFile
 } from '../../utils'
 import type { PreparedDeploy } from '../../utils'
 
@@ -373,6 +374,14 @@ driveRouter.delete('/deploy', async (req, res) => {
 })
 
 driveRouter.get('/file', async (req, res) => {
+  // A streamed deployment links every asset through `_FILE=<path>`, the
+  // spelling SAS Viya's job execution route answers, so one build opens on
+  // either host. The read is the same operation as `path=` - one file, the same
+  // permission rule on the same route - and only its typing differs: a page or
+  // a script has to arrive as itself, not as bytes.
+  if (typeof req.query._FILE === 'string')
+    return sendDeploymentFile(req, res, req.query._FILE)
+
   const { error: errQ, value: query } = fileParamValidation(req.query)
 
   if (errQ) return res.status(400).send(errQ.details[0].message)

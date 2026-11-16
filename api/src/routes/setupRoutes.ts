@@ -13,7 +13,11 @@ import {
 } from '../middlewares'
 import { createViyaRouter, viyaGuard } from './viya'
 import { isViyaEmulationEnabled, viyaServices } from './viya/services'
-import { API_PREFIXES, APP_STREAM_PREFIXES } from '../utils/routePrefixes'
+import {
+  API_PREFIX,
+  API_PREFIXES,
+  APP_STREAM_PREFIXES
+} from '../utils/routePrefixes'
 
 export const setupRoutes = (app: Express) => {
   // First, so a bookmark of an old path lands on the short one rather than on
@@ -24,6 +28,34 @@ export const setupRoutes = (app: Express) => {
   // permission model and @sasjs/adapter speak; `/api` is the one a reader
   // types. See utils/routePrefixes.ts.
   API_PREFIXES.forEach((prefix) => app.use(prefix, apiRouter))
+
+  /**
+   * The Viya spelling of the streaming read, kept so a build made for an
+   * estate opens on this server unmodified.
+   *
+   * A streamed frontend links every asset through `/SASJobExecution?_FILE=`,
+   * which is the address the estate answers and the address a build cannot
+   * rewrite at deploy time. The request is handed to the API as the path it
+   * stands for - `/SASjsApi/drive/file` - so the same guard, the same
+   * permission rule and the same handler answer it: this is a second spelling
+   * of one operation, not a second operation that could drift from it.
+   */
+  app.use('/SASJobExecution', (req, res, next) => {
+    if (req.method !== 'GET' || typeof req.query._FILE !== 'string')
+      return next()
+
+    const { url, baseUrl } = req
+
+    req.url = `/drive/file?_FILE=${encodeURIComponent(req.query._FILE)}`
+    req.baseUrl = API_PREFIX
+
+    return apiRouter(req, res, (error?: unknown) => {
+      req.url = url
+      req.baseUrl = baseUrl
+
+      next(error as Error)
+    })
+  })
 
   // `app.use` rather than passing the router directly, so the CSRF middleware
   // and the router both see the same mount point however it is spelled.

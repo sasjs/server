@@ -161,6 +161,20 @@ An app answers on two URLs.
 
 The id is what the permission model speaks, and it is the handle every removal names. A rename does not exist: an app published as a frontend IS its name, so a new name is a new app.
 
+## A streamed build, served from Drive
+
+A build made with `streamWeb` in the target's `streamConfig` (`sasjs web`, or `sasjs cbd`) writes an entry page whose every asset link names the file by path:
+
+```
+<script src="/SASJobExecution?_FILE=/Public/4gl/myapp/services/web/main.4f3a9c1d.js"></script>
+```
+
+That spelling is SAS Viya's, and this server answers it. `GET /SASJobExecution?_FILE=<path>` is the same read as `GET /SASjsApi/drive/file?_FILE=<path>`: one file out of the drive, typed by its extension, so a page, a script, a stylesheet or a font arrives as itself rather than as bytes. A build made for an estate can therefore be deployed to the drive at the `appLoc` it names and opened here, which is how a streaming fault is reproduced without an estate to reproduce it on.
+
+What the two spellings share is everything that decides access: the rule on `/SASjsApi/drive/file` governs both, so a caller who may not read the drive reads no asset, and a path that climbs out of the drive is refused with `400`. A file that is not there answers `202` with `Parameter Error` and `File error`, the way the estate answers rather than a `404`, so a missing asset looks the same in both places. Hashed asset names are cached immutably and everything else revalidates, as they are on an app's own route.
+
+Where the assets land is the build's business, not this server's. A SASjs server target writes the folder itself; a build made for an estate is deployed to `<appLoc>/services/<streamWebFolder>` and opened at `<server>/SASJobExecution?_FILE=<appLoc>/services/<streamServiceName>.html`.
+
 ## One pack, either run time
 
 A SASjs Server runs programs as SAS or as JavaScript, chosen by `RUN_TIMES`. A deployment can carry both: the SAS service `services/common/configure` and the JS program `services/common/configure.js` sit side by side under the app's folder, and the run time decides which one runs. A pack built for a server that runs JS - the `server` target of a SASjs app with its JS mocks in `serviceFolders` - therefore works on either without a second build, and a browser-hosted site (which is a JS host) runs the same programs.
