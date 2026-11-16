@@ -13,15 +13,17 @@ const runRouter = express.Router()
 const controller = new CodeController()
 
 /**
- * Answers with the error's own status when it carries one, and a 500 when it does
- * not.
+ * Answers numeric `code` responses directly and delegates other errors to the
+ * shared refusal handler.
  *
  * The execute and trigger controllers throw response objects with a numeric
  * `code`, as does DeployRefusal. Authentication failures are answered by the
- * middleware before these handlers. Unexpected failures without a numeric code
- * go through the shared refusal handler, which logs the error and returns a
- * fixed 500 body without exposing internal details. The code is removed from
- * expected responses so it is not repeated in the body.
+ * middleware before these handlers. The code is removed from these responses
+ * so it is not repeated in the body.
+ *
+ * For errors without a numeric code, the refusal handler returns a valid
+ * HttpError's 4xx status and message. It logs 5xx failures and sends a fixed
+ * body, preserving a valid HttpError's 5xx status; other errors become 500.
  */
 const sendError = (res: express.Response, err: any) => {
   if (typeof err?.code !== 'number') return sendRefusal(res, err)
