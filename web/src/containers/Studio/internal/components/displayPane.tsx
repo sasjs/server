@@ -33,9 +33,17 @@ const placeholder = (text: string) => (
  * looks for a scrolling box that is not this one, and when the document arrives
  * after the load there is nothing to jump to anyway.
  */
-const MarkdownPane = ({ text }: { text: string }) => {
+const MarkdownPane = ({
+  filePath,
+  text
+}: {
+  filePath: string
+  text: string
+}) => {
   const pane = useRef<HTMLDivElement>(null)
   const html = useMemo(() => markdownToHtml(text), [text])
+  /** The document-and-fragment already honoured, so a re-render keeps its place. */
+  const honoured = useRef('')
 
   const scrollToAnchor = useCallback((id: string) => {
     const target = pane.current?.querySelector(
@@ -45,13 +53,33 @@ const MarkdownPane = ({ text }: { text: string }) => {
     if (target) target.scrollIntoView({ block: 'start' })
   }, [])
 
+  /**
+   * Lands on a section and records that this document has been taken there.
+   *
+   * The record is what stops the effect below from pulling a reader back: once a
+   * link has been followed, the hash stays in the URL, and without it every
+   * re-render - a keystroke, a save, an external edit - would scroll the pane to
+   * that section again.
+   */
+  const followHash = useCallback(
+    (id: string) => {
+      honoured.current = `${filePath}#${id}`
+      scrollToAnchor(id)
+    },
+    [filePath, scrollToAnchor]
+  )
+
   // A URL that names a section opens on it: `?filePath=...SPFinit.md#helpinfo` is
   // the link people share, and it has to land where it says. The document is not
-  // here when the page loads, so this runs again as the text arrives.
+  // here when the page loads, so this runs again as the text arrives - once per
+  // document, which is what `honoured` counts.
   useEffect(() => {
     const id = decodeURIComponent(window.location.hash.replace(/^#/, ''))
-    if (id) scrollToAnchor(id)
-  }, [html, scrollToAnchor])
+
+    if (!id || honoured.current === `${filePath}#${id}`) return
+
+    followHash(id)
+  }, [html, filePath, followHash])
 
   return (
     <Box
@@ -67,7 +95,7 @@ const MarkdownPane = ({ text }: { text: string }) => {
         // reader is already looking at.
         event.preventDefault()
         const id = decodeURIComponent(link.hash.replace(/^#/, ''))
-        scrollToAnchor(id)
+        followHash(id)
         window.history.replaceState(null, '', link.hash)
       }}
       sx={{
@@ -172,7 +200,8 @@ export const DisplayPane = ({
 }) => {
   const kind = displayKindOf(filePath)
 
-  if (kind === 'markdown') return <MarkdownPane text={text} />
+  if (kind === 'markdown')
+    return <MarkdownPane filePath={filePath} text={text} />
   if (kind === 'csv') return <CsvPane text={text} />
   // Keyed on the file: the open-branch set is state of the view, and carrying it
   // across a switch would show the next document with the last one's branches

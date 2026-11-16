@@ -71,6 +71,28 @@ describe('Studio in a browser', () => {
    * proving that a link moved the reader means reading this element's offset,
    * not the window's.
    */
+  /** Puts the pane the rendered Markdown lives in back at its top. */
+  const scrollPaneToTop = () =>
+    page.evaluate(() => {
+      let element =
+        document.querySelector('h2#first-section')?.parentElement ?? null
+
+      while (element) {
+        const style = getComputedStyle(element)
+
+        if (
+          /(auto|scroll)/.test(style.overflowY) &&
+          element.scrollHeight > element.clientHeight
+        ) {
+          element.scrollTop = 0
+
+          return
+        }
+
+        element = element.parentElement
+      }
+    })
+
   const paneScrollTop = () =>
     page.evaluate(() => {
       let element =
@@ -1049,8 +1071,29 @@ describe('Studio in a browser', () => {
 
     // The pane moved to it, and the file is still the open one: the fragment was
     // written without a navigation.
-    expect(await paneScrollTop()).toBeGreaterThan(0)
+    const landed = await paneScrollTop()
+    expect(landed).toBeGreaterThan(0)
     expect(decodeURIComponent(new URL(page.url()).search)).toContain(NOTES_NAME)
+
+    // The reader then scrolls away - back to the top - and types. The fragment is
+    // still in the URL, so a pane that re-ran its scroll on every change would
+    // yank them back to the section they already left.
+    await scrollPaneToTop()
+    expect(await paneScrollTop()).toBe(0)
+
+    await page.click('.monaco-editor')
+    await page.keyboard.press('Control+End')
+    await page.keyboard.type('x')
+    await page.keyboard.press('Escape')
+
+    // The preview shows the keystroke, so the document really was re-rendered -
+    // otherwise this case would pass by never re-running the effect at all.
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('The end.x') ?? false,
+      { timeout: 30000 }
+    )
+
+    expect(await paneScrollTop()).toBe(0)
   }, 120000)
 
   it('opens a markdown file at the section its URL names', async () => {

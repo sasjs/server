@@ -276,6 +276,25 @@ check(
   'an external link still opens one',
   markdownToHtml('[site](https://example.com)\n').includes('target="_blank"')
 )
+check(
+  'a quote in a link target stays inside the attribute',
+  // The target is interpolated into `href` after the whole line has been escaped,
+  // so a quote arrives as `&quot;` and cannot close the attribute. Escaping the
+  // target a second time would corrupt it (`&` becomes `&amp;amp;`), so what is
+  // asserted here is the escaped form, not a second pass.
+  markdownToHtml('[x](https://e.com/"onmouseover="alert(1))').includes(
+    'href="https://e.com/&quot;onmouseover=&quot;alert(1"'
+  ) &&
+    !markdownToHtml('[x](https://e.com/"onmouseover="alert(1))').includes(
+      '"onmouseover="'
+    )
+)
+check(
+  'a query string keeps its ampersands',
+  markdownToHtml('[x](https://e.com/?a=1&b=2)').includes(
+    'href="https://e.com/?a=1&amp;b=2"'
+  )
+)
 
 check(
   'an anchor on its own line names the heading below it',
