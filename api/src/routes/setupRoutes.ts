@@ -30,7 +30,7 @@ export const setupRoutes = (app: Express) => {
   API_PREFIXES.forEach((prefix) => app.use(prefix, apiRouter))
 
   /**
-   * The web tiers a streamed page links through, answered as the API read they
+   * The web tiers a page talks through, answered as the API operation they
    * stand for.
    *
    * Each SAS platform has one address a browser fetches a program or a file
@@ -40,17 +40,47 @@ export const setupRoutes = (app: Express) => {
    * unmodified - which is the whole point, since that address cannot be rewritten
    * at deploy time.
    *
-   * Both are handed to the API as the path they stand for -
-   * `/SASjsApi/drive/file` - so the same guard, the same permission rule and the
-   * same handler answer them: these are spellings of one operation, not
-   * operations that could drift from it.
+   * Each tier speaks the two parameters its platform's tier speaks: `_FILE=` for
+   * a file to read, `_program=` for a stored program to run. `/StoredProgram`
+   * answers both; `/SASJobExecution` answers `_FILE=`, which is the one a
+   * streamed build links to, and keeps its own POST stub for the rest.
+   *
+   * Both are handed to the API as the path they stand for - `/drive/file` or
+   * `/stp/execute` - so the same guard, the same permission rule and the same
+   * handler answer them: these are spellings of one operation each, not
+   * operations that could drift from them.
    */
   for (const webTier of ['/StoredProgram', '/SASJobExecution'])
     app.use(webTier, (req, res, next) => {
+      const { url, baseUrl } = req
+
+      // one file, or one program, never both: the two answer different things,
+      // and choosing silently would answer a question the caller did not ask -
+      // the same rule the drive read applies to its own two names
+      if (req.query._program !== undefined && req.query._FILE !== undefined)
+        return res
+          .status(400)
+          .send('Exactly one of "_program" and "_FILE" may be given.')
+
+      // a program to run: the estate's other parameter, on the tier that stands
+      // where the estate's tiers stand. The method travels too - the adapter
+      // posts a program with its input data, a browser may get it
+      if (webTier === '/StoredProgram' && req.query._program !== undefined) {
+        const search = url.includes('?') ? url.slice(url.indexOf('?')) : ''
+
+        req.url = `/stp/execute${search}`
+        req.baseUrl = API_PREFIX
+
+        return apiRouter(req, res, (error?: unknown) => {
+          req.url = url
+          req.baseUrl = baseUrl
+
+          next(error as Error)
+        })
+      }
+
       if (req.method !== 'GET' || typeof req.query._FILE !== 'string')
         return next()
-
-      const { url, baseUrl } = req
 
       // the query travels as it arrived, not just the one name this spelling
       // knows: a request that names the file twice has to earn the same refusal
