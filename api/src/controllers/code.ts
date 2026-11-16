@@ -1,13 +1,24 @@
 import express from 'express'
-import { Request, Response, Security, Route, Tags, Post, Body } from 'tsoa'
+import {
+  Request,
+  Response,
+  Security,
+  Route,
+  Tags,
+  Post,
+  Get,
+  Body,
+  Query
+} from 'tsoa'
 import { Diagnostic, formatText } from '@sasjs/lint'
 import { getFormatEngine } from '../utils/formatEngine'
 import { ExecutionController, getSessionController } from './internal'
-import { TriggerResponse } from '../types'
+import { LintConfigJson, TriggerResponse } from '../types'
 import {
   getPreProgramVariables,
   getUserAutoExec,
   getDriveLintConfig,
+  getDriveLintConfigObject,
   lintProgram,
   ModeType,
   RunTimeType,
@@ -174,6 +185,29 @@ export class CodeController {
   @Post('/lint')
   public async lintCode(@Body() body: LintCodePayload): Promise<Diagnostic[]> {
     return lintProgram(body.code, await getDriveLintConfig(body.filePath))
+  }
+
+  /**
+   * Returns the lint rules that apply to a file on the drive, as JSON.
+   *
+   * The Studio formats code in the browser, where the program already is; what
+   * it cannot decide for itself is which `.sasjslint` wins, so this answers that
+   * question with the rules rather than making the client ship the program to
+   * have it formatted. The walk is the same one the lint and format routes use.
+   *
+   * Nothing is executed and no SAS source is returned. The payload is the
+   * parsed `.sasjslint` document, including any additional settings it contains.
+   *
+   * @param filePath a drive-relative path as the Studio editor knows it, e.g.
+   * `/projects/app/run.sas`. Omitted for an untitled buffer.
+   * @summary Get the lint rules that apply to a drive path
+   */
+  @Response(401, 'Unauthorized')
+  @Get('/lint-config')
+  public async getLintConfig(
+    @Query() filePath?: string
+  ): Promise<LintConfigJson> {
+    return getDriveLintConfigObject(filePath)
   }
 
   /**

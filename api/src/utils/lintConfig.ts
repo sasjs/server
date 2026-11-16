@@ -3,6 +3,7 @@ import { createFile, fileExists, readFile } from '@sasjs/utils'
 import { LintConfig } from '@sasjs/lint'
 import { getFilesFolder } from './file'
 import { resolveWithinDrive } from './resolveWithinDrive'
+import { LintConfigJson } from '../types'
 
 /**
  * The rules a drive with no `.sasjslint` of its own is seeded with.
@@ -60,8 +61,26 @@ export const seedDefaultLintConfig = async () => {
  */
 export const getDriveLintConfig = async (
   filePath?: string
-): Promise<LintConfig> => {
-  const rootConfig = await readConfig(getDefaultLintConfigPath())
+): Promise<LintConfig> =>
+  new LintConfig(await getDriveLintConfigObject(filePath))
+
+/**
+ * The same resolution, as the JSON a client can build its own `LintConfig` from.
+ *
+ * The Studio formats in the browser - the program is already there, and sending
+ * it to be re-indented costs a round trip on every format and leaves the editor
+ * unable to format when the server is unreachable. What the client cannot work
+ * out for itself is which `.sasjslint` wins, so that walk stays here and answers
+ * with the rules: a few hundred bytes instead of the program, and one
+ * implementation shared with the lint and format routes.
+ *
+ * @param filePath a drive-relative path as the Studio editor knows it, e.g.
+ * `/projects/app/run.sas`. Omitted for an untitled buffer.
+ */
+export const getDriveLintConfigObject = async (
+  filePath?: string
+): Promise<LintConfigJson> => {
+  const rootConfig = await readConfigObject(getDefaultLintConfigPath())
 
   if (filePath) {
     const absolutePath = resolveWithinDrive(filePath)
@@ -70,7 +89,9 @@ export const getDriveLintConfig = async (
     if (absolutePath) {
       let folder = path.dirname(absolutePath)
       while (true) {
-        const candidate = await readConfig(path.join(folder, lintFileName))
+        const candidate = await readConfigObject(
+          path.join(folder, lintFileName)
+        )
         if (candidate) return candidate
 
         if (path.resolve(folder) === driveRoot) break
@@ -84,7 +105,7 @@ export const getDriveLintConfig = async (
   // No file named, a path that escapes the drive, no `.sasjslint` anywhere on
   // the walk, or an unparsable drive-root file: the drive-root rules apply,
   // with the package default standing in when even that file cannot be read.
-  return rootConfig ?? new LintConfig(defaultLintConfiguration)
+  return rootConfig ?? (defaultLintConfiguration as LintConfigJson)
 }
 
 /**
@@ -95,7 +116,9 @@ export const getDriveLintConfig = async (
  * the author wrote are not applied and nothing else says so. A file that is
  * merely absent is the normal case in the walk and stays quiet.
  */
-const readConfig = async (configPath: string): Promise<LintConfig | null> => {
+const readConfigObject = async (
+  configPath: string
+): Promise<LintConfigJson | null> => {
   const content = await readFile(configPath).catch(() => null)
   if (content === null) return null
 
@@ -108,7 +131,7 @@ const readConfig = async (configPath: string): Promise<LintConfig | null> => {
     return null
   }
 
-  return new LintConfig(parsed)
+  return parsed as LintConfigJson
 }
 
 /** The parsed file, or null when it is not a JSON object. */
