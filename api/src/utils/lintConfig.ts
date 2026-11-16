@@ -131,7 +131,7 @@ const readConfigObject = async (
     return null
   }
 
-  return parsed
+  return parsed as LintConfigJson
 }
 
 /** The parsed file, or null when it is not a JSON object. */

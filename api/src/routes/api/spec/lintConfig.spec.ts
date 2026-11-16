@@ -11,7 +11,7 @@ import request from 'supertest'
 import lintSchema from '@sasjs/lint/sasjslint-schema.json'
 
 import appPromise from '../../../app'
-import { LintConfigJson } from '../../../types'
+import { LintConfigSettings } from '../../../types'
 import { CodeController, UserController } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
 import {
@@ -43,14 +43,14 @@ const projectRules = {
 
 /**
  * The response schema is generated from `LintConfigJson`, so a setting the linter
- * documents but the interface does not name is a field a generated client cannot
- * read. This is a compile-time assertion rather than a runtime one: if
+ * documents but the interface does not name is a field a generated client reads
+ * as untyped. This is a compile-time assertion rather than a runtime one: if
  * `@sasjs/lint` adds a rule, `MissingSetting` stops being `never` and the
  * assignment fails the suite's typecheck until the interface names it.
  */
 type MissingSetting = Exclude<
   keyof typeof lintSchema.properties,
-  keyof LintConfigJson
+  keyof LintConfigSettings
 >
 const everySettingIsNamed: MissingSetting extends never ? true : never = true
 
@@ -155,6 +155,22 @@ describe('GET /SASjsApi/code/lint-config', () => {
 
     expect(res.body).toEqual(rootRules)
     expect(JSON.stringify(res.body)).not.toContain('root:')
+  })
+
+  it('passes settings the linter does not document through as written', async () => {
+    // `indentation` is a formatter setting rather than a lint rule, so it is not in
+    // LintConfigJson's named list - but it is in the drive's file, and the route
+    // answers with the file parsed and unvalidated. The response schema is open
+    // (`additionalProperties: {}`), so a client that validates responses accepts it.
+    await createFile(
+      path.join(drive, 'files', 'projects', 'app', '.sasjslint'),
+      JSON.stringify({ ...projectRules, indentation: 3, somethingNew: true })
+    )
+
+    const res = await get('?filePath=/projects/app/run.sas').expect(200)
+
+    expect(res.body.indentation).toEqual(3)
+    expect(res.body.somethingNew).toEqual(true)
   })
 
   it('answers with the rules themselves, not a config wrapper', async () => {

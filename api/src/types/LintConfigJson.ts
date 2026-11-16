@@ -7,12 +7,20 @@
  * response schema: `object` emits `additionalProperties: false` with no
  * properties, which leaves a generated client unable to read a single field.
  *
- * The settings are `@sasjs/lint`'s own, so the schema they come from is the
- * one to compare against: `sasjslint-schema.json`. A spec does exactly that
- * (lintConfigSchema.spec.ts), so a rule added upstream fails the suite until
- * it is named here.
+ * The settings named here are `@sasjs/lint`'s own, so the schema they come from
+ * is the one to compare against: `sasjslint-schema.json`. The assertion that
+ * keeps them in step is `MissingSetting` / `everySettingIsNamed` in
+ * `api/src/routes/api/spec/lintConfig.spec.ts`, so a rule added upstream fails
+ * the suite's typecheck until it is named here.
+ *
+ * The document is OPEN, though, and the index signature says so. A drive's
+ * `.sasjslint` is the author's file: `getDriveLintConfigObject` answers with it
+ * parsed and unvalidated, and settings outside this list - `indentation`, which
+ * the formatter reads - are in the document and reach the client as written.
+ * Without the index signature tsoa emits `additionalProperties: false`, and a
+ * generated client that validates responses rejects a perfectly ordinary answer.
  */
-export interface LintConfigJson {
+export interface LintConfigSettings {
   /** The schema an editor validates the file against, when the file names one. */
   $schema?: string
   /** Reports lines that contain a string listed in bannedStrings, such as a word that looks like... */
@@ -89,4 +97,19 @@ export interface LintConfigJson {
   requiredMacroOptions?: string[]
   /** An object which specifies the severity level of each rule */
   severityLevel?: Record<string, 'warn' | 'error'>
+}
+
+/**
+ * The document the route answers with: every named setting, plus whatever else
+ * the drive's file carries.
+ *
+ * The index signature is what makes the schema open. `getDriveLintConfigObject`
+ * answers with the parsed file unvalidated, so `indentation` - a formatter
+ * setting, not a lint rule, and deliberately not in the named list - reaches the
+ * client exactly as the author wrote it. Without this, tsoa emits
+ * `additionalProperties: false` and a client that validates responses rejects an
+ * ordinary answer.
+ */
+export interface LintConfigJson extends Partial<LintConfigSettings> {
+  [setting: string]: unknown
 }

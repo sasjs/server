@@ -562,7 +562,7 @@ components:
             type: object
             description: 'Construct a type with a set of properties K of type T'
         LintConfigJson:
-            description: "A `.sasjslint` document: the rules as they sit on the drive.\n\nThis is the payload `GET /SASjsApi/code/lint-config` answers with, and the\ndocument a client hands to `new LintConfig(...)`. It is spelled out rather\nthan typed as `object` because tsoa reads this interface to write the\nresponse schema: `object` emits `additionalProperties: false` with no\nproperties, which leaves a generated client unable to read a single field.\n\nThe settings are `@sasjs/lint`'s own, so the schema they come from is the\none to compare against: `sasjslint-schema.json`. A spec does exactly that\n(lintConfigSchema.spec.ts), so a rule added upstream fails the suite until\nit is named here."
+            description: "The document the route answers with: every named setting, plus whatever else\nthe drive's file carries.\n\nThe index signature is what makes the schema open. `getDriveLintConfigObject`\nanswers with the parsed file unvalidated, so `indentation` - a formatter\nsetting, not a lint rule, and deliberately not in the named list - reaches the\nclient exactly as the author wrote it. Without this, tsoa emits\n`additionalProperties: false` and a client that validates responses rejects an\nordinary answer."
             properties:
                 $schema:
                     type: string
@@ -696,7 +696,7 @@ components:
                     $ref: '#/components/schemas/Record_string.warn-or-error_'
                     description: 'An object which specifies the severity level of each rule'
             type: object
-            additionalProperties: false
+            additionalProperties: {}
         FormatCodePayload:
             properties:
                 code:
