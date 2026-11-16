@@ -80,6 +80,11 @@
     "summary": "Lint SAS code and return the diagnostics"
   },
   {
+    "method": "GET",
+    "path": "/SASjsApi/code/lint-config",
+    "summary": "Get the lint rules that apply to a drive path"
+  },
+  {
     "method": "POST",
     "path": "/SASjsApi/code/trigger",
     "summary": "Trigger code and return a session ID"
