@@ -1714,6 +1714,33 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/LintCodePayload'
+    /SASjsApi/code/lint-config:
+        get:
+            operationId: GetLintConfig
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                additionalProperties: false
+                                type: object
+                '401':
+                    description: Unauthorized
+            description: "Returns the lint rules that apply to a file on the drive, as JSON.\n\nThe Studio formats code in the browser, where the program already is; what\nit cannot decide for itself is which `.sasjslint` wins, so this answers that\nquestion with the rules rather than making the client ship the program to\nhave it formatted. The walk is the same one the lint and format routes use.\n\nNothing is executed and no file content is returned: the payload is a rules\nobject a few hundred bytes long."
+            summary: 'Get the lint rules that apply to a drive path'
+            tags:
+                - Code
+            security:
+                -
+                    bearerAuth: []
+            parameters:
+                -
+                    in: query
+                    name: filePath
+                    required: false
+                    schema:
+                        type: string
     /SASjsApi/code/format:
         post:
             operationId: FormatCode

@@ -67,6 +67,21 @@ runRouter.post('/lint', async (req, res) => {
   }
 })
 
+runRouter.get('/lint-config', async (req, res) => {
+  try {
+    const filePath =
+      typeof req.query.filePath === 'string' ? req.query.filePath : undefined
+
+    res.send(await controller.getLintConfig(filePath))
+  } catch (err: any) {
+    const statusCode = err.code
+
+    delete err.code
+
+    res.status(statusCode).send(err)
+  }
+})
+
 runRouter.post('/format', async (req, res) => {
   const { error, value: body } = formatCodeValidation(req.body)
   if (error) return res.status(400).send(error.details[0].message)
