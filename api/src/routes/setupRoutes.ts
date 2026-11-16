@@ -46,7 +46,16 @@ export const setupRoutes = (app: Express) => {
 
     const { url, baseUrl } = req
 
-    req.url = `/drive/file?_FILE=${encodeURIComponent(req.query._FILE)}`
+    // the query travels as it arrived, not just the one name this spelling
+    // knows: a request that names the file twice has to earn the same refusal
+    // here as on the API spelling, rather than having one of them quietly
+    // dropped on the way
+    const params = new URLSearchParams({ _FILE: String(req.query._FILE) })
+
+    if (typeof req.query._filePath === 'string')
+      params.set('_filePath', req.query._filePath)
+
+    req.url = `/drive/file?${params}`
     req.baseUrl = API_PREFIX
 
     return apiRouter(req, res, (error?: unknown) => {

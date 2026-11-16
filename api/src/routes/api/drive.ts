@@ -8,6 +8,7 @@ import {
   DEPLOY_NEEDS_FOLDER,
   prepareDeploy,
   publishDeployedApp,
+  refuseTwoNames,
   sendDeploymentFile
 } from '../../utils'
 import type { PreparedDeploy } from '../../utils'
@@ -374,6 +375,10 @@ driveRouter.delete('/deploy', async (req, res) => {
 })
 
 driveRouter.get('/file', async (req, res) => {
+  // one file, two names that answer differently: a request carrying both is
+  // refused by the package's rule, whatever spelling reached this route
+  if (refuseTwoNames(req, res)) return
+
   // A streamed deployment links every asset through `_FILE=<path>`, the
   // spelling SAS Viya's job execution route answers, so one build opens on
   // either host. The read is the same operation as `path=` - one file, the same

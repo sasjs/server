@@ -1,6 +1,7 @@
 import express from 'express'
 
 import {
+  assertOneFileName,
   createDeploymentFileService,
   DEPLOYMENT_FILE_ERROR,
   isApiError
@@ -20,6 +21,30 @@ import { nodeDriveStore } from '../controllers/internal/nodeDriveStore'
  * Re-exported because the route's suite states the refusal by name.
  */
 export { DEPLOYMENT_FILE_ERROR }
+
+/**
+ * Answers a request that names the file twice, and says whether it did.
+ *
+ * The rule and its wording are the package's, so this route and the dispatcher
+ * refuse the same caller with the same `400` - the read has two names because
+ * they answer differently, and choosing one silently would answer a question
+ * nobody asked.
+ */
+export const refuseTwoNames = (
+  request: express.Request,
+  response: express.Response
+): boolean => {
+  try {
+    assertOneFileName(request.query)
+  } catch (error) {
+    if (!isApiError(error)) throw error
+
+    response.status(error.status).send(error.message)
+    return true
+  }
+
+  return false
+}
 
 export const sendDeploymentFile = async (
   request: express.Request,

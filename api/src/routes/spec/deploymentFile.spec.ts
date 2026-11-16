@@ -162,6 +162,27 @@ describe('streamed deployment files', () => {
     expect(res.text).toEqual(DEPLOYMENT_FILE_ERROR)
   })
 
+  it('refuses a request that names the file twice, on either spelling', async () => {
+    const { token } = await tokenFor(admin.username)
+
+    // the two names answer differently - typed, and bytes - so a request
+    // carrying both is a caller disagreeing with itself rather than a file to
+    // pick for it
+    for (const path of [
+      `/SASjsApi/drive/file?_FILE=${assetPath}&_filePath=${assetPath}`,
+      `/SASJobExecution?_FILE=${assetPath}&_filePath=${assetPath}`
+    ]) {
+      const res = await request(app)
+        .get(path)
+        .auth(token, { type: 'bearer' })
+        .expect(400)
+
+      expect(res.text).toEqual(
+        'Exactly one of "_filePath" and "_FILE" may be given.'
+      )
+    }
+  })
+
   it('refuses a path that climbs out of the drive', async () => {
     const { token } = await tokenFor(admin.username)
 
