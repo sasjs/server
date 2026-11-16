@@ -30,41 +30,47 @@ export const setupRoutes = (app: Express) => {
   API_PREFIXES.forEach((prefix) => app.use(prefix, apiRouter))
 
   /**
-   * The Viya spelling of the streaming read, kept so a build made for an
-   * estate opens on this server unmodified.
+   * The web tiers a streamed page links through, answered as the API read they
+   * stand for.
    *
-   * A streamed frontend links every asset through `/SASJobExecution?_FILE=`,
-   * which is the address the estate answers and the address a build cannot
-   * rewrite at deploy time. The request is handed to the API as the path it
-   * stands for - `/SASjsApi/drive/file` - so the same guard, the same
-   * permission rule and the same handler answer it: this is a second spelling
-   * of one operation, not a second operation that could drift from it.
+   * Each SAS platform has one address a browser fetches a program or a file
+   * from: `/SASStoredProcess` on SAS 9, `/SASJobExecution` on SAS Viya. This
+   * server's own is `/StoredProgram`, which is what a SASjs build links to; the
+   * estate's spelling is kept beside it so a build made for Viya opens here
+   * unmodified - which is the whole point, since that address cannot be rewritten
+   * at deploy time.
+   *
+   * Both are handed to the API as the path they stand for -
+   * `/SASjsApi/drive/file` - so the same guard, the same permission rule and the
+   * same handler answer them: these are spellings of one operation, not
+   * operations that could drift from it.
    */
-  app.use('/SASJobExecution', (req, res, next) => {
-    if (req.method !== 'GET' || typeof req.query._FILE !== 'string')
-      return next()
+  for (const webTier of ['/StoredProgram', '/SASJobExecution'])
+    app.use(webTier, (req, res, next) => {
+      if (req.method !== 'GET' || typeof req.query._FILE !== 'string')
+        return next()
 
-    const { url, baseUrl } = req
+      const { url, baseUrl } = req
 
-    // the query travels as it arrived, not just the one name this spelling
-    // knows: a request that names the file twice has to earn the same refusal
-    // here as on the API spelling, rather than having one of them quietly
-    // dropped on the way
-    const params = new URLSearchParams({ _FILE: String(req.query._FILE) })
+      // the query travels as it arrived, not just the one name this spelling
+      // knows: a request that names the file twice has to earn the same refusal
+      // here as on the API spelling, rather than having one of them quietly
+      // dropped on the way
+      const params = new URLSearchParams({ _FILE: String(req.query._FILE) })
 
-    if (typeof req.query._filePath === 'string')
-      params.set('_filePath', req.query._filePath)
+      if (typeof req.query._filePath === 'string')
+        params.set('_filePath', req.query._filePath)
 
-    req.url = `/drive/file?${params}`
-    req.baseUrl = API_PREFIX
+      req.url = `/drive/file?${params}`
+      req.baseUrl = API_PREFIX
 
-    return apiRouter(req, res, (error?: unknown) => {
-      req.url = url
-      req.baseUrl = baseUrl
+      return apiRouter(req, res, (error?: unknown) => {
+        req.url = url
+        req.baseUrl = baseUrl
 
-      next(error as Error)
+        next(error as Error)
+      })
     })
-  })
 
   // `app.use` rather than passing the router directly, so the CSRF middleware
   // and the router both see the same mount point however it is spelled.

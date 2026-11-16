@@ -139,6 +139,18 @@ describe('streamed deployment files', () => {
     expect(res.headers['content-type']).toContain('text/html')
   })
 
+  it('answers the SASjs tier spelling - what a SASjs build links to', async () => {
+    const { token } = await tokenFor(admin.username)
+
+    const res = await request(app)
+      .get(`/StoredProgram?_FILE=${assetPath}`)
+      .auth(token, { type: 'bearer' })
+      .expect(200)
+
+    expect(res.headers['content-type']).toContain('javascript')
+    expect(res.text).toEqual('console.log("streamed")')
+  })
+
   it('answers the Viya spelling of the same URL', async () => {
     const { token } = await tokenFor(admin.username)
 
@@ -170,7 +182,8 @@ describe('streamed deployment files', () => {
     // pick for it
     for (const path of [
       `/SASjsApi/drive/file?_FILE=${assetPath}&_filePath=${assetPath}`,
-      `/SASJobExecution?_FILE=${assetPath}&_filePath=${assetPath}`
+      `/SASJobExecution?_FILE=${assetPath}&_filePath=${assetPath}`,
+      `/StoredProgram?_FILE=${assetPath}&_filePath=${assetPath}`
     ]) {
       const res = await request(app)
         .get(path)
