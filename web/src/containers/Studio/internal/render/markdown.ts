@@ -39,11 +39,13 @@ export const isSafeHref = (href: string): boolean =>
  * The anchor a heading carries: `## Help <a name="helpinfo"></a>`.
  *
  * Files like the SAS Packages framework's markdown use an inline HTML anchor to
- * give a section a stable name, and the renderer shows that HTML as text - so the
- * anchor is lifted out and becomes the heading's own id, which is what a link to
- * `#helpinfo` needs.
+ * give a section a stable name, and the renderer shows that HTML as text - so
+ * the anchor is lifted out of the heading and emitted as a target of its own,
+ * which is what a link to `#helpinfo` needs. The heading keeps its slug, so a
+ * link to `#help` lands too: a heading with an anchor used to take the anchor's
+ * name as its id, which left the slug matching nothing.
  */
-const INLINE_ANCHOR = /<a\s+(?:name|id)\s*=\s*"([^"]+)"\s*>\s*<\/a>/i
+const INLINE_ANCHOR = /<a\s+(?:name|id)\s*=\s*"([^"]+)"\s*>\s*<\/a>/gi
 
 /** The id a heading gets when it carries no anchor of its own. */
 export const slugifyHeading = (text: string): string =>
@@ -54,17 +56,20 @@ export const slugifyHeading = (text: string): string =>
     .trim()
     .replace(/\s+/g, '-')
 
-/** A heading's id and the text to render, with any inline anchor taken out. */
-export const headingAnchor = (text: string): { id: string; text: string } => {
-  const anchor = INLINE_ANCHOR.exec(text)
+/**
+ * A heading's id, the anchors written inside it, and the text to render.
+ *
+ * Every anchor is returned, not just the first: two names on one heading are two
+ * links someone may follow, and one of them silently winning is a link that lands
+ * nowhere.
+ */
+export const headingAnchor = (
+  text: string
+): { id: string; anchors: string[]; text: string } => {
+  const anchors = Array.from(text.matchAll(INLINE_ANCHOR), (match) => match[1])
+  const visible = text.replace(INLINE_ANCHOR, '').trim()
 
-  if (anchor)
-    return {
-      id: anchor[1],
-      text: text.replace(INLINE_ANCHOR, '').trim()
-    }
-
-  return { id: slugifyHeading(text), text }
+  return { id: slugifyHeading(visible), anchors, text: visible }
 }
 
 /** A line that is nothing but an anchor: it names the section that follows it. */
@@ -137,8 +142,8 @@ export const markdownToHtml = (markdown: string): string => {
 
   let paragraph: string[] = []
   let list: { tag: 'ul' | 'ol'; items: string[] } | null = null
-  /** An id an anchor-only line set aside for the heading below it. */
-  let pendingAnchor = ''
+  /** Anchors set aside for the block below them, until it arrives. */
+  let pendingAnchors: string[] = []
   /** Ids already used, so a repeated heading does not repeat an id. */
   const usedIds = new Map<string, number>()
 
@@ -164,6 +169,17 @@ export const markdownToHtml = (markdown: string): string => {
     list = null
   }
 
+  /**
+   * Places the anchors held for the block below, so a link to one lands where the
+   * anchor is written rather than at the end of the document.
+   */
+  const flushAnchors = () => {
+    for (const name of pendingAnchors)
+      html.push(`<a id="${escapeHtml(uniqueId(name))}"></a>`)
+
+    pendingAnchors = []
+  }
+
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index]
 
@@ -181,6 +197,7 @@ export const markdownToHtml = (markdown: string): string => {
         index++
       }
 
+      flushAnchors()
       html.push(`<pre><code>${escapeHtml(body.join('\n'))}</code></pre>`)
       continue
     }
@@ -195,10 +212,12 @@ export const markdownToHtml = (markdown: string): string => {
 
     if (anchorOnly) {
       // Not rendered as text: it is the section's name, and it belongs on the
-      // heading underneath - which is why the anchor is held until one arrives.
+      // block underneath - which is why the anchor is held until one arrives.
+      // Held as a list: two names in a row are two targets, and dropping the
+      // first would leave a link to it with nowhere to land.
       closeParagraph()
       closeList()
-      pendingAnchor = anchorOnly[1]
+      pendingAnchors.push(anchorOnly[1])
       continue
     }
 
@@ -210,15 +229,26 @@ export const markdownToHtml = (markdown: string): string => {
 
       const level = heading[1].length
       const anchor = headingAnchor(heading[2].trim())
-      const id = pendingAnchor || anchor.id
-      const text = anchor.text
-      pendingAnchor = ''
+      // The heading keeps its own slug; the anchors written into it become
+      // targets just above it, so both `#help` and `#helpinfo` land. An anchor
+      // that names the slug itself is left to the heading, which avoids two
+      // elements claiming one id.
+      const names = [...pendingAnchors, ...anchor.anchors].filter(
+        (name) => name !== anchor.id
+      )
+      pendingAnchors = []
+
+      for (const name of names)
+        html.push(`<a id="${escapeHtml(uniqueId(name))}"></a>`)
+
       // An id on every heading: `#anything` in a README is a link someone may
       // arrive on, and an id is what the pane scrolls to.
       html.push(
-        id
-          ? `<h${level} id="${escapeHtml(uniqueId(id))}">${inline(text)}</h${level}>`
-          : `<h${level}>${inline(text)}</h${level}>`
+        anchor.id
+          ? `<h${level} id="${escapeHtml(uniqueId(anchor.id))}">${inline(
+              anchor.text
+            )}</h${level}>`
+          : `<h${level}>${inline(anchor.text)}</h${level}>`
       )
       continue
     }
@@ -226,6 +256,7 @@ export const markdownToHtml = (markdown: string): string => {
     if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) {
       closeParagraph()
       closeList()
+      flushAnchors()
       html.push('<hr />')
       continue
     }
@@ -235,6 +266,7 @@ export const markdownToHtml = (markdown: string): string => {
     if (quote) {
       closeParagraph()
       closeList()
+      flushAnchors()
       html.push(`<blockquote>${inline(quote[1])}</blockquote>`)
       continue
     }
@@ -245,6 +277,7 @@ export const markdownToHtml = (markdown: string): string => {
 
     if (item !== undefined) {
       closeParagraph()
+      flushAnchors()
 
       const tag = unordered ? 'ul' : 'ol'
 
@@ -262,6 +295,7 @@ export const markdownToHtml = (markdown: string): string => {
 
     if (isParagraphLine(line)) {
       closeList()
+      flushAnchors()
       paragraph.push(line.trim())
     }
   }
@@ -269,10 +303,9 @@ export const markdownToHtml = (markdown: string): string => {
   closeParagraph()
   closeList()
 
-  // An anchor that named no heading still has to exist: a link to it is a link
+  // An anchor that named no block still has to exist: a link to it is a link
   // someone may follow.
-  if (pendingAnchor)
-    html.push(`<a id="${escapeHtml(uniqueId(pendingAnchor))}"></a>`)
+  flushAnchors()
 
   return html.join('\n')
 }

@@ -73,7 +73,9 @@ export const requireWebBuild = () => {
  * A Markdown file on the drive, for the preview pane.
  *
  * Two headings and a link between them: enough to open the file in the split
- * view, and enough to say that a `#section` link lands on the section.
+ * view, and enough to say that a `#section` link lands on the section. The prose
+ * between the sections is long enough that the pane scrolls: a short document
+ * cannot show that a link moved it.
  */
 export const NOTES_NAME = 'notes.md'
 
@@ -85,6 +87,12 @@ export const NOTES = [
   '## First section',
   '',
   'Read the [second section](#second-section) next.',
+  '',
+  ...Array.from(
+    { length: 40 },
+    (_, index) =>
+      `Filler line ${index + 1}, so the pane has somewhere to scroll.`
+  ),
   '',
   '## Second section <a name="second"></a>',
   '',

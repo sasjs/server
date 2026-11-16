@@ -24,6 +24,8 @@ import {
   INDENTED_JSON_NAME,
   JSON_FILE_NAME,
   MINIFIED_JSON,
+  NOTES,
+  NOTES_NAME,
   PROGRAM_NAME,
   SAVE_FILE_CONTENT,
   SAVE_FILE_NAME,
@@ -62,6 +64,33 @@ describe('Studio in a browser', () => {
 
   const baseUrl = () => `http://localhost:${(server.address() as any).port}`
 
+  /**
+   * The scroll offset of the pane the rendered Markdown lives in.
+   *
+   * The pane is the scroll container - the page around it does not scroll - so
+   * proving that a link moved the reader means reading this element's offset,
+   * not the window's.
+   */
+  const paneScrollTop = () =>
+    page.evaluate(() => {
+      let element =
+        document.querySelector('h2#first-section')?.parentElement ?? null
+
+      while (element) {
+        const style = getComputedStyle(element)
+
+        if (
+          /(auto|scroll)/.test(style.overflowY) &&
+          element.scrollHeight > element.clientHeight
+        )
+          return element.scrollTop
+
+        element = element.parentElement
+      }
+
+      return -1
+    })
+
   beforeAll(async () => {
     // SASSessionController.createSession() reads this file before it spawns a
     // SAS process, and `npm test` does not run the script that produces it.
@@ -97,6 +126,10 @@ describe('Studio in a browser', () => {
       path.join(driveLocation, 'files', INDENTED_JSON_NAME),
       INDENTED_JSON
     )
+
+    // A Markdown file, for the preview pane's own tests: the drive is what the
+    // Studio reads, so the file has to exist there before the page asks for it.
+    await createFile(path.join(driveLocation, 'files', NOTES_NAME), NOTES)
 
     // A folder that has not been opened, so the lazy load can be observed.
     await createFolder(path.join(driveLocation, 'files', 'e2eFolder'))
@@ -988,7 +1021,49 @@ describe('Studio in a browser', () => {
     await split.waitFor({ timeout: 30000 })
 
     expect(await split.getAttribute('aria-pressed')).toBe('true')
-    // and the rendering is there, not only the toggle
-    await page.waitForSelector('text=First section', { timeout: 30000 })
+
+    // The rendered heading, not the text: Monaco stays mounted in split mode and
+    // carries `First section` in its own lines, so a `text=` selector would pass
+    // with an empty or broken preview.
+    await page.waitForSelector('h2#first-section', { timeout: 30000 })
+  }, 120000)
+
+  it('lands a markdown link on its section', async () => {
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(`/${NOTES_NAME}`)}`
+    )
+    await page.waitForSelector('h2#second-section', { timeout: 30000 })
+
+    expect(await paneScrollTop()).toBe(0)
+
+    // The one link in the file, drawn by the renderer with `data-anchor`: the
+    // pane claims the click, because the browser's own jump looks for a
+    // scrolling box that is not this one.
+    await page.click('a[data-anchor]')
+
+    await page.waitForFunction(() => location.hash === '#second-section', {
+      timeout: 30000
+    })
+
+    // The pane moved to it, and the file is still the open one: the fragment was
+    // written without a navigation.
+    expect(await paneScrollTop()).toBeGreaterThan(0)
+    expect(decodeURIComponent(new URL(page.url()).search)).toContain(NOTES_NAME)
+  }, 120000)
+
+  it('opens a markdown file at the section its URL names', async () => {
+    // The link people share: the file arrives after the load, so the fragment has
+    // to be read again once the document is there.
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(
+        `/${NOTES_NAME}`
+      )}#first-section`
+    )
+
+    await page.waitForSelector('h2#first-section', { timeout: 30000 })
+
+    // The heading sits below the title and the first paragraph, so landing on it
+    // means the pane moved rather than staying at the top.
+    expect(await paneScrollTop()).toBeGreaterThan(0)
   }, 120000)
 })
