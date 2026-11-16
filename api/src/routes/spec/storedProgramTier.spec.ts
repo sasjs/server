@@ -18,7 +18,13 @@ jest
   .mockImplementation(() => path.join(tmpFolder, 'appStreamConfig.json'))
 
 import appPromise from '../../app'
-import { UserController } from '../../controllers/'
+import {
+  PermissionController,
+  PermissionSettingForRoute,
+  PermissionType,
+  PrincipalType,
+  UserController
+} from '../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../utils'
 import { RunTimeType } from '../../utils'
 
@@ -118,6 +124,49 @@ describe('the StoredProgram tier', () => {
     expect(res.text).toEqual(
       'Exactly one of "_program" and "_FILE" may be given.'
     )
+  })
+
+  it('decides the run on the execute rule, so a caller with no grant runs nothing', async () => {
+    // the tier hands the request to the operation, so the operation's rule is
+    // the one that decides - inherited rather than re-decided, and asserted here
+    // because the tier is a second door to it
+    const userController = new UserController()
+    await userController.createUser({
+      displayName: 'Tier User',
+      username: 'tierUser',
+      password: 'userPassword',
+      isAdmin: false,
+      isActive: true
+    })
+
+    const user = await userController.getUserByUsername(
+      { user: { isAdmin: false } } as any,
+      'tierUser'
+    )
+    const userToken = generateAccessToken({ clientId, userId: user.uid })
+    await saveTokensInDB(user.uid, clientId, userToken, 'refreshToken')
+
+    await request(app)
+      .get(`/StoredProgram?_program=${appLoc}/services/web/main`)
+      .auth(userToken, { type: 'bearer' })
+      .expect(401)
+
+    // and the same caller, granted the rule the operation is gated on, reaches
+    // the run: the refusal that follows is the program's absence, not the gate
+    await new PermissionController().createPermission({
+      path: '/SASjsApi/stp/execute',
+      type: PermissionType.route,
+      setting: PermissionSettingForRoute.grant,
+      principalType: PrincipalType.user,
+      principalId: user.uid
+    })
+
+    const res = await request(app)
+      .get(`/StoredProgram?_program=${appLoc}/services/web/not-here`)
+      .auth(userToken, { type: 'bearer' })
+      .expect(400)
+
+    expect(res.text).toContain('does not exist')
   })
 
   it('still answers _FILE on the same tier', async () => {
