@@ -64,13 +64,6 @@ describe('Studio in a browser', () => {
 
   const baseUrl = () => `http://localhost:${(server.address() as any).port}`
 
-  /**
-   * The scroll offset of the pane the rendered Markdown lives in.
-   *
-   * The pane is the scroll container - the page around it does not scroll - so
-   * proving that a link moved the reader means reading this element's offset,
-   * not the window's.
-   */
   /** Puts the pane the rendered Markdown lives in back at its top. */
   const scrollPaneToTop = () =>
     page.evaluate(() => {
@@ -93,6 +86,13 @@ describe('Studio in a browser', () => {
       }
     })
 
+  /**
+   * The scroll offset of the pane the rendered Markdown lives in.
+   *
+   * The pane is the scroll container - the page around it does not scroll - so
+   * proving that a link moved the reader means reading this element's offset,
+   * not the window's.
+   */
   const paneScrollTop = () =>
     page.evaluate(() => {
       let element =

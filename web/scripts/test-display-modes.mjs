@@ -26,8 +26,13 @@ const {
   storedDisplayMode
 } = await import('../src/containers/Studio/internal/displayMode.ts')
 
-const { headingAnchor, markdownToHtml, isSafeHref, slugifyHeading } =
-  await import('../src/containers/Studio/internal/render/markdown.ts')
+const {
+  fragmentOf,
+  headingAnchor,
+  markdownToHtml,
+  isSafeHref,
+  slugifyHeading
+} = await import('../src/containers/Studio/internal/render/markdown.ts')
 const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
   await import('../src/containers/Studio/internal/render/csv.ts')
 const { jsonTreeOf } =
@@ -400,6 +405,18 @@ check('an anchor is a safe href', isSafeHref('#top'))
 check('a relative path is a safe href', isSafeHref('./doc.md'))
 check('javascript: is not', !isSafeHref('javascript:alert(1)'))
 check('data: is not', !isSafeHref('data:text/html,<b>x</b>'))
+
+// The fragment of a shared link is user input, and `decodeURIComponent` throws on
+// a malformed escape - a link pasted as `notes.md#100%` must not take the pane down.
+check('a fragment keeps its name', fragmentOf('#helpinfo') === 'helpinfo')
+check('a fragment is decoded', fragmentOf('#help%20info') === 'help info')
+check('an empty fragment names nothing', fragmentOf('') === '')
+check('a bare hash names nothing', fragmentOf('#') === '')
+check('a malformed fragment names nothing', fragmentOf('#100%') === '')
+check(
+  'a percent written as an escape is decoded',
+  fragmentOf('#100%25') === '100%'
+)
 
 // --- csv -------------------------------------------------------------------
 

@@ -17,7 +17,7 @@ import { Box, Typography } from '@mui/material'
 import { JsonTreePane } from './jsonTreePane'
 import { displayKindOf } from '../displayMode'
 import { CsvTable, csvTable } from '../render/csv'
-import { markdownToHtml } from '../render/markdown'
+import { fragmentOf, markdownToHtml } from '../render/markdown'
 
 const placeholder = (text: string) => (
   <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
@@ -74,7 +74,7 @@ const MarkdownPane = ({
   // here when the page loads, so this runs again as the text arrives - once per
   // document, which is what `honoured` counts.
   useEffect(() => {
-    const id = decodeURIComponent(window.location.hash.replace(/^#/, ''))
+    const id = fragmentOf(window.location.hash)
 
     if (!id || honoured.current === `${filePath}#${id}`) return
 
@@ -94,7 +94,10 @@ const MarkdownPane = ({
         // In this pane, not a new tab: the anchor is a place in the document the
         // reader is already looking at.
         event.preventDefault()
-        const id = decodeURIComponent(link.hash.replace(/^#/, ''))
+        const id = fragmentOf(link.hash)
+
+        if (!id) return
+
         followHash(id)
         window.history.replaceState(null, '', link.hash)
       }}

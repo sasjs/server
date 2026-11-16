@@ -36,6 +36,23 @@ export const isSafeHref = (href: string): boolean =>
   !/^\s*javascript:/i.test(href)
 
 /**
+ * The id a URL fragment names, or `''` when it names nothing usable.
+ *
+ * `decodeURIComponent` throws on a malformed escape, and a fragment is user
+ * input: a shared link pasted as `notes.md#100%` carries a lone `%`, and a
+ * document can write one into its own link. A fragment that cannot be decoded
+ * is not a section, so it is ignored rather than allowed to throw inside the
+ * effect that lands the reader.
+ */
+export const fragmentOf = (hash: string): string => {
+  try {
+    return decodeURIComponent(hash.replace(/^#/, ''))
+  } catch {
+    return ''
+  }
+}
+
+/**
  * The anchor a heading carries: `## Help <a name="helpinfo"></a>`.
  *
  * Files like the SAS Packages framework's markdown use an inline HTML anchor to
