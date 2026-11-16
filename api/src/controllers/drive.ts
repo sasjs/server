@@ -245,6 +245,9 @@ export class DriveController {
       'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'
   })
   @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Post('/deploy')
   public async deploy(@Body() body: DeployPayload): Promise<DeployResponse> {
     return deploy(body)
@@ -283,6 +286,9 @@ export class DriveController {
       'The file tree exceeds the deploy limit: 10001 entries (maximum 10000).'
   })
   @Response<DeployResponse>(500, 'Execution Error', execDeployErrorResponse)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Post('/deploy/upload')
   public async deployUpload(
     @UploadedFile() file: Express.Multer.File,
@@ -341,6 +347,9 @@ export class DriveController {
     message: 'Unpublishing failed!'
   })
   @Response(404, 'No app is published with that id')
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Delete('/deploy')
   public async unpublish(
     @Body() body: UnpublishPayload
@@ -375,6 +384,9 @@ export class DriveController {
   @SuccessResponse('200', 'The contents of the file')
   @Response(400, `Can't get file outside drive`)
   @Response(404, `File doesn't exist`)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Get('/file')
   public async getFile(
     @Request() request: express.Request,
@@ -419,6 +431,9 @@ export class DriveController {
    */
   @Response(400, `Can't get folder outside drive`)
   @Response(404, `Folder doesn't exist`)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Get('/folder')
   public async getFolder(@Query() _folderPath?: string) {
     const { files, folders } = await answer(driveService().list(_folderPath))
@@ -437,6 +452,9 @@ export class DriveController {
    */
   @Response(400, `Can't delete file outside drive`)
   @Response(404, `File doesn't exist`)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Delete('/file')
   public async deleteFile(@Query() _filePath: string) {
     const { status } = await answer(driveService().remove(_filePath))
@@ -458,6 +476,9 @@ export class DriveController {
    */
   @Response(400, `Can't delete folder outside drive`)
   @Response(404, `Folder doesn't exist`)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Delete('/folder')
   public async deleteFolder(@Query() _folderPath: string) {
     const { status } = await answer(driveService().rmdir(_folderPath))
@@ -484,6 +505,9 @@ export class DriveController {
   })
   @Response(400, `Can't put file outside drive`)
   @Response(409, 'File already exists')
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Post('/file')
   public async saveFile(
     @UploadedFile() file: Express.Multer.File,
@@ -511,6 +535,9 @@ export class DriveController {
     409,
     'Folder already exists. The body is that message as plain text.'
   )
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Post('/folder')
   public async addFolder(
     @Body() body: AddFolderPayload
@@ -535,6 +562,9 @@ export class DriveController {
   })
   @Response(400, `Can't modify file outside drive`)
   @Response(404, `File doesn't exist`)
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Patch('/file')
   public async updateFile(
     @UploadedFile() file: Express.Multer.File,
@@ -565,6 +595,9 @@ export class DriveController {
     'Something already exists at the new path. The body is that message as plain text.'
   )
   @Response(404, 'No file/folder found for provided path')
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Post('/rename')
   public async rename(
     @Body() body: RenamePayload
@@ -589,6 +622,9 @@ export class DriveController {
    * empty value means the drive root; omit the parameter entirely for the whole
    * tree.
    */
+  // the permission gate refuses a caller the rules do not grant, before the
+  // handler runs - the same 401 `code/execute` and `stp/execute` state
+  @Response(401, 'Unauthorized')
   @Get('/filetree')
   public async getFileTree(
     @Query() _folderPath?: string
