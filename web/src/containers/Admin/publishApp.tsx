@@ -3,6 +3,7 @@ import { Alert, Box, Button, Typography } from '@mui/material'
 import axios from 'axios'
 
 import { ACCEPTED_BUILDS, deployFormFor } from './deployForm'
+import { refusalText } from './publishRefusal'
 
 interface PublishedApp {
   id: string
@@ -44,12 +45,11 @@ const PublishApp = () => {
       )
 
       setResult(data)
-    } catch (err: any) {
-      setError(
-        typeof err.response?.data === 'string'
-          ? err.response.data
-          : 'The build could not be published.'
-      )
+    } catch (err) {
+      // the server says why it refused, and that sentence is the whole value of
+      // the banner: a publish that fails for a reason nobody can read is a
+      // support request
+      setError(refusalText(err))
     } finally {
       setPublishing(false)
       // Allow the same file to be chosen again after a failure.
