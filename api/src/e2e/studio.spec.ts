@@ -1000,7 +1000,9 @@ describe('Studio in a browser', () => {
     )
     await page.waitForTimeout(1500)
 
-    expect(asked).toContain('/')
+    // The root is sent as an empty path - `_folderPath=` - not as a slash, so the
+    // walk from it is '', '/Public', '/Public/demo'.
+    expect(asked).toContain('')
     expect(asked).toContain('/Public')
   }, 120000)
 
