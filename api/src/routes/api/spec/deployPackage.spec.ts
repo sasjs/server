@@ -442,6 +442,55 @@ describe('a deploy of a package', () => {
     expect(frontends()).toEqual(before)
   })
 
+  it('refuses a zip that is not an archive, and names the file and its opening', async () => {
+    // the upload a release asset produces when the tool that published it posted
+    // a multipart form to a host that stores the body verbatim: the file is the
+    // envelope, so its first bytes are the boundary rather than `PK`
+    const envelope = Buffer.concat([
+      Buffer.from(
+        '------formdata-undici-040361451847\r\n' +
+          'Content-Disposition: form-data; name="file"; filename="server.json.zip"\r\n' +
+          'Content-Type: application/octet-stream\r\n\r\n'
+      ),
+      Buffer.from('PK\u0003\u0004 not really')
+    ])
+
+    const before = frontends()
+
+    const res = await request(app)
+      .post('/SASjsApi/drive/deploy/upload')
+      .auth(accessToken, { type: 'bearer' })
+      .attach('file', envelope, 'server.json.zip')
+      .expect(400)
+
+    expect(res.body.status).toBe('failure')
+    expect(res.body.message).toContain(
+      '"server.json.zip" is not a zip archive: it begins with "------formdata-undici-'
+    )
+    expect(res.body.message).toContain('a zip archive begins with "PK"')
+
+    // nothing was published, so nothing is left behind either
+    expect(frontends()).toEqual(before)
+  })
+
+  it('refuses a zip the browser did not type as one, stating the type', async () => {
+    const zip = new AdmZip()
+    zip.addFile('index.html', Buffer.from('<h1>typed</h1>', 'utf8'))
+
+    const res = await request(app)
+      .post('/SASjsApi/drive/deploy/upload')
+      .auth(accessToken, { type: 'bearer' })
+      .attach('file', zip.toBuffer(), {
+        filename: 'bundle.zip',
+        contentType: 'application/octet-stream'
+      })
+      .expect(400)
+
+    // read as a deploy document it would be refused for "invalid JSON content",
+    // which is not what is wrong with it
+    expect(res.text).toBe('"file" has invalid type application/octet-stream')
+  })
+
   it('removes the frontend through the deploy route too, so both removals agree', async () => {
     await deploy({
       fileTree: packageTree('both-ways', { appLoc: '/Public/app/both' })

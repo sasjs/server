@@ -222,3 +222,102 @@ describe('reading an archive into a tree', () => {
     expect(refusal.status).toEqual('failure')
   })
 })
+
+/**
+ * A file that is not an archive at all, which is the refusal a person reads.
+ *
+ * The case that prompted these is real: a release asset was published as the
+ * multipart envelope an uploader sent instead of the file itself, so a "zip"
+ * downloaded from a release began `------formdata-undici-...`. `AdmZip` answered
+ * "Invalid CEN header (bad signature)", which names neither the file nor what it
+ * holds, and reached the client as a `500` - so the reader now says which file it
+ * was, quotes what the file begins with and states what an archive begins with.
+ */
+describe('a file that is not an archive', () => {
+  /** A file of exactly these bytes, named as it would arrive from a browser. */
+  const asFile = (bytes: Buffer, name: string): Express.Multer.File => {
+    const file = path.join(
+      workdir,
+      `${Math.random().toString(36).slice(2)}.zip`
+    )
+
+    fs.writeFileSync(file, bytes)
+
+    return {
+      path: file,
+      originalname: name,
+      mimetype: 'application/zip'
+    } as Express.Multer.File
+  }
+
+  /** The body an uploader sends when it posts a form to a host that wanted bytes. */
+  const multipartBody = (): Buffer =>
+    Buffer.concat([
+      Buffer.from(
+        '------formdata-undici-040361451847\r\n' +
+          'Content-Disposition: form-data; name="file"; filename="server.json.zip"\r\n' +
+          'Content-Type: application/octet-stream\r\n\r\n'
+      ),
+      fs.readFileSync(
+        archive({
+          'deploy.json': JSON.stringify({ appLoc: '/Public/app' })
+        }).path
+      )
+    ])
+
+  it('states the file, what it begins with, and what an archive begins with', async () => {
+    const file = asFile(multipartBody(), 'server.json.zip')
+
+    const refusal = await extractDeployDocumentFromZip(file).catch(
+      (error) => error
+    )
+
+    expect(refusal.code).toEqual(400)
+    expect(refusal.message).toContain('"server.json.zip" is not a zip archive')
+    // the opening is quoted, so a reader can see the envelope that was uploaded
+    expect(refusal.message).toContain('it begins with "------formdata-undici-')
+    expect(refusal.message).toContain('a zip archive begins with "PK"')
+  })
+
+  it('says a file is empty rather than quoting nothing', async () => {
+    const refusal = await extractFileTreeFromZip(
+      asFile(Buffer.alloc(0), 'empty.zip')
+    ).catch((error) => error)
+
+    expect(refusal.code).toEqual(400)
+    expect(refusal.message).toEqual(
+      'The file "empty.zip" is empty, where a zip archive begins with "PK".'
+    )
+  })
+
+  it('keeps the reader reason for an archive it cannot read, with the file name', async () => {
+    // a zip whose central directory signature is damaged: it begins with PK, so
+    // the opening check passes and the reader is the one that refuses it
+    const bytes = archive({ 'index.html': '<h1>Hello</h1>' }).path
+    const damaged = Buffer.from(fs.readFileSync(bytes))
+    damaged[damaged.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]))] = 0x58
+
+    const refusal = await extractFileTreeFromZip(
+      asFile(damaged, 'damaged.zip')
+    ).catch((error) => error)
+
+    expect(refusal.code).toEqual(400)
+    expect(refusal.message).toContain(
+      'The file "damaged.zip" could not be read as a zip archive:'
+    )
+    expect(refusal.message).toContain('Invalid CEN header')
+  })
+
+  it('refuses a truncated archive the same way', async () => {
+    const whole = fs.readFileSync(archive({ 'index.html': 'x' }).path)
+
+    const refusal = await extractDeployDocumentFromZip(
+      asFile(whole.subarray(0, whole.length - 30), 'cut.zip')
+    ).catch((error) => error)
+
+    expect(refusal.code).toEqual(400)
+    expect(refusal.message).toContain(
+      '"cut.zip" could not be read as a zip archive'
+    )
+  })
+})

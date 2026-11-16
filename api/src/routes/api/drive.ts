@@ -26,6 +26,7 @@ import {
   folderBodyValidation,
   folderParamValidation,
   HttpError,
+  isArchiveName,
   isZipFile,
   renameBodyValidation,
   unpublishValidation
@@ -218,7 +219,8 @@ driveRouter.post(
 
     let fileContent: string = ''
 
-    const { value: zipFile } = isZipFile(req.file)
+    const { error: archiveError, value: zipFile } = isZipFile(req.file)
+
     if (zipFile) {
       try {
         fileContent = (await extractDeployDocumentFromZip(zipFile)) ?? ''
@@ -233,6 +235,12 @@ driveRouter.post(
       // entries become the tree and what the document would have said (folder,
       // stream, replace) arrives in the query.
       if (!fileContent) return deployArchive(req, res, zipFile)
+    } else if (isArchiveName(req.file.originalname)) {
+      // a file named .zip that the browser did not type as an archive: read as a
+      // deploy document it is refused for "invalid JSON content", which names
+      // neither the file nor what is wrong with it
+      deleteFile(req.file.path)
+      return res.status(400).send(archiveError)
     } else {
       fileContent = await readFile(req.file.path)
     }

@@ -31,6 +31,14 @@ export class DeployRefusal extends Error {
 
   constructor(code: number, message: string) {
     super(message)
+
+    // this module's target compiles `class ... extends Error` to ES5, where
+    // `super()` answers a fresh `Error` and the instance loses this prototype -
+    // so `instanceof DeployRefusal` would answer false for a refusal this file
+    // threw. Putting it back is what lets a reader ask whether a failure is
+    // already a refusal, and keep its status rather than wrapping it.
+    Object.setPrototypeOf(this, DeployRefusal.prototype)
+
     this.code = code
   }
 }
@@ -49,11 +57,94 @@ const describeLimit = (bytes: number) =>
     ? `${bytes} bytes`
     : `${Math.round((bytes / MEGABYTE) * 10) / 10} MB`
 
+/** What an archive begins with: a local file, an empty archive, or a spanned one. */
+const ZIP_SIGNATURES = [
+  Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+  Buffer.from([0x50, 0x4b, 0x05, 0x06]),
+  Buffer.from([0x50, 0x4b, 0x07, 0x08])
+]
+
+/** Whether the file's name says it is an archive, whatever it was typed as. */
+export const isArchiveName = (name: string): boolean =>
+  path.extname(name).toUpperCase() === '.ZIP'
+
+/**
+ * The opening of a file, written out as it reads.
+ *
+ * A refusal is only useful if it says what was FOUND, so the first bytes are
+ * quoted: printable ASCII as itself, anything else as `\xNN` - a body that is not
+ * an archive may be binary, and neither a browser nor a log needs control
+ * characters in it.
+ */
+const openingBytes = (bytes: Buffer, count = 32): string => {
+  const shown = bytes.subarray(0, count)
+
+  let text = ''
+
+  for (let at = 0; at < shown.length; at++) {
+    const byte = shown[at]
+
+    if (byte >= 0x20 && byte < 0x7f) text += String.fromCharCode(byte)
+    else if (byte === 0x0a) text += '\\n'
+    else if (byte === 0x0d) text += '\\r'
+    else if (byte === 0x09) text += '\\t'
+    else text += `\\x${byte.toString(16).padStart(2, '0')}`
+  }
+
+  return bytes.length > count ? `${text}...` : text
+}
+
+/**
+ * Reads an uploaded file as an archive, and refuses one that is not.
+ *
+ * `AdmZip` reports a body that is not a zip in its own terms - "ADM-ZIP: Invalid
+ * CEN header (bad signature)" - which names neither the file nor what it holds,
+ * and reached the client as a `500`. The first four bytes answer whether the file
+ * is an archive at all, so the refusal names the file, quotes what it begins
+ * with, and says what an archive begins with. A file that passes that check and
+ * still cannot be read keeps the reader's reason, attached to the file's name.
+ *
+ * Both are `400`: the caller sent something that is not an archive, which is a
+ * request to correct rather than a server that broke.
+ */
+const readArchive = async <T>(
+  zipFile: Express.Multer.File,
+  read: (zip: AdmZip) => T
+): Promise<T> => {
+  const bytes = await fs.promises.readFile(zipFile.path)
+
+  if (
+    !ZIP_SIGNATURES.some((signature) => bytes.subarray(0, 4).equals(signature))
+  )
+    throw new DeployRefusal(
+      400,
+      bytes.length === 0
+        ? `The file "${zipFile.originalname}" is empty, where a zip archive begins with "PK".`
+        : `The file "${zipFile.originalname}" is not a zip archive: it begins with "${openingBytes(
+            bytes
+          )}", where a zip archive begins with "PK".`
+    )
+
+  try {
+    return read(new AdmZip(bytes))
+  } catch (error) {
+    if (error instanceof DeployRefusal) throw error
+
+    throw new DeployRefusal(
+      400,
+      `The file "${zipFile.originalname}" could not be read as a zip archive: ${
+        (error as Error)?.message ?? error
+      }`
+    )
+  }
+}
+
 export const isZipFile = (
   file: Express.Multer.File
 ): { error?: string; value?: Express.Multer.File } => {
   const fileExtension = path.extname(file.originalname)
-  if (fileExtension.toUpperCase() !== '.ZIP')
+
+  if (!isArchiveName(file.originalname))
     return { error: `"file" has invalid extension ${fileExtension}` }
 
   const allowedMimetypes = ['application/zip', 'application/x-zip-compressed']
@@ -85,49 +176,48 @@ export const isZipFile = (
 export const extractDeployDocumentFromZip = async (
   zipFile: Express.Multer.File,
   limits: DeployLimits = DEPLOY_LIMITS
-): Promise<string | undefined> => {
-  const zip = new AdmZip(await fs.promises.readFile(zipFile.path))
+): Promise<string | undefined> =>
+  readArchive(zipFile, (zip) => {
+    for (const entry of zip.getEntries()) {
+      if (entry.isDirectory) continue
+      if (entry.entryName.includes('/')) continue
+      if (!entry.entryName.toUpperCase().endsWith('.JSON')) continue
 
-  for (const entry of zip.getEntries()) {
-    if (entry.isDirectory) continue
-    if (entry.entryName.includes('/')) continue
-    if (!entry.entryName.toUpperCase().endsWith('.JSON')) continue
+      // `sasjs.app.json` is the bundle's own manifest, not a deploy document. It
+      // names an `appLoc` too, so without this it is read as a document and then
+      // refused for having no `fileTree` - the app's own metadata taking the whole
+      // archive down with it.
+      if (entry.entryName.toLowerCase() === APP_MANIFEST) continue
 
-    // `sasjs.app.json` is the bundle's own manifest, not a deploy document. It
-    // names an `appLoc` too, so without this it is read as a document and then
-    // refused for having no `fileTree` - the app's own metadata taking the whole
-    // archive down with it.
-    if (entry.entryName.toLowerCase() === APP_MANIFEST) continue
+      if (entry.header.size > limits.totalBytes)
+        throw new DeployRefusal(
+          413,
+          `The deploy document exceeds the deploy limit: ${describeSize(
+            entry.header.size
+          )} (maximum ${describeLimit(limits.totalBytes)}).`
+        )
 
-    if (entry.header.size > limits.totalBytes)
-      throw new DeployRefusal(
-        413,
-        `The deploy document exceeds the deploy limit: ${describeSize(
-          entry.header.size
-        )} (maximum ${describeLimit(limits.totalBytes)}).`
+      let parsed: unknown
+
+      try {
+        parsed = JSON.parse(entry.getData().toString('utf8'))
+      } catch (_) {
+        continue
+      }
+
+      // `||`, not `&&`: a document missing one of the two is still a document,
+      // and the deploy validator's own message (which names the missing field) is
+      // more use than being deployed as an app file
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        ('appLoc' in parsed || 'fileTree' in parsed)
       )
-
-    let parsed: unknown
-
-    try {
-      parsed = JSON.parse(entry.getData().toString('utf8'))
-    } catch (_) {
-      continue
+        return entry.getData().toString('utf8')
     }
 
-    // `||`, not `&&`: a document missing one of the two is still a document,
-    // and the deploy validator's own message (which names the missing field) is
-    // more use than being deployed as an app file
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      ('appLoc' in parsed || 'fileTree' in parsed)
-    )
-      return entry.getData().toString('utf8')
-  }
-
-  return undefined
-}
+    return undefined
+  })
 
 /**
  * Reads an archive of an app's files into a deploy tree.
@@ -157,9 +247,15 @@ export const extractDeployDocumentFromZip = async (
 export const extractFileTreeFromZip = async (
   zipFile: Express.Multer.File,
   limits: DeployLimits = DEPLOY_LIMITS
-): Promise<FileTree> => {
-  const zip = new AdmZip(await fs.promises.readFile(zipFile.path))
+): Promise<FileTree> =>
+  readArchive(zipFile, (zip) => entriesOf(zip, zipFile.originalname, limits))
 
+/** The tree an archive's entries describe - see `extractFileTreeFromZip`. */
+const entriesOf = (
+  zip: AdmZip,
+  archiveName: string,
+  limits: DeployLimits
+): FileTree => {
   const members: DeployMember[] = []
   const folders = new Map<string, FolderMember>()
 
@@ -242,7 +338,7 @@ export const extractFileTreeFromZip = async (
   if (!members.length)
     throw new DeployRefusal(
       400,
-      `The archive ${zipFile.originalname} contains no files to deploy.`
+      `The archive ${archiveName} contains no files to deploy.`
     )
 
   return { members }
