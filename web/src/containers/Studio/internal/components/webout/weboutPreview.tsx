@@ -100,7 +100,9 @@ const WebOutPreview = (props: WebOutPreviewProps) => {
         />
       ) : view === 'tree' ? (
         <Box sx={{ ...textPane(true), p: 0 }}>
-          <JsonTreePane text={output} />
+          // Keyed on the document: a re-run replaces `output` in place, and the
+          // open-branch set belongs to the webout it was made for
+          <JsonTreePane key={output} text={output} />
         </Box>
       ) : (
         <Box component="pre" sx={textPane(true)}>

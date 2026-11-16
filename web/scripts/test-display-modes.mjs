@@ -26,8 +26,13 @@ const {
   storedDisplayMode
 } = await import('../src/containers/Studio/internal/displayMode.ts')
 
-const { headingAnchor, markdownToHtml, isSafeHref, slugifyHeading } =
-  await import('../src/containers/Studio/internal/render/markdown.ts')
+const {
+  fragmentOf,
+  headingAnchor,
+  markdownToHtml,
+  isSafeHref,
+  slugifyHeading
+} = await import('../src/containers/Studio/internal/render/markdown.ts')
 const { MAX_PREVIEW_ROWS, csvTable, parseCsv } =
   await import('../src/containers/Studio/internal/render/csv.ts')
 const { jsonTreeOf } =
@@ -215,9 +220,14 @@ check(
  * text - so a `#helpinfo` link had nowhere to land.
  */
 check(
-  'an inline anchor becomes the heading id',
+  'a heading keeps its slug beside its inline anchor',
   headingAnchor('This is short help information <a name="helpinfo"></a>').id ===
-    'helpinfo'
+    'this-is-short-help-information'
+)
+check(
+  'the inline anchor is kept as a name of its own',
+  headingAnchor('This is short help information <a name="helpinfo"></a>')
+    .anchors[0] === 'helpinfo'
 )
 check(
   'the inline anchor is not left in the text',
@@ -233,10 +243,25 @@ check(
   slugifyHeading('Parameters:') === 'parameters'
 )
 check(
-  'the heading carries the id in the output',
+  'the heading is slugged and the anchor is a target of its own',
   markdownToHtml('## Help <a name="helpinfo"></a>\n').includes(
-    '<h2 id="helpinfo">Help</h2>'
-  )
+    '<a id="helpinfo"></a>'
+  ) &&
+    markdownToHtml('## Help <a name="helpinfo"></a>\n').includes(
+      '<h2 id="help">Help</h2>'
+    )
+)
+check(
+  'both names of an anchored heading land',
+  // `## Second section <a name="second"></a>` with a `[link](#second-section)`
+  // above it: the heading's slug and the anchor's name are two links a reader
+  // may follow, and the slug used to match nothing at all.
+  markdownToHtml('## Second section <a name="second"></a>\n').includes(
+    '<h2 id="second-section">Second section</h2>'
+  ) &&
+    markdownToHtml('## Second section <a name="second"></a>\n').includes(
+      '<a id="second"></a>'
+    )
 )
 check(
   'a bare heading gets a slug id',
@@ -255,6 +280,79 @@ check(
 check(
   'an external link still opens one',
   markdownToHtml('[site](https://example.com)\n').includes('target="_blank"')
+)
+check(
+  'a quote in a link target stays inside the attribute',
+  // The target is interpolated into `href` after the whole line has been escaped,
+  // so a quote arrives as `&quot;` and cannot close the attribute. Escaping the
+  // target a second time would corrupt it (`&` becomes `&amp;amp;`), so what is
+  // asserted here is the escaped form, not a second pass.
+  markdownToHtml('[x](https://e.com/"onmouseover="alert(1))').includes(
+    'href="https://e.com/&quot;onmouseover=&quot;alert(1"'
+  ) &&
+    !markdownToHtml('[x](https://e.com/"onmouseover="alert(1))').includes(
+      '"onmouseover="'
+    )
+)
+check(
+  'a query string keeps its ampersands',
+  markdownToHtml('[x](https://e.com/?a=1&b=2)').includes(
+    'href="https://e.com/?a=1&amp;b=2"'
+  )
+)
+
+check(
+  'an anchor on its own line names the heading below it',
+  markdownToHtml('<a name="helpinfo"></a>\n\n## Help\n').includes(
+    '<a id="helpinfo"></a>'
+  ) &&
+    markdownToHtml('<a name="helpinfo"></a>\n\n## Help\n').includes(
+      '<h2 id="help">Help</h2>'
+    )
+)
+check(
+  'an anchor on its own line is not printed as text',
+  !markdownToHtml('<a name="helpinfo"></a>\n\n## Help\n').includes('&lt;a name')
+)
+check(
+  'an anchor that names no heading still exists',
+  markdownToHtml('<a name="orphan"></a>\n').includes('<a id="orphan"></a>')
+)
+check(
+  'an anchor between two paragraphs sits where it is written',
+  (() => {
+    // Held until a heading arrived, an anchor followed by prose put its target at
+    // the end of the document, so a link to it scrolled the reader to the bottom.
+    const out = markdownToHtml(
+      'intro paragraph\n\n<a name="orphan"></a>\n\nprose after the anchor\n'
+    )
+
+    return (
+      out.includes('<a id="orphan"></a>') &&
+      out.indexOf('<a id="orphan"></a>') < out.indexOf('prose after the anchor')
+    )
+  })()
+)
+check(
+  'two anchors in a row are both targets',
+  (() => {
+    // The second used to overwrite the first, leaving no element with id "one".
+    const out = markdownToHtml(
+      '<a name="one"></a>\n<a name="two"></a>\n\n## Help\n'
+    )
+
+    return (
+      out.includes('<a id="one"></a>') &&
+      out.includes('<a id="two"></a>') &&
+      out.includes('<h2 id="help">Help</h2>')
+    )
+  })()
+)
+check(
+  'a repeated heading does not repeat an id',
+  markdownToHtml('## Usage\n\ntext\n\n## Usage\n').includes(
+    '<h2 id="usage-1">Usage</h2>'
+  )
 )
 
 // --- markdown --------------------------------------------------------------
@@ -307,6 +405,18 @@ check('an anchor is a safe href', isSafeHref('#top'))
 check('a relative path is a safe href', isSafeHref('./doc.md'))
 check('javascript: is not', !isSafeHref('javascript:alert(1)'))
 check('data: is not', !isSafeHref('data:text/html,<b>x</b>'))
+
+// The fragment of a shared link is user input, and `decodeURIComponent` throws on
+// a malformed escape - a link pasted as `notes.md#100%` must not take the pane down.
+check('a fragment keeps its name', fragmentOf('#helpinfo') === 'helpinfo')
+check('a fragment is decoded', fragmentOf('#help%20info') === 'help info')
+check('an empty fragment names nothing', fragmentOf('') === '')
+check('a bare hash names nothing', fragmentOf('#') === '')
+check('a malformed fragment names nothing', fragmentOf('#100%') === '')
+check(
+  'a percent written as an escape is decoded',
+  fragmentOf('#100%25') === '100%'
+)
 
 // --- csv -------------------------------------------------------------------
 

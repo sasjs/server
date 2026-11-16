@@ -11,13 +11,14 @@ import { chdir } from 'process'
 import { mkdirSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { PROGRAM, PROGRAM_NAME } from './fixture'
+import { NOTES, NOTES_NAME, PROGRAM, PROGRAM_NAME } from './fixture'
 
 const root = join(tmpdir(), 'sasjs-studio-e2e')
 const driveLocation = join(root, 'sasjs_root', 'drive')
 
 mkdirSync(join(driveLocation, 'files'), { recursive: true })
 writeFileSync(join(driveLocation, 'files', PROGRAM_NAME), PROGRAM)
+writeFileSync(join(driveLocation, 'files', NOTES_NAME), NOTES)
 
 chdir(root)
 

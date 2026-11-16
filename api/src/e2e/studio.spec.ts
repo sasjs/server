@@ -24,6 +24,8 @@ import {
   INDENTED_JSON_NAME,
   JSON_FILE_NAME,
   MINIFIED_JSON,
+  NOTES,
+  NOTES_NAME,
   PROGRAM_NAME,
   SAVE_FILE_CONTENT,
   SAVE_FILE_NAME,
@@ -62,6 +64,55 @@ describe('Studio in a browser', () => {
 
   const baseUrl = () => `http://localhost:${(server.address() as any).port}`
 
+  /** Puts the pane the rendered Markdown lives in back at its top. */
+  const scrollPaneToTop = () =>
+    page.evaluate(() => {
+      let element =
+        document.querySelector('h2#first-section')?.parentElement ?? null
+
+      while (element) {
+        const style = getComputedStyle(element)
+
+        if (
+          /(auto|scroll)/.test(style.overflowY) &&
+          element.scrollHeight > element.clientHeight
+        ) {
+          element.scrollTop = 0
+
+          return
+        }
+
+        element = element.parentElement
+      }
+    })
+
+  /**
+   * The scroll offset of the pane the rendered Markdown lives in.
+   *
+   * The pane is the scroll container - the page around it does not scroll - so
+   * proving that a link moved the reader means reading this element's offset,
+   * not the window's.
+   */
+  const paneScrollTop = () =>
+    page.evaluate(() => {
+      let element =
+        document.querySelector('h2#first-section')?.parentElement ?? null
+
+      while (element) {
+        const style = getComputedStyle(element)
+
+        if (
+          /(auto|scroll)/.test(style.overflowY) &&
+          element.scrollHeight > element.clientHeight
+        )
+          return element.scrollTop
+
+        element = element.parentElement
+      }
+
+      return -1
+    })
+
   beforeAll(async () => {
     // SASSessionController.createSession() reads this file before it spawns a
     // SAS process, and `npm test` does not run the script that produces it.
@@ -97,6 +148,10 @@ describe('Studio in a browser', () => {
       path.join(driveLocation, 'files', INDENTED_JSON_NAME),
       INDENTED_JSON
     )
+
+    // A Markdown file, for the preview pane's own tests: the drive is what the
+    // Studio reads, so the file has to exist there before the page asks for it.
+    await createFile(path.join(driveLocation, 'files', NOTES_NAME), NOTES)
 
     // A folder that has not been opened, so the lazy load can be observed.
     await createFolder(path.join(driveLocation, 'files', 'e2eFolder'))
@@ -930,5 +985,130 @@ describe('Studio in a browser', () => {
     expect(asked.some((asked) => asked.includes('program.sas'))).toBe(false)
 
     await page.unroute(check)
+  }, 120000)
+
+  it('links a folder, and opens the way to it', async () => {
+    const asked: string[] = []
+
+    page.on('request', (request) => {
+      if (!request.url().includes('/SASjsApi/drive/fileTree')) return
+
+      const askedFor = new URL(request.url()).searchParams.get('_folderPath')
+      if (askedFor !== null) asked.push(askedFor)
+    })
+
+    await page.goto(`${baseUrl()}/studio?folderPath=${encodeURIComponent('/')}`)
+
+    // The URL is the folder's address, and the panel says so rather than showing
+    // an empty editor over it.
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('folderPath=/'),
+      { timeout: 30000 }
+    )
+    await page.waitForSelector('text=A folder. Its address is the URL', {
+      timeout: 30000
+    })
+
+    expect(asked.length).toBeGreaterThan(0)
+
+    // A folder in a nested path is opened by walking to it, one level at a time.
+    asked.length = 0
+    await page.goto(
+      `${baseUrl()}/studio?folderPath=${encodeURIComponent('/Public/demo')}`
+    )
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('/Public/demo'),
+      { timeout: 30000 }
+    )
+    await page.waitForTimeout(1500)
+
+    // The root is sent as an empty path - `_folderPath=` - not as a slash, so the
+    // walk from it is '', '/Public', '/Public/demo'.
+    expect(asked).toContain('')
+    expect(asked).toContain('/Public')
+  }, 120000)
+
+  it('opens a markdown file in the split view, at this window width', async () => {
+    // The viewport this suite runs at is 1280x800, above SPLIT_VIEW_MIN_WIDTH, so
+    // the text and the rendering arrive together - the default this change made,
+    // and one no other test would notice going back to source-only.
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(`/${NOTES_NAME}`)}`
+    )
+
+    await page.waitForFunction(
+      () => decodeURIComponent(location.search).includes('notes.md'),
+      { timeout: 30000 }
+    )
+
+    const split = page.locator('button[value="split"]')
+    await split.waitFor({ timeout: 30000 })
+
+    expect(await split.getAttribute('aria-pressed')).toBe('true')
+
+    // The rendered heading, not the text: Monaco stays mounted in split mode and
+    // carries `First section` in its own lines, so a `text=` selector would pass
+    // with an empty or broken preview.
+    await page.waitForSelector('h2#first-section', { timeout: 30000 })
+  }, 120000)
+
+  it('lands a markdown link on its section', async () => {
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(`/${NOTES_NAME}`)}`
+    )
+    await page.waitForSelector('h2#second-section', { timeout: 30000 })
+
+    expect(await paneScrollTop()).toBe(0)
+
+    // The one link in the file, drawn by the renderer with `data-anchor`: the
+    // pane claims the click, because the browser's own jump looks for a
+    // scrolling box that is not this one.
+    await page.click('a[data-anchor]')
+
+    await page.waitForFunction(() => location.hash === '#second-section', {
+      timeout: 30000
+    })
+
+    // The pane moved to it, and the file is still the open one: the fragment was
+    // written without a navigation.
+    const landed = await paneScrollTop()
+    expect(landed).toBeGreaterThan(0)
+    expect(decodeURIComponent(new URL(page.url()).search)).toContain(NOTES_NAME)
+
+    // The reader then scrolls away - back to the top - and types. The fragment is
+    // still in the URL, so a pane that re-ran its scroll on every change would
+    // yank them back to the section they already left.
+    await scrollPaneToTop()
+    expect(await paneScrollTop()).toBe(0)
+
+    await page.click('.monaco-editor')
+    await page.keyboard.press('Control+End')
+    await page.keyboard.type('x')
+    await page.keyboard.press('Escape')
+
+    // The preview shows the keystroke, so the document really was re-rendered -
+    // otherwise this case would pass by never re-running the effect at all.
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('The end.x') ?? false,
+      { timeout: 30000 }
+    )
+
+    expect(await paneScrollTop()).toBe(0)
+  }, 120000)
+
+  it('opens a markdown file at the section its URL names', async () => {
+    // The link people share: the file arrives after the load, so the fragment has
+    // to be read again once the document is there.
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(
+        `/${NOTES_NAME}`
+      )}#first-section`
+    )
+
+    await page.waitForSelector('h2#first-section', { timeout: 30000 })
+
+    // The heading sits below the title and the first paragraph, so landing on it
+    // means the pane moved rather than staying at the top.
+    expect(await paneScrollTop()).toBeGreaterThan(0)
   }, 120000)
 })

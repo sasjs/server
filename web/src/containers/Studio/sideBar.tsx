@@ -62,6 +62,12 @@ const SideBar = ({
     handleSelect(filePath)
   }
 
+  const handleFolderClick = (folderPath: string) => {
+    // the drawer covers the panel the folder link opens, so it goes first
+    setMobileOpen(false)
+    handleFolderSelect?.(folderPath)
+  }
+
   const deleteNode = (path: string, isFolder: boolean) => {
     setIsLoading(true)
     const axiosPromise = axios.delete(
@@ -180,7 +186,7 @@ const SideBar = ({
           <TreeView
             node={directoryData}
             handleSelect={handleFileSelect}
-            handleFolderSelect={handleFolderSelect}
+            handleFolderSelect={handleFolderClick}
             deleteNode={deleteNode}
             addFile={addFile}
             addFolder={addFolder}
