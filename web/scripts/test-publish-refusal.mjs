@@ -67,10 +67,18 @@ check(
   ).includes('appLoc cannot be outside drive.')
 )
 check(
-  'a body with no reason still states the status rather than nothing',
-  refusalText(answered(502, {}, 'Bad Gateway')).includes(
-    'the server answered HTTP 502 (Bad Gateway) and gave no reason.'
-  )
+  'a body with no reason states the status and the status text',
+  refusalText({
+    message: 'Request failed with status code 502',
+    response: { status: 502, statusText: 'Bad Gateway', data: {} }
+  }).includes('the server answered HTTP 502 (Bad Gateway) and gave no reason.')
+)
+check(
+  'axios own message does not stand in for a reason the server did not give',
+  !refusalText({
+    message: 'Request failed with status code 502',
+    response: { status: 502, statusText: 'Bad Gateway', data: '' }
+  }).includes('Request failed with status code')
 )
 check(
   'an HTML page is read for its title, not printed',

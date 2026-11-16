@@ -467,7 +467,9 @@ describe('a deploy of a package', () => {
     expect(res.body.message).toContain(
       '"server.json.zip" is not a zip archive: it begins with "------formdata-undici-'
     )
-    expect(res.body.message).toContain('a zip archive begins with "PK"')
+    expect(res.body.message).toContain(
+      'a zip archive begins with the four bytes "PK\\x03\\x04"'
+    )
 
     // nothing was published, so nothing is left behind either
     expect(frontends()).toEqual(before)

@@ -67,9 +67,13 @@ const reasonOf = (body: unknown): string => {
  * The banner for a refused publish: the status the server answered, and the
  * reason it gave.
  *
- * A request that never reached the server has no status, and its reason is the
- * browser's own (`Network Error`, a CORS refusal, a dropped connection) - which
- * is still more than the panel said before.
+ * A REQUEST that never reached the server has no response, and its reason is the
+ * browser's own (`Network Error`, a CORS refusal, a dropped connection). A request
+ * that was ANSWERED does not: axios fills `error.message` with
+ * `Request failed with status code 502`, which says only what the status already
+ * says and buries the reason the server sent - so the body is the only place read
+ * for a reason, and a response that carried none is reported as such, with the
+ * status and its text.
  */
 export const refusalText = (error: unknown): string => {
   const response = (error as any)?.response
@@ -77,7 +81,9 @@ export const refusalText = (error: unknown): string => {
     typeof response?.status === 'number' ? response.status : undefined
   const answered = status === undefined ? '' : ` (HTTP ${status})`
 
-  const reason = reasonOf(response?.data) || reasonOf((error as any)?.message)
+  const reason = response
+    ? reasonOf(response.data)
+    : reasonOf((error as any)?.message)
 
   if (reason) return `The build could not be published${answered}: ${reason}`
 

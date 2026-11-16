@@ -41,7 +41,7 @@ Sizes are decoded bytes. A file member travels as its own text, or as base64 whe
 
 Member names are checked in the same pass: a name carrying `/`, `\` or `..` would write outside the deployment folder, so the tree is refused with `400` instead.
 
-A file that is not an archive is refused with `400` before it is read, and the refusal names the file and quotes what it holds: `The file "server.json.zip" is not a zip archive: it begins with "------formdata-undici-...", where a zip archive begins with "PK".` A download served under a `.zip` name is not always one - a release asset uploaded as the multipart body that carried it begins with the form boundary - and an archive that begins with `PK` but cannot be read keeps the reader's own reason, attached to the file's name. Both are `400`, because the request is what needs correcting.
+A file that is not an archive is refused with `400` before it is read, and the refusal names the file and quotes what it holds: `The file "server.json.zip" is not a zip archive: it begins with "------formdata-undici-...", where a zip archive begins with the four bytes "PK\x03\x04".` A download served under a `.zip` name is not always one - a release asset uploaded as the multipart body that carried it begins with the form boundary - and an archive that begins with the signature but cannot be read keeps the reader's own reason, attached to the file's name. Both are `400`, because the request is what needs correcting. A file that stops inside the signature is refused as what it is, with the number of bytes it holds.
 
 ## Publishing an app
 

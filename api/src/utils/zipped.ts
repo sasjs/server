@@ -57,7 +57,10 @@ const describeLimit = (bytes: number) =>
     ? `${bytes} bytes`
     : `${Math.round((bytes / MEGABYTE) * 10) / 10} MB`
 
-/** What an archive begins with: a local file, an empty archive, or a spanned one. */
+/**
+ * What a zip archive begins with: a local file, an empty archive, or a spanned
+ * one. All three are four bytes long, so the opening decides by itself.
+ */
 const ZIP_SIGNATURES = [
   Buffer.from([0x50, 0x4b, 0x03, 0x04]),
   Buffer.from([0x50, 0x4b, 0x05, 0x06]),
@@ -95,6 +98,45 @@ const openingBytes = (bytes: Buffer, count = 32): string => {
 }
 
 /**
+ * A zip archive's opening, as a refusal quotes it.
+ *
+ * Quoted in full, not as `PK`: a file holding only `PK` - an archive cut off
+ * before its header - would otherwise be refused with "it begins with PK, where a
+ * zip begins with PK", which contradicts itself exactly where a reader needs the
+ * sentence to be right.
+ */
+const ZIP_OPENING = openingBytes(ZIP_SIGNATURES[0])
+
+/** Whether the file stops inside a signature: `PK` on its own, `PK` and one more byte. */
+const endsInsideSignature = (bytes: Buffer): boolean =>
+  bytes.length > 0 &&
+  ZIP_SIGNATURES.some(
+    (signature) =>
+      bytes.length < signature.length &&
+      signature.subarray(0, bytes.length).equals(bytes)
+  )
+
+/**
+ * Why a file that is not an archive is not one, in the file's own terms.
+ *
+ * Three cases, because a reader needs different things from each: a file that is
+ * empty, a file that stops inside a signature (`PK` alone is an archive cut off
+ * before its header, not a file that begins the way an archive does), and anything
+ * else, which quotes what the file does begin with.
+ */
+const notAnArchive = (name: string, bytes: Buffer): string => {
+  if (bytes.length === 0)
+    return `The file "${name}" is empty, where a zip archive begins with the four bytes "${ZIP_OPENING}".`
+
+  if (endsInsideSignature(bytes))
+    return `The file "${name}" is not a zip archive: it holds ${bytes.length} byte(s), so it ends inside "${ZIP_OPENING}", the four bytes a zip archive begins with.`
+
+  return `The file "${name}" is not a zip archive: it begins with "${openingBytes(
+    bytes
+  )}", where a zip archive begins with the four bytes "${ZIP_OPENING}".`
+}
+
+/**
  * Reads an uploaded file as an archive, and refuses one that is not.
  *
  * `AdmZip` reports a body that is not a zip in its own terms - "ADM-ZIP: Invalid
@@ -116,14 +158,7 @@ const readArchive = async <T>(
   if (
     !ZIP_SIGNATURES.some((signature) => bytes.subarray(0, 4).equals(signature))
   )
-    throw new DeployRefusal(
-      400,
-      bytes.length === 0
-        ? `The file "${zipFile.originalname}" is empty, where a zip archive begins with "PK".`
-        : `The file "${zipFile.originalname}" is not a zip archive: it begins with "${openingBytes(
-            bytes
-          )}", where a zip archive begins with "PK".`
-    )
+    throw new DeployRefusal(400, notAnArchive(zipFile.originalname, bytes))
 
   try {
     return read(new AdmZip(bytes))

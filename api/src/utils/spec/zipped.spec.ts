@@ -276,7 +276,9 @@ describe('a file that is not an archive', () => {
     expect(refusal.message).toContain('"server.json.zip" is not a zip archive')
     // the opening is quoted, so a reader can see the envelope that was uploaded
     expect(refusal.message).toContain('it begins with "------formdata-undici-')
-    expect(refusal.message).toContain('a zip archive begins with "PK"')
+    expect(refusal.message).toContain(
+      'a zip archive begins with the four bytes "PK\\x03\\x04"'
+    )
   })
 
   it('says a file is empty rather than quoting nothing', async () => {
@@ -286,8 +288,27 @@ describe('a file that is not an archive', () => {
 
     expect(refusal.code).toEqual(400)
     expect(refusal.message).toEqual(
-      'The file "empty.zip" is empty, where a zip archive begins with "PK".'
+      'The file "empty.zip" is empty, where a zip archive begins with the four bytes "PK\\x03\\x04".'
     )
+  })
+
+  it('says how short a file that stops inside the signature is', async () => {
+    // `PK` alone is what a cut-off upload leaves: quoting it as "begins with PK,
+    // where a zip begins with PK" would contradict itself
+    const refusal = await extractFileTreeFromZip(
+      asFile(Buffer.from('PK'), 'cut.zip')
+    ).catch((error) => error)
+
+    expect(refusal.code).toEqual(400)
+    expect(refusal.message).toEqual(
+      'The file "cut.zip" is not a zip archive: it holds 2 byte(s), so it ends inside "PK\\x03\\x04", the four bytes a zip archive begins with.'
+    )
+
+    const oneMore = await extractDeployDocumentFromZip(
+      asFile(Buffer.from([0x50, 0x4b, 0x03]), 'cut2.zip')
+    ).catch((error) => error)
+
+    expect(oneMore.message).toContain('it holds 3 byte(s)')
   })
 
   it('keeps the reader reason for an archive it cannot read, with the file name', async () => {
