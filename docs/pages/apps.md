@@ -161,6 +161,22 @@ An app answers on two URLs.
 
 The id is what the permission model speaks, and it is the handle every removal names. A rename does not exist: an app published as a frontend IS its name, so a new name is a new app.
 
+## A streamed build, served from Drive
+
+A build made with `streamWeb` in the target's `streamConfig` (`sasjs web`, or `sasjs cbd`) writes an entry page whose every asset link names the file by path:
+
+```
+<script src="/StoredProgram?_FILE=/Public/4gl/myapp/services/web/main.4f3a9c1d.js"></script>
+```
+
+`/StoredProgram` is the web tier this server serves a build from: a browser fetches a filename from it, and the file comes back - one file out of the Drive, typed by its extension, so a page, a script, a stylesheet or a font arrives as itself rather than as bytes. Nothing has to be unpacked or mounted first, which is why a frontend built to name its assets this way can be deployed to the Drive at the `appLoc` it carries and opened here unchanged.
+
+`/StoredProgram` answers a second parameter: `_program=<path>` runs a stored program on the same address. A request naming both `_program` and `_FILE` is refused with `400`, because the two answer different things, and the refusal names both parameters rather than resolving one over the other. That refusal is one sentence with one copy per side: this server mints it in `api/src/routes/setupRoutes.ts` as `TIER_NEEDS_ONE_PARAMETER`, and the mocked host in sasjs/cli (`src/commands/build/internal/mockSite/assets/sw.js`) answers it verbatim, each pinned by its own spec, so a rewording cannot land on one side alone.
+
+What both parameters share is everything that decides access: the rule on `/SASjsApi/drive/file` governs them, so a caller who may not read the Drive reads no asset and runs no program, and a path that climbs out of the Drive is refused with `400`. A file that is not there answers `202` with `Parameter Error` and `File error` rather than a `404`, so a missing asset looks the same however it was asked for. Hashed asset names are cached immutably and everything else revalidates, as they are on an app's own route.
+
+Where the assets land is the build's business, not this server's: a target with `streamWeb` set writes the folder itself and is opened at `<server>/StoredProgram?_FILE=<appLoc>/services/<streamServiceName>.html`.
+
 ## One pack, either run time
 
 A SASjs Server runs programs as SAS or as JavaScript, chosen by `RUN_TIMES`. A deployment can carry both: the SAS service `services/common/configure` and the JS program `services/common/configure.js` sit side by side under the app's folder, and the run time decides which one runs. A pack built for a server that runs JS - the `server` target of a SASjs app with its JS mocks in `serviceFolders` - therefore works on either without a second build, and a browser-hosted site (which is a JS host) runs the same programs.
