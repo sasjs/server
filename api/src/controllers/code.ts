@@ -195,8 +195,8 @@ export class CodeController {
    * question with the rules rather than making the client ship the program to
    * have it formatted. The walk is the same one the lint and format routes use.
    *
-   * Nothing is executed and no file content is returned: the payload is a rules
-   * object a few hundred bytes long.
+   * Nothing is executed and no SAS source is returned. The payload is the
+   * parsed `.sasjslint` document, including any additional settings it contains.
    *
    * @summary Get the lint rules that apply to a drive path
    */

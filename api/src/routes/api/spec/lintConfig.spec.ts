@@ -1,8 +1,11 @@
+import fs from 'fs'
 import os from 'os'
 import path from 'path'
 
+import { parse } from 'yaml'
+
 import { LintConfig } from '@sasjs/lint'
-import { createFile, createFolder } from '@sasjs/utils'
+import { createFile, createFolder, deleteFolder } from '@sasjs/utils'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -55,6 +58,64 @@ type MissingSetting = Exclude<
 const everySettingIsNamed: MissingSetting extends never ? true : never = true
 
 describe('the lint-config response schema', () => {
+  it('documents severity values and the default rule', () => {
+    const spec = parse(
+      fs.readFileSync(
+        path.join(__dirname, '../../../../public/swagger.yaml'),
+        'utf8'
+      )
+    )
+    const settings = spec.components.schemas.LintConfigJson.properties
+    const severity =
+      spec.components.schemas[settings.severityLevel.$ref.split('/').pop()]
+    expect(severity.additionalProperties.type).toBe('string')
+    expect(severity.additionalProperties.enum.sort()).toEqual(['error', 'warn'])
+    expect(severity.description).toContain('default')
+  })
+
+  it('publishes complete descriptions for the previously truncated settings', () => {
+    const spec = parse(
+      fs.readFileSync(
+        path.join(__dirname, '../../../../public/swagger.yaml'),
+        'utf8'
+      )
+    )
+    const settings = spec.components.schemas.LintConfigJson.properties
+    const keys = [
+      'noBannedStrings',
+      'hasDoxygenHeader',
+      'noGremlins',
+      'noMalformedMacroCalls',
+      'lowerCaseMacroNames',
+      'minMacroNameLength',
+      'noNestedCommentsInHeader',
+      'noSingleAsteriskComments',
+      'noUndeclaredMacros',
+      'noUnusedMacros',
+      'noXcmd',
+      'noUnusedLibnames',
+      'ignoredMacros'
+    ] as const
+    for (const key of keys) {
+      expect(settings[key].description).toEqual(
+        lintSchema.properties[key].description.split('*/').join('*&#47;')
+      )
+    }
+  })
+
+  it('describes the returned configuration without claiming no file content', () => {
+    const spec = parse(
+      fs.readFileSync(
+        path.join(__dirname, '../../../../public/swagger.yaml'),
+        'utf8'
+      )
+    )
+    const operation = spec.paths['/SASjsApi/code/lint-config'].get
+    const text = JSON.stringify(operation)
+    expect(text).not.toContain('no file content is returned')
+    expect(text).toContain('no SAS source')
+  })
+
   it('names every setting the linter documents', () => {
     expect(everySettingIsNamed).toBe(true)
 
@@ -120,8 +181,12 @@ describe('GET /SASjsApi/code/lint-config', () => {
     process.driveLoc = drive
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     process.driveLoc = originalDriveLoc
+    if (drive) {
+      await deleteFolder(drive)
+      expect(fs.existsSync(drive)).toBe(false)
+    }
   })
 
   const get = (query = '') =>
