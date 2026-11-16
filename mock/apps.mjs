@@ -625,7 +625,45 @@ export const fetchPack = async (url) => {
       `Could not download the packaged app from ${url}: ${response.status} ${response.statusText}`
     )
 
-  const archive = Buffer.from(await response.arrayBuffer())
+  const body = Buffer.from(await response.arrayBuffer())
 
-  return JSON.parse(unzipEntry(archive, 'server.json').toString('utf8'))
+  return JSON.parse(
+    unzipEntry(unwrapArchive(body), 'server.json').toString('utf8')
+  )
+}
+
+/** The first bytes of a zip's first local file header. */
+const ZIP_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04])
+
+/** How much of the tail to read when looking for the envelope's closing boundary. */
+const TAIL_BYTES = 256
+
+/**
+ * The archive inside a release asset's body.
+ *
+ * GitHub stores an asset as the bytes it was uploaded with, and an upload sent as
+ * a `multipart/form-data` body stores the envelope too: the zip is there, after a
+ * part's headers, and the boundary closes it. Reading such a body as the archive
+ * fails the build until that release is uploaded again, which for a build that
+ * fetches third-party releases means the demo cannot be built at all - so the
+ * envelope is unwrapped here.
+ *
+ * A body that starts with a zip's own header is left exactly as it is.
+ */
+export const unwrapArchive = (body) => {
+  if (body.subarray(0, ZIP_MAGIC.length).equals(ZIP_MAGIC)) return body
+
+  const start = body.indexOf(ZIP_MAGIC)
+
+  if (start < 0) return body
+
+  const tailStart = Math.max(0, body.length - TAIL_BYTES)
+  const closing = body
+    .subarray(tailStart)
+    .toString('latin1')
+    .lastIndexOf('\r\n--')
+
+  return closing < 0
+    ? body.subarray(start)
+    : body.subarray(start, tailStart + closing)
 }

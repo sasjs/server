@@ -24,9 +24,11 @@ import {
   appVersion,
   packFiles,
   latestReleaseUrl,
+  fetchPack,
   releaseUrl,
   resolveRelease,
   unzipEntry,
+  unwrapArchive,
   withPublishedApp,
   withPublishedApps
 } from './apps.mjs'
@@ -204,6 +206,41 @@ test('reads the archive member, whichever way it was compressed', () => {
       `method ${method}`
     )
   }
+})
+
+test('reads a release whose asset arrived wrapped in a form-data envelope', async () => {
+  // Two app releases are stored with the envelope their upload sent: the zip is
+  // there, after a part's headers, and a boundary closes it. Reading the body as
+  // the archive failed the site build until those releases were uploaded again.
+  const zip = zipWith('server.json', Buffer.from('{"name":"wrapped"}'))
+  const boundary = '----formdata-undici-0123456789abcdef'
+  const envelope = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\n` +
+        'Content-Disposition: form-data; name="file"; filename="server.json.zip"\r\n' +
+        'Content-Type: application/octet-stream\r\n\r\n',
+      'latin1'
+    ),
+    zip,
+    Buffer.from(`\r\n--${boundary}--\r\n`, 'latin1')
+  ])
+
+  const original = globalThis.fetch
+  globalThis.fetch = async () => new Response(envelope)
+
+  try {
+    const pack = await fetchPack('https://example.invalid/server.json.zip')
+
+    assert.equal(pack.name, 'wrapped')
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test('leaves an unwrapped archive exactly as it is', () => {
+  const zip = zipWith('server.json', Buffer.from('{"name":"plain"}'))
+
+  assert.equal(unwrapArchive(zip), zip)
 })
 
 test('refuses an archive with no such member, and one that is not a zip', () => {
