@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
   Box,
@@ -15,120 +22,72 @@ import {
 } from '@mui/material'
 import { Search as SearchIcon } from '@mui/icons-material'
 
-/** A documentation page or an API operation, as one list. */
-interface Hit {
-  kind: 'docs' | 'api'
-  title: string
-  detail: string
-  /** The app's route for it. */
-  to: string
-}
+import axios from 'axios'
 
-interface Operation {
-  method: string
-  path: string
-  summary: string
-}
-
-interface DocsEntry {
-  location: string
-  title: string
-  text: string
-}
+import { AppContext } from '../context/appContext'
+import { APP_STREAM_ROUTE } from '../utils'
+import { APPS_LISTING } from '../utils/appUrl'
+import {
+  AppRow,
+  DocsEntry,
+  Hit,
+  Operation,
+  Sources,
+  kindLabel,
+  matches,
+  searchHint,
+  searchLabel,
+  searchScope
+} from '../utils/search'
 
 /**
- * Both sources, fetched once and kept for the session.
+ * The two sources a build writes, fetched once each and kept for the session.
  *
- * The documentation index is the one MkDocs builds for its own search - 163
- * entries, about 110 KB - and the operations list is written from the spec at
+ * The documentation index is the one MkDocs builds for its own search - about
+ * 163 entries and 110 KB - and the operations list is written from the spec at
  * build time, so neither search needs the server to answer anything: the same
  * code works on a static host. Shared at module level because every keystroke
- * would otherwise re-request them.
+ * would otherwise re-request them, and because neither changes while a page is
+ * open - they are files from the build.
  */
-let sources: Promise<{ docs: DocsEntry[]; operations: Operation[] }> | null =
-  null
+let docsSource: Promise<DocsEntry[]> | null = null
+let operationsSource: Promise<Operation[]> | null = null
 
-const loadSources = () =>
-  (sources ??= Promise.all([
-    fetch('/documentation/search/search_index.json')
-      .then((response) => (response.ok ? response.json() : { docs: [] }))
-      .then((index: { docs?: DocsEntry[] }) => index.docs ?? [])
-      .catch(() => [] as DocsEntry[]),
-    fetch('/api-operations.json')
-      .then((response) => (response.ok ? response.json() : []))
-      .then((operations: Operation[]) => operations ?? [])
-      .catch(() => [] as Operation[])
-  ]).then(([docs, operations]) => ({ docs, operations })))
+const loadDocs = () =>
+  (docsSource ??= fetch('/documentation/search/search_index.json')
+    .then((response) => (response.ok ? response.json() : { docs: [] }))
+    .then((index: { docs?: DocsEntry[] }) => index.docs ?? [])
+    .catch(() => [] as DocsEntry[]))
 
-/** How many results are worth showing: enough to choose from, not a page. */
-const LIMIT = 12
+const loadOperations = () =>
+  (operationsSource ??= fetch('/api-operations.json')
+    .then((response) => (response.ok ? response.json() : []))
+    .then((operations: Operation[]) => operations ?? [])
+    .catch(() => [] as Operation[]))
 
 /**
- * Where the query matches decides the order.
+ * The apps this caller may open, from the same listing the Apps screen draws.
  *
- * A page whose title contains the word is what the reader meant; a page that
- * mentions it in passing is a second best; and an operation that mentions it in
- * its summary is weaker than one whose path contains it. Without this, a query
- * like "permissions" returns twelve API operations and never shows the page
- * called Permissions.
+ * Requested through the shared axios instance, as every other reader of this
+ * listing is: it carries `baseURL: apiBaseUrl` - the API's own origin under
+ * `npm start`, which the dev server answers only for `/SASjsApi`, `/api` and
+ * `/docs` - and `withCredentials`, without which a deployment on another origin
+ * drops the session cookie. A bare `fetch` here 404s under `npm start` and then
+ * reports "nothing matches" under a placeholder promising "Search apps", which is
+ * the failure this search exists to remove.
+ *
+ * Not cached, unlike the build's own files: an app can be published or taken down
+ * between two visits to the screen, and a result that opens a page which is no
+ * longer served is worse than the request it would have saved.
  */
-const score = (needle: string, strong: string, weak: string) => {
-  if (strong.toLowerCase().includes(needle)) return 2
-  if (weak.toLowerCase().includes(needle)) return 1
+const loadApps = () =>
+  axios
+    .get(APPS_LISTING)
+    .then((response) => (response.data?.apps ?? []) as AppRow[])
+    .catch(() => [] as AppRow[])
 
-  return 0
-}
-
-const matches = (query: string, docs: DocsEntry[], operations: Operation[]) => {
-  const needle = query.trim().toLowerCase()
-
-  if (needle.length < 2) return [] as Hit[]
-
-  const scored: { hit: Hit; rank: number }[] = []
-
-  for (const entry of operations) {
-    const line = `${entry.method} ${entry.path}`
-    const rank = score(needle, line, entry.summary)
-
-    if (rank)
-      scored.push({
-        rank,
-        hit: {
-          kind: 'api',
-          title: line,
-          detail: entry.summary,
-          to: '/api'
-        }
-      })
-  }
-
-  for (const entry of docs) {
-    // `apps/#creating-apps` is a section of a page; the reader is taken to the
-    // page, which is what the framed route can address.
-    const location = entry.location.split('#')[0]
-    const rank = score(needle, entry.title, entry.text)
-
-    if (rank)
-      scored.push({
-        rank,
-        hit: {
-          kind: 'docs',
-          title: entry.title || location || 'Documentation',
-          detail: location ? `/${location}` : '/',
-          to: `/docs/${location}`
-        }
-      })
-  }
-
-  return scored
-    .sort(
-      (first, second) =>
-        second.rank - first.rank ||
-        first.hit.title.localeCompare(second.hit.title)
-    )
-    .slice(0, LIMIT)
-    .map((entry) => entry.hit)
-}
+/** No list but the ones this screen searches is loaded; see `searchScope`. */
+const empty: Sources = { docs: [], operations: [], apps: [] }
 
 const Results = ({
   hits,
@@ -152,7 +111,7 @@ const Results = ({
           }}
         />
         <Typography variant="caption" color="text.secondary">
-          {hit.kind === 'api' ? 'API' : 'Docs'}
+          {kindLabel(hit.kind)}
         </Typography>
       </ListItemButton>
     ))}
@@ -160,60 +119,86 @@ const Results = ({
 )
 
 /**
- * One search box for the documentation and the API.
+ * One search box, answering for the screen it is on.
  *
- * Two shapes of the same search: a field in the bar on a screen with room for
- * it, and a magnifier that opens a dialog where there is not. Both take
- * `Ctrl+K` (or `Cmd+K`), the shortcut a reader is most likely to try.
+ * On the documentation it searches the documentation, on the API explorer the
+ * operations, and on the apps screen the published apps - see `searchScope`. The
+ * dashboard, studio and settings have nothing of their own to search, so there it
+ * keeps answering both build-time lists, which is what it always did.
+ *
+ * Two shapes of the same search: a field in the bar on a screen with room for it,
+ * and a magnifier that opens a dialog where there is not. Both take `Ctrl+K` (or
+ * `Cmd+K`), the shortcut a reader is most likely to try.
  */
 const Search = () => {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const appContext = useContext(AppContext)
+  // An app is only searchable for a caller the listing would answer: without the
+  // grant the screen shows the built-in tiles instead, and `searchScope` keeps the
+  // both-lists box rather than promising a list it may not read.
+  const canListApps = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
+  const scope = searchScope(pathname, canListApps)
+
   const [query, setQuery] = useState('')
-  const [hits, setHits] = useState<Hit[]>([])
-  const [loaded, setLoaded] = useState(false)
+  const [sources, setSources] = useState<Sources>(empty)
+  const [searched, setSearched] = useState(false)
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [open, setOpen] = useState(false)
   const fieldRef = useRef<HTMLInputElement>(null)
-  /** The query whose results are still wanted; see `run`. */
-  const latest = useRef('')
 
-  // Warm both sources while the reader is doing something else: the first
-  // keystroke then filters rather than waits.
+  // Warm what this screen searches while the reader is doing something else: the
+  // first keystroke then filters rather than waits. Landing on another screen
+  // loads what that one needs, and only that one - the whole point of the scope
+  // is that the box does not answer from lists the screen has no use for.
   useEffect(() => {
-    loadSources().then(() => setLoaded(true))
-  }, [])
+    let live = true
 
-  const run = useCallback((value: string) => {
-    setQuery(value)
-    latest.current = value
+    setSearched(false)
 
-    if (value.trim().length < 2) {
-      setHits([])
-      return
-    }
+    Promise.all([
+      scope === 'docs' || scope === 'all' ? loadDocs() : [],
+      scope === 'api' || scope === 'all' ? loadOperations() : [],
+      // only ever 'apps' when the grant is held: see `searchScope`
+      scope === 'apps' ? loadApps() : []
+    ]).then(([docs, operations, apps]) => {
+      if (!live) return
 
-    loadSources().then(({ docs, operations }) => {
-      setLoaded(true)
-
-      // Every keystroke asks, and the answers can arrive out of order - a list
-      // from "permi" replacing the one for "permissions" is the flicker that
-      // makes a search box feel broken. Only the newest question is answered.
-      if (latest.current !== value) return
-
-      setHits(matches(value, docs, operations))
+      setSources({ docs, operations, apps })
+      setSearched(true)
     })
-  }, [])
+
+    return () => {
+      live = false
+    }
+  }, [scope])
+
+  // Derived, not stored: the results are a function of the query, the screen and
+  // what has loaded. Every keystroke asks the same lists, and an answer that
+  // arrives late cannot replace a newer one - there is no answer to arrive, only
+  // a re-render of the same inputs.
+  const hits = useMemo(
+    () => matches(scope, query, sources),
+    [scope, query, sources]
+  )
 
   const choose = useCallback(
     (hit: Hit) => {
       setOpen(false)
       setAnchor(null)
       setQuery('')
-      setHits([])
-      navigate(hit.to)
+
+      // An app is not a screen of this application: it opens beside the portal,
+      // as its tile does, so the reader keeps the listing they searched.
+      if (hit.href) window.open(hit.href, '_blank', 'noopener,noreferrer')
+      else if (hit.to) navigate(hit.to)
     },
     [navigate]
   )
+
+  const hint = searchHint(scope)
+  const label = searchLabel(scope)
+  const asked = query.trim().length >= 2
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -249,9 +234,9 @@ const Search = () => {
           size="small"
           fullWidth
           value={query}
-          placeholder="Search docs and API"
+          placeholder={hint}
           onFocus={(event) => setAnchor(event.currentTarget)}
-          onChange={(event) => run(event.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setAnchor(null)
@@ -267,7 +252,7 @@ const Search = () => {
               ),
               sx: { backgroundColor: 'background.paper', borderRadius: 1 }
             },
-            htmlInput: { 'aria-label': 'Search the documentation and the API' }
+            htmlInput: { 'aria-label': label }
           }}
         />
       </Box>
@@ -275,7 +260,7 @@ const Search = () => {
       <IconButton
         color="inherit"
         sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-        aria-label="Search the documentation and the API"
+        aria-label={label}
         onClick={() => setOpen(true)}
       >
         <SearchIcon />
@@ -284,7 +269,7 @@ const Search = () => {
       {/* Mounted only when it has somewhere to open: a Popover is a modal, and
           one left mounted while closed covers the page with a backdrop that
           swallows the click meant for what is underneath it. */}
-      {anchor && query.length >= 2 ? (
+      {anchor && asked ? (
         <Popover
           open
           anchorEl={anchor}
@@ -301,7 +286,7 @@ const Search = () => {
             <Results hits={hits} onChoose={choose} />
           ) : (
             <Typography variant="body2" sx={{ p: 2 }} color="text.secondary">
-              {loaded ? `Nothing matches “${query}”.` : 'Searching…'}
+              {searched ? `Nothing matches “${query}”.` : 'Searching…'}
             </Typography>
           )}
         </Popover>
@@ -319,12 +304,10 @@ const Search = () => {
             fullWidth
             size="small"
             value={query}
-            placeholder="Search docs and API"
-            onChange={(event) => run(event.target.value)}
+            placeholder={hint}
+            onChange={(event) => setQuery(event.target.value)}
             slotProps={{
-              htmlInput: {
-                'aria-label': 'Search the documentation and the API'
-              }
+              htmlInput: { 'aria-label': label }
             }}
           />
           <Box sx={{ mt: 1 }}>
@@ -332,7 +315,7 @@ const Search = () => {
               <Results hits={hits} onChoose={choose} />
             ) : (
               <Typography variant="body2" color="text.secondary">
-                {loaded ? 'Nothing matches.' : 'Searching…'}
+                {!asked ? hint : searched ? 'Nothing matches.' : 'Searching…'}
               </Typography>
             )}
           </Box>

@@ -43,6 +43,7 @@ import AppTile from '../../components/appTile'
 import { AppContext } from '../../context/appContext'
 import { brand } from '../../theme/palette'
 import { APP_STREAM_ROUTE, STUDIO_ROUTE } from '../../utils'
+import { APPS_LISTING } from '../../utils/appUrl'
 import { browserSite, clearSite } from '../../utils/cachedSite'
 import { ApiHost, apiHost } from '../../utils/host'
 import {
@@ -383,10 +384,7 @@ const Home = () => {
     let cancelled = false
 
     axios
-      // The canonical spelling, which the server answers on both prefixes and
-      // the browser-hosted build answers on this one: `/AppStream` redirects to
-      // the short `/app` on a server, and the listing is the same either way.
-      .get('/AppStream/apps.json')
+      .get(APPS_LISTING)
       .then((res) => {
         if (cancelled) return
         setAppsAvailable(

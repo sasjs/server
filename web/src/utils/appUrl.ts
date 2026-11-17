@@ -20,6 +20,23 @@ export interface AppLink {
 }
 
 /**
+ * Where the App Stream's listing is requested.
+ *
+ * The canonical spelling, which the server answers on both prefixes and the
+ * browser-hosted build answers on this one: `/AppStream` and the short `/app`
+ * are one surface, and the mock host answers `/AppStream/apps.json` today. It is
+ * stated once so the screens that draw apps and the search that finds them cannot
+ * ask different addresses - a listing address that drifts between callers is a
+ * screen that silently shows nothing.
+ *
+ * Requested through the shared axios instance, never a bare `fetch`: that
+ * instance carries `baseURL: apiBaseUrl` (the API's origin under `npm start`,
+ * which serves the build otherwise) and `withCredentials`, so the request
+ * reaches the API from the dev server and carries the session cookie.
+ */
+export const APPS_LISTING = '/AppStream/apps.json'
+
+/**
  * The segments the App Stream answers itself, before any app is looked up - a
  * name that collides with one of these can never open an app.
  */

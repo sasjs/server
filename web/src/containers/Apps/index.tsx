@@ -36,7 +36,7 @@ import AppTile from '../../components/appTile'
 import { appsColumnSx } from '../../components/appTileLayout'
 import { AppContext, ModeType } from '../../context/appContext'
 import { APP_STREAM_ROUTE, DEPLOY_ROUTE } from '../../utils'
-import { appHref } from '../../utils/appUrl'
+import { APPS_LISTING, appHref } from '../../utils/appUrl'
 import {
   RecentApp,
   recallRecentApps,
@@ -143,9 +143,7 @@ const Apps = () => {
     let cancelled = false
 
     axios
-      // The canonical spelling, for the same reason as the home screen: the
-      // server answers both, and the mock host answers this one today.
-      .get('/AppStream/apps.json')
+      .get(APPS_LISTING)
       .then((res) => {
         if (!cancelled) setApps(res.data?.apps ?? [])
       })
