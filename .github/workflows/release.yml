@@ -80,27 +80,35 @@ jobs:
       # version for them alone fills the changelog with entries that describe no
       # behaviour. semantic-release already declines a `docs:` commit; this
       # declines a merge whose message says `fix` but whose diff says `docs/`.
+      #
+      # The answer is `releasable`, and the release step below reads it as well
+      # as the build steps do. Gating only the builds is what published v7.24.3:
+      # the executables were skipped, semantic-release read `fix(docs): ...` as
+      # a fix, and `latest` became a release with no downloadable assets - so
+      # every install command in the README answered 404.
       - name: Does this commit change anything but the docs?
         id: scope
         run: |
           set -euo pipefail
           before='${{ github.event.before }}'
-          # A new branch, or a forced push: there is no range to inspect.
+          # A new branch, or a forced push: there is no range to inspect, so the
+          # commit is treated as releasable rather than guessed at from an empty
+          # diff.
           if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
-            echo "docsOnly=false" >> "$GITHUB_OUTPUT"
+            echo "releasable=true" >> "$GITHUB_OUTPUT"
+            echo "No range to inspect: treating this commit as releasable."
             exit 0
           fi
-          changed=$(git diff --name-only "$before" "$GITHUB_SHA" | grep -v '^docs/' || true)
-          if [ -z "$changed" ]; then
-            echo "docsOnly=true" >> "$GITHUB_OUTPUT"
-            echo "Only docs/ changed: no release."
-          else
-            echo "docsOnly=false" >> "$GITHUB_OUTPUT"
-          fi
+          # -z, because git quotes any path holding a non-ASCII byte, a quote or
+          # a backslash: `"docs/caf\303\251.md"` does not start with docs/, so a
+          # documentation-only merge with an accented filename would still reach
+          # the release step. NUL-separated output is never quoted.
+          git diff --name-only -z "$before" "$GITHUB_SHA" \
+            | node .github/scripts/release-gate.mjs scope
 
       - name: Is a release pending?
         id: pending
-        if: steps.scope.outputs.docsOnly != 'true'
+        if: steps.scope.outputs.releasable == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -319,12 +327,24 @@ jobs:
               ;;
           esac
 
-      # Deliberately ungated: the dry run above is a cost gate, while this is
-      # the real release. Running it unconditionally keeps one source of truth,
-      # and means a change to semantic-release's log wording can never silently
-      # suppress a release.
+      # The build steps above are skipped whenever no release is pending, and
+      # @semantic-release/github uploads whichever assets it finds without
+      # mentioning the ones it does not - which is how a release with an empty
+      # executables/ folder was created and published as complete. The files
+      # .releaserc declares are required here, before anything is tagged.
+      - name: Would the release carry its assets?
+        if: steps.pending.outputs.release == 'true'
+        run: node .github/scripts/release-gate.mjs assets
+
+      # Gated on the scope decision rather than on the dry run above: the dry
+      # run is a cost gate, and reading its log wording to decide whether to
+      # release would let a change to that wording suppress a release silently.
+      # The file list is a fact about this commit, so it cannot. The dry run
+      # still decides what gets BUILT, and the check below reads back what was
+      # actually released before anything reaches npm.
       - name: Release
         id: release
+        if: steps.scope.outputs.releasable == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.pending.outputs.version }}
@@ -342,9 +362,24 @@ jobs:
           #
           # Reading the tag rather than the log keeps the decision on an artefact
           # rather than on wording that semantic-release may change.
+          #
+          # The tag this step names is the release the rest of the job reads
+          # back, so it is resolved here rather than re-derived below: picking
+          # one of several tags by name order could hand the asset check an
+          # older complete release while the one just cut has nothing.
           git fetch --tags --force --quiet
-          if git tag --points-at "$GITHUB_SHA" | grep -qx "v${VERSION#v}"; then
+          TAG=""
+          if [ -n "${VERSION}" ] && git tag --points-at "$GITHUB_SHA" | grep -qx "v${VERSION#v}"; then
+            TAG="v${VERSION#v}"
+          else
+            # The dry run named no version but a tag now points here: take the
+            # highest, which is the one just cut, rather than whatever sorts
+            # first. The asset check still has to pass before npm sees it.
+            TAG=$(git tag --points-at "$GITHUB_SHA" | sort -V | tail -n1)
+          fi
+          if [ -n "$TAG" ]; then
             echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -352,6 +387,22 @@ jobs:
           if [ -n "${VERSION}" ]; then
             echo "::warning::semantic-release did not release ${VERSION} at ${GITHUB_SHA}, so this run publishes nothing. Usually a newer commit reached main while this run waited; the version is released by the next run that gets as far as this step."
           fi
+
+      # A release that was cut is visible only as a tag - semantic-release exits
+      # 0 either way - and the tag says nothing about what the release carries.
+      # This reads the published release back before npm gets the version, so one
+      # that cannot ship stops here. v7.24.3 published to npm while every install
+      # command in the README downloaded nothing.
+      - name: Does the release carry its assets?
+        if: steps.release.outputs.released == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The tag the Release step named, matched and fetched: this step
+          # resolves nothing of its own, so two tags on one commit cannot send
+          # it to the other release.
+          node .github/scripts/release-gate.mjs published "${{ steps.release.outputs.tag }}"
 
       # Publishing after the tag exists keeps the published version and the tag in
       # step: a publish failure then leaves a release without its npm entry, which
@@ -390,12 +441,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # The tag is created on the REMOTE by the github plugin (nothing makes
-          # one locally now that the changelog plugin is gone), so fetch it
-          # before asking which tag points at HEAD. An empty result still means
-          # this push produced no release.
-          git fetch --tags --force
-          TAG=$(git tag --points-at HEAD | head -n1)
+          # The tag the Release step matched: it fetched the tags the plugin
+          # created on the REMOTE, so nothing here re-derives one - and an
+          # empty value still means this push produced no release.
+          TAG="${{ steps.release.outputs.tag }}"
           if [ -z "$TAG" ]; then
             echo "No release was created for this commit - skipping."
             exit 0

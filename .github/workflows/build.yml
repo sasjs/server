@@ -129,6 +129,14 @@ jobs:
         # rebase that merged textually, broke the demo's build and nothing else.
         run: node --check mock/build.mjs && node --check mock/serve.mjs
 
+      - name: Test the release gate
+        # .github/scripts/release-gate.mjs is only ever executed by a push to
+        # main, and release.yml published v7.24.3 with no assets while every
+        # pull-request job was green. Its decisions - which commits release, and
+        # whether a release carries what .releaserc declares - are asserted
+        # here, on the cases it exists for rather than on today's checkout.
+        run: node --test .github/scripts/release-gate.test.mjs
+
   build-api:
     runs-on: ubuntu-22.04
 
