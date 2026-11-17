@@ -9,17 +9,18 @@
  * little further right. The row is what the reader points at, so the row takes
  * the click.
  *
- * Two clicks are not the entry's:
+ * A click that landed in a CHILD row is not the entry's. A row's children are
+ * nested inside it, so their clicks bubble through it; only the row the event
+ * started in answers.
  *
- * - one that landed in a CHILD row. A row's children are nested inside it, so
- *   their clicks bubble through it; only the row the event started in answers.
- * - one on the chevron. It is the folder's own control, and expanding a folder
- *   to see what is inside must not navigate away from the file being edited.
- *   The empty icon column a file has instead is the row - a click on it opens
- *   the file, as a click on the file's icon does - which is why the container
- *   is only refused when the click is on something INSIDE it.
+ * A click on the chevron is not the entry's either. It is the folder's own
+ * control, and expanding a folder to see what is inside must not navigate away
+ * from the file being edited. The empty icon column a file has instead is the
+ * row - a click on it opens the file, as a click on the file's icon does -
+ * which is why the container is only refused when the click is on something
+ * INSIDE it.
  *
- * Both questions are asked of the DOM, so they are asked here rather than in
+ * These questions are asked of the DOM, so they are asked here rather than in
  * the component: the browser is where a row and its parts are real, and this
  * can be driven with stubs (`npm run test:treerow`).
  */

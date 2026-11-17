@@ -114,8 +114,8 @@ const TreeView = ({
   /**
    * Opens the entry a click was made on, from anywhere in its row.
    *
-   * The row is what the reader points at, so the row takes the click - see
-   * `rowClickOpensEntry` for the two clicks that are not the entry's.
+   * The row is what the reader points at, so the row takes the click;
+   * `rowClickOpensEntry` is the rule that says which clicks are the entry's.
    */
   const handleRowClick = (event: React.MouseEvent, target: TreeNode) => {
     if (
