@@ -12,6 +12,7 @@ import {
 import axios from 'axios'
 
 import type { PermissionResponse } from '../../utils/types'
+import { APPS_LISTING } from '../../utils/appUrl'
 import { groupAppGrants } from './appGrants'
 
 /**
@@ -55,9 +56,7 @@ const AppStreamAccess = () => {
     // A failure here is not an error the reader can act on: the rules are still
     // readable, and a row keeps the key the rule names.
     axios
-      // the canonical spelling: the mock host answers this one today (see the
-      // Apps screen), and the server answers both
-      .get('/AppStream/apps.json')
+      .get(APPS_LISTING)
       .then((res) => {
         if (cancelled) return
 
