@@ -25,6 +25,15 @@ import { spawnSync } from 'node:child_process'
 
 const ALLOWED = new Map([
   [
+    'GHSA-fc5q-39xc-vjpf',
+    {
+      advisory: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+      recheckBy: '2027-03-31',
+      reason:
+        'picomatch ReDoS through single-branch repeated extglobs (CWE-1333, CVSS 7.5): the advisory covers <=4.0.7 with no first-patched version, and 4.0.7 is what npm publishes as latest, so neither an upgrade nor an override clears it. It reaches the tree only as build and test tooling - jest-haste-map, jest-message-util and jest-util, and through them @parcel/watcher, anymatch, fdir and tinyglobby - and `npm audit --omit=dev` reports nothing, so no published server dependency carries it.'
+    }
+  ],
+  [
     'GHSA-gcqx-w48m-w2h4',
     {
       advisory: 'https://github.com/advisories/GHSA-gcqx-w48m-w2h4',
