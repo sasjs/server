@@ -584,7 +584,7 @@ describe('permission', () => {
     beforeEach(() => {
       jest
         .spyOn(DriveController.prototype, 'deploy')
-        .mockImplementation((deployPayload) =>
+        .mockImplementation((_deployPayload) =>
           Promise.resolve({
             status: 'success',
             message: 'Files deployed successfully to @sasjs/server.'

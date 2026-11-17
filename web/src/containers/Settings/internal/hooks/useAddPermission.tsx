@@ -62,7 +62,7 @@ const useAddPermission = () => {
         .then((res) => {
           newAddedPermissions.push(res.data)
         })
-        .catch((error) => {
+        .catch((_error) => {
           errorPaths.push(permission.path)
         })
     }
@@ -75,7 +75,7 @@ const useAddPermission = () => {
         .then((res) => {
           updatedPermissions.push(res.data)
         })
-        .catch((error) => {
+        .catch((_error) => {
           errorPaths.push(permission.path)
         })
     }

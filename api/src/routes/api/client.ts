@@ -30,7 +30,7 @@ clientRouter.get(
   '/',
   authenticateAccessToken,
   verifyAdmin,
-  async (req, res) => {
+  async (_req, res) => {
     const controller = new ClientController()
     try {
       const response = await controller.getAllClients()

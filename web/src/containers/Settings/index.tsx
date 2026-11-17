@@ -27,7 +27,7 @@ const Settings = () => {
   const appContext = useContext(AppContext)
   const [value, setValue] = useState('profile')
 
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+  const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue)
   }
 

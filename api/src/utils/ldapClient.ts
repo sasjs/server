@@ -73,7 +73,7 @@ export class LDAPClient {
             })
           })
 
-          result.on('end', (result) => {
+          result.on('end', (_result) => {
             resolve(users)
           })
         }
@@ -107,7 +107,7 @@ export class LDAPClient {
           })
         })
 
-        result.on('end', (result) => {
+        result.on('end', (_result) => {
           resolve(groups)
         })
       })

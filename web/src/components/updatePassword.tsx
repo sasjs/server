@@ -45,7 +45,7 @@ const UpdatePassword = () => {
         currentPassword,
         newPassword
       })
-      .then((res: any) => {
+      .then((_res: any) => {
         appContext.setNeedsToUpdatePassword?.(false)
         toast.success('Password updated', {
           theme: 'dark',

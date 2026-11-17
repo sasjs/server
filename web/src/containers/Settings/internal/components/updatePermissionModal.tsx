@@ -49,7 +49,7 @@ const UpdatePermissionModal = ({
               options={['Grant', 'Deny']}
               disableClearable
               value={permissionSetting}
-              onChange={(event: any, newValue: string) =>
+              onChange={(_event: any, newValue: string) =>
                 setPermissionSetting(newValue)
               }
               renderInput={(params) => (

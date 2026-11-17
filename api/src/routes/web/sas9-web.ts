@@ -81,7 +81,7 @@ sas9WebRouter.post(
   }
 )
 
-sas9WebRouter.get('/SASLogon/login', async (req, res) => {
+sas9WebRouter.get('/SASLogon/login', async (_req, res) => {
   const response = await controller.loginGet()
 
   if (response.redirect) {

@@ -62,7 +62,7 @@ interface IGroupModel extends Model<
 const opts = {
   toJSON: {
     virtuals: true,
-    transform: function (doc: any, ret: any, options: any) {
+    transform: function (_doc: any, ret: any, _options: any) {
       delete ret._id
       delete ret.id
       return ret

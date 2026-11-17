@@ -141,7 +141,7 @@ const AddPermissionModal = ({
               options={paths}
               filterSelectedOptions
               value={selectedPaths}
-              onChange={(event: any, newValue: string[]) => {
+              onChange={(_event: any, newValue: string[]) => {
                 setSelectedPaths(newValue)
               }}
               renderInput={(params) => <TextField {...params} label="Paths" />}
@@ -152,7 +152,7 @@ const AddPermissionModal = ({
               options={['Route']}
               disableClearable
               value={permissionType}
-              onChange={(event: any, newValue: string) =>
+              onChange={(_event: any, newValue: string) =>
                 setPermissionType(newValue)
               }
               renderInput={(params) =>
@@ -169,7 +169,7 @@ const AddPermissionModal = ({
               options={['Group', 'User']}
               disableClearable
               value={principalType}
-              onChange={(event: any, newValue: string) =>
+              onChange={(_event: any, newValue: string) =>
                 setPrincipalType(newValue)
               }
               renderInput={(params) => (
@@ -184,7 +184,7 @@ const AddPermissionModal = ({
                 getOptionLabel={(option) => option.displayName}
                 disableClearable
                 value={userPrincipal}
-                onChange={(event: any, newValue: UserResponse) =>
+                onChange={(_event: any, newValue: UserResponse) =>
                   setUserPrincipal(newValue)
                 }
                 renderInput={(params) =>
@@ -201,7 +201,7 @@ const AddPermissionModal = ({
                 getOptionLabel={(option) => option.name}
                 disableClearable
                 value={groupPrincipal}
-                onChange={(event: any, newValue: GroupResponse) =>
+                onChange={(_event: any, newValue: GroupResponse) =>
                   setGroupPrincipal(newValue)
                 }
                 renderInput={(params) =>
@@ -219,7 +219,7 @@ const AddPermissionModal = ({
               options={['Grant', 'Deny']}
               disableClearable
               value={permissionSetting}
-              onChange={(event: any, newValue: string) =>
+              onChange={(_event: any, newValue: string) =>
                 setPermissionSetting(newValue)
               }
               renderInput={(params) => (

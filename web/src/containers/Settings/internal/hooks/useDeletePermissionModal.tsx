@@ -25,7 +25,7 @@ const useDeletePermissionModal = () => {
     setIsLoading(true)
     axios
       .delete(`/SASjsApi/permission/${selectedPermission?.uid}`)
-      .then((res: any) => {
+      .then((_res: any) => {
         fetchPermissions()
         setSnackbarMessage('Permission deleted!')
         setSnackbarSeverity(AlertSeverityType.Success)

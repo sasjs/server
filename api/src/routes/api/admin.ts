@@ -37,7 +37,7 @@ export const sendError = (res: express.Response, err: any) => {
     .send(code >= 500 ? 'Internal server error' : (err?.message ?? String(err)))
 }
 
-adminRouter.get('/diagnostics', async (req, res) => {
+adminRouter.get('/diagnostics', async (_req, res) => {
   const controller = new AdminController()
 
   try {
@@ -47,7 +47,7 @@ adminRouter.get('/diagnostics', async (req, res) => {
   }
 })
 
-adminRouter.get('/logs', async (req, res) => {
+adminRouter.get('/logs', async (_req, res) => {
   const controller = new AdminController()
 
   try {

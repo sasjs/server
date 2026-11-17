@@ -7,11 +7,11 @@ import { SessionState } from '../../types'
 
 export class FileUploadController {
   private storage = multer.diskStorage({
-    destination: function (req: Request, file: any, cb: any) {
+    destination: function (req: Request, _file: any, cb: any) {
       //Sending the intercepted files to the sessions subfolder
       cb(null, req.sasjsSession?.path)
     },
-    filename: function (req: Request, file: any, cb: any) {
+    filename: function (_req: Request, _file: any, cb: any) {
       //req_file prefix + unique hash added to sas request files
       cb(null, `req_file_${uuidv4().replace(/-/gm, '')}`)
     }

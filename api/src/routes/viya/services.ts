@@ -67,7 +67,7 @@ export const viyaServices = (req: Request): Services => ({
   identity: identityFor(req),
   viya: {
     serverUrl: serverUrl(req),
-    execute: async ({ program, variables, name, sessionId }) => {
+    execute: async ({ program, variables, name: _name, sessionId }) => {
       const controller = new ExecutionController()
 
       // every field a generated program reads, from the request: a service that

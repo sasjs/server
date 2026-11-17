@@ -18,7 +18,7 @@ sasViyaWebRouter.get('/', async (req, res) => {
   return res.send(response)
 })
 
-sasViyaWebRouter.post('/SASJobExecution/', async (req, res) => {
+sasViyaWebRouter.post('/SASJobExecution/', async (_req, res) => {
   try {
     res.send({ test: 'test' })
   } catch (err: any) {

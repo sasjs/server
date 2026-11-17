@@ -89,7 +89,7 @@ const PermissionFilterModal = ({
               options={paths}
               filterSelectedOptions
               value={pathFilter}
-              onChange={(event: any, newValue: string[]) => {
+              onChange={(_event: any, newValue: string[]) => {
                 setPathFilter(newValue)
               }}
               renderInput={(params) => <TextField {...params} label="Paths" />}
@@ -101,7 +101,7 @@ const PermissionFilterModal = ({
               options={principals}
               filterSelectedOptions
               value={principalFilter}
-              onChange={(event: any, newValue: string[]) => {
+              onChange={(_event: any, newValue: string[]) => {
                 setPrincipalFilter(newValue)
               }}
               renderInput={(params) => (
@@ -115,7 +115,7 @@ const PermissionFilterModal = ({
               options={Object.values(PrincipalType)}
               filterSelectedOptions
               value={principalTypeFilter}
-              onChange={(event: any, newValue: PrincipalType[]) => {
+              onChange={(_event: any, newValue: PrincipalType[]) => {
                 setPrincipalTypeFilter(newValue)
               }}
               renderInput={(params) => (
@@ -129,7 +129,7 @@ const PermissionFilterModal = ({
               options={['Grant', 'Deny']}
               filterSelectedOptions
               value={settingFilter}
-              onChange={(event: any, newValue: string[]) => {
+              onChange={(_event: any, newValue: string[]) => {
                 setSettingFilter(newValue)
               }}
               renderInput={(params) => (

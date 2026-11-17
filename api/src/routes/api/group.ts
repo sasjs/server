@@ -28,7 +28,7 @@ groupRouter.post(
   }
 )
 
-groupRouter.get('/', authenticateAccessToken, async (req, res) => {
+groupRouter.get('/', authenticateAccessToken, async (_req, res) => {
   const controller = new GroupController()
   try {
     const response = await controller.getAllGroups()
