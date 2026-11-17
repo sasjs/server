@@ -3,13 +3,15 @@ import path from 'path'
 /**
  * Where the SAS 9 mock's files live.
  *
- * `STATIC_MOCK_LOCATION` is the folder the pages, the stored-process mocks and
- * the uploads are read from and written to. A relative value is resolved
- * against the working directory; an absolute one is used as written, because
- * `path.join` would put it under the working directory instead.
+ * `STATIC_MOCK_LOCATION` is the folder the mock's pages, stored-process mocks and
+ * static assets are read from. A relative value is resolved against the working
+ * directory; an absolute one is used as written, because `path.join` would put it
+ * under the working directory instead.
  *
- * The controller and the upload route both need this, so the rule lives here
- * rather than in each of them.
+ * The rule lives here rather than in the controller because it is a rule, not a
+ * path: it decides what an absolute and a relative setting mean. An upload is not
+ * one of its callers - the mock's upload route hands its parts to
+ * `FileUploadController`, which writes them into the caller's session folder.
  */
 export const resolveMockPath = (
   configured: string = process.env.STATIC_MOCK_LOCATION || 'mocks'
@@ -17,10 +19,3 @@ export const resolveMockPath = (
   path.isAbsolute(configured)
     ? configured
     : path.join(process.cwd(), configured)
-
-/**
- * The folder multer writes uploads into: the mock's folder with the route's own
- * subfolder beneath it.
- */
-export const mockUploadDestination = (): string =>
-  path.join(resolveMockPath(), 'sas9', 'files-received')
