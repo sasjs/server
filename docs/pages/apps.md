@@ -17,7 +17,7 @@ Anybody can create an app for SASjs Server - it just needs to be compiled using 
 
 ## Deploying Apps
 
-Simply click the "Upload New App" button and select the local zip file containing the app you wish to deploy.
+An administrator publishes an app from Administration, in the "Publish an app" card: choose the zip a `sasjs build` produced and it is written to the drive and streamed at `/app/<id>/`. Nothing else on the server publishes an app from the browser - the card is the one action the App Stream page used to carry.
 
 Alternative deployment approaches include:
 
@@ -56,6 +56,10 @@ curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?name=harness" \
 
 The entries become `apps/<name>` on the drive, and the app opens at `/app/<name>/`. The name is the app's key, its folder and its address, so it has to be usable as one URL segment - see [The app's id, and the name it is known by](#the-apps-id-and-the-name-it-is-known-by).
 
+An archive whose entries all sit inside one folder is a folder that was compressed rather than its contents - `myapp/index.html` rather than `index.html` - and the folder is dropped, so the app is served at the root of `apps/<name>` rather than one level down. The folders a deployment is made of (`services`, `web`, `backend`) are never treated that way: an archive holding one of those at its root is a tree whose root that is. A request that names the folder it deploys to (`?appLoc=`) keeps the wrapper, because that route [keeps the archive's structure](#publishing-a-frontend-and-its-backend).
+
+An archive that names no destination is refused with `400`, and the refusal names the file, what it lacks and how to supply it: `The archive "site.zip" names no destination to deploy to: it carries no sasjs.app.json at its root, and the request states neither "name" nor "appLoc". Publish the zip a sasjs build writes, which states the destination itself, or add ?name=<app> to publish this archive as an app, or ?appLoc=/<folder> to deploy its files to a folder.`
+
 ## Publishing a frontend and its backend
 
 A bundle can carry both halves, and that is what `sasjs build` writes for a server target:
@@ -92,7 +96,7 @@ curl -X POST "https://my-server/SASjsApi/drive/deploy/upload?appLoc=/Public/apps
   -F "file=@harness.zip"
 ```
 
-The archive's structure is kept under `appLoc`, `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` sets its label. Such an app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html` - and a request that names `streamWebFolder` must carry that folder, or it is refused with a message naming it rather than deployed.
+The archive's structure is kept under `appLoc`, a single top-level folder included - a zip holding `mysite/index.html` deploys to `<appLoc>/mysite/index.html`. The unwrap described under [Publishing an app](#publishing-an-app) is what a publish does, not what a deploy to a named folder does. `streamWebFolder` publishes that folder as an App Stream app, and `streamServiceName` sets its label. Such an app is served from `<appLoc>/services/<streamWebFolder>`, so that is where its entry page lives - the example above holds `services/web/index.html` - and a request that names `streamWebFolder` must carry that folder, or it is refused with a message naming it rather than deployed.
 
 A zip that contains a deploy document - a root-level JSON file naming `appLoc` and `fileTree` - is read as a document instead, so the route answers both shapes. `sasjs.app.json` is never read as one, even though it names an `appLoc`: it is the bundle's own manifest. A JSON file the app itself ships, such as a manifest or a data file, names neither and is deployed with the rest.
 
@@ -120,6 +124,8 @@ A bundle may describe itself, in `sasjs.app.json` at the root of the archive:
 ```
 
 `name` says which app the frontend is and `appLoc` which backend it calls; both are optional in the file, because the request may state them instead. `streamWebFolder` states the older shape - a manifest carrying it publishes the legacy way, with the web assets under `<appLoc>/services/<streamWebFolder>` - and is what an older CLI writes. The manifest describes the app rather than serving it, so it is read and left out of the deployment, and the request wins where both speak: a caller naming a folder, a name or a label is correcting the archive.
+
+A legacy bundle states `appLoc` in its manifest as well, because that shape deploys one tree to one folder: `streamWebFolder` says where inside the folder the web assets sit, and `appLoc` says which folder. `sasjs build` writes both from the target, so the zip it produces can be published on a host that has nothing but the archive - including one uploaded by hand. A manifest that states `streamWebFolder` and no `appLoc` is refused with `400`: `"appLoc" is required when "streamWebFolder" is stated: the entry keeps its web assets at <appLoc>/services/<streamWebFolder>, so both halves are needed to say where they are.`
 
 ### Removing an app
 

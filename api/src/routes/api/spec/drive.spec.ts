@@ -617,11 +617,157 @@ describe('drive', () => {
         const res = await postArchive(zip, '')
 
         // neither a manifest, nor `name`, nor `appLoc`: the entries would have
-        // nowhere to go, and the refusal says which field names a destination
+        // nowhere to go, and the refusal names the archive, what it lacks and
+        // each way to say where its files belong - "files that do not name an
+        // app" is the rule, not something an admin can act on
         expect(res.statusCode).toEqual(400)
         expect(res.body.message).toEqual(
-          '"appLoc" is required to deploy files that do not name an app.'
+          'The archive "site.zip" names no destination to deploy to: it carries no sasjs.app.json at its root, and the request states neither "name" nor "appLoc". Publish the zip a sasjs build writes, which states the destination itself, or add ?name=<app> to publish this archive as an app, or ?appLoc=/<folder> to deploy its files to a folder.'
         )
+      })
+
+      it('reads a manifest that names nothing as a manifest, not as a missing one', async () => {
+        // `parseAppManifest` accepts a manifest carrying only a logo, and a tree
+        // whose only entry is that manifest names no app and no folder - telling
+        // this caller to add a sasjs.app.json would send them to a file they have
+        const zip = new AdmZip()
+        zip.addFile(
+          'sasjs.app.json',
+          Buffer.from(JSON.stringify({ logo: 'l.png' }), 'utf8')
+        )
+
+        const res = await postArchive(zip, '')
+
+        expect(res.statusCode).toEqual(400)
+        expect(res.body.message).toEqual(
+          'The archive "site.zip" names no destination to deploy to: it carries a sasjs.app.json that names no app and no folder. Name the app in that manifest ("name", or "appLoc" for a folder), or add ?name=<app> to publish this archive as an app, or ?appLoc=/<folder> to deploy its files to a folder.'
+        )
+      })
+
+      it('names the document, not the query, when a deploy document sets no destination', async () => {
+        // this branch reads the document and its tree; ?name and ?appLoc are read
+        // by the archive branch, so a remedy that named them here would send the
+        // caller to a parameter this route never looks at
+        const document = {
+          fileTree: {
+            members: [
+              { name: 'index.html', type: 'file', code: '<h1>Hello</h1>' }
+            ]
+          }
+        }
+
+        const res = await request(app)
+          .post('/SASjsApi/drive/deploy/upload')
+          .auth(accessToken, { type: 'bearer' })
+          .attach('file', Buffer.from(JSON.stringify(document)), 'deploy.json')
+
+        expect(res.statusCode).toEqual(400)
+        expect(res.body.message).toEqual(
+          'The deploy document "deploy.json" names no destination to deploy to: it states no "appLoc", and the tree it carries has no sasjs.app.json at its root. State "appLoc" in the document, add a sasjs.app.json naming the app to the root of its "fileTree", or publish the zip a sasjs build writes, which states the destination itself.'
+        )
+      })
+
+      it('deploys the contents of a compressed folder when it publishes an app', async () => {
+        // "compress" on a folder produces one top-level entry holding everything,
+        // and publishing that as it stands would serve the app one level too deep
+        const zip = new AdmZip()
+        zip.addFile('harness/index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
+        zip.addFile(
+          'harness/assets/app.js',
+          Buffer.from('console.log(1)', 'utf8')
+        )
+
+        const res = await postArchive(zip, '?name=harness')
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body.app.name).toEqual('harness')
+
+        const served = path.join(getFilesFolder(), 'apps', 'harness')
+
+        await expect(
+          readFile(path.join(served, 'index.html'))
+        ).resolves.toEqual('<h1>Hello</h1>')
+        await expect(
+          readFile(path.join(served, 'assets', 'app.js'))
+        ).resolves.toEqual('console.log(1)')
+        await expect(fileExists(path.join(served, 'harness'))).resolves.toEqual(
+          false
+        )
+
+        await appStreamService().unpublish(res.body.app.id)
+        await refreshAppStreamIndex()
+        await deleteFolder(path.join(getFilesFolder(), 'apps'))
+      })
+
+      it('keeps a single top-level folder when the request names the folder to deploy to', async () => {
+        // a deploy to `appLoc` keeps the archive's structure - that is what that
+        // route promises - so a zip of `mysite/` writes `mysite/` under the
+        // folder, where the unwrap a publish applies would flatten it
+        const zip = new AdmZip()
+        zip.addFile('mysite/index.html', Buffer.from('<h1>Hello</h1>', 'utf8'))
+
+        const res = await postArchive(zip)
+
+        expect(res.statusCode).toEqual(200)
+
+        await expect(
+          readFile(
+            path.join(
+              getFilesFolder(),
+              'Public',
+              'static',
+              'mysite',
+              'index.html'
+            )
+          )
+        ).resolves.toEqual('<h1>Hello</h1>')
+
+        await deleteFolder(path.join(getFilesFolder(), 'Public'))
+      })
+
+      it('reads the manifest of a bundle that was compressed as a folder, so it publishes', async () => {
+        // the shape the unwrap exists to repair: a bundle compressed by hand has
+        // its manifest one level down, `myapp/sasjs.app.json`, where the deploy
+        // finds no app and refuses the archive for naming no destination. This
+        // posts it with no query at all, so the manifest is the only thing that
+        // can name where the files go.
+        const zip = new AdmZip()
+        zip.addFile(
+          'myapp/sasjs.app.json',
+          Buffer.from(JSON.stringify({ name: 'myapp' }), 'utf8')
+        )
+        zip.addFile('myapp/index.html', Buffer.from('<h1>Hi</h1>', 'utf8'))
+        zip.addFile(
+          'myapp/assets/app.js',
+          Buffer.from('console.log(1)', 'utf8')
+        )
+
+        const res = await postArchive(zip, '')
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body.app.name).toEqual('myapp')
+        expect(res.body.app.url).toEqual(`/app/${res.body.app.id}/`)
+
+        // the frontend is the app, so it is served from `apps/<name>` at its own
+        // root - the wrapper is not part of the deployment
+        const served = path.join(getFilesFolder(), 'apps', 'myapp')
+        await expect(
+          readFile(path.join(served, 'index.html'))
+        ).resolves.toEqual('<h1>Hi</h1>')
+        await expect(
+          readFile(path.join(served, 'assets', 'app.js'))
+        ).resolves.toEqual('console.log(1)')
+        // the manifest describes the app, so it is not deployed as a file
+        await expect(
+          fileExists(path.join(served, 'sasjs.app.json'))
+        ).resolves.toEqual(false)
+
+        const index = await readStoredAppStreamEntries()
+        expect(index.find((entry) => entry.id === res.body.app.id)).toBeTruthy()
+
+        await appStreamService().unpublish(res.body.app.id)
+        await refreshAppStreamIndex()
+        await deleteFolder(path.join(getFilesFolder(), 'apps'))
       })
 
       it('deploys a JSON file the app itself ships', async () => {

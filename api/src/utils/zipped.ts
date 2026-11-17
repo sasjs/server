@@ -1,7 +1,12 @@
 import path from 'path'
 import fs from 'fs'
 import AdmZip from 'adm-zip'
-import { DEPLOY_LIMITS, APP_MANIFEST } from '@sasjs/api'
+import {
+  DEPLOY_LIMITS,
+  APP_MANIFEST,
+  BACKEND_FOLDER,
+  FRONTEND_FOLDER
+} from '@sasjs/api'
 import type { DeployLimits } from '@sasjs/api'
 import { MemberType } from '@sasjs/utils'
 import type {
@@ -311,24 +316,71 @@ export const extractDeployDocumentFromZip = async (
  * `.DS_Store`, which macOS adds to an archive of a folder and which are not part
  * of the app. Nothing else is filtered - a file the deploy will not accept (a
  * name with `..` in it, say) reaches the deploy and is refused there.
+ *
+ * `unwrap` says whether a single top-level folder is the caller's folder or part
+ * of the tree. It defaults to true - publishing an archive means serving what was
+ * in the folder - and the deploy route passes false when the request names an
+ * `appLoc`, because that route's contract is to keep the archive's structure
+ * under the folder it was given.
  */
 export const extractFileTreeFromZip = async (
   zipFile: Express.Multer.File,
-  limits: DeployLimits = DEPLOY_LIMITS
+  limits: DeployLimits = DEPLOY_LIMITS,
+  options: { unwrap?: boolean } = {}
 ): Promise<FileTree> =>
-  readArchive(zipFile, (zip) => entriesOf(zip, zipFile.originalname, limits))
+  readArchive(zipFile, (zip) =>
+    entriesOf(zip, zipFile.originalname, limits, options.unwrap !== false)
+  )
 
-/** The tree an archive's entries describe - see `extractFileTreeFromZip`. */
-const entriesOf = (
-  zip: AdmZip,
-  archiveName: string,
-  limits: DeployLimits
-): FileTree => {
-  const members: DeployMember[] = []
-  const folders = new Map<string, FolderMember>()
+/**
+ * The folders a deployment is made of, which are never a wrapper.
+ *
+ * An archive holding `services`, `web` or `backend` at its root is a tree whose
+ * root that is: `services` is where a legacy bundle's programs and web assets
+ * live, and `web` and `backend` are the two halves a package is split into.
+ * Stripping one of those would deploy a bundle's contents at the folder root,
+ * which is a deployment of a different shape.
+ *
+ * The two package halves are read from the package rather than spelled here: the
+ * split they belong to is `splitAppBundle`'s, and a rename there that left these
+ * as literals would make the unwrap quietly treat a bundle's `web/` as somebody's
+ * folder and deploy it a level up. `services` has no constant to borrow - it is
+ * the legacy shape, which the package reads as a tree rather than a name.
+ */
+const DEPLOY_OWN_FOLDERS = ['services', FRONTEND_FOLDER, BACKEND_FOLDER]
 
-  let entries = 0
-  let totalBytes = 0
+/**
+ * Whether an entry is part of the deployed tree.
+ *
+ * Two kinds are not, and macOS adds both when it archives a folder: the
+ * `__MACOSX/` tree and `.DS_Store`. The tree builder and the wrapper detection
+ * read this same rule, because a `.DS_Store` beside the folder is not a file the
+ * deployment carries - so it cannot be what says the archive is not a compressed
+ * folder. Deciding the wrapper from the unfiltered entries meant an archive of
+ * `myapp/` that carried one deployed at `apps/<name>/myapp/index.html`, one level
+ * too deep, with nothing to say why.
+ */
+const isDeployed = (segments: string[]): boolean =>
+  segments.length > 0 &&
+  segments[0] !== '__MACOSX' &&
+  segments[segments.length - 1] !== '.DS_Store'
+
+/**
+ * The folder an archive of a folder wraps its contents in, when it wraps them.
+ *
+ * Compressing a folder gives `myapp/index.html`, `myapp/assets/...` - one
+ * top-level entry that is the folder the caller had, not the app that was in it.
+ * Deploying that as the tree puts every file one level too deep, and it is also
+ * why a bundle's manifest stops being found: `sasjs.app.json` sits at
+ * `myapp/sasjs.app.json`, so the deploy sees an app that names nothing and
+ * refuses it for having no destination. The contents are what was meant, so the
+ * wrapper is dropped.
+ *
+ * A file at the root means the entries are not all inside one folder, and more
+ * than one top-level folder means the same. Both are the tree as it stands.
+ */
+const wrapperOf = (zip: AdmZip): string | undefined => {
+  const roots: string[] = []
 
   for (const entry of zip.getEntries()) {
     if (entry.isDirectory) continue
@@ -337,11 +389,54 @@ const entriesOf = (
       .split('/')
       .filter((segment) => segment !== '')
 
-    if (!segments.length || segments[0] === '__MACOSX') continue
+    if (!isDeployed(segments)) continue
+
+    if (segments.length === 1) return undefined
+
+    if (!roots.includes(segments[0])) roots.push(segments[0])
+
+    if (roots.length > 1) return undefined
+  }
+
+  const only = roots[0]
+
+  if (only === undefined || DEPLOY_OWN_FOLDERS.includes(only)) return undefined
+
+  return only
+}
+
+/** The tree an archive's entries describe - see `extractFileTreeFromZip`. */
+const entriesOf = (
+  zip: AdmZip,
+  archiveName: string,
+  limits: DeployLimits,
+  unwrap: boolean
+): FileTree => {
+  const members: DeployMember[] = []
+  const folders = new Map<string, FolderMember>()
+
+  // an archive of a folder holds the folder, not the tree: its name is in every
+  // entry's path and in none of the files. Only a route publishing the archive as
+  // an app asks for that reading - a deploy to a folder the request names keeps
+  // the archive's structure, which is what that route promises.
+  const wrapper = unwrap ? wrapperOf(zip) : undefined
+
+  let entries = 0
+  let totalBytes = 0
+
+  for (const entry of zip.getEntries()) {
+    if (entry.isDirectory) continue
+
+    const pathInTree =
+      wrapper === undefined || !entry.entryName.startsWith(`${wrapper}/`)
+        ? entry.entryName
+        : entry.entryName.slice(wrapper.length + 1)
+
+    const segments = pathInTree.split('/').filter((segment) => segment !== '')
+
+    if (!isDeployed(segments)) continue
 
     const name = segments.pop() as string
-
-    if (name === '.DS_Store') continue
 
     // measured from the central directory, so a compressed bomb is refused
     // before its bytes are expanded
