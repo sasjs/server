@@ -1,10 +1,17 @@
 import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
+import { MemberType } from '@sasjs/utils'
 
-import { ApiError, frontendFolderOf, isApiError } from '@sasjs/api'
+import {
+  ApiError,
+  APP_MANIFEST,
+  frontendFolderOf,
+  isApiError
+} from '@sasjs/api'
 
 import {
   DEPLOY_NEEDS_FOLDER,
+  namesNoDestination,
   prepareDeploy,
   publishDeployedApp,
   refuseTwoNames,
@@ -34,6 +41,21 @@ import {
 } from '../../utils'
 
 const controller = new DriveController()
+
+/**
+ * Whether a tree carries the bundle's manifest at its root.
+ *
+ * A manifest that names neither an app nor a folder cannot make a destination -
+ * `parseAppManifest` accepts one carrying only a logo - and the refusal has to say
+ * which of the two it found. Telling someone the archive carries no manifest when
+ * it carries one sends them to add a file that is already there.
+ */
+const carriesManifest = (tree: unknown): boolean =>
+  Array.isArray((tree as any)?.members) &&
+  (tree as any).members.some(
+    (member: any) =>
+      member?.name === APP_MANIFEST && member?.type === MemberType.file
+  )
 
 const driveRouter = express.Router()
 
@@ -267,6 +289,30 @@ driveRouter.post(
       // the JSON route does - one implementation of when a bundle is an app
       const prepared = prepareDeploy(body)
 
+      // the same refusal as an archive's, in the document's own terms: a
+      // document that states no folder, and whose tree states no manifest, has
+      // nowhere to write its files
+      if (
+        prepared.request === undefined &&
+        prepared.appLoc === undefined &&
+        body.appLoc === undefined
+      ) {
+        const named = carriesManifest(body.fileTree)
+
+        throw new ApiError(
+          400,
+          namesNoDestination(
+            `The deploy document "${req.file?.originalname ?? 'uploaded'}"`,
+            named
+              ? `it states no "appLoc", and the ${APP_MANIFEST} in its tree names no app and no folder.`
+              : `it states no "appLoc", and the tree it carries has no ${APP_MANIFEST} at its root.`,
+            named
+              ? `State "appLoc" in the document, name the app in that manifest ("name", or "appLoc" for a folder), or publish the zip a sasjs build writes, which states the destination itself.`
+              : `State "appLoc" in the document, add a ${APP_MANIFEST} naming the app to the root of its "fileTree", or publish the zip a sasjs build writes, which states the destination itself.`
+          )
+        )
+      }
+
       const response = await writeDeploy(prepared, {
         appLoc: body.appLoc,
         replace: body.replace
@@ -319,7 +365,13 @@ const deployArchive = async (
   }
 
   try {
-    const fileTree = await extractFileTreeFromZip(zipFile)
+    // publishing an archive serves what was in the folder, so a folder compressed
+    // by hand is unwrapped; a request that names an `appLoc` keeps the archive's
+    // structure, which is what that route promises - see "The archive's structure
+    // is kept under appLoc" in docs/pages/apps.md
+    const fileTree = await extractFileTreeFromZip(zipFile, undefined, {
+      unwrap: value.appLoc === undefined
+    })
 
     const deploy = {
       name: value.name,
@@ -331,6 +383,33 @@ const deployArchive = async (
     }
 
     const prepared = prepareDeploy(deploy as any)
+
+    // nothing in the archive or the request says where its files go. The
+    // package's own sentence says the rule; this one says what the admin chose
+    // and how to fix it, because an archive of a folder and a bundle missing its
+    // manifest read identically from the deploy's side.
+    if (
+      prepared.request === undefined &&
+      prepared.appLoc === undefined &&
+      value.appLoc === undefined
+    ) {
+      // a manifest that names nothing is not the same as no manifest: say which
+      // one was found, or the advice is to add a file that is already there
+      const named = carriesManifest(fileTree)
+
+      throw new ApiError(
+        400,
+        namesNoDestination(
+          `The archive "${zipFile.originalname}"`,
+          named
+            ? `it carries a ${APP_MANIFEST} that names no app and no folder.`
+            : `it carries no ${APP_MANIFEST} at its root, and the request states neither "name" nor "appLoc".`,
+          named
+            ? `Name the app in that manifest ("name", or "appLoc" for a folder), or add ?name=<app> to publish this archive as an app, or ?appLoc=/<folder> to deploy its files to a folder.`
+            : `Publish the zip a sasjs build writes, which states the destination itself, or add ?name=<app> to publish this archive as an app, or ?appLoc=/<folder> to deploy its files to a folder.`
+        )
+      )
+    }
 
     const response = await writeDeploy(prepared, {
       appLoc: value.appLoc,

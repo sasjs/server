@@ -61,6 +61,27 @@ export interface PreparedDeploy {
 export const DEPLOY_NEEDS_FOLDER =
   '"appLoc" is required to deploy files that do not name an app.'
 
+/**
+ * The refusal an upload earns when nothing in it names where its files go.
+ *
+ * `DEPLOY_NEEDS_FOLDER` states the rule - a tree that is not an app must name a
+ * folder - but it describes the server's inference rather than the file the
+ * caller chose, and an admin reading it has no way to tell a zip of a folder from
+ * a bundle missing its manifest from a request that forgot a parameter.
+ *
+ * So the sentence names the source, what it was missing, and the ways to supply
+ * it - and the ways are the CALLER's, because the two routes read a different
+ * place: the archive route reads the query, and the deploy-document route reads
+ * the document's own fields and its tree. A remedy that named a parameter the
+ * branch never reads would be worse than no remedy at all.
+ */
+export const namesNoDestination = (
+  source: string,
+  missing: string,
+  remedies: string
+): string =>
+  `${source} names no destination to deploy to: ${missing} ${remedies}`
+
 /** What a published app is reported as, on the deploy answer. */
 export interface PublishedApp {
   id: string

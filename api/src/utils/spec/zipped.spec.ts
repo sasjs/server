@@ -10,7 +10,7 @@ import os from 'os'
 import path from 'path'
 import AdmZip from 'adm-zip'
 
-import { checkDeployTree } from '@sasjs/api'
+import { checkDeployTree, BACKEND_FOLDER, FRONTEND_FOLDER } from '@sasjs/api'
 import type { DeployLimits } from '@sasjs/api'
 import {
   extractDeployDocumentFromZip,
@@ -48,6 +48,66 @@ beforeAll(() => {
 
 afterAll(() => {
   fs.rmSync(workdir, { recursive: true, force: true })
+})
+
+describe('the folder an archive was made from', () => {
+  const roots = (tree: { members: { name: string }[] }) =>
+    tree.members.map((member) => member.name)
+
+  it('drops a single top-level folder when the archive is published', async () => {
+    // "compress" on a folder gives `myapp/index.html`, not `index.html`
+    const file = archive({
+      'myapp/index.html': '<h1>Hi</h1>',
+      'myapp/assets/app.js': 'console.log(1)'
+    })
+
+    const tree = await extractFileTreeFromZip(file)
+
+    expect(roots(tree as any).sort()).toEqual(['assets', 'index.html'])
+  })
+
+  it('keeps the structure when the caller says the folder is part of the tree', async () => {
+    // a deploy to a folder the request names keeps the archive's structure, so
+    // the wrapper is the caller's own folder rather than something to drop
+    const file = archive({ 'mysite/index.html': '<h1>Hi</h1>' })
+
+    const tree = await extractFileTreeFromZip(file, undefined, {
+      unwrap: false
+    })
+
+    expect(roots(tree as any)).toEqual(['mysite'])
+  })
+
+  it('never treats a folder a deployment is made of as a wrapper', async () => {
+    // `services` is the legacy bundle's folder and `web` and `backend` are the
+    // halves a package is split into: an archive holding one of them at its root
+    // is a tree whose root that is, and stripping it would deploy the bundle's
+    // contents one level up
+    for (const root of ['services', FRONTEND_FOLDER, BACKEND_FOLDER]) {
+      const file = archive({ [`${root}/index.html`]: '<h1>Hi</h1>' })
+
+      const tree = await extractFileTreeFromZip(file)
+
+      expect(roots(tree as any)).toEqual([root])
+    }
+  })
+
+  it('reads a folder as compressed when the only root-level entry is one it drops', async () => {
+    // macOS writes `.DS_Store` beside the folder as well as inside it, and the
+    // tree builder drops it - so it cannot be what tells us the archive is not a
+    // compressed folder, or an archive of `myapp/` deploys at
+    // `apps/<name>/myapp/index.html` with no diagnostic
+    const file = archive({
+      '.DS_Store': 'junk',
+      '__MACOSX/._index.html': 'junk',
+      'myapp/index.html': '<h1>Hi</h1>',
+      'myapp/assets/app.js': 'console.log(1)'
+    })
+
+    const tree = await extractFileTreeFromZip(file)
+
+    expect(roots(tree as any).sort()).toEqual(['assets', 'index.html'])
+  })
 })
 
 describe('what counts as a deploy document', () => {
