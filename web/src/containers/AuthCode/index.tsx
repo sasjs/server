@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { useLocation } from 'react-router-dom'

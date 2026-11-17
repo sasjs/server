@@ -1,6 +1,5 @@
-import path from 'path'
 import { getString } from '@sasjs/utils/input'
-import { createFolder, fileExists, folderExists, isWindows } from '@sasjs/utils'
+import { fileExists, isWindows } from '@sasjs/utils'
 import { RunTimeType } from './verifyEnvVariables'
 
 export const getDesktopFields = async () => {
@@ -25,31 +24,6 @@ export const getDesktopFields = async () => {
   }
 
   return { sasLoc, nodeLoc, pythonLoc, rLoc }
-}
-
-const getDriveLocation = async (): Promise<string> => {
-  const validator = async (filePath: string) => {
-    if (!filePath) return 'Path to files/drive is required.'
-
-    const drivePath = path.join(process.cwd(), filePath)
-
-    if (!(await folderExists(drivePath))) {
-      await createFolder(drivePath)
-      await createFolder(path.join(drivePath, 'files'))
-    }
-
-    return true
-  }
-
-  const defaultLocation = isWindows() ? '.\\tmp\\' : './tmp/'
-
-  const targetName = await getString(
-    'Please enter path to file/drive (relative to executable): ',
-    validator,
-    defaultLocation
-  )
-
-  return targetName
 }
 
 const getSASLocation = async (): Promise<string> => {

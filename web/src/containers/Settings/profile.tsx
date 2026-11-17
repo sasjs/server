@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import {
   Grid,
@@ -55,7 +55,7 @@ const Profile = () => {
         displayName: user.displayName,
         autoExec: user.autoExec
       })
-      .then((res: any) => {
+      .then((_res: any) => {
         toast.success('User information updated', {
           theme: 'dark',
           position: 'bottom-right'
@@ -80,7 +80,7 @@ const Profile = () => {
         currentPassword,
         newPassword
       })
-      .then((res: any) => {
+      .then((_res: any) => {
         toast.success('Password updated', {
           theme: 'dark',
           position: 'bottom-right'

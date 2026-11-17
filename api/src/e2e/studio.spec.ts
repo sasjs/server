@@ -33,7 +33,7 @@ import {
 } from './fixture'
 import { requireWebBuild } from './fixture'
 import { UserController } from '../controllers/'
-import { RunTimeType, getWebBuildFolder, sysInitCompiledPath } from '../utils/'
+import { RunTimeType, sysInitCompiledPath } from '../utils/'
 
 // The password the user is moved to on the first-login change screen.
 const NEW_PASSWORD = 'newpass123'

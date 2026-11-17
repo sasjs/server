@@ -2,7 +2,7 @@ import express from 'express'
 import { AuthConfigController } from '../../controllers'
 const authConfigRouter = express.Router()
 
-authConfigRouter.get('/', async (req, res) => {
+authConfigRouter.get('/', async (_req, res) => {
   const controller = new AuthConfigController()
   try {
     // awaited: the controller answers a promise, and `res.send(promise)`
@@ -15,7 +15,7 @@ authConfigRouter.get('/', async (req, res) => {
   }
 })
 
-authConfigRouter.post('/synchroniseWithLDAP', async (req, res) => {
+authConfigRouter.post('/synchroniseWithLDAP', async (_req, res) => {
   const controller = new AuthConfigController()
   try {
     const response = await controller.synchroniseWithLDAP()

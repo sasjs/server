@@ -14,7 +14,6 @@ import {
 } from 'tsoa'
 import { randomBytes } from 'crypto'
 
-import User from '../model/User'
 import Client from '../model/Client'
 import {
   getWebBuildFolder,

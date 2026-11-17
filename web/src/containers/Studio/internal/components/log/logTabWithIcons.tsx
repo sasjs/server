@@ -17,7 +17,7 @@ interface LogTabProps {
 }
 
 const LogTabWithIcons = (props: LogTabProps) => {
-  const { errors, warnings, notes, body } = props.log
+  const { errors, warnings, body } = props.log
   const { notesListed, onToggleNotes } = props
 
   return (

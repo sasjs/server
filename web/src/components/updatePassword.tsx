@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import { Box, CssBaseline, Button, CircularProgress } from '@mui/material'
 import { toast } from 'react-toastify'
@@ -45,7 +45,7 @@ const UpdatePassword = () => {
         currentPassword,
         newPassword
       })
-      .then((res: any) => {
+      .then((_res: any) => {
         appContext.setNeedsToUpdatePassword?.(false)
         toast.success('Password updated', {
           theme: 'dark',

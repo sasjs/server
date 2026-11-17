@@ -1,4 +1,3 @@
-import React from 'react'
 import { Typography, IconButton } from '@mui/material'
 import AccountCircle from '@mui/icons-material/AccountCircle'
 

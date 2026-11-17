@@ -16,8 +16,7 @@ import {
   Patch,
   UploadedFile,
   FormField,
-  Delete,
-  Hidden
+  Delete
 } from 'tsoa'
 import { deleteFile, FileTree } from '@sasjs/utils'
 import {
@@ -32,12 +31,7 @@ import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
 import { HttpError } from '../utils'
-import {
-  appStreamService,
-  DEPLOY_NEEDS_FOLDER,
-  unpublishApp,
-  type PublishedApp
-} from '../utils'
+import { DEPLOY_NEEDS_FOLDER, unpublishApp, type PublishedApp } from '../utils'
 import { appSummary, type AppStreamEntry } from '@sasjs/api'
 
 interface DeployPayload {
@@ -86,12 +80,6 @@ interface DeployResponse {
   /** The app this deploy published, with the URL it is served on. */
   app?: PublishedApp
   example?: FileTree
-}
-
-interface GetFileResponse {
-  status: string
-  fileContent?: string
-  message?: string
 }
 
 interface GetFileTreeResponse {
@@ -291,19 +279,19 @@ export class DriveController {
   @Response(401, 'Unauthorized')
   @Post('/deploy/upload')
   public async deployUpload(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile('file') _file: Express.Multer.File,
     /** The app's name, for an archive that carries no `sasjs.app.json`. */
-    @Query() name?: string,
+    @Query('name') _name?: string,
     /** The folder to deploy into, when the archive is files rather than an app. */
-    @Query() appLoc?: string,
+    @Query('appLoc') _appLoc?: string,
     /** A folder under `services/` to publish as an App Stream app, e.g. `web`. */
-    @Query() streamWebFolder?: string,
+    @Query('streamWebFolder') _streamWebFolder?: string,
     /** The name to publish under, in the older payload vocabulary. */
-    @Query() streamServiceName?: string,
+    @Query('streamServiceName') _streamServiceName?: string,
     /** A logo to show on the app's tile. */
-    @Query() streamLogo?: string,
+    @Query('streamLogo') _streamLogo?: string,
     /** Write the tree as the folder's whole contents. Defaults to true for an archive. */
-    @Query() replace?: boolean
+    @Query('replace') _replace?: boolean
   ): Promise<DeployResponse> {
     // The route reads the upload itself - it has to decide whether the archive
     // holds a document before a payload exists - and calls `deploy` with the

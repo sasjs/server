@@ -1,4 +1,4 @@
-import React, { useState, Dispatch, SetStateAction, useEffect } from 'react'
+import { useState, Dispatch, SetStateAction, useEffect } from 'react'
 import {
   Button,
   Grid,
@@ -49,7 +49,7 @@ const UpdatePermissionModal = ({
               options={['Grant', 'Deny']}
               disableClearable
               value={permissionSetting}
-              onChange={(event: any, newValue: string) =>
+              onChange={(_event: any, newValue: string) =>
                 setPermissionSetting(newValue)
               }
               renderInput={(params) => (

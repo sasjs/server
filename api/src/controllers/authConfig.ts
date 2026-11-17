@@ -53,8 +53,10 @@ type MutuallyAssignable<A, B> = [A] extends [B]
     : never
   : never
 
-// fails to compile if the package's response type and this one drift apart
-const _authConfigDetailIsThePackageResponse: MutuallyAssignable<
+// fails to compile if the package's response type and this one drift apart.
+// Exported because nothing reads it: the assertion is the declaration, and
+// `noUnusedLocals` would otherwise report the only evidence of it as dead code.
+export const _authConfigDetailIsThePackageResponse: MutuallyAssignable<
   AuthConfigResponse,
   AuthConfigDetail
 > = true

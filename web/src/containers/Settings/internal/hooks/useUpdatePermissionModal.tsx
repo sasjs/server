@@ -27,7 +27,7 @@ const useUpdatePermissionModal = () => {
       .patch(`/SASjsApi/permission/${selectedPermission?.uid}`, {
         setting
       })
-      .then((res: any) => {
+      .then((_res: any) => {
         fetchPermissions()
         setSnackbarMessage('Permission updated!')
         setSnackbarSeverity(AlertSeverityType.Success)

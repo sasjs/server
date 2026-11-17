@@ -155,7 +155,7 @@ const guardApp = (authenticate: express.RequestHandler) => {
   return server
 }
 
-const refuses = (req: express.Request, res: express.Response) =>
+const refuses = (_req: express.Request, res: express.Response) =>
   res.status(401).json({ message: 'no token' })
 
 describe('who may reach the estate', () => {

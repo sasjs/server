@@ -47,7 +47,7 @@ export const refuseTwoNames = (
 }
 
 export const sendDeploymentFile = async (
-  request: express.Request,
+  _request: express.Request,
   response: express.Response,
   input: unknown
 ) => {

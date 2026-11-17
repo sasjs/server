@@ -1,6 +1,5 @@
 import express from 'express'
 import { deleteFile, readFile } from '@sasjs/utils'
-import type { FileTree, FolderMember } from '@sasjs/utils'
 
 import { ApiError, frontendFolderOf, isApiError } from '@sasjs/api'
 

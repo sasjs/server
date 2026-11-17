@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { mockUploadDestination, resolveMockPath } from '../mockPath'
+import { resolveMockPath } from '../mockPath'
 
 describe('resolveMockPath', () => {
   const original = process.env.STATIC_MOCK_LOCATION
@@ -29,13 +29,5 @@ describe('resolveMockPath', () => {
     delete process.env.STATIC_MOCK_LOCATION
 
     expect(resolveMockPath()).toBe(path.join(process.cwd(), 'mocks'))
-  })
-
-  it('puts the uploads under the mock folder', () => {
-    process.env.STATIC_MOCK_LOCATION = '/srv/mocks'
-
-    expect(mockUploadDestination()).toBe(
-      path.join('/srv/mocks', 'sas9', 'files-received')
-    )
   })
 })

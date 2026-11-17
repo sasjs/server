@@ -40,7 +40,7 @@ const LogComponent = (props: LogComponentProps) => {
   )
   const maxOpenedChunks = 2
 
-  const goToLogLine = (logInstance: LogInstance, ind: number) => {
+  const goToLogLine = (logInstance: LogInstance, _ind: number) => {
     let chunkNumber = 0
 
     for (

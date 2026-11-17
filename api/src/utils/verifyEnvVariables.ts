@@ -651,10 +651,6 @@ const verifyAdminUserConfig = () => {
   return errors
 }
 
-const isNumeric = (val: string): boolean => {
-  return !isNaN(Number(val))
-}
-
 /**
  * TRUST_PROXY states how much of the X-Forwarded-* chain Express believes, and
  * it decides whether the session cookie is marked Secure on a site whose TLS

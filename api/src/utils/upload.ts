@@ -1,6 +1,6 @@
 import path from 'path'
 import { MulterFile } from '../types/Upload'
-import { listFilesInFolder, readFileBinary, isWindows } from '@sasjs/utils'
+import { listFilesInFolder, isWindows } from '@sasjs/utils'
 import { asLiteral, asSasMacroValue } from './programVariables'
 
 interface FilenameMapSingle {

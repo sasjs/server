@@ -40,7 +40,7 @@ if (verifyEnvVariables()) process.exit(ReturnCode.InvalidEnv)
 
 const app = express()
 
-const onError: ErrorRequestHandler = (err, req, res, next) => {
+const onError: ErrorRequestHandler = (err, _req, res, _next) => {
   process.logger.error(err.stack)
   res.status(500).send('Something broke!')
 }

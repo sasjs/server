@@ -184,7 +184,7 @@ webRouter.get('/SASLogon/logout', desktopRestrict, async (req, res) => {
  * The OIDC endpoints are only meaningful when the provider is configured.
  * Without this they would fail deep inside OIDCClient.init() as a 500.
  */
-const oidcOnly: express.RequestHandler = (req, res, next) => {
+const oidcOnly: express.RequestHandler = (_req, res, next) => {
   if (!isAuthProviderEnabled(AuthProviderType.OIDC))
     return res.status(404).send('Not Found')
 

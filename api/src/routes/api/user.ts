@@ -30,7 +30,7 @@ userRouter.post('/', authenticateAccessToken, verifyAdmin, async (req, res) => {
   }
 })
 
-userRouter.get('/', authenticateAccessToken, async (req, res) => {
+userRouter.get('/', authenticateAccessToken, async (_req, res) => {
   const controller = new UserController()
   try {
     const response = await controller.getAllUsers()

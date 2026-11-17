@@ -46,7 +46,7 @@ const tabFor = (pathname: string) => {
   return validTabs.includes(pathname) ? pathname : ''
 }
 
-const Header = (props: any) => {
+const Header = (_props: any) => {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const appContext = useContext(AppContext)
@@ -87,7 +87,7 @@ const Header = (props: any) => {
     setTabValue(tabFor(pathname))
   }, [pathname])
 
-  const handleTabChange = (event: React.SyntheticEvent, value: string) => {
+  const handleTabChange = (_event: React.SyntheticEvent, value: string) => {
     setTabValue(value)
   }
 

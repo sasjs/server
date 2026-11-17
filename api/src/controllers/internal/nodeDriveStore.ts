@@ -25,7 +25,7 @@ import { getFilesFolder } from '../../utils/file'
  */
 const driveRoot = () => path.resolve(getFilesFolder())
 
-const outsideDrive = (driveRelative: string, resolved: string): Error => {
+const outsideDrive = (driveRelative: string, _resolved: string): Error => {
   const error: any = new Error(`Path is outside the drive: ${driveRelative}`)
   // both spellings, because the store's errors travel to two readers: the
   // drive routes read `code`, and anything walking the chain reads `status`

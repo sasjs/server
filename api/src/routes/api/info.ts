@@ -8,7 +8,7 @@ const infoRouter = express.Router()
 // the OIDC provider name) BEFORE anyone is authenticated. Nothing sensitive
 // is served here - the CORS whitelist deliberately is not part of the
 // response.
-infoRouter.get('/', async (req, res) => {
+infoRouter.get('/', async (_req, res) => {
   const controller = new InfoController()
   try {
     const response = await controller.info()
@@ -24,7 +24,7 @@ infoRouter.get(
   '/authorizedRoutes',
   authenticateAccessToken,
   verifyAdmin,
-  async (req, res) => {
+  async (_req, res) => {
     const controller = new InfoController()
     try {
       const response = controller.authorizedRoutes()

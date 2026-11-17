@@ -2,10 +2,8 @@ import express from 'express'
 import { setCSRFCookie } from '../../middlewares'
 import { WebController } from '../../controllers'
 import { MockSas9Controller } from '../../controllers/mock-sas9'
-import multer from 'multer'
 import dotenv from 'dotenv'
 import { FileUploadController } from '../../controllers/internal'
-import { mockUploadDestination } from '../../utils'
 
 dotenv.config({ quiet: true })
 
@@ -15,10 +13,6 @@ const webController = new WebController()
 // for example `isLoggedIn` and potentially more in future mocks
 const controller = new MockSas9Controller()
 const fileUploadController = new FileUploadController()
-
-// A relative STATIC_MOCK_LOCATION resolves against the working directory and an
-// absolute one is used as written; the rule is shared with the controller.
-const upload = multer({ dest: mockUploadDestination() })
 
 // The mock's login form posts application/x-www-form-urlencoded; the parser
 // is scoped here rather than mounted globally in app.ts.
@@ -87,7 +81,7 @@ sas9WebRouter.post(
   }
 )
 
-sas9WebRouter.get('/SASLogon/login', async (req, res) => {
+sas9WebRouter.get('/SASLogon/login', async (_req, res) => {
   const response = await controller.loginGet()
 
   if (response.redirect) {
