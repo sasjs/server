@@ -2,9 +2,9 @@
 #
 # Append a "Verifying the download" section to a GitHub release body.
 #
-# Run by .github/workflows/release.yml once semantic-release has published a
-# release, so it is only ever called for a tag that exists. It is idempotent:
-# the section is added once and skipped on any later run.
+# Run by .github/workflows/release.yml once the release has been published, so it
+# is only ever called for a tag that exists. It is idempotent: the section is
+# added once and skipped on any later run.
 #
 # Usage: add-verify-section.sh <tag>
 #

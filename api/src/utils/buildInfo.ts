@@ -14,9 +14,8 @@ export interface BuildInfo {
  *
  * The values are written into `buildInfo.generated.ts` by
  * `scripts/generateBuildInfo.ts`, which runs as part of `npm run initial` -
- * so a binary built by the release workflow carries the tag semantic-release
- * was about to cut, and a binary built by hand carries `git describe` output
- * or `dev`.
+ * so a binary built by the release workflow carries the tag it was cut for, and
+ * a binary built by hand carries `git describe` output or `dev`.
  *
  * Reading it from a generated module rather than the environment is
  * deliberate: `pkg` snapshots the compiled code into the executable, so a
