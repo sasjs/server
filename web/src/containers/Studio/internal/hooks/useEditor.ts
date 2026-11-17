@@ -32,6 +32,7 @@ import {
 import { applyLintMarkers, clearLintModel, lintModel } from '../lint'
 import { lintAppliesTo } from '../lintScope'
 import { formatSasCode } from '../format'
+import type { SasFormatMode } from '../format'
 import { displayKindOf } from '../displayMode'
 import { formatJson } from '../render/jsonFormat'
 import { prettyJson } from '../pretty'
@@ -103,19 +104,28 @@ const useEditor = ({
   }
 
   /**
-   * Whether a format request is in flight.
+   * Whether a rewrite of the buffer is in flight.
    *
-   * The button is disabled while one is: two clicks race, and the second answer
-   * would replace a buffer the first had already formatted.
+   * Both buttons are disabled while one is: two clicks race, and the second
+   * answer would replace a buffer the first had already rewritten.
    */
   const [formatting, setFormatting] = useState(false)
 
   /**
-   * Applies the `.sasjslint` formatting rules to the buffer.
+   * Rewrites the buffer, either with the layout engine (`format`) or with the
+   * `.sasjslint` rules alone (`fix`).
+   *
+   * Two jobs, two buttons, one flow. `fix` is what a rule can correct without
+   * judgement - trailing spaces, tabs, line endings, the header's macro list,
+   * a line wrapped past the limit. `format` adds the engine's layout on top:
+   * statement breaks, indentation and the macro-call boundaries that come with
+   * them. Doing the second when the author asked for the first is not a
+   * cosmetic difference - it rewrites lines the author did not ask to have
+   * touched.
    *
    * Three things this has to get right, and the first version got none of them:
    *
-   * - the buffer is submitted, so unsaved edits are formatted, and nothing
+   * - the buffer is submitted, so unsaved edits are rewritten, and nothing
    *   reaches the drive until Save
    * - the answer is applied only if the buffer still holds the text that was
    *   sent. The request takes as long as the server needs to read the rules
@@ -125,69 +135,100 @@ const useEditor = ({
    *   the text unchanged precisely so the caller can surface it; swallowing it
    *   left the user pressing a button that did nothing
    */
-  const fixFormatting = useCallback(async () => {
-    if (formatting) return
+  const applyFormatting = useCallback(
+    async (mode: SasFormatMode) => {
+      if (formatting) return
 
-    const sent = fileContent
+      const sent = fileContent
 
-    setFormatting(true)
+      setFormatting(true)
 
-    try {
-      /* Two formatters, because two languages: the SAS one asks the language
-         server, and JSON is parsed and re-emitted here. */
-      let formatted: string
+      try {
+        /* Two formatters, because two languages: the SAS one asks the api, and
+           JSON is parsed and re-emitted here. JSON has one job, not two - the
+           parser either accepts the document or names what would be lost - so
+           the rules-only mode has nothing to do with it. */
+        let rewritten: string
 
-      if (displayKindOf(selectedFilePath) === 'json') {
-        const result = formatJson(sent)
+        if (displayKindOf(selectedFilePath) === 'json') {
+          if (mode === 'fix') return
 
-        if (!result.ok) {
-          // the message names the refusal and what would have been lost
-          setSnackbarMessage(result.error)
-          setSnackbarSeverity(AlertSeverityType.Error)
+          const result = formatJson(sent)
+
+          if (!result.ok) {
+            // the message names the refusal and what would have been lost
+            setSnackbarMessage(result.error)
+            setSnackbarSeverity(AlertSeverityType.Error)
+            setOpenSnackbar(true)
+
+            return
+          }
+
+          rewritten = result.text
+        } else {
+          rewritten = await formatSasCode(
+            sent,
+            selectedFilePath || undefined,
+            mode
+          )
+        }
+
+        if (rewritten === sent) {
+          setSnackbarMessage(
+            mode === 'fix' ? 'No lint fixes to apply.' : 'Already formatted.'
+          )
+          setSnackbarSeverity(AlertSeverityType.Info)
           setOpenSnackbar(true)
 
           return
         }
 
-        formatted = result.text
-      } else {
-        formatted = await formatSasCode(sent, selectedFilePath || undefined)
-      }
+        // Only if nothing was typed while the request was away.
+        setFileContent((current) => (current === sent ? rewritten : current))
 
-      if (formatted === sent) {
-        setSnackbarMessage('Already formatted.')
-        setSnackbarSeverity(AlertSeverityType.Info)
+        if (fileContent === sent) {
+          setSnackbarMessage(
+            mode === 'fix' ? 'Lint fixes applied.' : 'Formatting applied.'
+          )
+          setSnackbarSeverity(AlertSeverityType.Success)
+          setOpenSnackbar(true)
+        }
+      } catch (error) {
+        setSnackbarMessage(
+          mode === 'fix'
+            ? 'The lint fixes could not run. Your code is unchanged.'
+            : 'The formatter could not run. Your code is unchanged.'
+        )
+        setSnackbarSeverity(AlertSeverityType.Error)
         setOpenSnackbar(true)
 
-        return
+        console.log(error)
+      } finally {
+        setFormatting(false)
       }
+    },
+    [
+      fileContent,
+      formatting,
+      selectedFilePath,
+      setFileContent,
+      setOpenSnackbar,
+      setSnackbarMessage,
+      setSnackbarSeverity
+    ]
+  )
 
-      // Only if nothing was typed while the formatter was away.
-      setFileContent((current) => (current === sent ? formatted : current))
+  /** The rules alone: what the lint can correct without judgement. */
+  const fixLintIssues = useCallback(
+    () => applyFormatting('fix'),
+    [applyFormatting]
+  )
 
-      if (fileContent === sent) {
-        setSnackbarMessage('Formatting applied.')
-        setSnackbarSeverity(AlertSeverityType.Success)
-        setOpenSnackbar(true)
-      }
-    } catch (error) {
-      setSnackbarMessage('The formatter could not run. Your code is unchanged.')
-      setSnackbarSeverity(AlertSeverityType.Error)
-      setOpenSnackbar(true)
-
-      console.log(error)
-    } finally {
-      setFormatting(false)
-    }
-  }, [
-    fileContent,
-    formatting,
-    selectedFilePath,
-    setFileContent,
-    setOpenSnackbar,
-    setSnackbarMessage,
-    setSnackbarSeverity
-  ])
+  /** The rules and the layout engine, which is what "format" means. */
+  const formatDocument = useCallback(
+    () => applyFormatting('format'),
+    [applyFormatting]
+  )
 
   const saveFile = useCallback(
     (filePath?: string, content?: string) => {
@@ -782,7 +823,8 @@ const useEditor = ({
     handleRunBtnClick,
     handleTabChange,
     saveBuffer,
-    fixFormatting,
+    fixLintIssues,
+    formatDocument,
     formatting,
     saveFile,
     setOpenFilePathInputModal,

@@ -2,7 +2,7 @@ import React from 'react'
 
 import { Badge, IconButton, Tooltip } from '@mui/material'
 
-import { AutoFixHigh, Save, SaveAs } from '@mui/icons-material'
+import { AutoFixHigh, FormatAlignLeft, Save, SaveAs } from '@mui/icons-material'
 
 type FileMenuProps = {
   isDirty: boolean
@@ -10,14 +10,24 @@ type FileMenuProps = {
   setOpenFilePathInputModal: React.Dispatch<React.SetStateAction<boolean>>
   saveFile: () => void
   /**
-   * Applies the `.sasjslint` formatting rules to the buffer.
-   *
-   * Formatting, not "fix the issues": the rules that can be corrected without
-   * judgement are layout, spacing and case. A rule about an unused macro
-   * variable needs a decision no button can make.
+   * Applies the fixes the `.sasjslint` rules can make on their own: trailing
+   * spaces, tabs, line endings, the header's macro list, a line wrapped past
+   * the limit. A rule that needs a decision - an unused macro variable, an
+   * undeclared macro - is reported and left for the author.
    */
-  fixFormatting: () => void
-  /** Why the button is disabled, or undefined when it is not. */
+  fixLintIssues: () => void
+  /**
+   * Rewrites the layout as well: statement breaks, indentation and the
+   * boundaries between macro calls.
+   *
+   * A second button rather than one that does both, because the two jobs are
+   * asked for separately. An author who wants their spacing tidied does not
+   * necessarily want their program re-laid-out.
+   */
+  formatDocument: () => void
+  /** Why the lint-fix button is disabled, or undefined when it is not. */
+  lintFixDisabledReason?: string
+  /** Why the format button is disabled, or undefined when it is not. */
   formatDisabledReason?: string
 }
 
@@ -66,12 +76,49 @@ const SaveButton = ({
   )
 }
 
+/**
+ * A rewrite button, with the two things a disabled one owes the reader: why it
+ * is disabled, and the same answer to a screen reader.
+ *
+ * The button sits inside a span so the tooltip survives being disabled - a
+ * disabled button swallows the pointer events its tooltip needs.
+ */
+const RewriteButton = ({
+  onClick,
+  disabledReason,
+  enabledLabel,
+  label,
+  children
+}: {
+  onClick: () => void
+  disabledReason?: string
+  /** Tooltip and aria-label while the button is usable. */
+  enabledLabel: string
+  /** Accessible name; the icon has no text of its own. */
+  label: string
+  children: React.ReactNode
+}) => (
+  <Tooltip title={disabledReason ?? enabledLabel}>
+    <span>
+      <IconButton
+        aria-label={disabledReason ?? `${label}: ${enabledLabel}`}
+        onClick={onClick}
+        disabled={!!disabledReason}
+      >
+        {children}
+      </IconButton>
+    </span>
+  </Tooltip>
+)
+
 const FileMenu = ({
   isDirty,
   selectedFilePath,
   setOpenFilePathInputModal,
   saveFile,
-  fixFormatting,
+  fixLintIssues,
+  formatDocument,
+  lintFixDisabledReason,
   formatDisabledReason
 }: FileMenuProps) => {
   return (
@@ -92,19 +139,22 @@ const FileMenu = ({
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip
-        title={formatDisabledReason ?? 'Apply the .sasjslint formatting rules'}
+      <RewriteButton
+        onClick={fixLintIssues}
+        disabledReason={lintFixDisabledReason}
+        enabledLabel="Fix what the .sasjslint rules can correct (spacing, tabs, line endings, the header)"
+        label="Fix lint issues"
       >
-        <span>
-          <IconButton
-            aria-label={formatDisabledReason ?? 'Apply the formatting rules'}
-            onClick={fixFormatting}
-            disabled={!!formatDisabledReason}
-          >
-            <AutoFixHigh />
-          </IconButton>
-        </span>
-      </Tooltip>
+        <AutoFixHigh />
+      </RewriteButton>
+      <RewriteButton
+        onClick={formatDocument}
+        disabledReason={formatDisabledReason}
+        enabledLabel="Format the layout (indentation, statement breaks, macro calls)"
+        label="Format"
+      >
+        <FormatAlignLeft />
+      </RewriteButton>
     </>
   )
 }

@@ -32,7 +32,9 @@ The rules come from a `.sasjslint` file - the same file `sasjs lint` reads in a 
 
 Findings appear above the editor as a count. Expanding it lists each finding, and clicking one moves the editor to that line. Nothing is shown when the buffer is clean.
 
-Formatting applies the same rules. **Format Code** (Alt+Shift+F, or the format button in the file menu) rewrites the buffer, and **Format On Save** in Settings > Editor - on by default - formats a SAS file as you save it. Both take the `.sasjslint` for the file's folder, so a project's indentation, header and naming conventions travel with its content.
+Two buttons in the file menu rewrite the buffer, because they are two different jobs. **Fix Lint Issues** (the wand) applies the fixes a rule can make on its own: trailing spaces, tabs, line endings, the header's macro list, a line wrapped past the limit. **Format** (the alignment icon) does that and then lays the program out - statement breaks, indentation and the boundaries between macro calls - which is a bigger change, so it is a separate click. A finding that needs a decision, such as an unused macro variable, is reported and left to you by both.
+
+**Format On Save** in Settings > Editor - on by default - lays the file out as you save it, the same as the **Format** button. All of these take the `.sasjslint` for the file's folder, so a project's indentation, header and naming conventions travel with its content.
 
 ## Clipboard
 
@@ -44,7 +46,7 @@ The big difference between SASjs Studio and other SAS executors is that every ex
 
 Every session also runs with the [SASjs core](https://core.sasjs.io) macros on the `SASAUTOS` path, so any of them - `mp_abort`, `mf_getuser`, `mv_createfolder` - can be called from a program without a `%include`. The server copies the library into the drive's `sas/sasautos` folder at startup and leaves it alone while the folder exists: delete that folder and restart to pick up a newer release.
 
-Other than that, everything works as you would expect.  The log is sent to the log window, and the WEBOUT page contains any content sent to the _webout fileref.
+Other than that, everything works as you would expect. The log is sent to the log window, and the WEBOUT page contains any content sent to the _webout fileref.
 
 ## JS specific
 
