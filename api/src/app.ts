@@ -5,7 +5,6 @@ import compression from 'compression'
 import dotenv from 'dotenv'
 
 import {
-  API_PREFIXES,
   copySASjsCore,
   createWeboutSasFile,
   getFilesFolder,
@@ -29,7 +28,6 @@ import {
   configureSecurity,
   docsInlineScripts
 } from './app-modules'
-import { DEPLOY_PAYLOAD_BYTES } from '@sasjs/api'
 import { setCSRFCookie } from './middlewares'
 import { folderExists } from '@sasjs/utils'
 
