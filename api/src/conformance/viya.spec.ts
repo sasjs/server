@@ -15,7 +15,10 @@
  * surface was measured against (`spec/viya/adapter-paths.json` in `@sasjs/api`).
  * This package depends on that same version, so this run and the estate client
  * in `src/controllers/internal/viyaClient.ts` drive one copy of the adapter: a
- * change that fails the run is a change that fails the real client.
+ * change that fails the run is a change that fails the real client. One case
+ * takes the client the server builds rather than constructing it here, so the
+ * wrapper's own wiring is part of the contract too - without it a change to how
+ * `SASjs` builds its compute client would break the server with this run green.
  *
  * What this run cannot prove: execution. A job runs on this server's engine, and
  * a machine without SAS has none, so the submit-and-read-the-webout leg is gated
@@ -32,7 +35,11 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import { SASViyaApiClient, SasjsRequestClient } from '@sasjs/adapter/node'
+import SASjs, {
+  SASViyaApiClient,
+  SasjsRequestClient
+} from '@sasjs/adapter/node'
+import { ServerType } from '@sasjs/utils/types'
 
 import { configureBodyParsers } from '../app-modules'
 import { ModeType, SECRETS } from '../utils'
@@ -270,6 +277,30 @@ describe('a Viya client against the emulated estate', () => {
 
     expect(contexts.length).toBeGreaterThan(0)
     expect(contexts[0].name).toBeTruthy()
+  })
+
+  it('builds the compute client from its config, the way the server does', async () => {
+    // The estate client does not construct SASViyaApiClient: it hands SASjs a
+    // serverUrl, a server type and a context name, then reads the client the
+    // wrapper builds (src/controllers/internal/viyaClient.ts:121-131). Every
+    // other case here builds that class directly, so a change to that wiring -
+    // which client the wrapper builds, the request client it hands over, the
+    // appLoc and context it passes - would leave them all green and break the
+    // server. This case takes the production path and asks the estate a
+    // question that needs no engine.
+    const sasjs = new SASjs({
+      serverUrl: origin,
+      serverType: ServerType.SasViya,
+      contextName: 'SAS Job Execution compute context'
+    })
+
+    const built = (sasjs as any).sasViyaApiClient as SASViyaApiClient
+
+    expect(built).toBeInstanceOf(SASViyaApiClient)
+
+    const contexts = await built.getComputeContexts(tokens.access_token)
+
+    expect(contexts.length).toBeGreaterThan(0)
   })
 
   it('opens two sessions the client accepts as live', async () => {
