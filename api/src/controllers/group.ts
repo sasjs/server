@@ -13,7 +13,7 @@ import {
 
 import Group, { GroupPayload, PUBLIC_GROUP_NAME } from '../model/Group'
 import User from '../model/User'
-import { GetUserBy, UserResponse } from './user'
+import { UserResponse } from './user'
 import { groupNamePattern } from '../utils/groupNamePattern'
 
 export interface GroupResponse {

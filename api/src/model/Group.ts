@@ -1,5 +1,4 @@
 import { Schema, model, Model, HydratedDocument, Types } from 'mongoose'
-import { GroupDetailsResponse } from '../controllers'
 import User, { IUserDocument } from './User'
 import { AuthProviderType } from '../utils'
 

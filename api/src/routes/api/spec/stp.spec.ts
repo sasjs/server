@@ -20,10 +20,7 @@ import {
   getSessionsFolder
 } from '../../../utils'
 import { createFile, generateTimestamp, deleteFolder } from '@sasjs/utils'
-import {
-  SessionController,
-  SASSessionController
-} from '../../../controllers/internal'
+import { SASSessionController } from '../../../controllers/internal'
 import * as ProcessProgramModule from '../../../controllers/internal/processProgram'
 import { Session, SessionState } from '../../../types'
 

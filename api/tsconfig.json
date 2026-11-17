@@ -6,6 +6,7 @@
     "outDir": "./build",
     "esModuleInterop": true,
     "strict": true,
+    "noUnusedLocals": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true

@@ -309,7 +309,7 @@ describe('user', () => {
 
     describe('by username', () => {
       it('should respond with updated user when admin user requests', async () => {
-        const dbUser = await controller.createUser(user)
+        await controller.createUser(user)
         const newDisplayName = 'My new display Name'
 
         const res = await request(app)

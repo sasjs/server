@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs'
 import AdmZip from 'adm-zip'
-import unZipper from 'unzipper'
 import { DEPLOY_LIMITS, APP_MANIFEST } from '@sasjs/api'
 import type { DeployLimits } from '@sasjs/api'
 import { MemberType } from '@sasjs/utils'
@@ -11,8 +10,6 @@ import type {
   FolderMember,
   ServiceMember
 } from '@sasjs/utils'
-import { extractName } from './extractName'
-import { createReadStream } from './file'
 
 type DeployMember = FolderMember | ServiceMember | FileMember
 

@@ -1,5 +1,4 @@
 import { createClient, Client } from 'ldapjs'
-import { ReturnCode } from './verifyEnvVariables'
 
 export interface LDAPUser {
   uid: string

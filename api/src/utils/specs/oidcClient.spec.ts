@@ -3,7 +3,6 @@ import { OIDCClient } from '../oidcClient'
 import {
   startStubIdP,
   StubIdP,
-  ISSUER_PATH,
   STUB_CLIENT_ID as CLIENT_ID,
   STUB_CLIENT_SECRET as CLIENT_SECRET,
   STUB_REDIRECT_URI as REDIRECT_URI

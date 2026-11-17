@@ -22,8 +22,7 @@ import {
   forgetPublishedApp,
   isRouteGranted,
   loadRouteRules,
-  ModeType,
-  refreshAppStreamIndex
+  ModeType
 } from '../../utils'
 import User from '../../model/User'
 

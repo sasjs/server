@@ -27,7 +27,6 @@ import { createFile, fileExists } from '@sasjs/utils'
 import {
   appStreamService,
   getFilesFolder,
-  getWebBuildFolder,
   refreshAppStreamIndex,
   sysInitCompiledPath
 } from '../utils/'

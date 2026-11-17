@@ -1,8 +1,7 @@
 import Joi from 'joi'
 import {
   PermissionType,
-  PermissionSettingForRoute,
-  PrincipalType
+  PermissionSettingForRoute
 } from '../controllers/permission'
 import { getAuthorizedRoutes } from './getAuthorizedRoutes'
 import { DESKTOP_USER_ID } from './desktopIdentity'

@@ -1,4 +1,3 @@
-import React from 'react'
 import Box from '@mui/material/Box'
 import ArticleIcon from '@mui/icons-material/Article'
 import CodeIcon from '@mui/icons-material/Code'

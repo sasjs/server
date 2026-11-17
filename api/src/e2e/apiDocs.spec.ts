@@ -19,7 +19,7 @@ import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, chromium } from 'playwright'
 import { createFile, fileExists } from '@sasjs/utils'
-import { getWebBuildFolder, sysInitCompiledPath } from '../utils/'
+import { sysInitCompiledPath } from '../utils/'
 import { UserController } from '../controllers/'
 
 const screenshotDir =

@@ -16,8 +16,7 @@ import {
   Patch,
   UploadedFile,
   FormField,
-  Delete,
-  Hidden
+  Delete
 } from 'tsoa'
 import { deleteFile, FileTree } from '@sasjs/utils'
 import {
@@ -32,12 +31,7 @@ import { nodeDriveStore, resolveDrivePath } from './internal/nodeDriveStore'
 
 import { TreeNode } from '../types'
 import { HttpError } from '../utils'
-import {
-  appStreamService,
-  DEPLOY_NEEDS_FOLDER,
-  unpublishApp,
-  type PublishedApp
-} from '../utils'
+import { DEPLOY_NEEDS_FOLDER, unpublishApp, type PublishedApp } from '../utils'
 import { appSummary, type AppStreamEntry } from '@sasjs/api'
 
 interface DeployPayload {
@@ -86,12 +80,6 @@ interface DeployResponse {
   /** The app this deploy published, with the URL it is served on. */
   app?: PublishedApp
   example?: FileTree
-}
-
-interface GetFileResponse {
-  status: string
-  fileContent?: string
-  message?: string
 }
 
 interface GetFileTreeResponse {

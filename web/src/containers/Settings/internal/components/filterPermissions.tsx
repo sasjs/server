@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { IconButton, Tooltip } from '@mui/material'
 import { FilterList } from '@mui/icons-material'
 import { PermissionResponse } from '../../../../utils/types'

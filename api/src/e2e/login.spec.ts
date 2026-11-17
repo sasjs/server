@@ -25,7 +25,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, BrowserContext, chromium, Page } from 'playwright'
 import { requireWebBuild } from './fixture'
 import { createFile, fileExists } from '@sasjs/utils'
-import { getWebBuildFolder, sysInitCompiledPath } from '../utils/'
+import { sysInitCompiledPath } from '../utils/'
 
 const screenshotDir =
   process.env.E2E_SCREENSHOT_DIR ?? path.join(__dirname, 'screenshots')

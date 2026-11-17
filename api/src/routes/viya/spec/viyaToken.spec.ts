@@ -257,7 +257,8 @@ describe('the estate token port', () => {
   })
 
   it('states what is left of the reused pair, not a fresh lifetime', async () => {
-    const first = await codeGrant()
+    // the pair has to exist on the estate; nothing in this case reads the answer
+    await codeGrant()
 
     // a pair minted a while ago, in effect: short expiries on the stored tokens
     const user = await User.findOne({ username: account.username })
