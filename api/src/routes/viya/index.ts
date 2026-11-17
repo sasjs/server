@@ -29,6 +29,7 @@ import { dispatchViya } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
 import { oauthToken, TOKEN_PATH } from './token'
+import { VIYA_CONTENT_BYTES, VIYA_CONTENT_PATH } from '../../app-modules'
 
 /**
  * The paths a Viya client uses, and the only ones this router answers.
@@ -144,22 +145,67 @@ const uploadOf = async (
   }
 }
 
+/**
+ * A file's new content, read here rather than by a global parser.
+ *
+ * `updateFileContent` in `@sasjs/adapter` puts the new content on the wire as the
+ * body, with the file's own content type, so no JSON parser may consume it. The
+ * bytes are read at this point in the chain - after `viyaGuard` has authenticated
+ * and authorised the caller - because that is what keeps a hundred megabytes from
+ * being buffered for someone who turns out to have no grant.
+ *
+ * `express.raw` refuses past its limit with `entity.too.large`, which is answered
+ * here as the mount's own 413: the app's error handler turns everything else into
+ * a 500.
+ */
+const contentOf = async (
+  req: express.Request,
+  res: express.Response,
+  limit: number
+): Promise<string | Uint8Array | undefined> => {
+  if (!VIYA_CONTENT_PATH.test(req.path)) return undefined
+  if (req.method !== 'PUT' && req.method !== 'POST') return undefined
+
+  const raw = express.raw({ type: () => true, limit })
+
+  try {
+    await new Promise<void>((resolve, reject) =>
+      raw(req, res, (error?: unknown) => (error ? reject(error) : resolve()))
+    )
+  } catch (error) {
+    if ((error as { type?: string })?.type === 'entity.too.large')
+      res.status(413).json({
+        message: `A file's content must not exceed ${limit} bytes.`
+      })
+    else throw error
+
+    return undefined
+  }
+
+  return req.body instanceof Uint8Array ? req.body : undefined
+}
+
 /** A request the emulator should not answer is left to the server's own routes. */
 export const isViyaPath = (path: string): boolean =>
   VIYA_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   )
 
-/**
- * The router.
- *
- * `services` is a factory rather than a value because a request carries the
- * caller: the estate the emulator answers as depends on who is asking, and a
- * host that resolved one at boot would answer everyone as the same account.
- */
+/** What the router may be told about the host it is mounted on. */
+export interface ViyaRouterOptions {
+  /**
+   * The largest file content a single request may carry. Stated so a case can
+   * measure the refusal without sending a hundred megabytes: the default is the
+   * cap production runs with.
+   */
+  contentBytes?: number
+}
+
 export const createViyaRouter = (
-  services: (req: express.Request) => Services
+  services: (req: express.Request) => Services,
+  options: ViyaRouterOptions = {}
 ) => {
+  const contentBytes = options.contentBytes ?? VIYA_CONTENT_BYTES
   const router = express.Router()
 
   router.use(async (req, res, next) => {
@@ -198,9 +244,17 @@ export const createViyaRouter = (
     let answer: ViyaResponse
 
     try {
+      // a file's content, as bytes, read behind the guard: it travels as
+      // `contents`, the request-side twin of the response's raw body
+      const contents = await contentOf(req, res, contentBytes)
+
+      // a refusal is already answered
+      if (res.headersSent) return
+
       answer = await dispatchViya(services(req), req.method, req.path, {
         query: req.query as Record<string, string | undefined>,
         body: req.body as Record<string, unknown> | undefined,
+        contents,
         file: await uploadOf(req),
         // the scheme is case-insensitive (RFC 7235 2.1), so `bearer <tok>` is a
         // bearer token and not a token that happens to start with the word
