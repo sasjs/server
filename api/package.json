@@ -54,13 +54,13 @@
   },
   "author": "4GL Ltd",
   "dependencies": {
-    "adm-zip": "0.6.1",
     "@sasjs/adapter": "4.19.1",
-    "@sasjs/api": "0.41.0",
+    "@sasjs/api": "0.44.0",
     "@sasjs/core": "^6.1.2",
     "@sasjs/lint": "5.5.7",
     "@sasjs/sas-language": "0.7.2",
     "@sasjs/utils": "4.11.0",
+    "adm-zip": "0.6.1",
     "bcryptjs": "^3.0.3",
     "compression": "1.8.2",
     "connect-mongo": "^6.0.0",
@@ -71,6 +71,7 @@
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "fs-extra": "11.4.1",
     "helmet": "^8.3.0",
     "http-headers-validation": "^0.0.2",
     "joi": "^18.3.1",
@@ -83,8 +84,7 @@
     "rotating-file-stream": "^3.2.10",
     "tsoa": "5.1.1",
     "unzipper": "^0.12.5",
-    "url": "^0.11.4",
-    "fs-extra": "11.4.1"
+    "url": "^0.11.4"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
