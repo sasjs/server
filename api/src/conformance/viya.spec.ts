@@ -13,9 +13,9 @@
  *
  * The client under contract is `@sasjs/adapter` 6.x, the version the emulator's
  * surface was measured against (`spec/viya/adapter-paths.json` in `@sasjs/api`).
- * This package's own dependency on 4.19.1 is its client for a real estate
- * (`src/controllers/internal/viyaClient.ts`), which is a separate question and
- * moves on its own schedule, so 6.x arrives under an alias.
+ * This package depends on that same version, so this run and the estate client
+ * in `src/controllers/internal/viyaClient.ts` drive one copy of the adapter: a
+ * change that fails the run is a change that fails the real client.
  *
  * What this run cannot prove: execution. A job runs on this server's engine, and
  * a machine without SAS has none, so the submit-and-read-the-webout leg is gated
@@ -32,7 +32,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import { SASViyaApiClient, SasjsRequestClient } from '@sasjs/adapter-v6/node'
+import { SASViyaApiClient, SasjsRequestClient } from '@sasjs/adapter/node'
 
 import { configureBodyParsers } from '../app-modules'
 import { ModeType, SECRETS } from '../utils'

@@ -55,7 +55,7 @@
   },
   "author": "4GL Ltd",
   "dependencies": {
-    "@sasjs/adapter": "4.19.1",
+    "@sasjs/adapter": "6.1.1",
     "@sasjs/api": "0.44.2",
     "@sasjs/core": "^6.1.2",
     "@sasjs/lint": "5.5.7",
@@ -88,7 +88,6 @@
     "url": "^0.11.4"
   },
   "devDependencies": {
-    "@sasjs/adapter-v6": "npm:@sasjs/adapter@6.1.1",
     "@types/adm-zip": "^0.5.8",
     "@types/bcryptjs": "^3.0.0",
     "@types/compression": "1.8.1",
