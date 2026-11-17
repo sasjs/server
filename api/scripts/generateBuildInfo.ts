@@ -3,10 +3,9 @@
  * git. Runs as part of `npm run initial`, so every `build`, `exe` and
  * `prestart` produces a file that names the release it came from.
  *
- * The release workflow resolves the next version with `semantic-release
- * --dry-run` BEFORE it builds the executables, and passes it here as
- * SASJS_SERVER_VERSION - the tag does not exist yet at that point, so `git
- * describe` alone would report the previous release.
+ * The release workflow cuts the tag first and passes it here as
+ * SASJS_SERVER_VERSION, because the executables are built from a checkout whose
+ * `git describe` would otherwise risk reporting the previous release.
  */
 import { execSync } from 'child_process'
 import fs from 'fs'

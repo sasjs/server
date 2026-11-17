@@ -5,17 +5,11 @@ on:
     branches:
       - main
 
-# One release at a time. Without this, two merges minutes apart start two
-# release runs: the first builds and publishes, the second creates its tag and
-# GitHub release and then fails at `npm publish` because the version is already
-# taken - so the tag names a commit whose build never reached npm, and the npm
-# entry carries the other run's build (sasjs/server#520).
-#
-# Queued rather than cancelled: a run that is mid-publish must never be torn
-# down, and a run that waits reads the commits that arrived while it waited, so
-# nothing is left unreleased. GitHub keeps one run per group, so a third merge
-# replaces the waiting one - and that run still covers the commit it replaced,
-# because it sees the same history.
+# One release at a time. Two merges minutes apart would otherwise start two
+# release runs over the same history: the second finds its commits already
+# covered, reports `skip`, and publishes nothing - while the first is still
+# building. Queued rather than cancelled, because a run that is mid-publish must
+# never be torn down (sasjs/server#520).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -27,25 +21,21 @@ jobs:
   release:
     runs-on: ubuntu-22.04
     permissions:
-      contents: write  # semantic-release creates the tag and the GitHub release
+      contents: write  # the tag, the draft release, its assets, and the PATCH that publishes it
       id-token: write  # npm trusted publishing (OIDC) and --provenance
-      # @semantic-release/github comments on the PRs and issues a release
-      # resolves. Without these two it gets a 403 AFTER the tag exists, which
-      # leaves a release with no npm entry and no release notes.
-      issues: write
-      pull-requests: write
 
     strategy:
       matrix:
         node-version: [lts/*]
 
     steps:
-      # This job never pushes to main: semantic-release creates the tag and the
-      # release through the API.
+      # This job never pushes to main: the release API creates the tag at the
+      # commit being released.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # semantic-release needs the full history plus the existing tags.
+          # the version is classified from the tags, so a shallow clone would
+          # see one commit and invent one
           fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node-version }}
@@ -53,69 +43,100 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      # semantic-release is the authority on whether this commit releases
-      # anything, so ask it BEFORE spending three minutes building three platform
-      # executables. The plugin install plus the dry run costs about forty
-      # seconds, and the build steps below are skipped whenever the answer is no
-      # - which includes docs: and chore: commits that do not request a release.
-      # Node 22 ships npm 10.x, and npm trusted publishing (OIDC) needs 11.5.1 or
+      # Node 22 ships npm 10, and trusted publishing (OIDC) needs 11.5.1 or
       # later - with an older CLI `npm publish` looks for a token and fails
-      # rather than exchanging the OIDC token. Same step the lint release runs.
+      # rather than exchanging the OIDC token. Floored, not floating: a newer
+      # major that changed --provenance or trusted publishing would break this
+      # job with nothing in the repository to review or revert.
       - name: Update npm
-        # Floored, not floating: OIDC publishing needs 11.5.1, and a floating
-        # npm major that changes --provenance or trusted publishing would break
-        # this job with nothing in the repo to review or revert.
         run: npm install -g npm@^11.5.1
 
-      - name: Install Semantic Release and plugins
-        run: |
-          npm i
-          # pinned, not floating: the scorecard reads an unpinned global install as an
-          # unpinned dependency, and a semantic-release major that changed the plugin
-          # contract would break this job with nothing in the repository to revert
-          npm i -g semantic-release@25.0.9
+      # The tool comes from the lockfile, so the bytes are pinned as well as the
+      # version, on the one job that can tag and publish.
+      - name: Install the release tool
+        run: npm ci
 
-      - name: Is a release pending?
-        id: pending
+      # The cut comes before anything is built, so every artefact below can name
+      # the release it belongs to, and the assets have a release to attach to.
+      # It is a DRAFT with no assets: a release published before its files exist
+      # is one whose download links answer 404 until an attach finishes, which is
+      # exactly what v7.24.3 shipped to `latest`.
+      #
+      # A failure after this step leaves an invisible draft and no npm entry -
+      # but NOT a tag: GitHub creates the backing tag when a draft is published,
+      # not when it is created (measured on this repository: a draft release with
+      # a tag name that did not exist left /git/refs/tags/... 404). So a failed
+      # cut burns no tag of its own and the commits stay uncovered until some
+      # release covers them - which is what the paragraph below is about.
+      #
+      # Finish the run by RE-RUNNING IT: the cut classifies the same commits,
+      # finds the draft it made last time and reuses it, the local tag it creates
+      # is what `--prepare-publish` resolves, `publish` is true while the
+      # registry lacks the version, and the job completes the release.
+      #
+      # A LATER merge is the case this pipeline depends on the tool for, and it
+      # needs a @sasjs/release that compares commits (the first release carrying
+      # sasjs/release#14 - see the dependency note in the PR):
+      #
+      #   - a run at a newer commit classifies from the last PUBLISHED tag, so it
+      #     computes the same version and finds the draft cut at the earlier
+      #     commit. A tool that reuses any release carrying that tag name attaches
+      #     the newer build to it and publishes the tag at the OLDER commit - a
+      #     release whose files and tag disagree, with nothing warning;
+      #   - from that release on, a draft naming another commit is discarded and
+      #     the release cut again here, so the merge is harmless: the earlier
+      #     attempt stays invisible and its commits ship in the release after it.
+      #
+      # Until the pin names such a release, re-run a failed release before
+      # merging anything else.
+      - name: Tag and cut the draft release, if there is anything to release
+        id: release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release -- --host github --release --no-assets --draft --output "$GITHUB_OUTPUT"
+
+      # What this run is finishing is decided from state, not from the cut. The
+      # cut leaves a draft and a LOCAL tag in this runner only - nothing on the
+      # forge covers those commits until the release is published - so the next
+      # run classifies the same commits to the same version and this step is what
+      # tells it whether that version still needs publishing. `released` cannot
+      # answer that: a run that died before npm got the version reports the same
+      # thing as one that finished. --prepare-publish answers from the tag and the
+      # registry - skip, tag, version, publish, exists - and refuses a tag that is
+      # not on main.
+      #
+      # Its answer is also checked rather than trusted: a run that exits 0 without
+      # reporting a decision this workflow understands would otherwise leave every
+      # later step skipped and the job green, having released nothing.
+      - name: Resolve the version this run publishes, and ask the registry
+        id: publish
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          semantic-release --dry-run 2>&1 | tee /tmp/dry-run.log
-          if grep -q 'The next release version is' /tmp/dry-run.log; then
-            echo "release=true" >> "$GITHUB_OUTPUT"
-            grep 'The next release version is' /tmp/dry-run.log
-            # The tag does not exist yet, so `git describe` inside the build
-            # would report the PREVIOUS release. Capture the version here and
-            # pass it to the build through SASJS_SERVER_VERSION so the binary
-            # names the release it is about to be published as.
-            VERSION=$(grep -oE 'The next release version is [0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?' /tmp/dry-run.log | head -1 | awk '{print $NF}')
-            # An empty value here would stamp every binary with the literal
-            # "v" and publish a build that cannot name its own release - fail
-            # the job instead of shipping that.
-            if [ -z "$VERSION" ]; then
-              echo "Could not parse the next version out of the dry-run output:"
-              cat /tmp/dry-run.log
-              exit 1
-            fi
-            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
-            echo "Building as v$VERSION"
-          elif grep -q 'There are no relevant changes, so no new version is released' /tmp/dry-run.log ||
-               grep -q "The local branch .* is behind the remote one, therefore a new version won't be published" /tmp/dry-run.log; then
-            echo "release=false" >> "$GITHUB_OUTPUT"
-            echo "No release is pending for this commit: the build steps are skipped."
-          else
-            echo "::error::Could not determine whether a release is pending; refusing to publish."
+          if [ -n "${TAG:-}" ]; then target=(--tag "$TAG"); else target=(--sha "$SHA"); fi
+          decision=$(mktemp)
+          npm run release -- --prepare-publish "${target[@]}" --branch main --output "$decision"
+          if ! grep -qxE 'skip=(true|false)' "$decision"; then
+            echo "::error::--prepare-publish reported no skip= decision, so this run cannot tell whether there is anything to publish:"
+            cat "$decision"
             exit 1
           fi
+          if grep -qx 'skip=false' "$decision" && ! grep -qE '^tag=[^[:space:]]+$' "$decision"; then
+            echo "::error::--prepare-publish reported something to publish but named no tag:"
+            cat "$decision"
+            exit 1
+          fi
+          cat "$decision" >> "$GITHUB_OUTPUT"
 
       - name: Install Dependencies WEB
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./web
         run: npm ci
 
       - name: Build WEB
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./web
         run: npm run build
         env:
@@ -125,7 +146,7 @@ jobs:
       # the release that carries it. Built after the client because they land in
       # the client's output directory.
       - name: Setup Python
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v6.0.0
         with:
           python-version: "3.12"
@@ -133,13 +154,13 @@ jobs:
           cache-dependency-path: docs/requirements.txt
 
       - name: Build DOCS
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         run: |
           pip install -r docs/requirements.txt
           node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
 
       - name: Install Dependencies API
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./api
         run: npm ci
 
@@ -150,7 +171,7 @@ jobs:
       # all three platforms, so all three base binaries are fetched up front,
       # retried and cached between runs.
       - name: Restore the pkg base binaries
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         id: pkg-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -158,7 +179,7 @@ jobs:
           key: pkg-cache-${{ runner.os }}-release-${{ hashFiles('api/package-lock.json') }}
 
       - name: Fetch the pkg base binaries
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         shell: bash
         working-directory: ./api
         run: |
@@ -190,14 +211,14 @@ jobs:
           done
 
       - name: Save the pkg base binaries
-        if: success() && steps.pending.outputs.release == 'true' && steps.pkg-cache.outputs.cache-hit != 'true'
+        if: success() && steps.publish.outputs.tag != '' && steps.pkg-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.pkg-cache
           key: ${{ steps.pkg-cache.outputs.cache-primary-key }}
 
       - name: Build Executables
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./api
         run: npm run exe
         env:
@@ -205,7 +226,7 @@ jobs:
           # Stamped into the binary by scripts/generateBuildInfo.ts and served
           # by GET /SASjsApi/admin/diagnostics, so an operator can tell which
           # release a binary is without downloading it again.
-          SASJS_SERVER_VERSION: ${{ steps.pending.outputs.version }}
+          SASJS_SERVER_VERSION: ${{ steps.publish.outputs.tag }}
           SASJS_SERVER_GIT_HASH: ${{ github.sha }}
           # The api build lists the SAS_PACKAGES macros over the GitHub API,
           # which rate limits unauthenticated requests per source IP.
@@ -217,7 +238,7 @@ jobs:
       # is the check that v3.10.0, v3.11.0 and v3.11.1 went out without - each of
       # them unable to write its first log line.
       - name: Smoke test the linux executable
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         run: node .github/scripts/smoke-executable.mjs executables/api-linux
 
       # Stage the npm package from the SAME build. `files` in the staged manifest
@@ -225,13 +246,13 @@ jobs:
       # layout api/src/utils/file.ts derives its roots from - see the script's
       # header for the arithmetic.
       - name: Stage the npm package
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         run: node .github/scripts/stage-npm-package.mjs "${VERSION#v}" npm-package
         env:
-          VERSION: ${{ steps.pending.outputs.version }}
+          VERSION: ${{ steps.publish.outputs.version }}
 
       - name: Check the tarball carries exactly the runtime
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./npm-package
         run: |
           set -euo pipefail
@@ -256,7 +277,7 @@ jobs:
           console.log('tarball: ' + files.length + ' files, ' + report.unpackedSize + ' bytes unpacked')
           "
       - name: Compress Executables
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./executables
         run: |
           zip linux.zip api-linux
@@ -264,103 +285,37 @@ jobs:
           zip windows.zip api-win.exe
 
       - name: Generate SHA256 checksums
-        if: steps.pending.outputs.release == 'true'
+        if: steps.publish.outputs.tag != ''
         working-directory: ./executables
         run: |
           sha256sum linux.zip macos.zip windows.zip > SHA256SUMS
           cat SHA256SUMS
 
-      # A version on npm with no tag for it means the two records already
-      # disagree: the next release numbers itself from the tags, so it would ship
-      # a version that is not the one users have. Refuse rather than paper over it,
-      # and say what to do - this is the state a published-but-untagged run leaves.
-      - name: Is this version already on npm?
-        if: steps.pending.outputs.release == 'true'
+      # The release exists but is invisible, and the files are on disk. The tool
+      # attaches them and reads the release back - every asset present, its size
+      # matching, and its GitHub sha256 digest equal to the bytes it sent - and
+      # --keep-draft leaves it invisible until npm has the version. That is the
+      # check v7.24.3 needed: @semantic-release/github uploaded what it found and
+      # said nothing about what it did not.
+      - name: Attach the assets to the draft, and verify them
+        if: steps.publish.outputs.tag != ''
         env:
-          VERSION: ${{ steps.pending.outputs.version }}
-        run: |
-          set -euo pipefail
-          V="${VERSION#v}"
-          # Three answers, not two. A registry that timed out, answered 5xx or
-          # refused us exits non-zero exactly like a version that is not there, and
-          # reading that as "not published" would send this gate green in the one
-          # case where it could not check - the mismatch it exists to catch, unseen.
-          if asked=$(npm view "@sasjs/server@${V}" version 2>&1); then
-            echo "::error::@sasjs/server@${V} is already on npm, but no tag points at it. The release record and the registry disagree, so this run refuses to release: either tag the commit that produced ${V}, or merge something that produces a new version."
-            exit 1
-          fi
-          case "${asked}" in
-            *E404*|*"404 Not Found"*)
-              echo "@sasjs/server@${V} is not on npm yet: safe to release."
-              ;;
-            *)
-              echo "::error::could not ask the registry whether @sasjs/server@${V} exists, so this run cannot tell whether releasing it is safe: ${asked}"
-              exit 1
-              ;;
-          esac
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: npm run release -- --attach "$TAG" --verify-assets --keep-draft
 
-      # Only publish when the same dry run caused a build. Otherwise a docs-only
-      # fix or a changed dry-run message could create a release without binaries.
-      - name: Release
-        id: release
-        if: steps.pending.outputs.release == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.pending.outputs.version }}
-        run: |
-          set -euo pipefail
-          # github's release plugin ignores missing assets rather than failing.
-          # Check all names and their hashes before it can create a tag or release.
-          test -n "$VERSION"
-          test -s npm-package/package.json
-          for asset in linux.zip macos.zip windows.zip SHA256SUMS; do
-            test -s "executables/$asset"
-          done
-          for asset in linux.zip macos.zip windows.zip; do
-            test "$(grep -cE "^[0-9a-f]{64}  ${asset//./\\.}$" executables/SHA256SUMS)" = 1
-          done
-          (cd executables && sha256sum --check --strict SHA256SUMS)
-          semantic-release
-
-          # Exit 0 is not the same as "released". semantic-release declines and
-          # succeeds when the checkout is behind the branch it releases from -
-          # "The local branch main is behind the remote one, therefore a new
-          # version won't be published" - which is what a second merge reaching
-          # main does to a run that is still waiting its turn in the concurrency
-          # queue. The tag is the evidence, so ask it: if v$VERSION does not point
-          # at this commit, this run released nothing and may publish nothing.
-          #
-          # Reading the tag rather than the log keeps the decision on an artefact
-          # rather than on wording that semantic-release may change.
-          git fetch --tags --force --quiet
-          if git tag --points-at "$GITHUB_SHA" | grep -qx "v${VERSION#v}"; then
-            echo "released=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "released=false" >> "$GITHUB_OUTPUT"
-          if [ -n "${VERSION}" ]; then
-            echo "::warning::semantic-release did not release ${VERSION} at ${GITHUB_SHA}, so this run publishes nothing. Usually a newer commit reached main while this run waited; the version is released by the next run that gets as far as this step."
-          fi
-
-      # Publishing after the tag exists keeps the published version and the tag in
-      # step: a publish failure then leaves a release without its npm entry, which
-      # is visible and retryable, rather than an npm version with no tag.
-      #
-      # Gated on what `Release` did, not on the dry run earlier in the job: the dry
-      # run answers whether a release is PENDING, and a run can be told that and
-      # then be declined by semantic-release - a newer commit reaching main while
-      # this one waited does it. Publishing on the strength of the earlier answer
-      # put a version on npm that no tag named. The tag is what this reads.
+      # Gated on the registry's answer, not on this run having cut the tag: a
+      # re-run that finds the version already on npm must skip the publish
+      # rather than fail on it, and still finish the release below.
       #
       # Requires npm trusted publishing configured for @sasjs/server against this
-      # repository and this workflow file. The FIRST publish of a new name needs a
-      # token-authenticated run, because npm only offers the trusted-publisher
+      # repository and this workflow file. The FIRST publish of a new name needs
+      # a token-authenticated run, because npm only offers the trusted-publisher
       # setting once the package exists.
       - name: Publish to npm
-        if: steps.release.outputs.released == 'true'
+        if: steps.publish.outputs.publish == 'true'
         env:
-          VERSION: ${{ steps.pending.outputs.version }}
+          VERSION: ${{ steps.publish.outputs.version }}
         run: |
           set -euo pipefail
           # The dist-tag decides what an unpinned `npx @sasjs/server` resolves,
@@ -374,20 +329,20 @@ jobs:
           echo "publishing $V under dist-tag $TAG"
           npm publish ./npm-package --provenance --access public --tag "$TAG"
 
+      # The last step of a release: the assets are verified again and the draft
+      # is what gets published, so a release is never public without its files.
+      # Gated on tag discovery rather than on the publish, because a re-run that
+      # found the version already on npm still has a draft to finalize.
+      - name: Publish the verified release
+        if: steps.publish.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: npm run release -- --attach "$TAG" --verify-assets
+
       - name: Document the checksums on the release
-        if: steps.release.outputs.released == 'true'
+        if: steps.publish.outputs.tag != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          # The tag is created on the REMOTE by the github plugin (nothing makes
-          # one locally now that the changelog plugin is gone), so fetch it
-          # before asking which tag points at HEAD. An empty result still means
-          # this push produced no release.
-          git fetch --tags --force
-          TAG=$(git tag --points-at HEAD | head -n1)
-          if [ -z "$TAG" ]; then
-            echo "No release was created for this commit - skipping."
-            exit 0
-          fi
-          bash .github/scripts/add-verify-section.sh "$TAG"
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: bash .github/scripts/add-verify-section.sh "$TAG"

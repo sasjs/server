@@ -1,6 +1,6 @@
 {
-  "name": "server",
-  "version": "0.0.76",
+  "name": "@sasjs/server",
+  "version": "0.0.0",
   "description": "NodeJS wrapper for calling the SAS binary executable",
   "repository": "https://github.com/sasjs/server",
   "scripts": {
@@ -13,6 +13,7 @@
     "mock:build": "node mock/build.mjs",
     "mock:serve": "node mock/serve.mjs",
     "mock:test": "node --test mock/lib.test.mjs mock/apps.test.mjs mock/drive.test.mjs mock/driveSeed.test.mjs",
+    "release": "sasjs-release",
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath ./.git-hooks",
     "lint-api:fix": "npx prettier --write \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint-api": "npx prettier --check \"api/src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
@@ -23,7 +24,6 @@
   },
   "devDependencies": {
     "@nogoo9/gitleaks": "8.30.1-post.2",
-    "@semantic-release/exec": "^6.0.3",
-    "@semantic-release/github": "^8.0.4"
+    "@sasjs/release": "0.13.1"
   }
 }
