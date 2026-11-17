@@ -16,9 +16,10 @@
  * This package depends on that same version, so this run and the estate client
  * in `src/controllers/internal/viyaClient.ts` drive one copy of the adapter: a
  * change that fails the run is a change that fails the real client. One case
- * takes the client the server builds rather than constructing it here, so the
- * wrapper's own wiring is part of the contract too - without it a change to how
- * `SASjs` builds its compute client would break the server with this run green.
+ * takes the client that module builds rather than constructing its own, so the
+ * parameters the server passes - the server URL, the context name, the server
+ * type - are under the run too; without it a change to them would break the
+ * server with this run green.
  *
  * What this run cannot prove: execution. A job runs on this server's engine, and
  * a machine without SAS has none, so the submit-and-read-the-webout leg is gated
@@ -35,13 +36,10 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
-import SASjs, {
-  SASViyaApiClient,
-  SasjsRequestClient
-} from '@sasjs/adapter/node'
-import { ServerType } from '@sasjs/utils/types'
+import { SASViyaApiClient, SasjsRequestClient } from '@sasjs/adapter/node'
 
 import { configureBodyParsers } from '../app-modules'
+import { getViyaClient } from '../controllers/internal/viyaClient'
 import { ModeType, SECRETS } from '../utils'
 import {
   PermissionController,
@@ -279,28 +277,44 @@ describe('a Viya client against the emulated estate', () => {
     expect(contexts[0].name).toBeTruthy()
   })
 
-  it('builds the compute client from its config, the way the server does', async () => {
-    // The estate client does not construct SASViyaApiClient: it hands SASjs a
-    // serverUrl, a server type and a context name, then reads the client the
-    // wrapper builds (src/controllers/internal/viyaClient.ts:121-131). Every
-    // other case here builds that class directly, so a change to that wiring -
-    // which client the wrapper builds, the request client it hands over, the
-    // appLoc and context it passes - would leave them all green and break the
-    // server. This case takes the production path and asks the estate a
-    // question that needs no engine.
-    const sasjs = new SASjs({
-      serverUrl: origin,
-      serverType: ServerType.SasViya,
-      contextName: 'SAS Job Execution compute context'
-    })
+  it('drives the estate through the client the server builds', async () => {
+    // The estate client never constructs SASViyaApiClient: it asks this module
+    // for the wrapper SASjs builds from VIYA_URL and VIYA_CONTEXT, then reads the
+    // compute client off it (src/controllers/internal/viyaClient.ts). Every other
+    // case here builds its own client, so a change to what the server passes -
+    // the server URL, the context name, the server type, the options handed to
+    // SASjs - would leave them all green and break the server. This case takes
+    // that module's client instead and asks the estate a question needing no
+    // engine, so it runs wherever the rest of this run does.
+    const saved = {
+      url: process.env.VIYA_URL,
+      context: process.env.VIYA_CONTEXT
+    }
 
-    const built = (sasjs as any).sasViyaApiClient as SASViyaApiClient
+    process.env.VIYA_URL = origin
+    process.env.VIYA_CONTEXT = 'SAS Job Execution compute context'
 
-    expect(built).toBeInstanceOf(SASViyaApiClient)
+    try {
+      const built = (getViyaClient() as any)
+        .sasViyaApiClient as SASViyaApiClient
 
-    const contexts = await built.getComputeContexts(tokens.access_token)
+      expect(built).toBeInstanceOf(SASViyaApiClient)
 
-    expect(contexts.length).toBeGreaterThan(0)
+      // the context the wrapper handed over is the one this module resolved, not
+      // one the case chose: a change to getViyaContext() or to the config it
+      // passes fails here
+      expect((built as any).contextName).toBe(process.env.VIYA_CONTEXT)
+
+      const contexts = await built.getComputeContexts(tokens.access_token)
+
+      expect(contexts.length).toBeGreaterThan(0)
+    } finally {
+      if (saved.url === undefined) delete process.env.VIYA_URL
+      else process.env.VIYA_URL = saved.url
+
+      if (saved.context === undefined) delete process.env.VIYA_CONTEXT
+      else process.env.VIYA_CONTEXT = saved.context
+    }
   })
 
   it('opens two sessions the client accepts as live', async () => {

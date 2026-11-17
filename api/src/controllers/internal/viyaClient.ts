@@ -118,7 +118,15 @@ const getAuth = async (): Promise<ViyaAuth> => {
   return cachedAuth
 }
 
-const getClient = (): SASjs => {
+/**
+ * The Viya client this module submits through, built from `VIYA_URL` and
+ * `VIYA_CONTEXT` on first use.
+ *
+ * Exported so the conformance run drives the wiring the server drives. A case
+ * that built its own `SASjs` would stay green while the parameters passed here -
+ * the server URL, the context name, the server type - changed underneath it.
+ */
+export const getViyaClient = (): SASjs => {
   client =
     client ||
     new SASjs({
@@ -152,7 +160,9 @@ const runProgram = async (
     // The public SASjs.executeScript() submits the code but does not return the
     // _webout fileref, so the compute client is used directly: debug=true relays
     // the log, expectWebout=true reads the session's _webout fileref.
-    const result = await (getClient() as any).sasViyaApiClient.executeScript(
+    const result = await (
+      getViyaClient() as any
+    ).sasViyaApiClient.executeScript(
       jobName,
       program.split('\n'),
       getViyaContext(),
