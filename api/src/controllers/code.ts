@@ -94,6 +94,19 @@ interface FormatCodePayload {
    * @example "/projects/app/run.sas"
    */
   filePath?: string
+  /**
+   * Whether to run the layout engine as well as the rules. Defaults to true,
+   * which is what "format" means.
+   *
+   * `false` is the editor's "fix lint issues": the rules are the changes that
+   * can be made without judgement - trailing spaces, tabs, line endings, the
+   * header's macro list, the wrapping a long line gets - and an author who asks
+   * for those does not want the engine's statement breaks and indentation
+   * rewritten at the same time. Nothing else about the response changes: it is
+   * still the rewritten buffer.
+   * @example false
+   */
+  layout?: boolean
 }
 
 @Security('bearerAuth')
@@ -233,6 +246,11 @@ export class CodeController {
   @Post('/format')
   public async formatCode(@Body() body: FormatCodePayload): Promise<string> {
     const lintConfig = await getDriveLintConfig(body.filePath)
+
+    // The rules alone, for a caller that asked for the lint fixes and not the
+    // layout. The engine is not loaded at all in that case, so the request does
+    // not wait for a module graph it would not use.
+    if (body.layout === false) return formatText(body.code, lintConfig)
 
     // The engine gives the formatter its layout - indentation, statement breaks,
     // keyword case from the drive's .sasjslint. It is loaded on first use, so a

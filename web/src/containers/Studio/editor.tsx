@@ -29,6 +29,7 @@ import {
   storedDisplayMode
 } from './internal/displayMode'
 import FileMenu from './internal/components/fileMenu'
+import { lintAppliesTo } from './internal/lintScope'
 import RunMenu from './internal/components/runMenu'
 import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
 import LintIssues from './internal/components/lint/lintIssues'
@@ -156,7 +157,8 @@ const SASjsEditor = ({
     handleRunBtnClick,
     handleTabChange,
     saveBuffer,
-    fixFormatting,
+    fixLintIssues,
+    formatDocument,
     formatting,
     setOpenFilePathInputModal,
     setFileContent,
@@ -216,13 +218,34 @@ const SASjsEditor = ({
           ? 'Formatting applies to .sas and .json files'
           : undefined
 
+  /**
+   * Why the lint-fix button cannot be used, or undefined when it can.
+   *
+   * The rules are SAS rules, so the button follows the same question the lint
+   * flow asks - `lintAppliesTo` - rather than a second copy of it: a `.sas` file
+   * qualifies, and an untitled buffer qualifies when the SAS run time is
+   * selected. JSON has no lint rules to fix, so it is not included here the way
+   * it is in `format`.
+   */
+  const lintFixDisabledReason = formatting
+    ? 'Fixing...'
+    : !fileContent.trim()
+      ? 'Nothing to fix yet'
+      : isImageFile(selectedFilePath)
+        ? 'A picture cannot be fixed'
+        : !lintAppliesTo(selectedFilePath, selectedRunTime)
+          ? 'Lint fixes apply to SAS programs'
+          : undefined
+
   const fileMenu = (
     <FileMenu
       isDirty={isDirty}
       selectedFilePath={selectedFilePath}
       setOpenFilePathInputModal={setOpenFilePathInputModal}
       saveFile={saveBuffer}
-      fixFormatting={fixFormatting}
+      fixLintIssues={fixLintIssues}
+      formatDocument={formatDocument}
+      lintFixDisabledReason={lintFixDisabledReason}
       formatDisabledReason={formatDisabledReason}
     />
   )

@@ -712,6 +712,10 @@ components:
                     type: string
                     description: "The drive path of the file the code comes from, when it has one. The rules\nresolve from the nearest `.sasjslint` at or above that file's folder, so\neach folder in the drive tree can carry its own rules. Omitted for an\nuntitled buffer, which formats against the drive-root rules."
                     example: /projects/app/run.sas
+                layout:
+                    type: boolean
+                    description: "Whether to run the layout engine as well as the rules. Defaults to true,\nwhich is what \"format\" means.\n\n`false` is the editor's \"fix lint issues\": the rules are the changes that\ncan be made without judgement - trailing spaces, tabs, line endings, the\nheader's macro list, the wrapping a long line gets - and an author who asks\nfor those does not want the engine's statement breaks and indentation\nrewritten at the same time. Nothing else about the response changes: it is\nstill the rewritten buffer."
+                    example: false
             required:
                 - code
             type: object
