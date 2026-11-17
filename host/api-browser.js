@@ -1,4 +1,4 @@
-/* @sasjs/api 0.43.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.44.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -1688,6 +1688,10 @@ var SASjsApi = (() => {
           description: "Invalid Format"
         },
         {
+          status: 401,
+          description: "Unauthorized"
+        },
+        {
           status: 404,
           description: "No app is published with that id"
         }
@@ -1752,6 +1756,10 @@ var SASjsApi = (() => {
         {
           status: 400,
           description: "Invalid Format"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         },
         {
           status: 413,
@@ -1824,6 +1832,10 @@ var SASjsApi = (() => {
           description: "Invalid Format"
         },
         {
+          status: 401,
+          description: "Unauthorized"
+        },
+        {
           status: 413,
           description: "File tree exceeds the deploy limit"
         },
@@ -1856,6 +1868,10 @@ var SASjsApi = (() => {
         {
           status: 400,
           description: "Can't delete file outside drive"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         },
         {
           status: 404,
@@ -1896,6 +1912,10 @@ var SASjsApi = (() => {
         {
           status: 400,
           description: "A path outside the drive, a refused extension, or a request naming neither or both"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         },
         {
           status: 404,
@@ -1940,6 +1960,10 @@ var SASjsApi = (() => {
           description: "Can't modify file outside drive"
         },
         {
+          status: 401,
+          description: "Unauthorized"
+        },
+        {
           status: 404,
           description: "File doesn't exist"
         }
@@ -1982,6 +2006,10 @@ var SASjsApi = (() => {
           description: "Can't put file outside drive"
         },
         {
+          status: 401,
+          description: "Unauthorized"
+        },
+        {
           status: 409,
           description: "File already exists"
         }
@@ -2006,6 +2034,10 @@ var SASjsApi = (() => {
         {
           status: 200,
           description: "Ok"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         }
       ]
     },
@@ -2032,6 +2064,10 @@ var SASjsApi = (() => {
         {
           status: 400,
           description: "Can't delete folder outside drive"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         },
         {
           status: 404,
@@ -2064,6 +2100,10 @@ var SASjsApi = (() => {
           description: "Can't get folder outside drive"
         },
         {
+          status: 401,
+          description: "Unauthorized"
+        },
+        {
           status: 404,
           description: "Folder doesn't exist"
         }
@@ -2092,6 +2132,10 @@ var SASjsApi = (() => {
         {
           status: 400,
           description: "Can't put folder outside drive"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         },
         {
           status: 409,
@@ -2128,6 +2172,10 @@ var SASjsApi = (() => {
         {
           status: 400,
           description: "Can't rename outside drive"
+        },
+        {
+          status: 401,
+          description: "Unauthorized"
         },
         {
           status: 404,
@@ -6661,6 +6709,40 @@ var SASjsApi = (() => {
     };
   };
 
+  // src/identity/routeAccess.ts
+  var TOP_LEVEL_ROUTES = ["/AppStream", "/SASjsApi"];
+  var ALWAYS_VISIBLE_ROUTES = ["/AppStream"];
+  var STATIC_AUTHORIZED_ROUTES = [
+    "/SASjsApi/code/execute",
+    "/SASjsApi/stp/execute",
+    "/SASjsApi/drive/deploy",
+    "/SASjsApi/drive/deploy/upload",
+    "/SASjsApi/drive/file",
+    "/SASjsApi/drive/folder",
+    "/SASjsApi/drive/fileTree",
+    "/SASjsApi/drive/rename"
+  ];
+  var DEFAULT_GRANTABLE_ROUTES = [
+    ...TOP_LEVEL_ROUTES,
+    ...STATIC_AUTHORIZED_ROUTES
+  ];
+  var topLevelRouteFor = (routePath) => TOP_LEVEL_ROUTES.find(
+    (route) => routePath.toLowerCase().startsWith(route.toLowerCase())
+  ) ?? routePath;
+  var settingOn = (rules, path) => rules.find((rule) => rule.path === path)?.setting;
+  var GRANT = "Grant";
+  var DENY = "Deny";
+  var isRouteGranted = (rules, path, topLevelRoute = topLevelRouteFor(path)) => {
+    const userSetting = settingOn(rules.user, path) ?? settingOn(rules.user, topLevelRoute);
+    if (userSetting) return userSetting === GRANT;
+    const onPath = rules.group.filter((rule) => rule.path === path);
+    if (onPath.some((rule) => rule.setting === GRANT)) return true;
+    if (onPath.some((rule) => rule.setting === DENY)) return false;
+    return rules.group.some(
+      (rule) => rule.path === topLevelRoute && rule.setting === GRANT
+    );
+  };
+
   // src/host/dispatch.ts
   var SECONDS_IN_A_DAY = 86400;
   var RUN_ROUTES = [
@@ -6670,11 +6752,12 @@ var SASjsApi = (() => {
     "POST /SASjsApi/code/execute",
     "POST /SASjsApi/code/trigger"
   ];
-  var GRANTED_RUN_ROUTES = [
-    "GET /SASjsApi/stp/execute",
-    "POST /SASjsApi/stp/execute",
-    "POST /SASjsApi/code/execute"
-  ];
+  var GRANTED_ROUTES = DEFAULT_GRANTABLE_ROUTES.filter(
+    (path) => !TOP_LEVEL_ROUTES.includes(path)
+  );
+  var grantPath = (path) => GRANTED_ROUTES.find(
+    (candidate) => candidate.toLowerCase() === path.toLowerCase()
+  );
   var ADMIN_ROUTES = [
     "GET /SASjsApi/admin/diagnostics",
     "GET /SASjsApi/admin/logs",
@@ -6721,7 +6804,12 @@ var SASjsApi = (() => {
     const identityScoped = ["User", "Group", "Permission", "Client"].includes(route.tag) || routeId === "PATCH /SASjsApi/auth/updatePassword";
     const runtimeScoped = RUN_ROUTES.includes(routeId);
     const adminScoped = ADMIN_ROUTES.includes(routeId) && Boolean(services.admin);
-    const grantScoped = Boolean(records) && GRANTED_RUN_ROUTES.includes(routeId);
+    const grantScoped = grantPath(route.path);
+    if (grantScoped && (identity || request.subject || request.token) && !records)
+      throw new ApiError(
+        501,
+        `This host has no record service, so it cannot answer ${routeId}.`
+      );
     if (adminScoped && !records)
       throw new ApiError(
         501,
@@ -6736,22 +6824,28 @@ var SASjsApi = (() => {
       }
       return subject;
     };
-    if (identityScoped && records || runtimeScoped && services.runtime || adminScoped || grantScoped) {
+    if (identityScoped && records || runtimeScoped && services.runtime || adminScoped || grantScoped && records) {
       const callerSubject = await caller();
+      let publicGrant = false;
       if (!callerSubject) {
-        if (!identity)
-          throw new ApiError(
-            501,
-            `This host has no identity service, so it cannot answer ${routeId}.`
-          );
-        throw new ApiError(401, "Unauthorized");
+        publicGrant = Boolean(
+          grantScoped && records && !identityScoped && !runtimeScoped && !adminScoped && await records.mayUseRoute(void 0, grantScoped)
+        );
+        if (!publicGrant) {
+          if (!identity)
+            throw new ApiError(
+              501,
+              `This host has no identity service, so it cannot answer ${routeId}.`
+            );
+          throw new ApiError(401, "Unauthorized");
+        }
       }
       if (adminScoped && !await records.mayAdminister(callerSubject)) {
         if (!await records.mayAct(callerSubject))
           throw new ApiError(401, "Unauthorized");
         throw new ApiError(401, "Admin account required");
       }
-      if (grantScoped && !await records.mayUseRoute(callerSubject, route.path))
+      if (grantScoped && records && !publicGrant && !await records.mayUseRoute(callerSubject, grantScoped))
         throw new ApiError(401, "Unauthorized");
     }
     validate(route, request);
@@ -7471,40 +7565,6 @@ var SASjsApi = (() => {
     "PATCH /SASjsApi/auth/updatePassword"
   ];
 
-  // src/identity/routeAccess.ts
-  var TOP_LEVEL_ROUTES = ["/AppStream", "/SASjsApi"];
-  var ALWAYS_VISIBLE_ROUTES = ["/AppStream"];
-  var STATIC_AUTHORIZED_ROUTES = [
-    "/SASjsApi/code/execute",
-    "/SASjsApi/stp/execute",
-    "/SASjsApi/drive/deploy",
-    "/SASjsApi/drive/deploy/upload",
-    "/SASjsApi/drive/file",
-    "/SASjsApi/drive/folder",
-    "/SASjsApi/drive/fileTree",
-    "/SASjsApi/drive/rename"
-  ];
-  var DEFAULT_GRANTABLE_ROUTES = [
-    ...TOP_LEVEL_ROUTES,
-    ...STATIC_AUTHORIZED_ROUTES
-  ];
-  var topLevelRouteFor = (routePath) => TOP_LEVEL_ROUTES.find(
-    (route) => routePath.toLowerCase().startsWith(route.toLowerCase())
-  ) ?? routePath;
-  var settingOn = (rules, path) => rules.find((rule) => rule.path === path)?.setting;
-  var GRANT = "Grant";
-  var DENY = "Deny";
-  var isRouteGranted = (rules, path, topLevelRoute = topLevelRouteFor(path)) => {
-    const userSetting = settingOn(rules.user, path) ?? settingOn(rules.user, topLevelRoute);
-    if (userSetting) return userSetting === GRANT;
-    const onPath = rules.group.filter((rule) => rule.path === path);
-    if (onPath.some((rule) => rule.setting === GRANT)) return true;
-    if (onPath.some((rule) => rule.setting === DENY)) return false;
-    return rules.group.some(
-      (rule) => rule.path === topLevelRoute && rule.setting === GRANT
-    );
-  };
-
   // src/identity/service.ts
   var unauthorized = () => new ApiError(401, "Unauthorized");
   var liveSubject = async (store, subject) => {
@@ -7854,6 +7914,18 @@ var SASjsApi = (() => {
         return Boolean(await readerOf(store, caller));
       },
       async mayUseRoute(caller, path) {
+        if (!caller) {
+          const rules = await store.permissions();
+          if (!rules.some((rule) => rule.group !== void 0)) return false;
+          const publicGroup = (await store.groups()).find(
+            (group) => group.name === PUBLIC_GROUP
+          );
+          return Boolean(
+            publicGroup && rules.some(
+              (rule) => rule.group === publicGroup.uid && rule.path === path && rule.setting === "Grant"
+            )
+          );
+        }
         const reader = await readerOf(store, caller);
         if (!reader) return false;
         if (reader.isAdmin) return true;
@@ -9264,6 +9336,37 @@ var SASjsApi = (() => {
   };
 
   // src/corpus/drive.ts
+  var ADMIN2 = { userId: "user-admin", clientId: "web_app" };
+  var RESTRICTED2 = { userId: "user-restricted", clientId: "web_app" };
+  var NO_DRIVE_GRANTS = {
+    ...DEFAULT_IDENTITY,
+    permissions: DEFAULT_IDENTITY.permissions.filter(
+      (rule) => rule.uid !== "rule-routes"
+    )
+  };
+  var PUBLIC_FILE = {
+    ...DEFAULT_IDENTITY,
+    groups: [
+      ...DEFAULT_IDENTITY.groups,
+      {
+        uid: "group-public",
+        name: "public",
+        description: "Everyone",
+        isActive: true,
+        users: []
+      }
+    ],
+    permissions: [
+      ...DEFAULT_IDENTITY.permissions,
+      {
+        uid: "rule-public-file",
+        path: "/SASjsApi/drive/file",
+        type: "Route",
+        setting: "Grant",
+        group: "group-public"
+      }
+    ]
+  };
   var success2 = { status: "success" };
   var bytes = (...values) => Uint8Array.from(values);
   var manyMembers = (count) => Array.from({ length: count }, (_, at) => ({
@@ -9277,6 +9380,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/file",
       description: "creates a file the drive did not have",
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/data/users.csv" },
         file: { name: "users.csv", contents: "id,name\n1,Ann\n" }
       },
@@ -9287,6 +9391,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/file",
       description: "takes the destination from the form field when the query has none",
       request: {
+        subject: ADMIN2,
         file: { name: "x.csv", contents: "x" },
         body: { filePath: "/data/from-form.csv" }
       },
@@ -9298,6 +9403,7 @@ var SASjsApi = (() => {
       description: "refuses a create over a file that exists, as 409",
       seed: { "/data/exists.csv": "a" },
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/data/exists.csv" },
         file: { name: "x", contents: "b" }
       },
@@ -9308,6 +9414,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/file",
       description: "refuses a refused extension before touching the drive",
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/data/run.sh" },
         file: { name: "run.sh", contents: "x" }
       },
@@ -9318,6 +9425,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/file",
       description: "refuses a path that climbs out of the drive",
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/../escape.csv" },
         file: { name: "x", contents: "x" }
       },
@@ -9327,14 +9435,20 @@ var SASjsApi = (() => {
       id: "create-file-without-payload",
       route: "POST /SASjsApi/drive/file",
       description: "answers for a missing file with the server wording",
-      request: { query: { _filePath: "/data/x.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/data/x.csv" }
+      },
       expect: { status: 400, error: '"file" is not present.' }
     },
     {
       id: "create-file-without-destination",
       route: "POST /SASjsApi/drive/file",
       description: "answers for a missing destination with the validation wording",
-      request: { file: { name: "x", contents: "x" } },
+      request: {
+        subject: ADMIN2,
+        file: { name: "x", contents: "x" }
+      },
       expect: { status: 400, error: '"_filePath" is required' }
     },
     {
@@ -9343,6 +9457,7 @@ var SASjsApi = (() => {
       description: "replaces the contents of a file that exists",
       seed: { "/data/keep.csv": "old" },
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/data/keep.csv" },
         file: { name: "keep.csv", contents: "new" }
       },
@@ -9353,6 +9468,7 @@ var SASjsApi = (() => {
       route: "PATCH /SASjsApi/drive/file",
       description: "refuses a replace of a file that is not there, as 404",
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/data/missing.csv" },
         file: { name: "x", contents: "x" }
       },
@@ -9363,6 +9479,7 @@ var SASjsApi = (() => {
       route: "PATCH /SASjsApi/drive/file",
       description: "refuses a replace of a path that climbs out of the drive",
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/../escape.csv" },
         file: { name: "x", contents: "x" }
       },
@@ -9373,21 +9490,30 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/drive/file",
       description: "answers with the file contents",
       seed: { "/data/keep.csv": "a,b\n1,2\n" },
-      request: { query: { _filePath: "/data/keep.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/data/keep.csv" }
+      },
       expect: { status: 200, contents: "a,b\n1,2\n" }
     },
     {
       id: "read-file-missing",
       route: "GET /SASjsApi/drive/file",
       description: "refuses a read of a file that is not there",
-      request: { query: { _filePath: "/data/missing.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/data/missing.csv" }
+      },
       expect: { status: 404, error: `File doesn't exist.` }
     },
     {
       id: "read-file-outside-drive",
       route: "GET /SASjsApi/drive/file",
       description: "refuses a read of a path that climbs out of the drive",
-      request: { query: { _filePath: "/../escape.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/../escape.csv" }
+      },
       expect: { status: 400, error: "Can't get file outside drive." }
     },
     {
@@ -9396,6 +9522,7 @@ var SASjsApi = (() => {
       description: "refuses a request that names the file twice, in two readings",
       seed: { "/data/keep.csv": "a" },
       request: {
+        subject: ADMIN2,
         query: { _filePath: "/data/keep.csv", _FILE: "/data/keep.csv" }
       },
       expect: {
@@ -9408,14 +9535,20 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/drive/file",
       description: "reads a deployment file by the name a streamed page links to",
       seed: { "/Public/app/services/web/main.js": "console.log(1)" },
-      request: { query: { _FILE: "/Public/app/services/web/main.js" } },
+      request: {
+        subject: ADMIN2,
+        query: { _FILE: "/Public/app/services/web/main.js" }
+      },
       expect: { status: 200, contents: "console.log(1)" }
     },
     {
       id: "read-streamed-file-missing",
       route: "GET /SASjsApi/drive/file",
       description: "answers a missing deployment file the way the estate does, not as a 404",
-      request: { query: { _FILE: "/Public/app/services/web/gone.js" } },
+      request: {
+        subject: ADMIN2,
+        query: { _FILE: "/Public/app/services/web/gone.js" }
+      },
       expect: { status: 202, contents: DEPLOYMENT_FILE_ERROR }
     },
     {
@@ -9423,21 +9556,30 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/drive/file",
       description: "deletes a file that exists",
       seed: { "/data/keep.csv": "a" },
-      request: { query: { _filePath: "/data/keep.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/data/keep.csv" }
+      },
       expect: { status: 200, body: success2 }
     },
     {
       id: "delete-file-missing",
       route: "DELETE /SASjsApi/drive/file",
       description: "refuses a delete of a file that is not there",
-      request: { query: { _filePath: "/data/missing.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/data/missing.csv" }
+      },
       expect: { status: 404, error: `File doesn't exist.` }
     },
     {
       id: "delete-file-outside-drive",
       route: "DELETE /SASjsApi/drive/file",
       description: "refuses a delete of a path that climbs out of the drive",
-      request: { query: { _filePath: "/../escape.csv" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/../escape.csv" }
+      },
       expect: { status: 400, error: "Can't delete file outside drive." }
     },
     {
@@ -9445,42 +9587,59 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/drive/folder",
       description: "lists the files and folders of a folder",
       seed: { "/data/a.csv": "a", "/data/reports/b.csv": "b" },
-      request: { query: { _folderPath: "/data" } },
+      request: {
+        subject: ADMIN2,
+        query: { _folderPath: "/data" }
+      },
       expect: { status: 200, body: { files: ["a.csv"], folders: ["reports"] } }
     },
     {
       id: "list-folder-missing",
       route: "GET /SASjsApi/drive/folder",
       description: "refuses a listing of a folder that is not there",
-      request: { query: { _folderPath: "/nope" } },
+      request: {
+        subject: ADMIN2,
+        query: { _folderPath: "/nope" }
+      },
       expect: { status: 404, error: `Folder doesn't exist.` }
     },
     {
       id: "list-folder-outside-drive",
       route: "GET /SASjsApi/drive/folder",
       description: "refuses a listing of a path that climbs out of the drive",
-      request: { query: { _folderPath: "/../escape" } },
+      request: {
+        subject: ADMIN2,
+        query: { _folderPath: "/../escape" }
+      },
       expect: { status: 400, error: "Can't get folder outside drive." }
     },
     {
       id: "delete-folder-without-path",
       route: "DELETE /SASjsApi/drive/folder",
       description: "answers for a missing folder path, because the table marks it required",
-      request: {},
+      request: {
+        subject: ADMIN2
+      },
       expect: { status: 400, error: '"_folderPath" is required' }
     },
     {
       id: "create-folder-without-path",
       route: "POST /SASjsApi/drive/folder",
       description: "answers for a missing folder path in the body",
-      request: { body: {} },
+      request: {
+        subject: ADMIN2,
+        body: {}
+      },
       expect: { status: 400, error: '"folderPath" is required' }
     },
     {
       id: "create-folder",
       route: "POST /SASjsApi/drive/folder",
       description: "creates a folder",
-      request: { body: { folderPath: "/data/reports" } },
+      request: {
+        subject: ADMIN2,
+        body: { folderPath: "/data/reports" }
+      },
       expect: { status: 200, body: success2 }
     },
     {
@@ -9488,7 +9647,10 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/folder",
       description: "refuses a folder that already exists, as 409",
       seed: { "/data/reports/a.csv": "a" },
-      request: { body: { folderPath: "/data/reports" } },
+      request: {
+        subject: ADMIN2,
+        body: { folderPath: "/data/reports" }
+      },
       expect: { status: 409, error: "Folder already exists." }
     },
     {
@@ -9496,14 +9658,20 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/drive/folder",
       description: "deletes a folder with everything under it",
       seed: { "/data/reports/a.csv": "a", "/data/reports/nested/b.csv": "b" },
-      request: { query: { _folderPath: "/data/reports" } },
+      request: {
+        subject: ADMIN2,
+        query: { _folderPath: "/data/reports" }
+      },
       expect: { status: 200, body: success2 }
     },
     {
       id: "delete-folder-missing",
       route: "DELETE /SASjsApi/drive/folder",
       description: "refuses a delete of a folder that is not there",
-      request: { query: { _folderPath: "/nope" } },
+      request: {
+        subject: ADMIN2,
+        query: { _folderPath: "/nope" }
+      },
       expect: { status: 404, error: `Folder doesn't exist.` }
     },
     {
@@ -9511,7 +9679,10 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/rename",
       description: "moves a file to a new path",
       seed: { "/data/old.csv": "r" },
-      request: { body: { oldPath: "/data/old.csv", newPath: "/data/new.csv" } },
+      request: {
+        subject: ADMIN2,
+        body: { oldPath: "/data/old.csv", newPath: "/data/new.csv" }
+      },
       expect: { status: 200, body: success2 }
     },
     {
@@ -9519,14 +9690,20 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/rename",
       description: "refuses a move onto something that exists",
       seed: { "/data/a.csv": "a", "/data/b.csv": "b" },
-      request: { body: { oldPath: "/data/a.csv", newPath: "/data/b.csv" } },
+      request: {
+        subject: ADMIN2,
+        body: { oldPath: "/data/a.csv", newPath: "/data/b.csv" }
+      },
       expect: { status: 409, error: "File with new name already exists." }
     },
     {
       id: "rename-missing",
       route: "POST /SASjsApi/drive/rename",
       description: "refuses a move of something that is not there",
-      request: { body: { oldPath: "/data/nope.csv", newPath: "/data/x.csv" } },
+      request: {
+        subject: ADMIN2,
+        body: { oldPath: "/data/nope.csv", newPath: "/data/x.csv" }
+      },
       expect: { status: 404, error: "No file/folder found for provided path." }
     },
     {
@@ -9535,6 +9712,7 @@ var SASjsApi = (() => {
       description: "refuses a rename that would produce a name the file routes refuse",
       seed: { "/data/report.csv": "a,b" },
       request: {
+        subject: ADMIN2,
         body: { oldPath: "/data/report.csv", newPath: "/data/report.sh" }
       },
       expect: { status: 400, error: "Invalid file extension" }
@@ -9545,6 +9723,7 @@ var SASjsApi = (() => {
       description: "renames a folder whose new name carries a blocked suffix",
       seed: { "/data/reports/a.csv": "a" },
       request: {
+        subject: ADMIN2,
         body: { oldPath: "/data/reports", newPath: "/data/reports.sh" }
       },
       expect: { status: 200, body: { status: "success" } }
@@ -9555,6 +9734,7 @@ var SASjsApi = (() => {
       description: "refuses a folder moved inside itself, which the server loses at the filesystem",
       seed: { "/data/reports/a.csv": "a" },
       request: {
+        subject: ADMIN2,
         body: { oldPath: "/data/reports", newPath: "/data/reports/nested" }
       },
       expect: {
@@ -9567,7 +9747,10 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/drive/filetree",
       description: "answers with the drive tree",
       seed: { "/data/a.csv": "a" },
-      request: { query: { _folderPath: "/data" } },
+      request: {
+        subject: ADMIN2,
+        query: { _folderPath: "/data" }
+      },
       expect: {
         status: 200,
         // Partial, because a file's `created` and `modified` are the host's
@@ -9596,6 +9779,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/deploy",
       description: "writes a whole tree under the appLoc it names",
       request: {
+        subject: ADMIN2,
         body: {
           appLoc: "/Public/apps/demo",
           fileTree: {
@@ -9623,6 +9807,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/deploy",
       description: "refuses a tree over the entry cap, naming the figure and the cap",
       request: {
+        subject: ADMIN2,
         body: {
           appLoc: "/Public/apps/many",
           fileTree: { members: manyMembers(10001) }
@@ -9642,6 +9827,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/deploy",
       description: "refuses a member name that would escape the deployment root",
       request: {
+        subject: ADMIN2,
         body: {
           appLoc: "/Public/apps/hostile",
           fileTree: {
@@ -9662,7 +9848,10 @@ var SASjsApi = (() => {
       id: "deploy-refused-by-shape",
       route: "POST /SASjsApi/drive/deploy",
       description: "refuses a fileTree that is not a tree, in the routes own envelope",
-      request: { body: { appLoc: "/Public/apps/bad", fileTree: { members: 1 } } },
+      request: {
+        subject: ADMIN2,
+        body: { appLoc: "/Public/apps/bad", fileTree: { members: 1 } }
+      },
       expect: {
         status: 400,
         body: {
@@ -9678,6 +9867,7 @@ var SASjsApi = (() => {
       description: "answers the routes 500 when the drive refuses the write",
       unwritable: true,
       request: {
+        subject: ADMIN2,
         body: {
           appLoc: "/Public/apps/demo",
           fileTree: {
@@ -9696,6 +9886,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/drive/deploy",
       description: "refuses an appLoc that resolves outside the drive",
       request: {
+        subject: ADMIN2,
         body: { appLoc: "/../outside", fileTree: { members: [] } }
       },
       expect: {
@@ -9709,9 +9900,170 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/drive/file",
       description: "keeps a byte file as bytes",
       seed: { "/data/pack.zip": bytes(80, 75, 3, 4) },
-      request: { query: { _filePath: "/data/pack.zip" } },
+      request: {
+        subject: ADMIN2,
+        query: { _filePath: "/data/pack.zip" }
+      },
       expect: { status: 200, contents: bytes(80, 75, 3, 4) }
-    }
+    },
+    // --------------------------------------------------- the rule that decides
+    {
+      id: "read-file-anonymous-public-grant",
+      route: "GET /SASjsApi/drive/file",
+      description: "admits an anonymous caller through an exact public group grant",
+      identity: PUBLIC_FILE,
+      seed: { "/data/public.csv": "public contents" },
+      request: { query: { _filePath: "/data/public.csv" } },
+      expect: { status: 200, contents: "public contents" }
+    },
+    {
+      id: "read-file-public-invalid-token",
+      route: "GET /SASjsApi/drive/file",
+      description: "treats an invalid token as anonymous on an exactly public route",
+      identity: PUBLIC_FILE,
+      seed: { "/data/public.csv": "public contents" },
+      request: {
+        token: "invalid-token",
+        query: { _filePath: "/data/public.csv" }
+      },
+      expect: { status: 200, contents: "public contents" }
+    },
+    {
+      id: "read-file-public-inactive-token",
+      route: "GET /SASjsApi/drive/file",
+      description: "treats a deactivated token as anonymous on an exactly public route",
+      identity: {
+        ...PUBLIC_FILE,
+        users: PUBLIC_FILE.users.map(
+          (user3) => user3.uid === "user-restricted" ? { ...user3, isActive: false } : user3
+        ),
+        tokens: [
+          {
+            username: "sasjsuser",
+            clientId: "web_app",
+            accessToken: "inactive-access",
+            refreshToken: "inactive-refresh"
+          }
+        ]
+      },
+      seed: { "/data/public.csv": "public contents" },
+      request: {
+        token: "inactive-access",
+        query: { _filePath: "/data/public.csv" }
+      },
+      expect: { status: 200, contents: "public contents" }
+    },
+    {
+      id: "create-file-anonymous-public-grant",
+      route: "POST /SASjsApi/drive/file",
+      description: "admits public writes when the exact route is granted",
+      identity: PUBLIC_FILE,
+      request: {
+        query: { _filePath: "/data/new.csv" },
+        file: { name: "new.csv", contents: "new" }
+      },
+      expect: { status: 200, body: success2 },
+      expectDrive: { present: ["/data/new.csv"] }
+    },
+    {
+      id: "read-folder-anonymous-other-public-grant",
+      route: "GET /SASjsApi/drive/folder",
+      description: "refuses an anonymous caller when a different path is public",
+      identity: PUBLIC_FILE,
+      request: { query: { _folderPath: "/data" } },
+      expect: { status: 401, error: "Unauthorized" }
+    },
+    {
+      id: "read-file-anonymous-public-parent-grant",
+      route: "GET /SASjsApi/drive/file",
+      description: "does not inherit public authentication from a parent grant",
+      identity: {
+        ...PUBLIC_FILE,
+        permissions: PUBLIC_FILE.permissions.map(
+          (rule) => rule.uid === "rule-public-file" ? { ...rule, path: "/SASjsApi" } : rule
+        )
+      },
+      seed: { "/data/public.csv": "public contents" },
+      request: { query: { _filePath: "/data/public.csv" } },
+      expect: { status: 401, error: "Unauthorized" }
+    },
+    {
+      id: "read-file-anonymous-public-deny",
+      route: "GET /SASjsApi/drive/file",
+      description: "does not authenticate an anonymous caller through a public deny",
+      identity: {
+        ...PUBLIC_FILE,
+        permissions: PUBLIC_FILE.permissions.map(
+          (rule) => rule.uid === "rule-public-file" ? { ...rule, setting: "Deny" } : rule
+        )
+      },
+      request: { query: { _filePath: "/data/public.csv" } },
+      expect: { status: 401, error: "Unauthorized" }
+    },
+    {
+      id: "read-file-public-user-deny",
+      route: "GET /SASjsApi/drive/file",
+      description: "admits an authenticated caller despite an explicit user deny on a public route",
+      identity: {
+        ...PUBLIC_FILE,
+        permissions: [
+          ...PUBLIC_FILE.permissions,
+          {
+            uid: "user-file-deny",
+            path: "/SASjsApi/drive/file",
+            type: "Route",
+            setting: "Deny",
+            user: "user-restricted"
+          }
+        ]
+      },
+      seed: { "/data/public.csv": "public contents" },
+      request: { subject: RESTRICTED2, query: { _filePath: "/data/public.csv" } },
+      expect: { status: 200, contents: "public contents" }
+    },
+    {
+      id: "read-file-granted-by-a-group-rule",
+      route: "GET /SASjsApi/drive/file",
+      description: "admits a restricted account the fixture grants this route, so the refusal beside it is the rule",
+      seed: { "/data/keep.csv": "a,b\n1,2\n" },
+      request: { subject: RESTRICTED2, query: { _filePath: "/data/keep.csv" } },
+      expect: { status: 200, contents: "a,b\n1,2\n" }
+    },
+    {
+      id: "rename-file-denied-to-a-restricted-account",
+      route: "POST /SASjsApi/drive/rename",
+      description: "refuses a drive route the rules do not grant, with the 401 a missing token earns",
+      seed: { "/data/old.csv": "r" },
+      request: {
+        subject: RESTRICTED2,
+        body: { oldPath: "/data/old.csv", newPath: "/data/new.csv" }
+      },
+      expect: { status: 401, error: "Unauthorized" }
+    },
+    // The permission gate refuses a caller the rules do not grant, on every route
+    // the inventory addresses. Each of these is the same account and the same
+    // refusal - the gate runs before the payload is read, which is why a bare
+    // request answers 401 rather than the 400 a missing parameter would earn.
+    ...[
+      "GET /SASjsApi/drive/file",
+      "GET /SASjsApi/drive/folder",
+      "GET /SASjsApi/drive/filetree",
+      "POST /SASjsApi/drive/file",
+      "PATCH /SASjsApi/drive/file",
+      "DELETE /SASjsApi/drive/file",
+      "POST /SASjsApi/drive/folder",
+      "DELETE /SASjsApi/drive/folder",
+      "POST /SASjsApi/drive/deploy",
+      "DELETE /SASjsApi/drive/deploy",
+      "POST /SASjsApi/drive/deploy/upload"
+    ].map((route) => ({
+      id: `${route.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-denied-to-a-restricted-account`,
+      route,
+      description: "refuses a drive route the rules do not grant, before it reads the payload",
+      identity: NO_DRIVE_GRANTS,
+      request: { subject: RESTRICTED2 },
+      expect: { status: 401, error: "Unauthorized" }
+    }))
   ];
 
   // src/corpus/identity.ts
@@ -10941,8 +11293,8 @@ var SASjsApi = (() => {
   ];
 
   // src/corpus/session.ts
-  var ADMIN2 = { userId: "user-admin", clientId: "web_app" };
-  var RESTRICTED2 = { userId: "user-restricted", clientId: "web_app" };
+  var ADMIN3 = { userId: "user-admin", clientId: "web_app" };
+  var RESTRICTED3 = { userId: "user-restricted", clientId: "web_app" };
   var notFound2 = (id) => `Session with ID '${id}' was not found.`;
   var UNAUTHORIZED = "Unauthorized";
   var SESSION_CORPUS = [
@@ -10951,7 +11303,7 @@ var SASjsApi = (() => {
       id: "session-summary-own",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers the owner the summary of their own session",
-      request: { subject: ADMIN2, params: { sessionId: "sess-admin" } },
+      request: { subject: ADMIN3, params: { sessionId: "sess-admin" } },
       expect: {
         status: 200,
         body: {
@@ -10968,7 +11320,7 @@ var SASjsApi = (() => {
       id: "session-summary-as-admin",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers an administrator another account's session",
-      request: { subject: ADMIN2, params: { sessionId: "sess-restricted" } },
+      request: { subject: ADMIN3, params: { sessionId: "sess-restricted" } },
       // both stamps: the document requires them, and this host stamps a session's
       // death time at creation rather than at completion - a running session
       // answers with the moment it is due to be destroyed
@@ -10994,14 +11346,14 @@ var SASjsApi = (() => {
       id: "session-summary-foreign",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers 404 for another account's session, not 403",
-      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      request: { subject: RESTRICTED3, params: { sessionId: "sess-admin" } },
       expect: { status: 404, error: notFound2("sess-admin") }
     },
     {
       id: "session-summary-unknown",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers the same 404 for a session that does not exist",
-      request: { subject: ADMIN2, params: { sessionId: "sess-nope" } },
+      request: { subject: ADMIN3, params: { sessionId: "sess-nope" } },
       expect: { status: 404, error: notFound2("sess-nope") }
     },
     // -------------------------------------------------------------------- log
@@ -11009,7 +11361,7 @@ var SASjsApi = (() => {
       id: "session-log-own",
       route: "GET /SASjsApi/session/{sessionId}/log",
       description: "answers the log this session wrote",
-      request: { subject: ADMIN2, params: { sessionId: "sess-admin" } },
+      request: { subject: ADMIN3, params: { sessionId: "sess-admin" } },
       expect: {
         status: 200,
         contents: "NOTE: session started\nNOTE: session completed\n"
@@ -11019,7 +11371,7 @@ var SASjsApi = (() => {
       id: "session-log-nothing-written",
       route: "GET /SASjsApi/session/{sessionId}/log",
       description: "answers an empty body for a session that has written nothing",
-      request: { subject: ADMIN2, params: { sessionId: "sess-silent" } },
+      request: { subject: ADMIN3, params: { sessionId: "sess-silent" } },
       expect: { status: 200, contents: "" }
     },
     {
@@ -11033,7 +11385,7 @@ var SASjsApi = (() => {
       id: "session-log-foreign",
       route: "GET /SASjsApi/session/{sessionId}/log",
       description: "will not read another account's log",
-      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      request: { subject: RESTRICTED3, params: { sessionId: "sess-admin" } },
       expect: { status: 404, error: notFound2("sess-admin") }
     },
     // ----------------------------------------------------------------- output
@@ -11041,7 +11393,7 @@ var SASjsApi = (() => {
       id: "session-output-own",
       route: "GET /SASjsApi/session/{sessionId}/output",
       description: "answers the webout this session produced",
-      request: { subject: ADMIN2, params: { sessionId: "sess-admin" } },
+      request: { subject: ADMIN3, params: { sessionId: "sess-admin" } },
       expect: { status: 200, contents: "<html><body>42</body></html>" }
     },
     {
@@ -11055,7 +11407,7 @@ var SASjsApi = (() => {
       id: "session-output-foreign",
       route: "GET /SASjsApi/session/{sessionId}/output",
       description: "will not read another account's webout",
-      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      request: { subject: RESTRICTED3, params: { sessionId: "sess-admin" } },
       expect: { status: 404, error: notFound2("sess-admin") }
     },
     // ------------------------------------------------------------------ state
@@ -11063,7 +11415,7 @@ var SASjsApi = (() => {
       id: "session-state-own",
       route: "GET /SASjsApi/session/{sessionId}/state",
       description: "answers the run time's state for this session",
-      request: { subject: RESTRICTED2, params: { sessionId: "sess-restricted" } },
+      request: { subject: RESTRICTED3, params: { sessionId: "sess-restricted" } },
       // the state alone: the document's SessionStateResponse permits no other
       // property, and `sasjs/server` answers exactly this object
       expect: { status: 200, body: { state: "running" } }
@@ -11079,14 +11431,14 @@ var SASjsApi = (() => {
       id: "session-state-foreign",
       route: "GET /SASjsApi/session/{sessionId}/state",
       description: "will not report another account's session state",
-      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      request: { subject: RESTRICTED3, params: { sessionId: "sess-admin" } },
       expect: { status: 404, error: notFound2("sess-admin") }
     }
   ];
 
   // src/corpus/runtime.ts
-  var ADMIN3 = { userId: "user-admin", clientId: "web_app" };
-  var RESTRICTED3 = { userId: "user-restricted", clientId: "web_app" };
+  var ADMIN4 = { userId: "user-admin", clientId: "web_app" };
+  var RESTRICTED4 = { userId: "user-restricted", clientId: "web_app" };
   var PROGRAM = "/Public/apps/demo/run.sas";
   var CODE = 'data _null_;\n  put "hello";\nrun;';
   var UNAUTHORIZED2 = "Unauthorized";
@@ -11098,7 +11450,7 @@ var SASjsApi = (() => {
       id: "stp-execute-get-answers-output",
       route: "GET /SASjsApi/stp/execute",
       description: "answers the output the program produced",
-      request: { subject: ADMIN3, query: { _program: PROGRAM } },
+      request: { subject: ADMIN4, query: { _program: PROGRAM } },
       runOutput: { contents: "hello from the program" },
       expect: { status: 200, contents: "hello from the program" }
     },
@@ -11106,7 +11458,7 @@ var SASjsApi = (() => {
       id: "stp-execute-get-answers-bytes",
       route: "GET /SASjsApi/stp/execute",
       description: "answers an output that is bytes as bytes",
-      request: { subject: ADMIN3, query: { _program: PROGRAM } },
+      request: { subject: ADMIN4, query: { _program: PROGRAM } },
       runOutput: { contents: bytes2(1, 2, 3) },
       expect: { status: 200, contents: bytes2(1, 2, 3) }
     },
@@ -11114,14 +11466,14 @@ var SASjsApi = (() => {
       id: "stp-execute-get-missing-program",
       route: "GET /SASjsApi/stp/execute",
       description: "refuses a request that names no program",
-      request: { subject: ADMIN3, query: {} },
+      request: { subject: ADMIN4, query: {} },
       expect: { status: 400, error: '"_program" is required' }
     },
     {
       id: "stp-execute-get-failed-run",
       route: "GET /SASjsApi/stp/execute",
       description: "answers 400 when the program could not be run",
-      request: { subject: ADMIN3, query: { _program: PROGRAM } },
+      request: { subject: ADMIN4, query: { _program: PROGRAM } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -11137,7 +11489,7 @@ var SASjsApi = (() => {
       id: "stp-execute-post-body-program",
       route: "POST /SASjsApi/stp/execute",
       description: "runs the program the body names",
-      request: { subject: ADMIN3, body: { _program: PROGRAM } },
+      request: { subject: ADMIN4, body: { _program: PROGRAM } },
       runOutput: { contents: "hello from the body" },
       expect: { status: 200, contents: "hello from the body" }
     },
@@ -11145,7 +11497,7 @@ var SASjsApi = (() => {
       id: "stp-execute-post-query-program",
       route: "POST /SASjsApi/stp/execute",
       description: "runs the program the query names, with no body",
-      request: { subject: ADMIN3, query: { _program: PROGRAM }, body: {} },
+      request: { subject: ADMIN4, query: { _program: PROGRAM }, body: {} },
       runOutput: { contents: "hello from the query" },
       expect: { status: 200, contents: "hello from the query" }
     },
@@ -11153,14 +11505,14 @@ var SASjsApi = (() => {
       id: "stp-execute-post-no-program",
       route: "POST /SASjsApi/stp/execute",
       description: "refuses a request with no program in the query or the body",
-      request: { subject: ADMIN3, body: {} },
+      request: { subject: ADMIN4, body: {} },
       expect: { status: 400, error: '"_program" is required' }
     },
     {
       id: "stp-execute-post-failed-run",
       route: "POST /SASjsApi/stp/execute",
       description: "answers 400 when the program could not be run",
-      request: { subject: ADMIN3, body: { _program: PROGRAM } },
+      request: { subject: ADMIN4, body: { _program: PROGRAM } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -11176,7 +11528,7 @@ var SASjsApi = (() => {
       id: "stp-trigger-answers-session",
       route: "POST /SASjsApi/stp/trigger",
       description: "answers the session a caller polls, and no pid from a mock",
-      request: { subject: ADMIN3, query: { _program: PROGRAM } },
+      request: { subject: ADMIN4, query: { _program: PROGRAM } },
       expect: { status: 200, keys: ["sessionId"] }
     },
     {
@@ -11184,7 +11536,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/stp/trigger",
       description: "accepts a retention in minutes, as the query carries it",
       request: {
-        subject: ADMIN3,
+        subject: ADMIN4,
         query: { _program: PROGRAM, expiresAfterMins: "15" }
       },
       expect: { status: 200, keys: ["sessionId"] }
@@ -11194,7 +11546,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/stp/trigger",
       description: "refuses a retention that is not a positive number of minutes",
       request: {
-        subject: ADMIN3,
+        subject: ADMIN4,
         query: { _program: PROGRAM, expiresAfterMins: "0" }
       },
       expect: { status: 400, error: '"expiresAfterMins" must be greater than 0' }
@@ -11203,14 +11555,14 @@ var SASjsApi = (() => {
       id: "stp-trigger-missing-program",
       route: "POST /SASjsApi/stp/trigger",
       description: "refuses a request that names no program",
-      request: { subject: ADMIN3, query: {} },
+      request: { subject: ADMIN4, query: {} },
       expect: { status: 400, error: '"_program" is required' }
     },
     {
       id: "stp-trigger-failed-run",
       route: "POST /SASjsApi/stp/trigger",
       description: "answers 400 when the program could not be started",
-      request: { subject: ADMIN3, query: { _program: PROGRAM } },
+      request: { subject: ADMIN4, query: { _program: PROGRAM } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -11226,7 +11578,7 @@ var SASjsApi = (() => {
       id: "code-execute-answers-output",
       route: "POST /SASjsApi/code/execute",
       description: "runs the code in the body and answers its output",
-      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN4, body: { code: CODE, runTime: "sas" } },
       runOutput: { contents: "NOTE: mock run" },
       expect: { status: 200, contents: "NOTE: mock run" }
     },
@@ -11240,35 +11592,35 @@ var SASjsApi = (() => {
       id: "code-execute-unknown-runtime",
       route: "POST /SASjsApi/code/execute",
       description: "refuses a run time the document does not name",
-      request: { subject: ADMIN3, body: { code: CODE, runTime: "cobol" } },
+      request: { subject: ADMIN4, body: { code: CODE, runTime: "cobol" } },
       expect: { status: 400 }
     },
     {
       id: "code-execute-missing-code",
       route: "POST /SASjsApi/code/execute",
       description: "refuses a payload with no code",
-      request: { subject: ADMIN3, body: { runTime: "sas" } },
+      request: { subject: ADMIN4, body: { runTime: "sas" } },
       expect: { status: 400, error: '"code" is required' }
     },
     {
       id: "code-execute-empty-code",
       route: "POST /SASjsApi/code/execute",
       description: "refuses code that is present but empty",
-      request: { subject: ADMIN3, body: { code: "", runTime: "sas" } },
+      request: { subject: ADMIN4, body: { code: "", runTime: "sas" } },
       expect: { status: 400, error: '"code" is not allowed to be empty' }
     },
     {
       id: "code-execute-non-string-code",
       route: "POST /SASjsApi/code/execute",
       description: "refuses code that is not a string rather than running its text",
-      request: { subject: ADMIN3, body: { code: 123, runTime: "sas" } },
+      request: { subject: ADMIN4, body: { code: 123, runTime: "sas" } },
       expect: { status: 400, error: '"code" must be a string' }
     },
     {
       id: "code-execute-failed-run",
       route: "POST /SASjsApi/code/execute",
       description: "answers 400 when the code could not be run",
-      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN4, body: { code: CODE, runTime: "sas" } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -11287,7 +11639,7 @@ var SASjsApi = (() => {
       id: "code-execute-denied-by-a-rule",
       route: "POST /SASjsApi/code/execute",
       description: "refuses a caller the rules do not grant, with the 401 a missing token earns",
-      request: { subject: RESTRICTED3, body: { code: CODE, runTime: "sas" } },
+      request: { subject: RESTRICTED4, body: { code: CODE, runTime: "sas" } },
       expect: { status: 401, error: UNAUTHORIZED2 }
     },
     {
@@ -11297,7 +11649,7 @@ var SASjsApi = (() => {
       id: "stp-execute-granted-by-a-group-rule",
       route: "POST /SASjsApi/stp/execute",
       description: "admits a restricted account the rules grant",
-      request: { subject: RESTRICTED3, body: { _program: PROGRAM } },
+      request: { subject: RESTRICTED4, body: { _program: PROGRAM } },
       runOutput: { contents: "granted run" },
       expect: { status: 200, contents: "granted run" }
     },
@@ -11306,14 +11658,14 @@ var SASjsApi = (() => {
       id: "code-trigger-answers-session",
       route: "POST /SASjsApi/code/trigger",
       description: "answers the session a caller polls, and no pid from a mock",
-      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN4, body: { code: CODE, runTime: "sas" } },
       expect: { status: 200, keys: ["sessionId"] }
     },
     {
       id: "code-trigger-missing-runtime",
       route: "POST /SASjsApi/code/trigger",
       description: "refuses a payload with no run time, which the document requires",
-      request: { subject: ADMIN3, body: { code: CODE } },
+      request: { subject: ADMIN4, body: { code: CODE } },
       expect: { status: 400, error: '"runTime" is required' }
     },
     {
@@ -11321,7 +11673,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/code/trigger",
       description: "refuses a retention that is not a positive number of minutes",
       request: {
-        subject: ADMIN3,
+        subject: ADMIN4,
         body: { code: CODE, runTime: "sas", expiresAfterMins: 0 }
       },
       expect: { status: 400, error: '"expiresAfterMins" must be greater than 0' }
@@ -11330,7 +11682,7 @@ var SASjsApi = (() => {
       id: "code-trigger-failed-run",
       route: "POST /SASjsApi/code/trigger",
       description: "answers 400 when the code could not be started",
-      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN4, body: { code: CODE, runTime: "sas" } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -11405,8 +11757,8 @@ var SASjsApi = (() => {
       }
     ]
   };
-  var ADMIN4 = "admin-access";
-  var RESTRICTED4 = "user-access";
+  var ADMIN5 = "admin-access";
+  var RESTRICTED5 = "user-access";
   var RESTRICTED_UID = "user-restricted";
   var ADMIN_UID = "user-admin";
   var RECORD_CORPUS = [
@@ -11416,7 +11768,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user",
       description: "lists the accounts any signed-in caller may see",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4 },
+      request: { token: ADMIN5 },
       expect: {
         status: 200,
         body: [
@@ -11440,7 +11792,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/{uid}",
       description: "returns the caller their own details, with the auto-exec code",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4, params: { uid: RESTRICTED_UID } },
+      request: { token: RESTRICTED5, params: { uid: RESTRICTED_UID } },
       expect: {
         status: 200,
         partial: {
@@ -11465,7 +11817,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/{uid}",
       description: "answers 404 for an identifier no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "user-none" } },
+      request: { token: ADMIN5, params: { uid: "user-none" } },
       expect: { status: 404, error: "User is not found." }
     },
     {
@@ -11473,7 +11825,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/by/username/{username}",
       description: "finds an account by username",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { username: "sasjsuser" } },
+      request: { token: ADMIN5, params: { username: "sasjsuser" } },
       expect: {
         status: 200,
         partial: { uid: RESTRICTED_UID, username: "sasjsuser", isAdmin: false }
@@ -11492,7 +11844,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/by/username/{username}",
       description: "answers 404 for a username no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { username: "nobody" } },
+      request: { token: ADMIN5, params: { username: "nobody" } },
       expect: { status: 404, error: "User is not found." }
     },
     {
@@ -11501,7 +11853,7 @@ var SASjsApi = (() => {
       description: "creates an account, sanitised, and reports it",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           username: "newuser",
           displayName: "  New User  ",
@@ -11526,7 +11878,7 @@ var SASjsApi = (() => {
       description: "refuses a creation by a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         body: {
           username: "newuser",
           displayName: "New User",
@@ -11549,7 +11901,7 @@ var SASjsApi = (() => {
       description: "refuses a username that is taken",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           username: "sasjsuser",
           displayName: "Another",
@@ -11564,7 +11916,7 @@ var SASjsApi = (() => {
       description: "changes an account's display name",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { uid: RESTRICTED_UID },
         body: {
           displayName: "Renamed User",
@@ -11583,7 +11935,7 @@ var SASjsApi = (() => {
       description: "refuses a change to somebody else's account",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         params: { uid: ADMIN_UID },
         body: {
           displayName: "Hijacked",
@@ -11599,7 +11951,7 @@ var SASjsApi = (() => {
       description: "answers 404 with the identifier it looked up",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { uid: "user-none" },
         body: { displayName: "Nobody", username: "nobody", password: "none123" }
       },
@@ -11611,7 +11963,7 @@ var SASjsApi = (() => {
       description: "refuses a username change on a provider-managed account",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { uid: "user-directory" },
         body: {
           username: "renamed",
@@ -11630,7 +11982,7 @@ var SASjsApi = (() => {
       description: "refuses a username another account already has",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { uid: RESTRICTED_UID },
         body: {
           username: "sasjsadmin",
@@ -11646,7 +11998,7 @@ var SASjsApi = (() => {
       description: "changes an account looked up by username",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { username: "sasjsuser" },
         body: {
           isActive: false,
@@ -11663,7 +12015,7 @@ var SASjsApi = (() => {
       description: "refuses a change to another account by username",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         params: { username: "sasjsadmin" },
         body: {
           displayName: "Hijacked",
@@ -11679,7 +12031,7 @@ var SASjsApi = (() => {
       description: "answers 404 with the username it looked up",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { username: "nobody" },
         body: { displayName: "Nobody", username: "nobody", password: "none123" }
       },
@@ -11691,7 +12043,7 @@ var SASjsApi = (() => {
       description: "refuses a display-name change on a provider-managed account",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { username: "diruser" },
         body: { displayName: "Renamed", username: "diruser", password: "dir123" }
       },
@@ -11706,7 +12058,7 @@ var SASjsApi = (() => {
       description: "refuses a username another account already has",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { username: "sasjsuser" },
         body: {
           username: "sasjsadmin",
@@ -11721,7 +12073,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/{uid}",
       description: "deletes an account as an administrator, without a password",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: RESTRICTED_UID }, body: {} },
+      request: { token: ADMIN5, params: { uid: RESTRICTED_UID }, body: {} },
       expect: { status: 200, body: "Account Deleted!" }
     },
     {
@@ -11729,7 +12081,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/{uid}",
       description: "refuses a deletion of somebody else's account",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4, params: { uid: ADMIN_UID }, body: {} },
+      request: { token: RESTRICTED5, params: { uid: ADMIN_UID }, body: {} },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -11737,7 +12089,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/{uid}",
       description: "answers 404 for an identifier no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "user-none" }, body: {} },
+      request: { token: ADMIN5, params: { uid: "user-none" }, body: {} },
       expect: { status: 404, error: "User is not found." }
     },
     {
@@ -11746,7 +12098,7 @@ var SASjsApi = (() => {
       description: "deletes an account looked up by username",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { username: "sasjsuser" },
         body: {}
       },
@@ -11758,7 +12110,7 @@ var SASjsApi = (() => {
       description: "refuses a self-deletion whose password is wrong",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         params: { username: "sasjsuser" },
         body: { password: "wrong123" }
       },
@@ -11769,7 +12121,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/by/username/{username}",
       description: "answers 404 for a username no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { username: "nobody" }, body: {} },
+      request: { token: ADMIN5, params: { username: "nobody" }, body: {} },
       expect: { status: 404, error: "User is not found." }
     },
     // ----------------------------------------------------------------- groups
@@ -11778,7 +12130,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group",
       description: "lists the groups",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4 },
+      request: { token: RESTRICTED5 },
       expect: {
         status: 200,
         body: [
@@ -11800,7 +12152,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/{uid}",
       description: "returns a group and its members",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4, params: { uid: "group-admins" } },
+      request: { token: RESTRICTED5, params: { uid: "group-admins" } },
       expect: {
         status: 200,
         partial: {
@@ -11823,7 +12175,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/{uid}",
       description: "answers 404 for an identifier no group has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "group-none" } },
+      request: { token: ADMIN5, params: { uid: "group-none" } },
       expect: { status: 404, error: "Group not found." }
     },
     {
@@ -11831,7 +12183,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/by/groupname/{name}",
       description: "finds a group by name",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { name: "DCGroup" } },
+      request: { token: ADMIN5, params: { name: "DCGroup" } },
       expect: {
         status: 200,
         partial: { uid: "group-data-controller", name: "DCGroup" }
@@ -11842,7 +12194,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/by/groupname/{name}",
       description: "answers 404 for a name no group has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { name: "nope" } },
+      request: { token: ADMIN5, params: { name: "nope" } },
       expect: { status: 404, error: "Group not found." }
     },
     {
@@ -11851,7 +12203,7 @@ var SASjsApi = (() => {
       description: "creates a group with no members",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: { name: "NewGroup", description: "A new group", isActive: true }
       },
       expect: {
@@ -11870,7 +12222,7 @@ var SASjsApi = (() => {
       description: "refuses a creation by a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         body: { name: "NewGroup", description: "x" }
       },
       expect: { status: 401, error: "Admin account required" }
@@ -11880,7 +12232,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/group",
       description: "refuses a name that is taken",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, body: { name: "DCGroup", description: "again" } },
+      request: { token: ADMIN5, body: { name: "DCGroup", description: "again" } },
       expect: { status: 409, error: "Group name already exists." }
     },
     {
@@ -11889,7 +12241,7 @@ var SASjsApi = (() => {
       description: "adds a member and returns the group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-admins", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11903,7 +12255,7 @@ var SASjsApi = (() => {
       description: "refuses a change to the reserved public group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-public", userUid: RESTRICTED_UID }
       },
       expect: { status: 400, error: "Can't add/remove user to 'public' group." }
@@ -11914,7 +12266,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         params: { groupUid: "group-admins", userUid: RESTRICTED_UID }
       },
       expect: { status: 401, error: "Admin account required" }
@@ -11925,7 +12277,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a group that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-none", userUid: RESTRICTED_UID }
       },
       expect: { status: 404, error: "Group not found." }
@@ -11936,7 +12288,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change on a provider-managed group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-directory", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11950,7 +12302,7 @@ var SASjsApi = (() => {
       description: "removes a member and returns the group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-data-controller", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11964,7 +12316,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change for a provider-managed user",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-admins", userUid: "user-directory" }
       },
       expect: {
@@ -11978,7 +12330,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change for a provider-managed user",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-admins", userUid: "user-directory" }
       },
       expect: {
@@ -11992,7 +12344,7 @@ var SASjsApi = (() => {
       description: "refuses a change to the reserved public group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-public", userUid: RESTRICTED_UID }
       },
       expect: { status: 400, error: "Can't add/remove user to 'public' group." }
@@ -12003,7 +12355,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         params: { groupUid: "group-data-controller", userUid: RESTRICTED_UID }
       },
       expect: { status: 401, error: "Admin account required" }
@@ -12014,7 +12366,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a member that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-admins", userUid: "user-none" }
       },
       expect: { status: 404, error: "User not found." }
@@ -12025,7 +12377,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change on a provider-managed group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { groupUid: "group-directory", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -12038,7 +12390,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/group/{uid}",
       description: "deletes a group",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "group-data-controller" } },
+      request: { token: ADMIN5, params: { uid: "group-data-controller" } },
       expect: { status: 200 }
     },
     {
@@ -12046,7 +12398,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/group/{uid}",
       description: "refuses a deletion by a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4, params: { uid: "group-admins" } },
+      request: { token: RESTRICTED5, params: { uid: "group-admins" } },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -12054,7 +12406,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/group/{uid}",
       description: "answers 404 for an identifier no group has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "group-none" } },
+      request: { token: ADMIN5, params: { uid: "group-none" } },
       expect: { status: 404, error: "Group not found." }
     },
     // ------------------------------------------------------------ permissions
@@ -12063,7 +12415,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/authorizedRoutes",
       description: "answers the route inventory to an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4 },
+      request: { token: ADMIN5 },
       expect: {
         status: 200,
         body: {
@@ -12087,7 +12439,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/authorizedRoutes",
       description: "refuses the inventory to a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4 },
+      request: { token: RESTRICTED5 },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -12095,7 +12447,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/myAuthorizedRoutes",
       description: "answers every route to an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4 },
+      request: { token: ADMIN5 },
       expect: {
         status: 200,
         body: {
@@ -12119,7 +12471,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/myAuthorizedRoutes",
       description: "answers a caller only the routes its rules grant",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4 },
+      request: { token: RESTRICTED5 },
       expect: {
         status: 200,
         // /AppStream is visible whatever the rules say; the two grants come from
@@ -12135,7 +12487,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/permission",
       description: "returns every rule to an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4 },
+      request: { token: ADMIN5 },
       expect: {
         status: 200,
         body: [
@@ -12168,7 +12520,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/permission",
       description: "returns a caller only their own rules and their groups'",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4 },
+      request: { token: RESTRICTED5 },
       expect: {
         status: 200,
         body: [
@@ -12210,7 +12562,7 @@ var SASjsApi = (() => {
       description: "creates a rule for a user",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/drive/folder",
           type: "Route",
@@ -12230,7 +12582,7 @@ var SASjsApi = (() => {
       description: "creates a rule for a group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/drive/rename",
           type: "Route",
@@ -12254,7 +12606,7 @@ var SASjsApi = (() => {
       description: "refuses a principal type that is neither a user nor a group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/drive/deploy",
           type: "Route",
@@ -12274,7 +12626,7 @@ var SASjsApi = (() => {
       description: "refuses a rule assigned to an administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/drive/folder",
           type: "Route",
@@ -12294,7 +12646,7 @@ var SASjsApi = (() => {
       description: "refuses a creation by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         body: {
           path: "/SASjsApi/drive/folder",
           type: "Route",
@@ -12311,7 +12663,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a principal that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/drive/rename",
           type: "Route",
@@ -12328,7 +12680,7 @@ var SASjsApi = (() => {
       description: "refuses a group rule that already exists",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/drive/file",
           type: "Route",
@@ -12348,7 +12700,7 @@ var SASjsApi = (() => {
       description: "refuses a rule that already exists",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           path: "/SASjsApi/code/execute",
           type: "Route",
@@ -12368,7 +12720,7 @@ var SASjsApi = (() => {
       description: "flips a rule from Deny to Grant",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { uid: "rule-code" },
         body: { setting: "Grant" }
       },
@@ -12380,7 +12732,7 @@ var SASjsApi = (() => {
       description: "refuses a change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         params: { uid: "rule-code" },
         body: { setting: "Grant" }
       },
@@ -12392,7 +12744,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a rule that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         params: { uid: "rule-none" },
         body: { setting: "Grant" }
       },
@@ -12403,7 +12755,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/permission/{uid}",
       description: "deletes a rule",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "rule-code" } },
+      request: { token: ADMIN5, params: { uid: "rule-code" } },
       expect: { status: 200, body: "Permission Deleted!" }
     },
     {
@@ -12411,7 +12763,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/permission/{uid}",
       description: "refuses a deletion by a non-administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4, params: { uid: "rule-code" } },
+      request: { token: RESTRICTED5, params: { uid: "rule-code" } },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -12419,7 +12771,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/permission/{uid}",
       description: "answers 404 for a rule that does not exist",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4, params: { uid: "rule-none" } },
+      request: { token: ADMIN5, params: { uid: "rule-none" } },
       expect: { status: 404, error: "Permission not found." }
     },
     // --------------------------------------------------------------- clients
@@ -12428,7 +12780,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/client",
       description: "lists the registered clients",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN4 },
+      request: { token: ADMIN5 },
       expect: {
         status: 200,
         body: [
@@ -12452,7 +12804,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/client",
       description: "refuses the list to a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4 },
+      request: { token: RESTRICTED5 },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -12461,7 +12813,7 @@ var SASjsApi = (() => {
       description: "registers a client",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           clientId: "new_app",
           clientSecret: "new_secret",
@@ -12485,7 +12837,7 @@ var SASjsApi = (() => {
       description: "applies the schema defaults when the lifetimes are omitted",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: { clientId: "default_app", clientSecret: "default_secret" }
       },
       expect: {
@@ -12504,7 +12856,7 @@ var SASjsApi = (() => {
       description: "refuses a registration by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         body: {
           clientId: "new_app",
           clientSecret: "new_secret",
@@ -12520,7 +12872,7 @@ var SASjsApi = (() => {
       description: "refuses a client id that is registered, with the 403 the server sends",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN4,
+        token: ADMIN5,
         body: {
           clientId: "web_app",
           clientSecret: "other",
@@ -12537,7 +12889,7 @@ var SASjsApi = (() => {
       description: "changes the caller’s own password",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         body: { currentPassword: "Orion123", newPassword: "changed123" }
       },
       expect: { status: 204 }
@@ -12547,7 +12899,7 @@ var SASjsApi = (() => {
       route: "PATCH /SASjsApi/auth/updatePassword",
       description: "refuses a body without the current password",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED4, body: { newPassword: "changed123" } },
+      request: { token: RESTRICTED5, body: { newPassword: "changed123" } },
       expect: { status: 400, error: '"currentPassword" is required' }
     },
     {
@@ -12566,7 +12918,7 @@ var SASjsApi = (() => {
       description: "refuses a change whose current password is wrong",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED4,
+        token: RESTRICTED5,
         body: { currentPassword: "wrong", newPassword: "changed123" }
       },
       expect: { status: 403, error: "Invalid current password!" }
