@@ -40,16 +40,6 @@ import { oauthToken, TOKEN_PATH } from './token'
  * operation is emulated`, which leaves a client unable to obtain the code the
  * `authorization_code` grant exchanges.
  */
-/**
- * The largest file content this mount reads out of a request body.
- *
- * A file PUT carries its content as the body with the file's own content type, so
- * `express.json` - and the limit it enforces - never sees it. This is that limit
- * for the one path: the same 100MB the JSON parser is given, stated here because
- * the cap has to be enforced somewhere the parser is not.
- */
-export const VIYA_CONTENT_BYTES = 100 * 1024 * 1024
-
 export const VIYA_PREFIXES = [
   '/compute',
   '/folders',
@@ -57,6 +47,18 @@ export const VIYA_PREFIXES = [
   '/identities',
   '/types'
 ]
+
+/**
+ * The largest file content this mount reads out of a request body.
+ *
+ * A file PUT carries its content as the body with the file's own content type, so
+ * `express.json` never parses it and the limit that parser enforces never applies.
+ * This is the cap for that one path, and it is this mount's own rule rather than a
+ * copy of the parser's: it matches the global `100mb` in `configureBodyParsers`,
+ * not the larger deploy-only limit the deploy routes are given, because a file's
+ * content is not a deploy payload.
+ */
+export const VIYA_CONTENT_BYTES = 100 * 1024 * 1024
 
 /**
  * The guard, scoped to what it protects.
@@ -196,13 +198,6 @@ export const isViyaPath = (path: string): boolean =>
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   )
 
-/**
- * The router.
- *
- * `services` is a factory rather than a value because a request carries the
- * caller: the estate the emulator answers as depends on who is asking, and a
- * host that resolved one at boot would answer everyone as the same account.
- */
 /** What the router may be told about the host it is mounted on. */
 export interface ViyaRouterOptions {
   /**
@@ -213,6 +208,13 @@ export interface ViyaRouterOptions {
   contentBytes?: number
 }
 
+/**
+ * The router.
+ *
+ * `services` is a factory rather than a value because a request carries the
+ * caller: the estate the emulator answers as depends on who is asking, and a
+ * host that resolved one at boot would answer everyone as the same account.
+ */
 export const createViyaRouter = (
   services: (req: express.Request) => Services,
   options: ViyaRouterOptions = {}
