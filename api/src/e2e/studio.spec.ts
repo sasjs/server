@@ -12,6 +12,7 @@
  * the unit-test run deliberately excludes.
  */
 import path from 'path'
+import { createRequire } from 'module'
 import { mkdirSync } from 'fs'
 import { readFile, rm, writeFile } from 'fs/promises'
 import { Express } from 'express'
@@ -805,9 +806,14 @@ describe('Studio in a browser', () => {
     // The pinned schema has no external references. If an upgrade introduces
     // one, reject the stale/incomplete bundle rather than silently losing the
     // referenced validation when Monaco has no request service.
+    // Resolved from the web package by name: the layout of node_modules is not
+    // a contract, and a hoisted or workspace install moves the path this used
+    // to spell out.
     const embeddedSchema = JSON.parse(
       await readFile(
-        require.resolve('../../../web/node_modules/@sasjs/lint/sasjslint-schema.json'),
+        createRequire(
+          path.join(__dirname, '..', '..', '..', 'web', 'package.json')
+        ).resolve('@sasjs/lint/sasjslint-schema.json'),
         'utf8'
       )
     )
