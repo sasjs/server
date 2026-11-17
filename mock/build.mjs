@@ -76,7 +76,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // `^6` resolved to whatever 6.x npm served at build time, which could be a CLI
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '7.2.0'
+// 7.2.1 includes the mock Drive upload authorization fix (sasjs/cli#1621).
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '7.2.1'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
