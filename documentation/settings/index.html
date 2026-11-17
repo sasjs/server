@@ -200,7 +200,7 @@
 <label class="md-header__button md-icon" for="__search">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
 </label>
-<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
 <label class="md-search__overlay" for="__search"></label>
 <div class="md-search__inner" role="search">
 <form class="md-search__form" name="search">
@@ -1697,7 +1697,7 @@ If <code>ADMIN_PASSWORD_RESET=YES</code> then the <code>ADMIN_USERNAME</code> wi
 <li><a href="./#ca_root"><code>CA_ROOT</code></a></li>
 <li><a href="./#private_key"><code>PRIVATE_KEY</code></a></li>
 </ul>
-<p>Developer notes: processed internally as <a href="https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions"><code>cert:</code> option</a> which has this description:</p>
+<p>Developer notes: processed internally as <a href="https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions" target="_blank" rel="noopener"><code>cert:</code> option</a> which has this description:</p>
 <blockquote>
 <p>Cert chains in PEM format. One cert chain should be provided per private key. Each cert chain should consist of the PEM formatted certificate for a provided private key, followed by the PEM formatted intermediate certificates (if any), in order, and not including the root CA (the root CA must be pre-known to the peer, see ca). When providing multiple cert chains, they do not have to be in the same order as their private keys in key. If the intermediate certificates are not provided, the peer will not be able to validate the certificate, and the handshake will fail.</p>
 </blockquote>
@@ -1710,7 +1710,7 @@ If <code>ADMIN_PASSWORD_RESET=YES</code> then the <code>ADMIN_USERNAME</code> wi
 <li><a href="./#private_key"><code>PRIVATE_KEY</code></a></li>
 <li><a href="./#cert_chain"><code>CERT_CHAIN</code></a></li>
 </ul>
-<p>Developer notes: processed internally as <a href="https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions"><code>ca:</code> option</a> which has this description:</p>
+<p>Developer notes: processed internally as <a href="https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions" target="_blank" rel="noopener"><code>ca:</code> option</a> which has this description:</p>
 <blockquote>
 <p>Optionally override the trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla. Mozilla's CAs are completely replaced when CAs are explicitly specified using this option. The value can be a string or Buffer, or an Array of strings and/or Buffers. Any string or Buffer can contain multiple PEM CAs concatenated together. The peer's certificate must be chainable to a CA trusted by the server for the connection to be authenticated. When using certificates that are not chainable to a well-known CA, the certificate's CA must be explicitly specified as a trusted or the connection will fail to authenticate. If the peer uses a certificate that doesn't match or chain to one of the default CAs, use the ca option to provide a CA certificate that the peer's certificate can match or chain to. For self-signed certificates, the certificate is its own CA, and must be provided. For PEM encoded certificates, supported types are "TRUSTED CERTIFICATE", "X509 CERTIFICATE", and "CERTIFICATE". See also tls.rootCertificates.</p>
 </blockquote>
@@ -1734,7 +1734,7 @@ See also:</p>
 <li><a href="./#db_type"><code>DB_TYPE</code></a></li>
 </ul>
 <h3 id="db_type">DB_TYPE<a class="headerlink" href="#db_type" title="Permanent link">¶</a></h3>
-<p>Specify the type of database.  When <code>DB_TYPE=cosmos_mongodb</code> the connection is made using <a href="https://www.npmjs.com/package/connect-mongo#set-the-compatibility-mode">compatibility mode</a>.</p>
+<p>Specify the type of database.  When <code>DB_TYPE=cosmos_mongodb</code> the connection is made using <a href="https://www.npmjs.com/package/connect-mongo#set-the-compatibility-mode" target="_blank" rel="noopener">compatibility mode</a>.</p>
 <p>Options: [mongodb|cosmos_mongodb] </p>
 <p>Default: mongodb</p>
 <h3 id="ddc_host_enabled">DDC_HOST_ENABLED<a class="headerlink" href="#ddc_host_enabled" title="Permanent link">¶</a></h3>
@@ -1750,7 +1750,7 @@ See also:</p>
 <h3 id="drive_location">DRIVE_LOCATION<a class="headerlink" href="#drive_location" title="Permanent link">¶</a></h3>
 <p>This setting is useful if you are running multiple instances of SASjs Server and would like to re-use the same Drive folder, Macros, Packages, and appStream config.</p>
 <p>The DRIVE_LOCATION can be shared across instances, but the SASJS_ROOT can't - as it will cause conflicts with sessions / uploads etc.</p>
-<p>If using this feature, be aware that the index of published apps (<code>appStreamConfig.json</code>, in the drive folder) is read at server startup and refreshed when an instance publishes or removes an app - so a deploy made on one instance reaches the others on their next restart.   If this is problematic for your project, please raise an <a href="https://github.com/sasjs/server/issues/new">issue</a>.</p>
+<p>If using this feature, be aware that the index of published apps (<code>appStreamConfig.json</code>, in the drive folder) is read at server startup and refreshed when an instance publishes or removes an app - so a deploy made on one instance reaches the others on their next restart.   If this is problematic for your project, please raise an <a href="https://github.com/sasjs/server/issues/new" target="_blank" rel="noopener">issue</a>.</p>
 <p>See also:</p>
 <ul>
 <li><a href="./#log_location"><code>LOG_LOCATION</code></a></li>
@@ -1771,13 +1771,13 @@ See also:</p>
 <p>HELMET Cross Origin Embedder Policy.  Sets the Cross-Origin-Embedder-Policy header to require-corp when <code>true</code></p>
 <p>Options: [true|false]</p>
 <p>Default: true</p>
-<p>Docs: <a href="https://helmetjs.github.io/#reference">https://helmetjs.github.io/#reference</a> (<code>crossOriginEmbedderPolicy</code>)</p>
+<p>Docs: <a href="https://helmetjs.github.io/#reference" target="_blank" rel="noopener">https://helmetjs.github.io/#reference</a> (<code>crossOriginEmbedderPolicy</code>)</p>
 <h3 id="helmet_csp_config_path">HELMET_CSP_CONFIG_PATH<a class="headerlink" href="#helmet_csp_config_path" title="Permanent link">¶</a></h3>
 <p>HELMET Content Security Policy</p>
 <p>Path to a json file containing HELMET <code>contentSecurityPolicy</code> directives</p>
 <p>The default policy allows no inline scripts and no inline event handlers, so a script injected into a page the server serves cannot run. The <code>style-src</code> directive is untouched by this default and keeps <code>'unsafe-inline'</code>, which the styling libraries used by the web interface require.</p>
 <p>An application deployed on the server that needs inline scripts or inline event handlers (many Angular and Data Controller builds do) loosens the policy with its own config file.</p>
-<p>Docs: <a href="https://helmetjs.github.io/#reference">https://helmetjs.github.io/#reference</a></p>
+<p>Docs: <a href="https://helmetjs.github.io/#reference" target="_blank" rel="noopener">https://helmetjs.github.io/#reference</a></p>
 <p>Default config:
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a>{
 </span><span id="__span-8-2"><a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a>  "frame-src": ["'self'"],
@@ -1868,11 +1868,11 @@ See also:</p>
 <p>Default: <code>true</code></p>
 <h3 id="log_format_morgan">LOG_FORMAT_MORGAN<a class="headerlink" href="#log_format_morgan" title="Permanent link">¶</a></h3>
 <p>These setting determines the level of logging produced by SASjs server.
-More details on this can be found in the Morgan documentation here:<a href="https://www.npmjs.com/package/morgan#predefined-formats">https://www.npmjs.com/package/morgan#predefined-formats</a></p>
+More details on this can be found in the Morgan documentation here:<a href="https://www.npmjs.com/package/morgan#predefined-formats" target="_blank" rel="noopener">https://www.npmjs.com/package/morgan#predefined-formats</a></p>
 <p>Options: [<code>combined</code>|<code>common</code>|<code>dev</code>|<code>short</code>|<code>tiny</code>]</p>
 <p>Default: <code>common</code></p>
 <h3 id="log_location">LOG_LOCATION<a class="headerlink" href="#log_location" title="Permanent link">¶</a></h3>
-<p>Location in which to write server logs (one file per day).  If not provided, logs are written in a <code>/logs</code> subfolder of the <code>SASJS_ROOT</code> location.  Can be a full path, else relative to the directory in which the server instance was launched.  More information on the behaviour (eg log rotation) is available in the underlying package (<a href="https://www.npmjs.com/package/rotating-file-stream">rotating-file-stream</a>).</p>
+<p>Location in which to write server logs (one file per day).  If not provided, logs are written in a <code>/logs</code> subfolder of the <code>SASJS_ROOT</code> location.  Can be a full path, else relative to the directory in which the server instance was launched.  More information on the behaviour (eg log rotation) is available in the underlying package (<a href="https://www.npmjs.com/package/rotating-file-stream" target="_blank" rel="noopener">rotating-file-stream</a>).</p>
 <p>Example: <code>LOG_LOCATION=./sasjs_root/logs</code></p>
 <p><img alt="The Studio log tab, showing where a session log is written" decoding="async" height="378" loading="lazy" src="../img/log_location.png" width="1594"/></p>
 <h3 id="login_lockout_minutes">LOGIN_LOCKOUT_MINUTES<a class="headerlink" href="#login_lockout_minutes" title="Permanent link">¶</a></h3>
@@ -1963,7 +1963,7 @@ More details on this can be found in the Morgan documentation here:<a href="http
 <li><a href="./#ca_root"><code>CA_ROOT</code></a></li>
 <li><a href="./#cert_chain"><code>CERT_CHAIN</code></a></li>
 </ul>
-<p>Developer notes: processed internally as <a href="https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions"><code>key:</code> option</a> which has this description:</p>
+<p>Developer notes: processed internally as <a href="https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions" target="_blank" rel="noopener"><code>key:</code> option</a> which has this description:</p>
 <blockquote>
 <p>Private keys in PEM format. PEM allows the option of private keys being encrypted. Encrypted keys will be decrypted with options.passphrase. Multiple keys using different algorithms can be provided either as an array of unencrypted key strings or buffers, or an array of objects in the form {pem: <string|buffer>[, passphrase: <string>]}. The object form can only occur in an array. object.passphrase is optional. Encrypted keys will be decrypted with object.passphrase if provided, or options.passphrase if it is not.</string></string|buffer></p>
 </blockquote>
@@ -1987,7 +1987,7 @@ More details on this can be found in the Morgan documentation here:<a href="http
 <li><a href="./#sas_path"><code>SAS_PATH</code></a></li>
 </ul>
 <h3 id="r_path">R_PATH<a class="headerlink" href="#r_path" title="Permanent link">¶</a></h3>
-<p>The path to the R executable (for running R programs).  Installation guides for R are available for <a href="https://linuxize.com/post/how-to-install-r-on-centos-7/">Centos 7</a>, <a href="https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-20-04">ubuntu</a> and <a href="https://www.digitalocean.com/community/tutorials/how-to-install-r-on-debian-10">Debian</a>.</p>
+<p>The path to the R executable (for running R programs).  Installation guides for R are available for <a href="https://linuxize.com/post/how-to-install-r-on-centos-7/" target="_blank" rel="noopener">Centos 7</a>, <a href="https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-20-04" target="_blank" rel="noopener">ubuntu</a> and <a href="https://www.digitalocean.com/community/tutorials/how-to-install-r-on-debian-10" target="_blank" rel="noopener">Debian</a>.</p>
 <p>Example: <code>R_PATH=/usr/bin/Rscript</code></p>
 <ul>
 <li><a href="./#node_path"><code>NODE_PATH</code></a></li>

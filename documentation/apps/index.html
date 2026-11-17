@@ -198,7 +198,7 @@
 <label class="md-header__button md-icon" for="__search">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
 </label>
-<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
 <label class="md-search__overlay" for="__search"></label>
 <div class="md-search__inner" role="search">
 <form class="md-search__form" name="search">
@@ -1124,12 +1124,12 @@
 <p>AppStream is the gateway to apps on SASjs Server.</p>
 <p><img alt="The SASjs App Stream portal, listing the apps a user can launch" decoding="async" height="1490" loading="lazy" src="../img/apps.png" width="1608"/></p>
 <h2 id="creating-apps">Creating Apps<a class="headerlink" href="#creating-apps" title="Permanent link">¶</a></h2>
-<p>Anybody can create an app for SASjs Server - it just needs to be compiled using the <a href="https://cli.sasjs.io/compile">SASjs CLI</a>.  The output of this process is a zip file that can be imported to any SASjs Server instance.</p>
+<p>Anybody can create an app for SASjs Server - it just needs to be compiled using the <a href="https://cli.sasjs.io/compile" target="_blank" rel="noopener">SASjs CLI</a>.  The output of this process is a zip file that can be imported to any SASjs Server instance.</p>
 <h2 id="deploying-apps">Deploying Apps<a class="headerlink" href="#deploying-apps" title="Permanent link">¶</a></h2>
 <p>Simply click the "Upload New App" button and select the local zip file containing the app you wish to deploy.</p>
 <p>Alternative deployment approaches include:</p>
 <ul>
-<li><code>sasjs deploy</code> - <a href="https://cli.sasjs.io/deploy/">https://cli.sasjs.io/deploy/</a></li>
+<li><code>sasjs deploy</code> - <a href="https://cli.sasjs.io/deploy/" target="_blank" rel="noopener">https://cli.sasjs.io/deploy/</a></li>
 <li>Use the <code>/SASjsApi/drive/deploy/upload</code> API</li>
 <li>Use the <code>/SASjsApi/drive/deploy</code> API</li>
 </ul>
@@ -1253,27 +1253,27 @@
 <p>SASjs Server does not have an in-built "app store" (due to our security policy of having no external web requests), however you may download apps yourself from the following locations and upload them to your SASjs Server instance.</p>
 <h3 id="productivity-apps">Productivity Apps<a class="headerlink" href="#productivity-apps" title="Permanent link">¶</a></h3>
 <h4 id="data-controller-for-sas">Data Controller for SAS®<a class="headerlink" href="#data-controller-for-sas" title="Permanent link">¶</a></h4>
-<p><a href="https://datacontroller.io">Data Controller</a> is a full-blown SAS application to provide business users with a carefully-controlled capability to make changes to data in SAS.</p>
-<p>The app can be downloaded from here: <a href="https://git.4gl.io/dc/deploy/raw/branch/main/server.json.zip">https://git.4gl.io/dc/deploy/raw/branch/main/server.json.zip</a>.</p>
-<p>Documentation is here: <a href="https://docs.datacontroller.io">https://docs.datacontroller.io</a>.</p>
+<p><a href="https://datacontroller.io" target="_blank" rel="noopener">Data Controller</a> is a full-blown SAS application to provide business users with a carefully-controlled capability to make changes to data in SAS.</p>
+<p>The app can be downloaded from here: <a href="https://git.4gl.io/dc/deploy/raw/branch/main/server.json.zip" target="_blank" rel="noopener">https://git.4gl.io/dc/deploy/raw/branch/main/server.json.zip</a>.</p>
+<p>Documentation is here: <a href="https://docs.datacontroller.io" target="_blank" rel="noopener">https://docs.datacontroller.io</a>.</p>
 <h3 id="seed-apps">Seed Apps<a class="headerlink" href="#seed-apps" title="Permanent link">¶</a></h3>
 <p>The following apps are presented as "starter packs" with which you can build your own SASjs App:</p>
 <h4 id="angular-seed-app">Angular Seed App<a class="headerlink" href="#angular-seed-app" title="Permanent link">¶</a></h4>
-<p>A demo app built using Angular.  Builds are published to the <a href="https://github.com/sasjs/angular-seed-app/releases">releases page</a>.</p>
+<p>A demo app built using Angular.  Builds are published to the <a href="https://github.com/sasjs/angular-seed-app/releases" target="_blank" rel="noopener">releases page</a>.</p>
 <h4 id="minimal-seed-app">Minimal Seed App<a class="headerlink" href="#minimal-seed-app" title="Permanent link">¶</a></h4>
-<p>This is a simple demo app built with Vanilla JS and SAS.  You can find the latest version on the github <a href="https://github.com/sasjs/minimal-seed-app/releases">releases page</a></p>
+<p>This is a simple demo app built with Vanilla JS and SAS.  You can find the latest version on the github <a href="https://github.com/sasjs/minimal-seed-app/releases" target="_blank" rel="noopener">releases page</a></p>
 <h4 id="react-seed-app">React Seed App<a class="headerlink" href="#react-seed-app" title="Permanent link">¶</a></h4>
-<p>The primary template used by the <a href="https://sasapps.io">SAS Apps team</a>.  Artefacts available on the <a href="https://github.com/sasjs/react-seed-app/releases">releases</a> page.</p>
+<p>The primary template used by the <a href="https://sasapps.io" target="_blank" rel="noopener">SAS Apps team</a>.  Artefacts available on the <a href="https://github.com/sasjs/react-seed-app/releases" target="_blank" rel="noopener">releases</a> page.</p>
 <h3 id="games">Games<a class="headerlink" href="#games" title="Permanent link">¶</a></h3>
 <p>The serious part of the game series is that you can see how easy it is to deploy generic web apps to SASjs Server - or any SAS server for that matter!</p>
 <h4 id="macro-dash">Macro Dash<a class="headerlink" href="#macro-dash" title="Permanent link">¶</a></h4>
-<p>Bounce through the WORK library, stomp the ERRORs and get the report out before the job runs out of steam. The leaderboard is a set of SAS services, so the game shows the full backend - not just a streamed frontend. Play it at <a href="https://dash.sasjs.io">https://dash.sasjs.io</a>; the SASjs Server service pack and the Viya deploy script are on the <a href="https://github.com/sasjs/macro-dash/releases">releases</a> page.</p>
+<p>Bounce through the WORK library, stomp the ERRORs and get the report out before the job runs out of steam. The leaderboard is a set of SAS services, so the game shows the full backend - not just a streamed frontend. Play it at <a href="https://dash.sasjs.io" target="_blank" rel="noopener">https://dash.sasjs.io</a>; the SASjs Server service pack and the Viya deploy script are on the <a href="https://github.com/sasjs/macro-dash/releases" target="_blank" rel="noopener">releases</a> page.</p>
 <h4 id="mario">Mario<a class="headerlink" href="#mario" title="Permanent link">¶</a></h4>
-<p>Needs no introduction. Release assets available here: <a href="https://github.com/sasjs/mario/releases">https://github.com/sasjs/mario/releases</a></p>
+<p>Needs no introduction. Release assets available here: <a href="https://github.com/sasjs/mario/releases" target="_blank" rel="noopener">https://github.com/sasjs/mario/releases</a></p>
 <h4 id="pacman">Pacman<a class="headerlink" href="#pacman" title="Permanent link">¶</a></h4>
-<p>Another video game classic! Release assets are available here: <a href="https://github.com/sasjs/pacman/releases">https://github.com/sasjs/pacman/releases</a></p>
+<p>Another video game classic! Release assets are available here: <a href="https://github.com/sasjs/pacman/releases" target="_blank" rel="noopener">https://github.com/sasjs/pacman/releases</a></p>
 <h4 id="rock-roller">Rock Roller<a class="headerlink" href="#rock-roller" title="Permanent link">¶</a></h4>
-<p>Dodge the trees and move down the slope! Release assets are available here: <a href="https://github.com/sasjs/rockroller/releases">https://github.com/sasjs/rockroller/releases</a>.</p>
+<p>Dodge the trees and move down the slope! Release assets are available here: <a href="https://github.com/sasjs/rockroller/releases" target="_blank" rel="noopener">https://github.com/sasjs/rockroller/releases</a>.</p>
 </article>
 </div>
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>

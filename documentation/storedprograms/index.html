@@ -198,7 +198,7 @@
 <label class="md-header__button md-icon" for="__search">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
 </label>
-<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+<a href="https://github.com/sasjs/server" title="sasjs/server on GitHub" aria-label="sasjs/server on GitHub" class="md-header__button md-icon md-header__repo" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg></a><div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
 <label class="md-search__overlay" for="__search"></label>
 <div class="md-search__inner" role="search">
 <form class="md-search__form" name="search">
@@ -1110,7 +1110,7 @@
 <li>Utility Macros / Functions</li>
 </ul>
 <p>The implementation varies depending on whether it is running as a SAS, JS, Python or R session.</p>
-<p>If you are calling your Stored Programs from a web application, it is recommended to review the <a href="https://github.com/sasjs/adapter">sasjs/adapter</a> (designed to work with Stored Programs) and associated <a href="https://github.com/search?q=topic%3Asasjs-seed-app+org%3Asasjs+fork%3Atrue&amp;type=repositories">seed apps</a>.  You might also want to review the <a href="https://git.datacontroller.io/dc/dc">Data Controller source</a> as an example of a relatively large, commercial application built on SASjs.</p>
+<p>If you are calling your Stored Programs from a web application, it is recommended to review the <a href="https://github.com/sasjs/adapter" target="_blank" rel="noopener">sasjs/adapter</a> (designed to work with Stored Programs) and associated <a href="https://github.com/search?q=topic%3Asasjs-seed-app+org%3Asasjs+fork%3Atrue&amp;type=repositories" target="_blank" rel="noopener">seed apps</a>.  You might also want to review the <a href="https://git.datacontroller.io/dc/dc" target="_blank" rel="noopener">Data Controller source</a> as an example of a relatively large, commercial application built on SASjs.</p>
 <h2 id="special-variables">Special Variables<a class="headerlink" href="#special-variables" title="Permanent link">¶</a></h2>
 <p>The following variables are "special":</p>
 <h3 id="_program"><code>_PROGRAM</code><a class="headerlink" href="#_program" title="Permanent link">¶</a></h3>
@@ -1125,7 +1125,7 @@
 <div class="language-sas highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nb">%let</span> name1=value1;
 </span><span id="__span-0-2"><a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="nb">%let</span> something=<span class="k">else</span>;
 </span></code></pre></div>
-<p>A number of "fixed" variables are also added at the start of the program - the code that generates them is in the repo, in <a href="https://github.com/sasjs/server/blob/main/api/src/controllers/internal/Execution.ts#L93">the program template in Execution.ts</a>.</p>
+<p>A number of "fixed" variables are also added at the start of the program - the code that generates them is in the repo, in <a href="https://github.com/sasjs/server/blob/main/api/src/controllers/internal/Execution.ts#L93" target="_blank" rel="noopener">the program template in Execution.ts</a>.</p>
 <p>If <code>_DEBUG</code> is set then <code>options mprint;</code> will also be automatically added to the start of the Stored Program.</p>
 <h3 id="input-files">Input Files<a class="headerlink" href="#input-files" title="Permanent link">¶</a></h3>
 <p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a> and the following variables will be dynamically added to the SAS program:</p>
@@ -1153,7 +1153,7 @@
 </span><span id="__span-2-2"><a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="nb">%let</span> _WEBIN_FILE_COUNT=<span class="m">0</span>;
 </span></code></pre></div>
 <h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">¶</a></h3>
-<p>Any response data should be written to the <code>_webout</code> fileref (which is pre-assigned in the session).  The corresponding header records (content type etc) can be written using the <a href="https://core.sasjs.io/mfs__httpheader_8sas.html">mfs_httpheader</a> macro. Additional <a href="https://core.sasjs.io/dir_41e1742e44e2de38b3bc91f993fed282.html">SASjs Server specific macros</a> are also available.</p>
+<p>Any response data should be written to the <code>_webout</code> fileref (which is pre-assigned in the session).  The corresponding header records (content type etc) can be written using the <a href="https://core.sasjs.io/mfs__httpheader_8sas.html" target="_blank" rel="noopener">mfs_httpheader</a> macro. Additional <a href="https://core.sasjs.io/dir_41e1742e44e2de38b3bc91f993fed282.html" target="_blank" rel="noopener">SASjs Server specific macros</a> are also available.</p>
 <p>The response (content and header) will vary depending on the <a href="#_debug"><code>_debug</code></a> setting.</p>
 <h2 id="js-programs">JS Programs<a class="headerlink" href="#js-programs" title="Permanent link">¶</a></h2>
 <p>The use of JS "programs" as your backend is highly beneficial for the following use cases:</p>
@@ -1208,7 +1208,7 @@
 </span><span id="__span-4-31"><a href="#__codelineno-4-31" id="__codelineno-4-31" name="__codelineno-4-31"></a><span class="nx">_sasjs_webout</span><span class="p">.</span><span class="nx">finalise</span><span class="p">(</span><span class="nx">_webout</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>fs</code> and <code>webout</code> are published as globals, so a program that declares its own <code>fs</code> or <code>webout</code> shadows it without clashing with the runtime's. The runtime keeps its own reference under the reserved <code>_sasjs_webout</code> name, which is also what writes <code>_webout</code> when the program assigns that variable instead of calling <code>webout()</code>.</p>
-<p><code>webout()</code> is generated into the program rather than imported, from the single copy of the block in <a href="https://github.com/sasjs/utils"><code>@sasjs/utils</code></a>: the server and <code>sasjs mock</code> emit the same text, so a program behaves the same in both, and the session log shows exactly what ran. The block resolves its own <code>fs</code> (and <code>os</code>, when the host has one, falling back to what a browser can answer).</p>
+<p><code>webout()</code> is generated into the program rather than imported, from the single copy of the block in <a href="https://github.com/sasjs/utils" target="_blank" rel="noopener"><code>@sasjs/utils</code></a>: the server and <code>sasjs mock</code> emit the same text, so a program behaves the same in both, and the session log shows exactly what ran. The block resolves its own <code>fs</code> (and <code>os</code>, when the host has one, falling back to what a browser can answer).</p>
 <h3 id="input-files_1">Input Files<a class="headerlink" href="#input-files_1" title="Permanent link">¶</a></h3>
 <p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a> and the following variables will be dynamically added to the JS program:</p>
 <ul>
@@ -1231,7 +1231,7 @@
 <div class="language-js highlight"><pre><span></span><code><span id="__span-6-1"><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span>
 </span></code></pre></div>
 <h3 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">¶</a></h3>
-<p>The recommended way to send data back is <code>webout()</code>, which mirrors the <a href="https://core.sasjs.io/ms__webout_8sas.html"><code>%ms_webout()</code></a> macro so that a JS program is laid out the way a SAS one is:</p>
+<p>The recommended way to send data back is <code>webout()</code>, which mirrors the <a href="https://core.sasjs.io/ms__webout_8sas.html" target="_blank" rel="noopener"><code>%ms_webout()</code></a> macro so that a JS program is laid out the way a SAS one is:</p>
 <div class="language-sas highlight"><pre><span></span><code><span id="__span-7-1"><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a>data work<span class="m">.</span>users;
 </span><span id="__span-7-2"><a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a>  <span class="k">set</span> work<span class="m">.</span>source;
 </span><span id="__span-7-3"><a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="kr">run;</span>
