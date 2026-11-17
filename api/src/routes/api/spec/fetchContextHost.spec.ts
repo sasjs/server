@@ -27,6 +27,16 @@ input.on('end', () => { fs.writeFileSync(weboutPath, JSON.stringify({ bytes, nam
       `_webout = JSON.stringify(webout('FETCH'))`
     )
     writeFileSync(
+      path.join(programFolder, 'mutate.js'),
+      `const first = webout('FETCH');
+fs.writeFileSync(_WEBIN_FILEREF1, 'id:best.\\n99');
+const second = webout('FETCH');
+fs.unlinkSync(_WEBIN_FILEREF1);
+let error;
+try { webout('FETCH'); } catch (err) { error = { code: err.code, syscall: err.syscall }; }
+_webout = JSON.stringify({ first, second, error });`
+    )
+    writeFileSync(
       path.join(programFolder, 'empty.js'),
       `_webout = JSON.stringify(_sasjs_fetch_context)`
     )
@@ -187,6 +197,18 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
       inline: [{ name: 'inline' }],
       table1: [{ id: 42 }],
       table2: [{ word: 'value' }]
+    })
+  })
+
+  it('FETCH re-reads a changed staged upload and throws if it is deleted', async () => {
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/mutate')
+      .attach('table', Buffer.from('id:best.\n42'), 'table.csv')
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({
+      first: { table: [{ id: 42 }] },
+      second: { table: [{ id: 99 }] },
+      error: { code: 'ENOENT', syscall: 'open' }
     })
   })
 
