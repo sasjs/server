@@ -187,13 +187,26 @@ describe('a Viya client against the emulated estate', () => {
   })
 
   afterAll(async () => {
-    await new Promise((resolve) => listener.close(resolve))
-    await con.connection.dropDatabase()
-    await con.connection.close()
-    await mongoServer.stop()
-    // the drive, the logs and the session folders this run wrote: a harness that
-    // left one behind per run would fill the temporary directory it runs in
-    await rm(root, { recursive: true, force: true })
+    // Guarded step by step: a boot that throws part way leaves some of these
+    // unassigned, and a teardown that dereferences one of them throws a TypeError
+    // in place of the real failure and leaves the rest undone - a mongod started
+    // by `MongoMemoryServer.create()` would outlive the run. Each step is
+    // attempted whether or not an earlier one failed, and the first real cause is
+    // what the report shows.
+    try {
+      if (listener) await new Promise((resolve) => listener.close(resolve))
+      if (con) {
+        await con.connection.dropDatabase()
+        await con.connection.close()
+      }
+      if (mongoServer) await mongoServer.stop()
+      // the drive, the logs and the session folders this run wrote: a harness that
+      // left one behind per run would fill the temporary directory it runs in
+      if (root) await rm(root, { recursive: true, force: true })
+    } catch (error) {
+      // a failed teardown must not mask a failed run: this is reported, not thrown
+      console.error('conformance teardown:', error)
+    }
   })
 
   it('refreshes the pair through the client, and refuses the token it replaced', async () => {

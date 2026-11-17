@@ -4,11 +4,14 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import request from 'supertest'
 
-import { createViyaRouter, isViyaPath, ruleFor, viyaGuard } from '../index'
 import {
-  configureBodyParsers,
-  type BodyParserOptions
-} from '../../../app-modules'
+  createViyaRouter,
+  isViyaPath,
+  ruleFor,
+  viyaGuard,
+  type ViyaRouterOptions
+} from '../index'
+import { configureBodyParsers } from '../../../app-modules'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -52,14 +55,14 @@ const pollWebout = async (mount: express.Express, sessionId: string) => {
 
 const app = (
   services: (req: express.Request) => Services,
-  options?: BodyParserOptions
+  options?: ViyaRouterOptions
 ) => {
   const server = express()
 
   // the server's own parsers, from the server's own module: a fixture that mounts
   // its own would answer a file PUT differently from production
-  configureBodyParsers(server, options)
-  server.use('/', createViyaRouter(services))
+  configureBodyParsers(server)
+  server.use('/', createViyaRouter(services, options))
   // what the server's own routes would answer for anything the router declines
   server.use('/', (_req, res) => res.status(418).json({ message: 'not viya' }))
 
