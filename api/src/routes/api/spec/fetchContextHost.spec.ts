@@ -27,8 +27,8 @@ describe('JS request context through the STP host', () => {
       path.join(programFolder, 'binary.js'),
       `
 _webout = JSON.stringify({
-  isBuffer: Buffer.isBuffer(_WEBIN_FILEREF1),
-  bytes: Array.from(_WEBIN_FILEREF1),
+  isPath: typeof _WEBIN_FILEREF1 === 'string',
+  bytes: Array.from(fs.readFileSync(_WEBIN_FILEREF1)),
   filename: _WEBIN_FILENAME1,
   name: _WEBIN_NAME1,
   csv: _sasjs_fetch_context.tables[0].csv,
@@ -40,12 +40,123 @@ _webout = JSON.stringify({
       path.join(programFolder, 'capture.js'),
       `
 _webout = JSON.stringify({ context: _sasjs_fetch_context, fileCount: _WEBIN_FILE_COUNT,
-  firstIsBuffer: Buffer.isBuffer(_WEBIN_FILEREF1) })
+  firstIsPath: typeof _WEBIN_FILEREF1 === 'string' })
+`
+    )
+    writeFileSync(
+      path.join(programFolder, 'paths.js'),
+      `
+const entries = []
+if (_WEBIN_FILE_COUNT >= 1) entries.push({ name: _WEBIN_NAME1, filename: _WEBIN_FILENAME1, path: _WEBIN_FILEREF1, bytes: Array.from(fs.readFileSync(_WEBIN_FILEREF1)) })
+if (_WEBIN_FILE_COUNT >= 2) entries.push({ name: _WEBIN_NAME2, filename: _WEBIN_FILENAME2, path: _WEBIN_FILEREF2, bytes: Array.from(fs.readFileSync(_WEBIN_FILEREF2)) })
+_webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FILE_COUNT ? { name: _WEBIN_NAME, filename: _WEBIN_FILENAME, path: _WEBIN_FILEREF } : [typeof _WEBIN_NAME, typeof _WEBIN_FILENAME, typeof _WEBIN_FILEREF], fetched: webout('FETCH') })
 `
     )
   })
 
   afterAll(() => rmSync(programFolder, { recursive: true, force: true }))
+
+  it('exposes a staged path and first-file aliases for a binary upload', async () => {
+    const bytes = Buffer.from([0, 0x80, 0xff, 0xc3, 0x28, 0x50, 0x4b])
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/paths')
+      .attach('image', bytes, 'image.bin')
+    expect(res.status).toBe(200)
+    const result = JSON.parse(res.text)
+    expect(result.count).toBe(1)
+    expect(result.entries[0]).toMatchObject({
+      name: 'image',
+      filename: 'image.bin',
+      bytes: Array.from(bytes)
+    })
+    expect(typeof result.entries[0].path).toBe('string')
+    expect(path.isAbsolute(result.entries[0].path)).toBe(true)
+    expect(result.aliases).toEqual({
+      name: 'image',
+      filename: 'image.bin',
+      path: result.entries[0].path
+    })
+    expect(result.fetched).toEqual({})
+  })
+
+  it.each([
+    ['UTF-8 BOM', Buffer.from([0xef, 0xbb, 0xbf, 0x61])],
+    ['empty', Buffer.alloc(0)]
+  ])('reads %s upload bytes without modification', async (_label, bytes) => {
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/paths')
+      .attach('raw', bytes, 'raw.bin')
+    expect(res.status).toBe(200)
+    const result = JSON.parse(res.text)
+    expect(result.entries[0].bytes).toEqual(Array.from(bytes))
+    expect(result.entries[0].path).toEqual(expect.any(String))
+  })
+
+  it('keeps multi-file names and bytes associated while FETCH parses a mixed upload', async () => {
+    const bytes = Buffer.from([0, 0xff, 0x80, 0xc3, 0x28])
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/paths')
+      .attach('raw', bytes, 'raw.bin')
+      .attach('table', Buffer.from('id:best.\n42'), 'table.csv')
+    expect(res.status).toBe(200)
+    const result = JSON.parse(res.text)
+    expect(result.count).toBe(2)
+    expect(result.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'raw',
+          filename: 'raw.bin',
+          bytes: Array.from(bytes),
+          path: expect.any(String)
+        }),
+        expect.objectContaining({
+          name: 'table',
+          filename: 'table.csv',
+          bytes: Array.from(Buffer.from('id:best.\n42')),
+          path: expect.any(String)
+        })
+      ])
+    )
+    expect(result.aliases).toEqual({
+      name: result.entries[0].name,
+      filename: result.entries[0].filename,
+      path: result.entries[0].path
+    })
+    expect(result.fetched).toEqual({ table: [{ id: 42 }] })
+  })
+
+  it('always supplies a zero count without files or first-file aliases', async () => {
+    const res = await request(app).get('/SASjsApi/stp/execute').query({
+      _program: '/fetch-context-test/paths',
+      _WEBIN_FILE_COUNT: 'hostile'
+    })
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({
+      count: 0,
+      entries: [],
+      aliases: ['undefined', 'undefined', 'undefined'],
+      fetched: {}
+    })
+  })
+
+  it('treats hostile multipart names as data and protects WEBIN bindings from collisions', async () => {
+    const name = "x';process.exit(19);//"
+    const filename = "file';process.exit(20);.bin"
+    const bytes = Buffer.from([0, 255])
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/paths')
+      .field('_WEBIN_FILEREF', 'collision')
+      .attach(name, bytes, filename)
+    expect(res.status).toBe(200)
+    const result = JSON.parse(res.text)
+    expect(result.entries[0]).toMatchObject({
+      name,
+      filename,
+      bytes: Array.from(bytes),
+      path: expect.any(String)
+    })
+    expect(result.aliases.path).toBe(result.entries[0].path)
+  })
 
   it('runs shared FETCH over real multipart uploads and inline parameter tables', async () => {
     const res = await request(app)
@@ -70,7 +181,7 @@ _webout = JSON.stringify({ context: _sasjs_fetch_context, fileCount: _WEBIN_FILE
       .attach('image', bytes, 'image.bin')
     expect(res.status).toBe(200)
     const result = JSON.parse(res.text)
-    expect(result.isBuffer).toBe(true)
+    expect(result.isPath).toBe(true)
     expect(result.bytes).toEqual(Array.from(bytes))
     expect(result.filename).toBe('image.bin')
     expect(result.name).toBe('image')
@@ -158,7 +269,7 @@ _webout = JSON.stringify({ context: _sasjs_fetch_context, fileCount: _WEBIN_FILE
       bodyparam: 'world'
     })
     expect(result.fileCount).toBe(2)
-    expect(result.firstIsBuffer).toBe(true)
+    expect(result.firstIsPath).toBe(true)
     expect(result.context.tables).toEqual(
       expect.arrayContaining([
         { name: 'table1', filename: 'table1.csv', csv: 'id:$char8.\nA\n' },

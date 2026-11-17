@@ -169,18 +169,23 @@ Any files attached to a request will be saved in the [session folder](sessions.m
 
 * `_WEBIN_FILE_COUNT` - contains an integer, from 0 to the number of files to being provided. This variable is always created.
 * `_WEBIN_FILENAME1` - the value that was specified in the FILENAME attribute by the frontend
-* `_WEBIN_FILEREF1` - a Node.js `Buffer` containing the exact uploaded bytes
+* `_WEBIN_FILEREF1` - a string containing the staged file's local session path, not a SAS fileref
 * `_WEBIN_NAME1` - the value that was specified in the NAME attribute by the frontend
+
+When at least one file is present, `_WEBIN_FILENAME`, `_WEBIN_NAME` and `_WEBIN_FILEREF` alias the corresponding `1` variables. With no files, those aliases are not created.
 
 To illustrate with an example - we are uploading two files, F1 and F2. The following JS code will be generated, and inserted at the beginning of the executed program:
 
 ```js
-const _WEBIN_FILEREF1 = fs.readFileSync('/path/to/file1')
-const _WEBIN_FILEREF2 = fs.readFileSync('/path/to/file2')
+const _WEBIN_FILEREF1 = '/path/to/file1'
+const _WEBIN_FILEREF2 = '/path/to/file2'
 const _WEBIN_FILENAME1 = 'F1'
 const _WEBIN_FILENAME2 = 'F2'
 const _WEBIN_NAME1 = 'FormRef1'
 const _WEBIN_NAME2 = 'FormRef2'
+const _WEBIN_FILEREF = _WEBIN_FILEREF1
+const _WEBIN_FILENAME = _WEBIN_FILENAME1
+const _WEBIN_NAME = _WEBIN_NAME1
 
 const _WEBIN_FILE_COUNT = 2
 
@@ -194,11 +199,13 @@ const _WEBIN_FILE_COUNT = 0
 
 #### Reading input tables and binary files
 
-On the server, `webout('FETCH')` reads adapter-formatted UTF-8 CSV input tables and returns an object of table names to arrays of rows. For each upload, the host supplies `{ name, filename, csv }` to the shared prelude, with `csv` decoded from the file's bytes as UTF-8. This text is **not** a byte-preserving representation of an arbitrary binary upload: invalid UTF-8 is replaced during decoding. Use `_WEBIN_FILEREF1` (or the corresponding numbered binding) directly as a `Buffer` for images, ZIPs, spreadsheets and other binary files; do not convert it to text if the bytes must be preserved. `_WEBIN_NAME1` and `_WEBIN_FILENAME1` identify the field and filename, and the bindings are lexical variables in the program.
+On the server, `webout('FETCH')` reads adapter-formatted UTF-8 CSV input tables and returns an object of table names to arrays of rows. For each upload, the host supplies `{ name, filename, csv }` to the shared prelude, with `csv` decoded from the file's bytes as UTF-8. This text is **not** a byte-preserving representation of an arbitrary binary upload: invalid UTF-8 is replaced during decoding. Read images, ZIPs, spreadsheets and other binary files with `fs.readFileSync(_WEBIN_FILEREF1)` to obtain their original bytes; specify `'utf8'` only for text. `_WEBIN_NAME1` and `_WEBIN_FILENAME1` identify the field and original filename, and the bindings are lexical variables in the program. The staged path is session-local and is only available while the session exists.
+
+**Breaking migration:** Earlier Server JS runtimes supplied the uploaded bytes as a `Buffer` in `_WEBIN_FILEREF1`. Replace `_WEBIN_FILEREF1.toString('utf8')` with `fs.readFileSync(_WEBIN_FILEREF1, 'utf8')`, and replace direct Buffer use with `fs.readFileSync(_WEBIN_FILEREF1)`. A string conversion alone now returns the path, not file contents.
 
 FETCH skips uploads whose first line does not look like an adapter table header. This is a heuristic, not a binary-file detector: a file that happens to look like a table can be parsed or cause FETCH to throw. Upload table names come from the multipart field, not the filename; repeated names are last-wins in multipart order. The numbered `_WEBIN_*` bindings use session directory order, which need not match multipart order.
 
-These Buffer and FETCH-context details describe the **server's Node.js runtime**, not the browser mock: its input bindings and transport can differ, so do not rely on it to verify binary handling.
+These path and FETCH-context details describe the **server's Node.js runtime**, not the browser mock: its input bindings and transport can differ, so do not rely on it to verify binary handling. SAS Server exposes an actual SAS fileref instead of a JS path; Viya stages uploads behind its files API and uses a files-service URI. The shared variable names do not make these representations interchangeable.
 
 ### Output
 

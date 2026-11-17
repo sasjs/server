@@ -188,7 +188,7 @@ ${program}
    used so a program that declares its own webout cannot break this. */
 ${weboutFinaliseStatement}
 `
-  // if no files are uploaded filesNamesMap will be undefined
+  // Upload bindings are always present, including a zero count with no files.
   if (otherArgs?.filesNamesMap) {
     const uploadJsCode = await generateFileUploadJSCode(
       otherArgs.filesNamesMap,
@@ -200,6 +200,8 @@ ${weboutFinaliseStatement}
     if (uploadJsCode.length > 0) {
       program = `${uploadJsCode}\n` + program
     }
+  } else {
+    program = `\nconst _WEBIN_FILE_COUNT = 0\n` + program
   }
   return requiredModules + program
 }

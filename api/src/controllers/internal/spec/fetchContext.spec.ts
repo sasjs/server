@@ -85,11 +85,11 @@ describe('JS request input context', () => {
     })
   })
 
-  it('allows a stored program to declare fs while uploaded buffers are read', async () => {
+  it('allows a stored program to declare fs while uploaded files are read', async () => {
     const output = path.join(dir, 'result.json')
     writeFileSync(path.join(dir, 'req_file_a'), 'file data')
     const generated = await createJSProgram(
-      `const fs = require('fs'); fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ text: _WEBIN_FILEREF1.toString(), tables: _sasjs_fetch_context.tables }))`,
+      `const fs = require('fs'); fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ text: fs.readFileSync(_WEBIN_FILEREF1, 'utf8'), tables: _sasjs_fetch_context.tables }))`,
       {} as any,
       {},
       { path: dir } as any,
@@ -227,7 +227,7 @@ describe('JS request input context', () => {
     writeFileSync(path.join(dir, 'req_file_a'), csv1)
     writeFileSync(path.join(dir, 'req_file_b'), csv2)
     const generated = await createJSProgram(
-      `fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ context: _sasjs_fetch_context, count: _WEBIN_FILE_COUNT, firstIsBuffer: Buffer.isBuffer(_WEBIN_FILEREF1) }))`,
+      `fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ context: _sasjs_fetch_context, count: _WEBIN_FILE_COUNT, firstIsPath: typeof _WEBIN_FILEREF1 === 'string' }))`,
       {} as any,
       { param: 'value' },
       { path: dir } as any,
@@ -248,7 +248,7 @@ describe('JS request input context', () => {
     execFileSync(process.execPath, [script])
     const actual = JSON.parse(readFileSync(output, 'utf8'))
     expect(actual.count).toBe(2)
-    expect(actual.firstIsBuffer).toBe(true)
+    expect(actual.firstIsPath).toBe(true)
     expect(actual.context).toEqual({
       params: { param: 'value' },
       tables: expect.arrayContaining([
@@ -271,7 +271,7 @@ describe('JS request input context', () => {
     }
     const output = path.join(dir, 'result.json')
     const generated = await createJSProgram(
-      `fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ legacy: [_WEBIN_FILEREF1.toString(), _WEBIN_FILEREF2.toString()], tables: _sasjs_fetch_context.tables }))`,
+      `fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ legacy: [fs.readFileSync(_WEBIN_FILEREF1, 'utf8'), fs.readFileSync(_WEBIN_FILEREF2, 'utf8')], tables: _sasjs_fetch_context.tables }))`,
       {} as any,
       {},
       { path: dir } as any,
