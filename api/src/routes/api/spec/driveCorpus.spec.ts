@@ -1,3 +1,5 @@
+import './sessionEnv'
+import { randomBytes } from 'crypto'
 import path from 'path'
 import fs from 'fs'
 import { Express } from 'express'
@@ -10,8 +12,8 @@ import {
   createFile,
   generateTimestamp
 } from '@sasjs/utils'
-import { DRIVE_CORPUS } from '@sasjs/api'
-import type { CorpusCase } from '@sasjs/api'
+import { DEFAULT_IDENTITY, DRIVE_CORPUS } from '@sasjs/api'
+import type { CorpusCase, IdentityFixture } from '@sasjs/api'
 import {
   refreshAppStreamIndex,
   writeStoredAppStreamEntries
@@ -39,27 +41,13 @@ jest
 import appPromise from '../../../app'
 import {
   UserController,
-  PermissionController,
-  PermissionType,
-  PermissionSettingForRoute,
-  PrincipalType
+  GroupController,
+  PermissionController
 } from '../../../controllers/'
 import { generateAccessToken, saveTokensInDB } from '../../../utils/'
-
-const clientId = 'someclientID'
-const user = {
-  displayName: 'Test User',
-  username: 'testUsername',
-  password: '87654321',
-  isAdmin: false,
-  isActive: true
-}
-
-const permission = {
-  type: PermissionType.route,
-  principalType: PrincipalType.user,
-  setting: PermissionSettingForRoute.grant
-}
+import User from '../../../model/User'
+import Group from '../../../model/Group'
+import Permission from '../../../model/Permission'
 
 /**
  * The corpus is what "the same API" means: the cases @sasjs/api runs against
@@ -81,35 +69,12 @@ describe('drive conformance corpus', () => {
   let app: Express
   let con: Mongoose
   let mongoServer: MongoMemoryServer
-  const userController = new UserController()
-  const permissionController = new PermissionController()
   const files = path.join(tmpFolder, 'drive', 'files')
-  let accessToken: string
 
   beforeAll(async () => {
     app = await appPromise
     mongoServer = await MongoMemoryServer.create()
     con = await mongoose.connect(mongoServer.getUri())
-
-    const dbUser = await userController.createUser(user)
-    const token = await generateAccessToken({ clientId, userId: dbUser.uid })
-    await saveTokensInDB(dbUser.uid, clientId, token, 'arefresh')
-    accessToken = token
-
-    // every route the corpus touches, granted to the test user
-    for (const route of [
-      '/SASjsApi/drive/file',
-      '/SASjsApi/drive/folder',
-      '/SASjsApi/drive/rename',
-      '/SASjsApi/drive/fileTree',
-      '/SASjsApi/drive/deploy'
-    ]) {
-      await permissionController.createPermission({
-        ...permission,
-        path: route,
-        principalId: dbUser.uid
-      })
-    }
   })
 
   afterAll(async () => {
@@ -118,6 +83,116 @@ describe('drive conformance corpus', () => {
     await mongoServer.stop()
     await deleteFolder(tmpFolder)
   })
+
+  // Translate fixture IDs to the database's IDs, and recreate every case's
+  // users, memberships and rules through the host's controllers.
+  const seedIdentity = async (
+    fixture: IdentityFixture,
+    testCase: CorpusCase
+  ) => {
+    await Promise.all([
+      User.deleteMany({}),
+      Group.deleteMany({}),
+      Permission.deleteMany({})
+    ])
+    const ids = new Map<string, string>()
+    const usernames = new Map<string, string>()
+    const tokens = new Map<string, string>()
+    const users = new UserController()
+    const groups = new GroupController()
+    const permissions = new PermissionController()
+
+    for (const user of fixture.users) {
+      const created = await users.createUser({
+        username: user.username,
+        displayName: user.displayName,
+        password: user.password ?? randomBytes(24).toString('hex'),
+        isAdmin: user.isAdmin,
+        isActive: user.isActive,
+        autoExec: user.autoExec
+      })
+      ids.set(user.uid, created.uid)
+      usernames.set(user.username, created.uid)
+      if (user.authProvider || user.needsToUpdatePassword)
+        await User.updateOne(
+          { _id: created.uid },
+          {
+            ...(user.authProvider ? { authProvider: user.authProvider } : {}),
+            ...(user.needsToUpdatePassword
+              ? { needsToUpdatePassword: true }
+              : {})
+          }
+        )
+    }
+
+    // createUser provisions home-route grants; a corpus identity must contain
+    // exactly its declared rules, not the host's automatic additions.
+    await Permission.deleteMany({})
+
+    for (const group of fixture.groups) {
+      const created = await groups.createGroup({
+        name: group.name,
+        description: group.description,
+        isActive: group.isActive
+      })
+      ids.set(group.uid, created.uid)
+      if (group.authProvider)
+        await Group.updateOne(
+          { _id: created.uid },
+          { authProvider: group.authProvider }
+        )
+      for (const username of group.users) {
+        const uid = usernames.get(username)
+        if (!uid) throw new Error(`Unknown fixture group member: ${username}`)
+        await groups.addUserToGroup(created.uid, uid)
+      }
+    }
+
+    for (const rule of fixture.permissions) {
+      const principal = rule.user ?? rule.group
+      const principalId =
+        principal && (ids.get(principal) ?? usernames.get(principal))
+      if (!principalId)
+        throw new Error(`Unknown fixture principal: ${principal}`)
+      await permissions.createPermission({
+        path: rule.path,
+        type: rule.type as any,
+        setting: rule.setting as any,
+        principalType: (rule.user ? 'user' : 'group') as any,
+        principalId
+      })
+    }
+
+    for (const token of fixture.tokens || []) {
+      const userId = usernames.get(token.username)
+      if (!userId)
+        throw new Error(`Unknown fixture token user: ${token.username}`)
+      const accessToken = generateAccessToken({
+        clientId: token.clientId,
+        userId
+      })
+      await saveTokensInDB(
+        userId,
+        token.clientId,
+        accessToken,
+        token.refreshToken || 'refresh'
+      )
+      if (token.accessToken) tokens.set(token.accessToken, accessToken)
+    }
+
+    if (testCase.request.token !== undefined)
+      return tokens.get(testCase.request.token) ?? testCase.request.token
+    const subject = testCase.request.subject
+    if (!subject) return undefined
+    const userId = ids.get(subject.userId)
+    if (!userId) throw new Error(`Unknown fixture subject: ${subject.userId}`)
+    const accessToken = generateAccessToken({
+      clientId: subject.clientId,
+      userId
+    })
+    await saveTokensInDB(userId, subject.clientId, accessToken, 'refresh')
+    return accessToken
+  }
 
   // The case's seed, written through the host's own filesystem: the server's
   // drive IS a real folder tree, so a case starts from the files it names. A
@@ -162,6 +237,13 @@ describe('drive conformance corpus', () => {
   // must not arrive as a type a browser executes - caller-supplied bytes on
   // the API origin with an executable type is the stored-XSS shape.
   it('serves an html drive file as a download, never text/html', async () => {
+    const accessToken = await seedIdentity(DEFAULT_IDENTITY, {
+      id: 'html-download',
+      route: 'GET /SASjsApi/drive/file',
+      description: 'html download',
+      request: { subject: { userId: 'user-admin', clientId: 'web_app' } },
+      expect: { status: 200 }
+    })
     await deleteFolder(files)
     await createFolder(files)
     await createFile(
@@ -171,11 +253,167 @@ describe('drive conformance corpus', () => {
 
     const res = await request(app)
       .get('/SASjsApi/drive/file?_filePath=' + encodeURIComponent('/x.html'))
-      .auth(accessToken, { type: 'bearer' })
+      .auth(accessToken as string, { type: 'bearer' })
 
     expect(res.statusCode).toBe(200)
     expect(res.headers['content-type']).toContain('application/octet-stream')
     expect(res.headers['x-content-type-options']).toBe('nosniff')
+  })
+
+  describe('denied valid mutations preserve persisted drive state', () => {
+    const publishedId = '6f1c1c1e-6a1e-4c4a-9d1a-1b2c3d4e5f60'
+    const deploy = {
+      appLoc: '/Public/myApp',
+      fileTree: {
+        members: [{ name: 'new.txt', type: 'file', code: 'bmV3IGNvbnRlbnRz' }]
+      }
+    }
+    const mutations = [
+      {
+        name: 'upload a new file',
+        send: (token: string) =>
+          request(app)
+            .post('/SASjsApi/drive/file')
+            .auth(token, { type: 'bearer' })
+            .field('filePath', '/data/new.csv')
+            .attach('file', Buffer.from('new data'), 'new.csv')
+      },
+      {
+        name: 'update a file',
+        send: (token: string) =>
+          request(app)
+            .patch('/SASjsApi/drive/file')
+            .auth(token, { type: 'bearer' })
+            .field('filePath', '/data/old.csv')
+            .attach('file', Buffer.from('replacement'), 'old.csv')
+      },
+      {
+        name: 'delete a file',
+        send: (token: string) =>
+          request(app)
+            .delete('/SASjsApi/drive/file')
+            .auth(token, { type: 'bearer' })
+            .query({ _filePath: '/data/old.csv' })
+      },
+      {
+        name: 'rename a file',
+        send: (token: string) =>
+          request(app)
+            .post('/SASjsApi/drive/rename')
+            .auth(token, { type: 'bearer' })
+            .send({ oldPath: '/data/old.csv', newPath: '/data/renamed.csv' })
+      },
+      {
+        name: 'create a folder',
+        send: (token: string) =>
+          request(app)
+            .post('/SASjsApi/drive/folder')
+            .auth(token, { type: 'bearer' })
+            .send({ folderPath: '/data/new-folder' })
+      },
+      {
+        name: 'delete a nonempty folder',
+        send: (token: string) =>
+          request(app)
+            .delete('/SASjsApi/drive/folder')
+            .auth(token, { type: 'bearer' })
+            .query({ _folderPath: '/data/nested' })
+      },
+      {
+        name: 'deploy a tree',
+        send: (token: string) =>
+          request(app)
+            .post('/SASjsApi/drive/deploy')
+            .auth(token, { type: 'bearer' })
+            .send(deploy)
+      },
+      {
+        name: 'upload a deploy document',
+        send: (token: string) =>
+          request(app)
+            .post('/SASjsApi/drive/deploy/upload')
+            .auth(token, { type: 'bearer' })
+            .attach('file', Buffer.from(JSON.stringify(deploy)), 'deploy.json')
+      },
+      {
+        name: 'unpublish an app',
+        send: (token: string) =>
+          request(app)
+            .delete('/SASjsApi/drive/deploy')
+            .auth(token, { type: 'bearer' })
+            .send({ id: publishedId })
+      }
+    ]
+
+    // Record paths, directories and exact bytes, including the publication
+    // registry beside files. This catches deletion, replacement and new files.
+    const snapshot = async (root: string): Promise<Record<string, string>> => {
+      const result: Record<string, string> = {}
+      const visit = async (dir: string, relative: string) => {
+        for (const entry of await fs.promises.readdir(dir, {
+          withFileTypes: true
+        })) {
+          const name = path.join(relative, entry.name)
+          const absolute = path.join(dir, entry.name)
+          if (entry.isDirectory()) {
+            result[name + '/'] = 'directory'
+            await visit(absolute, name)
+          } else {
+            result[name] = (await fs.promises.readFile(absolute)).toString(
+              'base64'
+            )
+          }
+        }
+      }
+      await visit(root, '')
+      return result
+    }
+
+    it.each(mutations)('$name', async ({ send }) => {
+      const testCase: CorpusCase = {
+        id: 'denied-mutation',
+        route: 'POST /SASjsApi/drive/file',
+        description: 'valid mutation by an ungranted user',
+        request: {
+          subject: { userId: 'user-restricted', clientId: 'web_app' }
+        },
+        seed: {
+          '/data/old.csv': 'original data',
+          '/data/nested/keep.csv': 'nested data',
+          '/Public/myApp/old.txt': 'deployed data'
+        },
+        expect: { status: 401 }
+      }
+      // Remove the default file grant too: permissions apply to a route, not
+      // a particular HTTP method, and file mutations must be denied as well.
+      const identity = {
+        ...DEFAULT_IDENTITY,
+        permissions: DEFAULT_IDENTITY.permissions.filter(
+          (rule) => rule.path !== '/SASjsApi/drive/file'
+        )
+      }
+      const deniedToken = await seedIdentity(identity, testCase)
+      const admin = await User.findOne({ username: 'sasjsadmin' })
+      if (!admin) throw new Error('Missing admin fixture')
+      const adminToken = generateAccessToken({
+        clientId: 'web_app',
+        userId: String(admin._id)
+      })
+      await saveTokensInDB(String(admin._id), 'web_app', adminToken, 'refresh')
+      await seedDrive(testCase)
+      const driveRoot = path.join(tmpFolder, 'drive')
+      const before = await snapshot(driveRoot)
+
+      const denied = await send(deniedToken as string)
+      expect(await snapshot(driveRoot)).toEqual(before)
+      expect(denied.statusCode).toBe(401)
+
+      // Same payload, same seeded state, authorized caller: proves the request
+      // would really have changed persisted state rather than failing validation.
+      const allowed = await send(adminToken)
+      expect(allowed.statusCode).toBe(200)
+      expect(await snapshot(driveRoot)).not.toEqual(before)
+    })
   })
 
   // A case that needs a failing store cannot be replayed over HTTP: this host's
@@ -186,9 +424,17 @@ describe('drive conformance corpus', () => {
 
   it.each(replayable)('$id', async (testCase) => {
     const want = testCase.expect
+    const accessToken = await seedIdentity(
+      testCase.identity || DEFAULT_IDENTITY,
+      testCase
+    )
     await seedDrive(testCase)
     const requestPath = queryOf(testCase)
     const method = testCase.route.split(' ')[0].toLowerCase()
+    const authenticate = (call: any) =>
+      accessToken === undefined
+        ? call
+        : call.auth(accessToken, { type: 'bearer' })
 
     let res: any
     if (testCase.request.file) {
@@ -202,12 +448,11 @@ describe('drive conformance corpus', () => {
       const formPath = testCase.request.body?.filePath
       if (formPath !== undefined)
         call = call.field('filePath', String(formPath))
-      res = await call.auth(accessToken, { type: 'bearer' })
+      res = await authenticate(call)
     } else if (testCase.request.body) {
-      res = await (request(app) as any)
-        [method](requestPath)
-        .send(testCase.request.body)
-        .auth(accessToken, { type: 'bearer' })
+      res = await authenticate(
+        (request(app) as any)[method](requestPath).send(testCase.request.body)
+      )
     } else if (
       want.contents !== undefined &&
       typeof want.contents !== 'string'
@@ -219,18 +464,22 @@ describe('drive conformance corpus', () => {
         res.on('data', (chunk: Buffer) => chunks.push(chunk))
         res.on('end', () => fn(null, Buffer.concat(chunks)))
       }
-      res = await (request(app) as any)
-        [method](requestPath)
-        .buffer(true)
-        .parse(binaryParser)
-        .auth(accessToken, { type: 'bearer' })
+      res = await authenticate(
+        (request(app) as any)
+          [method](requestPath)
+          .buffer(true)
+          .parse(binaryParser)
+      )
     } else {
-      res = await (request(app) as any)
-        [method](requestPath)
-        .auth(accessToken, { type: 'bearer' })
+      res = await authenticate((request(app) as any)[method](requestPath))
     }
 
     expect(res.statusCode).toBe(want.status)
+
+    for (const file of testCase.expectDrive?.present || [])
+      expect(fs.existsSync(path.join(files, file))).toBe(true)
+    for (const file of testCase.expectDrive?.missing || [])
+      expect(fs.existsSync(path.join(files, file))).toBe(false)
 
     if (want.error !== undefined) {
       // The drive's file routes answer the message as text; the deploy routes
