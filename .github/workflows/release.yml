@@ -74,21 +74,23 @@ jobs:
       # is what `--prepare-publish` resolves, `publish` is true while the
       # registry lacks the version, and the job completes the release.
       #
-      # A LATER merge is the case this pipeline depends on the tool for, and it
-      # needs a @sasjs/release that compares commits (the first release carrying
-      # sasjs/release#14 - see the dependency note in the PR):
+      # A LATER merge is the case this pipeline depends on the tool for, and the
+      # pinned version is what makes it safe: 0.13.2 is the first release that
+      # compares the commit an existing release names with the commit being
+      # released.
       #
       #   - a run at a newer commit classifies from the last PUBLISHED tag, so it
       #     computes the same version and finds the draft cut at the earlier
-      #     commit. A tool that reuses any release carrying that tag name attaches
-      #     the newer build to it and publishes the tag at the OLDER commit - a
-      #     release whose files and tag disagree, with nothing warning;
-      #   - from that release on, a draft naming another commit is discarded and
-      #     the release cut again here, so the merge is harmless: the earlier
-      #     attempt stays invisible and its commits ship in the release after it.
+      #     commit. A tool that reused any release carrying that tag name would
+      #     attach the newer build to it and publish the tag at the OLDER commit -
+      #     a release whose files and tag disagree, with nothing warning;
+      #   - with the comparison in place, a draft naming another commit is
+      #     discarded and the release cut again here, so the merge is harmless:
+      #     the earlier attempt stays invisible and its commits ship in the
+      #     release after it.
       #
-      # Until the pin names such a release, re-run a failed release before
-      # merging anything else.
+      # That is why the pin is exact: a downgrade below 0.13.2, or a switch back
+      # to semantic-release, restores the mis-publish.
       - name: Tag and cut the draft release, if there is anything to release
         id: release
         env:
