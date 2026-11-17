@@ -24,6 +24,19 @@ describe('JS request context through the STP host', () => {
       `_webout = JSON.stringify(_sasjs_fetch_context)`
     )
     writeFileSync(
+      path.join(programFolder, 'binary.js'),
+      `
+_webout = JSON.stringify({
+  isBuffer: Buffer.isBuffer(_WEBIN_FILEREF1),
+  bytes: Array.from(_WEBIN_FILEREF1),
+  filename: _WEBIN_FILENAME1,
+  name: _WEBIN_NAME1,
+  csv: _sasjs_fetch_context.tables[0].csv,
+  fetched: webout('FETCH')
+})
+`
+    )
+    writeFileSync(
       path.join(programFolder, 'capture.js'),
       `
 _webout = JSON.stringify({ context: _sasjs_fetch_context, fileCount: _WEBIN_FILE_COUNT,
@@ -48,6 +61,22 @@ _webout = JSON.stringify({ context: _sasjs_fetch_context, fileCount: _WEBIN_FILE
       table1: [{ id: 42 }],
       table2: [{ word: 'value' }]
     })
+  })
+
+  it('preserves binary multipart bytes in WEBIN while FETCH receives UTF-8 text', async () => {
+    const bytes = Buffer.from([0x00, 0x80, 0xff, 0xc3, 0x28, 0x0a, 0x50, 0x4b])
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/binary')
+      .attach('image', bytes, 'image.bin')
+    expect(res.status).toBe(200)
+    const result = JSON.parse(res.text)
+    expect(result.isBuffer).toBe(true)
+    expect(result.bytes).toEqual(Array.from(bytes))
+    expect(result.filename).toBe('image.bin')
+    expect(result.name).toBe('image')
+    expect(result.csv).toBe(bytes.toString('utf8'))
+    expect(Buffer.from(result.csv, 'utf8')).not.toEqual(bytes)
+    expect(result.fetched).toEqual({})
   })
 
   it('FETCH chooses the last multipart upload with a repeated field name', async () => {

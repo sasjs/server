@@ -101,7 +101,9 @@ export const generateFileUploadSasCode = async (
 }
 
 /**
- * Generates the js code that references uploaded files in the concurrent request
+ * Generates the js code that references uploaded files in the concurrent request.
+ * `_WEBIN_FILEREFn` is a raw Buffer; FETCH tables receive its UTF-8 text for
+ * adapter CSV parsing, not a byte-preserving representation of arbitrary files.
  * @param filesNamesMap object that maps hashed file names and original file names
  * @param sessionFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated js code
