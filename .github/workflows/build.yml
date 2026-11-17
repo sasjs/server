@@ -122,6 +122,9 @@ jobs:
         # deploy, so the rule is asserted here rather than discovered there.
         run: npm run mock:test
 
+      - name: Test the release workflow guard
+        run: node --test .github/scripts/release-workflow.test.mjs
+
       - name: Parse the site build scripts
         # mock/build.mjs and mock/serve.mjs are only ever executed by the
         # mock-site workflow, so a syntax error in them reaches main with every
