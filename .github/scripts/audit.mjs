@@ -32,25 +32,41 @@ const ALLOWED = new Map([
       reason:
         'deepmerge prototype poisoning (CVE-2026-93753): vulnerable range is >=4.2.0 <=4.3.1 and upstream has published no fixed release (4.3.1 is the latest), so no upgrade or override clears it. Reached through tsoa and jest-config, both of which merge configuration written by this repository, at build time, never with data from a request.'
     }
+  ],
+  [
+    'GHSA-fc5q-39xc-vjpf',
+    {
+      advisory: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+      recheckBy: '2027-01-31',
+      // enforced: see the production pass below, which fails if this id ever
+      // appears in the production set. The claim is checked, not asserted.
+      devOnly: true,
+      reason:
+        'picomatch ReDoS through single-branch repeated extglobs: the vulnerable range is <=4.0.7 and 4.0.7 is the latest published version, with no first patched version, so no upgrade or override clears it. It is not in the production set at all - `npm ls picomatch --omit=dev` is empty - and is reached only by dev and build tooling (@yao-pkg/pkg, jest, @parcel/watcher, tinyglobby/fdir, anymatch) matching glob patterns this repository writes: test discovery and file collection, never a pattern supplied by a request.'
+    }
   ]
 ])
 
-const audit = spawnSync('npm', ['audit', '--json'], {
-  encoding: 'utf8',
-  maxBuffer: 32 * 1024 * 1024
-})
+const runAudit = (args = []) => {
+  const audit = spawnSync('npm', ['audit', '--json', ...args], {
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024
+  })
 
-let report
-
-try {
-  report = JSON.parse(audit.stdout)
-} catch {
-  // `npm audit --json` prints nothing parseable when it cannot reach the
-  // registry. That is a broken pipeline, not a clean tree.
-  process.stderr.write(audit.stdout + audit.stderr)
-  console.error('\nCould not read the npm audit report (is the registry reachable?).')
-  process.exit(1)
+  try {
+    return JSON.parse(audit.stdout)
+  } catch {
+    // `npm audit --json` prints nothing parseable when it cannot reach the
+    // registry. That is a broken pipeline, not a clean tree.
+    process.stderr.write(audit.stdout + audit.stderr)
+    console.error(
+      '\nCould not read the npm audit report (is the registry reachable?).'
+    )
+    process.exit(1)
+  }
 }
+
+const report = runAudit()
 
 if (report.error) {
   console.error(`npm audit failed: ${JSON.stringify(report.error)}`)
@@ -58,30 +74,38 @@ if (report.error) {
 }
 
 /** @type {Map<string, {id: string, package: string, severity: string, title: string, range: string}>} */
-const advisories = new Map()
+const advisoriesIn = (report) => {
+  const advisories = new Map()
 
-for (const [name, vulnerability] of Object.entries(report.vulnerabilities || {})) {
-  for (const via of vulnerability.via || []) {
-    // A string `via` means "depends on a vulnerable package"; the advisory on
-    // the package it points at is reported separately.
-    if (typeof via === 'string') continue
+  for (const [name, vulnerability] of Object.entries(
+    report.vulnerabilities || {}
+  )) {
+    for (const via of vulnerability.via || []) {
+      // A string `via` means "depends on a vulnerable package"; the advisory on
+      // the package it points at is reported separately.
+      if (typeof via === 'string') continue
 
-    // Anything that carries an advisory is recorded, whether or not its id is
-    // a GHSA url: an unmatched advisory has to end up in front of a human.
-    const id =
-      (String(via.url || '').match(/GHSA-[\w-]+/) || [])[0] ||
-      String(via.url || '') ||
-      `${name}: ${via.title || 'advisory without an identifier'}`
+      // Anything that carries an advisory is recorded, whether or not its id is
+      // a GHSA url: an unmatched advisory has to end up in front of a human.
+      const id =
+        (String(via.url || '').match(/GHSA-[\w-]+/) || [])[0] ||
+        String(via.url || '') ||
+        `${name}: ${via.title || 'advisory without an identifier'}`
 
-    advisories.set(id, {
-      id,
-      package: name,
-      severity: via.severity,
-      title: via.title,
-      range: via.range
-    })
+      advisories.set(id, {
+        id,
+        package: name,
+        severity: via.severity,
+        title: via.title,
+        range: via.range
+      })
+    }
   }
+
+  return advisories
 }
+
+const advisories = advisoriesIn(report)
 
 const today = new Date().toISOString().slice(0, 10)
 const expired = [...ALLOWED.entries()].filter(
@@ -104,6 +128,40 @@ const blocking = []
 for (const advisory of advisories.values()) {
   if (ALLOWED.has(advisory.id)) waived.push(advisory)
   else blocking.push(advisory)
+}
+
+/**
+ * A `devOnly` waiver is checked, not believed.
+ *
+ * Matching is by advisory id alone, and the report above is the FULL tree - dev
+ * dependencies included, which is the bar this gate sets. Nothing in that
+ * matching distinguishes a package reached only by the build from one that
+ * ships, so an entry whose reason says "not in the production set" would go on
+ * waiving the advisory after a production dependency pulled the same package.
+ *
+ * The production set is therefore audited separately, and a `devOnly` id that
+ * appears there fails the build: at that point the waiver's justification is
+ * false and the advisory needs fixing or its own, explicit reason.
+ */
+const devOnly = [...ALLOWED.entries()]
+  .filter(([, entry]) => entry.devOnly)
+  .map(([id]) => id)
+
+if (devOnly.length) {
+  const production = advisoriesIn(runAudit(['--omit=dev']))
+  const exposed = devOnly.filter((id) => production.has(id))
+
+  if (exposed.length) {
+    for (const id of exposed) {
+      const advisory = production.get(id)
+
+      console.error(
+        `waived as dev-only, but ${id} (${advisory.severity} ${advisory.package}) now reaches a production dependency: fix it, or give it a reason that accounts for production exposure.`
+      )
+    }
+
+    process.exit(1)
+  }
 }
 
 for (const advisory of waived) {
