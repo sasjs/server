@@ -54,5 +54,3 @@ export const rowClickOpensEntry = (
   // the icon itself is the folder's control; the column it sits in is the row
   return !expandIcon || expandIcon === target
 }
-
-export default rowClickOpensEntry
