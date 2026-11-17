@@ -19,10 +19,11 @@
  *
  * What this run cannot prove: execution. A job runs on this server's engine, and
  * a machine without SAS has none, so the submit-and-read-the-webout leg is gated
- * on `CONFORMANCE_EXECUTE=1` and reports that it did not run rather than passing
- * quietly. Everything an application does before its first service - sign in,
- * find a context, open a session, create a folder, upload a file, read it back -
- * runs here with no engine at all.
+ * on `CONFORMANCE_EXECUTE=1` and is reported as SKIPPED when it is unset - never
+ * as a pass, which is what a returning case would claim. Everything an
+ * application does before its first service - sign in, find a context, open a
+ * session, create a folder, upload a file, read it back - runs here with no
+ * engine at all.
  */
 import express, { Express } from 'express'
 import { mkdtemp } from 'fs/promises'
@@ -59,6 +60,16 @@ interface TokenPair {
   expires_in: number
   [key: string]: unknown
 }
+
+/**
+ * The execution leg, declared rather than returned when this host has no engine.
+ *
+ * A returning `it` is a PASS to jest, so a machine without SAS would report the
+ * leg as verified when it never ran - the silent zero this run exists to catch.
+ * Skipped, the summary names the leg and says it did not run.
+ */
+const executionLeg = (name: string, fn: () => Promise<void>) =>
+  process.env.CONFORMANCE_EXECUTE === '1' ? it(name, fn) : it.skip(name, fn)
 
 describe('a Viya client against the emulated estate', () => {
   let server: Express
@@ -320,17 +331,7 @@ describe('a Viya client against the emulated estate', () => {
     ).rejects.toBeTruthy()
   })
 
-  it('runs a service and reads its webout, when this host has an engine', async () => {
-    if (process.env.CONFORMANCE_EXECUTE !== '1') {
-      // said out loud rather than skipped in silence: the leg exists, and the
-      // machine it did not run on is the reason
-      console.log(
-        'conformance: execution not run - set CONFORMANCE_EXECUTE=1 on a host with a SAS engine'
-      )
-
-      return
-    }
-
+  executionLeg('runs a service and reads its webout', async () => {
     const linesOfCode = [
       'data _null_;',
       '  file _webout;',

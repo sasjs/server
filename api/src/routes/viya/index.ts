@@ -40,6 +40,16 @@ import { oauthToken, TOKEN_PATH } from './token'
  * operation is emulated`, which leaves a client unable to obtain the code the
  * `authorization_code` grant exchanges.
  */
+/**
+ * The largest file content this mount reads out of a request body.
+ *
+ * A file PUT carries its content as the body with the file's own content type, so
+ * `express.json` - and the limit it enforces - never sees it. This is that limit
+ * for the one path: the same 100MB the JSON parser is given, stated here because
+ * the cap has to be enforced somewhere the parser is not.
+ */
+export const VIYA_CONTENT_BYTES = 100 * 1024 * 1024
+
 export const VIYA_PREFIXES = [
   '/compute',
   '/folders',
@@ -155,16 +165,27 @@ const uploadOf = async (
  * are what this collects.
  */
 const contentBodyOf = async (
-  req: express.Request
-): Promise<Uint8Array | undefined> => {
+  req: express.Request,
+  limit: number
+): Promise<Uint8Array | 'too-large' | undefined> => {
   if (!/^\/files\/files\/[^/]+\/content$/.test(req.path)) return undefined
   if (req.method !== 'PUT' && req.method !== 'POST') return undefined
   if (req.is('application/json') || req.is('multipart/form-data'))
     return undefined
 
   const chunks: Buffer[] = []
+  let read = 0
 
-  for await (const chunk of req) chunks.push(Buffer.from(chunk as Buffer))
+  // Counted as it arrives, and refused the moment it passes the cap: this is the
+  // one path the JSON parser does not bound, so without the count a caller decides
+  // how much memory the process allocates
+  for await (const chunk of req) {
+    read += (chunk as Buffer).length
+
+    if (read > limit) return 'too-large'
+
+    chunks.push(Buffer.from(chunk as Buffer))
+  }
 
   return Buffer.concat(chunks)
 }
@@ -182,9 +203,21 @@ export const isViyaPath = (path: string): boolean =>
  * caller: the estate the emulator answers as depends on who is asking, and a
  * host that resolved one at boot would answer everyone as the same account.
  */
+/** What the router may be told about the host it is mounted on. */
+export interface ViyaRouterOptions {
+  /**
+   * The largest file content a single request may carry. Stated so a case can
+   * measure the refusal without sending a hundred megabytes: the default is the
+   * cap production runs with.
+   */
+  contentBytes?: number
+}
+
 export const createViyaRouter = (
-  services: (req: express.Request) => Services
+  services: (req: express.Request) => Services,
+  options: ViyaRouterOptions = {}
 ) => {
+  const contentBytes = options.contentBytes ?? VIYA_CONTENT_BYTES
   const router = express.Router()
 
   router.use(async (req, res, next) => {
@@ -225,7 +258,14 @@ export const createViyaRouter = (
     try {
       // a file PUT carries its content as the body, which no JSON parser has read:
       // it travels as `contents`, the request-side twin of the response's raw body
-      const contents = await contentBodyOf(req)
+      const contents = await contentBodyOf(req, contentBytes)
+
+      // answered here rather than through `next`, because the error handler turns
+      // everything it sees into a 500
+      if (contents === 'too-large')
+        return res.status(413).json({
+          message: `A file's content must not exceed ${contentBytes} bytes.`
+        })
 
       answer = await dispatchViya(services(req), req.method, req.path, {
         query: req.query as Record<string, string | undefined>,
