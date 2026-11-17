@@ -324,6 +324,23 @@ describe('code', () => {
       expect(response.body).toContain('x = 1;\n')
     })
 
+    // `layout: false` is the editor's "fix lint issues": the rules run, the
+    // engine does not. Jest cannot load the engine at all - it is an ES module
+    // - so both modes answer with the rules here; what this asserts is that the
+    // request is accepted and the fixes are still applied. That the two modes
+    // differ is asserted against the real engine in
+    // scripts/test-format-api.cjs.
+    it('accepts layout: false and still applies the rules', async () => {
+      const response = await request(app)
+        .post('/SASjsApi/code/format')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ code: 'data _null_;\n  x = 1; \nrun;', layout: false })
+        .expect(200)
+
+      expect(response.body).toContain('x = 1;\n')
+      expect(response.body).not.toContain('x = 1; \n')
+    })
+
     it('applies the .sasjslint nearest the named file, walking up the drive', async () => {
       const driveFiles = process.driveLoc
         ? path.join(process.driveLoc, 'files')

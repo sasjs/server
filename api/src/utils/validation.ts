@@ -328,7 +328,10 @@ export const lintCodeValidation = (data: any): Joi.ValidationResult =>
 export const formatCodeValidation = (data: any): Joi.ValidationResult =>
   Joi.object({
     code: Joi.string().required(),
-    filePath: Joi.string()
+    filePath: Joi.string(),
+    // Absent means the engine runs, which is what the route documents as the
+    // default; only an explicit `false` asks for the rules alone.
+    layout: Joi.boolean()
   }).validate(data)
 
 export const triggerCodeValidation = (data: any): Joi.ValidationResult =>

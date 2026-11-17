@@ -47,8 +47,33 @@ async function main() {
       formattedHeader.body.startsWith(header),
       'header indentation must survive formatting'
     )
+    // `layout: false` is the editor's "fix lint issues": the rules run, the
+    // engine does not. The statement stays on the line the author wrote it on,
+    // because re-breaking it is the engine's job and nobody asked for it.
+    const rulesOnly = await request(app)
+      .post('/SASjsApi/code/format')
+      .send({ code: 'data _null_;x=1;   \nrun;\n', layout: false })
+      .expect(200)
+    assert.ok(
+      rulesOnly.body.includes('data _null_;x=1;\n'),
+      `layout: false must not re-break statements, got ${JSON.stringify(rulesOnly.body)}`
+    )
+    assert.ok(
+      !rulesOnly.body.includes('x=1;   '),
+      'layout: false must still apply the rules that can be fixed'
+    )
+
+    const layout = await request(app)
+      .post('/SASjsApi/code/format')
+      .send({ code: 'data _null_;x=1;   \nrun;\n' })
+      .expect(200)
+    assert.ok(
+      layout.body.includes('data _null_;\n  x=1;\n'),
+      `the default must lay the statement out, got ${JSON.stringify(layout.body)}`
+    )
+
     console.log(
-      'Real format API preserves standalone macro calls and header indentation; formatting is idempotent'
+      'Real format API preserves standalone macro calls and header indentation; formatting is idempotent; layout: false applies the rules alone'
     )
   } finally {
     process.chdir(originalCwd)
