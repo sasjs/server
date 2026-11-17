@@ -18,6 +18,7 @@ import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, chromium, Page } from 'playwright'
+import { lintSchemaUrl } from '@sasjs/lint'
 import { createFile, createFolder, fileExists } from '@sasjs/utils'
 import {
   INDENTED_JSON,
@@ -728,7 +729,8 @@ describe('Studio in a browser', () => {
       schemaRequests++
       await route.abort()
     }
-    await page.route('https://raw.githubusercontent.com/**', blockSchema)
+    const schemaOrigin = `${new URL(lintSchemaUrl).origin}/**`
+    await page.route(schemaOrigin, blockSchema)
     await page.goto(
       `${baseUrl()}/studio?filePath=${encodeURIComponent('/.sasjslint')}`
     )
@@ -746,17 +748,17 @@ describe('Studio in a browser', () => {
     // The actual file has this property; the description is supplied by its
     // schema rather than by Monaco's generic JSON language service.
     const property = page.locator('.view-line', { hasText: 'hasDoxygenHeader' })
-    await property.locator('span.mtk20').hover()
+    await property.getByText('hasDoxygenHeader', { exact: false }).hover()
     await page.waitForTimeout(1200)
     expect(
       (await page.locator('.monaco-hover').allTextContents()).join(' ')
-    ).toContain('header')
+    ).toContain('Enforces a Doxygen header at the start of each SAS file')
 
     const editor = page.locator('textarea.inputarea')
     await editor.focus()
     await page.keyboard.press('Control+A')
     await page.keyboard.insertText(
-      '{"$schema":"https://raw.githubusercontent.com/sasjs/lint/main/sasjslint-schema.json",'
+      `{"$schema":${JSON.stringify(lintSchemaUrl)},`
     )
     await page.keyboard.type('"noT')
     await page.keyboard.press('Control+Space')
@@ -781,8 +783,7 @@ describe('Studio in a browser', () => {
     await page.keyboard.insertText(
       JSON.stringify(
         {
-          $schema:
-            'https://raw.githubusercontent.com/sasjs/lint/main/sasjslint-schema.json',
+          $schema: lintSchemaUrl,
           maxLineLength: 'wrong'
         },
         null,
@@ -818,7 +819,7 @@ describe('Studio in a browser', () => {
       }
     }
     visit(embeddedSchema)
-    await page.unroute('https://raw.githubusercontent.com/**', blockSchema)
+    await page.unroute(schemaOrigin, blockSchema)
 
     // Unknown schemas remain blocked, with an honest diagnostic rather than a
     // silent loss of validation. This also guards against arbitrary same-origin
