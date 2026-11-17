@@ -1,4 +1,4 @@
-/* @sasjs/api 0.39.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.43.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -26,10 +26,12 @@ var SASjsApi = (() => {
     ADMIN_SIGNED_IN: () => ADMIN_SIGNED_IN,
     ALWAYS_VISIBLE_ROUTES: () => ALWAYS_VISIBLE_ROUTES,
     APP_CORPUS: () => APP_CORPUS,
+    APP_FOLDERS_ROOT: () => APP_FOLDERS_ROOT,
     APP_MANIFEST: () => APP_MANIFEST,
     APP_STREAM_INDEX: () => APP_STREAM_INDEX,
     AUTH_CONFIG_CORPUS: () => AUTH_CONFIG_CORPUS,
     ApiError: () => ApiError,
+    BACKEND_FOLDER: () => BACKEND_FOLDER,
     BROWSER_INFO: () => BROWSER_INFO,
     BUNDLE_NAME: () => BUNDLE_NAME,
     CODE_CORPUS: () => CODE_CORPUS,
@@ -39,6 +41,7 @@ var SASjsApi = (() => {
     DEFAULT_IDENTITY: () => DEFAULT_IDENTITY,
     DEFAULT_LOG_LINES: () => DEFAULT_LOG_LINES,
     DEFAULT_SESSIONS: () => DEFAULT_SESSIONS,
+    DEPLOYMENT_FILE_ERROR: () => DEPLOYMENT_FILE_ERROR,
     DEPLOY_CORPUS: () => DEPLOY_CORPUS,
     DEPLOY_LIMITS: () => DEPLOY_LIMITS,
     DEPLOY_PAYLOAD_BYTES: () => DEPLOY_PAYLOAD_BYTES,
@@ -48,6 +51,7 @@ var SASjsApi = (() => {
     DRIVE_CORPUS: () => DRIVE_CORPUS,
     EMULATED_HEADER: () => EMULATED_HEADER,
     EMULATED_HEADER_VALUE: () => EMULATED_HEADER_VALUE,
+    FRONTEND_FOLDER: () => FRONTEND_FOLDER,
     HANDLED_ROUTES: () => HANDLED_ROUTES,
     HOME_CORPUS: () => HOME_CORPUS,
     IDENTITY_CORPUS: () => IDENTITY_CORPUS,
@@ -61,6 +65,7 @@ var SASjsApi = (() => {
     MemorySessionRunner: () => MemorySessionRunner,
     NO_SUCH_APP: () => NO_SUCH_APP,
     NO_WEB_BUILD: () => NO_WEB_BUILD,
+    ONE_NAME_ONLY: () => ONE_NAME_ONLY,
     OVERLAY: () => OVERLAY,
     PROVIDER_MANAGED: () => PROVIDER_MANAGED,
     RECORD_CORPUS: () => RECORD_CORPUS,
@@ -79,7 +84,9 @@ var SASjsApi = (() => {
     VIYA_OVERLAY: () => VIYA_OVERLAY,
     VIYA_TABLE: () => VIYA_TABLE,
     VIYA_TARGET_VERSION: () => VIYA_TARGET_VERSION,
+    appRootOf: () => appRootOf,
     appSummary: () => appSummary,
+    assertOneFileName: () => assertOneFileName,
     basename: () => basename,
     cacheControlFor: () => cacheControlFor,
     checkDeployTree: () => checkDeployTree,
@@ -90,6 +97,7 @@ var SASjsApi = (() => {
     createAppStreamService: () => createAppStreamService,
     createAppStreamWebService: () => createAppStreamWebService,
     createAuthConfigService: () => createAuthConfigService,
+    createDeploymentFileService: () => createDeploymentFileService,
     createDirectoryService: () => createDirectoryService,
     createDriveAppStreamStore: () => createDriveAppStreamStore,
     createDriveService: () => createDriveService,
@@ -109,7 +117,9 @@ var SASjsApi = (() => {
     escapeHtml: () => escapeHtml,
     findRoute: () => findRoute,
     findViyaOperation: () => findViyaOperation,
+    frontendFolderOf: () => frontendFolderOf,
     hasBlockedExtension: () => hasBlockedExtension,
+    hasFrontendRoot: () => hasFrontendRoot,
     isApiError: () => isApiError,
     isAppId: () => isAppId,
     isDeployTree: () => isDeployTree,
@@ -508,6 +518,486 @@ var SASjsApi = (() => {
       }
     };
   };
+
+  // src/appstream/identity.ts
+  var normaliseAppLoc = (appLoc) => {
+    if (typeof appLoc !== "string" || appLoc === "")
+      throw new Error(
+        `App location must be a non-empty string, got ${JSON.stringify(appLoc)}.`
+      );
+    const normalised = normaliseDrivePath(appLoc);
+    if (normalised === null)
+      throw new ApiError(400, "appLoc cannot be outside drive.");
+    return normalised;
+  };
+  var newAppId = () => {
+    const webCrypto = globalThis.crypto;
+    if (typeof webCrypto?.randomUUID === "function") return webCrypto.randomUUID();
+    if (typeof webCrypto?.getRandomValues !== "function")
+      throw new Error("No cryptographic source of randomness is available.");
+    const bytes3 = new Uint8Array(16);
+    webCrypto.getRandomValues(bytes3);
+    bytes3[6] = bytes3[6] & 15 | 64;
+    bytes3[8] = bytes3[8] & 63 | 128;
+    const hex = Array.from(bytes3).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20)
+    ].join("-");
+  };
+  var APP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  var isAppId = (value) => typeof value === "string" && APP_ID.test(value);
+
+  // src/appstream/service.ts
+  var APP_FOLDERS_ROOT = "apps";
+  var frontendFolderOf = (name) => `/${APP_FOLDERS_ROOT}/${name}`;
+  var appSummary = (entry) => ({
+    id: entry.id,
+    name: entry.name,
+    url: `/app/${entry.id}/`
+  });
+  var webFolderOf = (value) => {
+    if (typeof value !== "string" || value === "")
+      throw new ApiError(400, '"streamWebFolder" is required');
+    if (value === "." || value === ".." || /[\\/]/.test(value))
+      throw new ApiError(400, "streamWebFolder must be a single path segment.");
+    return value;
+  };
+  var defaultAppName = (appLoc) => {
+    const segment = appLoc.split("/").filter(Boolean).pop();
+    return segment ? segment : "app";
+  };
+  var sameAppLoc = (left, right) => {
+    try {
+      return normaliseAppLoc(left) === normaliseAppLoc(right);
+    } catch (_) {
+      return false;
+    }
+  };
+  var appLocOf = (value) => {
+    try {
+      return normaliseAppLoc(value);
+    } catch (error) {
+      throw new ApiError(400, error.message);
+    }
+  };
+  var hasStreamFolder = (tree, streamWebFolder) => {
+    const members = tree?.members;
+    if (!Array.isArray(members)) return false;
+    const isFolder = (member, name) => {
+      const entry = member;
+      return entry?.type === "folder" && entry?.name === name;
+    };
+    const services = members.find((member) => isFolder(member, "services"));
+    const children = services?.members;
+    return Array.isArray(children) && children.some((member) => isFolder(member, streamWebFolder));
+  };
+  var hasFrontendRoot = (tree) => {
+    const members = tree?.members;
+    if (!Array.isArray(members)) return false;
+    return members.some((member) => {
+      const entry = member;
+      return entry?.type === "file" && entry?.name === "index.html";
+    });
+  };
+  var checkPublishRequest = (request, tree, options = {}) => {
+    const logo = logoOf(request.logo);
+    const frameAncestors = frameAncestorsOf(request.frameAncestors);
+    const timing = request.publishedAt === void 0 ? {} : { publishedAt: request.publishedAt };
+    if (request.streamWebFolder !== void 0) {
+      if (request.appLoc === void 0)
+        throw new ApiError(
+          400,
+          '"appLoc" is required when "streamWebFolder" is stated: the entry keeps its web assets at <appLoc>/services/<streamWebFolder>, so both halves are needed to say where they are.'
+        );
+      const appLoc2 = appLocOf(request.appLoc);
+      if (appLoc2 === "/")
+        throw new ApiError(400, "An app cannot be published at the drive root.");
+      const streamWebFolder = webFolderOf(request.streamWebFolder);
+      if (tree !== void 0 && !hasStreamFolder(tree, streamWebFolder))
+        throw new ApiError(
+          400,
+          `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc2}. Deploy the web assets under services/${streamWebFolder}, or ${options.folderFromManifest ? "correct the folder sasjs.app.json names." : "omit streamWebFolder."}`
+        );
+      return {
+        appLoc: appLoc2,
+        streamWebFolder,
+        ...request.name === void 0 ? {} : { name: nameOf(request.name) },
+        ...logo === void 0 ? {} : { logo },
+        ...frameAncestors === void 0 ? {} : { frameAncestors },
+        ...timing
+      };
+    }
+    if (request.name === void 0)
+      throw new ApiError(
+        400,
+        '"name" is required: an app is published at apps/<name>, so the publish has to say what it is called.'
+      );
+    const name = nameOf(request.name);
+    const appLoc = request.appLoc === void 0 ? void 0 : appLocOf(request.appLoc);
+    if (appLoc === "/")
+      throw new ApiError(400, "An app cannot name the drive root as its backend.");
+    if (tree !== void 0 && !hasFrontendRoot(tree))
+      throw new ApiError(
+        400,
+        `The deployed tree has no "index.html" at its root, so nothing would be published at apps/${name}. Publish the compiled web folder itself, not the folder that holds it.`
+      );
+    return {
+      name,
+      ...appLoc === void 0 ? {} : { appLoc },
+      ...logo === void 0 ? {} : { logo },
+      ...frameAncestors === void 0 ? {} : { frameAncestors },
+      ...timing
+    };
+  };
+  var nameOf = (value) => {
+    if (typeof value !== "string" || value.trim() === "")
+      throw new ApiError(400, '"name" must be a non-empty string');
+    return urlSafeName(value.trim());
+  };
+  var NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/;
+  var NAME_MAX_LENGTH = 64;
+  var RESERVED_NAMES = ["apps.json", "index.html"];
+  var urlSafeName = (name) => {
+    if (name.length > NAME_MAX_LENGTH)
+      throw new ApiError(
+        400,
+        `"name" must be at most ${NAME_MAX_LENGTH} characters, and "${name}" is ${name.length}.`
+      );
+    if (!NAME_PATTERN.test(name))
+      throw new ApiError(
+        400,
+        `"name" must be usable as a URL segment - letters, digits, dot, dash, underscore or tilde, starting with a letter or digit - so "/app/${name}" can be opened. "${name}" is not, because it carries a character that has to be percent-encoded, or a space.`
+      );
+    if (RESERVED_NAMES.includes(name.toLowerCase()))
+      throw new ApiError(
+        400,
+        `"name" cannot be "${name}": the App Stream answers /app/${name} itself, so an app with that name could never be opened by name.`
+      );
+    return name;
+  };
+  var logoOf = (value) => {
+    if (value === void 0) return void 0;
+    if (typeof value !== "string" || value === "")
+      throw new ApiError(400, '"logo" must be a non-empty string');
+    return value;
+  };
+  var frameAncestorsOf = (value) => {
+    if (value === void 0) return void 0;
+    const list = Array.isArray(value) ? value : [value];
+    if (list.length === 0 || list.some((source) => typeof source !== "string" || source === ""))
+      throw new ApiError(
+        400,
+        '"frameAncestors" must be a string or a non-empty list of strings'
+      );
+    return [...list];
+  };
+  var createAppStreamService = (store) => {
+    let queue = Promise.resolve();
+    const mutate = (work) => {
+      const run = queue.then(work, work);
+      queue = run.catch(() => void 0);
+      return run;
+    };
+    const readable = (allow) => store.read().then(
+      (entries) => entries.filter((entry) => allow ? allow(entry) : true).map((entry) => ({ ...entry })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+    );
+    return {
+      list: readable,
+      async get(id) {
+        const entry = (await store.read()).find(
+          (candidate) => candidate.id === id
+        );
+        if (!entry) throw new ApiError(404, "No app is published with that id.");
+        return { ...entry };
+      },
+      async forAppLoc(appLoc) {
+        let normalised;
+        try {
+          normalised = normaliseAppLoc(appLoc);
+        } catch (_) {
+          return void 0;
+        }
+        const entry = (await store.read()).find(
+          (candidate) => candidate.streamWebFolder !== void 0 && candidate.appLoc !== void 0 && sameAppLoc(candidate.appLoc, normalised)
+        );
+        return entry ? { ...entry } : void 0;
+      },
+      publish(request) {
+        return mutate(async () => {
+          const checked = checkPublishRequest(request);
+          const entries = await store.read();
+          const legacy = checked.streamWebFolder !== void 0;
+          const sameTarget = (candidate) => legacy ? candidate.streamWebFolder !== void 0 && candidate.appLoc !== void 0 && sameAppLoc(candidate.appLoc, checked.appLoc) : candidate.streamWebFolder === void 0 && candidate.name === checked.name;
+          const existing = entries.find(sameTarget);
+          const logo = checked.logo;
+          const frameAncestors = checked.frameAncestors;
+          const name = legacy ? checked.name ?? existing?.name ?? defaultAppName(checked.appLoc) : checked.name;
+          if (!legacy || checked.name !== void 0) {
+            const clash = entries.find(
+              (candidate) => candidate !== existing && candidate.name.toLowerCase() === name.toLowerCase()
+            );
+            if (clash)
+              throw new ApiError(
+                409,
+                `The name "${name}" is already the address of the app at ${clash.appLoc ?? frontendFolderOf(clash.name)}. An app's name is how it opens (/app/${name}), and two apps holding one name would answer an ambiguous lookup with nothing, so publish this one under a different name.`
+              );
+          }
+          const entry = {
+            id: existing ? existing.id : newAppId(),
+            // the label is the one field a redeploy inherits: everything else is
+            // what this publish states
+            name,
+            ...checked.appLoc === void 0 ? {} : { appLoc: checked.appLoc },
+            ...checked.streamWebFolder === void 0 ? {} : { streamWebFolder: checked.streamWebFolder },
+            ...logo === void 0 ? {} : { logo },
+            ...frameAncestors === void 0 ? {} : { frameAncestors },
+            publishedAt: checked.publishedAt ?? (/* @__PURE__ */ new Date()).toISOString()
+          };
+          await store.write([
+            ...entries.filter((candidate) => !sameTarget(candidate)),
+            entry
+          ]);
+          return { ...entry };
+        });
+      },
+      unpublish(id) {
+        return mutate(async () => {
+          const entries = await store.read();
+          const index = entries.findIndex((entry) => entry.id === id);
+          if (index === -1)
+            throw new ApiError(404, "No app is published with that id.");
+          const [removed] = entries.splice(index, 1);
+          await store.write(entries);
+          return { ...removed };
+        });
+      }
+    };
+  };
+  var MemoryAppStreamStore = class {
+    constructor(entries = []) {
+      this.entries = entries.map((entry) => ({ ...entry }));
+    }
+    async read() {
+      return this.entries.map((entry) => ({ ...entry }));
+    }
+    async write(entries) {
+      this.entries = entries.map((entry) => ({ ...entry }));
+    }
+  };
+
+  // src/appstream/web.ts
+  var DEFAULT_APP_PATH = "/app";
+  var NO_SUCH_APP = "There's no App Stream available here.";
+  var ESCAPES = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  };
+  var escapeHtml = (value) => value.replace(/[&<>"']/g, (character) => ESCAPES[character]);
+  var CONTENT_TYPES = {
+    html: "text/html; charset=utf-8",
+    htm: "text/html; charset=utf-8",
+    js: "text/javascript; charset=utf-8",
+    mjs: "text/javascript; charset=utf-8",
+    css: "text/css; charset=utf-8",
+    json: "application/json; charset=utf-8",
+    map: "application/json; charset=utf-8",
+    txt: "text/plain; charset=utf-8",
+    svg: "image/svg+xml",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    ico: "image/x-icon",
+    woff: "font/woff",
+    woff2: "font/woff2",
+    ttf: "font/ttf",
+    otf: "font/otf",
+    wasm: "application/wasm",
+    pdf: "application/pdf",
+    zip: "application/zip"
+  };
+  var contentTypeFor = (filePath2) => {
+    const extension = filePath2.slice(filePath2.lastIndexOf(".") + 1).toLowerCase();
+    return CONTENT_TYPES[extension] ?? "application/octet-stream";
+  };
+  var cacheControlFor = (filePath2) => /\.[0-9a-f]{8,}\.[A-Za-z0-9]+$/.test(filePath2) ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate";
+  var html = (status, markup) => ({
+    status,
+    body: markup,
+    contentType: "text/html; charset=utf-8"
+  });
+  var json = (status, body) => ({
+    status,
+    body: JSON.stringify(body),
+    contentType: "application/json; charset=utf-8"
+  });
+  var noSuchApp = () => html(404, `<!doctype html><html><body>${NO_SUCH_APP}</body></html>`);
+  var methodNotAllowed = (allowed) => ({
+    status: 405,
+    body: JSON.stringify({ status: "failure", message: `${allowed} only.` }),
+    contentType: "application/json; charset=utf-8",
+    headers: { allow: allowed }
+  });
+  var decoded = (segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch (_) {
+      return void 0;
+    }
+  };
+  var appRootOf = (entry) => entry.streamWebFolder !== void 0 && entry.appLoc !== void 0 ? `${entry.appLoc}/services/${entry.streamWebFolder}` : frontendFolderOf(entry.name);
+  var createAppStreamWebService = (appStream, drive, options = {}) => {
+    const base = (options.basePath ?? DEFAULT_APP_PATH).replace(/\/+$/, "");
+    const title = options.title ?? "SASjs App Stream";
+    const urlOf = (entry) => `${base}/${entry.id}/`;
+    const rowOf = (entry) => ({
+      id: entry.id,
+      name: entry.name,
+      appLoc: entry.appLoc ?? null,
+      logo: entry.logo === void 0 ? null : `${urlOf(entry)}${entry.logo}`,
+      url: urlOf(entry),
+      publishedAt: entry.publishedAt ?? null
+    });
+    const apps = async (allow) => {
+      const entries = await appStream.list(allow);
+      return { apps: entries.map(rowOf) };
+    };
+    const landing = async (allow) => {
+      const { apps: rows } = await apps(allow);
+      const tiles = rows.length ? `<ul class="apps">${rows.map(
+        (row) => `<li><a href="${escapeHtml(row.url)}">${escapeHtml(row.name)}</a><span class="loc">${escapeHtml(
+          row.appLoc ?? frontendFolderOf(row.name)
+        )}</span></li>`
+      ).join("")}</ul>` : '<p class="empty">No apps have been published yet.</p>';
+      return html(
+        200,
+        [
+          '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+          '<meta name="viewport" content="width=device-width,initial-scale=1">',
+          `<title>${escapeHtml(title)}</title>`,
+          "<style>",
+          "body{font-family:system-ui,sans-serif;margin:2rem;color:#1f2430}",
+          "h1{font-size:1.4rem}",
+          "ul.apps{list-style:none;padding:0;display:grid;gap:.75rem;max-width:40rem}",
+          "ul.apps li{display:flex;flex-direction:column;gap:.15rem;padding:.75rem 1rem;",
+          "border:1px solid #d8dee9;border-radius:.5rem}",
+          "ul.apps a{font-weight:600;text-decoration:none;color:#0b5cad}",
+          ".loc{font-size:.8rem;color:#5b6472;font-family:ui-monospace,monospace}",
+          ".empty{color:#5b6472}",
+          "</style></head><body>",
+          `<h1>${escapeHtml(title)}</h1>`,
+          tiles,
+          "</body></html>"
+        ].join("")
+      );
+    };
+    const resolve = async (segment, allow) => {
+      const entries = await appStream.list(allow);
+      const byId2 = entries.find((entry) => entry.id === segment);
+      if (byId2) return byId2;
+      const byName = entries.filter((entry) => entry.name === segment);
+      return byName.length === 1 ? byName[0] : void 0;
+    };
+    const asset = async (entry, segments) => {
+      const parts = segments.map(decoded);
+      if (parts.some((part) => part === void 0)) return noSuchApp();
+      const relative = parts.join("/") || "index.html";
+      try {
+        const file = await drive.read(`${appRootOf(entry)}/${relative}`);
+        return {
+          status: 200,
+          body: file.contents,
+          contentType: contentTypeFor(relative),
+          headers: { "cache-control": cacheControlFor(relative) }
+        };
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 404 || error.status === 400))
+          return noSuchApp();
+        throw error;
+      }
+    };
+    return {
+      apps,
+      landing,
+      async request({ method, path, allow }) {
+        const clean = (path.split(/[?#]/)[0] || "/").replace(/\/{2,}/g, "/");
+        const relative = base === "" ? clean : clean === base ? "/" : clean.startsWith(`${base}/`) ? clean.slice(base.length) : null;
+        if (relative === null) return noSuchApp();
+        if (relative === "" || relative === "/" || relative === "/index.html") {
+          if (method !== "GET") return methodNotAllowed("GET");
+          return landing(allow);
+        }
+        if (relative === "/apps.json") {
+          if (method !== "GET") return methodNotAllowed("GET");
+          return json(200, await apps(allow));
+        }
+        const segments = relative.split("/").filter(Boolean);
+        const key = decoded(segments[0]);
+        if (key === void 0) return noSuchApp();
+        if (method === "DELETE") {
+          const entry2 = await resolve(key, allow);
+          if (!entry2) return noSuchApp();
+          const removed = await appStream.unpublish(entry2.id);
+          return json(200, { status: "success", app: rowOf(removed) });
+        }
+        if (method !== "GET") return methodNotAllowed("GET, DELETE");
+        const entry = await resolve(key, allow);
+        if (!entry) return noSuchApp();
+        if (segments.length === 1 && !relative.endsWith("/"))
+          return { status: 301, location: urlOf(entry) };
+        return asset(entry, segments.slice(1));
+      }
+    };
+  };
+
+  // src/drive/deploymentFile.ts
+  var DEPLOYMENT_FILE_ERROR = "Parameter Error\nFile error";
+  var ONE_NAME_ONLY = 'Exactly one of "_filePath" and "_FILE" may be given.';
+  var assertOneFileName = (query) => {
+    if (query._filePath !== void 0 && query._FILE !== void 0)
+      throw new ApiError(400, ONE_NAME_ONLY);
+  };
+  var notFound = (error) => isApiError(error) && error.status === 404 || // a structural read, not `NodeJS.ErrnoException`: this module is in the
+  // browser build, which has no node types at all
+  error?.code === "ENOENT";
+  var notThere = () => ({
+    status: 202,
+    contentType: "text/plain; charset=utf-8",
+    body: DEPLOYMENT_FILE_ERROR
+  });
+  var createDeploymentFileService = (store) => ({
+    async read(input) {
+      const checked = checkFilePath(input);
+      if ("reason" in checked)
+        throw checked.reason === "extension" ? new ApiError(400, "Invalid file extension") : new ApiError(400, `Can't get file outside drive.`);
+      if (isRoot(checked.path))
+        throw new ApiError(400, `Can't get file outside drive.`);
+      const path = checked.path;
+      try {
+        if ((await store.stat(path)).directory) return notThere();
+        return {
+          status: 200,
+          contentType: contentTypeFor(path),
+          // lower case, matching the app stream's own answer (src/appstream/web.ts):
+          // the names are case-insensitive in HTTP but not in a plain object, and a
+          // host copying one into the other would lose a policy that mattered
+          headers: { "cache-control": cacheControlFor(path) },
+          body: await store.read(path)
+        };
+      } catch (error) {
+        if (notFound(error)) return notThere();
+        throw error;
+      }
+    }
+  });
 
   // src/drive/memory-store.ts
   var MemoryDriveStore = class {
@@ -1213,7 +1703,13 @@ var SASjsApi = (() => {
         {
           name: "appLoc",
           in: "body",
-          required: true,
+          required: false,
+          type: "string"
+        },
+        {
+          name: "name",
+          in: "body",
+          required: false,
           type: "string"
         },
         {
@@ -1274,6 +1770,12 @@ var SASjsApi = (() => {
       tag: "Drive",
       summary: "Deploy an uploaded file to SASjs Drive",
       params: [
+        {
+          name: "name",
+          in: "query",
+          required: false,
+          type: "string"
+        },
         {
           name: "appLoc",
           in: "query",
@@ -1371,7 +1873,13 @@ var SASjsApi = (() => {
         {
           name: "_filePath",
           in: "query",
-          required: true,
+          required: false,
+          type: "string"
+        },
+        {
+          name: "_FILE",
+          in: "query",
+          required: false,
           type: "string"
         }
       ],
@@ -1382,8 +1890,12 @@ var SASjsApi = (() => {
           description: "The contents of the file"
         },
         {
+          status: 202,
+          description: "A streamed file is not there: Parameter Error / File error"
+        },
+        {
           status: 400,
-          description: "Can't get file outside drive"
+          description: "A path outside the drive, a refused extension, or a request naming neither or both"
         },
         {
           status: 404,
@@ -2818,12 +3330,11 @@ var SASjsApi = (() => {
       responses: { 200: "OK!" }
     },
     // Admin - the host's own process and files, over the reports it supplies.
-    // The administrator check is the host's mount point (sasjs/server puts
-    // authenticateAccessToken and verifyAdmin in front of all three), so its 401
-    // - and the 500 a genuine failure answers - are host-only statuses.
+    // The administrator check is the package's, so its 401 is a case like any
+    // other; the 500 a genuine failure answers stays the host's.
     "GET /SASjsApi/admin/diagnostics": {
       implemented: true,
-      hostResponses: [401, 500],
+      hostResponses: [500],
       responses: {
         200: {
           build: { version: "", gitHash: "", buildDate: null },
@@ -2863,14 +3374,14 @@ var SASjsApi = (() => {
     },
     "GET /SASjsApi/admin/logs": {
       implemented: true,
-      hostResponses: [401, 500],
+      hostResponses: [500],
       responses: { 200: { files: [] } }
     },
     "GET /SASjsApi/admin/logs/{fileName}": {
       implemented: true,
       // 400 and 404 are the name rule's, and this package answers them before the
       // host is asked for anything
-      hostResponses: [401, 500],
+      hostResponses: [500],
       responses: {
         200: {
           fileName: "",
@@ -2949,7 +3460,16 @@ var SASjsApi = (() => {
     },
     // Drive - the file and folder rules, and the three deploy routes
     // The body is the file itself, so there is nothing to annotate
-    "GET /SASjsApi/drive/file": { implemented: true },
+    // The `_FILE=` read needs one capability the plain drive read does not: a
+    // host that serves a streamed deployment must supply the typed read, and one
+    // that does not answers 501 naming it - which is what a capability is for.
+    // (No route documents 501; the answer a host gives for a capability it lacks
+    // is outside the contract, and this field is where the package says it may
+    // happen.)
+    "GET /SASjsApi/drive/file": {
+      implemented: true,
+      capabilities: ["storage", "deploymentFile"]
+    },
     "POST /SASjsApi/drive/file": {
       implemented: true,
       responses: { 200: success, 409: "File already exists." }
@@ -6028,245 +6548,10 @@ var SASjsApi = (() => {
     }
   ];
 
-  // src/appstream/identity.ts
-  var normaliseAppLoc = (appLoc) => {
-    if (typeof appLoc !== "string" || appLoc === "")
-      throw new Error(
-        `App location must be a non-empty string, got ${JSON.stringify(appLoc)}.`
-      );
-    const normalised = normaliseDrivePath(appLoc);
-    if (normalised === null)
-      throw new ApiError(400, "appLoc cannot be outside drive.");
-    return normalised;
-  };
-  var newAppId = () => {
-    const webCrypto = globalThis.crypto;
-    if (typeof webCrypto?.randomUUID === "function") return webCrypto.randomUUID();
-    if (typeof webCrypto?.getRandomValues !== "function")
-      throw new Error("No cryptographic source of randomness is available.");
-    const bytes3 = new Uint8Array(16);
-    webCrypto.getRandomValues(bytes3);
-    bytes3[6] = bytes3[6] & 15 | 64;
-    bytes3[8] = bytes3[8] & 63 | 128;
-    const hex = Array.from(bytes3).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-    return [
-      hex.slice(0, 8),
-      hex.slice(8, 12),
-      hex.slice(12, 16),
-      hex.slice(16, 20),
-      hex.slice(20)
-    ].join("-");
-  };
-  var APP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-  var isAppId = (value) => typeof value === "string" && APP_ID.test(value);
-
-  // src/appstream/service.ts
-  var appSummary = (entry) => ({
-    id: entry.id,
-    name: entry.name,
-    url: `/app/${entry.id}/`
-  });
-  var webFolderOf = (value) => {
-    if (typeof value !== "string" || value === "")
-      throw new ApiError(400, '"streamWebFolder" is required');
-    if (value === "." || value === ".." || /[\\/]/.test(value))
-      throw new ApiError(400, "streamWebFolder must be a single path segment.");
-    return value;
-  };
-  var defaultAppName = (appLoc) => {
-    const segment = appLoc.split("/").filter(Boolean).pop();
-    return segment ? segment : "app";
-  };
-  var sameAppLoc = (left, right) => {
-    try {
-      return normaliseAppLoc(left) === normaliseAppLoc(right);
-    } catch (_) {
-      return false;
-    }
-  };
-  var appLocOf = (value) => {
-    try {
-      return normaliseAppLoc(value);
-    } catch (error) {
-      throw new ApiError(400, error.message);
-    }
-  };
-  var hasStreamFolder = (tree, streamWebFolder) => {
-    const members = tree?.members;
-    if (!Array.isArray(members)) return false;
-    const isFolder = (member, name) => {
-      const entry = member;
-      return entry?.type === "folder" && entry?.name === name;
-    };
-    const services = members.find((member) => isFolder(member, "services"));
-    const children = services?.members;
-    return Array.isArray(children) && children.some((member) => isFolder(member, streamWebFolder));
-  };
-  var checkPublishRequest = (request, tree, options = {}) => {
-    const appLoc = appLocOf(request.appLoc);
-    if (appLoc === "/")
-      throw new ApiError(400, "An app cannot be published at the drive root.");
-    const logo = logoOf(request.logo);
-    const frameAncestors = frameAncestorsOf(request.frameAncestors);
-    const streamWebFolder = webFolderOf(request.streamWebFolder);
-    if (tree !== void 0 && !hasStreamFolder(tree, streamWebFolder))
-      throw new ApiError(
-        400,
-        `The deployed tree has no "services/${streamWebFolder}" folder, so nothing would be published at ${appLoc}. Deploy the web assets under services/${streamWebFolder}, or ${options.folderFromManifest ? "correct the folder sasjs.app.json names." : "omit streamWebFolder."}`
-      );
-    return {
-      appLoc,
-      streamWebFolder,
-      ...request.name === void 0 ? {} : { name: nameOf(request.name, appLoc) },
-      ...logo === void 0 ? {} : { logo },
-      ...frameAncestors === void 0 ? {} : { frameAncestors },
-      ...request.publishedAt === void 0 ? {} : { publishedAt: request.publishedAt }
-    };
-  };
-  var nameOf = (value, appLoc) => {
-    if (value === void 0) return defaultAppName(appLoc);
-    if (typeof value !== "string" || value.trim() === "")
-      throw new ApiError(400, '"name" must be a non-empty string');
-    return urlSafeName(value.trim());
-  };
-  var NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/;
-  var NAME_MAX_LENGTH = 64;
-  var RESERVED_NAMES = ["apps.json", "index.html"];
-  var urlSafeName = (name) => {
-    if (name.length > NAME_MAX_LENGTH)
-      throw new ApiError(
-        400,
-        `"name" must be at most ${NAME_MAX_LENGTH} characters, and "${name}" is ${name.length}.`
-      );
-    if (!NAME_PATTERN.test(name))
-      throw new ApiError(
-        400,
-        `"name" must be usable as a URL segment - letters, digits, dot, dash, underscore or tilde, starting with a letter or digit - so "/app/${name}" can be opened. "${name}" is not, because it carries a character that has to be percent-encoded, or a space.`
-      );
-    if (RESERVED_NAMES.includes(name.toLowerCase()))
-      throw new ApiError(
-        400,
-        `"name" cannot be "${name}": the App Stream answers /app/${name} itself, so an app with that name could never be opened by name.`
-      );
-    return name;
-  };
-  var logoOf = (value) => {
-    if (value === void 0) return void 0;
-    if (typeof value !== "string" || value === "")
-      throw new ApiError(400, '"logo" must be a non-empty string');
-    return value;
-  };
-  var frameAncestorsOf = (value) => {
-    if (value === void 0) return void 0;
-    const list = Array.isArray(value) ? value : [value];
-    if (list.length === 0 || list.some((source) => typeof source !== "string" || source === ""))
-      throw new ApiError(
-        400,
-        '"frameAncestors" must be a string or a non-empty list of strings'
-      );
-    return [...list];
-  };
-  var createAppStreamService = (store) => {
-    let queue = Promise.resolve();
-    const mutate = (work) => {
-      const run = queue.then(work, work);
-      queue = run.catch(() => void 0);
-      return run;
-    };
-    const readable = (allow) => store.read().then(
-      (entries) => entries.filter((entry) => allow ? allow(entry) : true).map((entry) => ({ ...entry })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
-    );
-    return {
-      list: readable,
-      async get(id) {
-        const entry = (await store.read()).find(
-          (candidate) => candidate.id === id
-        );
-        if (!entry) throw new ApiError(404, "No app is published with that id.");
-        return { ...entry };
-      },
-      async forAppLoc(appLoc) {
-        let normalised;
-        try {
-          normalised = normaliseAppLoc(appLoc);
-        } catch (_) {
-          return void 0;
-        }
-        const entry = (await store.read()).find(
-          (candidate) => sameAppLoc(candidate.appLoc, normalised)
-        );
-        return entry ? { ...entry } : void 0;
-      },
-      publish(request) {
-        return mutate(async () => {
-          const checked = checkPublishRequest(request);
-          const appLoc = checked.appLoc;
-          const streamWebFolder = checked.streamWebFolder;
-          const entries = await store.read();
-          const existing = entries.find(
-            (entry2) => sameAppLoc(entry2.appLoc, appLoc)
-          );
-          const logo = checked.logo;
-          const frameAncestors = checked.frameAncestors;
-          const statedName = checked.name;
-          const name = statedName !== void 0 ? nameOf(statedName, appLoc) : existing?.name ?? nameOf(void 0, appLoc);
-          if (statedName !== void 0) {
-            const clash = entries.find(
-              (candidate) => !sameAppLoc(candidate.appLoc, appLoc) && candidate.name.toLowerCase() === name.toLowerCase()
-            );
-            if (clash)
-              throw new ApiError(
-                409,
-                `The name "${name}" is already the address of the app published at ${clash.appLoc}. A stated name is how the app opens (/app/${name}), and two apps holding one name would answer an ambiguous lookup with nothing, so publish this one under a different name.`
-              );
-          }
-          const entry = {
-            id: existing ? existing.id : newAppId(),
-            // the label is the one field a redeploy inherits: everything else is
-            // what this publish states
-            name,
-            appLoc,
-            streamWebFolder,
-            ...logo === void 0 ? {} : { logo },
-            ...frameAncestors === void 0 ? {} : { frameAncestors },
-            publishedAt: checked.publishedAt ?? (/* @__PURE__ */ new Date()).toISOString()
-          };
-          await store.write([
-            ...entries.filter(
-              (candidate) => !sameAppLoc(candidate.appLoc, appLoc)
-            ),
-            entry
-          ]);
-          return { ...entry };
-        });
-      },
-      unpublish(id) {
-        return mutate(async () => {
-          const entries = await store.read();
-          const index = entries.findIndex((entry) => entry.id === id);
-          if (index === -1)
-            throw new ApiError(404, "No app is published with that id.");
-          const [removed] = entries.splice(index, 1);
-          await store.write(entries);
-          return { ...removed };
-        });
-      }
-    };
-  };
-  var MemoryAppStreamStore = class {
-    constructor(entries = []) {
-      this.entries = entries.map((entry) => ({ ...entry }));
-    }
-    async read() {
-      return this.entries.map((entry) => ({ ...entry }));
-    }
-    async write(entries) {
-      this.entries = entries.map((entry) => ({ ...entry }));
-    }
-  };
-
   // src/appstream/bundle.ts
   var APP_MANIFEST = "sasjs.app.json";
+  var FRONTEND_FOLDER = "web";
+  var BACKEND_FOLDER = "backend";
   var isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
   var text = (value, field) => {
     if (value === void 0) return void 0;
@@ -6280,14 +6565,15 @@ var SASjsApi = (() => {
   var parseAppManifest = (value) => {
     if (!isObject(value))
       throw new ApiError(400, `${APP_MANIFEST} must be an object.`);
+    const name = text(value.name, "name");
+    const appLoc = text(value.appLoc, "appLoc");
     const streamWebFolder = text(value.streamWebFolder, "streamWebFolder");
-    if (streamWebFolder === void 0)
+    const logo = text(value.logo, "logo");
+    if (streamWebFolder !== void 0 && /[\\/]/.test(streamWebFolder))
       throw new ApiError(
         400,
-        `${APP_MANIFEST} must state "streamWebFolder": the folder under services/ holding the compiled app.`
+        `"streamWebFolder" in ${APP_MANIFEST} must be a single path segment.`
       );
-    const name = text(value.name, "name");
-    const logo = text(value.logo, "logo");
     const frameAncestors = value.frameAncestors;
     if (frameAncestors !== void 0 && (typeof frameAncestors !== "string" || frameAncestors === "") && !(Array.isArray(frameAncestors) && frameAncestors.length > 0 && frameAncestors.every(
       (source) => typeof source === "string" && source !== ""
@@ -6298,50 +6584,80 @@ var SASjsApi = (() => {
       );
     return {
       ...name === void 0 ? {} : { name },
-      streamWebFolder,
+      ...appLoc === void 0 ? {} : { appLoc },
+      ...streamWebFolder === void 0 ? {} : { streamWebFolder },
       ...logo === void 0 ? {} : { logo },
       ...frameAncestors === void 0 ? {} : { frameAncestors }
     };
+  };
+  var folderNamed = (members, name) => members.find(
+    (member) => isObject(member) && member.type === "folder" && member.name === name
+  );
+  var contentsOf = (member) => {
+    const members = member?.members;
+    return Array.isArray(members) ? { members } : void 0;
   };
   var splitAppBundle = (tree) => {
     if (!isObject(tree) || !Array.isArray(tree.members))
       return { tree };
     const members = tree.members;
     const at = members.findIndex(
-      (member2) => isObject(member2) && member2.type === "file" && member2.name === APP_MANIFEST
+      (member) => isObject(member) && member.type === "file" && member.name === APP_MANIFEST
     );
-    if (at === -1) return { tree };
-    const member = members[at];
-    if (typeof member.code !== "string")
-      throw new ApiError(400, `${APP_MANIFEST} carries no text.`);
-    let parsed;
-    try {
-      parsed = JSON.parse(member.code);
-    } catch (error) {
-      throw new ApiError(
-        400,
-        `${APP_MANIFEST} is not valid JSON: ${error.message}`
-      );
+    const withoutManifest = at === -1 ? members : members.filter((_, index) => index !== at);
+    let manifest;
+    if (at !== -1) {
+      const member = members[at];
+      if (typeof member.code !== "string")
+        throw new ApiError(400, `${APP_MANIFEST} carries no text.`);
+      const source = member.encoding === "base64" ? new TextDecoder().decode(decodeBase64(member.code)) : member.code;
+      let parsed;
+      try {
+        parsed = JSON.parse(source);
+      } catch (error) {
+        throw new ApiError(
+          400,
+          `${APP_MANIFEST} is not valid JSON: ${error.message}`
+        );
+      }
+      manifest = parseAppManifest(parsed);
     }
+    const rest = { ...tree, members: withoutManifest };
+    const web = folderNamed(withoutManifest, FRONTEND_FOLDER);
+    const backendFolder = folderNamed(withoutManifest, BACKEND_FOLDER);
+    if (web === void 0 && backendFolder === void 0 && manifest === void 0)
+      return { tree };
+    if (manifest?.streamWebFolder !== void 0) return { tree: rest, manifest };
+    const backend = contentsOf(backendFolder);
+    const ownFiles = withoutManifest.filter((member) => member !== backendFolder);
+    const frontend = contentsOf(web) ?? (ownFiles.length === 0 ? void 0 : { members: ownFiles });
     return {
-      tree: {
-        ...tree,
-        members: members.filter((_, index) => index !== at)
-      },
-      manifest: parseAppManifest(parsed)
+      tree: rest,
+      ...frontend === void 0 ? {} : { frontend },
+      ...backend === void 0 ? {} : { backend },
+      manifest
     };
   };
-  var publishRequestFor = (deploy, manifest) => {
+  var publishRequestFor = (deploy, manifest, options = {}) => {
     const streamWebFolder = deploy.streamWebFolder ?? manifest?.streamWebFolder;
-    if (streamWebFolder === void 0) return void 0;
-    const name = deploy.streamServiceName ?? manifest?.name;
+    const appLoc = deploy.appLoc ?? manifest?.appLoc;
+    const name = deploy.name ?? deploy.streamServiceName ?? manifest?.name;
     const logo = deploy.streamLogo ?? manifest?.logo;
+    const frameAncestors = manifest?.frameAncestors;
+    if (streamWebFolder !== void 0)
+      return {
+        ...appLoc === void 0 ? {} : { appLoc },
+        streamWebFolder,
+        ...name === void 0 ? {} : { name },
+        ...logo === void 0 ? {} : { logo },
+        ...frameAncestors === void 0 ? {} : { frameAncestors }
+      };
+    if (name === void 0 && !options.packaged) return void 0;
     return {
-      appLoc: deploy.appLoc,
-      streamWebFolder,
       ...name === void 0 ? {} : { name },
+      ...appLoc === void 0 ? {} : { appLoc },
       ...logo === void 0 ? {} : { logo },
-      ...manifest?.frameAncestors === void 0 ? {} : { frameAncestors: manifest.frameAncestors }
+      ...frameAncestors === void 0 ? {} : { frameAncestors }
     };
   };
 
@@ -6353,6 +6669,16 @@ var SASjsApi = (() => {
     "POST /SASjsApi/stp/trigger",
     "POST /SASjsApi/code/execute",
     "POST /SASjsApi/code/trigger"
+  ];
+  var GRANTED_RUN_ROUTES = [
+    "GET /SASjsApi/stp/execute",
+    "POST /SASjsApi/stp/execute",
+    "POST /SASjsApi/code/execute"
+  ];
+  var ADMIN_ROUTES = [
+    "GET /SASjsApi/admin/diagnostics",
+    "GET /SASjsApi/admin/logs",
+    "GET /SASjsApi/admin/logs/{fileName}"
   ];
   var given = (value) => typeof value === "string" && value !== "" ? value : void 0;
   var replaceOf = (value) => {
@@ -6394,9 +6720,25 @@ var SASjsApi = (() => {
     const { drive, identity, records, code } = services;
     const identityScoped = ["User", "Group", "Permission", "Client"].includes(route.tag) || routeId === "PATCH /SASjsApi/auth/updatePassword";
     const runtimeScoped = RUN_ROUTES.includes(routeId);
-    if (identityScoped && records || runtimeScoped && services.runtime) {
-      const subject = request.subject ?? (identity ? await identity.authenticate(request.token) : void 0);
-      if (!subject) {
+    const adminScoped = ADMIN_ROUTES.includes(routeId) && Boolean(services.admin);
+    const grantScoped = Boolean(records) && GRANTED_RUN_ROUTES.includes(routeId);
+    if (adminScoped && !records)
+      throw new ApiError(
+        501,
+        `This host has no record service, so it cannot answer ${routeId}.`
+      );
+    let subject = request.subject;
+    let subjectResolved = Boolean(request.subject);
+    const caller = async () => {
+      if (!subjectResolved) {
+        subject = identity ? await identity.authenticate(request.token) : void 0;
+        subjectResolved = true;
+      }
+      return subject;
+    };
+    if (identityScoped && records || runtimeScoped && services.runtime || adminScoped || grantScoped) {
+      const callerSubject = await caller();
+      if (!callerSubject) {
         if (!identity)
           throw new ApiError(
             501,
@@ -6404,6 +6746,13 @@ var SASjsApi = (() => {
           );
         throw new ApiError(401, "Unauthorized");
       }
+      if (adminScoped && !await records.mayAdminister(callerSubject)) {
+        if (!await records.mayAct(callerSubject))
+          throw new ApiError(401, "Unauthorized");
+        throw new ApiError(401, "Admin account required");
+      }
+      if (grantScoped && !await records.mayUseRoute(callerSubject, route.path))
+        throw new ApiError(401, "Unauthorized");
     }
     validate(route, request);
     const query = request.query || {};
@@ -6444,10 +6793,6 @@ var SASjsApi = (() => {
           `This host has no record service, so it cannot answer ${routeId}.`
         );
       return records;
-    };
-    const caller = async () => {
-      if (request.subject) return request.subject;
-      return identity?.authenticate(request.token);
     };
     if (routeId.startsWith("POST /SASjsApi/auth/") || routeId.startsWith("POST /SASLogon/") || routeId === "GET /SASLogon/logout" || routeId === "GET /SASjsApi/session") {
       if (!identity)
@@ -6517,10 +6862,11 @@ var SASjsApi = (() => {
       }
       // ------------------------------------------------- a host's own reports
       //
-      // The administrator middleware is the host's (sasjs/server mounts
-      // authenticateAccessToken and verifyAdmin ahead of all of these), which is
-      // why their 401 is marked host-only in the overlay. The package answers a
-      // body, and for a log tail the refusals that belong to the name rule.
+      // The administrator check is the package's, from the caller the transport
+      // resolved: `mayAdminister` is the decision `verifyAdmin` makes on a server,
+      // asked here so a browser host that supplies these reports cannot serve them
+      // to anyone who asks. What stays the host's is the body, and for a log tail
+      // the refusals that belong to the name rule.
       case "GET /SASjsApi/admin/diagnostics": {
         if (!services.admin)
           throw new ApiError(
@@ -6568,7 +6914,24 @@ var SASjsApi = (() => {
         return { status: 200, body: await services.directory.synchronise() };
       }
       case "GET /SASjsApi/drive/file": {
-        const file = await drive.read(String(query._filePath || ""));
+        assertOneFileName(query);
+        if (query._FILE !== void 0) {
+          if (!services.deploymentFile)
+            throw new ApiError(
+              501,
+              `This host has no deployment-file service, so it cannot answer ${routeId}.`
+            );
+          const page = await services.deploymentFile.read(String(query._FILE));
+          return {
+            status: page.status,
+            contents: page.body,
+            contentType: page.contentType,
+            headers: page.headers
+          };
+        }
+        if (query._filePath === void 0)
+          throw new ApiError(400, '"_filePath" is required');
+        const file = await drive.read(String(query._filePath));
         return { status: 200, contents: file.contents };
       }
       case "POST /SASjsApi/drive/file":
@@ -6610,21 +6973,60 @@ var SASjsApi = (() => {
       case "POST /SASjsApi/drive/deploy/upload":
       case "POST /SASjsApi/drive/deploy": {
         const bundle = splitAppBundle(body.fileTree);
+        const packaged = bundle.frontend !== void 0;
         const isUpload = routeId === "POST /SASjsApi/drive/deploy/upload";
         const setting = (name) => isUpload ? given(query[name]) ?? body?.[name] : body?.[name];
-        const appLoc = String(setting("appLoc") ?? "");
+        const statedAppLoc = given(setting("appLoc"));
+        const appLoc = typeof statedAppLoc === "string" ? statedAppLoc : void 0;
         const requested = services.appStream ? publishRequestFor(
           {
+            name: given(setting("name")),
             appLoc,
             streamWebFolder: given(setting("streamWebFolder")),
             streamServiceName: given(setting("streamServiceName")),
             streamLogo: given(setting("streamLogo"))
           },
-          bundle.manifest
+          bundle.manifest,
+          { packaged }
         ) : void 0;
         const folderFromManifest = requested?.streamWebFolder !== void 0 && given(setting("streamWebFolder")) === void 0 && bundle.manifest?.streamWebFolder !== void 0;
-        const publish = requested === void 0 ? void 0 : checkPublishRequest(requested, bundle.tree, { folderFromManifest });
+        const publish = requested === void 0 ? void 0 : checkPublishRequest(
+          requested,
+          packaged ? bundle.frontend : bundle.tree,
+          { folderFromManifest }
+        );
+        if (packaged && publish === void 0)
+          throw new ApiError(
+            501,
+            `This host has no app stream, so it cannot publish the frontend this bundle carries.`
+          );
+        if (publish !== void 0 && publish.streamWebFolder === void 0) {
+          if (bundle.backend !== void 0 && publish.appLoc === void 0)
+            throw new ApiError(
+              400,
+              'This bundle carries a "backend" folder but names no "appLoc" for it: state the backend folder in sasjs.app.json, or in the request.'
+            );
+          if (bundle.backend !== void 0)
+            await drive.deploy(publish.appLoc, bundle.backend, {
+              replace: false
+            });
+          await drive.deploy(
+            frontendFolderOf(publish.name),
+            packaged ? bundle.frontend : bundle.tree,
+            { replace: true }
+          );
+          const entry2 = await services.appStream.publish(publish);
+          return {
+            status: 200,
+            body: { ...DEPLOY_SUCCESS, app: appSummary(entry2) }
+          };
+        }
         const replace = replaceOf(setting("replace")) ?? isUpload;
+        if (appLoc === void 0)
+          throw new ApiError(
+            400,
+            '"appLoc" is required to deploy files that do not name an app.'
+          );
         await drive.deploy(appLoc, bundle.tree, { replace });
         if (publish === void 0 || !services.appStream)
           return { status: 200, body: DEPLOY_SUCCESS };
@@ -6662,7 +7064,7 @@ var SASjsApi = (() => {
           if (isApiError(err) && err.status === 404) throw appNotRegistered();
           throw err;
         });
-        const folder = `${entry.appLoc}/services/${entry.streamWebFolder}`;
+        const folder = appRootOf(entry);
         let entryFileExists = false;
         let lastModified = null;
         try {
@@ -6679,8 +7081,13 @@ var SASjsApi = (() => {
         const body2 = {
           id: entry.id,
           name: entry.name,
-          appLoc: entry.appLoc,
-          streamWebFolder: entry.streamWebFolder,
+          // the folder the entry is read from, which is what this route describes:
+          // `apps/<name>` for a frontend, and the legacy deployment's own folder for
+          // the older shape. A host that answered one and not the other would leave
+          // a client reading a path out of fields the entry may not carry.
+          frontendFolder: folder,
+          ...entry.appLoc === void 0 ? {} : { appLoc: entry.appLoc },
+          ...entry.streamWebFolder === void 0 ? {} : { streamWebFolder: entry.streamWebFolder },
           publishedAt: entry.publishedAt ?? null,
           entryFile: APP_ENTRY_FILE,
           entryFileExists,
@@ -7188,10 +7595,14 @@ var SASjsApi = (() => {
   var ALL_USERS_GROUP = "all-users";
   var PUBLIC_GROUP = "public";
   var unauthorized2 = () => new ApiError(401, "Unauthorized");
-  var requireCaller = async (store, caller) => {
-    if (!caller) throw unauthorized2();
+  var readerOf = async (store, caller) => {
+    if (!caller) return void 0;
     const user3 = await store.userById(caller.userId);
-    if (!user3 || !user3.isActive) throw unauthorized2();
+    return user3 && user3.isActive ? user3 : void 0;
+  };
+  var requireCaller = async (store, caller) => {
+    const user3 = await readerOf(store, caller);
+    if (!user3) throw unauthorized2();
     return user3;
   };
   var requireAdmin = async (store, caller) => {
@@ -7220,6 +7631,25 @@ var SASjsApi = (() => {
   });
   var createRecordService = (store, options = {}) => {
     const grantableRoutes = options.grantableRoutes || DEFAULT_GRANTABLE_ROUTES;
+    const grantedRoutesFor = async (reader) => {
+      if (reader.isAdmin) return new Set(grantableRoutes);
+      const rules = await store.permissions();
+      const mine = {
+        user: rules.filter((rule) => rule.user === reader.uid).map((rule) => ({ path: rule.path, setting: rule.setting })),
+        group: rules.filter(
+          (rule) => rule.group !== void 0 && reader.groups.includes(rule.group)
+        ).map((rule) => ({ path: rule.path, setting: rule.setting }))
+      };
+      const publicGroup = rules.some((rule) => rule.group !== void 0) ? (await store.groups()).find((group) => group.name === PUBLIC_GROUP) : void 0;
+      const publicGrants = publicGroup ? rules.filter(
+        (rule) => rule.group === publicGroup.uid && rule.setting === "Grant"
+      ).map((rule) => rule.path) : [];
+      return new Set(
+        grantableRoutes.filter(
+          (path) => ALWAYS_VISIBLE_ROUTES.includes(path) || publicGrants.includes(path) || isRouteGranted(mine, path, topLevelRouteFor(path))
+        )
+      );
+    };
     const groupDetails = async (group) => {
       const members = [];
       for (const uid of group.users) {
@@ -7413,25 +7843,22 @@ var SASjsApi = (() => {
       },
       async myAuthorizedRoutes(caller) {
         const reader = await requireCaller(store, caller);
-        if (reader.isAdmin) return { paths: [...grantableRoutes] };
-        const rules = await store.permissions();
-        const mine = {
-          user: rules.filter((rule) => rule.user === reader.uid).map((rule) => ({ path: rule.path, setting: rule.setting })),
-          group: rules.filter(
-            (rule) => rule.group !== void 0 && reader.groups.includes(rule.group)
-          ).map((rule) => ({ path: rule.path, setting: rule.setting }))
-        };
-        const publicGroup = (await store.groups()).find(
-          (group) => group.name === "public"
-        );
-        const publicGrants = publicGroup ? rules.filter(
-          (rule) => rule.group === publicGroup.uid && rule.setting === "Grant"
-        ).map((rule) => rule.path) : [];
-        return {
-          paths: grantableRoutes.filter(
-            (path) => ALWAYS_VISIBLE_ROUTES.includes(path) || publicGrants.includes(path) || isRouteGranted(mine, path, topLevelRouteFor(path))
-          )
-        };
+        const granted = await grantedRoutesFor(reader);
+        return { paths: grantableRoutes.filter((path) => granted.has(path)) };
+      },
+      async mayAdminister(caller) {
+        const reader = await readerOf(store, caller);
+        return Boolean(reader?.isAdmin);
+      },
+      async mayAct(caller) {
+        return Boolean(await readerOf(store, caller));
+      },
+      async mayUseRoute(caller, path) {
+        const reader = await readerOf(store, caller);
+        if (!reader) return false;
+        if (reader.isAdmin) return true;
+        const granted = await grantedRoutesFor(reader);
+        return granted.has(path);
       },
       async listPermissions(caller) {
         const reader = await requireCaller(store, caller);
@@ -7691,41 +8118,71 @@ var SASjsApi = (() => {
       newestModified: CORPUS_LOG.modified
     }
   };
+  var ADMIN = { userId: "user-admin", clientId: "web_app" };
+  var RESTRICTED = { userId: "user-restricted", clientId: "web_app" };
   var ADMIN_CORPUS = [
     {
       id: "admin-diagnostics-answers-the-report",
       route: "GET /SASjsApi/admin/diagnostics",
       description: "answers the host diagnostics report field for field",
-      request: {},
+      request: { subject: ADMIN },
       expect: { status: 200, body: CORPUS_DIAGNOSTICS }
     },
     {
       id: "admin-logs-lists-the-files",
       route: "GET /SASjsApi/admin/logs",
       description: "answers the log files the host holds, newest first",
-      request: {},
+      request: { subject: ADMIN },
       expect: { status: 200, body: { files: [CORPUS_LOG] } }
     },
     {
       id: "admin-log-tail-answers-the-tail",
       route: "GET /SASjsApi/admin/logs/{fileName}",
       description: "answers the tail of a log the folder holds",
-      request: { params: { fileName: CORPUS_LOG.name } },
+      request: { subject: ADMIN, params: { fileName: CORPUS_LOG.name } },
       expect: { status: 200, body: CORPUS_LOG_TAIL }
     },
     {
       id: "admin-log-tail-refuses-a-traversal",
       route: "GET /SASjsApi/admin/logs/{fileName}",
       description: "refuses a name that could resolve outside the log folder, before the host is asked",
-      request: { params: { fileName: "../20260101000000.log" } },
+      request: { subject: ADMIN, params: { fileName: "../20260101000000.log" } },
       expect: { status: 400, error: "Invalid log file name." }
     },
     {
       id: "admin-log-tail-answers-404",
       route: "GET /SASjsApi/admin/logs/{fileName}",
       description: "answers 404 for a name the folder does not hold",
-      request: { params: { fileName: "20250101000000.log" } },
+      request: { subject: ADMIN, params: { fileName: "20250101000000.log" } },
       expect: { status: 404, error: "Log file not found." }
+    },
+    {
+      id: "admin-diagnostics-refused-to-a-restricted-account",
+      route: "GET /SASjsApi/admin/diagnostics",
+      description: "refuses a signed-in account that is not an administrator, in the wording verifyAdmin uses",
+      request: { subject: RESTRICTED },
+      expect: { status: 401, error: "Admin account required" }
+    },
+    {
+      id: "admin-logs-refused-to-a-restricted-account",
+      route: "GET /SASjsApi/admin/logs",
+      description: "refuses the log inventory to a restricted account",
+      request: { subject: RESTRICTED },
+      expect: { status: 401, error: "Admin account required" }
+    },
+    {
+      id: "admin-log-tail-refused-to-a-restricted-account",
+      route: "GET /SASjsApi/admin/logs/{fileName}",
+      description: "refuses a log tail to a restricted account",
+      request: { subject: RESTRICTED, params: { fileName: CORPUS_LOG.name } },
+      expect: { status: 401, error: "Admin account required" }
+    },
+    {
+      id: "admin-logs-refused-with-no-caller",
+      route: "GET /SASjsApi/admin/logs",
+      description: "refuses a request that carries no caller at all",
+      request: {},
+      expect: { status: 401, error: "Unauthorized" }
     }
   ];
 
@@ -8934,6 +9391,34 @@ var SASjsApi = (() => {
       expect: { status: 400, error: "Can't get file outside drive." }
     },
     {
+      id: "read-file-names-both",
+      route: "GET /SASjsApi/drive/file",
+      description: "refuses a request that names the file twice, in two readings",
+      seed: { "/data/keep.csv": "a" },
+      request: {
+        query: { _filePath: "/data/keep.csv", _FILE: "/data/keep.csv" }
+      },
+      expect: {
+        status: 400,
+        error: 'Exactly one of "_filePath" and "_FILE" may be given.'
+      }
+    },
+    {
+      id: "read-streamed-file",
+      route: "GET /SASjsApi/drive/file",
+      description: "reads a deployment file by the name a streamed page links to",
+      seed: { "/Public/app/services/web/main.js": "console.log(1)" },
+      request: { query: { _FILE: "/Public/app/services/web/main.js" } },
+      expect: { status: 200, contents: "console.log(1)" }
+    },
+    {
+      id: "read-streamed-file-missing",
+      route: "GET /SASjsApi/drive/file",
+      description: "answers a missing deployment file the way the estate does, not as a 404",
+      request: { query: { _FILE: "/Public/app/services/web/gone.js" } },
+      expect: { status: 202, contents: DEPLOYMENT_FILE_ERROR }
+    },
+    {
       id: "delete-file",
       route: "DELETE /SASjsApi/drive/file",
       description: "deletes a file that exists",
@@ -9742,6 +10227,119 @@ var SASjsApi = (() => {
       }
     },
     {
+      id: "deploy-publishes-a-package",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "publishes a frontend to apps/<name> and writes the backend it carries to appLoc",
+      request: {
+        subject: SUBJECT,
+        body: {
+          fileTree: {
+            members: [
+              {
+                name: "sasjs.app.json",
+                type: "file",
+                code: JSON.stringify({
+                  name: "macrodash",
+                  appLoc: "/Public/app/md"
+                })
+              },
+              {
+                name: "web",
+                type: "folder",
+                members: [
+                  { name: "index.html", type: "file", code: "<h1>Dash</h1>" }
+                ]
+              },
+              {
+                name: "backend",
+                type: "folder",
+                members: [
+                  {
+                    name: "services",
+                    type: "folder",
+                    members: [{ name: "run", type: "service", code: "%put hi;" }]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      // the halves are named, so a host has to write them to two folders rather
+      // than deploy the container: a status alone cannot see that
+      expectDrive: {
+        present: ["/apps/macrodash/index.html", "/Public/app/md/services/run.sas"]
+      },
+      expect: {
+        status: 200,
+        partial: {
+          status: "success",
+          app: { name: "macrodash" }
+        }
+      }
+    },
+    {
+      id: "deploy-refuses-a-backend-with-no-apploc",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "refuses a bundle carrying services that names no folder to deploy them to",
+      request: {
+        subject: SUBJECT,
+        body: {
+          fileTree: {
+            members: [
+              {
+                name: "sasjs.app.json",
+                type: "file",
+                code: JSON.stringify({ name: "orphan-backend" })
+              },
+              {
+                name: "web",
+                type: "folder",
+                members: [
+                  { name: "index.html", type: "file", code: "<h1>orphan</h1>" }
+                ]
+              },
+              {
+                name: "backend",
+                type: "folder",
+                members: [
+                  {
+                    name: "services",
+                    type: "folder",
+                    members: [{ name: "run", type: "service", code: "" }]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      // both hosts refuse this the same way, and neither writes the frontend it
+      // could have deployed: half a deployment is worse than none
+      expectDrive: { missing: ["/apps/orphan-backend/index.html"] },
+      expect: {
+        status: 400,
+        error: 'This bundle carries a "backend" folder but names no "appLoc" for it: state the backend folder in sasjs.app.json, or in the request.'
+      }
+    },
+    {
+      id: "deploy-refuses-a-bundle-that-names-no-folder",
+      route: "POST /SASjsApi/drive/deploy",
+      description: "refuses a tree with no app named and no folder to deploy to, naming the field",
+      request: {
+        subject: SUBJECT,
+        body: {
+          fileTree: {
+            members: [{ name: "run", type: "service", code: "%put hi;" }]
+          }
+        }
+      },
+      expect: {
+        status: 400,
+        error: '"appLoc" is required to deploy files that do not name an app.'
+      }
+    },
+    {
       id: "deploy-refuses-a-bad-manifest",
       route: "POST /SASjsApi/drive/deploy",
       description: "refuses a bundle whose manifest is not JSON",
@@ -9842,7 +10440,7 @@ var SASjsApi = (() => {
 
   // src/session/service.ts
   var createSessionService = (directory, host) => {
-    const notFound2 = (id) => `Session with ID '${id}' was not found.`;
+    const notFound3 = (id) => `Session with ID '${id}' was not found.`;
     const visible = async (caller, id) => {
       if (!caller) throw new ApiError(401, "Unauthorized");
       const reader = await directory.userById(
@@ -9850,10 +10448,10 @@ var SASjsApi = (() => {
       );
       if (!reader || !reader.isActive) throw new ApiError(401, "Unauthorized");
       const session = await host.session(id);
-      if (!session) throw new ApiError(404, notFound2(id));
+      if (!session) throw new ApiError(404, notFound3(id));
       const owner = session.owner;
       if (owner !== reader.uid && owner !== reader.username && !reader.isAdmin)
-        throw new ApiError(404, notFound2(id));
+        throw new ApiError(404, notFound3(id));
       return session;
     };
     return {
@@ -9864,19 +10462,19 @@ var SASjsApi = (() => {
       async state(caller, id) {
         await visible(caller, id);
         const state = await host.state(id);
-        if (!state) throw new ApiError(404, notFound2(id));
+        if (!state) throw new ApiError(404, notFound3(id));
         return state;
       },
       async log(caller, id) {
         await visible(caller, id);
         const log = await host.log(id);
-        if (log === void 0) throw new ApiError(404, notFound2(id));
+        if (log === void 0) throw new ApiError(404, notFound3(id));
         return log;
       },
       async output(caller, id) {
         await visible(caller, id);
         const output = await host.output(id);
-        if (output === void 0) throw new ApiError(404, notFound2(id));
+        if (output === void 0) throw new ApiError(404, notFound3(id));
         return output;
       }
     };
@@ -9887,7 +10485,7 @@ var SASjsApi = (() => {
 
   // src/runtime/program.ts
   var programNotFound = (given2) => `The Program at (${given2}) does not exist.`;
-  var notThere = (given2) => new ApiError(400, programNotFound(given2));
+  var notThere2 = (given2) => new ApiError(400, programNotFound(given2));
   var runTimeOfPath = (path) => {
     const file = path.split(/[\\/]/).pop() || "";
     const dot = file.lastIndexOf(".");
@@ -9896,7 +10494,7 @@ var SASjsApi = (() => {
   };
   var resolveProgram = async (given2, deps) => {
     const resolved = deps.resolve(given2);
-    if (resolved === null) throw notThere(given2);
+    if (resolved === null) throw notThere2(given2);
     const extension = runTimeOfPath(resolved);
     if (extension !== void 0) {
       if (await deps.exists(resolved))
@@ -9907,7 +10505,7 @@ var SASjsApi = (() => {
         if (await deps.exists(candidate)) return { path: candidate, runTime };
       }
     }
-    throw notThere(given2);
+    throw notThere2(given2);
   };
 
   // src/runtime/service.ts
@@ -9930,7 +10528,7 @@ var SASjsApi = (() => {
     pad(now.getSeconds())
   ].join("");
   var newSessionId = (now) => `${timestamp(now)}-${Math.round(Math.random() * 1e5)}-${now.getTime()}`;
-  var notThere2 = (programPath) => programNotFound(programPath);
+  var notThere3 = (programPath) => programNotFound(programPath);
   var failedRun = (error) => {
     const message = "Job execution failed.";
     throw new ApiError(400, message, {
@@ -9964,7 +10562,7 @@ var SASjsApi = (() => {
       if (request.program === "")
         throw new ApiError(400, '"_program" is not allowed to be empty');
       const resolved = normaliseDrivePath(request.program);
-      if (resolved === null) return failedRun(notThere2(request.program));
+      if (resolved === null) return failedRun(notThere3(request.program));
       return { path: resolved };
     };
     const runTimeForPath = (path, request) => (
@@ -10190,10 +10788,10 @@ var SASjsApi = (() => {
       fail: testCase.failingRun,
       outputs: testCase.runOutput ? { [programOf(testCase)]: testCase.runOutput } : void 0
     });
+    const driveStore = testCase.unwritable ? new RefusingDriveStore(testCase.seed || {}) : new MemoryDriveStore(testCase.seed || {});
     return {
-      drive: createDriveService(
-        testCase.unwritable ? new RefusingDriveStore(testCase.seed || {}) : new MemoryDriveStore(testCase.seed || {})
-      ),
+      drive: createDriveService(driveStore),
+      deploymentFile: createDeploymentFileService(driveStore),
       info: createInfoService(BROWSER_INFO),
       home: createHomeService(async () => CORPUS_WEB_PAGE),
       authConfig: createAuthConfigService(CORPUS_AUTH_CONFIG),
@@ -10205,7 +10803,9 @@ var SASjsApi = (() => {
       directory: createDirectoryService(identity, CORPUS_DIRECTORY),
       identity: createIdentityService(identity),
       records: createRecordService(identity),
-      appStream: createAppStreamService(new MemoryAppStreamStore([CORPUS_APP])),
+      appStream: createAppStreamService(
+        new MemoryAppStreamStore(testCase.appStream ?? [CORPUS_APP])
+      ),
       session: createSessionService(identity, runner),
       // no `runTimes` option: the default is the five the document names, so a
       // case is never refused for a reason that belongs to one host's install
@@ -10262,6 +10862,12 @@ var SASjsApi = (() => {
 
   // src/corpus/app.ts
   var SUBJECT2 = { userId: "user-admin", clientId: "web_app" };
+  var FRONTEND_APP = {
+    id: "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+    name: "frontend-only",
+    publishedAt: "2026-02-02T00:00:00.000Z"
+  };
+  var FRONTEND_ENTRY_FILE = `/apps/${FRONTEND_APP.name}/index.html`;
   var ENTRY_FILE_PATH = `${CORPUS_APP.appLoc}/services/${CORPUS_APP.streamWebFolder}/index.html`;
   var APP_CORPUS = [
     {
@@ -10290,6 +10896,28 @@ var SASjsApi = (() => {
       }
     },
     {
+      id: "app-detail-frontend",
+      route: "GET /SASjsApi/app/{id}",
+      description: "describes an app published as a frontend, from the folder its name derives",
+      // the two shapes an index can hold, and the folder each is read from: this
+      // entry names no `appLoc` and no `streamWebFolder`, so the folder has to come
+      // from the name
+      appStream: [FRONTEND_APP],
+      seed: { [FRONTEND_ENTRY_FILE]: "<!doctype html><title>frontend</title>" },
+      request: { subject: SUBJECT2, params: { id: FRONTEND_APP.id } },
+      expect: {
+        status: 200,
+        partial: {
+          id: FRONTEND_APP.id,
+          name: FRONTEND_APP.name,
+          frontendFolder: `/apps/${FRONTEND_APP.name}`,
+          entryFile: "index.html",
+          entryFileExists: true,
+          url: `/app/${FRONTEND_APP.id}/`
+        }
+      }
+    },
+    {
       id: "app-detail-entry-file-missing",
       route: "GET /SASjsApi/app/{id}",
       description: "answers the entry as registered with no file and no date, for a deployment that is gone",
@@ -10313,9 +10941,9 @@ var SASjsApi = (() => {
   ];
 
   // src/corpus/session.ts
-  var ADMIN = { userId: "user-admin", clientId: "web_app" };
-  var RESTRICTED = { userId: "user-restricted", clientId: "web_app" };
-  var notFound = (id) => `Session with ID '${id}' was not found.`;
+  var ADMIN2 = { userId: "user-admin", clientId: "web_app" };
+  var RESTRICTED2 = { userId: "user-restricted", clientId: "web_app" };
+  var notFound2 = (id) => `Session with ID '${id}' was not found.`;
   var UNAUTHORIZED = "Unauthorized";
   var SESSION_CORPUS = [
     // ---------------------------------------------------------------- summary
@@ -10323,7 +10951,7 @@ var SASjsApi = (() => {
       id: "session-summary-own",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers the owner the summary of their own session",
-      request: { subject: ADMIN, params: { sessionId: "sess-admin" } },
+      request: { subject: ADMIN2, params: { sessionId: "sess-admin" } },
       expect: {
         status: 200,
         body: {
@@ -10340,7 +10968,7 @@ var SASjsApi = (() => {
       id: "session-summary-as-admin",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers an administrator another account's session",
-      request: { subject: ADMIN, params: { sessionId: "sess-restricted" } },
+      request: { subject: ADMIN2, params: { sessionId: "sess-restricted" } },
       // both stamps: the document requires them, and this host stamps a session's
       // death time at creation rather than at completion - a running session
       // answers with the moment it is due to be destroyed
@@ -10366,22 +10994,22 @@ var SASjsApi = (() => {
       id: "session-summary-foreign",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers 404 for another account's session, not 403",
-      request: { subject: RESTRICTED, params: { sessionId: "sess-admin" } },
-      expect: { status: 404, error: notFound("sess-admin") }
+      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      expect: { status: 404, error: notFound2("sess-admin") }
     },
     {
       id: "session-summary-unknown",
       route: "GET /SASjsApi/session/{sessionId}",
       description: "answers the same 404 for a session that does not exist",
-      request: { subject: ADMIN, params: { sessionId: "sess-nope" } },
-      expect: { status: 404, error: notFound("sess-nope") }
+      request: { subject: ADMIN2, params: { sessionId: "sess-nope" } },
+      expect: { status: 404, error: notFound2("sess-nope") }
     },
     // -------------------------------------------------------------------- log
     {
       id: "session-log-own",
       route: "GET /SASjsApi/session/{sessionId}/log",
       description: "answers the log this session wrote",
-      request: { subject: ADMIN, params: { sessionId: "sess-admin" } },
+      request: { subject: ADMIN2, params: { sessionId: "sess-admin" } },
       expect: {
         status: 200,
         contents: "NOTE: session started\nNOTE: session completed\n"
@@ -10391,7 +11019,7 @@ var SASjsApi = (() => {
       id: "session-log-nothing-written",
       route: "GET /SASjsApi/session/{sessionId}/log",
       description: "answers an empty body for a session that has written nothing",
-      request: { subject: ADMIN, params: { sessionId: "sess-silent" } },
+      request: { subject: ADMIN2, params: { sessionId: "sess-silent" } },
       expect: { status: 200, contents: "" }
     },
     {
@@ -10405,15 +11033,15 @@ var SASjsApi = (() => {
       id: "session-log-foreign",
       route: "GET /SASjsApi/session/{sessionId}/log",
       description: "will not read another account's log",
-      request: { subject: RESTRICTED, params: { sessionId: "sess-admin" } },
-      expect: { status: 404, error: notFound("sess-admin") }
+      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      expect: { status: 404, error: notFound2("sess-admin") }
     },
     // ----------------------------------------------------------------- output
     {
       id: "session-output-own",
       route: "GET /SASjsApi/session/{sessionId}/output",
       description: "answers the webout this session produced",
-      request: { subject: ADMIN, params: { sessionId: "sess-admin" } },
+      request: { subject: ADMIN2, params: { sessionId: "sess-admin" } },
       expect: { status: 200, contents: "<html><body>42</body></html>" }
     },
     {
@@ -10427,15 +11055,15 @@ var SASjsApi = (() => {
       id: "session-output-foreign",
       route: "GET /SASjsApi/session/{sessionId}/output",
       description: "will not read another account's webout",
-      request: { subject: RESTRICTED, params: { sessionId: "sess-admin" } },
-      expect: { status: 404, error: notFound("sess-admin") }
+      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      expect: { status: 404, error: notFound2("sess-admin") }
     },
     // ------------------------------------------------------------------ state
     {
       id: "session-state-own",
       route: "GET /SASjsApi/session/{sessionId}/state",
       description: "answers the run time's state for this session",
-      request: { subject: RESTRICTED, params: { sessionId: "sess-restricted" } },
+      request: { subject: RESTRICTED2, params: { sessionId: "sess-restricted" } },
       // the state alone: the document's SessionStateResponse permits no other
       // property, and `sasjs/server` answers exactly this object
       expect: { status: 200, body: { state: "running" } }
@@ -10451,13 +11079,14 @@ var SASjsApi = (() => {
       id: "session-state-foreign",
       route: "GET /SASjsApi/session/{sessionId}/state",
       description: "will not report another account's session state",
-      request: { subject: RESTRICTED, params: { sessionId: "sess-admin" } },
-      expect: { status: 404, error: notFound("sess-admin") }
+      request: { subject: RESTRICTED2, params: { sessionId: "sess-admin" } },
+      expect: { status: 404, error: notFound2("sess-admin") }
     }
   ];
 
   // src/corpus/runtime.ts
-  var ADMIN2 = { userId: "user-admin", clientId: "web_app" };
+  var ADMIN3 = { userId: "user-admin", clientId: "web_app" };
+  var RESTRICTED3 = { userId: "user-restricted", clientId: "web_app" };
   var PROGRAM = "/Public/apps/demo/run.sas";
   var CODE = 'data _null_;\n  put "hello";\nrun;';
   var UNAUTHORIZED2 = "Unauthorized";
@@ -10469,7 +11098,7 @@ var SASjsApi = (() => {
       id: "stp-execute-get-answers-output",
       route: "GET /SASjsApi/stp/execute",
       description: "answers the output the program produced",
-      request: { subject: ADMIN2, query: { _program: PROGRAM } },
+      request: { subject: ADMIN3, query: { _program: PROGRAM } },
       runOutput: { contents: "hello from the program" },
       expect: { status: 200, contents: "hello from the program" }
     },
@@ -10477,7 +11106,7 @@ var SASjsApi = (() => {
       id: "stp-execute-get-answers-bytes",
       route: "GET /SASjsApi/stp/execute",
       description: "answers an output that is bytes as bytes",
-      request: { subject: ADMIN2, query: { _program: PROGRAM } },
+      request: { subject: ADMIN3, query: { _program: PROGRAM } },
       runOutput: { contents: bytes2(1, 2, 3) },
       expect: { status: 200, contents: bytes2(1, 2, 3) }
     },
@@ -10485,14 +11114,14 @@ var SASjsApi = (() => {
       id: "stp-execute-get-missing-program",
       route: "GET /SASjsApi/stp/execute",
       description: "refuses a request that names no program",
-      request: { subject: ADMIN2, query: {} },
+      request: { subject: ADMIN3, query: {} },
       expect: { status: 400, error: '"_program" is required' }
     },
     {
       id: "stp-execute-get-failed-run",
       route: "GET /SASjsApi/stp/execute",
       description: "answers 400 when the program could not be run",
-      request: { subject: ADMIN2, query: { _program: PROGRAM } },
+      request: { subject: ADMIN3, query: { _program: PROGRAM } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -10508,7 +11137,7 @@ var SASjsApi = (() => {
       id: "stp-execute-post-body-program",
       route: "POST /SASjsApi/stp/execute",
       description: "runs the program the body names",
-      request: { subject: ADMIN2, body: { _program: PROGRAM } },
+      request: { subject: ADMIN3, body: { _program: PROGRAM } },
       runOutput: { contents: "hello from the body" },
       expect: { status: 200, contents: "hello from the body" }
     },
@@ -10516,7 +11145,7 @@ var SASjsApi = (() => {
       id: "stp-execute-post-query-program",
       route: "POST /SASjsApi/stp/execute",
       description: "runs the program the query names, with no body",
-      request: { subject: ADMIN2, query: { _program: PROGRAM }, body: {} },
+      request: { subject: ADMIN3, query: { _program: PROGRAM }, body: {} },
       runOutput: { contents: "hello from the query" },
       expect: { status: 200, contents: "hello from the query" }
     },
@@ -10524,14 +11153,14 @@ var SASjsApi = (() => {
       id: "stp-execute-post-no-program",
       route: "POST /SASjsApi/stp/execute",
       description: "refuses a request with no program in the query or the body",
-      request: { subject: ADMIN2, body: {} },
+      request: { subject: ADMIN3, body: {} },
       expect: { status: 400, error: '"_program" is required' }
     },
     {
       id: "stp-execute-post-failed-run",
       route: "POST /SASjsApi/stp/execute",
       description: "answers 400 when the program could not be run",
-      request: { subject: ADMIN2, body: { _program: PROGRAM } },
+      request: { subject: ADMIN3, body: { _program: PROGRAM } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -10547,7 +11176,7 @@ var SASjsApi = (() => {
       id: "stp-trigger-answers-session",
       route: "POST /SASjsApi/stp/trigger",
       description: "answers the session a caller polls, and no pid from a mock",
-      request: { subject: ADMIN2, query: { _program: PROGRAM } },
+      request: { subject: ADMIN3, query: { _program: PROGRAM } },
       expect: { status: 200, keys: ["sessionId"] }
     },
     {
@@ -10555,7 +11184,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/stp/trigger",
       description: "accepts a retention in minutes, as the query carries it",
       request: {
-        subject: ADMIN2,
+        subject: ADMIN3,
         query: { _program: PROGRAM, expiresAfterMins: "15" }
       },
       expect: { status: 200, keys: ["sessionId"] }
@@ -10565,7 +11194,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/stp/trigger",
       description: "refuses a retention that is not a positive number of minutes",
       request: {
-        subject: ADMIN2,
+        subject: ADMIN3,
         query: { _program: PROGRAM, expiresAfterMins: "0" }
       },
       expect: { status: 400, error: '"expiresAfterMins" must be greater than 0' }
@@ -10574,14 +11203,14 @@ var SASjsApi = (() => {
       id: "stp-trigger-missing-program",
       route: "POST /SASjsApi/stp/trigger",
       description: "refuses a request that names no program",
-      request: { subject: ADMIN2, query: {} },
+      request: { subject: ADMIN3, query: {} },
       expect: { status: 400, error: '"_program" is required' }
     },
     {
       id: "stp-trigger-failed-run",
       route: "POST /SASjsApi/stp/trigger",
       description: "answers 400 when the program could not be started",
-      request: { subject: ADMIN2, query: { _program: PROGRAM } },
+      request: { subject: ADMIN3, query: { _program: PROGRAM } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -10597,7 +11226,7 @@ var SASjsApi = (() => {
       id: "code-execute-answers-output",
       route: "POST /SASjsApi/code/execute",
       description: "runs the code in the body and answers its output",
-      request: { subject: ADMIN2, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
       runOutput: { contents: "NOTE: mock run" },
       expect: { status: 200, contents: "NOTE: mock run" }
     },
@@ -10611,35 +11240,35 @@ var SASjsApi = (() => {
       id: "code-execute-unknown-runtime",
       route: "POST /SASjsApi/code/execute",
       description: "refuses a run time the document does not name",
-      request: { subject: ADMIN2, body: { code: CODE, runTime: "cobol" } },
+      request: { subject: ADMIN3, body: { code: CODE, runTime: "cobol" } },
       expect: { status: 400 }
     },
     {
       id: "code-execute-missing-code",
       route: "POST /SASjsApi/code/execute",
       description: "refuses a payload with no code",
-      request: { subject: ADMIN2, body: { runTime: "sas" } },
+      request: { subject: ADMIN3, body: { runTime: "sas" } },
       expect: { status: 400, error: '"code" is required' }
     },
     {
       id: "code-execute-empty-code",
       route: "POST /SASjsApi/code/execute",
       description: "refuses code that is present but empty",
-      request: { subject: ADMIN2, body: { code: "", runTime: "sas" } },
+      request: { subject: ADMIN3, body: { code: "", runTime: "sas" } },
       expect: { status: 400, error: '"code" is not allowed to be empty' }
     },
     {
       id: "code-execute-non-string-code",
       route: "POST /SASjsApi/code/execute",
       description: "refuses code that is not a string rather than running its text",
-      request: { subject: ADMIN2, body: { code: 123, runTime: "sas" } },
+      request: { subject: ADMIN3, body: { code: 123, runTime: "sas" } },
       expect: { status: 400, error: '"code" must be a string' }
     },
     {
       id: "code-execute-failed-run",
       route: "POST /SASjsApi/code/execute",
       description: "answers 400 when the code could not be run",
-      request: { subject: ADMIN2, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -10650,19 +11279,41 @@ var SASjsApi = (() => {
       request: { body: {} },
       expect: { status: 401, error: UNAUTHORIZED2 }
     },
+    {
+      // The fixture denies this account `/SASjsApi/code/execute` with a user rule,
+      // and a denied rule refuses the call rather than only the menu entry beside
+      // it. On a server that is `authorize`; here it is the decision
+      // `myAuthorizedRoutes` reports from, asked of the same store.
+      id: "code-execute-denied-by-a-rule",
+      route: "POST /SASjsApi/code/execute",
+      description: "refuses a caller the rules do not grant, with the 401 a missing token earns",
+      request: { subject: RESTRICTED3, body: { code: CODE, runTime: "sas" } },
+      expect: { status: 401, error: UNAUTHORIZED2 }
+    },
+    {
+      // The positive control for the case above: the same account is granted
+      // `stp/execute` by a group rule, so the refusal there is the rule and not a
+      // blanket refusal of everything a restricted account asks for.
+      id: "stp-execute-granted-by-a-group-rule",
+      route: "POST /SASjsApi/stp/execute",
+      description: "admits a restricted account the rules grant",
+      request: { subject: RESTRICTED3, body: { _program: PROGRAM } },
+      runOutput: { contents: "granted run" },
+      expect: { status: 200, contents: "granted run" }
+    },
     // ----------------------------------------------- POST /code/trigger
     {
       id: "code-trigger-answers-session",
       route: "POST /SASjsApi/code/trigger",
       description: "answers the session a caller polls, and no pid from a mock",
-      request: { subject: ADMIN2, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
       expect: { status: 200, keys: ["sessionId"] }
     },
     {
       id: "code-trigger-missing-runtime",
       route: "POST /SASjsApi/code/trigger",
       description: "refuses a payload with no run time, which the document requires",
-      request: { subject: ADMIN2, body: { code: CODE } },
+      request: { subject: ADMIN3, body: { code: CODE } },
       expect: { status: 400, error: '"runTime" is required' }
     },
     {
@@ -10670,7 +11321,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/code/trigger",
       description: "refuses a retention that is not a positive number of minutes",
       request: {
-        subject: ADMIN2,
+        subject: ADMIN3,
         body: { code: CODE, runTime: "sas", expiresAfterMins: 0 }
       },
       expect: { status: 400, error: '"expiresAfterMins" must be greater than 0' }
@@ -10679,7 +11330,7 @@ var SASjsApi = (() => {
       id: "code-trigger-failed-run",
       route: "POST /SASjsApi/code/trigger",
       description: "answers 400 when the code could not be started",
-      request: { subject: ADMIN2, body: { code: CODE, runTime: "sas" } },
+      request: { subject: ADMIN3, body: { code: CODE, runTime: "sas" } },
       failingRun: true,
       expect: { status: 400, error: FAILED }
     },
@@ -10754,8 +11405,8 @@ var SASjsApi = (() => {
       }
     ]
   };
-  var ADMIN3 = "admin-access";
-  var RESTRICTED2 = "user-access";
+  var ADMIN4 = "admin-access";
+  var RESTRICTED4 = "user-access";
   var RESTRICTED_UID = "user-restricted";
   var ADMIN_UID = "user-admin";
   var RECORD_CORPUS = [
@@ -10765,7 +11416,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user",
       description: "lists the accounts any signed-in caller may see",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3 },
+      request: { token: ADMIN4 },
       expect: {
         status: 200,
         body: [
@@ -10789,7 +11440,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/{uid}",
       description: "returns the caller their own details, with the auto-exec code",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2, params: { uid: RESTRICTED_UID } },
+      request: { token: RESTRICTED4, params: { uid: RESTRICTED_UID } },
       expect: {
         status: 200,
         partial: {
@@ -10814,7 +11465,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/{uid}",
       description: "answers 404 for an identifier no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "user-none" } },
+      request: { token: ADMIN4, params: { uid: "user-none" } },
       expect: { status: 404, error: "User is not found." }
     },
     {
@@ -10822,7 +11473,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/by/username/{username}",
       description: "finds an account by username",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { username: "sasjsuser" } },
+      request: { token: ADMIN4, params: { username: "sasjsuser" } },
       expect: {
         status: 200,
         partial: { uid: RESTRICTED_UID, username: "sasjsuser", isAdmin: false }
@@ -10841,7 +11492,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/user/by/username/{username}",
       description: "answers 404 for a username no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { username: "nobody" } },
+      request: { token: ADMIN4, params: { username: "nobody" } },
       expect: { status: 404, error: "User is not found." }
     },
     {
@@ -10850,7 +11501,7 @@ var SASjsApi = (() => {
       description: "creates an account, sanitised, and reports it",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           username: "newuser",
           displayName: "  New User  ",
@@ -10875,7 +11526,7 @@ var SASjsApi = (() => {
       description: "refuses a creation by a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         body: {
           username: "newuser",
           displayName: "New User",
@@ -10898,7 +11549,7 @@ var SASjsApi = (() => {
       description: "refuses a username that is taken",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           username: "sasjsuser",
           displayName: "Another",
@@ -10913,7 +11564,7 @@ var SASjsApi = (() => {
       description: "changes an account's display name",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { uid: RESTRICTED_UID },
         body: {
           displayName: "Renamed User",
@@ -10932,7 +11583,7 @@ var SASjsApi = (() => {
       description: "refuses a change to somebody else's account",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         params: { uid: ADMIN_UID },
         body: {
           displayName: "Hijacked",
@@ -10948,7 +11599,7 @@ var SASjsApi = (() => {
       description: "answers 404 with the identifier it looked up",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { uid: "user-none" },
         body: { displayName: "Nobody", username: "nobody", password: "none123" }
       },
@@ -10960,7 +11611,7 @@ var SASjsApi = (() => {
       description: "refuses a username change on a provider-managed account",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { uid: "user-directory" },
         body: {
           username: "renamed",
@@ -10979,7 +11630,7 @@ var SASjsApi = (() => {
       description: "refuses a username another account already has",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { uid: RESTRICTED_UID },
         body: {
           username: "sasjsadmin",
@@ -10995,7 +11646,7 @@ var SASjsApi = (() => {
       description: "changes an account looked up by username",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { username: "sasjsuser" },
         body: {
           isActive: false,
@@ -11012,7 +11663,7 @@ var SASjsApi = (() => {
       description: "refuses a change to another account by username",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         params: { username: "sasjsadmin" },
         body: {
           displayName: "Hijacked",
@@ -11028,7 +11679,7 @@ var SASjsApi = (() => {
       description: "answers 404 with the username it looked up",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { username: "nobody" },
         body: { displayName: "Nobody", username: "nobody", password: "none123" }
       },
@@ -11040,7 +11691,7 @@ var SASjsApi = (() => {
       description: "refuses a display-name change on a provider-managed account",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { username: "diruser" },
         body: { displayName: "Renamed", username: "diruser", password: "dir123" }
       },
@@ -11055,7 +11706,7 @@ var SASjsApi = (() => {
       description: "refuses a username another account already has",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { username: "sasjsuser" },
         body: {
           username: "sasjsadmin",
@@ -11070,7 +11721,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/{uid}",
       description: "deletes an account as an administrator, without a password",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: RESTRICTED_UID }, body: {} },
+      request: { token: ADMIN4, params: { uid: RESTRICTED_UID }, body: {} },
       expect: { status: 200, body: "Account Deleted!" }
     },
     {
@@ -11078,7 +11729,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/{uid}",
       description: "refuses a deletion of somebody else's account",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2, params: { uid: ADMIN_UID }, body: {} },
+      request: { token: RESTRICTED4, params: { uid: ADMIN_UID }, body: {} },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -11086,7 +11737,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/{uid}",
       description: "answers 404 for an identifier no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "user-none" }, body: {} },
+      request: { token: ADMIN4, params: { uid: "user-none" }, body: {} },
       expect: { status: 404, error: "User is not found." }
     },
     {
@@ -11095,7 +11746,7 @@ var SASjsApi = (() => {
       description: "deletes an account looked up by username",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { username: "sasjsuser" },
         body: {}
       },
@@ -11107,7 +11758,7 @@ var SASjsApi = (() => {
       description: "refuses a self-deletion whose password is wrong",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         params: { username: "sasjsuser" },
         body: { password: "wrong123" }
       },
@@ -11118,7 +11769,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/user/by/username/{username}",
       description: "answers 404 for a username no account has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { username: "nobody" }, body: {} },
+      request: { token: ADMIN4, params: { username: "nobody" }, body: {} },
       expect: { status: 404, error: "User is not found." }
     },
     // ----------------------------------------------------------------- groups
@@ -11127,7 +11778,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group",
       description: "lists the groups",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2 },
+      request: { token: RESTRICTED4 },
       expect: {
         status: 200,
         body: [
@@ -11149,7 +11800,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/{uid}",
       description: "returns a group and its members",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2, params: { uid: "group-admins" } },
+      request: { token: RESTRICTED4, params: { uid: "group-admins" } },
       expect: {
         status: 200,
         partial: {
@@ -11172,7 +11823,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/{uid}",
       description: "answers 404 for an identifier no group has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "group-none" } },
+      request: { token: ADMIN4, params: { uid: "group-none" } },
       expect: { status: 404, error: "Group not found." }
     },
     {
@@ -11180,7 +11831,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/by/groupname/{name}",
       description: "finds a group by name",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { name: "DCGroup" } },
+      request: { token: ADMIN4, params: { name: "DCGroup" } },
       expect: {
         status: 200,
         partial: { uid: "group-data-controller", name: "DCGroup" }
@@ -11191,7 +11842,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/group/by/groupname/{name}",
       description: "answers 404 for a name no group has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { name: "nope" } },
+      request: { token: ADMIN4, params: { name: "nope" } },
       expect: { status: 404, error: "Group not found." }
     },
     {
@@ -11200,7 +11851,7 @@ var SASjsApi = (() => {
       description: "creates a group with no members",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: { name: "NewGroup", description: "A new group", isActive: true }
       },
       expect: {
@@ -11219,7 +11870,7 @@ var SASjsApi = (() => {
       description: "refuses a creation by a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         body: { name: "NewGroup", description: "x" }
       },
       expect: { status: 401, error: "Admin account required" }
@@ -11229,7 +11880,7 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/group",
       description: "refuses a name that is taken",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, body: { name: "DCGroup", description: "again" } },
+      request: { token: ADMIN4, body: { name: "DCGroup", description: "again" } },
       expect: { status: 409, error: "Group name already exists." }
     },
     {
@@ -11238,7 +11889,7 @@ var SASjsApi = (() => {
       description: "adds a member and returns the group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-admins", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11252,7 +11903,7 @@ var SASjsApi = (() => {
       description: "refuses a change to the reserved public group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-public", userUid: RESTRICTED_UID }
       },
       expect: { status: 400, error: "Can't add/remove user to 'public' group." }
@@ -11263,7 +11914,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         params: { groupUid: "group-admins", userUid: RESTRICTED_UID }
       },
       expect: { status: 401, error: "Admin account required" }
@@ -11274,7 +11925,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a group that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-none", userUid: RESTRICTED_UID }
       },
       expect: { status: 404, error: "Group not found." }
@@ -11285,7 +11936,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change on a provider-managed group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-directory", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11299,7 +11950,7 @@ var SASjsApi = (() => {
       description: "removes a member and returns the group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-data-controller", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11313,7 +11964,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change for a provider-managed user",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-admins", userUid: "user-directory" }
       },
       expect: {
@@ -11327,7 +11978,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change for a provider-managed user",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-admins", userUid: "user-directory" }
       },
       expect: {
@@ -11341,7 +11992,7 @@ var SASjsApi = (() => {
       description: "refuses a change to the reserved public group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-public", userUid: RESTRICTED_UID }
       },
       expect: { status: 400, error: "Can't add/remove user to 'public' group." }
@@ -11352,7 +12003,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         params: { groupUid: "group-data-controller", userUid: RESTRICTED_UID }
       },
       expect: { status: 401, error: "Admin account required" }
@@ -11363,7 +12014,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a member that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-admins", userUid: "user-none" }
       },
       expect: { status: 404, error: "User not found." }
@@ -11374,7 +12025,7 @@ var SASjsApi = (() => {
       description: "refuses a membership change on a provider-managed group",
       identity: PROVIDER_MANAGED,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { groupUid: "group-directory", userUid: RESTRICTED_UID }
       },
       expect: {
@@ -11387,7 +12038,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/group/{uid}",
       description: "deletes a group",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "group-data-controller" } },
+      request: { token: ADMIN4, params: { uid: "group-data-controller" } },
       expect: { status: 200 }
     },
     {
@@ -11395,7 +12046,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/group/{uid}",
       description: "refuses a deletion by a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2, params: { uid: "group-admins" } },
+      request: { token: RESTRICTED4, params: { uid: "group-admins" } },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -11403,7 +12054,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/group/{uid}",
       description: "answers 404 for an identifier no group has",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "group-none" } },
+      request: { token: ADMIN4, params: { uid: "group-none" } },
       expect: { status: 404, error: "Group not found." }
     },
     // ------------------------------------------------------------ permissions
@@ -11412,7 +12063,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/authorizedRoutes",
       description: "answers the route inventory to an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3 },
+      request: { token: ADMIN4 },
       expect: {
         status: 200,
         body: {
@@ -11436,7 +12087,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/authorizedRoutes",
       description: "refuses the inventory to a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2 },
+      request: { token: RESTRICTED4 },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -11444,7 +12095,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/myAuthorizedRoutes",
       description: "answers every route to an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3 },
+      request: { token: ADMIN4 },
       expect: {
         status: 200,
         body: {
@@ -11468,7 +12119,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/info/myAuthorizedRoutes",
       description: "answers a caller only the routes its rules grant",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2 },
+      request: { token: RESTRICTED4 },
       expect: {
         status: 200,
         // /AppStream is visible whatever the rules say; the two grants come from
@@ -11484,7 +12135,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/permission",
       description: "returns every rule to an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3 },
+      request: { token: ADMIN4 },
       expect: {
         status: 200,
         body: [
@@ -11517,7 +12168,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/permission",
       description: "returns a caller only their own rules and their groups'",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2 },
+      request: { token: RESTRICTED4 },
       expect: {
         status: 200,
         body: [
@@ -11559,7 +12210,7 @@ var SASjsApi = (() => {
       description: "creates a rule for a user",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/drive/folder",
           type: "Route",
@@ -11579,7 +12230,7 @@ var SASjsApi = (() => {
       description: "creates a rule for a group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/drive/rename",
           type: "Route",
@@ -11603,7 +12254,7 @@ var SASjsApi = (() => {
       description: "refuses a principal type that is neither a user nor a group",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/drive/deploy",
           type: "Route",
@@ -11623,7 +12274,7 @@ var SASjsApi = (() => {
       description: "refuses a rule assigned to an administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/drive/folder",
           type: "Route",
@@ -11643,7 +12294,7 @@ var SASjsApi = (() => {
       description: "refuses a creation by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         body: {
           path: "/SASjsApi/drive/folder",
           type: "Route",
@@ -11660,7 +12311,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a principal that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/drive/rename",
           type: "Route",
@@ -11677,7 +12328,7 @@ var SASjsApi = (() => {
       description: "refuses a group rule that already exists",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/drive/file",
           type: "Route",
@@ -11697,7 +12348,7 @@ var SASjsApi = (() => {
       description: "refuses a rule that already exists",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           path: "/SASjsApi/code/execute",
           type: "Route",
@@ -11717,7 +12368,7 @@ var SASjsApi = (() => {
       description: "flips a rule from Deny to Grant",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { uid: "rule-code" },
         body: { setting: "Grant" }
       },
@@ -11729,7 +12380,7 @@ var SASjsApi = (() => {
       description: "refuses a change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         params: { uid: "rule-code" },
         body: { setting: "Grant" }
       },
@@ -11741,7 +12392,7 @@ var SASjsApi = (() => {
       description: "answers 404 for a rule that does not exist",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         params: { uid: "rule-none" },
         body: { setting: "Grant" }
       },
@@ -11752,7 +12403,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/permission/{uid}",
       description: "deletes a rule",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "rule-code" } },
+      request: { token: ADMIN4, params: { uid: "rule-code" } },
       expect: { status: 200, body: "Permission Deleted!" }
     },
     {
@@ -11760,7 +12411,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/permission/{uid}",
       description: "refuses a deletion by a non-administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2, params: { uid: "rule-code" } },
+      request: { token: RESTRICTED4, params: { uid: "rule-code" } },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -11768,7 +12419,7 @@ var SASjsApi = (() => {
       route: "DELETE /SASjsApi/permission/{uid}",
       description: "answers 404 for a rule that does not exist",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3, params: { uid: "rule-none" } },
+      request: { token: ADMIN4, params: { uid: "rule-none" } },
       expect: { status: 404, error: "Permission not found." }
     },
     // --------------------------------------------------------------- clients
@@ -11777,7 +12428,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/client",
       description: "lists the registered clients",
       identity: ADMIN_SIGNED_IN,
-      request: { token: ADMIN3 },
+      request: { token: ADMIN4 },
       expect: {
         status: 200,
         body: [
@@ -11801,7 +12452,7 @@ var SASjsApi = (() => {
       route: "GET /SASjsApi/client",
       description: "refuses the list to a caller who is not an administrator",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2 },
+      request: { token: RESTRICTED4 },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -11810,7 +12461,7 @@ var SASjsApi = (() => {
       description: "registers a client",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           clientId: "new_app",
           clientSecret: "new_secret",
@@ -11834,7 +12485,7 @@ var SASjsApi = (() => {
       description: "applies the schema defaults when the lifetimes are omitted",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: { clientId: "default_app", clientSecret: "default_secret" }
       },
       expect: {
@@ -11853,7 +12504,7 @@ var SASjsApi = (() => {
       description: "refuses a registration by a non-administrator",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         body: {
           clientId: "new_app",
           clientSecret: "new_secret",
@@ -11869,7 +12520,7 @@ var SASjsApi = (() => {
       description: "refuses a client id that is registered, with the 403 the server sends",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: ADMIN3,
+        token: ADMIN4,
         body: {
           clientId: "web_app",
           clientSecret: "other",
@@ -11886,7 +12537,7 @@ var SASjsApi = (() => {
       description: "changes the caller’s own password",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         body: { currentPassword: "Orion123", newPassword: "changed123" }
       },
       expect: { status: 204 }
@@ -11896,7 +12547,7 @@ var SASjsApi = (() => {
       route: "PATCH /SASjsApi/auth/updatePassword",
       description: "refuses a body without the current password",
       identity: ADMIN_SIGNED_IN,
-      request: { token: RESTRICTED2, body: { newPassword: "changed123" } },
+      request: { token: RESTRICTED4, body: { newPassword: "changed123" } },
       expect: { status: 400, error: '"currentPassword" is required' }
     },
     {
@@ -11915,7 +12566,7 @@ var SASjsApi = (() => {
       description: "refuses a change whose current password is wrong",
       identity: ADMIN_SIGNED_IN,
       request: {
-        token: RESTRICTED2,
+        token: RESTRICTED4,
         body: { currentPassword: "wrong", newPassword: "changed123" }
       },
       expect: { status: 403, error: "Invalid current password!" }
@@ -11941,7 +12592,13 @@ var SASjsApi = (() => {
   var isEntry = (value) => {
     if (typeof value !== "object" || value === null) return false;
     const entry = value;
-    return typeof entry.id === "string" && typeof entry.name === "string" && typeof entry.appLoc === "string" && typeof entry.streamWebFolder === "string" && typeof entry.publishedAt === "string";
+    if (typeof entry.id !== "string" || typeof entry.name !== "string" || typeof entry.publishedAt !== "string")
+      return false;
+    if (entry.appLoc !== void 0 && typeof entry.appLoc !== "string")
+      return false;
+    if (entry.streamWebFolder !== void 0 && typeof entry.streamWebFolder !== "string")
+      return false;
+    return !(entry.streamWebFolder !== void 0 && entry.appLoc === void 0);
   };
   var createDriveAppStreamStore = (drive, filePath2 = APP_STREAM_INDEX) => ({
     async read() {
@@ -11986,174 +12643,6 @@ var SASjsApi = (() => {
       }
     }
   });
-
-  // src/appstream/web.ts
-  var DEFAULT_APP_PATH = "/app";
-  var NO_SUCH_APP = "There's no App Stream available here.";
-  var ESCAPES = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  };
-  var escapeHtml = (value) => value.replace(/[&<>"']/g, (character) => ESCAPES[character]);
-  var CONTENT_TYPES = {
-    html: "text/html; charset=utf-8",
-    htm: "text/html; charset=utf-8",
-    js: "text/javascript; charset=utf-8",
-    mjs: "text/javascript; charset=utf-8",
-    css: "text/css; charset=utf-8",
-    json: "application/json; charset=utf-8",
-    map: "application/json; charset=utf-8",
-    txt: "text/plain; charset=utf-8",
-    svg: "image/svg+xml",
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    gif: "image/gif",
-    webp: "image/webp",
-    ico: "image/x-icon",
-    woff: "font/woff",
-    woff2: "font/woff2",
-    ttf: "font/ttf",
-    otf: "font/otf",
-    wasm: "application/wasm",
-    pdf: "application/pdf",
-    zip: "application/zip"
-  };
-  var contentTypeFor = (filePath2) => {
-    const extension = filePath2.slice(filePath2.lastIndexOf(".") + 1).toLowerCase();
-    return CONTENT_TYPES[extension] ?? "application/octet-stream";
-  };
-  var cacheControlFor = (filePath2) => /\.[0-9a-f]{8,}\.[A-Za-z0-9]+$/.test(filePath2) ? "public, max-age=31536000, immutable" : "public, max-age=0, must-revalidate";
-  var html = (status, markup) => ({
-    status,
-    body: markup,
-    contentType: "text/html; charset=utf-8"
-  });
-  var json = (status, body) => ({
-    status,
-    body: JSON.stringify(body),
-    contentType: "application/json; charset=utf-8"
-  });
-  var noSuchApp = () => html(404, `<!doctype html><html><body>${NO_SUCH_APP}</body></html>`);
-  var methodNotAllowed = (allowed) => ({
-    status: 405,
-    body: JSON.stringify({ status: "failure", message: `${allowed} only.` }),
-    contentType: "application/json; charset=utf-8",
-    headers: { allow: allowed }
-  });
-  var decoded = (segment) => {
-    try {
-      return decodeURIComponent(segment);
-    } catch (_) {
-      return void 0;
-    }
-  };
-  var createAppStreamWebService = (appStream, drive, options = {}) => {
-    const base = (options.basePath ?? DEFAULT_APP_PATH).replace(/\/+$/, "");
-    const title = options.title ?? "SASjs App Stream";
-    const urlOf = (entry) => `${base}/${entry.id}/`;
-    const rowOf = (entry) => ({
-      id: entry.id,
-      name: entry.name,
-      appLoc: entry.appLoc,
-      logo: entry.logo === void 0 ? null : `${urlOf(entry)}${entry.logo}`,
-      url: urlOf(entry),
-      publishedAt: entry.publishedAt ?? null
-    });
-    const apps = async (allow) => {
-      const entries = await appStream.list(allow);
-      return { apps: entries.map(rowOf) };
-    };
-    const landing = async (allow) => {
-      const { apps: rows } = await apps(allow);
-      const tiles = rows.length ? `<ul class="apps">${rows.map(
-        (row) => `<li><a href="${escapeHtml(row.url)}">${escapeHtml(row.name)}</a><span class="loc">${escapeHtml(row.appLoc)}</span></li>`
-      ).join("")}</ul>` : '<p class="empty">No apps have been published yet.</p>';
-      return html(
-        200,
-        [
-          '<!doctype html><html lang="en"><head><meta charset="utf-8">',
-          '<meta name="viewport" content="width=device-width,initial-scale=1">',
-          `<title>${escapeHtml(title)}</title>`,
-          "<style>",
-          "body{font-family:system-ui,sans-serif;margin:2rem;color:#1f2430}",
-          "h1{font-size:1.4rem}",
-          "ul.apps{list-style:none;padding:0;display:grid;gap:.75rem;max-width:40rem}",
-          "ul.apps li{display:flex;flex-direction:column;gap:.15rem;padding:.75rem 1rem;",
-          "border:1px solid #d8dee9;border-radius:.5rem}",
-          "ul.apps a{font-weight:600;text-decoration:none;color:#0b5cad}",
-          ".loc{font-size:.8rem;color:#5b6472;font-family:ui-monospace,monospace}",
-          ".empty{color:#5b6472}",
-          "</style></head><body>",
-          `<h1>${escapeHtml(title)}</h1>`,
-          tiles,
-          "</body></html>"
-        ].join("")
-      );
-    };
-    const resolve = async (segment, allow) => {
-      const entries = await appStream.list(allow);
-      const byId2 = entries.find((entry) => entry.id === segment);
-      if (byId2) return byId2;
-      const byName = entries.filter((entry) => entry.name === segment);
-      return byName.length === 1 ? byName[0] : void 0;
-    };
-    const asset = async (entry, segments) => {
-      const parts = segments.map(decoded);
-      if (parts.some((part) => part === void 0)) return noSuchApp();
-      const relative = parts.join("/") || "index.html";
-      try {
-        const file = await drive.read(
-          `${entry.appLoc}/services/${entry.streamWebFolder}/${relative}`
-        );
-        return {
-          status: 200,
-          body: file.contents,
-          contentType: contentTypeFor(relative),
-          headers: { "cache-control": cacheControlFor(relative) }
-        };
-      } catch (error) {
-        if (error instanceof ApiError && (error.status === 404 || error.status === 400))
-          return noSuchApp();
-        throw error;
-      }
-    };
-    return {
-      apps,
-      landing,
-      async request({ method, path, allow }) {
-        const clean = (path.split(/[?#]/)[0] || "/").replace(/\/{2,}/g, "/");
-        const relative = base === "" ? clean : clean === base ? "/" : clean.startsWith(`${base}/`) ? clean.slice(base.length) : null;
-        if (relative === null) return noSuchApp();
-        if (relative === "" || relative === "/" || relative === "/index.html") {
-          if (method !== "GET") return methodNotAllowed("GET");
-          return landing(allow);
-        }
-        if (relative === "/apps.json") {
-          if (method !== "GET") return methodNotAllowed("GET");
-          return json(200, await apps(allow));
-        }
-        const segments = relative.split("/").filter(Boolean);
-        const key = decoded(segments[0]);
-        if (key === void 0) return noSuchApp();
-        if (method === "DELETE") {
-          const entry2 = await resolve(key, allow);
-          if (!entry2) return noSuchApp();
-          const removed = await appStream.unpublish(entry2.id);
-          return json(200, { status: "success", app: rowOf(removed) });
-        }
-        if (method !== "GET") return methodNotAllowed("GET, DELETE");
-        const entry = await resolve(key, allow);
-        if (!entry) return noSuchApp();
-        if (segments.length === 1 && !relative.endsWith("/"))
-          return { status: 301, location: urlOf(entry) };
-        return asset(entry, segments.slice(1));
-      }
-    };
-  };
   return __toCommonJS(index_exports);
 })();
 if (typeof self !== 'undefined') self.SASjsApi = SASjsApi

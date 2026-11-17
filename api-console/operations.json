@@ -694,7 +694,13 @@
       {
         "name": "appLoc",
         "in": "body",
-        "required": true,
+        "required": false,
+        "type": "string"
+      },
+      {
+        "name": "name",
+        "in": "body",
+        "required": false,
         "type": "string"
       },
       {
@@ -771,6 +777,12 @@
     "tag": "Drive",
     "summary": "Deploy an uploaded file to SASjs Drive",
     "params": [
+      {
+        "name": "name",
+        "in": "query",
+        "required": false,
+        "type": "string"
+      },
       {
         "name": "appLoc",
         "in": "query",
@@ -876,7 +888,13 @@
       {
         "name": "_filePath",
         "in": "query",
-        "required": true,
+        "required": false,
+        "type": "string"
+      },
+      {
+        "name": "_FILE",
+        "in": "query",
+        "required": false,
         "type": "string"
       }
     ],
@@ -887,8 +905,12 @@
         "description": "The contents of the file"
       },
       {
+        "status": 202,
+        "description": "A streamed file is not there: Parameter Error / File error"
+      },
+      {
         "status": 400,
-        "description": "Can't get file outside drive"
+        "description": "A path outside the drive, a refused extension, or a request naming neither or both"
       },
       {
         "status": 404,

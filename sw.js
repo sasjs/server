@@ -35,9 +35,9 @@
  * services are the package's; this file supplies the transport, the worker's own
  * activity, and the browser's answers to questions a server asks its process.
  */
-importScripts('host/runtime-core.js?v=ccf827eb50')
-importScripts('host/api-browser.js?v=ccf827eb50')
-importScripts('host/lint-browser.js?v=ccf827eb50')
+importScripts('host/runtime-core.js?v=568560c59b')
+importScripts('host/api-browser.js?v=568560c59b')
+importScripts('host/lint-browser.js?v=568560c59b')
 
 const R = self.SASjsMockRuntime
 
@@ -220,6 +220,18 @@ self.addEventListener('activate', (event) =>
   event.waitUntil(self.clients.claim())
 )
 
+/**
+ * The host's refusal when a request names both tier parameters.
+ *
+ * The one other copy is the sentence sasjs/server mints on the same two
+ * parameters (`api/src/routes/setupRoutes.ts`, `TIER_NEEDS_ONE_PARAMETER`).
+ * The mock answers as the host answers, so the wording has to match: a spec on
+ * each side asserts the sentence itself rather than the constant, so a change
+ * to either copy fails there instead of drifting quietly.
+ */
+const TIER_NEEDS_ONE_PARAMETER =
+  'Exactly one of "_program" and "_FILE" may be given.'
+
 const json = (obj, status) =>
   new Response(JSON.stringify(obj, null, 2), {
     status: status || 200,
@@ -367,7 +379,126 @@ const artifactResponse = (artifact) =>
 
 const broadcast = async (message) => {
   const clients = await self.clients.matchAll({ includeUncontrolled: true })
-  clients.forEach((client) => client.postMessage(message))
+  clients.forEach((client) => {
+    // a tab that closed between matchAll() and the send raises
+    // InvalidStateError, and one closed tab must not fail the broadcast the
+    // others just received - nor the load that is waiting on this call
+    try {
+      client.postMessage(message)
+    } catch (e) {
+      /* that client is gone: the rest still get it */
+    }
+  })
+}
+
+/**
+ * Resolvers waiting on the page's answer to a drive request, and that answer
+ * once it lands.
+ *
+ * The page owns the drive (`persist.js`): IndexedDB is durable, this worker is
+ * not - the browser terminates it between requests and starts a new one on the
+ * next. That new worker has no drive, and `ensureReady` would seed over the
+ * visitor's: every file they made reads `File doesn't exist.`, and creating one
+ * the seed ships reads `File already exists.` So the worker asks a live page for
+ * what it stored before it considers seeding.
+ */
+let driveWaiters = []
+
+/** The page has answered, whatever it said; stop waiting. */
+const driveArrived = (verdict) => {
+  const waiting = driveWaiters
+  driveWaiters = []
+  waiting.forEach((resolve) => resolve(verdict))
+}
+
+/** How long one page gets to answer, and how long the whole ask may take. */
+const ASK_TIMEOUT = 2000
+const ASK_BUDGET = 5000
+
+/**
+ * A client's stable handle.
+ *
+ * `clients.matchAll()` builds fresh `Client` objects on every call, so the
+ * object is not an identity and a set keyed on it would hand back the first tab
+ * on every round - the second tab never asked, the budget spent, and the seed
+ * this handshake exists to avoid. `client.id` is the one field that survives the
+ * call; the object itself is a fallback for a host that reports none.
+ */
+const askedId = (client) => client.id || client
+
+/**
+ * Asks the page for its drive, and answers what came back.
+ *
+ * Concurrent requests share the one promise: a second ask would be a second
+ * load of a drive the first is already installing.
+ *
+ * ONE CLIENT AT A TIME. A page answers by loading the drive into this worker,
+ * so two tabs both answering is two installs and the last one wins; the second
+ * tab is the fallback for the first not answering, not a second asker.
+ *
+ * A page that has not answered yet is not a reason to seed - a large drive, or
+ * a busy tab, takes longer than one ask allows - so the ask is retried while
+ * the budget lasts. Only when every page has had its turn does the seed path
+ * take over, which is where this worker started; the stored drive is still in
+ * IndexedDB and comes back on the next page load.
+ *
+ * 'unavailable' is the page saying it holds a drive it cannot read: the caller
+ * must NOT seed over it, so the verdict travels back to `ensureReady`.
+ */
+let driveAsked = null
+const askHostForDrive = () => {
+  if (driveAsked) return driveAsked
+
+  const asked = new Set()
+
+  driveAsked = (async () => {
+    const deadline = Date.now() + ASK_BUDGET
+
+    while (Date.now() < deadline) {
+      const clients = await self.clients.matchAll({
+        includeUncontrolled: true,
+        type: 'window'
+      })
+      // no page to ask: nothing can have the drive
+      if (!clients.length) return 'none'
+
+      const client = clients.find((c) => !asked.has(askedId(c))) || clients[0]
+      asked.add(askedId(client))
+
+      // A tab that closed between `matchAll()` and this send raises
+      // InvalidStateError. That is this client not answering, not a verdict: the
+      // next one is tried and the budget still bounds the wait. Letting it throw
+      // would reject the promise `driveAsked` holds, and every later ask would
+      // return that rejection - so `ensureReady` would fall through to the seed
+      // for the rest of this worker's life, which is the loss the ask exists to
+      // prevent.
+      try {
+        client.postMessage({ type: 'sasjs-need-drive' })
+      } catch (e) {
+        continue
+      }
+
+      // Registered after a send that worked: a failed send leaves no waiter
+      // behind for an answer that cannot come.
+      const arrived = new Promise((resolve) => driveWaiters.push(resolve))
+
+      const verdict = await Promise.race([
+        arrived,
+        new Promise((resolve) => setTimeout(() => resolve(null), ASK_TIMEOUT))
+      ])
+
+      if (verdict) return verdict
+    }
+
+    return 'none'
+  })().then((verdict) => {
+    // an unreadable drive is not a final answer: ask again on the next request
+    // rather than failing every one for the life of this worker
+    if (verdict === 'unavailable') driveAsked = null
+    return verdict
+  })
+
+  return driveAsked
 }
 
 /**
@@ -379,18 +510,41 @@ const broadcast = async (message) => {
  * stores and the store it seeds. It is sent only when it differs from the last
  * report, so a drive-only request carries no fixture and an identity-only change
  * still reaches storage.
+ *
+ * A report the page never received is not a report: the batch is kept and sent
+ * with the next one, and the fixture is reported again the next time.
  */
+/** Files taken from the runtime whose report to the page failed. */
+let unsentFiles = null
+
 const persistChanges = async () => {
-  const files = R.takeDirty()
+  // `takeDirty()` empties the runtime's map, and only the page writes the drive
+  // on: a batch that never reached it is gone from the drive the next worker
+  // instance loads, while this one has nothing left to hand over. So a failed
+  // report is kept and goes out with the next one.
+  const files = { ...(unsentFiles || {}), ...R.takeDirty() }
   const fixture = IDENTITY_STATE.store.snapshot()
   const asJson = IDENTITY_STATE.seeded ? JSON.stringify(fixture) : ''
-  const identity =
-    asJson && asJson !== IDENTITY_STATE.persisted ? fixture : null
+  const previous = IDENTITY_STATE.persisted
+  const identity = asJson && asJson !== previous ? fixture : null
+
+  if (!Object.keys(files).length && !identity) {
+    unsentFiles = null
+    return
+  }
 
   if (identity) IDENTITY_STATE.persisted = asJson
 
-  if (Object.keys(files).length || identity)
+  try {
     await broadcast({ type: 'sasjs-persist', files, identity })
+  } catch (e) {
+    unsentFiles = files
+    // the fixture is reported when it differs from the last one that ARRIVED
+    if (identity) IDENTITY_STATE.persisted = previous
+    throw e
+  }
+
+  unsentFiles = null
 }
 
 // ----------------------------------------------------------- the SAS transcript
@@ -903,6 +1057,79 @@ const APP_STREAM = API.createAppStreamService(
  * the site root. Both sides take the same base and the answers land inside the
  * folder.
  */
+/**
+ * The app stream's prefix: what a rule names to cover every app at once.
+ */
+const APP_STREAM_PREFIX = '/AppStream'
+
+/** One caller's rules, in the shape the route decision takes them. */
+const routeRulesOf = (permissions) => ({
+  user: (permissions || [])
+    .filter((rule) => rule.user !== undefined)
+    .map((rule) => ({ path: rule.path, setting: rule.setting })),
+  group: (permissions || [])
+    .filter((rule) => rule.group !== undefined)
+    .map((rule) => ({ path: rule.path, setting: rule.setting }))
+})
+
+/**
+ * The caller's own rule about which apps it may see.
+ *
+ * The surface takes this from the host, because only the host knows the rules a
+ * caller holds. sasjs/server answers it with `appIsGranted`: the path a rule
+ * names decides - the app's id, or the label an older rule uses - and the stream
+ * prefix decides when no rule names either. A browser host reads the same rules
+ * from the fixture, so a `Deny` on `/AppStream/orders` hides that app here as it
+ * does on a server, and a fixture with no app rules shows every published app.
+ */
+const appFilterFor = async (subject) => {
+  const rules = routeRulesOf(await RECORDS.listPermissions(subject))
+
+  return (entry) =>
+    API.isRouteGranted(
+      rules,
+      [
+        `${APP_STREAM_PREFIX}/${entry.id}`,
+        entry.name ? `${APP_STREAM_PREFIX}/${entry.name}` : ''
+      ].find((path) =>
+        [...rules.user, ...rules.group].some((rule) => rule.path === path)
+      ) || APP_STREAM_PREFIX,
+      APP_STREAM_PREFIX
+    )
+}
+
+/**
+ * The filter to hand the surface, cached per caller.
+ *
+ * The surface asks it for every request under `/app`, an app's own assets
+ * included, and each answer would otherwise read the permission records and the
+ * groups. The key carries the chosen account and the fixture the page last
+ * persisted, so signing in as someone else or writing a rule re-reads once and
+ * every request after that does not.
+ */
+let appFilterCache
+const appFilter = async (subject) => {
+  const key = `${String(CALLER_USERNAME)}|${String(IDENTITY_STATE.persisted)}`
+  if (appFilterCache && appFilterCache.key === key) return appFilterCache.filter
+
+  // the account the subject names, read from the fixture this host already
+  // holds: an administrator holds every app, so the rules are not asked at all
+  const caller = subject
+    ? IDENTITY_STATE.store
+        .snapshot()
+        .users.find((user) => user.uid === subject.userId)
+    : undefined
+
+  const filter = !caller
+    ? () => false
+    : caller.isAdmin
+      ? () => true
+      : await appFilterFor(subject)
+
+  appFilterCache = { key, filter }
+  return filter
+}
+
 let appStreamWeb
 const appStreamSurface = () => {
   if (!appStreamWeb)
@@ -981,7 +1208,14 @@ let linter
 const code = () => {
   if (codeService) return codeService
   linter = self.SASjsCode
-  codeService = linter.createCodeService({ lintConfig })
+  codeService = linter.createCodeService({
+    lintConfig,
+    reprint: (text, options) =>
+      linter.formatText(text, {
+        ...options,
+        dataRoot: `${self.location.origin}${BASE}/host/${linter.dataPath}`
+      })
+  })
   return codeService
 }
 
@@ -1047,6 +1281,10 @@ const parseLintConfig = (contents) => {
 
 const SERVICES = {
   drive: API.createDriveService(DRIVE_STORE),
+  // The read a streamed deployment links to, over the same store as the drive:
+  // a file the deploy wrote is the file its page fetches, typed by the package
+  // exactly as the server types it
+  deploymentFile: API.createDeploymentFileService(DRIVE_STORE),
   // The package's browser fixture states one run time; this host serves two, and
   // `info` is what the Studio reads to decide whether a file may be run at all,
   // so the answer is the host's own list rather than the fixture's.
@@ -1083,6 +1321,33 @@ const RUN_ROUTES = new Set([
   'POST /SASjsApi/stp/trigger',
   'POST /SASjsApi/code/execute',
   'POST /SASjsApi/code/trigger'
+])
+
+/**
+ * The run routes a permission rule addresses.
+ *
+ * A run is answered by this host rather than by `API.dispatch`, so the question
+ * is asked here: the answer is the one `/info/myAuthorizedRoutes` gives the
+ * interface, which is why a denied rule refuses the call and not only the menu
+ * entry beside it.
+ *
+ * Neither the drive routes nor the triggers are gated here, and that is
+ * deliberate: the drive routes stay ungated because the package does not gate
+ * them yet either (no rule is applied to a drive call until sasjs/api#97 lands,
+ * and that gates the run routes only), and the triggers are outside the
+ * inventory the rules address, as they are on a server.
+ *
+ * This set is a copy of the package's own list in `src/host/dispatch.ts`, and it
+ * fails open: a run route the package adds later is silently ungated here. It is
+ * retired by the `@sasjs/api` release that carries `mayUseRoute` - when the pin
+ * reaches that version, delete this set and ask the method instead, which is one
+ * decision rather than a read of the whole reported list, and stops the per-run
+ * re-read of the rules and the groups.
+ */
+const GRANTED_RUN_ROUTES = new Set([
+  'GET /SASjsApi/stp/execute',
+  'POST /SASjsApi/stp/execute',
+  'POST /SASjsApi/code/execute'
 ])
 
 /**
@@ -1397,9 +1662,10 @@ const subjectOf = async (request, query) => {
  * The service is called directly rather than through `dispatch` because a run's
  * answer is the webout *with the headers its service declared*
  * (`content-disposition` is how a service names a download), and the artefact
- * the service returns is where those headers are. Everything a client observes
- * about the request - who may run it, which field names the program, what
- * `_debug` means - is still the package's decision.
+ * the service returns is where those headers are. What a client observes about
+ * the request - which field names the program, what `_debug` means, which run
+ * times are offered - is still the package's decision; who may run it is not,
+ * because it is asked here before this is reached (see `GRANTED_RUN_ROUTES`).
  */
 const runRoute = async (routeId, payload, subject) => {
   // A program may read any file it likes - the drive is its filesystem - so
@@ -1496,9 +1762,14 @@ const outputRoute = async (request, params, subject) => {
 /** The response a `contents` answer becomes, typed by the path it names. */
 const contentsResponse = (answer, path) => {
   const binary = typeof answer.contents !== 'string'
+  // a route that states a type decided it from what the file IS - a streamed
+  // deployment's asset - and that answer wins over the extension's guess
   return new Response(answer.contents, {
     status: answer.status,
-    headers: { 'content-type': contentTypeFor(path, binary) }
+    headers: Object.assign(
+      { 'content-type': answer.contentType || contentTypeFor(path, binary) },
+      answer.headers
+    )
   })
 }
 
@@ -1515,7 +1786,7 @@ const contentsResponse = (answer, path) => {
  */
 const ensureForRequest = async (url) => {
   const paths = []
-  for (const name of ['_filePath', '_program']) {
+  for (const name of ['_filePath', '_FILE', '_program']) {
     const value = url.searchParams.get(name)
     if (value) paths.push(value)
   }
@@ -1539,7 +1810,39 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
   // both are answered, so the alias is stripped once here and everything below -
   // the route lookup, the drive routes' plain-text refusals, the log - works
   // from one path.
-  const apiPath = path.replace(/^\/api(?=\/|$)/i, '/SASjsApi')
+  // The web tier spellings: ours (`/StoredProgram`, which a SASjs build links to)
+  // and the estate's (`/SASJobExecution`, which a Viya build bakes in). Neither
+  // is in an API table, so the path is translated to the operation it stands
+  // for rather than answered twice - `_FILE=` is the drive read (the package
+  // decides its typing and its refusal), `_program=` is the run.
+  const webTier = /^\/(SASJobExecution|StoredProgram)$/i.test(path)
+  // Presence, not truthiness: the server tests `!== undefined`, and Express
+  // parses `_program=` to the empty string, so a request naming both with an
+  // empty value is refused there - a `get`-based guard reads the empty string as
+  // absent and answers the file instead, which is the disagreement to avoid.
+  const namedFile = url.searchParams.has('_FILE')
+  const namedProgram = url.searchParams.has('_program')
+  // presence decides which branch runs, as it does on the server (`!== undefined`
+  // there): an empty `_FILE=` still reaches the read, and the host refuses the
+  // empty name - falling through to "not part of the API" would answer a 404 the
+  // server never gives
+  const askedForFile = webTier && request.method === 'GET' && namedFile
+  const askedForProgram =
+    webTier && /^\/StoredProgram$/i.test(path) && namedProgram
+
+  // A request naming both is refused before either branch is chosen, in the
+  // server's own words - by parameter, and before either tier or method is
+  // considered, because that is the order the server checks them in. The mock
+  // exists so a host's answers can be reproduced: picking the file here would
+  // make the site work on a page the server answers 400 for.
+  if (webTier && namedFile && namedProgram)
+    return text(TIER_NEEDS_ONE_PARAMETER, 400)
+
+  const apiPath = askedForFile
+    ? '/SASjsApi/drive/file'
+    : askedForProgram && /^\/StoredProgram$/i.test(path)
+      ? '/SASjsApi/stp/execute'
+      : path.replace(/^\/api(?=\/|$)/i, '/SASjsApi')
   const query = {}
   for (const [k, v] of url.searchParams.entries()) query[k] = v
 
@@ -1548,7 +1851,7 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     // that needs a caller - a request that arrives before the page has booted
     // (a static asset fetch raced by an API call) must not answer as nobody
     await ensureIdentity()
-    await R.ensureReady()
+    await R.ensureReady(askHostForDrive)
     await ensureForRequest(url)
 
     // The app stream is the server's own web surface rather than part of the
@@ -1580,7 +1883,11 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
         path: url.pathname.replace(
           /\/AppStream(?=\/|$)/i,
           SHORT_APP_STREAM_PATH
-        )
+        ),
+        // who may see which app, which the surface leaves to the host. The
+        // caller is resolved here because this branch answers before the API
+        // routes below resolve theirs
+        allow: await appFilter(await subjectOf(request, query))
       })
 
       // a removal changes the index, which lives in the drive: persisted in the
@@ -1613,8 +1920,20 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     const payload = await readPayload(request, routeId === DEPLOY_UPLOAD)
     payload.query = query
 
-    if (RUN_ROUTES.has(routeId))
+    if (RUN_ROUTES.has(routeId)) {
+      // The rule this host would apply, asked of the package: the run routes are
+      // answered here rather than by `dispatch`, so the question is asked here.
+      // It is the same answer `/info/myAuthorizedRoutes` gives the interface -
+      // one decision, so a menu entry and the call behind it cannot disagree.
+      if (GRANTED_RUN_ROUTES.has(routeId)) {
+        const routePath = routeId.slice(routeId.indexOf(' ') + 1)
+        const granted = await RECORDS.myAuthorizedRoutes(subject)
+        if (!granted.paths.includes(routePath))
+          throw new API.ApiError(401, 'Unauthorized')
+      }
+
       return await runRoute(routeId, payload, subject)
+    }
 
     const apiRequest = {
       query,
@@ -1771,7 +2090,12 @@ self.addEventListener('fetch', (event) => {
   // canonicalises to `/SASjsApi`.
   if (/^\/api\/?$/i.test(path)) return
 
-  if (!/^\/(SASjsApi|SASLogon|AppStream|api|app)(\/|$)/i.test(path)) return
+  if (
+    !/^\/(SASjsApi|SASLogon|AppStream|api|app|SASJobExecution|StoredProgram)(\/|$)/i.test(
+      path
+    )
+  )
+    return
   event.respondWith(handle(event.request, url))
 })
 
@@ -1786,11 +2110,28 @@ self.addEventListener('message', (event) => {
         bootIdentity(data)
           .then(() => R.load(data.files || {}, data.deleted || []))
           .then(async () => {
-            await persistChanges()
+            // From here the payload is accepted and in the drive: a failure to
+            // write it back to the other tabs is NOT the worker refusing the
+            // data, and reporting it as a `host` refusal would have the page
+            // delete a stored drive the worker is serving. It gets its own kind,
+            // so a failed broadcast is reported and the drive left alone.
+            const persisted = await persistChanges().then(
+              () => null,
+              (e) => e
+            )
+            // the request that asked for this drive is waiting on it
+            driveArrived('loaded')
             reply({
               type: 'sasjs-load-ack',
               boot: R.bootInfo(),
-              stats: R.stats()
+              stats: R.stats(),
+              ...(persisted
+                ? {
+                    error:
+                      (persisted && persisted.message) || String(persisted),
+                    errorKind: 'persist'
+                  }
+                : {})
             })
           })
           .catch((e) =>
@@ -1813,11 +2154,26 @@ self.addEventListener('message', (event) => {
         bootIdentity(data)
           .then(() => R.seed())
           .then(async () => {
-            await persistChanges()
+            // as in the load ack: the seed is installed, and a failed write-back
+            // to the other tabs is a `persist` failure, not a refused seed
+            const persisted = await persistChanges().then(
+              () => null,
+              (e) => e
+            )
+            // "there is nothing stored" is an answer too: the wait is over and
+            // the seeded drive is the visitor's
+            driveArrived('seeded')
             reply({
               type: 'sasjs-seed-ack',
               boot: R.bootInfo(),
-              stats: R.stats()
+              stats: R.stats(),
+              ...(persisted
+                ? {
+                    error:
+                      (persisted && persisted.message) || String(persisted),
+                    errorKind: 'persist'
+                  }
+                : {})
             })
           })
           .catch((e) =>
@@ -1828,6 +2184,12 @@ self.addEventListener('message', (event) => {
             })
           )
       )
+      break
+
+    case 'sasjs-drive-unavailable':
+      // the page holds a drive it could not read: not an answer to seed over.
+      // `ensureReady` fails the request instead, and the next one asks again.
+      driveArrived('unavailable')
       break
 
     case 'sasjs-reset':
@@ -1952,7 +2314,7 @@ self.addEventListener('message', (event) => {
       // build. Whole means whole: the pieces nobody read are fetched first, or
       // the export would quietly lose every app bundle it had not opened.
       event.waitUntil(
-        R.ensureReady()
+        R.ensureReady(askHostForDrive)
           .then(() => R.ensureAll())
           .then(() => reply({ type: 'sasjs-snapshot', files: R.dumpAll() }))
           .catch((e) =>
@@ -1967,7 +2329,7 @@ self.addEventListener('message', (event) => {
 
     case 'sasjs-stats':
       event.waitUntil(
-        R.ensureReady().then(() => {
+        R.ensureReady(askHostForDrive).then(() => {
           try {
             reply({ type: 'sasjs-stats', boot: R.bootInfo(), stats: R.stats() })
           } catch (e) {
