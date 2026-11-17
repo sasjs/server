@@ -3,9 +3,10 @@ import { Box, Menu, MenuItem, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
-import { TreeItem } from '@mui/x-tree-view/TreeItem'
+import { TreeItem, treeItemClasses } from '@mui/x-tree-view/TreeItem'
 
 import FileTypeIcon from './fileTypeIcon'
+import { rowClickOpensEntry } from './treeRowClick'
 import DeleteConfirmationModal from './deleteConfirmationModal'
 import NameInputModal from './nameInputModal'
 
@@ -110,6 +111,25 @@ const TreeView = ({
     handleSelect(target.relativePath)
   }
 
+  /**
+   * Opens the entry a click was made on, from anywhere in its row.
+   *
+   * The row is what the reader points at, so the row takes the click;
+   * `rowClickOpensEntry` is the rule that says which clicks are the entry's.
+   */
+  const handleRowClick = (event: React.MouseEvent, target: TreeNode) => {
+    if (
+      !rowClickOpensEntry(
+        event.target as Element,
+        event.currentTarget as Element,
+        treeItemClasses.iconContainer
+      )
+    )
+      return
+
+    handleItemClick(target)
+  }
+
   const launch = (target: TreeNode, debug?: boolean) => {
     setContextMenu(null)
 
@@ -181,9 +201,12 @@ const TreeView = ({
       // a right-click on the rest of the row - where a user naturally clicks -
       // used to do nothing at all.
       onContextMenu={(event) => openContextMenu(event, nodes)}
+      // On the row, not on the label: the label is only as wide as the name, so
+      // a click on the indent or the icon column beside it - where a reader
+      // aiming at a short name naturally lands - used to do nothing at all.
+      onClick={(event) => handleRowClick(event, nodes)}
       label={
         <Typography
-          onClick={() => handleItemClick(nodes)}
           title={describeTimes(nodes)}
           sx={{
             display: 'flex',
