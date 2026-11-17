@@ -57,7 +57,7 @@ jobs:
       # anything, so ask it BEFORE spending three minutes building three platform
       # executables. The plugin install plus the dry run costs about forty
       # seconds, and the build steps below are skipped whenever the answer is no
-      # - which is every docs or chore merge on main.
+      # - which includes docs: and chore: commits that do not request a release.
       # Node 22 ships npm 10.x, and npm trusted publishing (OIDC) needs 11.5.1 or
       # later - with an older CLI `npm publish` looks for a token and fails
       # rather than exchanging the OIDC token. Same step the lint release runs.
@@ -75,32 +75,8 @@ jobs:
           # contract would break this job with nothing in the repository to revert
           npm i -g semantic-release@25.0.9
 
-      # A change that only touches the documentation ships no code, so it is not
-      # a release - the pages travel inside the next build, and cutting a
-      # version for them alone fills the changelog with entries that describe no
-      # behaviour. semantic-release already declines a `docs:` commit; this
-      # declines a merge whose message says `fix` but whose diff says `docs/`.
-      - name: Does this commit change anything but the docs?
-        id: scope
-        run: |
-          set -euo pipefail
-          before='${{ github.event.before }}'
-          # A new branch, or a forced push: there is no range to inspect.
-          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
-            echo "docsOnly=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          changed=$(git diff --name-only "$before" "$GITHUB_SHA" | grep -v '^docs/' || true)
-          if [ -z "$changed" ]; then
-            echo "docsOnly=true" >> "$GITHUB_OUTPUT"
-            echo "Only docs/ changed: no release."
-          else
-            echo "docsOnly=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Is a release pending?
         id: pending
-        if: steps.scope.outputs.docsOnly != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -124,9 +100,13 @@ jobs:
             fi
             echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
             echo "Building as v$VERSION"
-          else
+          elif grep -q 'There are no relevant changes, so no new version is released' /tmp/dry-run.log ||
+               grep -q "The local branch .* is behind the remote one, therefore a new version won't be published" /tmp/dry-run.log; then
             echo "release=false" >> "$GITHUB_OUTPUT"
             echo "No release is pending for this commit: the build steps are skipped."
+          else
+            echo "::error::Could not determine whether a release is pending; refusing to publish."
+            exit 1
           fi
 
       - name: Install Dependencies WEB
@@ -319,17 +299,27 @@ jobs:
               ;;
           esac
 
-      # Deliberately ungated: the dry run above is a cost gate, while this is
-      # the real release. Running it unconditionally keeps one source of truth,
-      # and means a change to semantic-release's log wording can never silently
-      # suppress a release.
+      # Only publish when the same dry run caused a build. Otherwise a docs-only
+      # fix or a changed dry-run message could create a release without binaries.
       - name: Release
         id: release
+        if: steps.pending.outputs.release == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.pending.outputs.version }}
         run: |
           set -euo pipefail
+          # github's release plugin ignores missing assets rather than failing.
+          # Check all names and their hashes before it can create a tag or release.
+          test -n "$VERSION"
+          test -s npm-package/package.json
+          for asset in linux.zip macos.zip windows.zip SHA256SUMS; do
+            test -s "executables/$asset"
+          done
+          for asset in linux.zip macos.zip windows.zip; do
+            test "$(grep -cE "^[0-9a-f]{64}  ${asset//./\\.}$" executables/SHA256SUMS)" = 1
+          done
+          (cd executables && sha256sum --check --strict SHA256SUMS)
           semantic-release
 
           # Exit 0 is not the same as "released". semantic-release declines and
