@@ -1,6 +1,6 @@
 import path from 'path'
 import { MulterFile } from '../types/Upload'
-import { listFilesInFolder, isWindows } from '@sasjs/utils'
+import { listFilesInFolder } from '@sasjs/utils'
 import { asLiteral, asSasMacroValue } from './programVariables'
 
 interface FilenameMapSingle {
@@ -112,15 +112,18 @@ export const generateFileUploadJSCode = async (
 ) => {
   let uploadCode = ''
   let fileCount = 0
+  const fetchTables = new Map<string, string>()
 
   const sessionFolderList: string[] = await listFilesInFolder(sessionFolder)
   sessionFolderList.forEach(async (fileName) => {
     if (fileName.includes('req_file')) {
       fileCount++
+      fetchTables.set(
+        fileName,
+        `{ name: _WEBIN_NAME${fileCount}, filename: _WEBIN_FILENAME${fileCount}, csv: _WEBIN_FILEREF${fileCount}.toString('utf8') }`
+      )
       const filePath = path.join(sessionFolder, fileName)
-      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = fs.readFileSync('${
-        isWindows() ? filePath.replace(/\\/g, '\\\\') : filePath
-      }')`
+      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = globalThis.fs.readFileSync(${asLiteral(filePath)})`
       uploadCode += `\nconst _WEBIN_FILENAME${fileCount} = ${asLiteral(
         filesNamesMap[fileName].originalName
       )}`
@@ -131,6 +134,13 @@ export const generateFileUploadJSCode = async (
   })
 
   uploadCode += `\nconst _WEBIN_FILE_COUNT = ${fileCount}`
+  // Multer .any() keeps request order in req.files; the prefixed UUID keys in
+  // makeFilesNamesMap retain that insertion order. Keep legacy _WEBIN indices
+  // in filesystem order, but supply FETCH tables in multipart order.
+  const orderedFetchTables = Object.keys(filesNamesMap)
+    .map((fileName) => fetchTables.get(fileName))
+    .filter((table): table is string => table !== undefined)
+  uploadCode += `\nconst _sasjs_fetch_tables = [${orderedFetchTables.join(', ')}]`
 
   return uploadCode
 }
