@@ -209,11 +209,30 @@ describe('a Viya client against the emulated estate', () => {
     )
     expect(answer.status).toBe(200)
 
-    // rotation is single use, which is what a caller replaying a token on a real
-    // estate is told
+    // rotation is single use, and both halves of that are asserted: the client's
+    // own verdict on the refusal, and the status and error the estate answers with.
+    // `rejects.toBeTruthy()` would be satisfied by a 500 or a dropped socket, which
+    // is not the same statement.
+    const replaced = tokens
+
     await expect(
-      client.refreshTokens(clientId, '', tokens.refresh_token)
-    ).rejects.toBeTruthy()
+      client.refreshTokens(clientId, '', replaced.refresh_token)
+    ).rejects.toMatchObject({ name: 'LoginRequiredError' })
+
+    const replay = await fetch(`${origin}/SASLogon/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${Buffer.from(`${clientId}:`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: replaced.refresh_token
+      })
+    })
+
+    expect(replay.status).toBe(401)
+    expect(await replay.json()).toMatchObject({ error: 'invalid_grant' })
 
     tokens = refreshed as unknown as TokenPair
   })
@@ -326,9 +345,21 @@ describe('a Viya client against the emulated estate', () => {
     // client makes
     await client.deleteFolder('/conformanceRoot', tokens.access_token)
 
+    // the client says `NotFoundError` with the address it asked for, and the estate
+    // says 404 with its own message: either half alone passes on a 500
     await expect(
       client.getFolder('/conformanceRoot', tokens.access_token)
-    ).rejects.toBeTruthy()
+    ).rejects.toMatchObject({
+      name: 'NotFoundError',
+      url: '/folders/folders/@item?path=/conformanceRoot'
+    })
+
+    const answered = await read('/folders/folders/@item?path=/conformanceRoot')
+
+    expect(answered.status).toBe(404)
+    expect(await answered.json()).toMatchObject({
+      message: "Folder doesn't exist."
+    })
   })
 
   executionLeg('runs a service and reads its webout', async () => {
