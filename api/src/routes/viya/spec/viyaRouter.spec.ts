@@ -4,13 +4,11 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import request from 'supertest'
 
+import { createViyaRouter, isViyaPath, ruleFor, viyaGuard } from '../index'
 import {
-  createViyaRouter,
-  isViyaPath,
-  ruleFor,
-  viyaGuard,
-  type ViyaRouterOptions
-} from '../index'
+  configureBodyParsers,
+  type BodyParserOptions
+} from '../../../app-modules'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -54,12 +52,14 @@ const pollWebout = async (mount: express.Express, sessionId: string) => {
 
 const app = (
   services: (req: express.Request) => Services,
-  options?: ViyaRouterOptions
+  options?: BodyParserOptions
 ) => {
   const server = express()
 
-  server.use(express.json())
-  server.use('/', createViyaRouter(services, options))
+  // the server's own parsers, from the server's own module: a fixture that mounts
+  // its own would answer a file PUT differently from production
+  configureBodyParsers(server, options)
+  server.use('/', createViyaRouter(services))
   // what the server's own routes would answer for anything the router declines
   server.use('/', (_req, res) => res.status(418).json({ message: 'not viya' }))
 
@@ -410,6 +410,67 @@ describe('an upload over the Viya paths', () => {
 
     expect(pastCap.status).toBe(413)
     expect(updates).toEqual(['12345678'])
+  })
+
+  /**
+   * A `.json` file is a file like any other: `updateFileContent` sends its own
+   * content type, which for one of those is `application/json`. A JSON parser
+   * consumes that body and hands on an object - or refuses it, when the file is
+   * not itself valid JSON - so the bytes have to be taken before the parser runs,
+   * for every content type rather than the text ones only.
+   */
+  it("reads a json file's content as bytes, not as a parsed body", async () => {
+    const updates: string[] = []
+    // deliberately not valid JSON: a file's bytes are not required to parse
+    const content = '{ this is not json'
+
+    const mount = app(() => {
+      const services = withExecution('[]', '')
+
+      services.drive = {
+        tree: async () => ({
+          status: 'success',
+          tree: {
+            name: '',
+            relativePath: '/',
+            isFolder: true,
+            children: [
+              {
+                name: 'a.json',
+                relativePath: '/a.json',
+                isFolder: false,
+                children: []
+              }
+            ]
+          }
+        }),
+        save: async () => ({ status: 'success' }) as never,
+        read: async () => ({ contents: content, binary: false }),
+        update: async (_path: string, contents: string | Uint8Array) => {
+          updates.push(Buffer.from(contents as Uint8Array).toString())
+
+          return { status: 'success' } as never
+        }
+      } as never
+
+      return services
+    })
+
+    const uploaded = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.from(content), 'a.json')
+
+    expect(uploaded.status).toBe(201)
+
+    const id = uploaded.body.id as string
+
+    const answer = await request(mount)
+      .put(`/files/files/${id}/content`)
+      .set('Content-Type', 'application/json')
+      .send(content)
+
+    expect(answer.status).toBe(200)
+    expect(updates).toEqual([content])
   })
 
   it('answers a request with no file part with the emulator own 400', async () => {

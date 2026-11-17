@@ -26,7 +26,7 @@
  * engine at all.
  */
 import express, { Express } from 'express'
-import { mkdtemp } from 'fs/promises'
+import { mkdtemp, rm } from 'fs/promises'
 import type { Server } from 'http'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -77,6 +77,8 @@ describe('a Viya client against the emulated estate', () => {
   let origin: string
   let con: Mongoose
   let mongoServer: MongoMemoryServer
+  /** The drive and log root this run creates, removed with the rest of the teardown. */
+  let root: string
   let client: SASViyaApiClient
   let tokens: TokenPair
 
@@ -119,7 +121,7 @@ describe('a Viya client against the emulated estate', () => {
 
   beforeAll(async () => {
     // what the server sets at boot, before `setupRoutes` reads them
-    const root = await mkdtemp(join(tmpdir(), 'viya-conformance-'))
+    root = await mkdtemp(join(tmpdir(), 'viya-conformance-'))
 
     process.sasjsRoot = root
     process.driveLoc = join(root, 'drive')
@@ -189,6 +191,9 @@ describe('a Viya client against the emulated estate', () => {
     await con.connection.dropDatabase()
     await con.connection.close()
     await mongoServer.stop()
+    // the drive, the logs and the session folders this run wrote: a harness that
+    // left one behind per run would fill the temporary directory it runs in
+    await rm(root, { recursive: true, force: true })
   })
 
   it('refreshes the pair through the client, and refuses the token it replaced', async () => {

@@ -49,18 +49,6 @@ export const VIYA_PREFIXES = [
 ]
 
 /**
- * The largest file content this mount reads out of a request body.
- *
- * A file PUT carries its content as the body with the file's own content type, so
- * `express.json` never parses it and the limit that parser enforces never applies.
- * This is the cap for that one path, and it is this mount's own rule rather than a
- * copy of the parser's: it matches the global `100mb` in `configureBodyParsers`,
- * not the larger deploy-only limit the deploy routes are given, because a file's
- * content is not a deploy payload.
- */
-export const VIYA_CONTENT_BYTES = 100 * 1024 * 1024
-
-/**
  * The guard, scoped to what it protects.
  *
  * Three paths matter and each is here for a reason:
@@ -156,70 +144,15 @@ const uploadOf = async (
   }
 }
 
-/**
- * A file's new content, when the request carries it as the body itself.
- *
- * `updateFileContent` in `@sasjs/adapter` puts a file PUT on the wire with the
- * file's own content type - `text/plain` for a program - and the content as the
- * body. `express.json` leaves that body unread by design, so without this the
- * emulator is handed `{}` and answers `400 File content is required.` to a caller
- * that sent the content. The handler takes a string or the bytes, so the bytes
- * are what this collects.
- */
-const contentBodyOf = async (
-  req: express.Request,
-  limit: number
-): Promise<Uint8Array | 'too-large' | undefined> => {
-  if (!/^\/files\/files\/[^/]+\/content$/.test(req.path)) return undefined
-  if (req.method !== 'PUT' && req.method !== 'POST') return undefined
-  if (req.is('application/json') || req.is('multipart/form-data'))
-    return undefined
-
-  const chunks: Buffer[] = []
-  let read = 0
-
-  // Counted as it arrives, and refused the moment it passes the cap: this is the
-  // one path the JSON parser does not bound, so without the count a caller decides
-  // how much memory the process allocates
-  for await (const chunk of req) {
-    read += (chunk as Buffer).length
-
-    if (read > limit) return 'too-large'
-
-    chunks.push(Buffer.from(chunk as Buffer))
-  }
-
-  return Buffer.concat(chunks)
-}
-
 /** A request the emulator should not answer is left to the server's own routes. */
 export const isViyaPath = (path: string): boolean =>
   VIYA_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   )
 
-/** What the router may be told about the host it is mounted on. */
-export interface ViyaRouterOptions {
-  /**
-   * The largest file content a single request may carry. Stated so a case can
-   * measure the refusal without sending a hundred megabytes: the default is the
-   * cap production runs with.
-   */
-  contentBytes?: number
-}
-
-/**
- * The router.
- *
- * `services` is a factory rather than a value because a request carries the
- * caller: the estate the emulator answers as depends on who is asking, and a
- * host that resolved one at boot would answer everyone as the same account.
- */
 export const createViyaRouter = (
-  services: (req: express.Request) => Services,
-  options: ViyaRouterOptions = {}
+  services: (req: express.Request) => Services
 ) => {
-  const contentBytes = options.contentBytes ?? VIYA_CONTENT_BYTES
   const router = express.Router()
 
   router.use(async (req, res, next) => {
@@ -258,16 +191,12 @@ export const createViyaRouter = (
     let answer: ViyaResponse
 
     try {
-      // a file PUT carries its content as the body, which no JSON parser has read:
-      // it travels as `contents`, the request-side twin of the response's raw body
-      const contents = await contentBodyOf(req, contentBytes)
-
-      // answered here rather than through `next`, because the error handler turns
-      // everything it sees into a 500
-      if (contents === 'too-large')
-        return res.status(413).json({
-          message: `A file's content must not exceed ${contentBytes} bytes.`
-        })
+      // A file PUT carries its content as the body, and `configureBodyParsers`
+      // reads it before any JSON parser can: it arrives here as bytes, in
+      // `contents` - the request-side twin of the response's raw body. A request
+      // with no body at all leaves it undefined, and the emulator answers its own
+      // 400.
+      const contents = req.body instanceof Uint8Array ? req.body : undefined
 
       answer = await dispatchViya(services(req), req.method, req.path, {
         query: req.query as Record<string, string | undefined>,
