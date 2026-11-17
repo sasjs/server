@@ -77,7 +77,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // that refuses the recording, one that serves no apps, or one whose run times
 // hide the program this site exists to show.
 // 7.2.1 includes the mock Drive upload authorization fix (sasjs/cli#1621).
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '7.2.1'
+// 7.2.2 carries @sasjs/api 0.44.2 (sasjs/cli#1622).
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '7.2.2'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
