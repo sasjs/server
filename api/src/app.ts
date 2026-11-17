@@ -22,6 +22,7 @@ import {
   verifyEnvVariables
 } from './utils'
 import {
+  configureBodyParsers,
   configureCors,
   configureExpressSession,
   configureLogger,
@@ -109,23 +110,8 @@ export default setProcessVariables().then(async () => {
    ***********************************/
   configureExpressSession(app)
 
-  // The deploy cap is stated in DECODED bytes and its tree travels as JSON, in
-  // which file contents are base64 - 4/3 of what they write - so a tree at the
-  // cap is up to ~134MB on the wire. That parser is mounted for the deploy
-  // routes ONLY: everything else keeps the global limit below, because a
-  // request body is buffered before authentication and no other route needs the
-  // headroom. Matching on the folder also covers /drive/deploy/upload, whose
-  // body is multipart and which express.json therefore ignores.
-  // Mounted on every spelling of the API prefix: the alias buffers the same
-  // body, so a deploy that succeeds on /SASjsApi/drive/deploy must not be
-  // refused with entity.too.large on /api/drive/deploy.
-  API_PREFIXES.forEach((prefix) =>
-    app.use(
-      `${prefix}/drive/deploy`,
-      express.json({ limit: DEPLOY_PAYLOAD_BYTES })
-    )
-  )
-  app.use(express.json({ limit: '100mb' }))
+  configureBodyParsers(app)
+
   app.use(express.static(path.join(__dirname, '../public')))
 
   // The API documentation page and the swagger-ui build beside it, served
@@ -140,20 +126,6 @@ export default setProcessVariables().then(async () => {
     '/api-assets',
     express.static(path.join(__dirname, '../public/SASjsApi'))
   )
-
-  // NOTE: no urlencoded body parser here. The only consumer of
-  // form-encoded bodies is the SAS9 mock's login form, which mounts its own
-  // parser inside the mock router (routes/web/sas9-web.ts) - keeping this
-  // global was body-parsing surface with no production need.
-
-  // Express 5 leaves req.body undefined when the request carries no parsable
-  // body (express 4 defaulted it to {}). Every route handler validates
-  // req.body with joi and assumes an object, and joi 18's validate(undefined)
-  // succeeds silently, so restore the express 4 default here.
-  app.use((req, _res, next) => {
-    if (req.body === undefined) req.body = {}
-    next()
-  })
 
   await setupUserAutoExec()
 

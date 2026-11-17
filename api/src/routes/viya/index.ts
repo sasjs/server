@@ -144,6 +144,31 @@ const uploadOf = async (
   }
 }
 
+/**
+ * A file's new content, when the request carries it as the body itself.
+ *
+ * `updateFileContent` in `@sasjs/adapter` puts a file PUT on the wire with the
+ * file's own content type - `text/plain` for a program - and the content as the
+ * body. `express.json` leaves that body unread by design, so without this the
+ * emulator is handed `{}` and answers `400 File content is required.` to a caller
+ * that sent the content. The handler takes a string or the bytes, so the bytes
+ * are what this collects.
+ */
+const contentBodyOf = async (
+  req: express.Request
+): Promise<Uint8Array | undefined> => {
+  if (!/^\/files\/files\/[^/]+\/content$/.test(req.path)) return undefined
+  if (req.method !== 'PUT' && req.method !== 'POST') return undefined
+  if (req.is('application/json') || req.is('multipart/form-data'))
+    return undefined
+
+  const chunks: Buffer[] = []
+
+  for await (const chunk of req) chunks.push(Buffer.from(chunk as Buffer))
+
+  return Buffer.concat(chunks)
+}
+
 /** A request the emulator should not answer is left to the server's own routes. */
 export const isViyaPath = (path: string): boolean =>
   VIYA_PREFIXES.some(
@@ -198,9 +223,14 @@ export const createViyaRouter = (
     let answer: ViyaResponse
 
     try {
+      // a file PUT carries its content as the body, which no JSON parser has read:
+      // it travels as `contents`, the request-side twin of the response's raw body
+      const contents = await contentBodyOf(req)
+
       answer = await dispatchViya(services(req), req.method, req.path, {
         query: req.query as Record<string, string | undefined>,
         body: req.body as Record<string, unknown> | undefined,
+        contents,
         file: await uploadOf(req),
         // the scheme is case-insensitive (RFC 7235 2.1), so `bearer <tok>` is a
         // bearer token and not a token that happens to start with the word

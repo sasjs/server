@@ -16,6 +16,7 @@
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath ./.git-hooks",
     "test": "mkdir -p tmp && mkdir -p ../web/build && node scripts/test-format-api.cjs && jest --silent --coverage",
     "test:e2e": "mkdir -p tmp && jest --config jest.e2e.config.js --runInBand",
+    "test:conformance": "mkdir -p tmp && jest --config jest.conformance.config.js --runInBand",
     "lint:fix": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "lint": "npx prettier --check \"src/**/*.{ts,tsx,js,jsx,html,css,sass,less,yml,md,graphql}\"",
     "exe": "npm run build && pkg .",
@@ -87,6 +88,7 @@
     "url": "^0.11.4"
   },
   "devDependencies": {
+    "@sasjs/adapter-v6": "npm:@sasjs/adapter@6.1.1",
     "@types/adm-zip": "^0.5.8",
     "@types/bcryptjs": "^3.0.0",
     "@types/compression": "1.8.1",

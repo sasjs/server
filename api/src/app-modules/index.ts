@@ -1,3 +1,4 @@
+export * from './configureBodyParsers'
 export * from './configureCors'
 export * from './configureDocsCsp'
 export * from './configureExpressSession'

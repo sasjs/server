@@ -272,6 +272,67 @@ describe('an upload over the Viya paths', () => {
     expect(left).toEqual([])
   })
 
+  /**
+   * `updateFileContent` in `@sasjs/adapter` puts the new content on the wire as
+   * the body itself, with the file's own content type, and `express.json` leaves
+   * that body unread - so the mount has to hand the emulator the bytes. Without
+   * it the caller is answered `400 File content is required.` having just sent the
+   * content.
+   */
+  it("hands a file PUT's content to the emulator as bytes", async () => {
+    const updates: Array<string | Uint8Array> = []
+
+    const mount = app(() => {
+      const services = withExecution('[]', '')
+
+      services.drive = {
+        tree: async () => ({
+          status: 'success',
+          tree: {
+            name: '',
+            relativePath: '/',
+            isFolder: true,
+            children: [
+              {
+                name: 'a.txt',
+                relativePath: '/a.txt',
+                isFolder: false,
+                children: []
+              }
+            ]
+          }
+        }),
+        save: async () => ({ status: 'success' }) as never,
+        read: async () => ({ contents: 'first', binary: false }),
+        update: async (_path: string, contents: string | Uint8Array) => {
+          updates.push(contents)
+
+          return { status: 'success' } as never
+        }
+      } as never
+
+      return services
+    })
+
+    // the id is the estate's: a file PUT names a file the estate already holds
+    const uploaded = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.from('first'), 'a.txt')
+
+    expect(uploaded.status).toBe(201)
+
+    const id = uploaded.body.id as string
+
+    const answer = await request(mount)
+      .put(`/files/files/${id}/content`)
+      .set('Content-Type', 'text/plain')
+      .send('second')
+
+    expect(answer.status).toBe(200)
+    expect(updates).toHaveLength(1)
+    expect(Buffer.from(updates[0] as Uint8Array).toString()).toBe('second')
+  })
+
   it('answers a request with no file part with the emulator own 400', async () => {
     const answer = await request(app(() => withExecution('[]', ''))).post(
       '/files/files'

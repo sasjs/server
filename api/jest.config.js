@@ -18,6 +18,9 @@ module.exports = {
     '<rootDir>/build/',
     // The browser test needs a web build and a browser, so it runs through
     // jest.e2e.config.js (`npm run test:e2e`) instead.
-    '<rootDir>/src/e2e/'
+    '<rootDir>/src/e2e/',
+    // The conformance run opens a socket and drives a real client, so it runs
+    // through jest.conformance.config.js (`npm run test:conformance`).
+    '<rootDir>/src/conformance/'
   ]
 }
