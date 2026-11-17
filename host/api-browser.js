@@ -1,4 +1,4 @@
-/* @sasjs/api 0.44.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.44.2 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -3584,9 +3584,8 @@ var SASjsApi = (() => {
     // sasjs/cli#1550, not this package's.
     "GET /SASjsApi/app/{id}": {
       implemented: true,
-      // the caller's token is the host's middleware, and a failure that is not the
-      // index refusing the id - a drive read that broke - is the host's to answer
-      hostResponses: [401, 500],
+      // a drive read that broke is the host's to answer
+      hostResponses: [500],
       // the shape a client reads: the entry as registered, the file it is served from,
       // and whether that file is there
       responses: {
@@ -5179,7 +5178,7 @@ var SASjsApi = (() => {
   };
 
   // src/viya/compute.ts
-  var DEFAULT_CONTEXT_NAME = "Emulated Compute Context";
+  var DEFAULT_CONTEXT_NAME = "SAS Job Execution compute context";
   var EMULATED_CONTEXT_ID = idFor("emulated-context", "context");
   var relLinks = (type, rels) => rels.map(([rel, href]) => ({ href, uri: href, rel, method: "GET", type }));
   var linksFor = (uri, type, collection = false, itemType = false) => [
@@ -5589,7 +5588,7 @@ var SASjsApi = (() => {
       const drive = requireDrive(services);
       const path = await pathForFileId(drive, params.id);
       const body = request.body;
-      const contents = request.file?.contents ?? (typeof body === "string" ? body : body?.contents);
+      const contents = request.contents ?? request.file?.contents ?? (typeof body === "string" || body instanceof Uint8Array ? body : body?.contents);
       if (contents === void 0 || contents === null)
         throw new ApiError(400, "File content is required.");
       await drive.update(path, contents);
@@ -5770,7 +5769,7 @@ var SASjsApi = (() => {
           creationTimeStamp: EMULATED_NOW,
           modifiedTimeStamp: EMULATED_NOW,
           parentFolderUri: `/folders/folders/${idFor(path)}`,
-          uri: `${path}/${name}`.replace(/\/{2,}/g, "/"),
+          uri: `/folders/folders/${idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"))}`,
           links: linksFor2(
             `/folders/folders/${idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"))}`
           )
@@ -5787,7 +5786,7 @@ var SASjsApi = (() => {
           modifiedTimeStamp: EMULATED_NOW,
           parentFolderUri: `/folders/folders/${idFor(path)}`,
           added: EMULATED_NOW,
-          uri: `${path}/${name}`.replace(/\/{2,}/g, "/"),
+          uri: `/files/files/${idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"), "file")}`,
           links: linksFor2(
             `/files/files/${idFor(`${path}/${name}`.replace(/\/{2,}/g, "/"), "file")}`
           )
@@ -6805,7 +6804,8 @@ var SASjsApi = (() => {
     const runtimeScoped = RUN_ROUTES.includes(routeId);
     const adminScoped = ADMIN_ROUTES.includes(routeId) && Boolean(services.admin);
     const grantScoped = grantPath(route.path);
-    if (grantScoped && (identity || request.subject || request.token) && !records)
+    const appDetailScoped = routeId === "GET /SASjsApi/app/{id}";
+    if ((grantScoped || appDetailScoped) && (identity || request.subject || request.token) && !records)
       throw new ApiError(
         501,
         `This host has no record service, so it cannot answer ${routeId}.`
@@ -6824,6 +6824,16 @@ var SASjsApi = (() => {
       }
       return subject;
     };
+    if (appDetailScoped && (identity || records || request.subject || request.token) && !await caller()) {
+      if (!identity)
+        throw new ApiError(
+          501,
+          `This host has no identity service, so it cannot answer ${routeId}.`
+        );
+      throw new ApiError(401, "Unauthorized");
+    }
+    if (appDetailScoped && records && !await records.mayAct(await caller()))
+      throw new ApiError(401, "Unauthorized");
     if (identityScoped && records || runtimeScoped && services.runtime || adminScoped || grantScoped && records) {
       const callerSubject = await caller();
       let publicGrant = false;
@@ -7158,6 +7168,22 @@ var SASjsApi = (() => {
           if (isApiError(err) && err.status === 404) throw appNotRegistered();
           throw err;
         });
+        if (records) {
+          const subject2 = await caller();
+          if (!await records.mayAdminister(subject2)) {
+            const rules = (await records.listPermissions(subject2)).filter(
+              (rule) => rule.type === "Route"
+            );
+            const paths = [`/AppStream/${entry.id}`, `/AppStream/${entry.name}`];
+            const decided = paths.find((path) => rules.some((rule) => rule.path === path)) ?? paths[0];
+            const routeRules = {
+              user: rules.filter((rule) => rule.user === subject2.userId),
+              group: rules.filter((rule) => rule.group !== void 0)
+            };
+            if (!isRouteGranted(routeRules, decided, "/AppStream"))
+              throw appNotRegistered();
+          }
+        }
         const folder = appRootOf(entry);
         let entryFileExists = false;
         let lastModified = null;
@@ -11223,6 +11249,13 @@ var SASjsApi = (() => {
   var ENTRY_FILE_PATH = `${CORPUS_APP.appLoc}/services/${CORPUS_APP.streamWebFolder}/index.html`;
   var APP_CORPUS = [
     {
+      id: "app-detail-anonymous",
+      route: "GET /SASjsApi/app/{id}",
+      description: "refuses an anonymous caller before looking up an app",
+      request: { params: { id: CORPUS_APP.id } },
+      expect: { status: 401, error: "Unauthorized" }
+    },
+    {
       id: "app-detail-published",
       route: "GET /SASjsApi/app/{id}",
       description: "describes the app the id names, and the entry file it is served from",
@@ -11279,6 +11312,16 @@ var SASjsApi = (() => {
         status: 200,
         partial: { entryFileExists: false, lastModified: null }
       }
+    },
+    {
+      id: "app-detail-denied",
+      route: "GET /SASjsApi/app/{id}",
+      description: "conceals a registered app from a caller without a stream grant",
+      request: {
+        subject: { userId: "user-restricted", clientId: "web_app" },
+        params: { id: CORPUS_APP.id }
+      },
+      expect: { status: 404, error: "No App Stream is registered with that id." }
     },
     {
       id: "app-detail-unknown-id",
