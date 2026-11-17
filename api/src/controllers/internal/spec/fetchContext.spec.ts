@@ -8,6 +8,7 @@ import {
 } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
+import ts from 'typescript'
 import { createJSProgram } from '../createJSProgram'
 
 describe('JS request input context', () => {
@@ -18,6 +19,52 @@ describe('JS request input context', () => {
   })
 
   afterEach(() => rmSync(dir, { recursive: true, force: true }))
+
+  it('reports reserved legacy bindings while preserving their FETCH values', async () => {
+    const previous = process.logger
+    const warn = jest.fn()
+    process.logger = { ...previous, warn } as any
+    try {
+      const output = path.join(dir, 'result.json')
+      const generated = await createJSProgram(
+        `fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify(_sasjs_fetch_context.params))`,
+        {} as any,
+        {
+          fs: 'file',
+          console: 'console',
+          class: 'keyword',
+          _WEBIN_FILE_COUNT: 'count',
+          valid: 'yes',
+          'bad-name': 'bad'
+        },
+        { path: dir } as any,
+        path.join(dir, 'webout'),
+        path.join(dir, 'headers'),
+        path.join(dir, 'token')
+      )
+      const script = path.join(dir, 'job.js')
+      writeFileSync(script, generated)
+      execFileSync(process.execPath, [script])
+      expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual({
+        fs: 'file',
+        console: 'console',
+        class: 'keyword',
+        _WEBIN_FILE_COUNT: 'count',
+        valid: 'yes'
+      })
+      const messages = warn.mock.calls.map(([message]) => message as string)
+      expect(messages).toContainEqual(expect.stringContaining('bad-name'))
+      const collisions = messages.find((message) => message.includes('legacy'))
+      expect(collisions).toEqual(expect.stringContaining('fs'))
+      expect(collisions).toEqual(expect.stringContaining('console'))
+      expect(collisions).toEqual(expect.stringContaining('class'))
+      expect(collisions).toEqual(expect.stringContaining('_WEBIN_FILE_COUNT'))
+      expect(collisions).not.toContain('valid')
+      expect(collisions).toContain('FETCH')
+    } finally {
+      process.logger = previous
+    }
+  })
 
   it('preserves repeated request parameter fragments in the context', async () => {
     const output = path.join(dir, 'result.json')
@@ -130,6 +177,47 @@ describe('JS request input context', () => {
     expect(actual.hasOwn).toBe(true)
     expect(actual.ordinary).toBe(payload)
     expect(require('fs').existsSync(marker)).toBe(false)
+  })
+
+  it('does not pass an async callback to the upload generator traversal', () => {
+    const source = ts.createSourceFile(
+      'upload.ts',
+      readFileSync(path.join(__dirname, '../../../utils/upload.ts'), 'utf8'),
+      ts.ScriptTarget.Latest,
+      true
+    )
+    let callbacks = 0
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === 'generateFileUploadJSCode'
+      ) {
+        const inspect = (child: ts.Node) => {
+          if (
+            ts.isCallExpression(child) &&
+            ts.isPropertyAccessExpression(child.expression) &&
+            child.expression.name.text === 'forEach'
+          ) {
+            const callback = child.arguments[0]
+            expect(ts.isArrowFunction(callback)).toBe(true)
+            expect(
+              ts.canHaveModifiers(callback) &&
+                ts
+                  .getModifiers(callback)
+                  ?.some(
+                    (modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword
+                  )
+            ).toBeFalsy()
+            callbacks++
+          }
+          ts.forEachChild(child, inspect)
+        }
+        ts.forEachChild(node, inspect)
+      } else ts.forEachChild(node, visit)
+    }
+    visit(source)
+    expect(callbacks).toBe(1)
   })
 
   it('passes uploaded file contents through lexical bindings without embedding them', async () => {

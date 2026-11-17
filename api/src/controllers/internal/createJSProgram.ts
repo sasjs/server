@@ -21,8 +21,11 @@ export const createJSProgram = async (
   const { safe, dropped } = partitionParameterNames(vars)
   reportDroppedParameterNames(dropped)
 
-  // The shared prelude, Node globals and upload bindings own these identifiers.
-  // Keep colliding request fields in the context, but do not redeclare them.
+  // The shared prelude and upload bindings own these identifiers. Keep
+  // colliding request fields in the context, but do not redeclare them. The
+  // globalThis check below also protects runtime globals not in our list; that
+  // fallback follows the server's Node version (the job may use NODE_PATH).
+  // A static list alone can shadow a newly introduced global used by webout.
   const jsKeywords = new Set([
     'await',
     'break',
@@ -98,6 +101,11 @@ export const createJSProgram = async (
       !jsKeywords.has(key) &&
       !runtimeNames.has(key) &&
       !(key in globalThis)
+  )
+  const legacyNameSet = new Set(legacyNames)
+  reportDroppedParameterNames(
+    safe.filter((key) => !legacyNameSet.has(key)),
+    'js-legacy-collision'
   )
   const varStatments = legacyNames.reduce(
     (computed: string, key: string) =>

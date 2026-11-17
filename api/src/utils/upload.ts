@@ -115,7 +115,7 @@ export const generateFileUploadJSCode = async (
   const fetchTables = new Map<string, string>()
 
   const sessionFolderList: string[] = await listFilesInFolder(sessionFolder)
-  sessionFolderList.forEach(async (fileName) => {
+  sessionFolderList.forEach((fileName) => {
     if (fileName.includes('req_file')) {
       fileCount++
       fetchTables.set(
