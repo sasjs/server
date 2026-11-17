@@ -52,11 +52,17 @@ export const partitionParameterNames = (vars: {
  * program that expects one of them would otherwise fail with an undefined
  * variable and no clue why.
  */
-export const reportDroppedParameterNames = (dropped: string[]): void => {
-  if (dropped.length)
-    process.logger?.warn(
-      `Ignoring stored-program parameters that are not valid SAS names (letters, digits and underscores, starting with a letter or underscore): ${dropped.join(', ')}`
-    )
+export const reportDroppedParameterNames = (
+  dropped: string[],
+  reason: 'invalid' | 'js-legacy-collision' = 'invalid'
+): void => {
+  if (dropped.length) {
+    const message =
+      reason === 'invalid'
+        ? 'Ignoring stored-program parameters that are not valid SAS names (letters, digits and underscores, starting with a letter or underscore)'
+        : 'Ignoring JavaScript legacy bindings for reserved or global names; values remain available in FETCH context'
+    process.logger?.warn(`${message}: ${dropped.join(', ')}`)
+  }
 }
 
 /**

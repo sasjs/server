@@ -21,7 +21,93 @@ export const createJSProgram = async (
   const { safe, dropped } = partitionParameterNames(vars)
   reportDroppedParameterNames(dropped)
 
-  const varStatments = safe.reduce(
+  // The shared prelude and upload bindings own these identifiers. Keep
+  // colliding request fields in the context, but do not redeclare them. The
+  // globalThis check below also protects runtime globals not in our list; that
+  // fallback follows the server's Node version (the job may use NODE_PATH).
+  // A static list alone can shadow a newly introduced global used by webout.
+  const jsKeywords = new Set([
+    'await',
+    'break',
+    'case',
+    'catch',
+    'class',
+    'const',
+    'continue',
+    'debugger',
+    'default',
+    'delete',
+    'do',
+    'else',
+    'enum',
+    'export',
+    'extends',
+    'false',
+    'finally',
+    'for',
+    'function',
+    'if',
+    'import',
+    'in',
+    'instanceof',
+    'new',
+    'null',
+    'return',
+    'super',
+    'switch',
+    'this',
+    'throw',
+    'true',
+    'try',
+    'typeof',
+    'var',
+    'void',
+    'while',
+    'with',
+    'yield',
+    'let',
+    'static',
+    'implements',
+    'interface',
+    'package',
+    'private',
+    'protected',
+    'public'
+  ])
+  const runtimeNames = new Set([
+    'require',
+    'module',
+    'exports',
+    '__filename',
+    '__dirname',
+    'fs',
+    'webout',
+    '_webout',
+    'weboutPath',
+    '_SASJS_TOKENFILE',
+    '_SASJS_WEBOUT_HEADERS',
+    '_SASJS_APISERVERURL',
+    '_SASJS_USERNAME',
+    '_SASJS_USERID',
+    '_SASJS_DISPLAYNAME',
+    '_METAPERSON',
+    '_METAUSER',
+    'SASJSPROCESSMODE'
+  ])
+  const legacyNames = safe.filter(
+    (key) =>
+      !key.startsWith('_sasjs_') &&
+      !key.startsWith('_WEBIN_') &&
+      !jsKeywords.has(key) &&
+      !runtimeNames.has(key) &&
+      !(key in globalThis)
+  )
+  const legacyNameSet = new Set(legacyNames)
+  reportDroppedParameterNames(
+    safe.filter((key) => !legacyNameSet.has(key)),
+    'js-legacy-collision'
+  )
+  const varStatments = legacyNames.reduce(
     (computed: string, key: string) =>
       `${computed}const ${key} = ${asLiteral(vars[key])};\n`,
     ''
@@ -51,7 +137,20 @@ export const createJSProgram = async (
     siteId: process.env.SITE_ID?.trim() || undefined
   })
 
+  // Object.fromEntries preserves names such as __proto__ as ordinary own keys.
+  // Parameter values use the same literal encoding as the legacy bindings.
+  const fetchParams = safe
+    .map((key) => {
+      const value = vars[key]
+      const literal = Array.isArray(value)
+        ? `[${value.map(asLiteral).join(', ')}]`
+        : asLiteral(value)
+      return `[${asLiteral(key)}, ${literal}]`
+    })
+    .join(', ')
+
   const preProgramVarStatments = `
+const _sasjs_fetch_context = { params: Object.fromEntries([${fetchParams}]), tables: ${otherArgs?.filesNamesMap ? '_sasjs_fetch_tables' : '[]'} };
 let _webout = '';
 const weboutPath = ${asLiteral(weboutPath)}; 
 const _SASJS_TOKENFILE = ${asLiteral(tokenFile)};
