@@ -85,6 +85,62 @@ describe('JS request input context', () => {
     })
   })
 
+  it('defers staged file reads until FETCH or explicit context access', async () => {
+    const input = path.join(dir, 'req_file_a')
+    const output = path.join(dir, 'result.json')
+    writeFileSync(input, 'id:best.\n42')
+    const preload = path.join(dir, 'preload.js')
+    writeFileSync(
+      preload,
+      `const fs = require('fs');
+const read = fs.readFileSync;
+globalThis.uploadReads = [];
+fs.readFileSync = function (file, ...args) {
+  if (file === ${JSON.stringify(input)}) {
+    if (!globalThis.serviceStarted) throw new Error('upload read before service');
+    globalThis.uploadReads.push(args[0]);
+  }
+  return read.call(this, file, ...args);
+};`
+    )
+    const generated = await createJSProgram(
+      `globalThis.serviceStarted = true;
+const size = fs.statSync(_WEBIN_FILEREF1).size;
+const before = globalThis.uploadReads.length;
+const fetched = webout('FETCH');
+const afterFetch = globalThis.uploadReads.length;
+const csv = _sasjs_fetch_context.tables[0].csv;
+const serialized = JSON.parse(JSON.stringify(_sasjs_fetch_context));
+fs.writeFileSync(${JSON.stringify(output)}, JSON.stringify({ size, before, fetched, afterFetch, csv, serialized, reads: globalThis.uploadReads }));`,
+      {} as any,
+      {},
+      { path: dir } as any,
+      path.join(dir, 'webout'),
+      path.join(dir, 'headers'),
+      path.join(dir, 'token'),
+      {
+        filesNamesMap: {
+          req_file_a: { fieldName: 'input', originalName: 'input.csv' }
+        }
+      }
+    )
+    const script = path.join(dir, 'job.js')
+    writeFileSync(script, generated)
+    execFileSync(process.execPath, ['--require', preload, script])
+    expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual({
+      size: Buffer.byteLength('id:best.\n42'),
+      before: 0,
+      fetched: { input: [{ id: 42 }] },
+      afterFetch: 1,
+      csv: 'id:best.\n42',
+      serialized: {
+        params: {},
+        tables: [{ name: 'input', filename: 'input.csv', csv: 'id:best.\n42' }]
+      },
+      reads: ['utf8', 'utf8', 'utf8']
+    })
+  })
+
   it('allows a stored program to declare fs while uploaded files are read', async () => {
     const output = path.join(dir, 'result.json')
     writeFileSync(path.join(dir, 'req_file_a'), 'file data')

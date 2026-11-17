@@ -16,6 +16,13 @@ describe('JS request context through the STP host', () => {
     process.nodeLoc = process.execPath
     mkdirSync(programFolder, { recursive: true })
     writeFileSync(
+      path.join(programFolder, 'lazy.js'),
+      `const input = require('fs').createReadStream(_WEBIN_FILEREF1);
+let bytes = 0;
+input.on('data', chunk => { bytes += chunk.length });
+input.on('end', () => { fs.writeFileSync(weboutPath, JSON.stringify({ bytes, name: _WEBIN_NAME1 })) });`
+    )
+    writeFileSync(
       path.join(programFolder, 'fetch.js'),
       `_webout = JSON.stringify(webout('FETCH'))`
     )
@@ -55,6 +62,15 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
   })
 
   afterAll(() => rmSync(programFolder, { recursive: true, force: true }))
+
+  it('streams a multipart upload without calling FETCH', async () => {
+    const bytes = Buffer.from([0, 0xff, 0x80, 0xc3, 0x28])
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/lazy')
+      .attach('input', bytes, 'input.bin')
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({ bytes: bytes.length, name: 'input' })
+  })
 
   it('exposes a staged path and first-file aliases for a binary upload', async () => {
     const bytes = Buffer.from([0, 0x80, 0xff, 0xc3, 0x28, 0x50, 0x4b])
