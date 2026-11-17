@@ -138,6 +138,18 @@ export const getViyaClient = (): SASjs => {
   return client
 }
 
+/**
+ * Drops the cached client, so the next `getViyaClient()` is built from the env
+ * as it stands then.
+ *
+ * The client is cached for the process, which is what a server wants and what a
+ * test must be able to undo: a case that points `VIYA_URL` at its own socket
+ * would otherwise win the cache for every later case in that process.
+ */
+export const resetViyaClient = () => {
+  client = undefined
+}
+
 export interface ViyaExecutionResult {
   webout: string
   log: string

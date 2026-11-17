@@ -170,12 +170,13 @@ jobs:
           SAS_PATH: '/some/path/to/sas'
           NODE_PATH: '/some/path/to/node'
 
-      - name: Run the conformance run
+      - name: 'Run the conformance run (no engine: the execution leg is skipped)'
         # The emulator's own specs assert what this server answers; this one
         # drives @sasjs/adapter over a socket, which is the only thing that says
         # a client can read those answers. It needs no browser and no engine -
-        # execution is gated on CONFORMANCE_EXECUTE and says so when it does not
-        # run - so it belongs beside the unit suite rather than in the e2e job.
+        # no job in this pipeline has a SAS binary, so the execution leg is
+        # reported as SKIPPED rather than claimed as a pass - which is why it
+        # belongs beside the unit suite rather than in the e2e job.
         working-directory: ./api
         run: npm run test:conformance
         env:

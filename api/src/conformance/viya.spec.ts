@@ -39,7 +39,10 @@ import { MongoMemoryServer } from 'mongodb-memory-server'
 import { SASViyaApiClient, SasjsRequestClient } from '@sasjs/adapter/node'
 
 import { configureBodyParsers } from '../app-modules'
-import { getViyaClient } from '../controllers/internal/viyaClient'
+import {
+  getViyaClient,
+  resetViyaClient
+} from '../controllers/internal/viyaClient'
 import { ModeType, SECRETS } from '../utils'
 import {
   PermissionController,
@@ -89,6 +92,29 @@ describe('a Viya client against the emulated estate', () => {
 
   const userController = new UserController()
   const permissionController = new PermissionController()
+
+  /**
+   * The globals this file installs, read before it installs them.
+   *
+   * `sasjsRoot`, `driveLoc`, `logsLoc` and `secrets` are process-wide and point
+   * into the temp root the teardown deletes. `maxWorkers: 1` keeps a second
+   * conformance file from running beside this one, but the test match is a glob:
+   * without the restore, a file added next to this one starts against a deleted
+   * root and this run's secrets.
+   */
+  const savedGlobals = {
+    sasjsRoot: process.sasjsRoot,
+    driveLoc: process.driveLoc,
+    logsLoc: process.logsLoc,
+    secrets: process.secrets,
+    mode: process.env.MODE,
+    emulateViya: process.env.EMULATE_VIYA
+  }
+
+  const restoreEnv = (key: string, value: string | undefined) => {
+    if (value === undefined) delete process.env[key]
+    else process.env[key] = value
+  }
 
   /**
    * The password grant, posted as `sasjs auth login` posts it.
@@ -211,6 +237,20 @@ describe('a Viya client against the emulated estate', () => {
     } catch (error) {
       // a failed teardown must not mask a failed run: this is reported, not thrown
       console.error('conformance teardown:', error)
+    } finally {
+      // the globals go back to what this file found, because they are process
+      // wide and the root they point into has just been deleted. The cached
+      // estate client goes with them, or the next file in this process would
+      // read the wiring this run chose.
+      resetViyaClient()
+
+      process.sasjsRoot = savedGlobals.sasjsRoot
+      process.driveLoc = savedGlobals.driveLoc
+      process.logsLoc = savedGlobals.logsLoc
+      process.secrets = savedGlobals.secrets
+
+      restoreEnv('MODE', savedGlobals.mode)
+      restoreEnv('EMULATE_VIYA', savedGlobals.emulateViya)
     }
   })
 
@@ -294,6 +334,10 @@ describe('a Viya client against the emulated estate', () => {
     process.env.VIYA_URL = origin
     process.env.VIYA_CONTEXT = 'SAS Job Execution compute context'
 
+    // the client is cached for the process, so this case builds a fresh one from
+    // its own env rather than accepting whatever an earlier caller left behind
+    resetViyaClient()
+
     try {
       const built = (getViyaClient() as any)
         .sasViyaApiClient as SASViyaApiClient
@@ -314,6 +358,11 @@ describe('a Viya client against the emulated estate', () => {
 
       if (saved.context === undefined) delete process.env.VIYA_CONTEXT
       else process.env.VIYA_CONTEXT = saved.context
+
+      // and the client built from this case's env goes with the env: it is
+      // cached for the process, so leaving it would hand this run's socket to
+      // whatever reads the estate client next
+      resetViyaClient()
     }
   })
 
