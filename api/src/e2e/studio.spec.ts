@@ -12,12 +12,14 @@
  * the unit-test run deliberately excludes.
  */
 import path from 'path'
+import { createRequire } from 'module'
 import { mkdirSync } from 'fs'
 import { readFile, rm, writeFile } from 'fs/promises'
 import { Express } from 'express'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { Browser, chromium, Page } from 'playwright'
+import { lintSchemaUrl } from '@sasjs/lint'
 import { createFile, createFolder, fileExists } from '@sasjs/utils'
 import {
   INDENTED_JSON,
@@ -719,6 +721,130 @@ describe('Studio in a browser', () => {
       await page.unroute('**/SASjsApi/code/execute')
     }
   }, 120000)
+
+  it('validates the actual drive lint configuration with schema completions and hover', async () => {
+    // Block the schema origin before the editor opens: its local schema must
+    // supply validation and assistance even without network access.
+    let schemaRequests = 0
+    const blockSchema = async (route: import('playwright').Route) => {
+      schemaRequests++
+      await route.abort()
+    }
+    const schemaOrigin = `${new URL(lintSchemaUrl).origin}/**`
+    await page.route(schemaOrigin, blockSchema)
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent('/.sasjslint')}`
+    )
+    await page.waitForSelector('.view-line .detected-link', { timeout: 30000 })
+    await page.waitForTimeout(2000)
+
+    const schemaLink = page.locator('.view-line .detected-link').first()
+    await schemaLink.hover()
+    await page.waitForTimeout(1200)
+    const hover = (await page.locator('.monaco-hover').allTextContents()).join(
+      ' '
+    )
+    expect(hover).not.toContain('No schema request service available')
+
+    // The actual file has this property; the description is supplied by its
+    // schema rather than by Monaco's generic JSON language service.
+    const property = page.locator('.view-line', { hasText: 'hasDoxygenHeader' })
+    await property.getByText('hasDoxygenHeader', { exact: false }).hover()
+    await page.waitForTimeout(1200)
+    expect(
+      (await page.locator('.monaco-hover').allTextContents()).join(' ')
+    ).toContain('Enforces a Doxygen header at the start of each SAS file')
+
+    const editor = page.locator('textarea.inputarea')
+    await editor.focus()
+    await page.keyboard.press('Control+A')
+    await page.keyboard.insertText(
+      `{"$schema":${JSON.stringify(lintSchemaUrl)},`
+    )
+    await page.keyboard.type('"noT')
+    await page.keyboard.press('Control+Space')
+    await page.waitForSelector('.suggest-widget.visible', { timeout: 10000 })
+    await page.waitForTimeout(1500)
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.suggest-widget.visible')
+          ?.textContent?.includes('noTabs'),
+      null,
+      { timeout: 10000 }
+    )
+    expect(await page.locator('.suggest-widget.visible').innerText()).toContain(
+      'noTabs'
+    )
+
+    // A valid JSON buffer with the wrong value type must produce a schema
+    // diagnostic. The file is an unsaved edit, never written to the drive.
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Control+A')
+    await page.keyboard.insertText(
+      JSON.stringify(
+        {
+          $schema: lintSchemaUrl,
+          maxLineLength: 'wrong'
+        },
+        null,
+        2
+      )
+    )
+    await page.waitForTimeout(1500)
+    await page
+      .locator('.view-line', { hasText: 'wrong' })
+      .locator('span')
+      .last()
+      .hover()
+    await page.waitForTimeout(1000)
+    const invalidHover = (
+      await page.locator('.monaco-hover').allTextContents()
+    ).join(' ')
+    expect(invalidHover).toContain('Incorrect type')
+    expect(schemaRequests).toBe(0)
+    // The pinned schema has no external references. If an upgrade introduces
+    // one, reject the stale/incomplete bundle rather than silently losing the
+    // referenced validation when Monaco has no request service.
+    // Resolved from the web package by name: the layout of node_modules is not
+    // a contract, and a hoisted or workspace install moves the path this used
+    // to spell out.
+    const embeddedSchema = JSON.parse(
+      await readFile(
+        createRequire(
+          path.join(__dirname, '..', '..', '..', 'web', 'package.json')
+        ).resolve('@sasjs/lint/sasjslint-schema.json'),
+        'utf8'
+      )
+    )
+    const visit = (value: unknown): void => {
+      if (!value || typeof value !== 'object') return
+      for (const [key, child] of Object.entries(value)) {
+        if (key === '$ref') expect(String(child)).toMatch(/^#/)
+        visit(child)
+      }
+    }
+    visit(embeddedSchema)
+    await page.unroute(schemaOrigin, blockSchema)
+
+    // Unknown schemas remain blocked, with an honest diagnostic rather than a
+    // silent loss of validation. This also guards against arbitrary same-origin
+    // requests from a crafted $schema in an untrusted drive file.
+    await page.keyboard.press('Control+A')
+    await page.keyboard.insertText(
+      JSON.stringify({ $schema: `${baseUrl()}/schema-probe` })
+    )
+    await page.waitForTimeout(1500)
+    await page.locator('.view-line .detected-link').first().hover()
+    await page.waitForTimeout(1000)
+    expect(
+      (await page.locator('.monaco-hover').allTextContents()).join(' ')
+    ).toContain('No schema request service available')
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent('/studio-test.sas')}`
+    )
+    await page.waitForSelector('.monaco-editor', { timeout: 30000 })
+  }, 60000)
 
   it('opens a one-line JSON file indented, and leaves the drive file alone', async () => {
     await page.click(`text=${JSON_FILE_NAME}`)

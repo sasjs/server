@@ -15,7 +15,8 @@ import {
 import { Menu, MenuOpen } from '@mui/icons-material'
 import { styled } from '@mui/material/styles'
 
-import Editor from 'react-monaco-editor'
+import Editor, { monaco } from 'react-monaco-editor'
+import lintSchema from '@sasjs/lint/sasjslint-schema.json'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import FilePathInputModal from '../../components/filePathInputModal'
@@ -55,6 +56,28 @@ import { useColorMode, useSetting } from '../../utils/hooks'
 registerSasLanguage()
 registerSasCompletions()
 registerSasHover()
+
+// Register the version paired with the server's linter. Monaco's schema
+// request service is disabled by default: turning it on globally would let a
+// drive file make the browser fetch arbitrary URLs (including same-origin
+// endpoints). An inline schema works offline and does not grant that capability.
+//
+// Registered under the schema's own `$id`, which validation matches against the
+// `$schema` a document carries - and documents carry `lintSchemaUrl`. Those are
+// the same string in this release, and a spec asserts it, so a release that
+// changes one and not the other fails a test instead of silently disabling
+// validation. The constant itself is not imported here on purpose: `@sasjs/lint`
+// is a Node package, and importing anything from its entry point pulls `fs`,
+// `os` and `stream` into the browser bundle, which webpack refuses to resolve.
+// The schema JSON is the only part of the package the Studio can use.
+const jsonDefaults = monaco.languages.json.jsonDefaults
+jsonDefaults.setDiagnosticsOptions({
+  ...jsonDefaults.diagnosticsOptions,
+  schemas: [
+    ...(jsonDefaults.diagnosticsOptions.schemas ?? []),
+    { uri: lintSchema.$id, schema: lintSchema }
+  ]
+})
 
 /**
  * Starts the language server once the editor is on screen and the browser is
