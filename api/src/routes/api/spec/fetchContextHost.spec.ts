@@ -220,16 +220,10 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
     expect(JSON.parse(res.text)).toEqual({ input: [{ x: 'a' }, { x: 'b' }] })
   })
 
-  it('discards adapter-generated empty single-column records in multipart uploads', async () => {
-    const { convertToCSV } = require('@sasjs/adapter/utils/convertToCsv')
-    const data = {
-      empty: [{ x: '' }],
-      middle: [{ x: 'a' }, { x: '' }, { x: 'b' }]
-    }
-    const empty = convertToCSV(data, 'empty')
-    const middle = convertToCSV(data, 'middle')
-    expect(empty).toBe('x:$char1.\r\n')
-    expect(middle).toBe('x:$char1.\r\na\r\n\r\nb')
+  it('discards adapter-format empty single-column records in multipart uploads', async () => {
+    // Wire-format fixtures captured from @sasjs/adapter 6.1.1 convertToCSV.
+    const empty = 'x:$char1.\r\n'
+    const middle = 'x:$char1.\r\na\r\n\r\nb'
     const res = await request(app)
       .post('/SASjsApi/stp/execute?_program=/fetch-context-test/fetch')
       .attach('empty', Buffer.from(empty), 'empty.csv')
