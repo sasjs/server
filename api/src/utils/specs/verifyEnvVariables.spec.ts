@@ -16,6 +16,7 @@ import { userInfo } from 'os'
 // that exercise it temporarily switch NODE_ENV and restore it afterwards.
 const managedEnvVars = [
   'MODE',
+  'MOCK_SERVERTYPE',
   'CORS',
   'WHITELIST',
   'NODE_ENV',
@@ -94,6 +95,11 @@ describe('verifyEnvVariables', () => {
 
   afterEach(() => {
     restoreEnv()
+  })
+
+  it('rejects SAS 9 mock mode in server configuration', () => {
+    process.env.MOCK_SERVERTYPE = 'sas9'
+    expect(verifyEnvVariables()).toEqual(ReturnCode.InvalidEnv)
   })
 
   describe('AUTH_PROVIDERS parsing', () => {

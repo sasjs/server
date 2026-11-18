@@ -49,9 +49,7 @@ export class MockSas9Controller {
     const username = req.query._username?.toString() || undefined
     const password = req.query._password?.toString() || undefined
 
-    if (username && password && typeof req.body?.username === 'string') {
-      this.loggedIn = req.body.username
-    }
+    if (username && password) this.loggedIn = username
 
     if (!this.loggedIn) {
       return {
