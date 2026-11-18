@@ -101,7 +101,9 @@ export const generateFileUploadSasCode = async (
 }
 
 /**
- * Generates the js code that references uploaded files in the concurrent request
+ * Generates the js code that references uploaded files in the concurrent request.
+ * `_WEBIN_FILEREFn` is a staged path; FETCH tables lazily read UTF-8 text for
+ * adapter CSV parsing, not a byte-preserving representation of arbitrary files.
  * @param filesNamesMap object that maps hashed file names and original file names
  * @param sessionFolder name of the folder that is created for the purpose of files in concurrent request
  * @returns generated js code
@@ -120,10 +122,10 @@ export const generateFileUploadJSCode = async (
       fileCount++
       fetchTables.set(
         fileName,
-        `{ name: _WEBIN_NAME${fileCount}, filename: _WEBIN_FILENAME${fileCount}, csv: _WEBIN_FILEREF${fileCount}.toString('utf8') }`
+        `{ name: _WEBIN_NAME${fileCount}, filename: _WEBIN_FILENAME${fileCount}, get csv() { return globalThis.fs.readFileSync(_WEBIN_FILEREF${fileCount}, 'utf8') } }`
       )
       const filePath = path.join(sessionFolder, fileName)
-      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = globalThis.fs.readFileSync(${asLiteral(filePath)})`
+      uploadCode += `\nconst _WEBIN_FILEREF${fileCount} = ${asLiteral(filePath)}`
       uploadCode += `\nconst _WEBIN_FILENAME${fileCount} = ${asLiteral(
         filesNamesMap[fileName].originalName
       )}`
@@ -134,6 +136,11 @@ export const generateFileUploadJSCode = async (
   })
 
   uploadCode += `\nconst _WEBIN_FILE_COUNT = ${fileCount}`
+  if (fileCount > 0) {
+    uploadCode += `\nconst _WEBIN_NAME = _WEBIN_NAME1`
+    uploadCode += `\nconst _WEBIN_FILENAME = _WEBIN_FILENAME1`
+    uploadCode += `\nconst _WEBIN_FILEREF = _WEBIN_FILEREF1`
+  }
   // Multer .any() keeps request order in req.files; the prefixed UUID keys in
   // makeFilesNamesMap retain that insertion order. Keep legacy _WEBIN indices
   // in filesystem order, but supply FETCH tables in multipart order.
