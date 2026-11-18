@@ -2,7 +2,7 @@
   "format": 1,
   "sharded": true,
   "boot": 0,
-  "files": 430,
+  "files": 425,
   "entries": {
     "/sasjs/drive/files/.sasjslint": {
       "shard": 0,
@@ -176,6 +176,10 @@
       "shard": 0,
       "bytes": 799
     },
+    "/sasjs/drive/files/Public/app/angular-seed-app/services/Angular.html": {
+      "shard": 1,
+      "bytes": 3214
+    },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/common/appinit.js": {
       "shard": 1,
       "bytes": 2539
@@ -186,7 +190,7 @@
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/common/getdata.js": {
       "shard": 1,
-      "bytes": 4018
+      "bytes": 3715
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/common/getdata.sas": {
       "shard": 1,
@@ -198,7 +202,7 @@
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/files/upload.js": {
       "shard": 1,
-      "bytes": 2549
+      "bytes": 4767
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/files/upload.sas": {
       "shard": 1,
@@ -219,14 +223,6 @@
     "/sasjs/drive/files/Public/app/angular-seed-app/services/web/assets/theme-init.js": {
       "shard": 1,
       "bytes": 883
-    },
-    "/sasjs/drive/files/Public/app/angular-seed-app/services/web/docs/.git": {
-      "shard": 1,
-      "bytes": 29
-    },
-    "/sasjs/drive/files/Public/app/angular-seed-app/services/web/docs/.nojekyll": {
-      "shard": 1,
-      "bytes": 0
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/web/docs/README.md": {
       "shard": 1,
@@ -288,14 +284,6 @@
       "shard": 1,
       "bytes": 8167
     },
-    "/sasjs/drive/files/Public/app/angular-seed-app/services/web/docs/static/js/.gitkeep": {
-      "shard": 1,
-      "bytes": 0
-    },
-    "/sasjs/drive/files/Public/app/angular-seed-app/services/web/docs/static/sas/.gitkeep": {
-      "shard": 1,
-      "bytes": 0
-    },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/web/docs/sw.js": {
       "shard": 1,
       "bytes": 1204
@@ -310,7 +298,7 @@
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/web/index.html": {
       "shard": 1,
-      "bytes": 2899
+      "bytes": 2924
     },
     "/sasjs/drive/files/Public/app/angular-seed-app/services/web/polyfills-ESM5JYF4.js": {
       "shard": 1,
@@ -320,9 +308,13 @@
       "shard": 1,
       "bytes": 3519
     },
+    "/sasjs/drive/files/Public/app/macrodash/services/MacroDash.html": {
+      "shard": 2,
+      "bytes": 4004
+    },
     "/sasjs/drive/files/Public/app/macrodash/services/common/configure.js": {
       "shard": 2,
-      "bytes": 6296
+      "bytes": 4791
     },
     "/sasjs/drive/files/Public/app/macrodash/services/common/configure.sas": {
       "shard": 2,
@@ -338,19 +330,15 @@
     },
     "/sasjs/drive/files/Public/app/macrodash/services/common/savescore.js": {
       "shard": 2,
-      "bytes": 5889
+      "bytes": 4363
     },
     "/sasjs/drive/files/Public/app/macrodash/services/common/savescore.sas": {
       "shard": 2,
       "bytes": 50517
     },
-    "/sasjs/drive/files/Public/app/macrodash/services/web/CNAME": {
-      "shard": 2,
-      "bytes": 14
-    },
     "/sasjs/drive/files/Public/app/macrodash/services/web/index.html": {
       "shard": 2,
-      "bytes": 3444
+      "bytes": 3482
     },
     "/sasjs/drive/files/Public/app/macrodash/services/web/js/audio.js": {
       "shard": 2,
@@ -358,7 +346,7 @@
     },
     "/sasjs/drive/files/Public/app/macrodash/services/web/js/backend.js": {
       "shard": 2,
-      "bytes": 19400
+      "bytes": 19624
     },
     "/sasjs/drive/files/Public/app/macrodash/services/web/js/controls.js": {
       "shard": 2,
@@ -370,7 +358,7 @@
     },
     "/sasjs/drive/files/Public/app/macrodash/services/web/js/game.js": {
       "shard": 2,
-      "bytes": 78358
+      "bytes": 78414
     },
     "/sasjs/drive/files/Public/app/macrodash/services/web/js/level.js": {
       "shard": 2,
@@ -394,7 +382,7 @@
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/common/getdata.js": {
       "shard": 3,
-      "bytes": 4377
+      "bytes": 2469
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/common/getdata.sas": {
       "shard": 3,
@@ -403,6 +391,10 @@
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/common/springs.json": {
       "shard": 3,
       "bytes": 17350
+    },
+    "/sasjs/drive/files/Public/app/minimal-seed-app/services/minimal-seed-app.html": {
+      "shard": 3,
+      "bytes": 3392
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/web/Roboto-Regular.ttf": {
       "shard": 3,
@@ -414,7 +406,7 @@
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/web/index.html": {
       "shard": 3,
-      "bytes": 3142
+      "bytes": 3361
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/web/scripts.js": {
       "shard": 3,
@@ -422,7 +414,11 @@
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/web/style.css": {
       "shard": 3,
-      "bytes": 3008
+      "bytes": 3071
+    },
+    "/sasjs/drive/files/Public/app/react-seed-app/services/React.html": {
+      "shard": 4,
+      "bytes": 1917
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/common/appinit.js": {
       "shard": 4,
@@ -434,7 +430,7 @@
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/common/getdata.js": {
       "shard": 4,
-      "bytes": 4016
+      "bytes": 2851
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/common/getdata.sas": {
       "shard": 4,
@@ -446,19 +442,11 @@
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/files/upload.js": {
       "shard": 4,
-      "bytes": 3405
+      "bytes": 5101
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/files/upload.sas": {
       "shard": 4,
       "bytes": 146379
-    },
-    "/sasjs/drive/files/Public/app/react-seed-app/services/web/docs/.git": {
-      "shard": 4,
-      "bytes": 39
-    },
-    "/sasjs/drive/files/Public/app/react-seed-app/services/web/docs/.nojekyll": {
-      "shard": 4,
-      "bytes": 0
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/web/docs/README.md": {
       "shard": 4,
@@ -520,14 +508,6 @@
       "shard": 4,
       "bytes": 8092
     },
-    "/sasjs/drive/files/Public/app/react-seed-app/services/web/docs/static/js/.gitkeep": {
-      "shard": 4,
-      "bytes": 0
-    },
-    "/sasjs/drive/files/Public/app/react-seed-app/services/web/docs/static/sas/.gitkeep": {
-      "shard": 4,
-      "bytes": 0
-    },
     "/sasjs/drive/files/Public/app/react-seed-app/services/web/docs/sw.js": {
       "shard": 4,
       "bytes": 322
@@ -546,7 +526,7 @@
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/web/index.html": {
       "shard": 4,
-      "bytes": 1614
+      "bytes": 1539
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/web/logo-white.png": {
       "shard": 4,
@@ -1700,9 +1680,9 @@
       "shard": 11,
       "bytes": 290376
     },
-    "/sasjs/drive/files/Public/app/angular-seed-app/services/web/main-JXVHCH3I.js": {
+    "/sasjs/drive/files/Public/app/angular-seed-app/services/web/main-3JC4LIKP.js": {
       "shard": 12,
-      "bytes": 805404
+      "bytes": 811773
     },
     "/sasjs/drive/files/Public/app/macrodash/services/web/sasjs.js": {
       "shard": 13,
@@ -1710,7 +1690,7 @@
     },
     "/sasjs/drive/files/Public/app/minimal-seed-app/services/web/sasjs.js": {
       "shard": 14,
-      "bytes": 869485
+      "bytes": 888229
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/common/springs.json": {
       "shard": 15,
@@ -1718,7 +1698,7 @@
     },
     "/sasjs/drive/files/Public/app/react-seed-app/services/web/index.bundle.js": {
       "shard": 16,
-      "bytes": 677618
+      "bytes": 684126
     },
     "/sasjs/drive/files/code/sas-packages/SPF/SPFinit.sas": {
       "shard": 17,
@@ -1735,26 +1715,26 @@
     {
       "id": 1,
       "file": "host/vfs-snapshot-1.json",
-      "bytes": 776156,
-      "files": 36
+      "bytes": 781281,
+      "files": 33
     },
     {
       "id": 2,
       "file": "host/vfs-snapshot-2.json",
-      "bytes": 372629,
+      "bytes": 373906,
       "files": 16
     },
     {
       "id": 3,
       "file": "host/vfs-snapshot-3.json",
-      "bytes": 612831,
-      "files": 10
+      "bytes": 614597,
+      "files": 11
     },
     {
       "id": 4,
       "file": "host/vfs-snapshot-4.json",
-      "bytes": 813257,
-      "files": 38
+      "bytes": 815591,
+      "files": 35
     },
     {
       "id": 5,
@@ -1801,7 +1781,7 @@
     {
       "id": 12,
       "file": "host/vfs-snapshot-12.json",
-      "bytes": 805404,
+      "bytes": 811773,
       "files": 1
     },
     {
@@ -1813,7 +1793,7 @@
     {
       "id": 14,
       "file": "host/vfs-snapshot-14.json",
-      "bytes": 869485,
+      "bytes": 888229,
       "files": 1
     },
     {
@@ -1825,7 +1805,7 @@
     {
       "id": 16,
       "file": "host/vfs-snapshot-16.json",
-      "bytes": 677618,
+      "bytes": 684126,
       "files": 1
     },
     {
