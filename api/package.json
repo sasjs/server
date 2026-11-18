@@ -60,7 +60,7 @@
     "@sasjs/core": "6.1.2",
     "@sasjs/lint": "5.5.7",
     "@sasjs/sas-language": "0.7.2",
-    "@sasjs/utils": "4.13.0",
+    "@sasjs/utils": "4.13.1",
     "adm-zip": "0.6.1",
     "bcryptjs": "^3.0.3",
     "compression": "1.8.2",

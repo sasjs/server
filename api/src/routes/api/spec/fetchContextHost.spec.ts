@@ -200,6 +200,18 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
     })
   })
 
+  it('fetches a CRLF-terminated multi-column upload without a phantom row', async () => {
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/fetch')
+      .attach(
+        'input',
+        Buffer.from('name:$char8. count:best.\r\nAda,2\r\n'),
+        'input.csv'
+      )
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({ input: [{ name: 'Ada', count: 2 }] })
+  })
+
   it('FETCH re-reads a changed staged upload and throws if it is deleted', async () => {
     const res = await request(app)
       .post('/SASjsApi/stp/execute?_program=/fetch-context-test/mutate')
