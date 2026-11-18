@@ -89,10 +89,32 @@ describe('SAS 9 mock login input', () => {
       .expect('Location', '/SASLogon/Login')
   })
 
-  it('rejects a malformed username on credentialed stored process GET', async () => {
+  it('accepts query credentials on the fixture GET without a request body', async () => {
+    const response = await request(app)
+      .get('/SASStoredProcess?%5fUsErNaMe=PUBLIC&_PASSWORD=secret')
+      .expect(200)
+    expect(response.text).toBe('sas-stored-process')
     await request(app)
-      .get('/SASStoredProcess?_username=alice&_password=secret')
-      .send({ username: {} })
+      .post('/SASStoredProcess/do')
+      .expect(302)
+      .expect('Location', '/SASLogon/Login')
+  })
+
+  it('uses the query username rather than an unrelated GET body username', async () => {
+    await request(app)
+      .get('/SASStoredProcess?_username=PUBLIC&_password=secret')
+      .send({ username: 'alice' })
+      .expect(200)
+    await request(app)
+      .post('/SASStoredProcess/do')
+      .expect(302)
+      .expect('Location', '/SASLogon/Login')
+  })
+
+  it('does not accept a missing query credential', async () => {
+    await request(app)
+      .get('/SASStoredProcess?_username=alice')
+      .send({ username: 'alice' })
       .expect(302)
       .expect('Location', '/SASLogon/login')
     await request(app)

@@ -419,6 +419,10 @@ jobs:
       - name: Build the server
         working-directory: ./api
         run: npm run build
+        env:
+          # The api build lists the SAS_PACKAGES macros over the GitHub API,
+          # which rate limits unauthenticated requests per source IP.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # A fresh database per run: the server only logs its seed lines the first
       # time it creates the admin account, and ADMIN_PASSWORD_INITIAL is required
