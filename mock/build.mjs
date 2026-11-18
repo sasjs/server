@@ -87,7 +87,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // to the registry - 7.4.0 still pinned 0.44.2 and no release landed in between.
 // Its breaking change, `_WEBIN_FILEREF` giving paths rather than contents, is in
 // the SAS9 upload path, which no screen on this site uses.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '8.0.0'
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '8.0.4'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
