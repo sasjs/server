@@ -1,4 +1,4 @@
-/* @sasjs/api 0.44.2 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.44.4 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -1567,6 +1567,12 @@ var SASjsApi = (() => {
           in: "body",
           required: false,
           type: "string"
+        },
+        {
+          name: "layout",
+          in: "body",
+          required: false,
+          type: "boolean"
         }
       ],
       requestBodies: ["application/json"],
@@ -6784,6 +6790,16 @@ var SASjsApi = (() => {
     }
   };
   var APP_ENTRY_FILE = "index.html";
+  var layoutOf = (value) => {
+    if (value === void 0) return void 0;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      const text2 = value.trim().toLowerCase();
+      if (text2 === "true") return true;
+      if (text2 === "false") return false;
+    }
+    throw new ApiError(400, '"layout" must be a boolean.');
+  };
   var APP_NOT_REGISTERED = "No App Stream is registered with that id.";
   var appNotRegistered = () => new ApiError(404, APP_NOT_REGISTERED, {
     status: "failure",
@@ -7402,7 +7418,10 @@ var SASjsApi = (() => {
           status: 200,
           body: await code.format(await caller(), {
             code: body.code,
-            filePath: body.filePath
+            filePath: body.filePath,
+            // the body is rebuilt field by field here, so a flag the service reads
+            // has to be named or the request's own answer is lost on the way
+            layout: layoutOf(body.layout)
           })
         };
       case "GET /SASjsApi/info/authorizedRoutes":
