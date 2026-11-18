@@ -559,6 +559,19 @@
       
     </span>
 </a>
+<nav aria-label="Input Files" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reading-input-tables-and-binary-files">
+<span class="md-ellipsis">
+      
+        Reading input tables and binary files
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#output_1">
@@ -934,6 +947,19 @@
       
     </span>
 </a>
+<nav aria-label="Input Files" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reading-input-tables-and-binary-files">
+<span class="md-ellipsis">
+      
+        Reading input tables and binary files
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#output_1">
@@ -1208,28 +1234,37 @@
 </span><span id="__span-4-31"><a href="#__codelineno-4-31" id="__codelineno-4-31" name="__codelineno-4-31"></a><span class="nx">_sasjs_webout</span><span class="p">.</span><span class="nx">finalise</span><span class="p">(</span><span class="nx">_webout</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>fs</code> and <code>webout</code> are published as globals, so a program that declares its own <code>fs</code> or <code>webout</code> shadows it without clashing with the runtime's. The runtime keeps its own reference under the reserved <code>_sasjs_webout</code> name, which is also what writes <code>_webout</code> when the program assigns that variable instead of calling <code>webout()</code>.</p>
-<p><code>webout()</code> is generated into the program rather than imported, from the single copy of the block in <a href="https://github.com/sasjs/utils" target="_blank" rel="noopener"><code>@sasjs/utils</code></a>: the server and <code>sasjs mock</code> emit the same text, so a program behaves the same in both, and the session log shows exactly what ran. The block resolves its own <code>fs</code> (and <code>os</code>, when the host has one, falling back to what a browser can answer).</p>
+<p><code>webout()</code> is generated into the program rather than imported, from the single copy of the block in <a href="https://github.com/sasjs/utils" target="_blank" rel="noopener"><code>@sasjs/utils</code></a>: the server and <code>sasjs mock</code> use the same prelude, but host-provided inputs can differ. The session log shows exactly what ran. The block resolves its own <code>fs</code> (and <code>os</code>, when the host has one, falling back to what a browser can answer).</p>
 <h3 id="input-files_1">Input Files<a class="headerlink" href="#input-files_1" title="Permanent link">¶</a></h3>
 <p>Any files attached to a request will be saved in the <a href="../sessions/">session folder</a> and the following variables will be dynamically added to the JS program:</p>
 <ul>
 <li><code>_WEBIN_FILE_COUNT</code> - contains an integer, from 0 to the number of files to being provided. This variable is always created.</li>
 <li><code>_WEBIN_FILENAME1</code> - the value that was specified in the FILENAME attribute by the frontend</li>
-<li><code>_WEBIN_FILEREF1</code> - This will contain the actual file object</li>
+<li><code>_WEBIN_FILEREF1</code> - a string containing the staged file's local session path, not a SAS fileref</li>
 <li><code>_WEBIN_NAME1</code> - the value that was specified in the NAME attribute by the frontend</li>
 </ul>
+<p>When at least one file is present, <code>_WEBIN_FILENAME</code>, <code>_WEBIN_NAME</code> and <code>_WEBIN_FILEREF</code> alias the corresponding <code>1</code> variables. With no files, those aliases are not created.</p>
 <p>To illustrate with an example - we are uploading two files, F1 and F2. The following JS code will be generated, and inserted at the beginning of the executed program:</p>
-<div class="language-js highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFileSync</span><span class="p">(</span><span class="s1">'/path/to/file1'</span><span class="p">)</span>
-</span><span id="__span-5-2"><a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFileSync</span><span class="p">(</span><span class="s1">'/path/to/file2'</span><span class="p">)</span>
+<div class="language-js highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/path/to/file1'</span>
+</span><span id="__span-5-2"><a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/path/to/file2'</span>
 </span><span id="__span-5-3"><a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILENAME1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'F1'</span>
 </span><span id="__span-5-4"><a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILENAME2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'F2'</span>
 </span><span id="__span-5-5"><a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_NAME1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'FormRef1'</span>
 </span><span id="__span-5-6"><a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_NAME2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'FormRef2'</span>
-</span><span id="__span-5-7"><a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a>
-</span><span id="__span-5-8"><a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2</span>
+</span><span id="__span-5-7"><a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">_WEBIN_FILEREF1</span>
+</span><span id="__span-5-8"><a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILENAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">_WEBIN_FILENAME1</span>
+</span><span id="__span-5-9"><a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_NAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">_WEBIN_NAME1</span>
+</span><span id="__span-5-10"><a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2</span>
 </span></code></pre></div>
 <p>If there are no files uploaded, only the following code will be generated:</p>
 <div class="language-js highlight"><pre><span></span><code><span id="__span-6-1"><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kd">const</span><span class="w"> </span><span class="nx">_WEBIN_FILE_COUNT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span>
 </span></code></pre></div>
+<h4 id="reading-input-tables-and-binary-files">Reading input tables and binary files<a class="headerlink" href="#reading-input-tables-and-binary-files" title="Permanent link">¶</a></h4>
+<p>On the server, <code>webout('FETCH')</code> reads adapter-formatted UTF-8 CSV input tables and returns an object of table names to arrays of rows. For each upload, the host supplies <code>{ name, filename, csv }</code> to the shared prelude. <code>csv</code> is a lazy, enumerable getter: it decodes the file as UTF-8 when accessed, not before the service starts. Each access reads the file again, including when serializing the context. FETCH reads every uploaded file, including non-CSV files, so path-only services handling large or binary uploads should avoid FETCH and context serialization. This text is <strong>not</strong> a byte-preserving representation of an arbitrary binary upload: invalid UTF-8 is replaced during decoding. Read images, ZIPs, spreadsheets and other binary files with <code>fs.readFileSync(_WEBIN_FILEREF1)</code> to obtain their original bytes; specify <code>'utf8'</code> only for text. <code>_WEBIN_NAME1</code> and <code>_WEBIN_FILENAME1</code> identify the field and original filename, and the bindings are lexical variables in the program. The staged path is session-local and is only available while the session exists.</p>
+<p><strong>Breaking migration:</strong> Earlier Server JS runtimes supplied the uploaded bytes as a <code>Buffer</code> in <code>_WEBIN_FILEREF1</code>. Replace <code>_WEBIN_FILEREF1.toString('utf8')</code> with <code>fs.readFileSync(_WEBIN_FILEREF1, 'utf8')</code>, and replace direct Buffer use with <code>fs.readFileSync(_WEBIN_FILEREF1)</code>. A string conversion alone now returns the path, not file contents.</p>
+<p>FETCH skips uploads whose first line does not look like an adapter table header. This is a heuristic, not a binary-file detector: a file that happens to look like a table can be parsed or cause FETCH to throw. Upload table names come from the multipart field, not the filename; repeated names are last-wins in multipart order. The numbered <code>_WEBIN_*</code> bindings use session directory order, which need not match multipart order.</p>
+<p>These path and FETCH-context details describe the <strong>server's Node.js runtime</strong>, not the browser mock: its input bindings and transport can differ, so do not rely on it to verify binary handling. SAS Server exposes an actual SAS fileref instead of a JS path; Viya stages uploads behind its files API and uses a files-service URI. The shared variable names do not make these representations interchangeable.</p>
 <h3 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">¶</a></h3>
 <p>The recommended way to send data back is <code>webout()</code>, which mirrors the <a href="https://core.sasjs.io/ms__webout_8sas.html" target="_blank" rel="noopener"><code>%ms_webout()</code></a> macro so that a JS program is laid out the way a SAS one is:</p>
 <div class="language-sas highlight"><pre><span></span><code><span id="__span-7-1"><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a>data work<span class="m">.</span>users;
