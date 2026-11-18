@@ -35,9 +35,9 @@
  * services are the package's; this file supplies the transport, the worker's own
  * activity, and the browser's answers to questions a server asks its process.
  */
-importScripts('host/runtime-core.js?v=5b35698c4e')
-importScripts('host/api-browser.js?v=5b35698c4e')
-importScripts('host/lint-browser.js?v=5b35698c4e')
+importScripts('host/runtime-core.js?v=87636c5fbc')
+importScripts('host/api-browser.js?v=87636c5fbc')
+importScripts('host/lint-browser.js?v=87636c5fbc')
 
 const R = self.SASjsMockRuntime
 
