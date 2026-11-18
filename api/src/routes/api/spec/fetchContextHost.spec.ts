@@ -61,6 +61,10 @@ _webout = JSON.stringify({ context: _sasjs_fetch_context, fileCount: _WEBIN_FILE
 `
     )
     writeFileSync(
+      path.join(programFolder, 'tier-input.js'),
+      `_webout = JSON.stringify({ value: region, body: BodyField })`
+    )
+    writeFileSync(
       path.join(programFolder, 'paths.js'),
       `
 const entries = []
@@ -72,6 +76,80 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
   })
 
   afterAll(() => rmSync(programFolder, { recursive: true, force: true }))
+
+  it('normalizes every tier query name while preserving values and leaving the API unchanged', async () => {
+    for (const method of ['get', 'post'] as const) {
+      for (const name of ['Region', 'REGION', '%52eGiOn']) {
+        const res = await request(app)
+          [method](
+            `/StoredProgram?_PROGRAM=/fetch-context-test/capture&${name}=North%2BWest%26x`
+          )
+          .expect(200)
+        expect(JSON.parse(res.text).context.params.region).toBe('North+West&x')
+      }
+    }
+    const direct = await request(app)
+      .get(
+        '/SASjsApi/stp/execute?_program=/fetch-context-test/capture&Region=Mixed'
+      )
+      .expect(200)
+    const params = JSON.parse(direct.text).context.params
+    expect(params.Region).toBe('Mixed')
+    expect(params.region).toBeUndefined()
+  })
+
+  it('preserves POST body names and body precedence independently of URL normalization', async () => {
+    const res = await request(app)
+      .post(
+        '/StoredProgram?_PROGRAM=/fetch-context-test/capture&ReGiOn=fromQuery'
+      )
+      .send({ region: 'fromBody', OtherField: 'MixedCase' })
+      .expect(200)
+    expect(JSON.parse(res.text).context.params).toMatchObject({
+      region: 'fromBody',
+      OtherField: 'MixedCase'
+    })
+  })
+
+  it('exposes canonical URL bindings to JS and leaves POST body bindings intact', async () => {
+    for (const name of ['region', 'REGION', 'ReGiOn']) {
+      const res = await request(app)
+        .post(
+          `/StoredProgram?_program=/fetch-context-test/tier-input&${name}=AbC%26D`
+        )
+        .send({ BodyField: 'body' })
+        .expect(200)
+      expect(JSON.parse(res.text)).toEqual({ value: 'AbC&D', body: 'body' })
+    }
+  })
+
+  it('validates mixed-case debug as the direct API does', async () => {
+    const direct = await request(app)
+      .get('/SASjsApi/stp/execute?_program=/fetch-context-test/capture&_debug=')
+      .expect(400)
+    const tier = await request(app)
+      .get('/StoredProgram?_program=/fetch-context-test/capture&_DeBuG=')
+      .expect(400)
+    expect(tier.text).toBe(direct.text)
+  })
+
+  it('rejects duplicate arbitrary query names as the API does for arrays', async () => {
+    for (const method of ['get', 'post'] as const) {
+      const direct = await request(app)
+        [method](
+          '/SASjsApi/stp/execute?_program=/fetch-context-test/capture&region=a&region=b'
+        )
+        .expect(400)
+      for (const query of ['region=a&region=b', 'Region=a&%52EGION=b']) {
+        const tier = await request(app)
+          [method](
+            `/StoredProgram?_program=/fetch-context-test/capture&${query}`
+          )
+          .expect(400)
+        expect(tier.text).toBe(direct.text)
+      }
+    }
+  })
 
   it('streams a multipart upload without calling FETCH', async () => {
     const bytes = Buffer.from([0, 0xff, 0x80, 0xc3, 0x28])

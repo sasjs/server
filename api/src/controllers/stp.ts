@@ -24,6 +24,10 @@ import {
 } from '../utils'
 import { MulterFile } from '../types/Upload'
 import { TriggerResponse } from '../types'
+import {
+  mergeTierPostVariables,
+  tierProgramRequest
+} from '../utils/tierPostVariables'
 
 /**
  * Response of `POST /SASjsApi/stp/trigger`. The shape and its documentation
@@ -124,10 +128,15 @@ export class STPController {
     @Query() _program?: string
   ): Promise<string | Buffer> {
     const program = _program ?? body?._program
+    const isTier = Boolean((request as any)[tierProgramRequest])
+    const merged = isTier
+      ? mergeTierPostVariables(request.query, request.body, program)
+      : { ...request.query, ...request.body }
     const vars: ExecutionVars = {
-      ...request.query,
-      ...request.body,
-      _debug: parseDebugValue(request.query._debug ?? request.body?._debug)
+      ...merged,
+      _debug: parseDebugValue(
+        isTier ? merged._debug : (request.query._debug ?? request.body?._debug)
+      )
     }
     const filesNamesMap = request.files?.length
       ? makeFilesNamesMap(request.files as MulterFile[])
