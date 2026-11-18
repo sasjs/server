@@ -200,6 +200,41 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
     })
   })
 
+  it('fetches a CRLF-terminated multi-column upload without a phantom row', async () => {
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/fetch')
+      .attach(
+        'input',
+        Buffer.from('name:$char8. count:best.\r\nAda,2\r\n'),
+        'input.csv'
+      )
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({ input: [{ name: 'Ada', count: 2 }] })
+  })
+
+  it('discards blank records between distinct uploaded rows', async () => {
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/fetch')
+      .attach('input', Buffer.from('x:$char8.\r\na\r\n\r\nb\r\n'), 'input.csv')
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({ input: [{ x: 'a' }, { x: 'b' }] })
+  })
+
+  it('discards adapter-format empty single-column records in multipart uploads', async () => {
+    // Wire-format fixtures captured from @sasjs/adapter 6.1.1 convertToCSV.
+    const empty = 'x:$char1.\r\n'
+    const middle = 'x:$char1.\r\na\r\n\r\nb'
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/fetch')
+      .attach('empty', Buffer.from(empty), 'empty.csv')
+      .attach('middle', Buffer.from(middle), 'middle.csv')
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({
+      empty: [],
+      middle: [{ x: 'a' }, { x: 'b' }]
+    })
+  })
+
   it('FETCH re-reads a changed staged upload and throws if it is deleted', async () => {
     const res = await request(app)
       .post('/SASjsApi/stp/execute?_program=/fetch-context-test/mutate')
