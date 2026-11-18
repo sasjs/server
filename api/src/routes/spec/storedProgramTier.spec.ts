@@ -104,6 +104,38 @@ describe('the StoredProgram tier', () => {
     )
   })
 
+  it('rejects repeated program names like the direct API', async () => {
+    for (const method of ['get', 'post'] as const) {
+      const direct = await request(app)
+        [method]('/SASjsApi/stp/execute?_program=/first&_program=/second')
+        .auth(token, { type: 'bearer' })
+        .expect(400)
+      const tier = await request(app)
+        [method]('/StoredProgram?_program=/first&%5fPrOgRaM=/second')
+        .auth(token, { type: 'bearer' })
+        .expect(400)
+      expect(tier.text).toBe(direct.text)
+    }
+  })
+
+  it('rejects mixed-case program and file conflicts on both tiers', async () => {
+    for (const tier of ['/StoredProgram', '/SASJobExecution']) {
+      const res = await request(app)
+        .get(`${tier}?%5fPROGRAM=&_file=${appLoc}/services/web/main.js`)
+        .auth(token, { type: 'bearer' })
+        .expect(400)
+      expect(res.text).toEqual(
+        'Exactly one of "_program" and "_FILE" may be given.'
+      )
+    }
+  })
+
+  it('requires authentication for a mixed-case program', async () => {
+    await request(app)
+      .get(`/StoredProgram?_PROGRAM=${appLoc}/services/web/not-here`)
+      .expect(401)
+  })
+
   it('carries the method through, so a posted program stays a post', async () => {
     const res = await request(app)
       .post(`/StoredProgram?_program=${appLoc}/services/web/not-here`)
@@ -145,6 +177,11 @@ describe('the StoredProgram tier', () => {
     )
     const userToken = generateAccessToken({ clientId, userId: user.uid })
     await saveTokensInDB(user.uid, clientId, userToken, 'refreshToken')
+
+    await request(app)
+      .get(`/StoredProgram?_PrOgRaM=${appLoc}/services/web/main`)
+      .auth(userToken, { type: 'bearer' })
+      .expect(401)
 
     await request(app)
       .get(`/StoredProgram?_program=${appLoc}/services/web/main`)

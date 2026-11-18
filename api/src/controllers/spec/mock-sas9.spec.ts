@@ -18,6 +18,10 @@ describe('MockSas9Controller mock location', () => {
     fs.mkdirSync(path.join(mocksFolder, 'sas9', 'generic'), { recursive: true })
     fs.mkdirSync(path.join(mocksFolder, 'sas9', 'custom'), { recursive: true })
     fs.writeFileSync(
+      path.join(mocksFolder, 'sas9', 'generic', 'logged-in'),
+      'ok'
+    )
+    fs.writeFileSync(
       path.join(mocksFolder, 'sas9', 'generic', 'sas-stored-process'),
       'FROM-THE-CONFIGURED-FOLDER'
     )
@@ -39,6 +43,15 @@ describe('MockSas9Controller mock location', () => {
     ;(controller as any).loggedIn = 'user'
     return controller
   }
+
+  it('exposes the same POST refusal for logged-out and public users', async () => {
+    const controller = new MockSas9Controller()
+    expect(controller.postLoginRedirect()).toBe('/SASLogon/login')
+    await controller.loginPost({ body: { username: 'PUBLIC' } } as any)
+    expect(controller.postLoginRedirect()).toBe('/SASLogon/Login')
+    await controller.loginPost({ body: { username: 'alice' } } as any)
+    expect(controller.postLoginRedirect()).toBeUndefined()
+  })
 
   it('reads the default stored process from an absolute folder', async () => {
     const response = await loggedInController().sasStoredProcess({

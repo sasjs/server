@@ -1,7 +1,7 @@
 import { readFile } from '@sasjs/utils'
 import express from 'express'
-import path from 'path'
 import { Request, Post, Get } from 'tsoa'
+import { resolveMockResponsePath } from '../utils/resolveMockResponsePath'
 import dotenv from 'dotenv'
 import { ExecutionController } from './internal'
 import {
@@ -11,6 +11,7 @@ import {
   resolveMockPath
 } from '../utils'
 import { MulterFile } from '../types/Upload'
+import { mergeTierPostVariables } from '../utils/tierPostVariables'
 
 dotenv.config({ quiet: true })
 
@@ -34,6 +35,13 @@ export class MockSas9Controller {
     return resolveMockPath(this.mocksPath)
   }
 
+  /** Mock POST eligibility only; this is not server authentication. */
+  public postLoginRedirect(): string | undefined {
+    if (!this.loggedIn) return '/SASLogon/login'
+    if (this.isPublicAccount()) return '/SASLogon/Login'
+    return undefined
+  }
+
   @Get('/SASStoredProcess')
   public async sasStoredProcess(
     @Request() req: express.Request
@@ -41,7 +49,9 @@ export class MockSas9Controller {
     const username = req.query._username?.toString() || undefined
     const password = req.query._password?.toString() || undefined
 
-    if (username && password) this.loggedIn = req.body.username
+    if (username && password && typeof req.body?.username === 'string') {
+      this.loggedIn = req.body.username
+    }
 
     if (!this.loggedIn) {
       return {
@@ -55,15 +65,7 @@ export class MockSas9Controller {
       ? program.replace('/', '').split('/')
       : ['generic', 'sas-stored-process']
 
-    if (program) {
-      return await getMockResponseFromFile([
-        this.mockBase(),
-        'sas9',
-        ...filePath
-      ])
-    }
-
-    return await getMockResponseFromFile([this.mockBase(), 'sas9', ...filePath])
+    return await getMockResponseFromFile(this.mockBase(), filePath)
   }
 
   @Get('/SASStoredProcess/do')
@@ -115,31 +117,19 @@ export class MockSas9Controller {
       }
     }
 
-    return await getMockResponseFromFile([this.mockBase(), 'sas9', ...filePath])
+    return await getMockResponseFromFile(this.mockBase(), filePath)
   }
 
   @Post('/SASStoredProcess/do/')
   public async sasStoredProcessDoPost(
     @Request() req: express.Request
   ): Promise<Sas9Response> {
-    if (!this.loggedIn) {
-      return {
-        content: '',
-        redirect: '/SASLogon/login'
-      }
-    }
-
-    if (this.isPublicAccount()) {
-      return {
-        content: '',
-        redirect: '/SASLogon/Login'
-      }
-    }
+    const redirect = this.postLoginRedirect()
+    if (redirect) return { content: '', redirect }
 
     const program = req.query._program ?? req.body?._program
     const vars = {
-      ...req.query,
-      ...req.body,
+      ...mergeTierPostVariables(req.query, req.body, program),
       _requestMethod: req.method,
       _driveLoc: process.driveLoc
     }
@@ -180,26 +170,22 @@ export class MockSas9Controller {
           redirect: '/SASStoredProcess/Logoff?publicDenied=true'
         }
       } else {
-        return await getMockResponseFromFile([
-          this.mockBase(),
-          'sas9',
+        return await getMockResponseFromFile(this.mockBase(), [
           'generic',
           'logged-in'
         ])
       }
     }
 
-    return await getMockResponseFromFile([
-      this.mockBase(),
-      'sas9',
-      'generic',
-      'login'
-    ])
+    return await getMockResponseFromFile(this.mockBase(), ['generic', 'login'])
   }
 
   @Post('/SASLogon/login')
   public async loginPost(req: express.Request): Promise<Sas9Response> {
-    if (req.body.lt && req.body.lt !== 'validtoken')
+    if (
+      (req.body?.lt && req.body.lt !== 'validtoken') ||
+      typeof req.body?.username !== 'string'
+    )
       return {
         content: '',
         redirect: '/SASLogon/login'
@@ -207,9 +193,7 @@ export class MockSas9Controller {
 
     this.loggedIn = req.body.username
 
-    return await getMockResponseFromFile([
-      this.mockBase(),
-      'sas9',
+    return await getMockResponseFromFile(this.mockBase(), [
       'generic',
       'logged-in'
     ])
@@ -220,17 +204,13 @@ export class MockSas9Controller {
     this.loggedIn = undefined
 
     if (req.query.publicDenied === 'true') {
-      return await getMockResponseFromFile([
-        this.mockBase(),
-        'sas9',
+      return await getMockResponseFromFile(this.mockBase(), [
         'generic',
         'public-access-denied'
       ])
     }
 
-    return await getMockResponseFromFile([
-      this.mockBase(),
-      'sas9',
+    return await getMockResponseFromFile(this.mockBase(), [
       'generic',
       'logged-out'
     ])
@@ -252,19 +232,21 @@ export class MockSas9Controller {
 }
 
 const getMockResponseFromFile = async (
-  filePath: string[]
+  mockBase: string,
+  responsePath: string[]
 ): Promise<MockFileRead> => {
-  const filePathParsed = path.join(...filePath)
   let error: boolean = false
 
-  let file = await readFile(filePathParsed).catch((err: any) => {
-    const errMsg = `Error reading mocked file on path: ${filePathParsed}\nError: ${err}`
-    process.logger.error(errMsg)
+  let file = await resolveMockResponsePath(mockBase, responsePath)
+    .then((resolved) => readFile(resolved))
+    .catch((err: any) => {
+      const errMsg = `Error reading mocked file\nError: ${err}`
+      process.logger.error(errMsg)
 
-    error = true
+      error = true
 
-    return errMsg
-  })
+      return errMsg
+    })
 
   return {
     content: file,

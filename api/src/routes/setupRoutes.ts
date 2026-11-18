@@ -5,6 +5,8 @@ import { ddcHostRouter } from './ddcHost'
 import apiRouter from './api'
 import appStreamRouter from './appStream'
 import { legacyRouteRedirects } from './legacyRouteRedirects'
+import { normalizeTierQuery } from '../utils/tierQuery'
+import { tierProgramRequest } from '../utils/tierPostVariables'
 
 import {
   authenticateAccessToken,
@@ -63,7 +65,11 @@ export const setupRoutes = (app: Express) => {
    */
   for (const webTier of ['/StoredProgram', '/SASJobExecution'])
     app.use(webTier, (req, res, next) => {
+      // The mount is prefix-matched by Express, but the tier is the root only.
+      if (req.path !== '/') return next()
+
       const { url, baseUrl } = req
+      const { search, hasFile, hasProgram } = normalizeTierQuery(url)
 
       // one file, or one program, never both: the two answer different things,
       // and choosing silently would answer a question the caller did not ask -
@@ -75,19 +81,19 @@ export const setupRoutes = (app: Express) => {
       // constant `TIER_NEEDS_ONE_PARAMETER`). Both are pinned by a spec that
       // asserts the exact wording, and docs/pages/apps.md says where the copy
       // lives, so a rewording cannot pass one repo and miss the other silently.
-      if (req.query._program !== undefined && req.query._FILE !== undefined)
+      if (hasProgram && hasFile)
         return res.status(400).send(TIER_NEEDS_ONE_PARAMETER)
 
       // a program to run: the estate's other parameter, on the tier that stands
       // where the estate's tiers stand. The method travels too - the adapter
       // posts a program with its input data, a browser may get it
-      if (webTier === '/StoredProgram' && req.query._program !== undefined) {
-        const search = url.includes('?') ? url.slice(url.indexOf('?')) : ''
-
+      if (webTier === '/StoredProgram' && hasProgram) {
         req.url = `/stp/execute${search}`
         req.baseUrl = API_PREFIX
+        ;(req as any)[tierProgramRequest] = true
 
         return apiRouter(req, res, (error?: unknown) => {
+          delete (req as any)[tierProgramRequest]
           req.url = url
           req.baseUrl = baseUrl
 
@@ -95,19 +101,10 @@ export const setupRoutes = (app: Express) => {
         })
       }
 
-      if (req.method !== 'GET' || typeof req.query._FILE !== 'string')
-        return next()
+      if (req.method !== 'GET' || !hasFile) return next()
 
-      // the query travels as it arrived, not just the one name this spelling
-      // knows: a request that names the file twice has to earn the same refusal
-      // here as on the API spelling, rather than having one of them quietly
-      // dropped on the way
-      const params = new URLSearchParams({ _FILE: String(req.query._FILE) })
-
-      if (typeof req.query._filePath === 'string')
-        params.set('_filePath', req.query._filePath)
-
-      req.url = `/drive/file?${params}`
+      // Carry all query pairs through so the API sees conflicts and other inputs.
+      req.url = `/drive/file${search}`
       req.baseUrl = API_PREFIX
 
       return apiRouter(req, res, (error?: unknown) => {

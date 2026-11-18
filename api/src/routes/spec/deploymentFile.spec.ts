@@ -163,6 +163,77 @@ describe('streamed deployment files', () => {
     expect(res.text).toEqual('console.log("streamed")')
   })
 
+  it('accepts mixed-case and percent-encoded file keys on both tiers', async () => {
+    const { token } = await tokenFor(admin.username)
+
+    for (const tier of ['/StoredProgram', '/SASJobExecution']) {
+      for (const key of ['_file', '_FiLe', '%5fFi%4Ce']) {
+        const res = await request(app)
+          .get(`${tier}?${key}=${assetPath}`)
+          .auth(token, { type: 'bearer' })
+          .expect(200)
+        expect(res.text).toEqual('console.log("streamed")')
+      }
+    }
+  })
+
+  it('rejects repeated file names like the direct API, including mixed spellings', async () => {
+    const { token } = await tokenFor(admin.username)
+    const direct = await request(app)
+      .get(`/SASjsApi/drive/file?_FILE=/missing.js&_FILE=${assetPath}`)
+      .auth(token, { type: 'bearer' })
+      .expect(400)
+    for (const tier of ['/StoredProgram', '/SASJobExecution']) {
+      for (const query of [
+        `_FILE=/missing.js&_FILE=${assetPath}`,
+        `_FILE=/missing.js&_file=${assetPath}`,
+        `_file=${assetPath}&%5fFILE=/missing.js`
+      ]) {
+        const res = await request(app)
+          .get(`${tier}?${query}`)
+          .auth(token, { type: 'bearer' })
+          .expect(400)
+        expect(res.text).toEqual(direct.text)
+      }
+      await request(app).get(`${tier}?_FILE=a&_file=b`).expect(401)
+    }
+  })
+
+  it('refuses mixed-case file and filepath even with repeats or empty values', async () => {
+    const { token } = await tokenFor(admin.username)
+    for (const tier of ['/StoredProgram', '/SASJobExecution']) {
+      for (const query of [
+        `_file=${assetPath}&%5fFILEPATH=${assetPath}`,
+        `_FILE=${assetPath}&_filepath=`,
+        `_filePath=${assetPath}&_FILEPATH=${assetPath}&_fIlE=${assetPath}`
+      ]) {
+        const res = await request(app)
+          .get(`${tier}?${query}`)
+          .auth(token, { type: 'bearer' })
+          .expect(400)
+        expect(res.text).toEqual(
+          'Exactly one of "_filePath" and "_FILE" may be given.'
+        )
+      }
+    }
+  })
+
+  it('applies authentication, authorization and traversal checks to mixed-case files', async () => {
+    const { token: adminToken } = await tokenFor(admin.username)
+    const { token: userToken } = await tokenFor(streamUser.username)
+    for (const tier of ['/StoredProgram', '/SASJobExecution']) {
+      await request(app).get(`${tier}?_file=${assetPath}`).expect(401)
+      await request(app)
+        .get(`${tier}?_FiLe=${assetPath}`)
+        .auth(userToken, { type: 'bearer' })
+        .expect(401)
+      await request(app)
+        .get(`${tier}?_file=../../etc/passwd`)
+        .auth(adminToken, { type: 'bearer' })
+        .expect(400)
+    }
+  })
+
   it('answers a missing file the way the estate does', async () => {
     const { token } = await tokenFor(admin.username)
 
