@@ -78,7 +78,16 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // hide the program this site exists to show.
 // 7.2.1 includes the mock Drive upload authorization fix (sasjs/cli#1621).
 // 7.2.2 carries @sasjs/api 0.44.2 (sasjs/cli#1622).
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '7.2.2'
+//
+// 8.0.0 is the first release whose host honours the `layout` flag on the format
+// route. The CLI pins the `@sasjs/api` build the worker answers `/SASjsApi` from,
+// so a host assembled by anything up to 7.4.0 laid the code out whichever button
+// the Studio pressed: "Fix lint issues" reformatted the file. The fix is
+// `@sasjs/api` 0.44.4 (sasjs/cli#1629), and 8.0.0 is the release that carried it
+// to the registry - 7.4.0 still pinned 0.44.2 and no release landed in between.
+// Its breaking change, `_WEBIN_FILEREF` giving paths rather than contents, is in
+// the SAS9 upload path, which no screen on this site uses.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '8.0.0'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
