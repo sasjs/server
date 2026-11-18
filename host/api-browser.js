@@ -1,4 +1,4 @@
-/* @sasjs/api 0.44.4 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.44.6 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -2224,7 +2224,7 @@ var SASjsApi = (() => {
         {
           name: "description",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
@@ -2239,6 +2239,10 @@ var SASjsApi = (() => {
         {
           status: 200,
           description: "Ok"
+        },
+        {
+          status: 400,
+          description: 'A body the schema refuses, e.g. `"isActive" must be a boolean`.'
         },
         {
           status: 401,
@@ -2939,6 +2943,10 @@ var SASjsApi = (() => {
           description: "Ok"
         },
         {
+          status: 400,
+          description: 'A body the schema refuses, e.g. `"isAdmin" must be a boolean`.'
+        },
+        {
           status: 401,
           description: "Admin account required"
         },
@@ -2973,6 +2981,10 @@ var SASjsApi = (() => {
         {
           status: 200,
           description: "Account Deleted!"
+        },
+        {
+          status: 400,
+          description: 'A password shorter than six characters, or a key the deletion takes none of; e.g. `"password" is required`'
         },
         {
           status: 401,
@@ -3030,19 +3042,19 @@ var SASjsApi = (() => {
         {
           name: "displayName",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
           name: "username",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
           name: "password",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
@@ -3069,6 +3081,10 @@ var SASjsApi = (() => {
         {
           status: 200,
           description: "Ok"
+        },
+        {
+          status: 400,
+          description: 'A body the schema refuses, e.g. `"isAdmin" must be a boolean`.'
         },
         {
           status: 401,
@@ -3115,6 +3131,10 @@ var SASjsApi = (() => {
           description: "Account Deleted!"
         },
         {
+          status: 400,
+          description: 'A username the schema refuses, a password shorter than six characters, or a key an administrator\'s deletion takes none of; e.g. `"password" is required`'
+        },
+        {
           status: 401,
           description: "Admin account required, or invalid password"
         },
@@ -3145,6 +3165,10 @@ var SASjsApi = (() => {
           description: "Ok"
         },
         {
+          status: 400,
+          description: 'A username the schema refuses, e.g. `"username" must only contain alpha-numeric characters`'
+        },
+        {
           status: 401,
           description: "Unauthorized"
         },
@@ -3170,19 +3194,19 @@ var SASjsApi = (() => {
         {
           name: "displayName",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
           name: "username",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
           name: "password",
           in: "body",
-          required: true,
+          required: false,
           type: "string"
         },
         {
@@ -3209,6 +3233,10 @@ var SASjsApi = (() => {
         {
           status: 200,
           description: "Ok"
+        },
+        {
+          status: 400,
+          description: 'A body the schema refuses, e.g. `"isAdmin" must be a boolean`.'
         },
         {
           status: 401,
@@ -6790,7 +6818,147 @@ var SASjsApi = (() => {
     }
   };
   var APP_ENTRY_FILE = "index.html";
-  var layoutOf = (value) => {
+  var refused = (message) => new ApiError(400, message);
+  var stringField = (field, value, allowEmpty = false) => {
+    if (typeof value !== "string") throw refused(`"${field}" must be a string`);
+    if (value === "" && !allowEmpty)
+      throw refused(`"${field}" is not allowed to be empty`);
+    return value;
+  };
+  var requiredField = (field, value) => {
+    if (value === void 0) throw refused(`"${field}" is required`);
+    return stringField(field, value);
+  };
+  var alphanumeric = (field, value, min, max) => {
+    if (!/^[A-Za-z0-9]+$/.test(value))
+      throw refused(`"${field}" must only contain alpha-numeric characters`);
+    if (value.length < min)
+      throw refused(`"${field}" length must be at least ${min} characters long`);
+    if (value.length > max)
+      throw refused(
+        `"${field}" length must be less than or equal to ${max} characters long`
+      );
+    return value;
+  };
+  var lengthBetween = (field, value, min, max) => {
+    if (value.length < min)
+      throw refused(`"${field}" length must be at least ${min} characters long`);
+    if (value.length > max)
+      throw refused(
+        `"${field}" length must be less than or equal to ${max} characters long`
+      );
+    return value;
+  };
+  var trimmedName = (field, value) => {
+    const name = value.trim();
+    if (name === "") throw refused(`"${field}" is not allowed to be empty`);
+    if (name.length < 6)
+      throw refused(`"${field}" length must be at least 6 characters long`);
+    return name;
+  };
+  var refuseUnknown = (body, keys) => {
+    for (const key of Object.keys(body))
+      if (!keys.includes(key)) throw refused(`"${key}" is not allowed`);
+  };
+  var ADMIN_GATED_ROUTES = /* @__PURE__ */ new Set([
+    "POST /SASjsApi/permission",
+    "PATCH /SASjsApi/permission/{uid}",
+    "DELETE /SASjsApi/permission/{uid}",
+    "GET /SASjsApi/client",
+    "POST /SASjsApi/client"
+  ]);
+  var foldedUsername = (value) => alphanumeric(
+    "username",
+    requiredField("username", value).toLowerCase(),
+    3,
+    16
+  );
+  var deletionBody = (body, admin) => {
+    if (admin) {
+      for (const key of Object.keys(body))
+        throw refused(`"${key}" is not allowed`);
+      return {};
+    }
+    const password = lengthBetween(
+      "password",
+      requiredField("password", body.password),
+      6,
+      1024
+    );
+    for (const key of Object.keys(body))
+      if (key !== "password") throw refused(`"${key}" is not allowed`);
+    return { password };
+  };
+  var USER_KEYS = [
+    "displayName",
+    "username",
+    "password",
+    "isAdmin",
+    "isActive",
+    "autoExec"
+  ];
+  var userCreate = (body) => {
+    const displayName = trimmedName(
+      "displayName",
+      requiredField("displayName", body.displayName)
+    );
+    const username = alphanumeric(
+      "username",
+      requiredField("username", body.username).toLowerCase(),
+      3,
+      16
+    );
+    const password = lengthBetween(
+      "password",
+      requiredField("password", body.password),
+      6,
+      1024
+    );
+    const isAdmin = booleanOf(body.isAdmin, "isAdmin");
+    const isActive = booleanOf(body.isActive, "isActive");
+    const autoExec = body.autoExec === void 0 ? void 0 : stringField("autoExec", body.autoExec, true);
+    refuseUnknown(body, USER_KEYS);
+    return { displayName, username, password, isAdmin, isActive, autoExec };
+  };
+  var GROUP_CREATE_KEYS = ["name", "description", "isActive"];
+  var groupCreate = (body) => {
+    const name = alphanumeric("name", requiredField("name", body.name), 3, 16);
+    const description = body.description === void 0 ? void 0 : stringField("description", body.description);
+    const isActive = booleanOf(body.isActive, "isActive");
+    refuseUnknown(body, GROUP_CREATE_KEYS);
+    return { name, description, isActive };
+  };
+  var userUpdate = (body, admin) => {
+    const changes = { ...body };
+    if (changes.displayName !== void 0)
+      changes.displayName = trimmedName(
+        "displayName",
+        stringField("displayName", changes.displayName)
+      );
+    if (changes.username !== void 0)
+      changes.username = alphanumeric(
+        "username",
+        stringField("username", changes.username).toLowerCase(),
+        3,
+        16
+      );
+    if (changes.password !== void 0)
+      lengthBetween(
+        "password",
+        stringField("password", changes.password),
+        6,
+        1024
+      );
+    if (changes.autoExec !== void 0)
+      stringField("autoExec", changes.autoExec, true);
+    const declared = admin ? USER_KEYS : USER_KEYS.filter((key) => key !== "isAdmin" && key !== "isActive");
+    for (const field of ["isAdmin", "isActive"])
+      if (admin && field in changes)
+        changes[field] = booleanOf(changes[field], field);
+    refuseUnknown(changes, declared);
+    return changes;
+  };
+  var booleanOf = (value, field) => {
     if (value === void 0) return void 0;
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
@@ -6798,7 +6966,7 @@ var SASjsApi = (() => {
       if (text2 === "true") return true;
       if (text2 === "false") return false;
     }
-    throw new ApiError(400, '"layout" must be a boolean.');
+    throw new ApiError(400, `"${field}" must be a boolean`);
   };
   var APP_NOT_REGISTERED = "No App Stream is registered with that id.";
   var appNotRegistered = () => new ApiError(404, APP_NOT_REGISTERED, {
@@ -6874,7 +7042,6 @@ var SASjsApi = (() => {
       if (grantScoped && records && !publicGrant && !await records.mayUseRoute(callerSubject, grantScoped))
         throw new ApiError(401, "Unauthorized");
     }
-    validate(route, request);
     const query = request.query || {};
     const body = request.body || {};
     const params = request.params || {};
@@ -6906,6 +7073,20 @@ var SASjsApi = (() => {
       status: 200,
       contents: output.contents
     });
+    const callerRecord = async () => {
+      const recordsService = required();
+      const subject2 = await caller();
+      return recordsService.getUser(subject2, {
+        uid: String(subject2?.userId ?? "")
+      });
+    };
+    const verifyAdminIfNeeded = async (target) => {
+      const me = await callerRecord();
+      if (me.isAdmin) return true;
+      const ownAccount = target.uid !== void 0 && target.uid === me.uid || target.username !== void 0 && target.username === me.username;
+      if (!ownAccount) throw new ApiError(401, "Admin account required");
+      return false;
+    };
     const required = () => {
       if (!records)
         throw new ApiError(
@@ -6914,6 +7095,51 @@ var SASjsApi = (() => {
         );
       return records;
     };
+    const controllerRules = {
+      "POST /SASjsApi/user": async (request2) => {
+        if (!(await callerRecord()).isAdmin)
+          throw new ApiError(401, "Admin account required");
+        return { body: userCreate(request2.body || {}) };
+      },
+      "POST /SASjsApi/group": async (request2) => {
+        if (!(await callerRecord()).isAdmin)
+          throw new ApiError(401, "Admin account required");
+        return { body: groupCreate(request2.body || {}) };
+      },
+      "PATCH /SASjsApi/user/{uid}": async (request2) => {
+        const admin = await verifyAdminIfNeeded({
+          uid: String(request2.params?.uid ?? "")
+        });
+        return { body: userUpdate(request2.body || {}, admin) };
+      },
+      "PATCH /SASjsApi/user/by/username/{username}": async (request2) => {
+        const admin = await verifyAdminIfNeeded({
+          username: String(request2.params?.username ?? "")
+        });
+        const username = foldedUsername(request2.params?.username);
+        return { body: userUpdate(request2.body || {}, admin), username };
+      },
+      "DELETE /SASjsApi/user/by/username/{username}": async (request2) => {
+        const admin = await verifyAdminIfNeeded({
+          username: String(request2.params?.username ?? "")
+        });
+        const username = foldedUsername(request2.params?.username);
+        return { body: deletionBody(request2.body || {}, admin), username };
+      },
+      "DELETE /SASjsApi/user/{uid}": async (request2) => {
+        const admin = await verifyAdminIfNeeded({
+          uid: String(request2.params?.uid ?? "")
+        });
+        return { body: deletionBody(request2.body || {}, admin) };
+      }
+    };
+    const controllerRule = controllerRules[routeId];
+    const controllerAnswer = controllerRule ? await controllerRule(request) : void 0;
+    if (!controllerRule) {
+      if (ADMIN_GATED_ROUTES.has(routeId) && !(await callerRecord()).isAdmin)
+        throw new ApiError(401, "Admin account required");
+      validate(route, request);
+    }
     if (routeId.startsWith("POST /SASjsApi/auth/") || routeId.startsWith("POST /SASLogon/") || routeId === "GET /SASLogon/logout" || routeId === "GET /SASjsApi/session") {
       if (!identity)
         throw new ApiError(
@@ -7344,20 +7570,16 @@ var SASjsApi = (() => {
         return {
           status: 200,
           body: await required().getUser(await caller(), {
-            username: String(params.username ?? "")
+            username: foldedUsername(params.username)
           })
         };
       case "POST /SASjsApi/user":
         return {
           status: 200,
-          body: await required().createUser(await caller(), {
-            username: String(body.username ?? ""),
-            displayName: String(body.displayName ?? ""),
-            password: String(body.password ?? ""),
-            isAdmin: body.isAdmin,
-            isActive: body.isActive,
-            autoExec: body.autoExec
-          })
+          body: await required().createUser(
+            await caller(),
+            controllerAnswer.body
+          )
         };
       case "PATCH /SASjsApi/user/{uid}":
         return {
@@ -7365,7 +7587,9 @@ var SASjsApi = (() => {
           body: await required().updateUser(
             await caller(),
             { uid: String(params.uid ?? "") },
-            body
+            // the body the controller's own schema accepted, with what Joi converts
+            // already converted
+            controllerAnswer.body
           )
         };
       case "PATCH /SASjsApi/user/by/username/{username}":
@@ -7373,8 +7597,8 @@ var SASjsApi = (() => {
           status: 200,
           body: await required().updateUser(
             await caller(),
-            { username: String(params.username ?? "") },
-            body
+            { username: controllerAnswer.username ?? "" },
+            controllerAnswer.body
           )
         };
       case "DELETE /SASjsApi/user/{uid}":
@@ -7383,7 +7607,7 @@ var SASjsApi = (() => {
           body: await required().deleteUser(
             await caller(),
             { uid: String(params.uid ?? "") },
-            { password: body.password }
+            { password: controllerAnswer.body.password }
           )
         };
       case "DELETE /SASjsApi/user/by/username/{username}":
@@ -7391,7 +7615,7 @@ var SASjsApi = (() => {
           status: 200,
           body: await required().deleteUser(
             await caller(),
-            { username: String(params.username ?? "") },
+            { username: controllerAnswer.username ?? "" },
             { password: body.password }
           )
         };
@@ -7421,7 +7645,7 @@ var SASjsApi = (() => {
             filePath: body.filePath,
             // the body is rebuilt field by field here, so a flag the service reads
             // has to be named or the request's own answer is lost on the way
-            layout: layoutOf(body.layout)
+            layout: booleanOf(body.layout, "layout")
           })
         };
       case "GET /SASjsApi/info/authorizedRoutes":
@@ -7454,9 +7678,10 @@ var SASjsApi = (() => {
         return {
           status: 200,
           body: await required().createGroup(await caller(), {
-            name: String(body.name ?? ""),
-            description: String(body.description ?? ""),
-            isActive: body.isActive
+            name: String(controllerAnswer.body.name ?? ""),
+            // left absent rather than made empty: the service applies the model's default
+            description: controllerAnswer.body.description,
+            isActive: controllerAnswer.body.isActive
           })
         };
       case "POST /SASjsApi/group/{groupUid}/{userUid}":
@@ -7838,7 +8063,7 @@ var SASjsApi = (() => {
             throw new ApiError(409, "Username already exists.");
           change.username = body.username;
         }
-        if (displayName) change.displayName = displayName;
+        change.displayName = displayName;
         if (body.isAdmin !== void 0) change.isAdmin = body.isAdmin;
         if (body.isActive !== void 0) change.isActive = body.isActive;
         if (body.autoExec !== void 0) change.autoExec = body.autoExec;
@@ -7880,7 +8105,8 @@ var SASjsApi = (() => {
           throw new ApiError(409, "Group name already exists.");
         const created = await store.createGroup({
           name: body.name,
-          description: body.description,
+          // the model defaults the field, so an absent description is the model's
+          description: body.description ?? "Group description.",
           isActive: body.isActive !== false
         });
         return groupDetails(created);
@@ -11894,6 +12120,25 @@ var SASjsApi = (() => {
       }
     },
     {
+      id: "get-user-by-username-mixed-case",
+      route: "GET /SASjsApi/user/by/username/{username}",
+      description: "finds the account when the path names it in another case",
+      identity: ADMIN_SIGNED_IN,
+      request: { token: ADMIN5, params: { username: "SASJSUSER" } },
+      expect: { status: 200, partial: { uid: RESTRICTED_UID } }
+    },
+    {
+      id: "get-user-by-username-refused-name",
+      route: "GET /SASjsApi/user/by/username/{username}",
+      description: "refuses a path parameter the username schema does not allow",
+      identity: ADMIN_SIGNED_IN,
+      request: { token: ADMIN5, params: { username: "a-b" } },
+      expect: {
+        status: 400,
+        error: '"username" must only contain alpha-numeric characters'
+      }
+    },
+    {
       id: "get-user-by-username-unauthenticated",
       route: "GET /SASjsApi/user/by/username/{username}",
       description: "refuses the by-username read with no caller",
@@ -11973,6 +12218,49 @@ var SASjsApi = (() => {
       expect: { status: 409, error: "Username already exists." }
     },
     {
+      id: "create-user-bad-admin-flag",
+      route: "POST /SASjsApi/user",
+      description: "refuses an isAdmin the schema does not call a boolean",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        body: {
+          username: "flaguser",
+          displayName: "Flag User",
+          password: "password",
+          isAdmin: "yes"
+        }
+      },
+      expect: { status: 400, error: '"isAdmin" must be a boolean' }
+    },
+    {
+      id: "create-user-bad-active-flag",
+      route: "POST /SASjsApi/user",
+      description: "refuses an isActive the schema does not call a boolean",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        body: {
+          username: "flaguser",
+          displayName: "Flag User",
+          password: "password",
+          isActive: "sometimes"
+        }
+      },
+      expect: { status: 400, error: '"isActive" must be a boolean' }
+    },
+    {
+      id: "create-user-not-admin-incomplete",
+      route: "POST /SASjsApi/user",
+      description: "refuses a non-admin before it reads the body it sent",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        body: { username: "incomplete" }
+      },
+      expect: { status: 401, error: "Admin account required" }
+    },
+    {
       id: "update-user",
       route: "PATCH /SASjsApi/user/{uid}",
       description: "changes an account's display name",
@@ -11999,13 +12287,48 @@ var SASjsApi = (() => {
       request: {
         token: RESTRICTED5,
         params: { uid: ADMIN_UID },
-        body: {
-          displayName: "Hijacked",
-          username: "sasjsadmin",
-          password: "Orion123"
-        }
+        // the body is one the schema would refuse too, so the case only passes when
+        // the caller is gated before the body is read, as the middleware order has it
+        body: { isAdmin: "yes" }
       },
       expect: { status: 401, error: "Admin account required" }
+    },
+    {
+      id: "update-user-empty-body",
+      route: "PATCH /SASjsApi/user/{uid}",
+      description: "applies an update that omits every field, which the controller stores as an empty name",
+      identity: ADMIN_SIGNED_IN,
+      request: { token: ADMIN5, params: { uid: RESTRICTED_UID }, body: {} },
+      // the controller always puts the sanitised display name into the update, so an
+      // omitted one is written as the empty string rather than left as it was
+      expect: {
+        status: 200,
+        partial: { uid: RESTRICTED_UID, displayName: "" }
+      }
+    },
+    {
+      id: "update-user-self-admin-flag",
+      route: "PATCH /SASjsApi/user/{uid}",
+      description: "refuses a flag only an administrator may send, on the caller's own account",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        params: { uid: RESTRICTED_UID },
+        body: { isAdmin: true }
+      },
+      expect: { status: 400, error: '"isAdmin" is not allowed' }
+    },
+    {
+      id: "update-user-by-username-self-admin-flag",
+      route: "PATCH /SASjsApi/user/by/username/{username}",
+      description: "refuses a flag only an administrator may send, by username",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        params: { username: "sasjsuser" },
+        body: { isAdmin: true }
+      },
+      expect: { status: 400, error: '"isAdmin" is not allowed' }
     },
     {
       id: "update-user-missing",
@@ -12079,13 +12402,56 @@ var SASjsApi = (() => {
       request: {
         token: RESTRICTED5,
         params: { username: "sasjsadmin" },
-        body: {
-          displayName: "Hijacked",
-          username: "sasjsadmin",
-          password: "Orion123"
-        }
+        // a body the schema would refuse for this caller, so the case only passes
+        // when the caller is gated before the body is read
+        body: { isAdmin: "yes" }
       },
       expect: { status: 401, error: "Admin account required" }
+    },
+    {
+      id: "update-user-by-username-mixed-case",
+      route: "PATCH /SASjsApi/user/by/username/{username}",
+      description: "finds the account when the path names it in another case",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        params: { username: "SASJSUSER" },
+        body: { displayName: "Renamed User" }
+      },
+      expect: {
+        status: 200,
+        partial: { uid: RESTRICTED_UID, displayName: "Renamed User" }
+      }
+    },
+    {
+      id: "update-user-by-username-parameter-before-body",
+      route: "PATCH /SASjsApi/user/by/username/{username}",
+      description: "refuses the path parameter before the body it is sent with",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        params: { username: "a-b" },
+        body: { displayName: "x" }
+      },
+      expect: {
+        status: 400,
+        error: '"username" must only contain alpha-numeric characters'
+      }
+    },
+    {
+      id: "update-user-by-username-refused-name",
+      route: "PATCH /SASjsApi/user/by/username/{username}",
+      description: "refuses a path parameter the username schema does not allow",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        params: { username: "a-b" },
+        body: { displayName: "Renamed User" }
+      },
+      expect: {
+        status: 400,
+        error: '"username" must only contain alpha-numeric characters'
+      }
     },
     {
       id: "update-user-by-username-missing",
@@ -12147,6 +12513,18 @@ var SASjsApi = (() => {
       expect: { status: 401, error: "Admin account required" }
     },
     {
+      id: "delete-user-not-admin-no-password",
+      route: "DELETE /SASjsApi/user/{uid}",
+      description: "requires the caller's own password when it is not an admin",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        params: { uid: RESTRICTED_UID },
+        body: {}
+      },
+      expect: { status: 400, error: '"password" is required' }
+    },
+    {
       id: "delete-user-missing",
       route: "DELETE /SASjsApi/user/{uid}",
       description: "answers 404 for an identifier no account has",
@@ -12165,6 +12543,72 @@ var SASjsApi = (() => {
         body: {}
       },
       expect: { status: 200, body: "Account Deleted!" }
+    },
+    {
+      id: "delete-user-admin-bodys-refused",
+      route: "DELETE /SASjsApi/user/by/username/{username}",
+      description: "refuses a body an administrator's deletion takes none of",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        params: { username: "sasjsuser" },
+        body: { password: "Orion123" }
+      },
+      expect: { status: 400, error: '"password" is not allowed' }
+    },
+    {
+      id: "delete-user-by-username-extra-key",
+      route: "DELETE /SASjsApi/user/by/username/{username}",
+      description: "refuses a key outside the password a self-deletion carries",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        params: { username: "sasjsuser" },
+        body: { password: "Orion123", extra: 1 }
+      },
+      expect: { status: 400, error: '"extra" is not allowed' }
+    },
+    {
+      id: "delete-user-by-username-parameter-before-body",
+      route: "DELETE /SASjsApi/user/by/username/{username}",
+      description: "refuses the path parameter before the body it is sent with",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        params: { username: "a-b" },
+        body: { password: "Orion123" }
+      },
+      expect: {
+        status: 400,
+        error: '"username" must only contain alpha-numeric characters'
+      }
+    },
+    {
+      id: "delete-user-by-username-short-password",
+      route: "DELETE /SASjsApi/user/by/username/{username}",
+      description: "refuses a password shorter than the schema allows, uncompared",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        params: { username: "sasjsuser" },
+        body: { password: "abc" }
+      },
+      expect: {
+        status: 400,
+        error: '"password" length must be at least 6 characters long'
+      }
+    },
+    {
+      id: "delete-user-by-username-no-password",
+      route: "DELETE /SASjsApi/user/by/username/{username}",
+      description: "requires the caller's own password for a self-deletion",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: RESTRICTED5,
+        params: { username: "sasjsuser" },
+        body: {}
+      },
+      expect: { status: 400, error: '"password" is required' }
     },
     {
       id: "delete-user-by-username-wrong-password",
@@ -12296,6 +12740,42 @@ var SASjsApi = (() => {
       identity: ADMIN_SIGNED_IN,
       request: { token: ADMIN5, body: { name: "DCGroup", description: "again" } },
       expect: { status: 409, error: "Group name already exists." }
+    },
+    {
+      id: "create-group-empty-description",
+      route: "POST /SASjsApi/group",
+      description: "refuses an empty description, which the schema does not allow",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        body: { name: "EmptyDescription", description: "" }
+      },
+      expect: {
+        status: 400,
+        error: '"description" is not allowed to be empty'
+      }
+    },
+    {
+      id: "create-group-no-description",
+      route: "POST /SASjsApi/group",
+      description: "creates a group whose description the caller left out",
+      identity: ADMIN_SIGNED_IN,
+      request: { token: ADMIN5, body: { name: "NoDescription" } },
+      expect: {
+        status: 200,
+        partial: { name: "NoDescription", description: "Group description." }
+      }
+    },
+    {
+      id: "create-group-bad-active-flag",
+      route: "POST /SASjsApi/group",
+      description: "refuses an isActive the schema does not call a boolean",
+      identity: ADMIN_SIGNED_IN,
+      request: {
+        token: ADMIN5,
+        body: { name: "FlagGroup", description: "a group", isActive: "yes" }
+      },
+      expect: { status: 400, error: '"isActive" must be a boolean' }
     },
     {
       id: "add-user-to-group",
@@ -12707,16 +13187,9 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/permission",
       description: "refuses a creation by a non-administrator",
       identity: ADMIN_SIGNED_IN,
-      request: {
-        token: RESTRICTED5,
-        body: {
-          path: "/SASjsApi/drive/folder",
-          type: "Route",
-          setting: "Grant",
-          principalType: "user",
-          principalId: RESTRICTED_UID
-        }
-      },
+      // an empty body, which the document requires five fields of, so the case only
+      // passes when the caller is refused before the schema is consulted
+      request: { token: RESTRICTED5, body: {} },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -12793,11 +13266,8 @@ var SASjsApi = (() => {
       route: "PATCH /SASjsApi/permission/{uid}",
       description: "refuses a change by a non-administrator",
       identity: ADMIN_SIGNED_IN,
-      request: {
-        token: RESTRICTED5,
-        params: { uid: "rule-code" },
-        body: { setting: "Grant" }
-      },
+      // `setting` is required, so an empty body only reaches 401 when the gate runs first
+      request: { token: RESTRICTED5, params: { uid: "rule-code" }, body: {} },
       expect: { status: 401, error: "Admin account required" }
     },
     {
@@ -12917,15 +13387,9 @@ var SASjsApi = (() => {
       route: "POST /SASjsApi/client",
       description: "refuses a registration by a non-administrator",
       identity: ADMIN_SIGNED_IN,
-      request: {
-        token: RESTRICTED5,
-        body: {
-          clientId: "new_app",
-          clientSecret: "new_secret",
-          accessTokenExpiration: 3600,
-          refreshTokenExpiration: 86400
-        }
-      },
+      // the document requires `clientId` here, so an empty body would be refused
+      // first by a host that validated before it gated
+      request: { token: RESTRICTED5, body: {} },
       expect: { status: 401, error: "Admin account required" }
     },
     {
