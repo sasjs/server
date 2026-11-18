@@ -212,6 +212,14 @@ _webout = JSON.stringify({ count: _WEBIN_FILE_COUNT, entries, aliases: _WEBIN_FI
     expect(JSON.parse(res.text)).toEqual({ input: [{ name: 'Ada', count: 2 }] })
   })
 
+  it('discards blank records between distinct uploaded rows', async () => {
+    const res = await request(app)
+      .post('/SASjsApi/stp/execute?_program=/fetch-context-test/fetch')
+      .attach('input', Buffer.from('x:$char8.\r\na\r\n\r\nb\r\n'), 'input.csv')
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.text)).toEqual({ input: [{ x: 'a' }, { x: 'b' }] })
+  })
+
   it('FETCH re-reads a changed staged upload and throws if it is deleted', async () => {
     const res = await request(app)
       .post('/SASjsApi/stp/execute?_program=/fetch-context-test/mutate')
