@@ -7,6 +7,7 @@
  * exercises is a helper whose bug only shows up in the deploy.
  */
 import { execSync, spawnSync } from 'child_process'
+import { existsSync, readFileSync } from 'fs'
 
 /**
  * Runs a command and shows its output.
@@ -22,6 +23,93 @@ export const run = (command, cwd) => {
   const output = execSync(command, { cwd, encoding: 'utf8' })
 
   if (output) process.stdout.write(output)
+}
+
+/** The attribute the login screen reads the demo's accounts from. */
+export const DEMO_LOGIN_META = 'sasjs-demo-login'
+
+/**
+ * The demo's sign-in accounts, from the identity fixture the host authenticates
+ * against.
+ *
+ * A visitor needs these: the demonstration site runs against a fixture rather
+ * than a real directory, and a login screen with no way in is a wall. They are
+ * taken from `host/identity.json` - the fixture the build ships, and the file the
+ * host starts from - rather than restated here, so an account added to the
+ * fixture appears on the screen without anyone remembering to copy it, and one
+ * removed stops being advertised.
+ *
+ * It is the accounts the BUILD ships, which is not always what a particular
+ * browser answers with: the host boots the identity snapshot the page hands it,
+ * and a visitor who changes a password or adds an account keeps that change in
+ * their own browser. Advertising the fixture is still the right default - it is
+ * what a first-time visitor signs in with - but the screen is a description of
+ * the deployment, not a promise about the store in front of them.
+ *
+ * Only accounts that can actually sign in are listed: a password is what makes an
+ * account usable, and an inactive one is refused however right the password is.
+ */
+export const demoLogins = (identity) => {
+  const users = Array.isArray(identity?.users) ? identity.users : []
+
+  return users
+    .filter(
+      (user) =>
+        user &&
+        user.isActive !== false &&
+        typeof user.username === 'string' &&
+        user.username !== '' &&
+        typeof user.password === 'string' &&
+        user.password !== ''
+    )
+    .map((user) => ({
+      username: user.username,
+      password: user.password,
+      admin: user.isAdmin === true
+    }))
+}
+
+const escapeAttribute = (value) =>
+  value.replace(
+    /[&<>"]/g,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character]
+  )
+
+/**
+ * The meta tag that carries those accounts to the interface, or nothing.
+ *
+ * An attribute rather than a script: the shell is served from every route, and a
+ * `<meta>` is inert - no execution, no CSP exception, and it reads the same on a
+ * page that has not booted yet. The interface only shows the block when the tag
+ * is there, and a real deployment never writes one.
+ */
+export const demoLoginMeta = (logins) =>
+  logins.length === 0
+    ? ''
+    : `<meta name="${DEMO_LOGIN_META}" content="${escapeAttribute(
+        JSON.stringify(logins)
+      )}" />`
+
+/**
+ * The accounts the built site ships, read from its identity fixture.
+ *
+ * A build without the fixture publishes a site whose login screen offers no way
+ * in, and CI stays green about it - so a missing file is a build failure, not a
+ * site to ship without the block. The reasons it can be missing are named because
+ * they have different fixes: a CLI older than the browser host, or a target that
+ * turns that host off.
+ */
+export const readDemoLogins = (identityPath, cliVersion = 'the pinned CLI') => {
+  if (!existsSync(identityPath))
+    throw new Error(
+      `The mock site has no identity fixture: expected ${identityPath}. ` +
+        `Either @sasjs/cli ${cliVersion} predates the browser host writing one, ` +
+        `or the target turns that host off (streamConfig.mockApi), so there is no ` +
+        `sign-in to name and no demo to publish.`
+    )
+
+  return demoLogins(JSON.parse(readFileSync(identityPath, 'utf8')))
 }
 
 /** Everything a failed command said, whichever stream it said it on. */

@@ -10,9 +10,11 @@ import {
   TextField,
   Button,
   Divider,
-  Typography
+  Typography,
+  Stack
 } from '@mui/material'
 import { AppContext } from '../context/appContext'
+import { demoLogins } from '../utils/demoLogin'
 
 /**
  * The refusal the CSRF middleware sends when the token in the browser does not
@@ -59,6 +61,12 @@ const Login = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+
+  /**
+   * The demonstration site's accounts, when this page states them (see
+   * `demoLogins`). A real deployment carries no such meta and shows nothing.
+   */
+  const demos = demoLogins()
 
   const handleSubmit = async (e: any) => {
     setIsLoading(true)
@@ -133,11 +141,52 @@ const Login = () => {
         */}
         {appContext.localLoginEnabled && (
           <>
+            {/*
+              The demonstration site's accounts, listed where they are needed. It
+              is a fixture rather than a directory, so there is nobody to ask; the
+              list is the fixture the build shipped. A click fills the form -
+              typing a demo password from a screenshot is the kind of friction
+              that makes a demo feel broken.
+            */}
+            {demos.length > 0 && (
+              <Box sx={{ width: '25ch', textAlign: 'left' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  component="p"
+                >
+                  Demo credentials
+                </Typography>
+                <Stack spacing={0.25} sx={{ mt: 0.5, mb: 1 }}>
+                  {demos.map((demo) => (
+                    <Button
+                      key={demo.username}
+                      type="button"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        justifyContent: 'flex-start',
+                        textTransform: 'none'
+                      }}
+                      onClick={() => {
+                        setUsername(demo.username)
+                        setPassword(demo.password)
+                      }}
+                    >
+                      {demo.username} / {demo.password}
+                      {demo.admin ? ' (admin)' : ''}
+                    </Button>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+
             <TextField
               id="username"
               label="Username"
               type="text"
               variant="outlined"
+              value={username}
               onChange={(e: any) => setUsername(e.target.value)}
               required
             />
@@ -146,6 +195,7 @@ const Login = () => {
               label="Password"
               type="password"
               variant="outlined"
+              value={password}
               onChange={(e: any) => setPassword(e.target.value)}
               required
             />
