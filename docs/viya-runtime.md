@@ -29,6 +29,16 @@ The transport is `@sasjs/adapter/node`, not a hand-rolled Viya client. The adapt
 
 All four are validated at startup in `verifyEnvVariables`, so a typo fails the boot rather than every request.
 
+## When there is no estate: `EMULATE_VIYA`
+
+Running as Viya behind this server is one interface with two implementations. `RUN_TIMES=sasviya`, described above, proxies to a real estate. `EMULATE_VIYA=true` answers the same Viya paths from an emulated estate instead, so an application built for `serverType=SASVIYA` can be developed, demonstrated and regression-tested with no VPN, no credentials and no Viya behind it. The same table runs in `@sasjs/cli`'s mock host, which is what puts a Viya-targeted app in a browser with no backend at all.
+
+The mode is off unless `EMULATE_VIYA` is `true`, `1`, `yes` or `on`. What it answers, and what stays real, is documented with the setting in [`EMULATE_VIYA`](pages/settings.md#emulate_viya): the estate's identity, folders, files, types and compute shapes come from the emulator over this server's own Drive and identity store, while execution is this server's engine, so a submitted service returns the `_webout` its program produced and a program that fails fails.
+
+It is a development and testing aid, not a deployment. It emulates one pinned Viya version, whose shapes the contract was captured against; it executes nothing of Viya's; and no answer it gives is authoritative for a real estate, so it must never serve production traffic or stand in for one in a support case. Every answer on those emulated paths says which mode answered - `x-sasjs-emulated: viya@<version>` - and the server says the same once at startup, naming the version, because a console log is often the only evidence of which mode produced a result. The token port is the exception: `/SASLogon/oauth/token` is answered by this server's own accounts and carries no such header, which is the one place an emulated client sees a real answer from this server.
+
+The data is generated from a seed taken from the target's `serverUrl`, so one target answers the same folders, rows and screenshots on every run. Two suites that need different fixtures therefore need two emulated estates.
+
 ## Round 1 scope: one service account
 
 Every run executes on Viya as `VIYA_USER`. That is simple and, because the estate is already gated to the server's IP, it does not widen who can reach Viya - but it does mean every server user runs with that account's authority on Viya. The server's Drive write access is therefore the Viya privilege boundary in this release, and the deployment guidance should say so.

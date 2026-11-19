@@ -178,6 +178,16 @@ export default setProcessVariables().then(async () => {
     `App Stream index loaded: ${publishedApps.length} app(s) registered.`
   )
 
+  // The emulated Viya estate, named once - sasjs/server#665, decision 5. A
+  // captured console log has to say which mode produced it, and this is the only
+  // one of that decision's three defences an operator ever sees. Read here rather
+  // than in `setupRoutes`, so the line lands before the routes are mounted and
+  // appears exactly once per boot.
+  const { viyaEmulationNotice } = await import('./routes/viya/services')
+  const viyaNotice = viyaEmulationNotice()
+
+  if (viyaNotice) process.logger.warn(viyaNotice)
+
   // loading these modules after setting up variables due to
   // multer's usage of process var process.driveLoc
   const { setupRoutes } = await import('./routes/setupRoutes')

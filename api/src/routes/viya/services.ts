@@ -13,7 +13,7 @@
  */
 import type { Request } from 'express'
 import type { Services } from '@sasjs/api'
-import { createDriveService } from '@sasjs/api'
+import { createDriveService, VIYA_TARGET_VERSION } from '@sasjs/api'
 
 import {
   ExecutionController,
@@ -42,6 +42,31 @@ const VIYA_SESSION_IDLE_MS = 60 * 60 * 1000
 /** Whether the emulated estate answers on this server at all. */
 export const isViyaEmulationEnabled = (): boolean =>
   /^(1|true|yes|on)$/i.test(process.env.EMULATE_VIYA ?? '')
+
+/**
+ * The one line the server prints at boot when the emulated estate is on.
+ *
+ * Decision 5 of sasjs/server#665 makes emulation unmistakable in three places,
+ * because an answer that looks real is a support risk: the `x-sasjs-emulated`
+ * header on every response (a client reads it), the settings page (a reader
+ * looking for the setting finds it), and the console at startup. The third is
+ * the one that catches an operator whose logs are the only evidence of which
+ * mode produced a result.
+ *
+ * The token port is named separately and is not called emulated, because it is
+ * not: the emulator holds no account to check a credential against, so
+ * `routes/viya/index.ts` answers `/SASLogon/oauth/token` from this server's own
+ * accounts and registered clients, and that answer carries no
+ * `x-sasjs-emulated` header. A notice that claimed otherwise would be the
+ * overstatement decision 5 exists to prevent.
+ *
+ * It answers `undefined` when the estate is off, so a host prints nothing at all
+ * rather than a line announcing that a mode is not in force.
+ */
+export const viyaEmulationNotice = (): string | undefined =>
+  isViyaEmulationEnabled()
+    ? `Viya emulation is ON (EMULATE_VIYA): /identities, /folders, /files, /types and /compute are answered as an emulated Viya ${VIYA_TARGET_VERSION}, while /SASLogon/oauth/token is answered by this server's own accounts. This is not a Viya deployment - answers are for development and testing only, and none is authoritative for a real estate.`
+    : undefined
 
 /** The address clients reach this server at, which is the estate's seed. */
 const serverUrl = (req: Request): string =>

@@ -197,7 +197,7 @@ A client authenticates at `/SASLogon/oauth/token`, which this server answers wit
 
 A code is asked for either way a client asks: `POST /SASLogon/authorize` returns it as JSON, and `GET /SASLogon/oauth/authorize?client_id=...&response_type=code` returns the page `@sasjs/adapter` reads the code out of, for a session that already exists. The sign-in PAGE is the deployment's own - this server renders no login form, so a caller with no session is told to sign in rather than shown a form the estate would have served.
 
-Every answer carries an `x-sasjs-emulated` header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one.
+Every answer on the emulated paths carries an `x-sasjs-emulated` header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one. The token port is the exception: `/SASLogon/oauth/token` is answered above by this server's own accounts, and that answer is this server's, not the emulator's, so it carries no such header.
 
 Unset, or set to anything other than `true`, `1`, `yes` or `on`, the Viya paths are not mounted and the server behaves exactly as before.
 
