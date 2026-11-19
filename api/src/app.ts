@@ -7,6 +7,7 @@ import dotenv from 'dotenv'
 import {
   copySASjsCore,
   createWeboutSasFile,
+  getAppsFolder,
   getFilesFolder,
   getPackagesFolder,
   getWebBuildFolder,
@@ -15,6 +16,7 @@ import {
   refreshAppStreamIndex,
   ReturnCode,
   setProcessVariables,
+  setupAppsFolder,
   setupFilesFolder,
   setupPackagesFolder,
   setupUserAutoExec,
@@ -128,6 +130,11 @@ export default setProcessVariables().then(async () => {
   await setupUserAutoExec()
 
   if (!(await folderExists(getFilesFolder()))) await setupFilesFolder()
+
+  // The drive-root `apps` folder, where a published app's frontend lives. Seeded
+  // so the Studio tree carries it from the first start rather than from the first
+  // publish: a frontend is read and edited there, not only written by a deploy.
+  if (!(await folderExists(getAppsFolder()))) await setupAppsFolder()
 
   // The drive-root `.sasjslint` is the default lint/format rules file, so seed
   // it before the first lint or format request can read it.
