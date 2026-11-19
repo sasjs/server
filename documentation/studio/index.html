@@ -411,6 +411,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#finding-a-file">
+<span class="md-ellipsis">
+      
+        Finding a file
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#linting-and-formatting">
 <span class="md-ellipsis">
       
@@ -645,6 +654,15 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#finding-a-file">
+<span class="md-ellipsis">
+      
+        Finding a file
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#linting-and-formatting">
 <span class="md-ellipsis">
       
@@ -708,6 +726,9 @@
 <h2 id="saving">Saving<a class="headerlink" href="#saving" title="Permanent link">¶</a></h2>
 <p>The disk icon above the editor saves the file, as does Ctrl+S. When the editor holds changes the drive does not have yet, a blue dot sits on the disk. Saving clears it. While the file matches what the drive holds the disk is greyed out, so a click on it always has something to do.</p>
 <p>A JSON file that is minified - one line with no spaces between the tokens - opens indented, so a generated config reads as a document rather than one long line. The editor only re-indents text it can reproduce character for character, so a one-line file with its own spacing, or one that already carries indentation, opens exactly as it is stored. The file on the drive keeps its bytes either way until it is saved.</p>
+<h2 id="finding-a-file">Finding a file<a class="headerlink" href="#finding-a-file" title="Permanent link">¶</a></h2>
+<p>The search box in the header searches the drive while you are in Studio. A file's own name is matched first and the folders above it second, so <code>orders</code> finds <code>orders.sas</code> wherever it lives, and <code>demo/services</code> finds what that folder holds. Choosing a result opens it in the editor at its own address - <code>/studio?filePath=%2FPublic%2Fdemo%2Forders.csv</code> - which is the form a deep link, a reload and the back button already use. Ctrl+K puts the cursor in the box.</p>
+<p>The drive is read one folder at a time, so the first search in a page session walks it: a moment on a large drive, during which the box says it is searching. The list is then kept until the page is reloaded, so reload to include files created after the walk.</p>
 <h2 id="linting-and-formatting">Linting and formatting<a class="headerlink" href="#linting-and-formatting" title="Permanent link">¶</a></h2>
 <p>SAS code is linted as you edit, about half a second after you stop typing, including changes you have not saved yet. Nothing is executed to do it.</p>
 <p>The rules come from a <code>.sasjslint</code> file - the same file <code>sasjs lint</code> reads in a project, and the same set of options. A file in the drive gets the rules from the <strong>nearest</strong> <code>.sasjslint</code> at or above its folder, so a folder carries its own rules for everything beneath it, and the one at the drive root (<code>/.sasjslint</code>) is the default for everything else, including an untitled buffer. The file is ordinary content on the drive: edit it in the tree and the next lint uses the new rules, with no reload and no restart.</p>
