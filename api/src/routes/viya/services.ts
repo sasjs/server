@@ -12,7 +12,7 @@
  * estate answers with real output rather than generated output.
  */
 import type { Request } from 'express'
-import type { Services } from '@sasjs/api'
+import type { Services, Subject } from '@sasjs/api'
 import { createDriveService, VIYA_TARGET_VERSION } from '@sasjs/api'
 
 import {
@@ -74,6 +74,16 @@ const serverUrl = (req: Request): string =>
   `${req.protocol}://${req.get('host') ?? 'localhost'}`
 
 /**
+ * The caller, as the guard resolved them - the one answer both the estate's
+ * identity port and the bodies use, so `@currentUser` and `createdBy` cannot
+ * disagree about who is asking.
+ */
+export const subjectOf = (req: Request): Subject | undefined =>
+  req.user
+    ? { userId: req.user.username, clientId: req.user.clientId }
+    : undefined
+
+/**
  * The caller, as the guard resolved them.
  *
  * `desktopIdentity` answers as the process's own OS account, which in server mode
@@ -83,8 +93,7 @@ const serverUrl = (req: Request): string =>
  */
 const identityFor = (req: Request): Services['identity'] =>
   Object.assign({}, desktopIdentity, {
-    authenticate: async () =>
-      req.user ? { userId: req.user.username } : undefined
+    authenticate: async () => subjectOf(req)
   })
 
 export const viyaServices = (req: Request): Services => ({

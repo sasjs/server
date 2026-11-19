@@ -14,7 +14,8 @@ import {
   type ViyaRouterOptions
 } from '../index'
 import { configureBodyParsers } from '../../../app-modules'
-import { dispatchViya } from '@sasjs/api'
+import { createDriveService, dispatchViya } from '@sasjs/api'
+import { MemoryDriveStore } from '@sasjs/api'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -123,6 +124,81 @@ const chunked = async (
     await new Promise<void>((resolve) => listener.close(() => resolve()))
   }
 }
+
+describe('the caller the guard resolved', () => {
+  const withDrive = (): Services => ({
+    drive: createDriveService(new MemoryDriveStore()),
+    viya: { serverUrl: 'http://localhost:5000' }
+  })
+
+  /** What `authenticateAccessToken` leaves on the request, and nothing else. */
+  const asUser =
+    (username: string): express.RequestHandler =>
+    (req, _res, next) => {
+      ;(req as express.Request & { user?: unknown }).user = {
+        userId: 'u1',
+        clientId: 'c1',
+        username,
+        displayName: username,
+        isAdmin: false,
+        isActive: true,
+        needsToUpdatePassword: false
+      }
+
+      next()
+    }
+
+  const mountFor = (username: string): express.Express => {
+    const server = express()
+
+    configureBodyParsers(server)
+    server.use(asUser(username))
+    server.use(
+      '/',
+      createViyaRouter(() => withDrive())
+    )
+
+    return server
+  }
+
+  it('stamps the bodies with the account the guard resolved', async () => {
+    const answer = await request(mountFor('alice'))
+      .post('/folders/folders')
+      .query({ parentFolderUri: '' })
+      .send({ name: 'alice-folder' })
+
+    expect(answer.status).toBe(201)
+    expect(answer.body).toMatchObject({
+      createdBy: 'alice',
+      modifiedBy: 'alice'
+    })
+  })
+
+  /**
+   * The identity route and the bodies are the same answer, so the mount's subject
+   * has to reach both: a regression that stopped passing it would leave the
+   * conformance run's `me.id` truthy on the emulated fallback and nothing else
+   * would notice.
+   */
+  it('answers the same account at /@currentUser', async () => {
+    const answer = await request(mountFor('alice')).get(
+      '/identities/users/@currentUser'
+    )
+
+    expect(answer.status).toBe(200)
+    expect(answer.body).toMatchObject({ id: 'alice', name: 'alice' })
+  })
+
+  it('names the emulated user when no guard resolved one', async () => {
+    const answer = await request(app(() => withDrive()))
+      .post('/folders/folders')
+      .query({ parentFolderUri: '' })
+      .send({ name: 'anonymous-folder' })
+
+    expect(answer.status).toBe(201)
+    expect(answer.body).toMatchObject({ createdBy: 'emulated-user' })
+  })
+})
 
 describe('the Viya mount', () => {
   it('answers the paths a Viya client uses, with the emulated header', async () => {

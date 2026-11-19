@@ -29,6 +29,7 @@ import { dispatchViya, emulatedHeaders } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
 import { oauthToken, TOKEN_PATH } from './token'
+import { subjectOf } from './services'
 import { VIYA_CONTENT_BYTES, VIYA_CONTENT_PATH } from '../../app-modules'
 
 /**
@@ -348,6 +349,9 @@ export const createViyaRouter = (
         body: req.body as Record<string, unknown> | undefined,
         contents,
         file: await uploadOf(req),
+        // the caller the guard resolved: the bodies name this account, and the
+        // token stays beside it for a request no guard has seen
+        subject: subjectOf(req),
         // the scheme is case-insensitive (RFC 7235 2.1), so `bearer <tok>` is a
         // bearer token and not a token that happens to start with the word
         token: (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '')
