@@ -35,10 +35,13 @@ const storage = multer.diskStorage({
  * A refusal, with the status the route answers it with.
  *
  * `code` names the reason so a host can tell one refusal from another without
- * matching on prose - the emulated mount answers the ceilings 413 and the rest
- * 400. `LIMIT_FILE_SIZE` is multer's own code, and is also what the filter uses
- * for a part past the route's ceiling; `INVALID_EXTENSION` and `STORAGE_FAILURE`
- * are this parser's own names, and multer never produces them.
+ * matching on prose. `LIMIT_FILE_SIZE` is multer's own code, and is also what the
+ * filter uses for a part past the route's ceiling; `INVALID_EXTENSION` and
+ * `STORAGE_FAILURE` are this parser's own names, and multer never produces them.
+ *
+ * The emulated mount answers `LIMIT_FILE_SIZE` 413 - a body past a ceiling - and
+ * passes every other status through as it stands: the field-name ceiling
+ * (`LIMIT_FIELD_KEY`) and the extension rule are 400, a storage fault 500.
  */
 export interface UploadRefusal {
   status: number
