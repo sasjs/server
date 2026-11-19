@@ -177,8 +177,9 @@ const uploadOf = async (
  * being buffered for someone who turns out to have no grant.
  *
  * `express.raw` refuses past its limit with `entity.too.large`, which is answered
- * here as the mount's own 413: the app's error handler turns everything else into
- * a 500.
+ * here as the mount's own 400 in the estate's envelope: the app's error handler
+ * turns everything else into a 500, and the status matches the upload route's
+ * own size refusal so one class of refusal carries one number on this mount.
  */
 const contentOf = async (
   req: express.Request,
@@ -197,10 +198,10 @@ const contentOf = async (
   } catch (error) {
     if ((error as { type?: string })?.type === 'entity.too.large')
       res
-        .status(413)
+        .status(400)
         .json(
           emulatedRefusal(
-            413,
+            400,
             `A file's content must not exceed ${limit} bytes.`
           )
         )

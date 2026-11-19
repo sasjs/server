@@ -1,12 +1,14 @@
 /**
  * The statuses the upload parser answers, and where each refusal comes from.
  *
- * Two routes protect the same ceiling: the filter compares the request's
- * `Content-Length` and refuses `400` with its own message, while multer's
+ * Two arms protect the same ceiling: the filter compares the request's
+ * `Content-Length` and refuses with its own message, while multer's
  * `limits.fileSize` catches a part that streams past it with no header to
- * compare. The second answered `500`, which tells a caller its own oversized file
- * was the server failing - and the emulated mount now renders that status in the
- * estate's envelope, so the wrong number travels further than a log line.
+ * compare. Both answer 400, as does every other MulterError - the file sent under
+ * the wrong field name included - because each describes the caller's request and
+ * multer carries no status of its own. The second arm used to answer 500, and the
+ * emulated mount renders these statuses in the estate's envelope, so a wrong
+ * number there travels further than a log line.
  */
 import express from 'express'
 import { mkdtemp, rm } from 'fs/promises'
@@ -144,5 +146,23 @@ describe('the upload parser', () => {
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()))
     }
+  })
+
+  /**
+   * The other caller-side code the 500 hid: a file sent under a field name the
+   * route does not read. It named the server as failed for a request the caller
+   * can fix.
+   */
+  it('answers a file under the wrong field name as a caller error', async () => {
+    const answered: number[] = []
+    const app = await mount(1024, answered)
+
+    const answer = await request(app)
+      .post('/')
+      .attach('other', Buffer.from('x'), 'a.txt')
+
+    expect(answer.status).toBe(400)
+    expect(answer.body.message).toBe('Unexpected file field')
+    expect(answered).toEqual([400])
   })
 })

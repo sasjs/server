@@ -107,17 +107,14 @@ export const multerSingle = (
   const upload = instanceFor(fileSize).single(fileName)
 
   upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      // A part past `limits.fileSize` is the same refusal the filter gives an
-      // upload whose Content-Length says so - it is the caller's file that is too
-      // large, not the server failing, so 500 was the wrong answer. Every other
-      // MulterError keeps multer's own status.
-      const status = err.code === 'LIMIT_FILE_SIZE' ? 400 : 500
+    // Every refusal this parser makes describes the caller's request: an
+    // extension the drive blocks, a part past the ceiling named by the route, a
+    // file sent under the wrong field name. `MulterError` carries no status of
+    // its own - only a code - and none of those codes is a server fault, so they
+    // all answer 400. A 500 said the server had failed when the caller's upload
+    // was the thing to fix.
+    if (err) return writeRefusal(res, 400, err.message)
 
-      return writeRefusal(res, status, err.message)
-    } else if (err) {
-      return writeRefusal(res, 400, err.message)
-    }
     // Everything went fine.
     next()
   })

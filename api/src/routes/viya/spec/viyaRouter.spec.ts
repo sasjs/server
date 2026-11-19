@@ -475,11 +475,11 @@ describe('an upload over the Viya paths', () => {
       .set('Content-Type', 'text/plain')
       .send('123456789')
 
-    expect(pastCap.status).toBe(413)
-    // the cap's refusal carries the same envelope as every other refusal on this
-    // mount, so a client keying on `httpStatusCode` reads it here too
+    expect(pastCap.status).toBe(400)
+    // the cap's refusal carries the same envelope, and the same status, as the
+    // upload route's size refusal: one class of refusal, one number
     expect(pastCap.body).toEqual(
-      emulatedRefusal(413, "A file's content must not exceed 8 bytes.")
+      emulatedRefusal(400, "A file's content must not exceed 8 bytes.")
     )
     expect(updates).toEqual(['12345678'])
   })
