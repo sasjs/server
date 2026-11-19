@@ -5,6 +5,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import webpack from 'webpack'
 
@@ -16,7 +17,7 @@ const executable = candidates.find(
 )
 assert.ok(executable, 'Chromium not found; set CHROMIUM to its executable')
 const web = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const temp = await mkdtemp(path.join(web, '.search-test-'))
+const temp = await mkdtemp(path.join(tmpdir(), 'sasjs-search-test-'))
 let server, browser, socket
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 try {
