@@ -9,9 +9,9 @@
     "tests"
   ],
   "snapshot": true,
-  "snapshotShards": 18,
+  "snapshotShards": 24,
   "sasTranscript": true,
   "identity": "default",
   "buildStamp": "72fe2c465b",
-  "builtAt": "2026-11-18T22:59:30.937Z"
+  "builtAt": "2026-11-19T14:04:05.252Z"
 }
