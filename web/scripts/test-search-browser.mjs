@@ -470,6 +470,33 @@ try {
     'dashboard: one query answers from docs, API, apps and the drive, and only as far as the grants allow'
   )
 
+  // A drive with nothing on it leaves no walk to reuse, so a mixed screen must
+  // remember that it has looked: otherwise every letter typed walks it again.
+  await navigate(1200)
+  await evaluate('searchHarness.navigate("/")')
+  await until(
+    `!!document.querySelector(${JSON.stringify(dash)})`,
+    'dashboard again'
+  )
+  await evaluate('searchHarness.setEmpty(true)')
+  await type(dash, 'zz')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'an empty drive and no match'
+  )
+  assert.equal(await walkCount(), 1, 'an empty drive is walked once')
+  await type(dash, 'zz')
+  await pause(300)
+  assert.equal(
+    await walkCount(),
+    1,
+    'typing does not walk an empty drive again'
+  )
+  await evaluate('searchHarness.setEmpty(false)')
+  console.log(
+    'dashboard: an empty drive is walked once, not once per keystroke'
+  )
+
   await navigate(1200)
   await evaluate('searchHarness.setFail(true)')
   await type(desktop, 'ord')

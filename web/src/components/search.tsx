@@ -200,6 +200,12 @@ const Search = () => {
      * still this caller's answer.
      */
     files?: string[]
+    /**
+     * Whether this caller's drive has been read once already, empty or not. A
+     * drive with no files leaves no `promise` to reuse, and without this a mixed
+     * screen would walk it again on every keystroke.
+     */
+    walked?: boolean
   } | null>(null)
   if (
     !driveCache.current ||
@@ -279,15 +285,15 @@ const Search = () => {
   // The drive takes one request per folder, so start only on a real query.
   //
   // A drive-only screen observes the query itself, so changing it retries a walk
-  // that came back empty. A mixed screen follows the query only until a walk has
-  // actually produced files: then the cache answers every later query, and there
-  // is nothing to gain from re-entering this effect on each letter. Until then a
-  // query change is the retry, exactly as it is on a drive-only screen.
+  // that came back empty. A mixed screen asks once: `walked` remembers that the
+  // drive has been read whether or not it held anything, because an empty drive
+  // leaves no promise to reuse and following the query there would walk the whole
+  // drive again on every letter.
   const walkKey =
     scope === 'drive'
       ? currentQuery
       : scope === 'everything' && asked
-        ? cache.promise || cache.files?.length
+        ? cache.promise || cache.walked
           ? 'answered'
           : currentQuery
         : ''
@@ -315,16 +321,32 @@ const Search = () => {
     // Files are merged into what the screen already shows rather than replacing
     // it: on the dashboard the docs, the operations and the apps are already on
     // screen, and a walk that took a second must not blank them while it runs.
-    cache.promise.then((files) => {
-      if (!live || driveCache.current !== cache) return
+    cache.promise
+      .then((files) => {
+        if (!live || driveCache.current !== cache) return
 
-      loadedContext.current = cache
-      cache.files = files
-      setWalking(false)
-      setSources((previous) => ({ ...previous, files }))
-      setLoadedScope(scope)
-      setSearched(true)
-    })
+        loadedContext.current = cache
+        cache.files = files
+        cache.walked = true
+        setWalking(false)
+        setSources((previous) => ({ ...previous, files }))
+        setLoadedScope(scope)
+        setSearched(true)
+      })
+      .catch(() => {
+        // `walkDrivePaths` answers null for a folder it cannot read, so a
+        // rejection here means the walk itself broke. Left unhandled it would
+        // keep the box saying "Searching…" for ever and surface as an unhandled
+        // rejection; instead the walk is forgotten (so a later screen may try
+        // again) and the lists already on screen stay.
+        if (!live || driveCache.current !== cache) return
+
+        cache.walked = true
+        cache.promise = null
+        setWalking(false)
+        setLoadedScope(scope)
+        setSearched(true)
+      })
 
     return () => {
       live = false
