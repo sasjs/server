@@ -6,12 +6,14 @@ import request from 'supertest'
 
 import {
   createViyaRouter,
+  emulatedRefusal,
   isViyaPath,
   ruleFor,
   viyaGuard,
   type ViyaRouterOptions
 } from '../index'
 import { configureBodyParsers } from '../../../app-modules'
+import { dispatchViya } from '@sasjs/api'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -324,6 +326,29 @@ describe('an upload over the Viya paths', () => {
   })
 
   /**
+   * The envelope is not this server's invention: `dispatchViya` renders the same
+   * keys for a handler's `ApiError`, and `@sasjs/api` exports no builder for the
+   * body. The parser's refusal is built here, so this case is what holds the two
+   * in step - a bump that changes the emulator's shape fails here, rather than
+   * answering two forms on one mount.
+   */
+  it("renders the same refusal envelope @sasjs/api's dispatcher does", async () => {
+    // a handler's own refusal: an unknown session is an ApiError(404)
+    const refused = await dispatchViya(
+      withExecution('[]', ''),
+      'GET',
+      '/compute/sessions/no-such-session/state',
+      { query: {} }
+    )
+
+    expect(refused.status).toBe(404)
+
+    const body = refused.body as { message: string }
+
+    expect(emulatedRefusal(refused.status, body.message)).toEqual(refused.body)
+  })
+
+  /**
    * `updateFileContent` in `@sasjs/adapter` puts the new content on the wire as
    * the body itself, with the file's own content type, and `express.json` leaves
    * that body unread - so the mount has to hand the emulator the bytes. Without
@@ -451,6 +476,11 @@ describe('an upload over the Viya paths', () => {
       .send('123456789')
 
     expect(pastCap.status).toBe(413)
+    // the cap's refusal carries the same envelope as every other refusal on this
+    // mount, so a client keying on `httpStatusCode` reads it here too
+    expect(pastCap.body).toEqual(
+      emulatedRefusal(413, "A file's content must not exceed 8 bytes.")
+    )
     expect(updates).toEqual(['12345678'])
   })
 

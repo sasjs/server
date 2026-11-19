@@ -125,11 +125,17 @@ export const ruleFor = (path: string): string | undefined => {
  *
  * `dispatchViya` answers a refusal from a handler with this envelope (its
  * `isApiError` arm), and every other answer this mount gives is JSON. A part the
- * upload filter refuses is answered before the emulator sees the request, so it
- * is refused here in the same shape rather than in the drive API's plain text: a
- * client parsing these answers sees one form everywhere.
+ * upload filter refuses, and content past the cap, are answered before the
+ * emulator sees the request, so they are refused here in the same shape rather
+ * than in the drive API's plain text: a client parsing these answers sees one
+ * form everywhere.
+ *
+ * `@sasjs/api` exports no builder for that body, so this is a second definition
+ * of it. `viyaRouter.spec.ts` compares it with the dispatcher's own answer for a
+ * handler's refusal, which is what makes a change to the library's shape fail a
+ * test here instead of answering two forms on one mount.
  */
-const emulatedRefusal = (status: number, message: string) => ({
+export const emulatedRefusal = (status: number, message: string) => ({
   version: 2,
   httpStatusCode: status,
   errorCode: status,
@@ -190,9 +196,14 @@ const contentOf = async (
     )
   } catch (error) {
     if ((error as { type?: string })?.type === 'entity.too.large')
-      res.status(413).json({
-        message: `A file's content must not exceed ${limit} bytes.`
-      })
+      res
+        .status(413)
+        .json(
+          emulatedRefusal(
+            413,
+            `A file's content must not exceed ${limit} bytes.`
+          )
+        )
     else throw error
 
     return undefined
