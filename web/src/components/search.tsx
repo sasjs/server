@@ -229,6 +229,8 @@ const Search = () => {
 
   // Build-time indexes and the apps listing remain warm on entry. The drive is
   // different: it takes one request per folder, so start only on a real query.
+  // Observe the query itself so changing it retries an empty walk; the cache
+  // shares an in-flight or successful walk across keystrokes.
   useEffect(() => {
     let live = true
 
@@ -268,7 +270,7 @@ const Search = () => {
     return () => {
       live = false
     }
-  }, [scope, scope === 'drive' && asked, cache])
+  }, [scope, scope === 'drive' ? currentQuery : '', cache])
 
   // Derived, not stored: the results are a function of the query, the screen and
   // what has loaded. Every keystroke asks the same lists, and an answer that

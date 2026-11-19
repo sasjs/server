@@ -198,8 +198,18 @@ try {
     'document.body.textContent.includes("Searching…")',
     'loading shown'
   )
+  await type(desktop, 'd')
+  await pause(100)
+  assert.equal(await walkCount(), 1, 'typing during a walk reuses it')
   await evaluate('searchHarness.setHold(false); searchHarness.release()')
   await until('document.body.textContent.includes("orders.sas")', 'name result')
+  await type(desktop, 'ers')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'refined result'
+  )
+  await pause(100)
+  assert.equal(await walkCount(), 1, 'typing after a successful walk reuses it')
   await clear(desktop)
   await type(desktop, 'reports')
   await until('document.body.textContent.includes("orders.sas")', 'path result')
@@ -361,21 +371,65 @@ try {
 
   await navigate(1200)
   await evaluate('searchHarness.setFail(true)')
-  await type(desktop, 'orders')
+  await type(desktop, 'ord')
   await until(
     'document.body.textContent.includes("Nothing matches")',
     'failed walk produces no results'
   )
   assert.equal(await walkCount(), 1, 'failed walk asked once')
+  await evaluate('searchHarness.setFail(false)')
+  await type(desktop, 'ers')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'retry after failed walk without clearing'
+  )
+  assert.equal(
+    await walkCount(),
+    2,
+    'changing the query retries the failed walk'
+  )
+  console.log('failed walk is retried when the query changes without clearing')
+
+  await navigate(1200)
+  await evaluate('searchHarness.setFail(true)')
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'failed walk before clearing'
+  )
   await clear(desktop)
   await evaluate('searchHarness.setFail(false)')
   await type(desktop, 'orders')
   await until(
     'document.body.textContent.includes("orders.sas")',
-    'retry after empty walk'
+    'retry after clearing failed search'
   )
-  assert.equal(await walkCount(), 2, 'failed walk is retried on the next query')
-  console.log('failed walk shows no matches and can be retried')
+  assert.equal(
+    await walkCount(),
+    2,
+    'clearing and retyping retries a failed walk'
+  )
+
+  await navigate(1200)
+  await evaluate('searchHarness.setEmpty(true)')
+  await type(desktop, 'ord')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'empty walk produces no results'
+  )
+  assert.equal(await walkCount(), 1, 'empty walk asked once')
+  await evaluate('searchHarness.setEmpty(false)')
+  await type(desktop, 'ers')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'retry after empty walk without clearing'
+  )
+  assert.equal(
+    await walkCount(),
+    2,
+    'changing the query retries the empty walk'
+  )
+  console.log('empty walk is retried when the query changes without clearing')
 
   await navigate(1200)
   await evaluate('searchHarness.setHold(true)')

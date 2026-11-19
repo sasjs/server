@@ -36,11 +36,16 @@ export type ListFolder = (folderPath: string) => Promise<TreeNode | null>
  * drive is still worth searching, so the refusal ends that branch rather than the
  * walk. A folder already asked is never asked again, which is what keeps a
  * symlinked folder, or a level that names its own parent, from looping.
+ * Finite concurrency is rounded down to a minimum of one; non-finite values use
+ * the default so a malformed limit cannot stall or launch an unbounded walk.
  */
 export const walkDrivePaths = async (
   list: ListFolder,
   concurrency: number = WALK_CONCURRENCY
 ): Promise<string[]> => {
+  const limit = Number.isFinite(concurrency)
+    ? Math.max(1, Math.floor(concurrency))
+    : WALK_CONCURRENCY
   const files: string[] = []
   const folders: string[] = [ROOT_PATH]
   const asked = new Set<string>([ROOT_PATH])
@@ -48,7 +53,7 @@ export const walkDrivePaths = async (
 
   await new Promise<void>((resolve) => {
     const pump = (): void => {
-      while (active < concurrency && folders.length) {
+      while (active < limit && folders.length) {
         const folder = folders.shift() as string
 
         active += 1

@@ -9,6 +9,7 @@ const requests: string[] = []
 let release: (() => void) | undefined
 let hold = false
 let fail = false
+let empty = false
 
 axios.defaults.adapter = async (config) => {
   const url = config.url ?? ''
@@ -31,7 +32,9 @@ axios.defaults.adapter = async (config) => {
       data: {
         status: 'success',
         tree: {
-          children: [{ relativePath: '/reports/orders.sas', isFolder: false }]
+          children: empty
+            ? []
+            : [{ relativePath: '/reports/orders.sas', isFolder: false }]
         }
       }
     }
@@ -78,6 +81,9 @@ function Harness() {
       },
       setFail: (value: boolean) => {
         fail = value
+      },
+      setEmpty: (value: boolean) => {
+        empty = value
       }
     }
   })

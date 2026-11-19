@@ -359,6 +359,69 @@ await checkAsync('walkDrivePaths asks each folder once', async () => {
   assert.deepEqual(asked, [ROOT_PATH, '/a'])
 })
 
+await checkAsync(
+  'walkDrivePaths normalizes unusual concurrency without stalling',
+  async () => {
+    const cases = [
+      ['zero', 0, 1],
+      ['negative', -2, 1],
+      ['NaN', NaN, 6],
+      ['positive infinity', Infinity, 6],
+      ['negative infinity', -Infinity, 6],
+      ['fraction below one', 0.5, 1],
+      ['fraction above one', 1.5, 1],
+      ['fraction above two', 2.5, 2]
+    ]
+    const levels = { '': [] }
+    for (let index = 0; index < 9; index++) {
+      levels[''].push(node(`f${index}`, `/f${index}`, true))
+      levels[`/f${index}`] = [node('file.sas', `/f${index}/file.sas`, false)]
+    }
+    const expected = Array.from(
+      { length: 9 },
+      (_, index) => `/f${index}/file.sas`
+    )
+
+    const results = await Promise.allSettled(
+      cases.map(async ([label, concurrency, limit]) => {
+        let inFlight = 0
+        let most = 0
+        let clock
+        const timeout = new Promise((_, reject) => {
+          clock = setTimeout(
+            () => reject(new Error(`${label}: the walk did not finish`)),
+            1000
+          )
+        })
+        try {
+          const files = await Promise.race([
+            walkDrivePaths(async (folderPath) => {
+              inFlight++
+              most = Math.max(most, inFlight)
+              await new Promise((resolve) => setImmediate(resolve))
+              inFlight--
+              return treeOf(levels)(folderPath)
+            }, concurrency),
+            timeout
+          ])
+          assert.deepEqual(
+            files.sort(),
+            expected,
+            `${label}: reached every file`
+          )
+          assert.equal(most, limit, `${label}: concurrency`)
+        } finally {
+          clearTimeout(clock)
+        }
+      })
+    )
+    const failures = results
+      .filter((result) => result.status === 'rejected')
+      .map((result) => result.reason.message)
+    assert.deepEqual(failures, [], failures.join('\n'))
+  }
+)
+
 await checkAsync('walkDrivePaths reads the drive a few folders at a time', async () => {
   let inFlight = 0
   let most = 0
