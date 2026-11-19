@@ -54,8 +54,6 @@ import {
  */
 let docsSource: Promise<DocsEntry[]> | null = null
 let operationsSource: Promise<Operation[]> | null = null
-/** The drive's file paths: one walk per session, not one per keystroke. */
-let driveSource: Promise<string[]> | null = null
 
 const loadDocs = () =>
   (docsSource ??= fetch('/documentation/search/search_index.json')
@@ -113,26 +111,6 @@ const listFolder = (folderPath: string) =>
         : null
     )
     .catch(() => null)
-
-/**
- * Every file path on the drive, walked once and kept for the session.
- *
- * Kept, unlike the apps listing, because the walk is not one request but one per
- * folder: asking again on each keystroke, or each time the reader comes back to
- * Studio, would spend a request per folder on every visit. The cost of keeping it
- * is that a file written in this page is found after a reload - which is when the
- * explorer finds it too.
- *
- * A walk that found nothing is not kept: an empty drive and a session that was
- * not ready when the box asked give the same answer, and only the second of those
- * is worth retrying.
- */
-const loadDrive = () =>
-  (driveSource ??= walkDrivePaths(listFolder).then((files) => {
-    if (!files.length) driveSource = null
-
-    return files
-  }))
 
 /** No list but the ones this screen searches is loaded; see `searchScope`. */
 const empty: Sources = { docs: [], operations: [], apps: [], files: [] }
@@ -192,48 +170,120 @@ const Search = () => {
   const scope = searchScope(pathname, canListApps, canListDrive)
 
   const [query, setQuery] = useState('')
+  const [queryScope, setQueryScope] = useState(scope)
+  const [queryContext, setQueryContext] = useState<object | null>(null)
   const [sources, setSources] = useState<Sources>(empty)
   const [searched, setSearched] = useState(false)
+  const [loadedScope, setLoadedScope] = useState(scope)
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [open, setOpen] = useState(false)
   const fieldRef = useRef<HTMLInputElement>(null)
+  // Search unmounts at sign-out. Keep its cache here, not at module scope, so a
+  // later caller cannot see the previous session's paths. A grant or user change
+  // also discards the cache, including any walk still in flight.
+  const driveCache = useRef<{
+    userId?: string
+    username: string
+    allowed: boolean
+    promise: Promise<string[]> | null
+  } | null>(null)
+  if (
+    !driveCache.current ||
+    driveCache.current.userId !== appContext.userId ||
+    driveCache.current.username !== appContext.username ||
+    driveCache.current.allowed !== canListDrive
+  ) {
+    driveCache.current = {
+      userId: appContext.userId,
+      username: appContext.username,
+      allowed: canListDrive,
+      promise: null
+    }
+  }
 
-  // Warm what this screen searches while the reader is doing something else: the
-  // first keystroke then filters rather than waits. Landing on another screen
-  // loads what that one needs, and only that one - the whole point of the scope
-  // is that the box does not answer from lists the screen has no use for.
+  const cache = driveCache.current
+  const loadedContext = useRef(cache)
+  const authenticated = useRef(true)
+  useEffect(() => {
+    authenticated.current = true
+    return () => {
+      authenticated.current = false
+    }
+  }, [])
+  // A query belongs to the screen where it was typed. Carrying it into Studio
+  // would start an expensive walk without a search initiated there.
+  const currentQuery =
+    queryScope === scope && queryContext === cache ? query : ''
+  const asked = currentQuery.trim().length >= 2
+  const updateQuery = (value: string) => {
+    setQueryScope(scope)
+    setQueryContext(cache)
+    setQuery(value)
+  }
+
+  useEffect(() => {
+    setQuery('')
+    setQueryScope(scope)
+    setQueryContext(cache)
+  }, [scope, cache])
+
+  // Build-time indexes and the apps listing remain warm on entry. The drive is
+  // different: it takes one request per folder, so start only on a real query.
   useEffect(() => {
     let live = true
 
     setSearched(false)
+    if (scope === 'drive' && !asked) return
+
+    const loadDrive = () => {
+      if (!cache.promise) {
+        const walk = walkDrivePaths((folder) =>
+          authenticated.current && driveCache.current === cache
+            ? listFolder(folder)
+            : Promise.resolve(null)
+        ).then((files) => {
+          // Empty can mean the session was not ready; allow a later retry.
+          if (!files.length && cache.promise === walk) cache.promise = null
+          return files
+        })
+        cache.promise = walk
+      }
+      return cache.promise
+    }
 
     Promise.all([
       scope === 'docs' || scope === 'all' ? loadDocs() : [],
       scope === 'api' || scope === 'all' ? loadOperations() : [],
-      // only ever 'apps' when the grant is held: see `searchScope`
       scope === 'apps' ? loadApps() : [],
-      // the drive is a walk, so the box says "Searching…" for its duration
-      // rather than offering half a drive to search
       scope === 'drive' ? loadDrive() : []
     ]).then(([docs, operations, apps, files]) => {
-      if (!live) return
+      if (!live || driveCache.current !== cache) return
 
+      loadedContext.current = cache
       setSources({ docs, operations, apps, files })
+      setLoadedScope(scope)
       setSearched(true)
     })
 
     return () => {
       live = false
     }
-  }, [scope])
+  }, [scope, scope === 'drive' && asked, cache])
 
   // Derived, not stored: the results are a function of the query, the screen and
   // what has loaded. Every keystroke asks the same lists, and an answer that
   // arrives late cannot replace a newer one - there is no answer to arrive, only
   // a re-render of the same inputs.
   const hits = useMemo(
-    () => matches(scope, query, sources),
-    [scope, query, sources]
+    () =>
+      matches(
+        scope,
+        currentQuery,
+        searched && loadedScope === scope && loadedContext.current === cache
+          ? sources
+          : empty
+      ),
+    [scope, currentQuery, sources, searched, loadedScope, cache]
   )
 
   const choose = useCallback(
@@ -252,7 +302,6 @@ const Search = () => {
 
   const hint = searchHint(scope)
   const label = searchLabel(scope)
-  const asked = query.trim().length >= 2
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -287,10 +336,10 @@ const Search = () => {
           inputRef={fieldRef}
           size="small"
           fullWidth
-          value={query}
+          value={currentQuery}
           placeholder={hint}
           onFocus={(event) => setAnchor(event.currentTarget)}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => updateQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setAnchor(null)
@@ -357,9 +406,9 @@ const Search = () => {
             autoFocus
             fullWidth
             size="small"
-            value={query}
+            value={currentQuery}
             placeholder={hint}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => updateQuery(event.target.value)}
             slotProps={{
               htmlInput: { 'aria-label': label }
             }}

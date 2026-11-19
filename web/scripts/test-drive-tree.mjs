@@ -259,8 +259,8 @@ assert.deepEqual(
 /*
  * A drive search needs every file on the drive, and the API answers one folder at
  * a time - so the list is a walk. These pin what the walk reaches, what it does
- * with a folder it cannot read, and that it asks each folder once: the three
- * things a search would get wrong silently, as an empty result set.
+ * with a folder it cannot read, that it asks each folder once, and its concurrency
+ * bound.
  */
 
 const treeOf = (levels) => async (folderPath) =>
