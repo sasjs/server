@@ -1,5 +1,6 @@
 import express from 'express'
 import { mkdtemp, readdir } from 'fs/promises'
+import http from 'http'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import request from 'supertest'
@@ -69,6 +70,58 @@ const app = (
   server.use('/', (_req, res) => res.status(418).json({ message: 'not viya' }))
 
   return server
+}
+
+/**
+ * A POST whose multipart body is written in chunks, so no Content-Length reaches
+ * the parser - the arm the filter cannot see. Supertest buffers what it is given
+ * and computes that header, so this goes through a real listener.
+ */
+const chunked = async (
+  server: express.Express,
+  boundary: string,
+  body: Buffer
+): Promise<{ status: number; body: Record<string, unknown> }> => {
+  const listener = await new Promise<import('http').Server>((resolve) => {
+    const started = server.listen(0, () => resolve(started))
+  })
+  const { port } = listener.address() as { port: number }
+
+  try {
+    return await new Promise<{ status: number; body: Record<string, unknown> }>(
+      (resolve, reject) => {
+        const req = http.request(
+          {
+            port,
+            path: '/files/files',
+            method: 'POST',
+            headers: {
+              'Content-Type': `multipart/form-data; boundary=${boundary}`,
+              'Transfer-Encoding': 'chunked'
+            }
+          },
+          (res) => {
+            const chunks: Buffer[] = []
+
+            res.on('data', (chunk) => chunks.push(chunk as Buffer))
+            res.on('end', () =>
+              resolve({
+                status: res.statusCode as number,
+                body: JSON.parse(Buffer.concat(chunks).toString())
+              })
+            )
+          }
+        )
+
+        req.on('error', reject)
+        req.write(body.subarray(0, 40))
+        req.write(body.subarray(40))
+        req.end()
+      }
+    )
+  } finally {
+    await new Promise<void>((resolve) => listener.close(() => resolve()))
+  }
 }
 
 describe('the Viya mount', () => {
@@ -345,6 +398,38 @@ describe('an upload over the Viya paths', () => {
       errorCode: 413
     })
     expect(answer.body.message).toMatch(/^File size is over limit/)
+  })
+
+  /**
+   * The other arm of the same ceiling: a part streamed without a Content-Length
+   * never reaches the filter, so multer's own limit refuses it and the parser
+   * passes `LIMIT_FILE_SIZE` to the writer. This is the path the mount's
+   * translation exists for, and nothing else on the mount exercises it.
+   */
+  it('answers a chunked over-cap upload the same way', async () => {
+    const mount = app(() => withExecution('[]', ''), { uploadBytes: 8 })
+
+    const boundary = 'viya-part-boundary'
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\n` +
+          'Content-Disposition: form-data; name="file"; filename="a.txt"\r\n' +
+          'Content-Type: text/plain\r\n\r\n'
+      ),
+      Buffer.alloc(9, 'x'),
+      Buffer.from(`\r\n--${boundary}--\r\n`)
+    ])
+
+    const answer = await chunked(mount, boundary, body)
+
+    expect(answer.status).toBe(413)
+    expect(answer.body).toMatchObject({
+      version: 2,
+      httpStatusCode: 413,
+      errorCode: 413
+    })
+    // multer's own message, which is how the case knows the other arm ran
+    expect(answer.body.message).toBe('File too large')
   })
 
   /**
