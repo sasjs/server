@@ -108,7 +108,6 @@
     "axios": "^1.20.0",
     "jest": "^30.5.2",
     "mongodb-memory-server": "^11.3.0",
-    "nodejs-file-downloader": "^4.13.0",
     "playwright": "^1.63.0",
     "prettier": "3.9.9",
     "rimraf": "^6.1.3",
