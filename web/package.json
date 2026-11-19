@@ -52,7 +52,7 @@
     "@mui/material": "9.4.0",
     "@mui/x-tree-view": "9.16.0",
     "@sasjs/lint": "5.5.7",
-    "@sasjs/sas-language": "0.7.3",
+    "@sasjs/sas-language": "0.7.4",
     "@sasjs/utils": "4.3.1",
     "axios": "1.20.0",
     "monaco-editor": "0.52.2",
