@@ -589,12 +589,14 @@ describe('a Viya client against the emulated estate', () => {
    * is under test is the deployment surface after sign-in, not the prompt.
    */
   it('is driven by the CLI: a folder created with `sasjs` exists on the estate', async () => {
-    const home = await mkdtemp(join(tmpdir(), 'viya-cli-home-'))
-    const project = await mkdtemp(join(tmpdir(), 'viya-cli-project-'))
     // the estate the run booted has an empty drive, and a deployment's appLoc
     // already exists on a real one: creating it here keeps the case about what
     // the CLI does - create the deployment folder - rather than about the drive
-    // happening to have a /Public
+    // happening to have a /Public.
+    //
+    // Before the temporary directories, deliberately: this call can fail, and a
+    // `mkdtemp` above the `try` would leave its directory on disk, because the
+    // throw skips the `finally` that removes it.
     const appLoc = '/cli-conformance'
 
     await client.createFolder(
@@ -603,6 +605,9 @@ describe('a Viya client against the emulated estate', () => {
       undefined,
       tokens.access_token
     )
+
+    const home = await mkdtemp(join(tmpdir(), 'viya-cli-home-'))
+    const project = await mkdtemp(join(tmpdir(), 'viya-cli-project-'))
 
     try {
       await mkdir(join(project, 'sasjs'), { recursive: true })
