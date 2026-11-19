@@ -21,6 +21,13 @@
  * type - are under the run too; without it a change to them would break the
  * server with this run green.
  *
+ * The CLI is the other caller, and it is driven as a process rather than through
+ * the adapter API: `sasjs folder create` types the command a user types, and gets
+ * its own argument parsing, config discovery and auth path. Its own literals are
+ * measured in `@sasjs/api`'s scope check (`spec/viya/cli-paths.json`), so a path
+ * only the CLI builds is declared there; this case is the other half - that the
+ * declared surface is enough to run it.
+ *
  * What this run cannot prove: execution. A job runs on this server's engine, and
  * a machine without SAS has none, so the submit-and-read-the-webout leg is gated
  * on `CONFORMANCE_EXECUTE=1` and is reported as SKIPPED when it is unset - never
@@ -29,11 +36,12 @@
  * session, create a folder, upload a file, read it back - runs here with no
  * engine at all.
  */
+import { spawn } from 'child_process'
 import express, { Express } from 'express'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
+import { dirname, join } from 'path'
 import type { Server } from 'http'
 import { tmpdir } from 'os'
-import { join } from 'path'
 import mongoose, { Mongoose } from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { SASViyaApiClient, SasjsRequestClient } from '@sasjs/adapter/node'
@@ -51,6 +59,75 @@ import {
   PrincipalType,
   UserController
 } from '../controllers/'
+
+/**
+ * Where the CLI's own entry point is.
+ *
+ * A process rather than an import: what a user runs is `sasjs <command>`, and an
+ * in-process call would skip the argument parsing, the config discovery and the
+ * auth path that a person meets - which are exactly the parts a test of the
+ * emulator's usability has to cover.
+ *
+ * The CLI is installed rather than declared. It is a devDependency-shaped need
+ * that the package's own lock does not carry: adding it re-resolves trees this
+ * repository pins for other reasons (`@emnapi` under `@unrs/resolver-binding`),
+ * and a lock file rewritten for one test would put every other install at the
+ * mercy of whoever regenerated it. The job installs it into a prefix of its own
+ * by exact version and names the entry point in `SASJS_CLI_ENTRY`; a run without
+ * it fails here with the command to type rather than skipping - a skipped case
+ * reads as a pass in a summary, and the point of this case is that it ran.
+ */
+const cliEntry = (): string => {
+  // The job installs the CLI into a prefix of its own and names the entry point,
+  // so this run never depends on what the repository's own manifest resolves
+  if (process.env.SASJS_CLI_ENTRY) return process.env.SASJS_CLI_ENTRY
+
+  try {
+    return join(
+      dirname(require.resolve('@sasjs/cli/package.json')),
+      'build',
+      'index.js'
+    )
+  } catch {
+    throw new Error(
+      'The conformance run needs the CLI as a process. Install it by exact ' +
+        'version and point SASJS_CLI_ENTRY at it: `npm install --prefix ' +
+        '/tmp/conformance-cli --ignore-scripts @sasjs/cli@8.0.5`.'
+    )
+  }
+}
+
+/**
+ * Run the CLI with its own HOME.
+ *
+ * `HOME` is a temporary directory so the run reads no developer's `~/.sasjsrc`
+ * and writes none: a target left in a real home directory changes what every
+ * later command on that machine resolves. `NO_PROXY` is set for the same reason
+ * a test should not inherit one - this box, and many build agents, route egress
+ * through a proxy, and the estate under test is on loopback.
+ */
+const runCli = (args: string[], options: { cwd: string; home: string }) =>
+  new Promise<{ code: number | null; output: string }>((resolve, reject) => {
+    const child = spawn(process.execPath, [cliEntry(), ...args], {
+      cwd: options.cwd,
+      env: {
+        ...process.env,
+        HOME: options.home,
+        USERPROFILE: options.home,
+        NO_PROXY: '*',
+        no_proxy: '*',
+        NO_COLOR: '1'
+      },
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+
+    let output = ''
+
+    child.stdout.on('data', (chunk) => (output += String(chunk)))
+    child.stderr.on('data', (chunk) => (output += String(chunk)))
+    child.on('error', reject)
+    child.on('close', (code) => resolve({ code, output }))
+  })
 
 /** The public client the CLI signs in with, and the account a caller uses. */
 const clientId = 'sas.cli'
@@ -494,5 +571,97 @@ describe('a Viya client against the emulated estate', () => {
     )
 
     expect(String(result.result ?? '')).toContain('conformance webout')
+  })
+
+  /**
+   * The CLI, as a process, against the same estate.
+   *
+   * Every case above drives `@sasjs/adapter` from this process. A deployment is
+   * not driven that way: `sasjs` is, and the emulator exists so that a project
+   * targeting a Viya estate can be deployed and demonstrated without one. That
+   * claim is only worth something if the command a person types reaches this
+   * estate, so this case types it - the CLI's own entry point, its own argument
+   * parsing, its own config discovery, its own auth path, and the adapter's
+   * requests underneath.
+   *
+   * The target carries the pair this run already minted, because the password
+   * grant is a person typing a password and there is no way to ask one here: what
+   * is under test is the deployment surface after sign-in, not the prompt.
+   */
+  it('is driven by the CLI: a folder created with `sasjs` exists on the estate', async () => {
+    // the estate the run booted has an empty drive, and a deployment's appLoc
+    // already exists on a real one: creating it here keeps the case about what
+    // the CLI does - create the deployment folder - rather than about the drive
+    // happening to have a /Public.
+    //
+    // Before the temporary directories, deliberately: this call can fail, and a
+    // `mkdtemp` above the `try` would leave its directory on disk, because the
+    // throw skips the `finally` that removes it.
+    const appLoc = '/cli-conformance'
+
+    await client.createFolder(
+      'cli-conformance',
+      '/',
+      undefined,
+      tokens.access_token
+    )
+
+    const home = await mkdtemp(join(tmpdir(), 'viya-cli-home-'))
+    const project = await mkdtemp(join(tmpdir(), 'viya-cli-project-'))
+
+    try {
+      await mkdir(join(project, 'sasjs'), { recursive: true })
+
+      await writeFile(
+        join(project, 'sasjs', 'sasjsconfig.json'),
+        JSON.stringify(
+          {
+            name: 'conformance',
+            defaultTarget: 'viya',
+            targets: [
+              {
+                name: 'viya',
+                serverType: 'SASVIYA',
+                serverUrl: origin,
+                appLoc,
+                authConfig: {
+                  access_token: tokens.access_token,
+                  refresh_token: tokens.refresh_token,
+                  client: clientId,
+                  secret: ''
+                }
+              }
+            ]
+          },
+          null,
+          2
+        ),
+        'utf8'
+      )
+
+      const { code, output } = await runCli(
+        ['folder', 'create', `${appLoc}/from-the-cli`, '-t', 'viya'],
+        { cwd: project, home }
+      )
+
+      // the CLI's own exit code, with its output in the failure: a run that fails
+      // without saying what the CLI printed leaves the next reader guessing
+      expect({ code, output: code === 0 ? '' : output }).toEqual({
+        code: 0,
+        output: ''
+      })
+
+      // and the estate agrees: the folder is read back through the client, so a
+      // CLI that printed "created" without creating anything fails here
+      const created = await client.getFolder(
+        `${appLoc}/from-the-cli`,
+        tokens.access_token
+      )
+
+      expect(created).toBeTruthy()
+    } finally {
+      await rm(home, { recursive: true, force: true })
+      await rm(project, { recursive: true, force: true })
+    }
   })
 })

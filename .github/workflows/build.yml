@@ -173,6 +173,17 @@ jobs:
           SAS_PATH: '/some/path/to/sas'
           NODE_PATH: '/some/path/to/node'
 
+      - name: Install the CLI, which the conformance run drives as a process
+        # Installed into its own prefix rather than declared as a dependency, for
+        # two measured reasons. Declared, the CLI's tree re-resolves `@emnapi`
+        # under `@unrs/resolver-binding` and drops entries this lock carries for
+        # other platforms, which `npm ci` then refuses (`Missing:
+        # @emnapi/core@1.11.3 from lock file`). Installed with `--no-save` inside
+        # `./api` instead, npm exits with `Cannot read properties of null (reading
+        # 'match')` - it resolves the new tree against a manifest and lock this
+        # package pins for other reasons. A prefix of its own touches neither.
+        run: npm install --prefix "$RUNNER_TEMP/conformance-cli" --ignore-scripts @sasjs/cli@8.0.5
+
       - name: 'Run the conformance run (no engine: the execution leg is skipped)'
         # The emulator's own specs assert what this server answers; this one
         # drives @sasjs/adapter over a socket, which is the only thing that says
@@ -192,6 +203,7 @@ jobs:
           RUN_TIMES: 'sas,js'
           SAS_PATH: '/some/path/to/sas'
           NODE_PATH: '/some/path/to/node'
+          SASJS_CLI_ENTRY: ${{ runner.temp }}/conformance-cli/node_modules/@sasjs/cli/build/index.js
 
       - name: Build Package
         working-directory: ./api
