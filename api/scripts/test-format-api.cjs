@@ -37,6 +37,40 @@ async function main() {
       .expect(200)
     assert.equal(again.body, response.body)
 
+    // A semicolon-less macro value must not swallow its closing %end.
+    const macro = [
+      '%macro f();',
+      '%if &type=N %then %do;',
+      '&valn',
+      '%end;',
+      '%else %if &type=C %then %do;',
+      '&valc',
+      '%end;',
+      '%mend f;',
+      ''
+    ].join('\n')
+    const expectedMacro = [
+      '%macro f();',
+      '  %if &type=N %then %do;',
+      '    &valn',
+      '  %end;',
+      '  %else %if &type=C %then %do;',
+      '    &valc',
+      '  %end;',
+      '%mend f;',
+      ''
+    ].join('\n')
+    const formattedMacro = await request(app)
+      .post('/SASjsApi/code/format')
+      .send({ code: macro })
+      .expect(200)
+    assert.equal(formattedMacro.body, expectedMacro)
+    const formattedMacroAgain = await request(app)
+      .post('/SASjsApi/code/format')
+      .send({ code: formattedMacro.body })
+      .expect(200)
+    assert.equal(formattedMacroAgain.body, expectedMacro)
+
     const header =
       '/**\n  @file example\n    @details Details\n      code sample\n**/\n'
     const formattedHeader = await request(app)
