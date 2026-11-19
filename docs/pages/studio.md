@@ -24,6 +24,12 @@ The disk icon above the editor saves the file, as does Ctrl+S. When the editor h
 
 A JSON file that is minified - one line with no spaces between the tokens - opens indented, so a generated config reads as a document rather than one long line. The editor only re-indents text it can reproduce character for character, so a one-line file with its own spacing, or one that already carries indentation, opens exactly as it is stored. The file on the drive keeps its bytes either way until it is saved.
 
+## Finding a file
+
+The search box in the header searches the drive while you are in Studio. A file's own name is matched first and the folders above it second, so `orders` finds `orders.sas` wherever it lives, and `demo/services` finds what that folder holds. Choosing a result opens it in the editor at its own address - `/studio?filePath=%2FPublic%2Fdemo%2Forders.csv` - which is the form a deep link, a reload and the back button already use. Ctrl+K puts the cursor in the box.
+
+The drive is read one folder at a time, so the first search in a page session walks it: a moment on a large drive, during which the box says it is searching. The list is then kept until the page is reloaded, so reload to include files created after the walk.
+
 ## Linting and formatting
 
 SAS code is linted as you edit, about half a second after you stop typing, including changes you have not saved yet. Nothing is executed to do it.

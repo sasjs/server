@@ -3,10 +3,11 @@
  *
  * One field in the bar on every screen, but not one question: a reader on the
  * documentation means the documentation, a reader on the API explorer means an
- * operation, and a reader on the apps screen is looking for an app. Answering all
- * of them everywhere is why a query like "permissions" used to return an API
- * operation before the page called Permissions - the box answered a question
- * nobody on that screen had asked.
+ * operation, a reader on the apps screen is looking for an app, and a reader in
+ * Studio is looking for a file on the drive. Answering all of them everywhere is
+ * why a query like "permissions" used to return an API operation before the page
+ * called Permissions - the box answered a question nobody on that screen had
+ * asked.
  *
  * The rule lives here rather than in the component because it is the part worth
  * testing, and because the placeholder, the results and the destination all read
@@ -20,7 +21,7 @@
 import { appHref } from './appUrl'
 
 /** The screens with something of their own to search. */
-export type Scope = 'docs' | 'api' | 'apps' | 'all'
+export type Scope = 'docs' | 'api' | 'apps' | 'drive' | 'all'
 
 /** One entry of the index MkDocs writes for its own search. */
 export interface DocsEntry {
@@ -57,11 +58,13 @@ export interface Sources {
   docs: DocsEntry[]
   operations: Operation[]
   apps: AppRow[]
+  /** The drive's file paths, as `walkDrivePaths` collects them. */
+  files: string[]
 }
 
 /** One result, whichever list it came from. */
 export interface Hit {
-  kind: 'docs' | 'api' | 'app'
+  kind: 'docs' | 'api' | 'app' | 'file'
   title: string
   detail: string
   /** The app's route, for a hit that is opened in place. */
@@ -84,6 +87,13 @@ export const LIMIT = 12
  */
 const APPS_PATHS = ['/apps', '/SASjsApps']
 
+/**
+ * The paths Studio answers on, for the same reason the apps screen has two: a
+ * bookmark of the old address renders the editor, and a reader in the editor is
+ * looking for a file, whichever address brought them there.
+ */
+const STUDIO_PATHS = ['/studio', '/SASjsStudio']
+
 /** Whether a path is the screen at `root`, or a path under it. */
 const isScreen = (pathname: string, root: string): boolean =>
   pathname === root || pathname.startsWith(`${root}/`)
@@ -92,24 +102,33 @@ const isScreen = (pathname: string, root: string): boolean =>
  * The screen a path belongs to.
  *
  * The docs are a subtree - `/docs/guides/settings/` - and the others are single
- * screens, but a path under one of those is the same screen as its root. Any
- * other screen (the dashboard, studio, settings) has nothing of its own to search,
- * so the box keeps answering the documentation and the API, which is what it did
- * before it learned to narrow.
+ * screens, but a path under one of those is the same screen as its root. The
+ * dashboard and settings have nothing of their own to search, so there the box
+ * keeps answering the documentation and the API, which is what it did before it
+ * learned to narrow.
  *
- * The apps are the exception that needs to know more than the path: the listing
- * is refused to a caller without the App Stream grant, and the screen answers
- * that caller with the built-in tiles instead. A box that still said "Search
- * apps" would promise a list it has not been allowed to read and report "nothing
- * matches" for a question it never asked, so the scope falls back to the
- * both-lists search - the same answer every screen without a list of its own
- * gives.
+ * Two scopes need to know more than the path:
+ *
+ * The apps listing is refused to a caller without the App Stream grant, and the
+ * screen answers that caller with the built-in tiles instead. A box that still
+ * said "Search apps" would promise a list it has not been allowed to read and
+ * report "nothing matches" for a question it never asked, so the scope falls
+ * back to the both-lists search - the same answer every screen without a list of
+ * its own gives. The drive is the same story on a different grant: its files are
+ * read one folder at a time, through the route the explorer itself uses, and a
+ * caller who cannot read that route has no drive to search.
  */
-export const searchScope = (pathname: string, canListApps = true): Scope => {
+export const searchScope = (
+  pathname: string,
+  canListApps = true,
+  canListDrive = true
+): Scope => {
   if (isScreen(pathname, '/docs')) return 'docs'
   if (isScreen(pathname, '/api')) return 'api'
   if (canListApps && APPS_PATHS.some((path) => isScreen(pathname, path)))
     return 'apps'
+  if (canListDrive && STUDIO_PATHS.some((path) => isScreen(pathname, path)))
+    return 'drive'
 
   return 'all'
 }
@@ -125,6 +144,7 @@ export const searchHint = (scope: Scope): string => {
   if (scope === 'docs') return 'Search the docs'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search apps'
+  if (scope === 'drive') return 'Search the drive'
 
   return 'Search docs and API'
 }
@@ -134,6 +154,8 @@ export const searchLabel = (scope: Scope): string => {
   if (scope === 'docs') return 'Search the documentation'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search the apps'
+  if (scope === 'drive') return 'Search the drive'
+
   return 'Search the documentation and the API'
 }
 
@@ -141,6 +163,7 @@ export const searchLabel = (scope: Scope): string => {
 export const kindLabel = (kind: Hit['kind']): string => {
   if (kind === 'api') return 'API'
   if (kind === 'app') return 'App'
+  if (kind === 'file') return 'File'
 
   return 'Docs'
 }
@@ -229,6 +252,41 @@ const appHits = (needle: string, apps: AppRow[], hits: Ranked[]) => {
   }
 }
 
+/**
+ * A drive file, matched on its own name first and its folders second.
+ *
+ * A reader typing `orders` means the file called `orders.sas`, not the eleven
+ * others that happen to live under a folder with that word in its path; a reader
+ * typing `demo/services` means a folder, and wants what is inside it. So the name
+ * outranks the path, exactly as a page's title outranks the page's body text.
+ *
+ * The line under the name is the folder the file sits in - the drive root itself
+ * for a file at the top - because that is what tells two files of the same name
+ * apart, and the name is already in the result.
+ */
+const fileHits = (needle: string, files: string[], hits: Ranked[]) => {
+  for (const filePath of files) {
+    const segments = filePath.split('/')
+    const name = segments[segments.length - 1] || filePath
+    // the path is the weaker match, and it contains the name, so a name match
+    // can never be scored as a path match by accident
+    const rank = score(needle, name, filePath)
+
+    if (rank)
+      hits.push({
+        rank,
+        hit: {
+          kind: 'file',
+          title: name,
+          detail: segments.slice(0, -1).join('/') || '/',
+          // the address the editor opens a file by - `?filePath=` is how a deep
+          // link, a reload and the back button all land on the same file
+          to: `/studio?filePath=${encodeURIComponent(filePath)}`
+        }
+      })
+  }
+}
+
 interface Ranked {
   hit: Hit
   rank: number
@@ -257,6 +315,7 @@ export const matches = (
   if (scope === 'api' || scope === 'all')
     operationHits(needle, sources.operations, hits)
   if (scope === 'apps') appHits(needle, sources.apps, hits)
+  if (scope === 'drive') fileHits(needle, sources.files, hits)
 
   return hits
     .sort(
