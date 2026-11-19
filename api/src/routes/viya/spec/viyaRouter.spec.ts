@@ -174,6 +174,21 @@ describe('the caller the guard resolved', () => {
     })
   })
 
+  /**
+   * The identity route and the bodies are the same answer, so the mount's subject
+   * has to reach both: a regression that stopped passing it would leave the
+   * conformance run's `me.id` truthy on the emulated fallback and nothing else
+   * would notice.
+   */
+  it('answers the same account at /@currentUser', async () => {
+    const answer = await request(mountFor('alice')).get(
+      '/identities/users/@currentUser'
+    )
+
+    expect(answer.status).toBe(200)
+    expect(answer.body).toMatchObject({ id: 'alice', name: 'alice' })
+  })
+
   it('names the emulated user when no guard resolved one', async () => {
     const answer = await request(app(() => withDrive()))
       .post('/folders/folders')
