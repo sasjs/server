@@ -121,6 +121,28 @@ export const ruleFor = (path: string): string | undefined => {
 }
 
 /**
+ * The body a refusal is answered with, in the emulator's shape.
+ *
+ * `dispatchViya` answers a refusal from a handler with this envelope (its
+ * `isApiError` arm), and every other answer this mount gives is JSON. A part the
+ * upload filter refuses, and content past the cap, are answered before the
+ * emulator sees the request, so they are refused here in the same shape rather
+ * than in the drive API's plain text: a client parsing these answers sees one
+ * form everywhere.
+ *
+ * `@sasjs/api` exports no builder for that body, so this is a second definition
+ * of it. `viyaRouter.spec.ts` compares it with the dispatcher's own answer for a
+ * handler's refusal, which is what makes a change to the library's shape fail a
+ * test here instead of answering two forms on one mount.
+ */
+export const emulatedRefusal = (status: number, message: string) => ({
+  version: 2,
+  httpStatusCode: status,
+  errorCode: status,
+  message
+})
+
+/**
  * The part a multipart request carried, in the shape the emulator reads.
  *
  * `multerSingle` puts the part on disk and describes it; the emulator wants the
@@ -155,8 +177,9 @@ const uploadOf = async (
  * being buffered for someone who turns out to have no grant.
  *
  * `express.raw` refuses past its limit with `entity.too.large`, which is answered
- * here as the mount's own 413: the app's error handler turns everything else into
- * a 500.
+ * here as the mount's own 413 in the estate's envelope: the app's error handler
+ * turns everything else into a 500, and 413 is the status this mount gives a body
+ * past a ceiling, so the upload route's size refusals answer it too.
  */
 const contentOf = async (
   req: express.Request,
@@ -174,9 +197,14 @@ const contentOf = async (
     )
   } catch (error) {
     if ((error as { type?: string })?.type === 'entity.too.large')
-      res.status(413).json({
-        message: `A file's content must not exceed ${limit} bytes.`
-      })
+      res
+        .status(413)
+        .json(
+          emulatedRefusal(
+            413,
+            `A file's content must not exceed ${limit} bytes.`
+          )
+        )
     else throw error
 
     return undefined
@@ -230,6 +258,11 @@ export interface ViyaRouterOptions {
    * cap production runs with.
    */
   contentBytes?: number
+  /**
+   * The largest file an upload may carry, stated for the same reason: a case
+   * measures the mount's refusal without sending a hundred megabytes.
+   */
+  uploadBytes?: number
 }
 
 export const createViyaRouter = (
@@ -279,11 +312,24 @@ export const createViyaRouter = (
         res.once('finish', () => resolve())
         res.once('close', () => resolve())
 
-        multerSingle('file', [req, res, () => resolve()])
+        // The drive API answers a refusal as plain text and its clients read it
+        // that way; this mount answers the estate's envelope instead. A body past
+        // a ceiling is 413 here - the status the content route below answers for
+        // the same condition - while the drive keeps its own 400, so the parser
+        // states the reason in `code` and the translation happens once, here.
+        multerSingle('file', [req, res, () => resolve()], {
+          fileSize: options.uploadBytes,
+          writeRefusal: (response, { status, message, code }) => {
+            const refusalStatus = code === 'LIMIT_FILE_SIZE' ? 413 : status
+
+            response
+              .status(refusalStatus)
+              .json(emulatedRefusal(refusalStatus, message))
+          }
+        })
       })
 
-      // a refusal is already answered, in the parser's plain text; nothing below
-      // should write a second response
+      // a refusal is already answered; nothing below should write a second response
       if (res.headersSent) return
     }
 
