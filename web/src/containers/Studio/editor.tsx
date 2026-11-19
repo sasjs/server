@@ -21,16 +21,16 @@ import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import FilePathInputModal from '../../components/filePathInputModal'
 import { DisplayPane } from './internal/components/displayPane'
+import { ChangeReview } from './internal/components/changeReview'
+import { comparisonFor, formatKindFor } from './internal/changes'
 import {
   DisplayMode,
-  displayKindOf,
   displayModeLabel,
   displayModeStorageKey,
   displayModesFor,
   storedDisplayMode
 } from './internal/displayMode'
 import FileMenu from './internal/components/fileMenu'
-import { lintAppliesTo } from './internal/lintScope'
 import RunMenu from './internal/components/runMenu'
 import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
 import LintIssues from './internal/components/lint/lintIssues'
@@ -182,7 +182,13 @@ const SASjsEditor = ({
     saveBuffer,
     fixLintIssues,
     formatDocument,
+    undoFormat,
+    beginRevert,
+    cancelRevert,
+    confirmRevert,
     formatting,
+    review,
+    setReview,
     setOpenFilePathInputModal,
     setFileContent,
     Snackbar
@@ -222,7 +228,7 @@ const SASjsEditor = ({
   }
 
   // The editor's width changes with the pane, and Monaco only measures when told.
-  useEffect(relayout, [displayMode, relayout])
+  useEffect(relayout, [displayMode, review, relayout])
 
   /**
    * Why the format button cannot be used, or undefined when it can.
@@ -236,9 +242,12 @@ const SASjsEditor = ({
       ? 'Nothing to format yet'
       : isImageFile(selectedFilePath)
         ? 'A picture cannot be formatted'
-        : selectedFileExtension !== 'sas' &&
-            displayKindOf(selectedFilePath) !== 'json'
-          ? 'Formatting applies to .sas and .json files'
+        : !formatKindFor({
+              path: selectedFilePath,
+              runtime: selectedRunTime,
+              mode: 'format'
+            })
+          ? 'Formatting applies to SAS programs and JSON files'
           : undefined
 
   /**
@@ -256,7 +265,11 @@ const SASjsEditor = ({
       ? 'Nothing to fix yet'
       : isImageFile(selectedFilePath)
         ? 'A picture cannot be fixed'
-        : !lintAppliesTo(selectedFilePath, selectedRunTime)
+        : !formatKindFor({
+              path: selectedFilePath,
+              runtime: selectedRunTime,
+              mode: 'fix'
+            })
           ? 'Lint fixes apply to SAS programs'
           : undefined
 
@@ -266,6 +279,7 @@ const SASjsEditor = ({
       selectedFilePath={selectedFilePath}
       setOpenFilePathInputModal={setOpenFilePathInputModal}
       saveFile={saveBuffer}
+      showChanges={() => setReview({ kind: 'saved', before: prevFileContent })}
       fixLintIssues={fixLintIssues}
       formatDocument={formatDocument}
       lintFixDisabledReason={lintFixDisabledReason}
@@ -348,12 +362,50 @@ const SASjsEditor = ({
           flex: 1,
           minWidth: 0,
           height: '100%',
-          display: displayMode === 'rendered' ? 'none' : 'block'
+          display: review || displayMode === 'rendered' ? 'none' : 'block'
         }}
       >
         {monacoEditor}
       </Box>
-      {displayMode !== 'source' && (
+      {review && (
+        <Box sx={{ flex: 1, minWidth: 0, height: '100%' }}>
+          <ChangeReview
+            {...comparisonFor(review, fileContent)}
+            language={languageForFile(selectedFilePath, selectedFileExtension)}
+            label={
+              review.kind === 'saved'
+                ? 'Last loaded or saved → current buffer'
+                : 'Before formatting → formatted result'
+            }
+            untitled={!selectedFilePath}
+            onRevert={
+              review.kind === 'saved'
+                ? {
+                    begin: beginRevert,
+                    cancel: cancelRevert,
+                    confirm: () => {
+                      if (confirmRevert() && displayMode === 'rendered')
+                        setDisplayMode('source')
+                    }
+                  }
+                : undefined
+            }
+            onUndoFormatting={
+              review.kind === 'format'
+                ? () => {
+                    if (undoFormat() && displayMode === 'rendered')
+                      setDisplayMode('source')
+                  }
+                : undefined
+            }
+            onClose={() => {
+              setReview(null)
+              if (displayMode === 'rendered') setDisplayMode('source')
+            }}
+          />
+        </Box>
+      )}
+      {!review && displayMode !== 'source' && (
         <Box
           sx={{
             flex: 1,

@@ -38,6 +38,80 @@ import { formatJson } from '../render/jsonFormat'
 import { prettyJson } from '../pretty'
 import { guardMousePaste } from '../mousePasteGuard'
 import { readSettings } from '../settings'
+import {
+  formatKindFor,
+  rewriteBuffer,
+  saveSnapshot,
+  undoFormatting
+} from '../changes'
+import type { Review } from '../changes'
+
+type RevertContext = {
+  editor: monaco.editor.IStandaloneCodeEditor | null
+  path: string
+  generation: number
+  baseline: string
+  reviewBaseline: string | null
+  busy: boolean
+  saveEpoch: number
+}
+
+type RevertSnapshot = {
+  editor: monaco.editor.IStandaloneCodeEditor
+  model: monaco.editor.ITextModel
+  path: string
+  generation: number
+  baseline: string
+  version: number
+  text: string
+  saveEpoch: number
+}
+
+function captureRevert(context: RevertContext): RevertSnapshot | null {
+  const { editor, baseline, reviewBaseline, busy } = context
+  const model = editor?.getModel()
+  if (!editor || !model || busy || reviewBaseline !== baseline) return null
+  return {
+    editor,
+    model,
+    path: context.path,
+    generation: context.generation,
+    baseline,
+    version: model.getVersionId(),
+    text: model.getValue(),
+    saveEpoch: context.saveEpoch
+  }
+}
+
+function applyRevert(
+  snapshot: RevertSnapshot,
+  context: RevertContext
+): 'applied' | 'stale' | 'unavailable' {
+  const { model, editor } = snapshot
+  if (
+    context.busy ||
+    context.editor !== editor ||
+    editor.getModel() !== model ||
+    context.path !== snapshot.path ||
+    context.generation !== snapshot.generation ||
+    context.baseline !== snapshot.baseline ||
+    context.reviewBaseline !== snapshot.baseline ||
+    context.saveEpoch !== snapshot.saveEpoch ||
+    model.getVersionId() !== snapshot.version ||
+    model.getValue() !== snapshot.text
+  )
+    return 'stale'
+  editor.pushUndoStop()
+  const applied = editor.executeEdits('sasjs-revert-saved', [
+    {
+      range: model.getFullModelRange(),
+      text: snapshot.baseline,
+      forceMoveMarkers: true
+    }
+  ])
+  editor.pushUndoStop()
+  return applied ? 'applied' : 'unavailable'
+}
 
 type UseEditorParams = {
   selectedFilePath: string
@@ -55,7 +129,15 @@ const useEditor = ({
   const { Snackbar, setOpenSnackbar, setSnackbarMessage, setSnackbarSeverity } =
     useSnackbar()
   const [isLoading, setIsLoading] = useState(false)
-  const [prevFileContent, setPrevFileContent] = useStateWithCallback('')
+  const [prevFileContent, setPrevFileContentState] = useStateWithCallback('')
+  const baselineRef = useRef('')
+  const setPrevFileContent = useCallback(
+    (value: string) => {
+      baselineRef.current = value
+      setPrevFileContentState(value)
+    },
+    [setPrevFileContentState]
+  )
   const [fileContent, setFileContent] = useState('')
   const [log, setLog] = useState<LogObject | string>()
   const [webout, setWebout] = useState<string>()
@@ -87,6 +169,16 @@ const useEditor = ({
    * against this before it is shown - see `lint`.
    */
   const selectedFilePathRef = useRef(selectedFilePath)
+  const fileGeneration = useRef(0)
+  if (selectedFilePathRef.current !== selectedFilePath) {
+    selectedFilePathRef.current = selectedFilePath
+    fileGeneration.current++
+  }
+  const [review, setReview] = useState<Review | null>(null)
+  const formattingRef = useRef(false)
+  const savingRef = useRef(false)
+  // Even a completed save invalidates a confirmation opened beforehand.
+  const saveEpoch = useRef(0)
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   // Detaches the mouse-paste guard from the editor that was unmounted, so a
@@ -137,86 +229,146 @@ const useEditor = ({
    */
   const applyFormatting = useCallback(
     async (mode: SasFormatMode) => {
-      if (formatting) return
-
-      const sent = fileContent
-
+      const editor = editorRef.current
+      const path = selectedFilePath
+      const formatContext = { path, runtime: selectedRunTime, mode }
+      const kind = formatKindFor(formatContext)
+      if (!editor || formattingRef.current || savingRef.current || !kind) return
+      const generation = fileGeneration.current
+      formattingRef.current = true
       setFormatting(true)
-
       try {
-        /* Two formatters, because two languages: the SAS one asks the api, and
-           JSON is parsed and re-emitted here. JSON has one job, not two - the
-           parser either accepts the document or names what would be lost - so
-           the rules-only mode has nothing to do with it. */
-        let rewritten: string
-
-        if (displayKindOf(selectedFilePath) === 'json') {
-          if (mode === 'fix') return
-
-          const result = formatJson(sent)
-
-          if (!result.ok) {
-            // the message names the refusal and what would have been lost
-            setSnackbarMessage(result.error)
-            setSnackbarSeverity(AlertSeverityType.Error)
-            setOpenSnackbar(true)
-
-            return
-          }
-
-          rewritten = result.text
-        } else {
-          rewritten = await formatSasCode(
-            sent,
-            selectedFilePath || undefined,
-            mode
-          )
-        }
-
-        if (rewritten === sent) {
-          setSnackbarMessage(
-            mode === 'fix' ? 'No lint fixes to apply.' : 'Already formatted.'
-          )
-          setSnackbarSeverity(AlertSeverityType.Info)
-          setOpenSnackbar(true)
-
-          return
-        }
-
-        // Only if nothing was typed while the request was away.
-        setFileContent((current) => (current === sent ? rewritten : current))
-
-        if (fileContent === sent) {
-          setSnackbarMessage(
-            mode === 'fix' ? 'Lint fixes applied.' : 'Formatting applied.'
-          )
-          setSnackbarSeverity(AlertSeverityType.Success)
-          setOpenSnackbar(true)
-        }
-      } catch (error) {
+        const result = await rewriteBuffer({
+          editor,
+          formatContext,
+          isCurrent: () =>
+            fileGeneration.current === generation &&
+            selectedFilePathRef.current === path,
+          format: async (sent) => {
+            if (kind === 'json') {
+              const formatted = formatJson(sent)
+              if (!formatted.ok) throw new Error(formatted.error)
+              return formatted.text
+            }
+            return formatSasCode(sent, path || undefined, mode)
+          },
+          onApplied: (before, after, snapshot) =>
+            setReview({
+              kind: 'format',
+              before,
+              after,
+              generation,
+              ...snapshot
+            })
+        })
+        if (fileGeneration.current !== generation) return
         setSnackbarMessage(
-          mode === 'fix'
-            ? 'The lint fixes could not run. Your code is unchanged.'
+          result === 'applied'
+            ? mode === 'fix'
+              ? 'Lint fixes applied.'
+              : 'Formatting applied.'
+            : result === 'unchanged'
+              ? mode === 'fix'
+                ? 'No lint fixes to apply.'
+                : 'Already formatted.'
+              : 'The buffer changed; formatting was not applied.'
+        )
+        setSnackbarSeverity(
+          result === 'stale' || result === 'unavailable'
+            ? AlertSeverityType.Warning
+            : AlertSeverityType.Info
+        )
+        setOpenSnackbar(true)
+      } catch (error) {
+        if (fileGeneration.current !== generation) return
+        setSnackbarMessage(
+          error instanceof Error && displayKindOf(path) === 'json'
+            ? error.message
             : 'The formatter could not run. Your code is unchanged.'
         )
         setSnackbarSeverity(AlertSeverityType.Error)
         setOpenSnackbar(true)
-
-        console.log(error)
       } finally {
+        formattingRef.current = false
         setFormatting(false)
       }
     },
     [
-      fileContent,
-      formatting,
       selectedFilePath,
-      setFileContent,
+      selectedRunTime,
       setOpenSnackbar,
       setSnackbarMessage,
       setSnackbarSeverity
     ]
   )
+
+  const undoFormat = useCallback((): boolean => {
+    if (review?.kind !== 'format') return false
+    const editor = editorRef.current
+    const result = editor
+      ? undoFormatting(
+          editor,
+          review,
+          () =>
+            fileGeneration.current === review.generation &&
+            selectedFilePathRef.current === selectedFilePath &&
+            !savingRef.current &&
+            !formattingRef.current
+        )
+      : 'unavailable'
+    if (result === 'applied') {
+      setReview(null)
+      return true
+    }
+    setSnackbarMessage(
+      'Formatting cannot be undone because the buffer changed or another operation is in progress. Your code is unchanged.'
+    )
+    setSnackbarSeverity(AlertSeverityType.Warning)
+    setOpenSnackbar(true)
+    return false
+  }, [
+    review,
+    selectedFilePath,
+    setSnackbarMessage,
+    setSnackbarSeverity,
+    setOpenSnackbar
+  ])
+
+  const revertContext = (): RevertContext => ({
+    editor: editorRef.current,
+    path: selectedFilePathRef.current,
+    generation: fileGeneration.current,
+    baseline: baselineRef.current,
+    reviewBaseline: review?.kind === 'saved' ? review.before : null,
+    busy: savingRef.current || formattingRef.current,
+    saveEpoch: saveEpoch.current
+  })
+  const revertSnapshot = useRef<RevertSnapshot | null>(null)
+  const warnRevertStale = () => {
+    setSnackbarMessage(
+      'The buffer or saved baseline changed, or another operation is in progress. Nothing was reverted.'
+    )
+    setSnackbarSeverity(AlertSeverityType.Warning)
+    setOpenSnackbar(true)
+  }
+  const beginRevert = (): boolean => {
+    revertSnapshot.current = captureRevert(revertContext())
+    if (!revertSnapshot.current) warnRevertStale()
+    return !!revertSnapshot.current
+  }
+  const cancelRevert = () => {
+    revertSnapshot.current = null
+  }
+  const confirmRevert = (): boolean => {
+    const snapshot = revertSnapshot.current
+    revertSnapshot.current = null
+    if (!snapshot || applyRevert(snapshot, revertContext()) !== 'applied') {
+      warnRevertStale()
+      return false
+    }
+    setReview(null)
+    return true
+  }
 
   /** The rules alone: what the lint can correct without judgement. */
   const fixLintIssues = useCallback(
@@ -230,79 +382,107 @@ const useEditor = ({
     [applyFormatting]
   )
 
-  const saveFile = useCallback(
-    (filePath?: string, content?: string) => {
-      // The buffer holds text, so writing it over a picture would replace the
-      // image with an empty file. The file menu is hidden for a picture, and
-      // this keeps any other route to a save from truncating one.
-      const target = filePath ?? selectedFilePath
+  const canStartSave = useCallback(() => {
+    if (formattingRef.current || savingRef.current) {
+      setSnackbarMessage(
+        'Save was not started because formatting or saving is in progress. Please save again when it finishes.'
+      )
+      setSnackbarSeverity(AlertSeverityType.Warning)
+      setOpenSnackbar(true)
+      return false
+    }
+    if (selectedFilePathRef.current !== selectedFilePath) {
+      setSnackbarMessage('The selected file changed. Please save again.')
+      setSnackbarSeverity(AlertSeverityType.Warning)
+      setOpenSnackbar(true)
+      return false
+    }
+    return true
+  }, [
+    selectedFilePath,
+    setSnackbarMessage,
+    setSnackbarSeverity,
+    setOpenSnackbar
+  ])
 
+  const saveFile = useCallback(
+    async (filePath?: string, content?: string) => {
+      const target = filePath ?? selectedFilePath
       if (isImageFile(target)) {
         setSnackbarMessage('A picture cannot be edited here.')
         setSnackbarSeverity(AlertSeverityType.Warning)
         setOpenSnackbar(true)
-
         return
       }
-
-      setIsLoading(true)
-
-      // The caller may hand in the text it just formatted; otherwise the
-      // buffer as React knows it is saved. Formatting applies its edits to
-      // the model first, so the two can differ for one render.
-      const text = content ?? fileContent
-
-      if (filePath) {
-        filePath = filePath.startsWith('/') ? filePath : `/${filePath}`
+      const savedAs = !!filePath
+      if (savedAs && !canStartSave()) return
+      if (savedAs) {
+        savingRef.current = true
+        saveEpoch.current++
       }
-
+      const generation = fileGeneration.current
+      const model = editorRef.current?.getModel()
+      const version = model?.getVersionId()
+      const text = content ?? model?.getValue() ?? fileContent
+      const normalizedPath =
+        filePath && (filePath.startsWith('/') ? filePath : `/${filePath}`)
       const formData = new FormData()
-
-      const stringBlob = new Blob([text], { type: 'text/plain' })
-      formData.append('file', stringBlob)
-      formData.append('filePath', filePath ?? selectedFilePath)
-
-      const axiosPromise = filePath
-        ? axios.post('/SASjsApi/drive/file', formData)
-        : axios.patch('/SASjsApi/drive/file', formData)
-
-      axiosPromise
-        .then(() => {
-          if (filePath && text === prevFileContent) {
-            // when fileContent and prevFileContent is same,
-            // callback function in setPrevFileContent method is not called
-            // because behind the scene useEffect hook is being used
-            // for calling callback function, and it's only fired when the
-            // new value is not equal to old value.
-            // So, we'll have to explicitly update the selected file path
-
-            setSelectedFilePath(filePath, true)
-          } else {
-            setPrevFileContent(text, () => {
-              if (filePath) {
-                setSelectedFilePath(filePath, true)
-              }
-            })
+      formData.append('file', new Blob([text], { type: 'text/plain' }))
+      formData.append('filePath', normalizedPath ?? selectedFilePath)
+      setIsLoading(true)
+      try {
+        if (normalizedPath) await axios.post('/SASjsApi/drive/file', formData)
+        else await axios.patch('/SASjsApi/drive/file', formData)
+        if (fileGeneration.current !== generation) return
+        if (normalizedPath) {
+          if (
+            model &&
+            (editorRef.current?.getModel() !== model ||
+              model.getVersionId() !== version)
+          ) {
+            setSnackbarMessage(
+              'File saved, but the buffer changed. Save as again to include your edits.'
+            )
+            setSnackbarSeverity(AlertSeverityType.Warning)
+            setOpenSnackbar(true)
+            return
           }
-          setSnackbarMessage('File saved!')
-          setSnackbarSeverity(AlertSeverityType.Success)
-          setOpenSnackbar(true)
-        })
-        .catch((err) => {
-          setModalTitle('Abort')
-          setModalPayload(
-            typeof err.response.data === 'object'
-              ? JSON.stringify(err.response.data)
-              : err.response.data
-          )
-          setOpenModal(true)
-        })
-        .finally(() => {
-          setIsLoading(false)
-        })
+        }
+        setPrevFileContent(text)
+        setReview((current) =>
+          current?.kind === 'saved' ? { kind: 'saved', before: text } : current
+        )
+        if (normalizedPath) setSelectedFilePath(normalizedPath, true)
+        setSnackbarMessage('File saved!')
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
+      } catch (err: any) {
+        if (fileGeneration.current !== generation) return
+        setModalTitle('Abort')
+        setModalPayload(
+          typeof err.response?.data === 'object'
+            ? JSON.stringify(err.response.data)
+            : (err.response?.data ?? 'Save failed.')
+        )
+        setOpenModal(true)
+      } finally {
+        if (savedAs) savingRef.current = false
+        if (fileGeneration.current === generation) setIsLoading(false)
+      }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fileContent, prevFileContent, selectedFilePath]
+    [
+      fileContent,
+      selectedFilePath,
+      canStartSave,
+      setSelectedFilePath,
+      setPrevFileContent,
+      setSnackbarMessage,
+      setSnackbarSeverity,
+      setOpenSnackbar,
+      setModalTitle,
+      setModalPayload,
+      setOpenModal
+    ]
   )
 
   const handleTabChange = (_e: any, newValue: string) => {
@@ -419,8 +599,9 @@ const useEditor = ({
   }
 
   const handleFilePathInput = (filePath: string) => {
+    if (!canStartSave()) return
     setOpenFilePathInputModal(false)
-    saveFile(filePath)
+    void saveFile(filePath)
   }
 
   /**
@@ -437,72 +618,66 @@ const useEditor = ({
     [selectedFilePath, selectedRunTime]
   )
 
-  /**
-   * Formats the buffer and applies the result to the editor model, returning
-   * the text the buffer now holds. Formatting only applies when the buffer
-   * holds a SAS program: the api applies SAS rules, so a program in another
-   * runtime stays exactly as typed. A formatting failure returns the buffer
-   * untouched - the caller's action (save or format) proceeds with what is
-   * there.
-   */
-  const formatBuffer = useCallback(
-    async (editor: monaco.editor.ICodeEditor) => {
-      if (!isSasBuffer()) return
-
-      const model = editor.getModel()
-      if (!model) return
-
-      const code = model.getValue()
-
-      let formatted = code
-      try {
-        // The buffer's file, when it has one, names the file whose tree the
-        // rules resolve from - the same path the lint flow passes.
-        formatted = await formatSasCode(code, selectedFilePath || undefined)
-      } catch {
-        return
-      }
-
-      if (formatted === code) return
-
-      editor.pushUndoStop()
-      editor.executeEdits('sasjs-format', [
-        {
-          range: model.getFullModelRange(),
-          text: formatted,
-          forceMoveMarkers: true
-        }
-      ])
-      editor.pushUndoStop()
-
-      return formatted
-    },
-    [isSasBuffer, selectedFilePath]
-  )
-
-  /**
-   * Saves the buffer the way Ctrl+S does: the text is formatted first when the
-   * setting asks for it, and the model's own text is what gets written, because
-   * React's copy of the buffer lags a formatting edit by one render.
-   */
+  /** Save an exact model snapshot, aborting if formatting raced an edit or switch. */
   const saveBuffer = useCallback(async () => {
+    if (isImageFile(selectedFilePath) || !canStartSave()) return
     if (!selectedFilePath) {
       setOpenFilePathInputModal(true)
-
       return
     }
-
     const editor = editorRef.current
-    const content =
-      editor && readSettings()['editor.formatOnSave']
-        ? await formatBuffer(editor)
-        : undefined
-
-    const text = content ?? editor?.getModel()?.getValue()
-
-    if (text !== undefined && prevFileContent !== text)
-      saveFile(undefined, text)
-  }, [selectedFilePath, formatBuffer, prevFileContent, saveFile])
+    if (!editor) return
+    const generation = fileGeneration.current
+    savingRef.current = true
+    saveEpoch.current++
+    try {
+      const result = await saveSnapshot({
+        editor,
+        formatContext: {
+          path: selectedFilePath,
+          runtime: selectedRunTime,
+          mode: 'format'
+        },
+        isCurrent: () =>
+          fileGeneration.current === generation &&
+          selectedFilePathRef.current === selectedFilePath,
+        format:
+          readSettings()['editor.formatOnSave'] && isSasBuffer()
+            ? (text) => formatSasCode(text, selectedFilePath || undefined)
+            : undefined,
+        onFormatted: (before, after, snapshot) =>
+          setReview({ kind: 'format', before, after, generation, ...snapshot }),
+        write: async (text) => {
+          if (text !== prevFileContent) await saveFile(undefined, text)
+        }
+      })
+      if (result !== 'saved' && fileGeneration.current === generation) {
+        setSnackbarMessage(
+          'The buffer changed; save was cancelled. Save again to include your edits.'
+        )
+        setSnackbarSeverity(AlertSeverityType.Warning)
+        setOpenSnackbar(true)
+      }
+    } catch {
+      if (fileGeneration.current === generation) {
+        setSnackbarMessage('Formatting failed; the file was not saved.')
+        setSnackbarSeverity(AlertSeverityType.Error)
+        setOpenSnackbar(true)
+      }
+    } finally {
+      savingRef.current = false
+    }
+  }, [
+    selectedFilePath,
+    selectedRunTime,
+    canStartSave,
+    isSasBuffer,
+    prevFileContent,
+    saveFile,
+    setSnackbarMessage,
+    setSnackbarSeverity,
+    setOpenSnackbar
+  ])
 
   /**
    * Ctrl+S anywhere in Studio.
@@ -554,12 +729,7 @@ const useEditor = ({
 
       // Method that will be executed when the action is triggered.
       // @param editor The editor instance is passed in as a convenience
-      run: async (ed) => {
-        await formatBuffer(ed)
-        setSnackbarMessage('Code formatted!')
-        setSnackbarSeverity(AlertSeverityType.Success)
-        setOpenSnackbar(true)
-      }
+      run: () => formatDocument()
     })
 
     const runCodeAction = editorRef.current?.addAction({
@@ -593,7 +763,7 @@ const useEditor = ({
     saveFile,
     saveBuffer,
     runCode,
-    formatBuffer,
+    formatDocument,
     setOpenSnackbar,
     setSnackbarMessage,
     setSnackbarSeverity
@@ -621,6 +791,8 @@ const useEditor = ({
   }, [selectedFilePath, runTimes])
 
   useEffect(() => {
+    const generation = fileGeneration.current
+    setReview(null)
     if (selectedFilePath) {
       setIsLoading(true)
       setSelectedFileExtension(extensionOf(selectedFilePath))
@@ -638,12 +810,14 @@ const useEditor = ({
           // the drive types every non-text file as octet-stream, which
           // `<img>` will not draw an SVG from: the blob is re-typed from the
           // file's own extension before it becomes an object URL
-          .then((res: any) =>
+          .then((res: any) => {
+            if (fileGeneration.current !== generation) return
             setImageUrl(
               URL.createObjectURL(asImageBlob(res.data, selectedFilePath))
             )
-          )
+          })
           .catch((err) => {
+            if (fileGeneration.current !== generation) return
             setModalTitle('Abort')
             setModalPayload(
               typeof err.response?.data === 'object'
@@ -652,7 +826,9 @@ const useEditor = ({
             )
             setOpenModal(true)
           })
-          .finally(() => setIsLoading(false))
+          .finally(() => {
+            if (fileGeneration.current === generation) setIsLoading(false)
+          })
 
         setWebout('')
         setTab('code')
@@ -672,6 +848,7 @@ const useEditor = ({
           responseType: 'text'
         })
         .then((res: any) => {
+          if (fileGeneration.current !== generation) return
           // A JSON file is usually stored minified, which is one long line in
           // the editor. It opens indented instead, and indented is what it
           // holds, so the buffer starts clean and the drive keeps the file it
@@ -689,15 +866,18 @@ const useEditor = ({
           editorRef.current?.focus()
         })
         .catch((err) => {
+          if (fileGeneration.current !== generation) return
           setModalTitle('Abort')
           setModalPayload(
-            typeof err.response.data === 'object'
+            typeof err.response?.data === 'object'
               ? JSON.stringify(err.response.data)
-              : err.response.data
+              : (err.response?.data ?? 'File could not be opened.')
           )
           setOpenModal(true)
         })
-        .finally(() => setIsLoading(false))
+        .finally(() => {
+          if (fileGeneration.current === generation) setIsLoading(false)
+        })
     } else {
       // A buffer with no file behind it is restored from local storage, and
       // that restored text is its baseline: the dot on the save icon means
@@ -706,8 +886,8 @@ const useEditor = ({
       setPrevFileContent(content)
       setFileContent(content)
       setImageUrl('')
+      setIsLoading(false)
     }
-    selectedFilePathRef.current = selectedFilePath
     setWebout('')
     setTab('code')
     /* And the lint panel empties with the file. It lists findings about the
@@ -825,7 +1005,13 @@ const useEditor = ({
     saveBuffer,
     fixLintIssues,
     formatDocument,
+    undoFormat,
+    beginRevert,
+    cancelRevert,
+    confirmRevert,
     formatting,
+    review,
+    setReview,
     saveFile,
     setOpenFilePathInputModal,
     setFileContent,

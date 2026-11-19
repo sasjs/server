@@ -2,13 +2,20 @@ import React from 'react'
 
 import { Badge, IconButton, Tooltip } from '@mui/material'
 
-import { AutoFixHigh, FormatAlignLeft, Save, SaveAs } from '@mui/icons-material'
+import {
+  AutoFixHigh,
+  Difference,
+  FormatAlignLeft,
+  Save,
+  SaveAs
+} from '@mui/icons-material'
 
 type FileMenuProps = {
   isDirty: boolean
   selectedFilePath: string
   setOpenFilePathInputModal: React.Dispatch<React.SetStateAction<boolean>>
   saveFile: () => void
+  showChanges: () => void
   /**
    * Applies the fixes the `.sasjslint` rules can make on their own: trailing
    * spaces, tabs, line endings, the header's macro list, a line wrapped past
@@ -116,6 +123,7 @@ const FileMenu = ({
   selectedFilePath,
   setOpenFilePathInputModal,
   saveFile,
+  showChanges,
   fixLintIssues,
   formatDocument,
   lintFixDisabledReason,
@@ -138,6 +146,11 @@ const FileMenu = ({
             <SaveAs />
           </IconButton>
         </span>
+      </Tooltip>
+      <Tooltip title="Changes since last loaded or saved">
+        <IconButton aria-label="Changes" onClick={showChanges}>
+          <Difference />
+        </IconButton>
       </Tooltip>
       <RewriteButton
         onClick={fixLintIssues}
