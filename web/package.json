@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack-dev-server --config webpack.dev.ts --hot",
     "build": "webpack --config webpack.prod.ts",
-    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:cachedsite && npm run test:displaymodes && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:publishrefusal && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:saveshortcut && npm run test:runtime && npm run test:treerow && npm run test:apidocs && npm run test:search && npm run test:search-browser && npm run test:demologin",
+    "test": "npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:cachedsite && npm run test:displaymodes && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:publishrefusal && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:saveshortcut && npm run test:runtime && npm run test:treerow && npm run test:apidocs && npm run test:search && npm run test:browser-start && npm run test:demologin",
     "test:grammar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-grammar.mjs",
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
@@ -40,6 +40,7 @@
     "test:apidocs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-api-docs-pane.mjs",
     "test:search": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-search.mjs",
     "test:search-browser": "node scripts/test-search-browser.mjs",
+    "test:browser-start": "node --test scripts/test-browser-start.mjs",
     "test:demologin": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-demo-login.mjs"
   },
   "dependencies": {

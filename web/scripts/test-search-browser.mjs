@@ -8,6 +8,7 @@ import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import webpack from 'webpack'
+import { waitForDevTools } from './browser-start.mjs'
 
 const candidates = process.env.CHROMIUM
   ? [process.env.CHROMIUM]
@@ -78,20 +79,9 @@ try {
       `--user-data-dir=${temp}/profile`,
       'about:blank'
     ],
-    { stdio: 'ignore' }
+    { stdio: ['ignore', 'ignore', 'pipe'] }
   )
-  let port
-  for (let n = 0; n < 100; n++) {
-    try {
-      port = (
-        await readFile(path.join(temp, 'profile/DevToolsActivePort'), 'utf8')
-      ).split('\n')[0]
-      break
-    } catch {
-      await pause(100)
-    }
-  }
-  assert.ok(port, 'Chromium did not start')
+  const port = await waitForDevTools(browser)
   const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json()
   socket = new WebSocket(
     targets.find((target) => target.type === 'page').webSocketDebuggerUrl
