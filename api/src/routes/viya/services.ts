@@ -65,7 +65,7 @@ export const isViyaEmulationEnabled = (): boolean =>
  */
 export const viyaEmulationNotice = (): string | undefined =>
   isViyaEmulationEnabled()
-    ? `Viya emulation is ON (EMULATE_VIYA): /identities, /folders, /files, /types, /compute and /SASLogon/oauth/token are answered as an emulated Viya ${VIYA_TARGET_VERSION}, the token port from this server's own accounts. Every answer says so in x-sasjs-emulated. This is not a Viya deployment - answers are for development and testing only, and none is authoritative for a real estate.`
+    ? `Viya emulation is ON (EMULATE_VIYA): /identities, /folders, /files, /types, /compute and /SASLogon/oauth/token are answered as an emulated Viya ${VIYA_TARGET_VERSION}, the token port from this server's own accounts. Every answer on those paths says so in x-sasjs-emulated. This is not a Viya deployment - answers are for development and testing only, and none is authoritative for a real estate.`
     : undefined
 
 /** The address clients reach this server at, which is the estate's seed. */
