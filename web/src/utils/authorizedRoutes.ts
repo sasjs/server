@@ -15,6 +15,15 @@ export const STUDIO_ROUTE = '/SASjsApi/code/execute'
 export const APP_STREAM_ROUTE = '/AppStream'
 
 /**
+ * Reading a folder's immediate contents.
+ *
+ * The Studio explorer loads the drive a level at a time through this route, and
+ * the header's drive search walks it the same way - one grant, because they are
+ * the same reading of the same drive.
+ */
+export const FILE_TREE_ROUTE = '/SASjsApi/drive/fileTree'
+
+/**
  * Publishing and unpublishing an app: `POST /SASjsApi/drive/deploy` writes the
  * registry entry, `DELETE` on the same route removes it. One route, so a caller
  * holding the grant to publish holds the one to take it back down.

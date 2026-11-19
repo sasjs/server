@@ -54,9 +54,31 @@ check('apps, old address', searchScope('/SASjsApps'), 'apps')
 check('apps, old address, trailing slash', searchScope('/SASjsApps/'), 'apps')
 
 // the other old addresses render screens with nothing of their own
-check('studio, old address', searchScope('/SASjsStudio'), 'all')
 check('settings, old address', searchScope('/SASjsSettings'), 'all')
 check('logon', searchScope('/logon'), 'all')
+
+// Studio is a screen with a list of its own now: the drive. Both its addresses
+// render the editor, so both get the drive search - and a path under either is
+// the same screen, as it is for the docs.
+check('studio', searchScope('/studio'), 'drive')
+check('studio, old address', searchScope('/SASjsStudio'), 'drive')
+check('studio, old address, trailing slash', searchScope('/SASjsStudio/'), 'drive')
+check('a path under studio', searchScope('/studio/anything'), 'drive')
+
+// A caller who cannot read the drive's folders is shown the refusal the route
+// gives - there is no listing to walk - so the box must not promise a search of
+// a drive it cannot see. It answers both lists, as every screen without a list
+// of its own does.
+check('studio without the drive grant', searchScope('/studio', true, false), 'all')
+check(
+  'studio, old address, without the drive grant',
+  searchScope('/SASjsStudio', true, false),
+  'all'
+)
+// the two grants are independent: holding the drive's changes nothing on the apps
+// screen, and holding the App Stream's changes nothing in Studio
+check('apps without the drive grant', searchScope('/apps', true, false), 'apps')
+check('docs without the drive grant', searchScope('/docs', true, false), 'docs')
 
 // A caller without the App Stream grant cannot read the listing - the screen gives
 // them the built-in tiles - so the box must not promise "Search apps" and then
@@ -73,13 +95,13 @@ check('api without the grant', searchScope('/api', false), 'api')
 
 // the screens with nothing of their own keep the old, both-lists behaviour
 check('dashboard', searchScope('/'), 'all')
-check('studio', searchScope('/studio'), 'all')
 check('settings', searchScope('/settings'), 'all')
 
 // the promise the field makes, per screen
 check('docs hint', searchHint('docs'), 'Search the docs')
 check('api hint', searchHint('api'), 'Search the API')
 check('apps hint', searchHint('apps'), 'Search apps')
+check('drive hint', searchHint('drive'), 'Search the drive')
 check('dashboard hint', searchHint('all'), 'Search docs and API')
 
 // --- what each scope answers from ---------------------------------------------
@@ -135,10 +157,23 @@ const apps = [
   }
 ]
 
-const sources = { docs, operations, apps }
+const files = [
+  '/root.sas',
+  '/home/sasjsadmin/program.sas',
+  '/Public/demo/orders.csv',
+  '/Public/demo/services/web/index.html',
+  '/Public/demo/services/macro/orders.sas',
+  '/code/core/mf_abort.sas',
+  // a file whose FOLDER is what matches: named so that it sorts before the
+  // files that carry the word in their own names, which is the case that tells
+  // "the name outranks the path" apart from "the alphabet decided"
+  '/orders/aaa.txt'
+]
+
+const sources = { docs, operations, apps, files }
 
 // a word the docs and the API both use: each screen sees only its own
-const deployed = { docs, operations, apps }
+const deployed = { docs, operations, apps, files }
 
 check(
   'docs scope returns docs only',
@@ -168,6 +203,25 @@ check(
 check(
   'apps scope ignores pages',
   kinds(matches('apps', 'settings', deployed)),
+  ''
+)
+check(
+  'drive scope returns files only',
+  kinds(matches('drive', 'orders', deployed)),
+  'file'
+)
+// the docs carry the word "settings" and the drive does not
+check(
+  'drive scope ignores the other lists',
+  kinds(matches('drive', 'settings', deployed)),
+  ''
+)
+// a word the drive carries: the dashboard still answers only from its two lists
+// a dashboard that started offering files would be answering a question nobody
+// on the dashboard asked
+check(
+  'the dashboard does not search the drive',
+  kinds(matches('all', 'orders', deployed)),
   ''
 )
 
@@ -215,6 +269,60 @@ check(
   'shared name falls back to the id',
   matches('apps', 'mario', { ...sources, apps: twins })[0]?.href,
   '/app/a1/'
+)
+
+// --- the drive is searched by file name, then by the folders above it ---------
+
+// two files carry the word: the one NAMED orders outranks the one that merely
+// lives under a folder with that name, whatever the alphabet says
+const orders = matches('drive', 'orders', sources)
+check('file by name', orders[0]?.title, 'orders.csv')
+check('a name beats a folder', orders[0]?.detail, '/Public/demo')
+check(
+  'both name matches outrank the folder match',
+  orders.map((hit) => hit.title).join(','),
+  'orders.csv,orders.sas,aaa.txt'
+)
+
+// a query with a slash in it is a path, and a path segment matches too - this is
+// the reader who remembers where the file lives rather than what it is called
+const byFolder = matches('drive', 'demo/services/macro', sources)
+check('file by its folders', byFolder[0]?.title, 'orders.sas')
+check('folder line', byFolder[0]?.detail, '/Public/demo/services/macro')
+
+// a file at the drive root has no folder to show: '/' rather than an empty line
+check('root file', matches('drive', 'root.sas', sources)[0]?.detail, '/')
+check(
+  'a file deep on the drive shows its folder',
+  matches('drive', 'program.sas', sources)[0]?.detail,
+  '/home/sasjsadmin'
+)
+
+// the result opens the file the way a deep link does - encoded, because a drive
+// path is all slashes and may carry a space
+check(
+  'a file opens in the editor',
+  matches('drive', 'index.html', sources)[0]?.to,
+  '/studio?filePath=%2FPublic%2Fdemo%2Fservices%2Fweb%2Findex.html'
+)
+check(
+  'a file has no tab to open',
+  matches('drive', 'index.html', sources)[0]?.href,
+  undefined
+)
+check(
+  'two characters are enough',
+  matches('drive', 'mf', sources)[0]?.title,
+  'mf_abort.sas'
+)
+check('one character asks nothing', matches('drive', 'o', sources).length, 0)
+
+// a long answer is truncated here too
+const manyFiles = Array.from({ length: 30 }, (_, index) => `/many/file${index}.sas`)
+check(
+  'file limit',
+  matches('drive', 'file', { ...sources, files: manyFiles }).length,
+  LIMIT
 )
 
 // --- the request the box makes ------------------------------------------------
@@ -284,4 +392,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('search: scoped to the screen, apps searched by their own fields')
+console.log('search: scoped to the screen, apps and drive files searched by their own fields')

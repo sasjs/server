@@ -25,8 +25,10 @@ import { Search as SearchIcon } from '@mui/icons-material'
 import axios from 'axios'
 
 import { AppContext } from '../context/appContext'
-import { APP_STREAM_ROUTE } from '../utils'
+import { APP_STREAM_ROUTE, FILE_TREE_ROUTE } from '../utils'
 import { APPS_LISTING } from '../utils/appUrl'
+import { walkDrivePaths } from '../utils/driveWalk'
+import type { TreeNode } from '../utils/types'
 import {
   AppRow,
   DocsEntry,
@@ -52,6 +54,8 @@ import {
  */
 let docsSource: Promise<DocsEntry[]> | null = null
 let operationsSource: Promise<Operation[]> | null = null
+/** The drive's file paths: one walk per session, not one per keystroke. */
+let driveSource: Promise<string[]> | null = null
 
 const loadDocs = () =>
   (docsSource ??= fetch('/documentation/search/search_index.json')
@@ -86,8 +90,52 @@ const loadApps = () =>
     .then((response) => (response.data?.apps ?? []) as AppRow[])
     .catch(() => [] as AppRow[])
 
+/**
+ * One folder's immediate children, as the explorer reads them.
+ *
+ * Read through the shared axios instance for the reason `loadApps` gives: a bare
+ * `fetch` of `/SASjsApi/...` 404s under `npm start` and drops the session cookie
+ * on a deployment that answers from another origin.
+ *
+ * A folder that cannot be read answers null rather than throwing. That is not a
+ * failure unique to a search: the caller may hold no grant for that folder, or
+ * the folder may have gone between the listing and the request, and either way
+ * the rest of the drive is still worth walking - see `walkDrivePaths`.
+ */
+const listFolder = (folderPath: string) =>
+  axios
+    .get('/SASjsApi/drive/fileTree', {
+      params: { _folderPath: folderPath }
+    })
+    .then((response) =>
+      response.data?.status === 'success'
+        ? (response.data.tree as TreeNode)
+        : null
+    )
+    .catch(() => null)
+
+/**
+ * Every file path on the drive, walked once and kept for the session.
+ *
+ * Kept, unlike the apps listing, because the walk is not one request but one per
+ * folder: asking again on each keystroke, or each time the reader comes back to
+ * Studio, would spend a request per folder on every visit. The cost of keeping it
+ * is that a file written in this page is found after a reload - which is when the
+ * explorer finds it too.
+ *
+ * A walk that found nothing is not kept: an empty drive and a session that was
+ * not ready when the box asked give the same answer, and only the second of those
+ * is worth retrying.
+ */
+const loadDrive = () =>
+  (driveSource ??= walkDrivePaths(listFolder).then((files) => {
+    if (!files.length) driveSource = null
+
+    return files
+  }))
+
 /** No list but the ones this screen searches is loaded; see `searchScope`. */
-const empty: Sources = { docs: [], operations: [], apps: [] }
+const empty: Sources = { docs: [], operations: [], apps: [], files: [] }
 
 const Results = ({
   hits,
@@ -122,9 +170,10 @@ const Results = ({
  * One search box, answering for the screen it is on.
  *
  * On the documentation it searches the documentation, on the API explorer the
- * operations, and on the apps screen the published apps - see `searchScope`. The
- * dashboard, studio and settings have nothing of their own to search, so there it
- * keeps answering both build-time lists, which is what it always did.
+ * operations, on the apps screen the published apps, and in Studio the files on
+ * the drive - see `searchScope`. The dashboard and settings have nothing of their
+ * own to search, so there it keeps answering both build-time lists, which is what
+ * it always did.
  *
  * Two shapes of the same search: a field in the bar on a screen with room for it,
  * and a magnifier that opens a dialog where there is not. Both take `Ctrl+K` (or
@@ -136,9 +185,11 @@ const Search = () => {
   const appContext = useContext(AppContext)
   // An app is only searchable for a caller the listing would answer: without the
   // grant the screen shows the built-in tiles instead, and `searchScope` keeps the
-  // both-lists box rather than promising a list it may not read.
+  // both-lists box rather than promising a list it may not read. The drive is the
+  // same on the grant the explorer reads folders with.
   const canListApps = appContext.isAuthorizedFor(APP_STREAM_ROUTE)
-  const scope = searchScope(pathname, canListApps)
+  const canListDrive = appContext.isAuthorizedFor(FILE_TREE_ROUTE)
+  const scope = searchScope(pathname, canListApps, canListDrive)
 
   const [query, setQuery] = useState('')
   const [sources, setSources] = useState<Sources>(empty)
@@ -160,11 +211,14 @@ const Search = () => {
       scope === 'docs' || scope === 'all' ? loadDocs() : [],
       scope === 'api' || scope === 'all' ? loadOperations() : [],
       // only ever 'apps' when the grant is held: see `searchScope`
-      scope === 'apps' ? loadApps() : []
-    ]).then(([docs, operations, apps]) => {
+      scope === 'apps' ? loadApps() : [],
+      // the drive is a walk, so the box says "Searching…" for its duration
+      // rather than offering half a drive to search
+      scope === 'drive' ? loadDrive() : []
+    ]).then(([docs, operations, apps, files]) => {
       if (!live) return
 
-      setSources({ docs, operations, apps })
+      setSources({ docs, operations, apps, files })
       setSearched(true)
     })
 

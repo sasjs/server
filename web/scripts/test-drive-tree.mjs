@@ -26,6 +26,7 @@ const {
   parentPathOf,
   withRootPath
 } = await import('../src/utils/driveTree.ts')
+const { walkDrivePaths } = await import('../src/utils/driveWalk.ts')
 
 const node = (name, relativePath, isFolder, children = [], extra = {}) => ({
   name,
@@ -38,6 +39,17 @@ const node = (name, relativePath, isFolder, children = [], extra = {}) => ({
 let checks = 0
 const check = (label, fn) => {
   fn()
+  checks++
+  console.log('ok -', label)
+}
+
+/**
+ * The same check, for a piece of work that has to be awaited: the walk is async,
+ * so its assertions run in a promise and a bare `check` would have moved on
+ * before they did.
+ */
+const checkAsync = async (label, fn) => {
+  await fn()
   checks++
   console.log('ok -', label)
 }
@@ -243,5 +255,131 @@ assert.deepEqual(
   [ROOT_PATH, '/a', '/a/b', '/a/b/c'],
   'a trailing slash is not a level'
 )
+
+/*
+ * A drive search needs every file on the drive, and the API answers one folder at
+ * a time - so the list is a walk. These pin what the walk reaches, what it does
+ * with a folder it cannot read, and that it asks each folder once: the three
+ * things a search would get wrong silently, as an empty result set.
+ */
+
+const treeOf = (levels) => async (folderPath) =>
+  levels[folderPath] === undefined
+    ? null
+    : node(folderPath || 'files', folderPath, true, levels[folderPath])
+
+await checkAsync('walkDrivePaths reaches every file in the tree', async () => {
+  const files = await walkDrivePaths(
+    treeOf({
+      '': [
+        node('top.sas', '/top.sas', false),
+        node('a', '/a', true),
+        node('b', '/b', true)
+      ],
+      '/a': [node('a.sas', '/a/a.sas', false), node('deep', '/a/deep', true)],
+      '/a/deep': [node('deeper.sas', '/a/deep/deeper.sas', false)],
+      '/b': [node('b.sas', '/b/b.sas', false)]
+    })
+  )
+
+  assert.deepEqual(files.sort(), [
+    '/a/a.sas',
+    '/a/deep/deeper.sas',
+    '/b/b.sas',
+    '/top.sas'
+  ])
+})
+
+await checkAsync('walkDrivePaths starts at the drive root', async () => {
+  const asked = []
+  await walkDrivePaths(async (folderPath) => {
+    asked.push(folderPath)
+    return node('files', folderPath, true, [])
+  })
+
+  assert.deepEqual(asked, [ROOT_PATH])
+})
+
+await checkAsync('walkDrivePaths loses only the branch a refusal covers', async () => {
+  const files = await walkDrivePaths(
+    treeOf({
+      '': [node('open', '/open', true), node('closed', '/closed', true)],
+      '/open': [node('open.sas', '/open/open.sas', false)]
+      // '/closed' is absent: the reader answers null, as a refused folder does
+    })
+  )
+
+  assert.deepEqual(files, ['/open/open.sas'])
+})
+
+await checkAsync('walkDrivePaths survives a reader that throws', async () => {
+  const files = await walkDrivePaths(async (folderPath) => {
+    if (folderPath === '/boom') throw new Error('403')
+
+    return treeOf({
+      '': [node('boom', '/boom', true), node('ok', '/ok', true)],
+      '/ok': [node('ok.sas', '/ok/ok.sas', false)]
+    })(folderPath)
+  })
+
+  assert.deepEqual(files, ['/ok/ok.sas'])
+})
+
+await checkAsync('walkDrivePaths asks each folder once', async () => {
+  const asked = []
+  // a level that names its own parent: a symlink, or a drive that answered for
+  // the wrong folder - the walk must stop rather than loop
+  const walk = walkDrivePaths(async (folderPath) => {
+    asked.push(folderPath)
+
+    // a tick between folders, so a walk that loops can still be interrupted by
+    // the clock below rather than starving the event loop it needs
+    await new Promise((resolve) => setImmediate(resolve))
+
+    return node('files', folderPath, true, [
+      node('itself', folderPath === '' ? '/a' : folderPath, true)
+    ])
+  })
+
+  // raced against a clock so that a walk which loops FAILS instead of hanging the
+  // suite: the failure being guarded against is a search that never answers. The
+  // clock is cleared on the way out, or a resolved walk would leave it to reject
+  // into nothing a second later.
+  let clock
+  const timeout = new Promise((_, reject) => {
+    clock = setTimeout(() => reject(new Error('the walk did not finish')), 1000)
+  })
+
+  try {
+    await Promise.race([walk, timeout])
+  } finally {
+    clearTimeout(clock)
+  }
+
+  assert.deepEqual(asked, [ROOT_PATH, '/a'])
+})
+
+await checkAsync('walkDrivePaths reads the drive a few folders at a time', async () => {
+  let inFlight = 0
+  let most = 0
+
+  const levels = { '': [] }
+  for (let index = 0; index < 12; index++) {
+    levels[''].push(node(`f${index}`, `/f${index}`, true))
+    levels[`/f${index}`] = []
+  }
+
+  await walkDrivePaths(async (folderPath) => {
+    inFlight++
+    most = Math.max(most, inFlight)
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    inFlight--
+
+    return treeOf(levels)(folderPath)
+  }, 3)
+
+  assert.ok(most <= 3, `asked ${most} folders at once`)
+  assert.ok(most > 1, 'the walk is not one request at a time')
+})
 
 console.log(`\n${checks} checks passed`)
