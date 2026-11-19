@@ -369,6 +369,95 @@ try {
     'scope changes and late drive response do not contaminate docs, API or apps'
   )
 
+  // --- the dashboard searches everything -------------------------------------
+  await navigate(1200)
+  await evaluate('searchHarness.navigate("/")')
+  await until(
+    `!!document.querySelector('input[aria-label="Search the documentation, the API, the apps and the drive"]')`,
+    'dashboard scope'
+  )
+  const dash =
+    'input[aria-label="Search the documentation, the API, the apps and the drive"]'
+  assert.equal(
+    await evaluate(
+      `document.querySelector(${JSON.stringify(dash)}).placeholder`
+    ),
+    'Search everything',
+    'the dashboard says what it searches'
+  )
+  assert.equal(await walkCount(), 0, 'the dashboard must not walk on entry')
+  await type(dash, 'o')
+  await pause(150)
+  assert.equal(
+    await walkCount(),
+    0,
+    'a single character must not walk from the dashboard'
+  )
+  await evaluate('searchHarness.setHold(true)')
+  await type(dash, 'rders')
+  await until(
+    '(searchHarness.requests.filter(x => x.startsWith("/SASjsApi/drive/fileTree:")).length === 1)',
+    'the dashboard walks on a real query'
+  )
+  // The lists already loaded answer while the drive is still being read: a
+  // search of everything does not hold three answers behind its slowest
+  await until(
+    'document.body.textContent.includes("Orders docs")',
+    'docs answer before the walk'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("orders app")'),
+    true,
+    'apps answer before the walk'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("GET /orders")'),
+    true,
+    'the API answers before the walk'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("orders.sas")'),
+    false,
+    'no file is claimed before the drive has been read'
+  )
+  await evaluate('searchHarness.setHold(false); searchHarness.release()')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'the file appears when the walk answers'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("Orders docs")'),
+    true,
+    'the walk must not blank what was already shown'
+  )
+  assert.equal(await walkCount(), 1, 'the dashboard walks once for the query')
+  await evaluate('searchHarness.setAllowed(false)')
+  await until(
+    `!!document.querySelector('input[aria-label="Search the documentation and the API"]')`,
+    'dashboard without the grants'
+  )
+  await type(
+    'input[aria-label="Search the documentation and the API"]',
+    'orders'
+  )
+  await until(
+    'document.body.textContent.includes("Orders docs")',
+    'grant-less dashboard answers the lists it may read'
+  )
+  assert.equal(
+    await walkCount(),
+    1,
+    'a caller without the drive grant cannot start a walk'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("orders.sas")'),
+    false,
+    'a caller without the drive grant sees no file'
+  )
+  console.log(
+    'dashboard: one query answers from docs, API, apps and the drive, and only as far as the grants allow'
+  )
+
   await navigate(1200)
   await evaluate('searchHarness.setFail(true)')
   await type(desktop, 'ord')
