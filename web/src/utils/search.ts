@@ -111,9 +111,6 @@ const isScreen = (pathname: string, root: string): boolean =>
  * screens, but a path under one of those is the same screen as its root. Settings
  * has nothing of its own to search, so there the box keeps answering the
  * documentation and the API, which is what it did before it learned to narrow.
- * The dashboard has no subject of its own either, but it is asked a different
- * question - where is the thing - so it answers from everything the caller may
- * read; see the last paragraph.
  *
  * More than one scope needs to know more than the path:
  *
