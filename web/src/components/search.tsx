@@ -334,14 +334,14 @@ const Search = () => {
         setSearched(true)
       })
       .catch(() => {
-        // `walkDrivePaths` answers null for a folder it cannot read, so a
-        // rejection here means the walk itself broke. Left unhandled it would
-        // keep the box saying "Searching…" for ever and surface as an unhandled
-        // rejection; instead the walk is forgotten (so a later screen may try
-        // again) and the lists already on screen stay.
+        // `walkDrivePaths` answers null for a folder it cannot read, so this
+        // branch is only reached if the walk itself throws. Left unhandled it
+        // would keep the box saying "Searching…" for ever and surface as an
+        // unhandled rejection; instead the walk is forgotten - not marked as
+        // walked - so the next query tries again, as a drive-only screen does,
+        // and the lists already on screen stay.
         if (!live || driveCache.current !== cache) return
 
-        cache.walked = true
         cache.promise = null
         setWalking(false)
         setLoadedScope(scope)
