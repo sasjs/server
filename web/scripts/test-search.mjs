@@ -8,6 +8,10 @@
  * asserted directly rather than through a rendered box - see the note at the end
  * for why the component is not source-matched here.
  *
+ * The dashboard is the one screen that answers from all four lists, so its rule
+ * is asserted here too: only for a caller holding both grants, with each kind
+ * getting a turn so the longest list cannot answer for all of them.
+ *
  * Run with `npm run test:search`.
  */
 import { registerHooks } from 'node:module'
@@ -62,14 +66,22 @@ check('logon', searchScope('/logon'), 'all')
 // the same screen, as it is for the docs.
 check('studio', searchScope('/studio'), 'drive')
 check('studio, old address', searchScope('/SASjsStudio'), 'drive')
-check('studio, old address, trailing slash', searchScope('/SASjsStudio/'), 'drive')
+check(
+  'studio, old address, trailing slash',
+  searchScope('/SASjsStudio/'),
+  'drive'
+)
 check('a path under studio', searchScope('/studio/anything'), 'drive')
 
 // A caller who cannot read the drive's folders is shown the refusal the route
 // gives - there is no listing to walk - so the box must not promise a search of
 // a drive it cannot see. It answers both lists, as every screen without a list
 // of its own does.
-check('studio without the drive grant', searchScope('/studio', true, false), 'all')
+check(
+  'studio without the drive grant',
+  searchScope('/studio', true, false),
+  'all'
+)
 check(
   'studio, old address, without the drive grant',
   searchScope('/SASjsStudio', true, false),
@@ -93,16 +105,30 @@ check(
 check('docs with the grant', searchScope('/docs', true), 'docs')
 check('api without the grant', searchScope('/api', false), 'api')
 
-// the screens with nothing of their own keep the old, both-lists behaviour
-check('dashboard', searchScope('/'), 'all')
+// the screens with nothing of their own keep the old, both-lists behaviour, and
+// the dashboard - the one screen whose question is "where is it" - answers from
+// everything it may read
+check('dashboard', searchScope('/'), 'everything')
 check('settings', searchScope('/settings'), 'all')
+
+// the dashboard's promise is only as wide as its grants: a caller who cannot
+// read the listing, or the drive, is offered the both-lists search rather than a
+// scope whose results would not arrive
+check('dashboard without the apps grant', searchScope('/', false), 'all')
+check('dashboard without the drive grant', searchScope('/', true, false), 'all')
+check('dashboard with both grants', searchScope('/', true, true), 'everything')
+// the dashboards of the other spellings of a screen are untouched: /apps and
+// /studio are still their own screens whatever the grants
+check('apps is not the dashboard', searchScope('/apps'), 'apps')
+check('studio is not the dashboard', searchScope('/studio'), 'drive')
 
 // the promise the field makes, per screen
 check('docs hint', searchHint('docs'), 'Search the docs')
 check('api hint', searchHint('api'), 'Search the API')
 check('apps hint', searchHint('apps'), 'Search apps')
 check('drive hint', searchHint('drive'), 'Search the drive')
-check('dashboard hint', searchHint('all'), 'Search docs and API')
+check('dashboard hint', searchHint('everything'), 'Search everything')
+check('settings hint', searchHint('all'), 'Search docs and API')
 
 // --- what each scope answers from ---------------------------------------------
 
@@ -216,20 +242,120 @@ check(
   kinds(matches('drive', 'settings', deployed)),
   ''
 )
-// a word the drive carries: the dashboard still answers only from its two lists
-// a dashboard that started offering files would be answering a question nobody
-// on the dashboard asked
+// a word the drive carries: the settings screen keeps the both-lists search, and
+// a screen that started offering files would be answering a question nobody on
+// it asked
 check(
-  'the dashboard does not search the drive',
+  'the settings screen does not search the drive',
   kinds(matches('all', 'orders', deployed)),
   ''
 )
 
 const everything = matches('all', 'frontend', deployed)
 check(
-  'dashboard mixes the two lists',
+  'the both-lists screen mixes the two lists',
   [...new Set(everything.map((hit) => hit.kind))].sort().join(','),
   'api,docs'
+)
+
+// --- the dashboard searches everything ---------------------------------------
+
+// the word "orders" is in a docs page, an operation, an app and a file: all four
+// answer on the dashboard
+const wide = {
+  docs: [{ location: 'orders/', title: 'Orders docs', text: '' }],
+  operations: [{ method: 'GET', path: '/orders', summary: 'list orders' }],
+  apps: [
+    {
+      id: 'o1',
+      name: 'orders app',
+      appLoc: null,
+      logo: null,
+      url: '/app/o1/',
+      publishedAt: null
+    }
+  ],
+  files: ['/reports/orders.sas']
+}
+check(
+  'the dashboard answers from all four lists',
+  kinds(matches('everything', 'orders', wide)),
+  'docs,api,app,file'
+)
+check(
+  'the drive is searched from the dashboard',
+  kinds(matches('everything', 'orders', deployed)),
+  'file'
+)
+check(
+  'apps are searched from the dashboard',
+  kinds(matches('everything', 'mario', deployed)),
+  'app'
+)
+
+// The docs index is the longest list by far, so a plain rank-and-truncate would
+// let it fill every slot. Each kind gets a turn first: a query the pages answer
+// twenty times and one app answers once still shows the app.
+const flooded = {
+  ...deployed,
+  docs: Array.from({ length: 30 }, (_, index) => ({
+    location: `app-${index}/`,
+    title: `Application ${index}`,
+    text: 'app'
+  })),
+  apps: [
+    {
+      id: 'a1',
+      name: 'app',
+      appLoc: null,
+      logo: null,
+      url: '/app/a1/',
+      publishedAt: null
+    }
+  ]
+}
+const mixed = matches('everything', 'app', flooded)
+check('a long list cannot fill every slot', mixed.length, LIMIT)
+check(
+  'every kind gets a turn',
+  [...new Set(mixed.map((hit) => hit.kind))].sort().join(','),
+  'app,docs'
+)
+check(
+  'the one app appears before the pages run out',
+  mixed.findIndex((hit) => hit.kind === 'app') < 4,
+  true
+)
+
+// a query only one kind answers still fills the list from that kind alone
+const manyDocs = matches('everything', 'app', {
+  ...deployed,
+  docs: flooded.docs,
+  apps: [],
+  operations: [],
+  files: []
+})
+check('one kind still fills the list', manyDocs.length, LIMIT)
+check('and it is that kind', kinds(manyDocs), 'docs')
+
+// the result keeps the shape each screen already relies on: an app opens in a
+// tab and a file opens in the editor, whichever list they came from
+const appHit = matches('everything', 'mario', deployed).find(
+  (hit) => hit.kind === 'app'
+)
+check(
+  'an app result from the dashboard opens in a tab',
+  appHit?.href,
+  '/app/mario/'
+)
+check('an app result has no route', appHit?.to, undefined)
+const fileHit = matches('everything', 'orders', deployed).find(
+  (hit) => hit.kind === 'file'
+)
+check(
+  'a file result from the dashboard opens in the editor',
+  fileHit?.to,
+  '/studio?filePath=%2FPublic%2Fdemo%2Forders.csv'
 )
 
 // --- apps are matched on what the registry actually holds ---------------------
@@ -318,7 +444,10 @@ check(
 check('one character asks nothing', matches('drive', 'o', sources).length, 0)
 
 // a long answer is truncated here too
-const manyFiles = Array.from({ length: 30 }, (_, index) => `/many/file${index}.sas`)
+const manyFiles = Array.from(
+  { length: 30 },
+  (_, index) => `/many/file${index}.sas`
+)
 check(
   'file limit',
   matches('drive', 'file', { ...sources, files: manyFiles }).length,
@@ -368,23 +497,18 @@ check(
   LIMIT
 )
 
-// The box itself is not asserted here, and nothing else in the tree asserts it
-// either: it renders JSX, node cannot evaluate that, and this repository has no
-// web rendering suite. Matching its source text instead pins spellings rather
-// than behaviour - a rename, or inlining `searchHint(scope)` in the placeholder,
-// would fail the suite while the search went on working - so those assertions
-// were removed rather than kept as a false comfort.
+// The box itself is not asserted in this file: it renders JSX, node cannot
+// evaluate that, and matching its source text pins spellings rather than
+// behaviour - a rename, or inlining `searchHint(scope)` in the placeholder,
+// would fail the suite while the search went on working. The rendered box has
+// its own suite; see the note at the end.
 //
 // What the component decides is the scope, and that is the pure function above.
-// That the field then follows it - the placeholder and accessible name per
-// screen, the list consulted, the destination of a hit - was verified by hand in
-// a browser against a site built from this branch (placeholder "Search the docs"
-// on /docs, "Search the API" on /api, "Search apps" on /apps and /SASjsApps,
-// "Search docs and API" elsewhere; a docs-only term returning nothing on /api
-// and the Settings page on /docs; an app result opening /app/<name>/ in a new
-// tab). That is a record of a check made while writing this, not a test: if the
-// component's wiring needs a standing guard, it needs a rendering suite this
-// repository does not have yet.
+// Everything the field then does with it - the placeholder and accessible name
+// per screen, which lists it asks for, when the drive walk starts, what a result
+// opens - is asserted in `test-search-browser.mjs`, which renders the component
+// in Chromium with only its network mocked. This file is the rule; that one is
+// the wiring.
 
 if (failures.length) {
   console.error(`FAILED (${failures.length})`)
@@ -392,4 +516,6 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('search: scoped to the screen, apps and drive files searched by their own fields')
+console.log(
+  'search: scoped to the screen, everything on the dashboard, apps and drive files searched by their own fields'
+)

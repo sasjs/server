@@ -20,8 +20,14 @@
  */
 import { appHref } from './appUrl'
 
-/** The screens with something of their own to search. */
-export type Scope = 'docs' | 'api' | 'apps' | 'drive' | 'all'
+/**
+ * The screens with something of their own to search.
+ *
+ * `all` is the two build-time lists and `everything` is those plus the apps
+ * listing and the drive - the dashboard's answer, for the reader who has just
+ * signed in and does not yet know which screen holds what they want.
+ */
+export type Scope = 'docs' | 'api' | 'apps' | 'drive' | 'all' | 'everything'
 
 /** One entry of the index MkDocs writes for its own search. */
 export interface DocsEntry {
@@ -102,12 +108,11 @@ const isScreen = (pathname: string, root: string): boolean =>
  * The screen a path belongs to.
  *
  * The docs are a subtree - `/docs/guides/settings/` - and the others are single
- * screens, but a path under one of those is the same screen as its root. The
- * dashboard and settings have nothing of their own to search, so there the box
- * keeps answering the documentation and the API, which is what it did before it
- * learned to narrow.
+ * screens, but a path under one of those is the same screen as its root. Settings
+ * has nothing of its own to search, so there the box keeps answering the
+ * documentation and the API, which is what it did before it learned to narrow.
  *
- * Two scopes need to know more than the path:
+ * More than one scope needs to know more than the path:
  *
  * The apps listing is refused to a caller without the App Stream grant, and the
  * screen answers that caller with the built-in tiles instead. A box that still
@@ -117,6 +122,12 @@ const isScreen = (pathname: string, root: string): boolean =>
  * its own gives. The drive is the same story on a different grant: its files are
  * read one folder at a time, through the route the explorer itself uses, and a
  * caller who cannot read that route has no drive to search.
+ *
+ * The dashboard is the one screen that answers from all four lists, because it
+ * is the one screen whose question is "where is the thing I want" rather than
+ * "on this screen". Only a caller holding both grants gets that scope: for
+ * anyone else it falls back to the both-lists search, which cannot promise a
+ * listing the caller may not read.
  */
 export const searchScope = (
   pathname: string,
@@ -129,6 +140,7 @@ export const searchScope = (
     return 'apps'
   if (canListDrive && STUDIO_PATHS.some((path) => isScreen(pathname, path)))
     return 'drive'
+  if (pathname === '/' && canListApps && canListDrive) return 'everything'
 
   return 'all'
 }
@@ -145,6 +157,7 @@ export const searchHint = (scope: Scope): string => {
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search apps'
   if (scope === 'drive') return 'Search the drive'
+  if (scope === 'everything') return 'Search everything'
 
   return 'Search docs and API'
 }
@@ -155,6 +168,8 @@ export const searchLabel = (scope: Scope): string => {
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search the apps'
   if (scope === 'drive') return 'Search the drive'
+  if (scope === 'everything')
+    return 'Search the documentation, the API, the apps and the drive'
 
   return 'Search the documentation and the API'
 }
@@ -293,12 +308,58 @@ interface Ranked {
 }
 
 /**
+ * How many kinds a mixed search has to give a turn to, in the order it gives it.
+ *
+ * The order is the one a reader is most likely to mean: the pages that explain a
+ * thing, then the calls that do it, then the app that already does it, then the
+ * file they wrote themselves.
+ */
+const KIND_ORDER: Hit['kind'][] = ['docs', 'api', 'app', 'file']
+
+/**
+ * How many results one kind gets before the others take their turn. Three rounds
+ * of four kinds fills the twelve a mixed search shows, so a kind that has three
+ * matches is always visible however many pages share the word.
+ */
+const PER_KIND = Math.ceil(LIMIT / KIND_ORDER.length)
+
+/**
+ * A mixed answer, one result per kind in turn, then whatever room is left.
+ *
+ * Without the turns, the longest list wins every slot - and the documentation
+ * index is by far the longest. With them, "app" shows the Apps page, the App
+ * Stream calls, the app called app and the file called app.sas, and a query only
+ * one kind matches still fills the list from that kind alone.
+ */
+const everyKind = (ranked: Ranked[]): Ranked[] => {
+  const lists = KIND_ORDER.map((kind) =>
+    ranked.filter((entry) => entry.hit.kind === kind)
+  )
+  const chosen: Ranked[] = []
+
+  for (let round = 0; round < PER_KIND && chosen.length < LIMIT; round++)
+    for (const list of lists)
+      if (list[round] && chosen.length < LIMIT) chosen.push(list[round])
+
+  for (const entry of ranked)
+    if (chosen.length < LIMIT && !chosen.includes(entry)) chosen.push(entry)
+
+  return chosen
+}
+
+/**
  * The results for a query, in the order worth reading.
  *
  * Only the lists this screen searches are consulted, so a query on `/docs` cannot
  * return an operation and a query on `/apps` cannot return a page. Below two
  * characters nothing is asked: one letter matches most of the index, and a list
  * that long is slower to read than typing another letter is.
+ *
+ * A mixed search needs one rule more. The documentation index alone holds more
+ * entries than a result list has room for, so a query like "app" would fill every
+ * slot with pages and leave the app of that name out - a search that says it
+ * covers everything and answers from one list. `everyKind` gives each kind a turn
+ * first and fills what is left afterwards.
  */
 export const matches = (
   scope: Scope,
@@ -311,18 +372,22 @@ export const matches = (
 
   const hits: Ranked[] = []
 
-  if (scope === 'docs' || scope === 'all') docHits(needle, sources.docs, hits)
-  if (scope === 'api' || scope === 'all')
+  if (scope === 'docs' || scope === 'all' || scope === 'everything')
+    docHits(needle, sources.docs, hits)
+  if (scope === 'api' || scope === 'all' || scope === 'everything')
     operationHits(needle, sources.operations, hits)
-  if (scope === 'apps') appHits(needle, sources.apps, hits)
-  if (scope === 'drive') fileHits(needle, sources.files, hits)
+  if (scope === 'apps' || scope === 'everything')
+    appHits(needle, sources.apps, hits)
+  if (scope === 'drive' || scope === 'everything')
+    fileHits(needle, sources.files, hits)
 
-  return hits
-    .sort(
-      (first, second) =>
-        second.rank - first.rank ||
-        first.hit.title.localeCompare(second.hit.title)
-    )
-    .slice(0, LIMIT)
-    .map((entry) => entry.hit)
+  const ranked = hits.sort(
+    (first, second) =>
+      second.rank - first.rank ||
+      first.hit.title.localeCompare(second.hit.title)
+  )
+
+  return (
+    scope === 'everything' ? everyKind(ranked) : ranked.slice(0, LIMIT)
+  ).map((entry) => entry.hit)
 }

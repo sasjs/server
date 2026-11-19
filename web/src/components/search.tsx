@@ -149,9 +149,11 @@ const Results = ({
  *
  * On the documentation it searches the documentation, on the API explorer the
  * operations, on the apps screen the published apps, and in Studio the files on
- * the drive - see `searchScope`. The dashboard and settings have nothing of their
- * own to search, so there it keeps answering both build-time lists, which is what
- * it always did.
+ * the drive - see `searchScope`. The dashboard has no subject of its own, so it
+ * answers from all four: the reader who has just signed in is asking where a
+ * thing is, not which screen holds it. Settings keeps the both-lists search,
+ * because a setting is a screen of this application and the docs and the API are
+ * what explain it.
  *
  * Two shapes of the same search: a field in the bar on a screen with room for it,
  * and a magnifier that opens a dialog where there is not. Both take `Ctrl+K` (or
@@ -174,6 +176,11 @@ const Search = () => {
   const [queryContext, setQueryContext] = useState<object | null>(null)
   const [sources, setSources] = useState<Sources>(empty)
   const [searched, setSearched] = useState(false)
+  // Whether the drive walk a query started is still out. The lists a screen
+  // loads on entry answer on the next tick, but the walk is one request per
+  // folder, and "nothing matches" while it is still reading the drive would be
+  // the one answer a search of everything must not give early.
+  const [walking, setWalking] = useState(false)
   const [loadedScope, setLoadedScope] = useState(scope)
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [open, setOpen] = useState(false)
@@ -186,6 +193,19 @@ const Search = () => {
     username: string
     allowed: boolean
     promise: Promise<string[]> | null
+    /**
+     * The files the walk found, kept here rather than only in state. The two
+     * effects below race - a small drive can answer before the apps listing does -
+     * and a screen that loads its lists second must not blank files that are
+     * still this caller's answer.
+     */
+    files?: string[]
+    /**
+     * Whether this caller's drive has been read once already, empty or not. A
+     * drive with no files leaves no `promise` to reuse, and without this a mixed
+     * screen would walk it again on every keystroke.
+     */
+    walked?: boolean
   } | null>(null)
   if (
     !driveCache.current ||
@@ -227,42 +247,32 @@ const Search = () => {
     setQueryContext(cache)
   }, [scope, cache])
 
-  // Build-time indexes and the apps listing remain warm on entry. The drive is
-  // different: it takes one request per folder, so start only on a real query.
-  // Observe the query itself so changing it retries an empty walk; the cache
-  // shares an in-flight or successful walk across keystrokes.
+  // What the screen answers without being asked. The two build-time indexes are
+  // module-cached and the apps listing is one request, so this settles on the
+  // next tick and every screen opens with its list already in hand.
   useEffect(() => {
     let live = true
 
     setSearched(false)
-    if (scope === 'drive' && !asked) return
+    setWalking(false)
 
-    const loadDrive = () => {
-      if (!cache.promise) {
-        const walk = walkDrivePaths((folder) =>
-          authenticated.current && driveCache.current === cache
-            ? listFolder(folder)
-            : Promise.resolve(null)
-        ).then((files) => {
-          // Empty can mean the session was not ready; allow a later retry.
-          if (!files.length && cache.promise === walk) cache.promise = null
-          return files
-        })
-        cache.promise = walk
-      }
-      return cache.promise
-    }
+    // A drive-only screen has nothing to warm: its one source is the walk, which
+    // the effect below starts on a real query.
+    if (scope === 'drive') return
 
     Promise.all([
-      scope === 'docs' || scope === 'all' ? loadDocs() : [],
-      scope === 'api' || scope === 'all' ? loadOperations() : [],
-      scope === 'apps' ? loadApps() : [],
-      scope === 'drive' ? loadDrive() : []
-    ]).then(([docs, operations, apps, files]) => {
+      scope === 'docs' || scope === 'all' || scope === 'everything'
+        ? loadDocs()
+        : [],
+      scope === 'api' || scope === 'all' || scope === 'everything'
+        ? loadOperations()
+        : [],
+      scope === 'apps' || scope === 'everything' ? loadApps() : []
+    ]).then(([docs, operations, apps]) => {
       if (!live || driveCache.current !== cache) return
 
       loadedContext.current = cache
-      setSources({ docs, operations, apps, files })
+      setSources({ docs, operations, apps, files: cache.files ?? [] })
       setLoadedScope(scope)
       setSearched(true)
     })
@@ -270,7 +280,78 @@ const Search = () => {
     return () => {
       live = false
     }
-  }, [scope, scope === 'drive' ? currentQuery : '', cache])
+  }, [scope, cache])
+
+  // The drive takes one request per folder, so start only on a real query.
+  //
+  // A drive-only screen observes the query itself, so changing it retries a walk
+  // that came back empty. A mixed screen asks once: `walked` remembers that the
+  // drive has been read whether or not it held anything, because an empty drive
+  // leaves no promise to reuse and following the query there would walk the whole
+  // drive again on every letter.
+  const walkKey =
+    scope === 'drive'
+      ? currentQuery
+      : scope === 'everything' && asked
+        ? cache.promise || cache.walked
+          ? 'answered'
+          : currentQuery
+        : ''
+
+  useEffect(() => {
+    if (!walkKey || !asked) return
+
+    let live = true
+
+    if (!cache.promise) {
+      const walk = walkDrivePaths((folder) =>
+        authenticated.current && driveCache.current === cache
+          ? listFolder(folder)
+          : Promise.resolve(null)
+      ).then((files) => {
+        // Empty can mean the session was not ready; allow a later retry.
+        if (!files.length && cache.promise === walk) cache.promise = null
+        return files
+      })
+      cache.promise = walk
+    }
+
+    setWalking(true)
+
+    // Files are merged into what the screen already shows rather than replacing
+    // it: on the dashboard the docs, the operations and the apps are already on
+    // screen, and a walk that took a second must not blank them while it runs.
+    cache.promise
+      .then((files) => {
+        if (!live || driveCache.current !== cache) return
+
+        loadedContext.current = cache
+        cache.files = files
+        cache.walked = true
+        setWalking(false)
+        setSources((previous) => ({ ...previous, files }))
+        setLoadedScope(scope)
+        setSearched(true)
+      })
+      .catch(() => {
+        // `walkDrivePaths` answers null for a folder it cannot read, so this
+        // branch is only reached if the walk itself throws. Left unhandled it
+        // would keep the box saying "Searching…" for ever and surface as an
+        // unhandled rejection; instead the walk is forgotten - not marked as
+        // walked - so the next query tries again, as a drive-only screen does,
+        // and the lists already on screen stay.
+        if (!live || driveCache.current !== cache) return
+
+        cache.promise = null
+        setWalking(false)
+        setLoadedScope(scope)
+        setSearched(true)
+      })
+
+    return () => {
+      live = false
+    }
+  }, [scope, walkKey, cache])
 
   // Derived, not stored: the results are a function of the query, the screen and
   // what has loaded. Every keystroke asks the same lists, and an answer that
@@ -391,7 +472,9 @@ const Search = () => {
             <Results hits={hits} onChoose={choose} />
           ) : (
             <Typography variant="body2" sx={{ p: 2 }} color="text.secondary">
-              {searched ? `Nothing matches “${query}”.` : 'Searching…'}
+              {searched && !walking
+                ? `Nothing matches “${query}”.`
+                : 'Searching…'}
             </Typography>
           )}
         </Popover>
@@ -420,7 +503,11 @@ const Search = () => {
               <Results hits={hits} onChoose={choose} />
             ) : (
               <Typography variant="body2" color="text.secondary">
-                {!asked ? hint : searched ? 'Nothing matches.' : 'Searching…'}
+                {!asked
+                  ? hint
+                  : searched && !walking
+                    ? 'Nothing matches.'
+                    : 'Searching…'}
               </Typography>
             )}
           </Box>
