@@ -7,12 +7,24 @@
  * failure is not.
  */
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 
-import { run, runWhenTheRegistryIsReady } from './lib.mjs'
+import {
+  demoLoginMeta,
+  demoLogins,
+  readDemoLogins,
+  run,
+  runWhenTheRegistryIsReady
+} from './lib.mjs'
 
 /**
  * A command that fails `failures` times with `message`, then succeeds - and
@@ -140,5 +152,120 @@ test('carries a failing command s output, which is what makes the retry possible
     assert.match(said, /ETARGET/)
   } finally {
     counter.clean()
+  }
+})
+
+/**
+ * The demo's sign-in accounts, from the identity fixture the host ships.
+ *
+ * The failure this guards against is a login screen that advertises an account
+ * the host refuses: a restated list drifts from the fixture, and the demo then
+ * blames the visitor for a password printed on the page.
+ */
+test('lists the accounts the host would accept, and only those', () => {
+  const identity = {
+    format: 1,
+    users: [
+      {
+        uid: 'user-admin',
+        username: 'sasjsadmin',
+        password: 'Orion123',
+        isAdmin: true,
+        isActive: true
+      },
+      {
+        uid: 'user-restricted',
+        username: 'sasjsuser',
+        password: 'Orion123',
+        isAdmin: false,
+        isActive: true
+      },
+      // inactive: the host refuses it however right the password is
+      {
+        uid: 'user-off',
+        username: 'retired',
+        password: 'Orion123',
+        isActive: false
+      },
+      // no password: an SSO account cannot use this form
+      { uid: 'user-sso', username: 'directory-only', isActive: true },
+      // malformed entries are dropped rather than thrown over
+      null,
+      { username: '' }
+    ]
+  }
+
+  assert.deepEqual(demoLogins(identity), [
+    { username: 'sasjsadmin', password: 'Orion123', admin: true },
+    { username: 'sasjsuser', password: 'Orion123', admin: false }
+  ])
+
+  // nothing to list is not a failure: a host with no fixture shows no block
+  assert.deepEqual(demoLogins({}), [])
+  assert.deepEqual(demoLogins(undefined), [])
+})
+
+test('the meta is inert markup, and carries quotes as entities', () => {
+  const tag = demoLoginMeta([
+    { username: 'sasjsadmin', password: 'a"b<c&d', admin: true }
+  ])
+
+  assert.match(tag, /^<meta name="sasjs-demo-login" content="/)
+  // a raw quote would end the attribute and hand the rest of the JSON to the page
+  assert.equal(tag.includes('a"b'), false)
+  assert.match(tag, /&quot;/)
+
+  // what the page reads back is the JSON it was given
+  const content = tag.match(/content="([^"]*)"/)[1]
+  const decoded = content
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+
+  assert.deepEqual(JSON.parse(decoded), [
+    { username: 'sasjsadmin', password: 'a"b<c&d', admin: true }
+  ])
+
+  // no accounts, no tag - the interface's switch is the tag's presence
+  assert.equal(demoLoginMeta([]), '')
+})
+
+/**
+ * A build with no identity fixture must fail, not publish a site whose login
+ * screen offers no way in.
+ *
+ * The fixture is written by the pinned CLI, so its absence means that CLI stopped
+ * writing one - the same class as a missing API console, which this build already
+ * refuses to publish.
+ */
+test('refuses to build without the identity fixture, and reads it when it is there', () => {
+  const folder = path.join(os.tmpdir(), `mock-identity-${process.pid}`)
+  const fixture = path.join(folder, 'identity.json')
+
+  mkdirSync(folder, { recursive: true })
+
+  try {
+    assert.throws(
+      () => readDemoLogins(fixture, '8.0.4'),
+      /no identity fixture.*8\.0\.4/s
+    )
+
+    writeFileSync(
+      fixture,
+      JSON.stringify({
+        users: [
+          { username: 'sasjsadmin', password: 'Orion123', isAdmin: true },
+          { username: 'sasjsuser', password: 'Orion123', isAdmin: false }
+        ]
+      })
+    )
+
+    assert.deepEqual(readDemoLogins(fixture, '8.0.4'), [
+      { username: 'sasjsadmin', password: 'Orion123', admin: true },
+      { username: 'sasjsuser', password: 'Orion123', admin: false }
+    ])
+  } finally {
+    rmSync(folder, { recursive: true, force: true })
   }
 })

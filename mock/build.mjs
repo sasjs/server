@@ -29,7 +29,12 @@ import {
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-import { run as runInShell, runWhenTheRegistryIsReady } from './lib.mjs'
+import {
+  demoLoginMeta,
+  readDemoLogins,
+  run as runInShell,
+  runWhenTheRegistryIsReady
+} from './lib.mjs'
 import { withCodeSources, withServerSeededFiles } from './driveSeed.mjs'
 import {
   fetchPack,
@@ -385,15 +390,44 @@ if (!existsSync(consolePage))
 // any depth: the shell's asset references are relative, so from /docs/settings/
 // `host/boot.js` would be requested as /docs/settings/host/boot.js and the app
 // would never start. The root copy is left alone - it is already at the root.
-const shell = readFileSync(index, 'utf8').replace(
-  '<head>',
-  '<head><base href="/" />'
+//
+// Both copies also carry the demo's sign-in accounts (see `readDemoLogins` in
+// `lib.mjs`): a visitor arriving at the login screen has no directory to be in,
+// so the credentials are part of the demo rather than something to hunt for. The
+// interface shows the block only where that meta is present, which is why the
+// published page - and not the web bundle - is where it belongs.
+const identityPath = path.join(site, 'host', 'identity.json')
+
+// The fixture is what the login screen lists, so a build without it publishes a
+// site that offers no way in - and one CI would stay green about. Same judgement
+// as the API console above: an artefact this build depends on is missing.
+const demoMeta = demoLoginMeta(readDemoLogins(identityPath, CLI_VERSION))
+
+const withDemoLogins = (html) => {
+  if (!demoMeta) return html
+
+  if (!html.includes('<head>'))
+    throw new Error(
+      `Could not add the demo's sign-in accounts to ${index} - the shell has no <head>`
+    )
+
+  return html.replace('<head>', `<head>${demoMeta}`)
+}
+
+const source = readFileSync(index, 'utf8')
+const shell = withDemoLogins(
+  source.replace('<head>', '<head><base href="/" />')
 )
 
 if (!shell.includes('<base href="/" />'))
   throw new Error(
     `Could not add a base href to ${index} - the shell has no <head>`
   )
+
+// the root page is what a visitor lands on, and the login screen is where an
+// unauthenticated one is sent: without this copy the hint would be on every
+// route except the one that needs it
+writeFileSync(index, withDemoLogins(source))
 
 writeFileSync(path.join(site, '404.html'), shell)
 
