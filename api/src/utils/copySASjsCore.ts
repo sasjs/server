@@ -1,13 +1,36 @@
+import fs from 'fs'
 import path from 'path'
 import {
   asyncForEach,
-  createFile,
   createFolder,
   deleteFolder,
   readFile
 } from '@sasjs/utils'
 
 import { getMacrosFolder, sasJSCoreMacros, sasJSCoreMacrosInfo } from '.'
+
+/**
+ * Copies the named macros from `source` to `destination`, byte for byte.
+ *
+ * Reading each file as a string and writing it back would replace the bytes of
+ * a macro that is not valid UTF-8 with U+FFFD. The drive copy this produces is
+ * the only copy SAS reads, so that would put the archive checksum - and the
+ * pin behind it - out of reach of what actually runs.
+ */
+export const copyMacrosByteForByte = async (
+  source: string,
+  destination: string,
+  macroNames: string[]
+) => {
+  await asyncForEach(
+    macroNames.filter(Boolean),
+    async (macroName) =>
+      await fs.promises.copyFile(
+        path.join(source, macroName),
+        path.join(destination, macroName)
+      )
+  )
+}
 
 export const copySASjsCore = async () => {
   if (process.env.NODE_ENV === 'test') return
@@ -21,14 +44,11 @@ export const copySASjsCore = async () => {
 
   const macros = await readFile(sasJSCoreMacrosInfo)
 
-  await asyncForEach(macros.split('\n'), async (macroName) => {
-    const macroFileSourcePath = path.join(sasJSCoreMacros, macroName)
-    const macroContent = await readFile(macroFileSourcePath)
-
-    const macroFileDestPath = path.join(macrosDrivePath, macroName)
-
-    await createFile(macroFileDestPath, macroContent)
-  })
+  await copyMacrosByteForByte(
+    sasJSCoreMacros,
+    macrosDrivePath,
+    macros.split('\n')
+  )
 
   process.logger.info('Macros Drive Path:', macrosDrivePath)
 }

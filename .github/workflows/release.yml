@@ -230,9 +230,6 @@ jobs:
           # release a binary is without downloading it again.
           SASJS_SERVER_VERSION: ${{ steps.publish.outputs.tag }}
           SASJS_SERVER_GIT_HASH: ${{ github.sha }}
-          # The api build lists the SAS_PACKAGES macros over the GitHub API,
-          # which rate limits unauthenticated requests per source IP.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The packaged binary is the only artefact this release ships that runs on
       # the small-icu Node `pkg` embeds, and nothing else in CI ever starts one.

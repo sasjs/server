@@ -42,7 +42,7 @@ Be sure to use v16 or above, and to set your environment variables in the releva
 
 SASjs Server is split between an API server (serving REST requests) and a WEB Server (everything else).  These can be run together, or on seperate ports.
 
-The first API start downloads the SAS_PACKAGES macros and caches them in `api/.sasautos-download`; later starts reinstall them from that cache, because every start rebuilds `api/sas/sasautos` from `@sasjs/core`. To refresh the cache - a macro was added or changed upstream - run `npm run downloadMacros -- --force` from `api/`; a build does that automatically before it starts.
+The first API start downloads the SAS_PACKAGES macros and caches them in `api/.sasautos-download`; later starts reinstall them from that cache, because every start rebuilds `api/sas/sasautos` from `@sasjs/core`. To re-fetch the pinned release - to replace a cache that was edited, or to check the download still works - run `npm run downloadMacros -- --force` from `api/`; a build does that automatically before it starts. That does **not** pick up upstream changes: the macros come from a pinned release, so `--force` fetches the same archive again. Moving to a newer upstream tag means editing `SAS_PACKAGES_RELEASE` and `SAS_PACKAGES_RELEASE_SHA256` in `api/scripts/downloadMacros.ts` together, the checksum coming from `sha256sum` of `https://codeload.github.com/yabwon/SAS_PACKAGES/zip/refs/tags/<tag>`; the script fails naming both hashes if only one is updated.
 
 ### NodeJS Dev - Single Port
 

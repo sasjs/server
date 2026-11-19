@@ -140,10 +140,6 @@ jobs:
       - name: Build API
         working-directory: ./api
         run: npm run build
-        env:
-          # The api build lists the SAS_PACKAGES macros over the GitHub API,
-          # which rate limits unauthenticated requests per source IP.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # One target on purpose: this runner can execute only its own platform's
       # binary, so building the others would add minutes and prove nothing.
