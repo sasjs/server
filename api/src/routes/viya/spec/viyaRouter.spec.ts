@@ -326,6 +326,28 @@ describe('an upload over the Viya paths', () => {
   })
 
   /**
+   * A part past the mount's own ceiling is 413, matching the content route's cap,
+   * whether the filter refuses it from Content-Length or multer's limit catches
+   * it. `uploadBytes` is stated for this case: production runs at the parser's
+   * default and no test can send a hundred megabytes.
+   */
+  it('answers an over-cap upload as 413 in the envelope', async () => {
+    const mount = app(() => withExecution('[]', ''), { uploadBytes: 8 })
+
+    const answer = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.alloc(9, 'x'), 'a.txt')
+
+    expect(answer.status).toBe(413)
+    expect(answer.body).toMatchObject({
+      version: 2,
+      httpStatusCode: 413,
+      errorCode: 413
+    })
+    expect(answer.body.message).toMatch(/^File size is over limit/)
+  })
+
+  /**
    * The envelope is not this server's invention: `dispatchViya` renders the same
    * keys for a handler's `ApiError`, and `@sasjs/api` exports no builder for the
    * body. The parser's refusal is built here, so this case is what holds the two
@@ -475,11 +497,11 @@ describe('an upload over the Viya paths', () => {
       .set('Content-Type', 'text/plain')
       .send('123456789')
 
-    expect(pastCap.status).toBe(400)
-    // the cap's refusal carries the same envelope, and the same status, as the
-    // upload route's size refusal: one class of refusal, one number
+    expect(pastCap.status).toBe(413)
+    // 413 is this mount's answer for a body past a ceiling, on this route and on
+    // the upload route alike: one class of refusal, one number
     expect(pastCap.body).toEqual(
-      emulatedRefusal(400, "A file's content must not exceed 8 bytes.")
+      emulatedRefusal(413, "A file's content must not exceed 8 bytes.")
     )
     expect(updates).toEqual(['12345678'])
   })

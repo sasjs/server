@@ -11,7 +11,7 @@
  * number there travels further than a log line.
  */
 import express from 'express'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdtemp, rm, writeFile } from 'fs/promises'
 import http from 'http'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -37,7 +37,7 @@ describe('the upload parser', () => {
   const mount = async (limit: number, answered: number[]) => {
     const { multerSingle } = await import('../multer')
 
-    const writeRefusal: RefusalWriter = (res, status, message) => {
+    const writeRefusal: RefusalWriter = (res, { status, message }) => {
       answered.push(status)
 
       res.status(status).json({ status, message })
@@ -46,12 +46,10 @@ describe('the upload parser', () => {
     const server = express()
 
     server.post('/', (req, res) =>
-      multerSingle(
-        'file',
-        [req, res, () => res.status(201).end()],
-        limit,
+      multerSingle('file', [req, res, () => res.status(201).end()], {
+        fileSize: limit,
         writeRefusal
-      )
+      })
     )
 
     return server
@@ -164,5 +162,32 @@ describe('the upload parser', () => {
     expect(answer.status).toBe(400)
     expect(answer.body.message).toBe('Unexpected file field')
     expect(answered).toEqual([400])
+  })
+
+  /**
+   * A failure that belongs to the server: the destination cannot be written. Its
+   * message can carry an absolute path, so the caller gets a fixed sentence and
+   * the error goes to the log instead.
+   */
+  it('answers a storage failure as a server error, without the path', async () => {
+    const answered: number[] = []
+    const app = await mount(1024, answered)
+
+    // a regular file where the uploads folder belongs, so it cannot be created
+    // (an earlier case in this file left the folder there)
+    await rm(join(root, 'uploads'), { recursive: true, force: true })
+    await writeFile(join(root, 'uploads'), 'x')
+
+    try {
+      const answer = await request(app)
+        .post('/')
+        .attach('file', Buffer.from('x'), 'a.txt')
+
+      expect(answer.status).toBe(500)
+      expect(answer.body.message).toBe('The file could not be stored.')
+      expect(answered).toEqual([500])
+    } finally {
+      await rm(join(root, 'uploads'), { force: true })
+    }
   })
 })
