@@ -23,6 +23,7 @@ import {
   type SasConnection
 } from './connection'
 import { registerSasLanguageServer } from './providers'
+import { isReviewModel } from '../reviewModel'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
 
 /**
@@ -105,7 +106,7 @@ const closeModel = (
 }
 
 const isSasModel = (model: monaco.editor.ITextModel): boolean =>
-  model.getLanguageId() === SAS_LANGUAGE_ID
+  model.getLanguageId() === SAS_LANGUAGE_ID && !isReviewModel(model)
 
 /**
  * Starts the SAS language server and registers its providers.
