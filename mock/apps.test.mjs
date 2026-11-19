@@ -254,7 +254,7 @@ test('refuses an archive with no such member, and one that is not a zip', () => 
   )
 })
 
-test('decodes the file tree, and writes the app under its appLoc', () => {
+test('writes the frontend to apps/<name>, and the backend under its appLoc', () => {
   const files = packFiles(pack, MACRO_DASH)
   const byPath = Object.fromEntries(
     files.map((file) => [file.path, file.contents])
@@ -268,12 +268,12 @@ test('decodes the file tree, and writes the app under its appLoc', () => {
     '/Public/app/macrodash/jobs/scores.sas',
     '/Public/app/macrodash/services/common/configure.js',
     '/Public/app/macrodash/services/common/configure.sas',
-    '/Public/app/macrodash/services/web/index.html',
-    '/Public/app/macrodash/services/web/js/game.js',
-    '/Public/app/macrodash/services/web/macrodash.png',
     '/Public/app/macrodash/tests/jobs/testscores.sas',
     '/Public/app/macrodash/tests/services/rungetdata.sas',
-    '/Public/app/macrodash/tests/testSetup.sas'
+    '/Public/app/macrodash/tests/testSetup.sas',
+    '/apps/macro-dash/index.html',
+    '/apps/macro-dash/js/game.js',
+    '/apps/macro-dash/macrodash.png'
   ])
 
   // the jobs and the tests are programs, so they land as `.sas` like the services -
@@ -308,17 +308,14 @@ test('decodes the file tree, and writes the app under its appLoc', () => {
 
   // base64 in, text on the drive - a page left encoded is a blank app
   assert.equal(
-    byPath['/Public/app/macrodash/services/web/index.html'],
+    byPath['/apps/macro-dash/index.html'],
     '<!doctype html><title>Macro Dash</title>'
   )
-  assert.equal(
-    byPath['/Public/app/macrodash/services/web/js/game.js'],
-    'console.log(1)'
-  )
+  assert.equal(byPath['/apps/macro-dash/js/game.js'], 'console.log(1)')
 
   // and the PNG is a byte entry, marked the way the runtime reads
   assert.equal(
-    byPath['/Public/app/macrodash/services/web/macrodash.png'],
+    byPath['/apps/macro-dash/macrodash.png'],
     '\u0000base64:iVBORw0KGgo='
   )
 })
@@ -429,12 +426,13 @@ test('a pack laid out at the root publishes its jobs and tests once', () => {
 
   const paths = packFiles(rootLayout, MACRO_DASH).map((file) => file.path)
 
-  // the web folder keeps its `services/web` address even at the root - that is the
-  // path the App Stream serves - and each job and test appears exactly once
+  // the frontend lands at `apps/<name>` wherever the pack put its web folder -
+  // that is the folder a v8 publish uploads and the App Stream serves - and each
+  // job and test appears exactly once
   assert.deepEqual(paths.sort(), [
     '/Public/app/rooty/jobs/nightly.sas',
-    '/Public/app/rooty/services/web/index.html',
-    '/Public/app/rooty/tests/testSetup.sas'
+    '/Public/app/rooty/tests/testSetup.sas',
+    '/apps/macro-dash/index.html'
   ])
 })
 
@@ -543,17 +541,21 @@ test('a file member with no code is refused, while an empty one is a blank file'
   assert.equal(file.contents, '')
 })
 
-test('the index carries the registration a deploy would have written', () => {
+test('the index carries the registration a frontend publish would have written', () => {
   const entry = appEntry(pack, MACRO_DASH, '2026-11-11T00:00:00.000Z')
 
   assert.deepEqual(entry, {
     id: MACRO_DASH.id,
     name: MACRO_DASH.name,
     appLoc: '/Public/app/macrodash',
-    streamWebFolder: 'web',
     logo: 'macrodash.png',
     publishedAt: '2026-11-11T00:00:00.000Z'
   })
+
+  // a `streamWebFolder` is the older shape's way of saying where a frontend sits
+  // inside a backend folder: an entry carrying one keeps the app out of `apps/`,
+  // and `@sasjs/api` reads the folder from the name only when it is absent
+  assert.equal('streamWebFolder' in entry, false)
 })
 
 test('the snapshot keeps the files the site already shipped, and gains the app', () => {
@@ -581,9 +583,7 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
     snapshot.files['/sasjs/drive/files/Public/demo/orders.csv']
   )
   assert.equal(
-    published.files[
-      '/sasjs/drive/files/Public/app/macrodash/services/web/index.html'
-    ],
+    published.files['/sasjs/drive/files/apps/macro-dash/index.html'],
     '<!doctype html><title>Macro Dash</title>'
   )
   assert.equal(index.length, 1)
@@ -591,9 +591,7 @@ test('the snapshot keeps the files the site already shipped, and gains the app',
 
   // the input is not mutated: the build writes one snapshot from one read
   assert.equal(
-    snapshot.files[
-      '/sasjs/drive/files/Public/app/macrodash/services/web/index.html'
-    ],
+    snapshot.files['/sasjs/drive/files/apps/macro-dash/index.html'],
     undefined
   )
 })
@@ -707,7 +705,7 @@ test('a data file beside a program travels with it, so the program can read it',
     '/Public/app/minimal-seed-app/services/common/getdata.js',
     '/Public/app/minimal-seed-app/services/common/getdata.sas',
     '/Public/app/minimal-seed-app/services/common/springs.json',
-    '/Public/app/minimal-seed-app/services/web/index.html'
+    '/apps/minimal-seed-app/index.html'
   ])
 
   assert.equal(
@@ -819,8 +817,8 @@ test('the React seed app publishes its JS services, dataset and bundle', () => {
     '/Public/app/react-seed-app/services/common/springs.json',
     '/Public/app/react-seed-app/services/files/upload.js',
     '/Public/app/react-seed-app/services/files/upload.sas',
-    '/Public/app/react-seed-app/services/web/index.bundle.js',
-    '/Public/app/react-seed-app/services/web/index.html'
+    '/apps/react-seed-app/index.bundle.js',
+    '/apps/react-seed-app/index.html'
   ])
 
   assert.equal(
@@ -926,8 +924,8 @@ test('the Angular seed app publishes its JS services and bundle', () => {
     '/Public/app/angular-seed-app/services/common/springs.json',
     '/Public/app/angular-seed-app/services/files/upload.js',
     '/Public/app/angular-seed-app/services/files/upload.sas',
-    '/Public/app/angular-seed-app/services/web/index.html',
-    '/Public/app/angular-seed-app/services/web/main-K4JT6XUZ.js'
+    '/apps/angular-seed-app/index.html',
+    '/apps/angular-seed-app/main-K4JT6XUZ.js'
   ])
 
   assert.equal(
@@ -1048,9 +1046,7 @@ test('every app is published into one index, and each keeps its own files', () =
 
   // each app's files are on the drive, and none overwrote another
   assert.equal(
-    published.files[
-      '/sasjs/drive/files/Public/app/macrodash/services/web/index.html'
-    ],
+    published.files['/sasjs/drive/files/apps/macro-dash/index.html'],
     '<!doctype html><title>Macro Dash</title>'
   )
   assert.equal(
@@ -1060,9 +1056,7 @@ test('every app is published into one index, and each keeps its own files', () =
     '[{"AREA":"x"}]'
   )
   assert.equal(
-    published.files[
-      '/sasjs/drive/files/Public/app/react-seed-app/services/web/index.bundle.js'
-    ],
+    published.files['/sasjs/drive/files/apps/react-seed-app/index.bundle.js'],
     'console.log("bundle")'
   )
 })

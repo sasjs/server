@@ -20,15 +20,32 @@
  *
  * Two paths, both on the drive, per app:
  *
- *   - the app's files, at `<appLoc>/services/<streamWebFolder>/...`, because that
- *     is where `@sasjs/api`'s App Stream looks for an app's assets;
+ *   - the app's frontend, at `apps/<name>`: since the CLI's 8.0 a bundle's
+ *     frontend is uploaded separately from its backend and lands in that one
+ *     reserved folder, so it is where `@sasjs/api` serves the app from and where a
+ *     reader who opens Studio expects to find it - the `apps` folder at the root
+ *     of the drive, with the app's own `index.html` inside it. Seeding an app any
+ *     other way leaves the demo with no `apps` folder at all, and a visitor with
+ *     nowhere to look but a service folder;
  *   - the index, at `/.sasjs/apps.json` (`APP_STREAM_INDEX` in `@sasjs/api`),
  *     which is the register the browser host reads a listing from.
+ *
+ * The backend - the services, jobs and tests the app calls and ships - stays where
+ * a deploy puts it, at `<appLoc>/services/...`, because that is the folder the
+ * app's own programs name when they run.
  *
  * The site's drive snapshot is a whole drive, so every app goes into the same file
  * the build already ships - see `withPublishedApps`.
  */
 import { inflateRawSync } from 'node:zlib'
+
+/**
+ * Where `@sasjs/api` keeps a published app's frontend: one reserved drive folder,
+ * `APP_FOLDERS_ROOT` in that package, and the folder an app is named after inside
+ * it (`frontendFolderOf`). Drive-relative, so the snapshot's keys carry the drive
+ * root in front of it - see `DRIVE_ROOT` below.
+ */
+const APP_FOLDERS_ROOT = 'apps'
 
 /**
  * An app this site publishes, as the release that carries it.
@@ -378,9 +395,12 @@ const folderNamed = (node, name) =>
  * content is base64.
  *
  * Three sets of files come out of the tree, because a browser host needs the first
- * two to run the app and a reader browsing it in Studio wants the third:
+ * two to run the app and a reader browsing it in Studio wants all three:
  *
- *   - the streamed web folder, which the App Stream serves as the app itself;
+ *   - the streamed web folder, which becomes the app's FRONTEND: its contents are
+ *     what `apps/<name>` holds, the folder the App Stream serves and the one the
+ *     Studio tree shows at the root of the drive. It is the `web/` folder of the
+ *     deployment, which is what a v8 `sasjs app publish` uploads on its own;
  *   - every file beside it under `services/`, which is what the host runs and what
  *     a program reads while it runs. A JS program (`services/common/getdata.js`) is
  *     written by a pack built for a server that can run JS - the `server` target of
@@ -398,7 +418,9 @@ const folderNamed = (node, name) =>
  *     most apps have no jobs, and half have no tests.
  *
  * The pack's `sasjs.app.json` is NOT put on the drive. It is the deploy's manifest
- * rather than a program, so it would add a file to the tree a reader has to skip.
+ * rather than a program, so it would add a file to the tree a reader has to skip -
+ * and this build already knows the two facts it states, because the descriptor
+ * names the app and the pack names the backend.
  *
  * The `.sas` services are `service` members rather than files, and they ARE put on
  * the drive, as `<name>.sas` beside the JavaScript twin of the same name. This host
@@ -418,7 +440,7 @@ export const packFiles = (pack, app) => {
 
   const appLoc = pack.appLoc.replace(/\/+$/, '')
   const files = []
-  const webFolder = `${appLoc}/services/${pack.streamWebFolder}`
+  const frontendFolder = `/${APP_FOLDERS_ROOT}/${app.name}`
 
   const entryFor = (bytes) => {
     if (!isText(bytes))
@@ -444,7 +466,7 @@ export const packFiles = (pack, app) => {
       if (member.type !== 'file') continue
 
       files.push({
-        path: `${webFolder}${name}`,
+        path: `${frontendFolder}${name}`,
         ...entryFor(decodeCode(member))
       })
     }
@@ -542,17 +564,25 @@ export const packFiles = (pack, app) => {
 /**
  * The registry entry a deploy of this app would have written.
  *
- * The fields are `@sasjs/api`'s `AppStreamEntry`: the id addresses the app, the
- * name labels the tile, the appLoc and folder are where its files are read from,
- * and the logo is a file inside the app itself - the surface builds its URL from
- * the app's own, so a path that is not in the deployment is a broken image
- * rather than a 404 at publish time.
+ * The fields are `@sasjs/api`'s `AppStreamEntry`. An app is its frontend, so the
+ * entry says where the frontend is by NOT saying it: a frontend lives at
+ * `apps/<name>`, and the surface derives the folder from the name (`appRootOf`).
+ * A `streamWebFolder` is the older shape's way of stating a location inside a
+ * backend folder, and writing one here would keep the demo's apps where they used
+ * to be - buried in `services/`, with no `apps` folder for anyone to open.
+ *
+ * `appLoc` stays, because it is what the app's own programs run against: the
+ * backend's folder, which several apps may share, and metadata rather than where
+ * the frontend is stored.
+ *
+ * The logo is a file inside the app itself - the surface builds its URL from the
+ * app's own, so a path that is not in the deployment is a broken image rather than
+ * a 404 at publish time.
  */
 export const appEntry = (pack, app, publishedAt) => ({
   id: app.id,
   name: app.name,
   appLoc: pack.appLoc,
-  streamWebFolder: pack.streamWebFolder,
   ...(pack.streamLogo ? { logo: pack.streamLogo } : {}),
   publishedAt
 })
