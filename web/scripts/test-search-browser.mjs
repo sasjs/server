@@ -82,10 +82,22 @@ try {
     { stdio: ['ignore', 'ignore', 'pipe'] }
   )
   const port = await waitForDevTools(browser)
-  const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json()
-  socket = new WebSocket(
-    targets.find((target) => target.type === 'page').webSocketDebuggerUrl
-  )
+  // The port is listening before the page target exists: the browser writes its
+  // debugging address as it starts, and `about:blank` becomes a page a moment
+  // later. Reading the target list once raced that and failed the job with a
+  // TypeError on an empty list, so wait for the page this test drives.
+  const pageTarget = async () => {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const targets = await (
+        await fetch(`http://127.0.0.1:${port}/json`)
+      ).json()
+      const page = targets.find((target) => target.type === 'page')
+      if (page) return page
+      await pause(100)
+    }
+    throw new Error('the DevTools endpoint served no page target')
+  }
+  socket = new WebSocket((await pageTarget()).webSocketDebuggerUrl)
   await new Promise((resolve, reject) => {
     socket.onopen = resolve
     socket.onerror = reject
