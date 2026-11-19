@@ -108,7 +108,13 @@ export const multerSingle = (
 
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
-      return writeRefusal(res, 500, err.message)
+      // A part past `limits.fileSize` is the same refusal the filter gives an
+      // upload whose Content-Length says so - it is the caller's file that is too
+      // large, not the server failing, so 500 was the wrong answer. Every other
+      // MulterError keeps multer's own status.
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 400 : 500
+
+      return writeRefusal(res, status, err.message)
     } else if (err) {
       return writeRefusal(res, 400, err.message)
     }
