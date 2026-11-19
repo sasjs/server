@@ -13,7 +13,7 @@ import {
   authorize,
   csrfProtection
 } from '../middlewares'
-import { createViyaRouter, viyaGuard } from './viya'
+import { createViyaRouter, viyaEmulatedHeaders, viyaGuard } from './viya'
 import { isViyaEmulationEnabled, viyaServices } from './viya/services'
 import {
   API_PREFIX,
@@ -139,6 +139,10 @@ export const setupRoutes = (app: Express) => {
       // signed in - and never guards the estate's own login
       // the guard rewrites `req.url` to the API path the Viya path stands for,
       // so the same permission rules decide a job submission and a file write
+      // the header first, so the guard's own refusal carries it: decision 5 of
+      // sasjs/server#665 asks that a refusal say what answered it, and a 401 from
+      // the guard is the one answer that never reaches the router
+      viyaEmulatedHeaders,
       viyaGuard(authenticateAccessToken, authorize),
       createViyaRouter(viyaServices)
     )

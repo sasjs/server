@@ -218,6 +218,13 @@ describe('a Viya client against the emulated estate', () => {
 
     expect(answer.status).toBe(200)
 
+    // Decision 5: the token port's answer is marked like every other answer from
+    // the mount. It is answered by this server rather than by the emulator, which
+    // is exactly why it used to be the exception, and a client that keys on this
+    // header to know it is talking to an emulated estate would have had one answer
+    // telling it otherwise.
+    expect(answer.headers.get('x-sasjs-emulated')).toMatch(/^viya@/)
+
     return (await answer.json()) as TokenPair
   }
 

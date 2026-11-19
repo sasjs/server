@@ -25,7 +25,7 @@
 import express from 'express'
 import { readFile } from 'fs/promises'
 import { deleteFile } from '@sasjs/utils'
-import { dispatchViya } from '@sasjs/api'
+import { dispatchViya, emulatedHeaders } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
 import { oauthToken, TOKEN_PATH } from './token'
@@ -191,6 +191,37 @@ export const isViyaPath = (path: string): boolean =>
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   )
 
+/**
+ * Whether a request is the one the server answers under `/SASLogon`.
+ *
+ * The predicate lives beside `isViyaPath` because two callers need the same
+ * answer: the router, which hands the request to the token port, and the header
+ * the mount sets before anything can refuse it.
+ */
+export const isTokenRequest = (req: express.Request): boolean =>
+  req.method === 'POST' && req.path === TOKEN_PATH
+
+/**
+ * Mark the answer as an emulated estate.
+ *
+ * Exported for the host that mounts this router: the guard in front of it can
+ * refuse a caller with a 401, and decision 5 asks that refusals say what answered
+ * them too. Stamping at the router covers everything that reaches the router;
+ * exporting this covers the answer that does not.
+ */
+export const viyaEmulatedHeaders = (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  if (isViyaPath(req.path) || isTokenRequest(req))
+    Object.entries(emulatedHeaders()).forEach(([name, value]) =>
+      res.setHeader(name, String(value))
+    )
+
+  next()
+}
+
 /** What the router may be told about the host it is mounted on. */
 export interface ViyaRouterOptions {
   /**
@@ -211,13 +242,28 @@ export const createViyaRouter = (
   router.use(async (req, res, next) => {
     // the token port is this server's, not the emulator's: the credential in the
     // request is a sasjs/server account, which the emulator has no view of
-    if (req.method === 'POST' && req.path === TOKEN_PATH)
-      return oauthToken(req, res)
+    const answersToken = isTokenRequest(req)
 
     // everything else under `/SASLogon` is the web router's - login, authorize,
     // logout - so the emulator never sees a sign-in path. It carries no operation
     // for one, and a client that cannot sign in cannot reach the code grant
-    if (!isViyaPath(req.path)) return next()
+    if (!answersToken && !isViyaPath(req.path)) return next()
+
+    // Every answer this mount gives says the estate is emulated - decision 5 of
+    // sasjs/server#665, which asks for it on "every response ... including
+    // refusals and 404s".
+    //
+    // Stamped after the test above, so a request this mount passes on is left
+    // untouched for whichever router answers it, and before the token branch
+    // below, which returns early: that early return is exactly how the token port
+    // came to be the one answer without the header. The emulator stamps its own
+    // answers too, so most responses carry a header set twice to the same value -
+    // cheaper than a promise with an exception in it.
+    Object.entries(emulatedHeaders()).forEach(([name, value]) =>
+      res.setHeader(name, String(value))
+    )
+
+    if (answersToken) return oauthToken(req, res)
 
     // the emulator answers `POST /files/files` from the multipart part, and this
     // is the parser the rest of the server uses for one. Imported here rather
