@@ -108,12 +108,14 @@ const isScreen = (pathname: string, root: string): boolean =>
  * The screen a path belongs to.
  *
  * The docs are a subtree - `/docs/guides/settings/` - and the others are single
- * screens, but a path under one of those is the same screen as its root. The
- * dashboard and settings have nothing of their own to search, so there the box
- * keeps answering the documentation and the API, which is what it did before it
- * learned to narrow.
+ * screens, but a path under one of those is the same screen as its root. Settings
+ * has nothing of its own to search, so there the box keeps answering the
+ * documentation and the API, which is what it did before it learned to narrow.
+ * The dashboard has no subject of its own either, but it is asked a different
+ * question - where is the thing - so it answers from everything the caller may
+ * read; see the last paragraph.
  *
- * Two scopes need to know more than the path:
+ * More than one scope needs to know more than the path:
  *
  * The apps listing is refused to a caller without the App Stream grant, and the
  * screen answers that caller with the built-in tiles instead. A box that still

@@ -106,7 +106,7 @@ SASjs Server is MIT open source. The repository is [sasjs/server on GitHub](http
 
 The search box in the header answers for the screen you are on: the pages on `/docs`, the operations on `/api`, the published apps on `/apps`, the drive's files in Studio. On the dashboard it searches all four at once, so a reader who has just signed in can find a thing without knowing which screen holds it. `Ctrl+K` puts the cursor in the box.
 
-Four lists take turns in the results, so a word the documentation mentions a hundred times cannot push out the app of that name. What the box offers matches what the caller may read: a caller without the App Stream grant is not offered apps, and one who may not read the drive is not offered files.
+Four lists take turns in the results, so a word the documentation mentions a hundred times cannot push out the app of that name. Searching everything from the dashboard needs both the App Stream and the drive grants; a caller holding only one of them (or neither) is offered the two build-time lists instead, so the box never promises a listing the caller may not read.
 
 The drive is read the same way here as in Studio - one folder at a time, on the first query of the page session - so the pages, operations and apps that are already loaded are shown while it runs, and the box says it is searching until the walk has finished. Like Studio's search, the list of files is kept until the page is reloaded.
 </div>
