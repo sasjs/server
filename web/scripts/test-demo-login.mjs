@@ -62,6 +62,44 @@ check(
 
 check('the attribute name', DEMO_LOGIN_META, 'sasjs-demo-login')
 
+/*
+ * The two halves, joined.
+ *
+ * The build writes the tag and the interface reads it, and each declares the
+ * attribute name - the bundle cannot import the build's module, so the name is
+ * the contract between them. A rename on one side would leave every check above
+ * green and quietly remove the block from the published page, so the contract is
+ * asserted here: the build's constant, and the build's own tag read back by the
+ * interface's parser.
+ */
+const { DEMO_LOGIN_META: BUILD_META, demoLoginMeta } =
+  await import('../../mock/lib.mjs')
+
+check(
+  'the build and the interface agree on the attribute',
+  DEMO_LOGIN_META,
+  BUILD_META
+)
+
+/** The attribute decoding a browser applies, for the four characters the build escapes. */
+const decodeAttribute = (value) =>
+  value
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+
+const tag = demoLoginMeta([
+  { username: 'sasjsadmin', password: 'Orion123', admin: true }
+])
+const content = /content="([^"]*)"/.exec(tag)?.[1]
+
+check(
+  'the tag the build writes is the list the interface reads',
+  parseDemoLogins(decodeAttribute(content ?? '')),
+  [{ username: 'sasjsadmin', password: 'Orion123', admin: true }]
+)
+
 if (failures.length) {
   console.error('FAILED:\n' + failures.join('\n'))
   process.exit(1)
