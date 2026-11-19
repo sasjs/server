@@ -1,5 +1,5 @@
 import path from 'path'
-import { Request } from 'express'
+import { Request, Response } from 'express'
 import multer, { FileFilterCallback, Options } from 'multer'
 import { blockFileRegex, getUploadsFolder } from '../utils'
 
@@ -63,6 +63,24 @@ const fileFilterFor =
 /** One multer instance per ceiling, built on first use. */
 const instances = new Map<number, ReturnType<typeof multer>>()
 
+/**
+ * How a refusal is written to the caller.
+ *
+ * The drive API answers a plain-text message, and its clients read that text, so
+ * plain text is the default. A host that answers an envelope - the emulated Viya
+ * mount - passes its own writer, so the parser's refusal travels in the same
+ * shape as every other answer that host gives.
+ */
+export type RefusalWriter = (
+  res: Response,
+  status: number,
+  message: string
+) => void
+
+const plainText: RefusalWriter = (res, status, message) => {
+  res.status(status).send(message)
+}
+
 const instanceFor = (fileSize: number) => {
   const existing = instances.get(fileSize)
 
@@ -82,16 +100,17 @@ const instanceFor = (fileSize: number) => {
 export const multerSingle = (
   fileName: string,
   arg: any,
-  fileSize = UPLOAD_LIMIT_BYTES
+  fileSize = UPLOAD_LIMIT_BYTES,
+  writeRefusal: RefusalWriter = plainText
 ) => {
   const [req, res, next] = arg
   const upload = instanceFor(fileSize).single(fileName)
 
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
-      return res.status(500).send(err.message)
+      return writeRefusal(res, 500, err.message)
     } else if (err) {
-      return res.status(400).send(err.message)
+      return writeRefusal(res, 400, err.message)
     }
     // Everything went fine.
     next()

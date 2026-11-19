@@ -297,6 +297,33 @@ describe('an upload over the Viya paths', () => {
   })
 
   /**
+   * A part the upload filter refuses - an extension the drive blocks - is
+   * answered before the emulator sees the request. Every other answer this mount
+   * gives is JSON, so the refusal travels in the same envelope a handler's
+   * refusal does; the parser's plain-text body was the one bare string a client
+   * parsing these answers could meet.
+   */
+  it("answers the parser's refusal in the emulator's envelope", async () => {
+    const mount = app(() => withExecution('[]', ''))
+
+    const answer = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.from('MZ'), 'program.exe')
+
+    // the drive's refusal, in the shape `dispatchViya` answers one with
+    expect(answer.status).toBe(400)
+    expect(answer.headers['content-type']).toMatch(/json/)
+    expect(answer.body).toEqual({
+      version: 2,
+      httpStatusCode: 400,
+      errorCode: 400,
+      message: 'Invalid file extension'
+    })
+    // a refusal is still the emulator's answer, and decision 5 stamps those too
+    expect(answer.headers['x-sasjs-emulated']).toMatch(/^viya@/)
+  })
+
+  /**
    * `updateFileContent` in `@sasjs/adapter` puts the new content on the wire as
    * the body itself, with the file's own content type, and `express.json` leaves
    * that body unread - so the mount has to hand the emulator the bytes. Without

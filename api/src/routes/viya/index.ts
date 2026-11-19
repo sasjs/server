@@ -121,6 +121,22 @@ export const ruleFor = (path: string): string | undefined => {
 }
 
 /**
+ * The body a refusal is answered with, in the emulator's shape.
+ *
+ * `dispatchViya` answers a refusal from a handler with this envelope (its
+ * `isApiError` arm), and every other answer this mount gives is JSON. A part the
+ * upload filter refuses is answered before the emulator sees the request, so it
+ * is refused here in the same shape rather than in the drive API's plain text: a
+ * client parsing these answers sees one form everywhere.
+ */
+const emulatedRefusal = (status: number, message: string) => ({
+  version: 2,
+  httpStatusCode: status,
+  errorCode: status,
+  message
+})
+
+/**
  * The part a multipart request carried, in the shape the emulator reads.
  *
  * `multerSingle` puts the part on disk and describes it; the emulator wants the
@@ -279,11 +295,19 @@ export const createViyaRouter = (
         res.once('finish', () => resolve())
         res.once('close', () => resolve())
 
-        multerSingle('file', [req, res, () => resolve()])
+        // the drive API reads a refusal as plain text; this mount answers an
+        // envelope, so a client parsing these answers does not meet a bare string
+        // on the one path an upload can fail before the emulator sees it
+        multerSingle(
+          'file',
+          [req, res, () => resolve()],
+          undefined,
+          (response, status, message) =>
+            response.status(status).json(emulatedRefusal(status, message))
+        )
       })
 
-      // a refusal is already answered, in the parser's plain text; nothing below
-      // should write a second response
+      // a refusal is already answered; nothing below should write a second response
       if (res.headersSent) return
     }
 
