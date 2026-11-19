@@ -53,19 +53,19 @@ export const isViyaEmulationEnabled = (): boolean =>
  * the one that catches an operator whose logs are the only evidence of which
  * mode produced a result.
  *
- * The token port is named separately and is not called emulated, because it is
- * not: the emulator holds no account to check a credential against, so
- * `routes/viya/index.ts` answers `/SASLogon/oauth/token` from this server's own
- * accounts and registered clients, and that answer carries no
- * `x-sasjs-emulated` header. A notice that claimed otherwise would be the
- * overstatement decision 5 exists to prevent.
+ * The token port is named, and named honestly: the emulator holds no account to
+ * check a credential against, so `routes/viya/index.ts` answers
+ * `/SASLogon/oauth/token` from this server's own accounts and registered clients.
+ * Its answers are still this server standing in for Viya, so they carry the same
+ * `x-sasjs-emulated` header as the rest - stamped by the mount, which is the only
+ * place that can promise it on every answer including an early return.
  *
  * It answers `undefined` when the estate is off, so a host prints nothing at all
  * rather than a line announcing that a mode is not in force.
  */
 export const viyaEmulationNotice = (): string | undefined =>
   isViyaEmulationEnabled()
-    ? `Viya emulation is ON (EMULATE_VIYA): /identities, /folders, /files, /types and /compute are answered as an emulated Viya ${VIYA_TARGET_VERSION}, while /SASLogon/oauth/token is answered by this server's own accounts. This is not a Viya deployment - answers are for development and testing only, and none is authoritative for a real estate.`
+    ? `Viya emulation is ON (EMULATE_VIYA): /identities, /folders, /files, /types, /compute and /SASLogon/oauth/token are answered as an emulated Viya ${VIYA_TARGET_VERSION}, the token port from this server's own accounts. Every answer says so in x-sasjs-emulated. This is not a Viya deployment - answers are for development and testing only, and none is authoritative for a real estate.`
     : undefined
 
 /** The address clients reach this server at, which is the estate's seed. */

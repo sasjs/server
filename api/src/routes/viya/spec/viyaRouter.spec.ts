@@ -80,6 +80,18 @@ describe('the Viya mount', () => {
     expect(answer.body.items[0].name).toBeTruthy()
   })
 
+  // The other side of the same rule: a request this mount passes on must not be
+  // marked, or every answer the server gives in emulated mode would claim to come
+  // from an emulated estate
+  it('leaves a path it does not answer unmarked', async () => {
+    const answer = await request(app(() => withExecution('[]', ''))).get(
+      '/SASjsApi/info'
+    )
+
+    expect(answer.status).toBe(418)
+    expect(answer.headers['x-sasjs-emulated']).toBeUndefined()
+  })
+
   it('leaves everything else to the server own routes', async () => {
     const answer = await request(app(() => withExecution('[]', ''))).get(
       '/SASjsApi/info'

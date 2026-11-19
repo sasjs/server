@@ -67,20 +67,26 @@ describe('the startup notice for the emulated estate', () => {
     expect(viyaEmulationNotice()).toMatch(/not a Viya deployment/)
   })
 
-  // The token port is the one Viya path this server answers itself: the emulator
-  // holds no account to check a credential against, so `/SASLogon/oauth/token` is
-  // answered from this server's own accounts and carries no `x-sasjs-emulated`
-  // header. A notice that listed it among the emulated paths would be exactly the
-  // overstatement decision 5 exists to prevent.
-  it('names the token port as this server own, not as emulated', () => {
+  // The token port is the one Viya path this server answers itself, and an
+  // operator reading the log needs both halves: it is part of the emulated estate
+  // (so it is in the list, and its answers carry the header like the rest), and
+  // the accounts it checks are this server's, not an estate's - which is the
+  // difference that bites someone who expects their Viya password to work.
+  it('names the token port, and says whose accounts it checks', () => {
     process.env.EMULATE_VIYA = 'true'
 
     const notice = viyaEmulationNotice() as string
 
-    expect(notice).toContain(
-      "/SASLogon/oauth/token is answered by this server's own accounts"
-    )
-    expect(notice).not.toMatch(/\/SASLogon[\s\S]*are answered as an emulated/)
+    expect(notice).toContain('/SASLogon/oauth/token')
+    expect(notice).toContain("the token port from this server's own accounts")
+  })
+
+  // The header is the machine-readable half of the same statement, and the notice
+  // says so rather than leaving an operator to find the docs for it.
+  it('names the header that marks every answer', () => {
+    process.env.EMULATE_VIYA = 'true'
+
+    expect(viyaEmulationNotice()).toContain('x-sasjs-emulated')
   })
 
   // The notice is one log line. A multi-line message splits the one statement an
