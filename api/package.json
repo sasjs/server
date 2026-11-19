@@ -56,8 +56,8 @@
   "author": "4GL Ltd",
   "dependencies": {
     "@sasjs/adapter": "6.1.1",
-    "@sasjs/api": "0.44.4",
-    "@sasjs/core": "6.1.2",
+    "@sasjs/api": "0.46.0",
+    "@sasjs/core": "7.1.15",
     "@sasjs/lint": "5.5.7",
     "@sasjs/sas-language": "0.7.3",
     "@sasjs/utils": "4.13.2",

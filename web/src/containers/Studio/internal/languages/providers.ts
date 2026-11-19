@@ -10,6 +10,7 @@ import type * as monaco from 'monaco-editor'
 
 import type { MessageConnection, SemanticTokensLegend } from './connection'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
+import { isReviewModel } from '../reviewModel'
 
 /** Positions: monaco is 1-based, the protocol is 0-based. */
 type ProtocolPosition = { line: number; character: number }
@@ -329,6 +330,7 @@ export const registerSasLanguageServer = (
 
   monacoApi.languages.registerCompletionItemProvider(SAS_LANGUAGE_ID, {
     provideCompletionItems: (model, position) => {
+      if (isReviewModel(model)) return null
       const word = model.getWordUntilPosition(position)
 
       // The range covers the word already typed, so accepting a suggestion
@@ -347,31 +349,40 @@ export const registerSasLanguageServer = (
   })
 
   monacoApi.languages.registerHoverProvider(SAS_LANGUAGE_ID, {
-    provideHover: (model, position) => provideHover(connection, model, position)
+    provideHover: (model, position) =>
+      isReviewModel(model) ? null : provideHover(connection, model, position)
   })
 
   monacoApi.languages.registerDocumentSymbolProvider(SAS_LANGUAGE_ID, {
-    provideDocumentSymbols: (model) => provideDocumentSymbols(connection, model)
+    provideDocumentSymbols: (model) =>
+      isReviewModel(model) ? null : provideDocumentSymbols(connection, model)
   })
 
   monacoApi.languages.registerSignatureHelpProvider(SAS_LANGUAGE_ID, {
     provideSignatureHelp: (model, position) =>
-      provideSignatureHelp(connection, model, position)
+      isReviewModel(model)
+        ? null
+        : provideSignatureHelp(connection, model, position)
   })
 
   monacoApi.languages.registerFoldingRangeProvider(SAS_LANGUAGE_ID, {
-    provideFoldingRanges: (model) => provideFoldingRanges(connection, model)
+    provideFoldingRanges: (model) =>
+      isReviewModel(model) ? null : provideFoldingRanges(connection, model)
   })
 
   monacoApi.languages.registerDocumentFormattingEditProvider(SAS_LANGUAGE_ID, {
     provideDocumentFormattingEdits: (model, options) =>
-      provideDocumentFormattingEdits(connection, model, options)
+      isReviewModel(model)
+        ? null
+        : provideDocumentFormattingEdits(connection, model, options)
   })
 
   monacoApi.languages.registerDocumentSemanticTokensProvider(SAS_LANGUAGE_ID, {
     getLegend: () => legend,
     provideDocumentSemanticTokens: (model) =>
-      provideDocumentSemanticTokens(connection, model),
+      isReviewModel(model)
+        ? null
+        : provideDocumentSemanticTokens(connection, model),
     releaseDocumentSemanticTokens: () => undefined
   })
 }

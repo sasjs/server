@@ -25,7 +25,7 @@
 import express from 'express'
 import { readFile } from 'fs/promises'
 import { deleteFile } from '@sasjs/utils'
-import { dispatchViya } from '@sasjs/api'
+import { dispatchViya, emulatedHeaders } from '@sasjs/api'
 import type { Services, ViyaResponse } from '@sasjs/api'
 
 import { oauthToken, TOKEN_PATH } from './token'
@@ -121,6 +121,28 @@ export const ruleFor = (path: string): string | undefined => {
 }
 
 /**
+ * The body a refusal is answered with, in the emulator's shape.
+ *
+ * `dispatchViya` answers a refusal from a handler with this envelope (its
+ * `isApiError` arm), and every other answer this mount gives is JSON. A part the
+ * upload filter refuses, and content past the cap, are answered before the
+ * emulator sees the request, so they are refused here in the same shape rather
+ * than in the drive API's plain text: a client parsing these answers sees one
+ * form everywhere.
+ *
+ * `@sasjs/api` exports no builder for that body, so this is a second definition
+ * of it. `viyaRouter.spec.ts` compares it with the dispatcher's own answer for a
+ * handler's refusal, which is what makes a change to the library's shape fail a
+ * test here instead of answering two forms on one mount.
+ */
+export const emulatedRefusal = (status: number, message: string) => ({
+  version: 2,
+  httpStatusCode: status,
+  errorCode: status,
+  message
+})
+
+/**
  * The part a multipart request carried, in the shape the emulator reads.
  *
  * `multerSingle` puts the part on disk and describes it; the emulator wants the
@@ -155,8 +177,9 @@ const uploadOf = async (
  * being buffered for someone who turns out to have no grant.
  *
  * `express.raw` refuses past its limit with `entity.too.large`, which is answered
- * here as the mount's own 413: the app's error handler turns everything else into
- * a 500.
+ * here as the mount's own 413 in the estate's envelope: the app's error handler
+ * turns everything else into a 500, and 413 is the status this mount gives a body
+ * past a ceiling, so the upload route's size refusals answer it too.
  */
 const contentOf = async (
   req: express.Request,
@@ -174,9 +197,14 @@ const contentOf = async (
     )
   } catch (error) {
     if ((error as { type?: string })?.type === 'entity.too.large')
-      res.status(413).json({
-        message: `A file's content must not exceed ${limit} bytes.`
-      })
+      res
+        .status(413)
+        .json(
+          emulatedRefusal(
+            413,
+            `A file's content must not exceed ${limit} bytes.`
+          )
+        )
     else throw error
 
     return undefined
@@ -191,6 +219,37 @@ export const isViyaPath = (path: string): boolean =>
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   )
 
+/**
+ * Whether a request is the one the server answers under `/SASLogon`.
+ *
+ * The predicate lives beside `isViyaPath` because two callers need the same
+ * answer: the router, which hands the request to the token port, and the header
+ * the mount sets before anything can refuse it.
+ */
+export const isTokenRequest = (req: express.Request): boolean =>
+  req.method === 'POST' && req.path === TOKEN_PATH
+
+/**
+ * Mark the answer as an emulated estate.
+ *
+ * Exported for the host that mounts this router: the guard in front of it can
+ * refuse a caller with a 401, and decision 5 asks that refusals say what answered
+ * them too. Stamping at the router covers everything that reaches the router;
+ * exporting this covers the answer that does not.
+ */
+export const viyaEmulatedHeaders = (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  if (isViyaPath(req.path) || isTokenRequest(req))
+    Object.entries(emulatedHeaders()).forEach(([name, value]) =>
+      res.setHeader(name, String(value))
+    )
+
+  next()
+}
+
 /** What the router may be told about the host it is mounted on. */
 export interface ViyaRouterOptions {
   /**
@@ -199,6 +258,11 @@ export interface ViyaRouterOptions {
    * cap production runs with.
    */
   contentBytes?: number
+  /**
+   * The largest file an upload may carry, stated for the same reason: a case
+   * measures the mount's refusal without sending a hundred megabytes.
+   */
+  uploadBytes?: number
 }
 
 export const createViyaRouter = (
@@ -211,13 +275,28 @@ export const createViyaRouter = (
   router.use(async (req, res, next) => {
     // the token port is this server's, not the emulator's: the credential in the
     // request is a sasjs/server account, which the emulator has no view of
-    if (req.method === 'POST' && req.path === TOKEN_PATH)
-      return oauthToken(req, res)
+    const answersToken = isTokenRequest(req)
 
     // everything else under `/SASLogon` is the web router's - login, authorize,
     // logout - so the emulator never sees a sign-in path. It carries no operation
     // for one, and a client that cannot sign in cannot reach the code grant
-    if (!isViyaPath(req.path)) return next()
+    if (!answersToken && !isViyaPath(req.path)) return next()
+
+    // Every answer this mount gives says the estate is emulated - decision 5 of
+    // sasjs/server#665, which asks for it on "every response ... including
+    // refusals and 404s".
+    //
+    // Stamped after the test above, so a request this mount passes on is left
+    // untouched for whichever router answers it, and before the token branch
+    // below, which returns early: that early return is exactly how the token port
+    // came to be the one answer without the header. The emulator stamps its own
+    // answers too, so most responses carry a header set twice to the same value -
+    // cheaper than a promise with an exception in it.
+    Object.entries(emulatedHeaders()).forEach(([name, value]) =>
+      res.setHeader(name, String(value))
+    )
+
+    if (answersToken) return oauthToken(req, res)
 
     // the emulator answers `POST /files/files` from the multipart part, and this
     // is the parser the rest of the server uses for one. Imported here rather
@@ -233,11 +312,24 @@ export const createViyaRouter = (
         res.once('finish', () => resolve())
         res.once('close', () => resolve())
 
-        multerSingle('file', [req, res, () => resolve()])
+        // The drive API answers a refusal as plain text and its clients read it
+        // that way; this mount answers the estate's envelope instead. A body past
+        // a ceiling is 413 here - the status the content route below answers for
+        // the same condition - while the drive keeps its own 400, so the parser
+        // states the reason in `code` and the translation happens once, here.
+        multerSingle('file', [req, res, () => resolve()], {
+          fileSize: options.uploadBytes,
+          writeRefusal: (response, { status, message, code }) => {
+            const refusalStatus = code === 'LIMIT_FILE_SIZE' ? 413 : status
+
+            response
+              .status(refusalStatus)
+              .json(emulatedRefusal(refusalStatus, message))
+          }
+        })
       })
 
-      // a refusal is already answered, in the parser's plain text; nothing below
-      // should write a second response
+      // a refusal is already answered; nothing below should write a second response
       if (res.headersSent) return
     }
 

@@ -1,17 +1,20 @@
 import express from 'express'
 import { mkdtemp, readdir } from 'fs/promises'
+import http from 'http'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import request from 'supertest'
 
 import {
   createViyaRouter,
+  emulatedRefusal,
   isViyaPath,
   ruleFor,
   viyaGuard,
   type ViyaRouterOptions
 } from '../index'
 import { configureBodyParsers } from '../../../app-modules'
+import { dispatchViya } from '@sasjs/api'
 import type { Services } from '@sasjs/api'
 
 /**
@@ -69,6 +72,58 @@ const app = (
   return server
 }
 
+/**
+ * A POST whose multipart body is written in chunks, so no Content-Length reaches
+ * the parser - the arm the filter cannot see. Supertest buffers what it is given
+ * and computes that header, so this goes through a real listener.
+ */
+const chunked = async (
+  server: express.Express,
+  boundary: string,
+  body: Buffer
+): Promise<{ status: number; body: Record<string, unknown> }> => {
+  const listener = await new Promise<import('http').Server>((resolve) => {
+    const started = server.listen(0, () => resolve(started))
+  })
+  const { port } = listener.address() as { port: number }
+
+  try {
+    return await new Promise<{ status: number; body: Record<string, unknown> }>(
+      (resolve, reject) => {
+        const req = http.request(
+          {
+            port,
+            path: '/files/files',
+            method: 'POST',
+            headers: {
+              'Content-Type': `multipart/form-data; boundary=${boundary}`,
+              'Transfer-Encoding': 'chunked'
+            }
+          },
+          (res) => {
+            const chunks: Buffer[] = []
+
+            res.on('data', (chunk) => chunks.push(chunk as Buffer))
+            res.on('end', () =>
+              resolve({
+                status: res.statusCode as number,
+                body: JSON.parse(Buffer.concat(chunks).toString())
+              })
+            )
+          }
+        )
+
+        req.on('error', reject)
+        req.write(body.subarray(0, 40))
+        req.write(body.subarray(40))
+        req.end()
+      }
+    )
+  } finally {
+    await new Promise<void>((resolve) => listener.close(() => resolve()))
+  }
+}
+
 describe('the Viya mount', () => {
   it('answers the paths a Viya client uses, with the emulated header', async () => {
     const answer = await request(app(() => withExecution('[]', ''))).get(
@@ -78,6 +133,18 @@ describe('the Viya mount', () => {
     expect(answer.status).toBe(200)
     expect(answer.headers['x-sasjs-emulated']).toMatch(/^viya@/)
     expect(answer.body.items[0].name).toBeTruthy()
+  })
+
+  // The other side of the same rule: a request this mount passes on must not be
+  // marked, or every answer the server gives in emulated mode would claim to come
+  // from an emulated estate
+  it('leaves a path it does not answer unmarked', async () => {
+    const answer = await request(app(() => withExecution('[]', ''))).get(
+      '/SASjsApi/info'
+    )
+
+    expect(answer.status).toBe(418)
+    expect(answer.headers['x-sasjs-emulated']).toBeUndefined()
   })
 
   it('leaves everything else to the server own routes', async () => {
@@ -285,6 +352,110 @@ describe('an upload over the Viya paths', () => {
   })
 
   /**
+   * A part the upload filter refuses - an extension the drive blocks - is
+   * answered before the emulator sees the request. Every other answer this mount
+   * gives is JSON, so the refusal travels in the same envelope a handler's
+   * refusal does; the parser's plain-text body was the one bare string a client
+   * parsing these answers could meet.
+   */
+  it("answers the parser's refusal in the emulator's envelope", async () => {
+    const mount = app(() => withExecution('[]', ''))
+
+    const answer = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.from('MZ'), 'program.exe')
+
+    // the drive's refusal, in the shape `dispatchViya` answers one with
+    expect(answer.status).toBe(400)
+    expect(answer.headers['content-type']).toMatch(/json/)
+    expect(answer.body).toEqual({
+      version: 2,
+      httpStatusCode: 400,
+      errorCode: 400,
+      message: 'Invalid file extension'
+    })
+    // a refusal is still the emulator's answer, and decision 5 stamps those too
+    expect(answer.headers['x-sasjs-emulated']).toMatch(/^viya@/)
+  })
+
+  /**
+   * A part past the mount's own ceiling is 413, matching the content route's cap,
+   * whether the filter refuses it from Content-Length or multer's limit catches
+   * it. `uploadBytes` is stated for this case: production runs at the parser's
+   * default and no test can send a hundred megabytes.
+   */
+  it('answers an over-cap upload as 413 in the envelope', async () => {
+    const mount = app(() => withExecution('[]', ''), { uploadBytes: 8 })
+
+    const answer = await request(mount)
+      .post('/files/files')
+      .attach('file', Buffer.alloc(9, 'x'), 'a.txt')
+
+    expect(answer.status).toBe(413)
+    expect(answer.body).toMatchObject({
+      version: 2,
+      httpStatusCode: 413,
+      errorCode: 413
+    })
+    expect(answer.body.message).toMatch(/^File size is over limit/)
+  })
+
+  /**
+   * The other arm of the same ceiling: a part streamed without a Content-Length
+   * never reaches the filter, so multer's own limit refuses it and the parser
+   * passes `LIMIT_FILE_SIZE` to the writer. This is the path the mount's
+   * translation exists for, and nothing else on the mount exercises it.
+   */
+  it('answers a chunked over-cap upload the same way', async () => {
+    const mount = app(() => withExecution('[]', ''), { uploadBytes: 8 })
+
+    const boundary = 'viya-part-boundary'
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\n` +
+          'Content-Disposition: form-data; name="file"; filename="a.txt"\r\n' +
+          'Content-Type: text/plain\r\n\r\n'
+      ),
+      Buffer.alloc(9, 'x'),
+      Buffer.from(`\r\n--${boundary}--\r\n`)
+    ])
+
+    const answer = await chunked(mount, boundary, body)
+
+    expect(answer.status).toBe(413)
+    expect(answer.body).toMatchObject({
+      version: 2,
+      httpStatusCode: 413,
+      errorCode: 413
+    })
+    // multer's own message, which is how the case knows the other arm ran
+    expect(answer.body.message).toBe('File too large')
+  })
+
+  /**
+   * The envelope is not this server's invention: `dispatchViya` renders the same
+   * keys for a handler's `ApiError`, and `@sasjs/api` exports no builder for the
+   * body. The parser's refusal is built here, so this case is what holds the two
+   * in step - a bump that changes the emulator's shape fails here, rather than
+   * answering two forms on one mount.
+   */
+  it("renders the same refusal envelope @sasjs/api's dispatcher does", async () => {
+    // a handler's own refusal: an unknown session is an ApiError(404)
+    const refused = await dispatchViya(
+      withExecution('[]', ''),
+      'GET',
+      '/compute/sessions/no-such-session/state',
+      { query: {} }
+    )
+
+    expect(refused.status).toBe(404)
+
+    const body = refused.body as { message: string }
+
+    expect(emulatedRefusal(refused.status, body.message)).toEqual(refused.body)
+  })
+
+  /**
    * `updateFileContent` in `@sasjs/adapter` puts the new content on the wire as
    * the body itself, with the file's own content type, and `express.json` leaves
    * that body unread - so the mount has to hand the emulator the bytes. Without
@@ -412,6 +583,11 @@ describe('an upload over the Viya paths', () => {
       .send('123456789')
 
     expect(pastCap.status).toBe(413)
+    // 413 is this mount's answer for a body past a ceiling, on this route and on
+    // the upload route alike: one class of refusal, one number
+    expect(pastCap.body).toEqual(
+      emulatedRefusal(413, "A file's content must not exceed 8 bytes.")
+    )
     expect(updates).toEqual(['12345678'])
   })
 
