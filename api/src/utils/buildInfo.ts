@@ -7,6 +7,22 @@ export interface BuildInfo {
   gitHash: string
   /** ISO timestamp of the build, or null when it is not known. */
   buildDate: string | null
+  /**
+   * Version of the `@sasjs/core` macros the build installed, or 'unknown'.
+   *
+   * Optional so an older generated file, or a caller assembling the object for
+   * formatting, still satisfies the type.
+   */
+  coreVersion?: string
+  /** The SAS_PACKAGES release the macros came from. */
+  sasPackages?: {
+    /** Upstream tag, e.g. `20261111`. */
+    release: string
+    /** SHA-256 of that release's archive. */
+    sha256: string
+    /** `pinned`, `latest` (resolved by the release build) or `pinned-fallback`. */
+    source: string
+  }
 }
 
 /**

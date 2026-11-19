@@ -166,6 +166,17 @@ jobs:
         working-directory: ./api
         run: npm ci
 
+      # The release carries the newest core macros, not the version the lock
+      # pins: the pin is what pull requests are tested against, and a release is
+      # cut often enough that bumping it by hand every time is the thing this
+      # avoids. Installed without touching package.json or the lock, so the
+      # committed pin stays intact; the version actually installed is recorded
+      # for buildInfo and the release notes, and a failed lookup falls back to
+      # the pin rather than failing the release.
+      - name: Take the newest @sasjs/core
+        if: steps.publish.outputs.tag != ''
+        run: node .github/scripts/take-latest-core.mjs
+
       # Same reason as the smoke workflow: `pkg` builds Node from source when its
       # base-binary download fails, and that build cannot compile on this image
       # (`deps/ada/ada.h` needs a newer libstdc++ than gcc 12). A 504 from the
@@ -230,6 +241,15 @@ jobs:
           # release a binary is without downloading it again.
           SASJS_SERVER_VERSION: ${{ steps.publish.outputs.tag }}
           SASJS_SERVER_GIT_HASH: ${{ github.sha }}
+          # The macros come from the newest upstream tag rather than the pin;
+          # downloadMacros records the tag and checksum it used, which
+          # buildInfo then carries into the binary.
+          SASJS_SAS_PACKAGES_LATEST: '1'
+          # The resolved tag is verified against its tree through api.github.com,
+          # which authenticates by token. Without one the request spends the
+          # shared runner's unauthenticated budget, and a 403 there would quietly
+          # turn the release into a pinned one.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The packaged binary is the only artefact this release ships that runs on
       # the small-icu Node `pkg` embeds, and nothing else in CI ever starts one.
@@ -345,3 +365,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.publish.outputs.tag }}
         run: bash .github/scripts/add-verify-section.sh "$TAG"
+
+      # What the release resolved, in the place a user reads: a release carries
+      # the newest core and macro release, and this is the only record of which
+      # ones it got - including when a lookup failed and the pin was used.
+      - name: Document the upstream versions on the release
+        if: steps.publish.outputs.tag != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: bash .github/scripts/add-upstream-section.sh "$TAG"
