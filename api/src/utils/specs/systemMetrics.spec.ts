@@ -37,6 +37,17 @@ describe('buildInfo', () => {
     expect(typeof info.gitHash).toBe('string')
   })
 
+  it('reports the upstream macros it carries', () => {
+    // Diagnostics is how an operator answers "which macros does this binary
+    // have?" - the answer is not always the pin, because a release resolves the
+    // newest upstream tag.
+    const info = getBuildInfo()
+
+    expect(typeof info.coreVersion).toBe('string')
+    expect(info.sasPackages?.release).toBeTruthy()
+    expect(info.sasPackages?.sha256).toBeTruthy()
+  })
+
   it('formats the version with the commit for a support ticket', () => {
     const formatted = formatBuildInfo({
       version: 'v3.2.2',

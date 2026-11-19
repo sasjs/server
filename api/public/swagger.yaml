@@ -17,6 +17,26 @@ components:
                     type: string
                     nullable: true
                     description: 'ISO timestamp of the build, or null when it is not known.'
+                coreVersion:
+                    type: string
+                    description: "Version of the `@sasjs/core` macros the build installed, or 'unknown'.\n\nOptional so an older generated file, or a caller assembling the object for\nformatting, still satisfies the type."
+                sasPackages:
+                    properties:
+                        source:
+                            type: string
+                            description: '`pinned`, `latest` (resolved by the release build) or `pinned-fallback`.'
+                        sha256:
+                            type: string
+                            description: 'SHA-256 of that release''s archive.'
+                        release:
+                            type: string
+                            description: 'Upstream tag, e.g. `20261111`.'
+                    required:
+                        - source
+                        - sha256
+                        - release
+                    type: object
+                    description: 'The SAS_PACKAGES release the macros came from.'
             required:
                 - version
                 - gitHash

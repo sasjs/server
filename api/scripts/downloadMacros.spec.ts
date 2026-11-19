@@ -12,11 +12,15 @@ import {
   downloadCache,
   downloadMacros,
   installFromCache,
+  gitBlobHash,
   macroFileName,
+  newestTag,
   removeStaleDownloads,
+  resolveRelease,
   SAS_PACKAGES_RELEASE,
   SAS_PACKAGES_RELEASE_SHA256,
   sasPackagesArchiveUrl,
+  verifyAgainstTree,
   writeCacheManifest
 } from './downloadMacros'
 
@@ -163,6 +167,22 @@ describe('downloadMacros', () => {
     names.forEach((name) => fs.writeFileSync(path.join(dir, name), '%put;'))
 
   /**
+   * Runs `downloadMacros` with the resolved-release record inside the temp tree.
+   * The script writes that record next to `api/` by default, and a spec that
+   * left a fake tag there would have a later build report it.
+   */
+  const runDownload = (
+    dir: string,
+    cacheDir: string,
+    forced: boolean,
+    options: Parameters<typeof downloadMacros>[3] = {}
+  ) =>
+    downloadMacros(dir, cacheDir, forced, {
+      resolvedReleasePath: path.join(root, 'resolved.json'),
+      ...options
+    })
+
+  /**
    * A cache as `cacheDownloads` leaves it: the files, then the list, the
    * contents digest and the release marker. Written last for the same reason
    * the script does it - the marker is the completion signal.
@@ -172,6 +192,17 @@ describe('downloadMacros', () => {
     names: string[],
     release: string = SAS_PACKAGES_RELEASE_SHA256
   ) => writeCacheManifest(dir, names, release)
+
+  /**
+   * A tag tree that matches `releaseArchive()`, as the forge would return it:
+   * the blob hash of each macro's bytes under its path in the repository.
+   */
+  const releaseTree = (): Record<string, string> => ({
+    'SPF/Macros/mf_getquoted.sas': gitBlobHash(Buffer.from('%quoted;')),
+    'SPF/Macros/mf_getunquoted.sas': gitBlobHash(Buffer.from('%unquoted;')),
+    'SPF/Macros/mf_xptree.sas': gitBlobHash(Buffer.from('%xptree;')),
+    'README.md': gitBlobHash(Buffer.from('# SAS_PACKAGES'))
+  })
 
   const listOf = (dir: string) =>
     fs
@@ -394,7 +425,7 @@ describe('downloadMacros', () => {
           fs.writeFileSync(path.join(cache, '.release-sha256'), marker)
         const archive = releaseArchive()
         stub = await serve(sends(200, archive))
-        await downloadMacros(folder, cache, false, {
+        await runDownload(folder, cache, false, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -416,7 +447,7 @@ describe('downloadMacros', () => {
       fs.writeFileSync(path.join(cache, 'mf_dl_b.sas'), 'cached-b')
       await markCache(cache, ['mf_dl_a.sas', 'mf_dl_b.sas'])
 
-      await downloadMacros(folder, cache, false)
+      await runDownload(folder, cache, false)
 
       // The cached content, not whatever GitHub would have served, proves the
       // branch replaced the download.
@@ -437,7 +468,7 @@ describe('downloadMacros', () => {
       const archive = releaseArchive()
       stub = await serve(sends(200, archive))
 
-      await downloadMacros(folder, cache, true, {
+      await runDownload(folder, cache, true, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -488,7 +519,7 @@ describe('downloadMacros', () => {
       const token = process.env.GITHUB_TOKEN
       process.env.GITHUB_TOKEN = 'ghs_macros_spec'
       try {
-        await downloadMacros(folder, cache, true, {
+        await runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -513,7 +544,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, archive))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -536,7 +567,7 @@ describe('downloadMacros', () => {
       })
       stub = await serve(sends(200, archive))
 
-      await downloadMacros(folder, cache, true, {
+      await runDownload(folder, cache, true, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -549,7 +580,7 @@ describe('downloadMacros', () => {
 
       // A start installs from the cache over a folder `copySASjsCore` recreated.
       fs.rmSync(path.join(folder, 'mf_bytes.sas'))
-      await downloadMacros(folder, cache, false, {
+      await runDownload(folder, cache, false, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -570,7 +601,7 @@ describe('downloadMacros', () => {
       const archive = releaseArchive()
       stub = await serve(sends(200, archive))
 
-      await downloadMacros(absent, cache, true, {
+      await runDownload(absent, cache, true, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -586,7 +617,7 @@ describe('downloadMacros', () => {
       stub = await serve(() => undefined)
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: '0'.repeat(64),
           waitSeconds: () => 0,
@@ -602,7 +633,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, releaseArchive()))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(Buffer.from('something else')),
           waitSeconds: () => 0
@@ -617,7 +648,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, Buffer.from('not a zip')))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(Buffer.from('not a zip')),
           waitSeconds: () => 0
@@ -632,7 +663,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, Buffer.alloc(0)))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(Buffer.alloc(0)),
           waitSeconds: () => 0
@@ -650,7 +681,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, archive))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -666,7 +697,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, archive))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -687,7 +718,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, archive))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -709,7 +740,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(200, archive))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: sha256(archive),
           waitSeconds: () => 0
@@ -725,7 +756,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(404, Buffer.from('not found')))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: '0'.repeat(64),
           waitSeconds: () => 0
@@ -744,7 +775,7 @@ describe('downloadMacros', () => {
         sends(200, archive)(seen, res)
       })
 
-      await downloadMacros(folder, cache, true, {
+      await runDownload(folder, cache, true, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -762,7 +793,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(500, Buffer.from('boom')))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: '0'.repeat(64),
           waitSeconds: () => 0
@@ -786,7 +817,7 @@ describe('downloadMacros', () => {
       const archive = releaseArchive()
       stub = await serve(sends(200, archive))
 
-      await downloadMacros(folder, cache, false, {
+      await runDownload(folder, cache, false, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -798,6 +829,99 @@ describe('downloadMacros', () => {
         'mf_getunquoted.sas',
         'mf_xptree.sas'
       ])
+    })
+
+    it('should install the newest upstream tag, record it, and reuse the record on the next run', async () => {
+      // What the release job does: a forced download, then `initial`'s warm
+      // start. The newest tag has no pin, so the recorded checksum is what makes
+      // the second run install from the cache instead of fetching 13 MB again.
+      const archive = releaseArchive()
+      stub = await serve(sends(200, archive))
+      const record = path.join(root, 'resolved.json')
+      const listTags = async () => ['20260101', '20270101']
+
+      await runDownload(folder, cache, true, {
+        archiveUrl: stub.archiveUrl,
+        waitSeconds: () => 0,
+        resolveLatest: true,
+        listTags,
+        fetchTree: async () => releaseTree(),
+        resolvedReleasePath: record
+      })
+
+      expect(stub.requests).toHaveLength(1)
+      expect(JSON.parse(fs.readFileSync(record, 'utf8'))).toMatchObject({
+        tag: '20270101',
+        source: 'latest',
+        sha256: sha256(archive)
+      })
+
+      await runDownload(folder, cache, false, {
+        archiveUrl: stub.archiveUrl,
+        waitSeconds: () => 0,
+        resolveLatest: true,
+        listTags,
+        fetchTree: async () => releaseTree(),
+        resolvedReleasePath: record
+      })
+
+      expect(stub.requests).toHaveLength(1)
+    })
+
+    it('should not trust a record made for another tag', async () => {
+      // Upstream moved between the two runs: the recorded checksum belongs to a
+      // different release, so the second run has to fetch rather than assert it.
+      const archive = releaseArchive()
+      stub = await serve(sends(200, archive))
+      const record = path.join(root, 'resolved.json')
+
+      await runDownload(folder, cache, true, {
+        archiveUrl: stub.archiveUrl,
+        waitSeconds: () => 0,
+        resolveLatest: true,
+        listTags: async () => ['20270101'],
+        fetchTree: async () => releaseTree(),
+        resolvedReleasePath: record
+      })
+
+      await runDownload(folder, cache, false, {
+        archiveUrl: stub.archiveUrl,
+        waitSeconds: () => 0,
+        resolveLatest: true,
+        listTags: async () => ['20270202'],
+        fetchTree: async () => releaseTree(),
+        resolvedReleasePath: record
+      })
+
+      expect(stub.requests).toHaveLength(2)
+      expect(JSON.parse(fs.readFileSync(record, 'utf8')).tag).toBe('20270202')
+    })
+
+    it('should stop when a macro does not match the tag it came from', async () => {
+      // The archive came from codeload, which publishes no checksum. The tag's
+      // tree is what ties the bytes to the tag, so a mismatch means the two
+      // disagree and the build must not install either of them.
+      const archive = releaseArchive()
+      stub = await serve(sends(200, archive))
+      const record = path.join(root, 'resolved.json')
+      const tamperedTree = {
+        ...releaseTree(),
+        'SPF/Macros/mf_xptree.sas': '0'.repeat(40)
+      }
+
+      await expect(
+        runDownload(folder, cache, true, {
+          archiveUrl: stub.archiveUrl,
+          waitSeconds: () => 0,
+          resolveLatest: true,
+          listTags: async () => ['20270101'],
+          fetchTree: async () => tamperedTree,
+          resolvedReleasePath: record
+        })
+      ).rejects.toThrow(/do not match the tag's tree/)
+
+      expect(listOf(folder)).toEqual([])
+      expect(fs.existsSync(record)).toBe(false)
     })
 
     it('should remove a macro the new release no longer ships', async () => {
@@ -814,7 +938,7 @@ describe('downloadMacros', () => {
       const archive = releaseArchive()
       stub = await serve(sends(200, archive))
 
-      await downloadMacros(folder, cache, true, {
+      await runDownload(folder, cache, true, {
         archiveUrl: stub.archiveUrl,
         expectedSha256: sha256(archive),
         waitSeconds: () => 0
@@ -847,7 +971,7 @@ describe('downloadMacros', () => {
       stub = await serve(sends(500, Buffer.from('boom')))
 
       await expect(
-        downloadMacros(folder, cache, true, {
+        runDownload(folder, cache, true, {
           archiveUrl: stub.archiveUrl,
           expectedSha256: '0'.repeat(64),
           waitSeconds: () => 0
@@ -859,6 +983,126 @@ describe('downloadMacros', () => {
         'cached-a'
       )
       expect(readList(cache)).toEqual(['mf_dl_a.sas'])
+    })
+  })
+
+  describe('verifyAgainstTree', () => {
+    const macros = [
+      { name: 'mf_a.sas', content: Buffer.from('%a;') },
+      { name: 'mf_b.sas', content: Buffer.from('%b;') }
+    ]
+    const matching = {
+      'SPF/Macros/mf_a.sas': gitBlobHash(Buffer.from('%a;')),
+      'SPF/Macros/mf_b.sas': gitBlobHash(Buffer.from('%b;'))
+    }
+
+    it('should accept an archive that matches the tag', () => {
+      expect(() =>
+        verifyAgainstTree('20270101', macros, matching)
+      ).not.toThrow()
+    })
+
+    it("should reject a macro whose bytes are not the tag's", () => {
+      expect(() =>
+        verifyAgainstTree('20270101', macros, {
+          ...matching,
+          'SPF/Macros/mf_a.sas': '0'.repeat(40)
+        })
+      ).toThrow(/do not match the tag's tree/)
+    })
+
+    it('should reject an archive that is missing a macro the tag lists', () => {
+      // Checking only what was downloaded would accept this: the files that are
+      // there all match, and the missing one is never named.
+      expect(() =>
+        verifyAgainstTree('20270101', [macros[0]], {
+          ...matching,
+          'SPF/Macros/mf_c.sas': gitBlobHash(Buffer.from('%c;'))
+        })
+      ).toThrow(/absent from the archive.*mf_c\.sas/)
+    })
+  })
+
+  describe('resolveRelease', () => {
+    it('should use the pin when the build did not ask for the latest', async () => {
+      expect(await resolveRelease()).toEqual({
+        tag: SAS_PACKAGES_RELEASE,
+        expectedSha256: SAS_PACKAGES_RELEASE_SHA256,
+        source: 'pinned'
+      })
+    })
+
+    it('should take the newest tag when the build asks for the latest', async () => {
+      const tree = { 'SPF/Macros/mf_a.sas': 'abc' }
+      const release = await resolveRelease({
+        resolveLatest: true,
+        listTags: async () => ['20260101', '20261111', '20261002'],
+        fetchTree: async () => tree
+      })
+
+      expect(release.tag).toBe('20261111')
+      expect(release.source).toBe('latest')
+      // Nothing to verify the archive against - the tag was not known in advance
+      // - so the tag's own tree is what the download is checked against.
+      expect(release.expectedSha256).toBeUndefined()
+      expect(release.tree).toEqual(tree)
+    })
+
+    it('should compare tags as numbers, not strings', () => {
+      // Lexically, '2026129' sorts above '20261111'; as dates it does not.
+      expect(newestTag(['2026129', '20261111'])).toBe('20261111')
+    })
+
+    it('should ignore tags that are not dates', () => {
+      // One `v1` or notes tag upstream would otherwise sort above every date
+      // and be resolved as "the newest release", then 404 the release build.
+      expect(newestTag(['v1', 'notes', '20261111'])).toBe('20261111')
+      expect(newestTag(['v1', 'notes'])).toBeUndefined()
+    })
+
+    it('should fall back to the pin, and say why, when the tags cannot be listed', async () => {
+      const release = await resolveRelease({
+        resolveLatest: true,
+        listTags: async () => {
+          throw new Error('git: command not found')
+        }
+      })
+
+      expect(release).toMatchObject({
+        tag: SAS_PACKAGES_RELEASE,
+        expectedSha256: SAS_PACKAGES_RELEASE_SHA256,
+        source: 'pinned-fallback'
+      })
+      expect(release.fallback).toContain('git: command not found')
+    })
+
+    it('should fall back to the pin when the repository lists no date tags', async () => {
+      const release = await resolveRelease({
+        resolveLatest: true,
+        listTags: async () => []
+      })
+
+      expect(release.source).toBe('pinned-fallback')
+    })
+
+    it('should fall back to the pin when the tag cannot be verified', async () => {
+      // No tree, nothing to check the archive against - and the pin has a
+      // checksum, so it is the safer release to ship.
+      const release = await resolveRelease({
+        resolveLatest: true,
+        listTags: async () => ['20270101'],
+        fetchTree: async () => {
+          throw new Error('403 rate limit exceeded')
+        }
+      })
+
+      expect(release).toMatchObject({
+        tag: SAS_PACKAGES_RELEASE,
+        expectedSha256: SAS_PACKAGES_RELEASE_SHA256,
+        source: 'pinned-fallback'
+      })
+      expect(release.fallback).toContain('rate limit')
+      expect(release.tree).toBeUndefined()
     })
   })
 

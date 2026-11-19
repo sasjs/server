@@ -1,8 +1,10 @@
 import AdmZip from 'adm-zip'
 import axios from 'axios'
 import crypto from 'crypto'
+import { execFile } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import { promisify } from 'util'
 import {
   createFile,
   createFolder,
@@ -19,12 +21,14 @@ import {
 } from '../src/utils/file'
 
 /**
- * The SAS_PACKAGES release the macros are taken from, pinned so a build is
- * reproducible: the archive is fetched as one file from codeload and its
- * SHA-256 is checked against `SAS_PACKAGES_RELEASE_SHA256` below, instead of
- * listing SPF/Macros through the GitHub API and fetching file by file (which
- * spent the unauthenticated API budget of a shared CI runner and could serve
- * a moving master between requests).
+ * The SAS_PACKAGES release the macros are taken from by default, pinned so a
+ * pull request and a local build are reproducible: the archive is fetched as one
+ * file from codeload and its SHA-256 is checked against
+ * `SAS_PACKAGES_RELEASE_SHA256` below.
+ *
+ * A release build does not use the pin - it resolves the newest upstream tag
+ * (see `resolveRelease`) and records it, so a published version carries the
+ * freshest macros without anyone editing these constants.
  */
 export const SAS_PACKAGES_RELEASE = '20261111'
 
@@ -32,9 +36,278 @@ export const SAS_PACKAGES_RELEASE = '20261111'
 export const SAS_PACKAGES_RELEASE_SHA256 =
   '8bbb0c1ae746faa3c9f1d0d136bce9337fd28fa89e1d9df1abc8d6ea763691c9'
 
-/** Where the pinned release's zip archive is downloaded from. */
-export const sasPackagesArchiveUrl = (): string =>
-  `https://codeload.github.com/yabwon/SAS_PACKAGES/zip/refs/tags/${SAS_PACKAGES_RELEASE}`
+/** The repository the macros come from. */
+export const sasPackagesRepoUrl = 'https://github.com/yabwon/SAS_PACKAGES'
+
+/**
+ * Where the release archive is downloaded from. `tag` is explicit because a
+ * release build resolves the newest upstream tag instead of using the pin.
+ */
+export const sasPackagesArchiveUrl = (
+  tag: string = SAS_PACKAGES_RELEASE
+): string =>
+  `https://codeload.github.com/yabwon/SAS_PACKAGES/zip/refs/tags/${tag}`
+
+/**
+ * What the last download installed, written for `generateBuildInfo.ts` so a
+ * binary can report the macro release it carries - which is not always the pin,
+ * because a release resolves the newest upstream tag. Gitignored build state.
+ */
+export const resolvedReleaseFile = path.join(
+  apiRoot,
+  '.sas-packages-resolved.json'
+)
+
+/** The release a download used, and whether it was resolved or the pin. */
+export interface ResolvedRelease {
+  /** The upstream tag the macros came from. */
+  tag: string
+  /** What the archive must hash to; absent when the tag was resolved at build time. */
+  expectedSha256?: string
+  /** `pinned`, `latest` (resolved now), or `pinned-fallback` (the lookup failed). */
+  source: 'pinned' | 'latest' | 'pinned-fallback'
+  /** Why the pin was used instead of the newest tag, when it was. */
+  fallback?: string
+  /**
+   * The tag's file list and blob hashes, from the forge. A resolved release has
+   * no checksum of the archive to compare against, so this is what the
+   * extracted macros are verified against.
+   */
+  tree?: Record<string, string>
+}
+
+/**
+ * The tags of the macros repository.
+ *
+ * `git ls-remote` rather than the GitHub API: it needs no token and spends none
+ * of the per-source-IP API budget that the file-by-file download this replaces
+ * exhausted.
+ */
+export const latestReleaseTags = async (
+  repoUrl: string = sasPackagesRepoUrl
+): Promise<string[]> => {
+  const { stdout } = await promisify(execFile)(
+    'git',
+    ['ls-remote', '--tags', repoUrl],
+    // A connection that stalls rather than fails would otherwise hold the
+    // release job open until the workflow times out.
+    { timeout: downloadTimeoutMs }
+  )
+
+  return stdout
+    .split('\n')
+    .map((line) => line.split('\t')[1])
+    .filter(Boolean)
+    .map((ref) => ref.replace(/^refs\/tags\//, '').replace(/\^\{\}$/, ''))
+}
+
+/** The highest tag, compared numerically so `20261111` beats `2026129`. */
+export const newestTag = (tags: string[]): string | undefined =>
+  // The upstream names releases by date. Anything else - a `v1`, a notes tag -
+  // sorts above the dates under numeric collation and is not a release this can
+  // download, so it is filtered out rather than resolved and then 404ing.
+  [...tags]
+    .filter((tag) => /^\d{8}$/.test(tag))
+    .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
+    .pop()
+
+/** The git blob hash of some bytes, which is what a tree listing names. */
+export const gitBlobHash = (content: Buffer): string =>
+  crypto
+    .createHash('sha1')
+    .update(`blob ${content.length}\u0000`)
+    .update(content)
+    .digest('hex')
+
+/**
+ * A tag's files and blob hashes, from the forge's API.
+ *
+ * This is the authenticated source for a resolved release: the archive comes
+ * from codeload, which publishes no checksum, but the tag points at a commit
+ * whose tree names a hash for every file - so the bytes that get installed can
+ * be checked against the tag they claim to come from. One request per release
+ * build, sent to api.github.com with the token when there is one (that is the
+ * host a token belongs to).
+ */
+export const tagTree = async (
+  tag: string,
+  token: string | undefined = process.env.GITHUB_TOKEN
+): Promise<Record<string, string>> => {
+  const res = await axios.get(
+    `https://api.github.com/repos/yabwon/SAS_PACKAGES/git/trees/${tag}`,
+    {
+      params: { recursive: '1' },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      timeout: downloadTimeoutMs
+    }
+  )
+
+  const tree: Record<string, string> = {}
+
+  for (const entry of res.data?.tree ?? [])
+    if (entry.type === 'blob') tree[entry.path] = entry.sha
+
+  if (!Object.keys(tree).length)
+    throw new Error(`${tag} lists no files in its tree`)
+
+  return tree
+}
+
+/** The first few names, then a count: enough for a log line, not the whole list. */
+const summarise = (names: string[]): string =>
+  `${names.slice(0, 5).join(', ')}${names.length > 5 ? `, and ${names.length - 5} more` : ''}`
+
+/**
+ * Checks the extracted macros against the tag's tree, in both directions: every
+ * macro the archive carries must hash to what the tree names, and every macro
+ * the tree lists must be in the archive.
+ *
+ * The second direction is the one worth spelling out: a check that only looks at
+ * what was downloaded accepts an archive that is missing files, and an
+ * incomplete install is exactly the disagreement between archive and tag that
+ * this exists to catch.
+ *
+ * Neither outcome is a fallback - both mean the archive and the tag disagree, so
+ * the build stops before anything is installed.
+ */
+export const verifyAgainstTree = (
+  tag: string,
+  macros: { name: string; content: Buffer }[],
+  tree: Record<string, string>
+) => {
+  const installed = macros.map((macro) => macro.name)
+  const listed = Object.keys(tree)
+    .filter((entryPath) => entryPath.startsWith(macrosFolder))
+    .map((entryPath) => macroFileName(entryPath))
+    .filter((name) => name && !isUnsafeMacroName(name))
+
+  const mismatched = macros
+    .filter(
+      (macro) =>
+        tree[`${macrosFolder}${macro.name}`] !== gitBlobHash(macro.content)
+    )
+    .map((macro) => macro.name)
+
+  const missing = listed.filter((name) => !installed.includes(name))
+
+  if (!mismatched.length && !missing.length) return
+
+  const detail = [
+    mismatched.length
+      ? `${mismatched.length} file(s) do not match the tag's tree (${summarise(mismatched)})`
+      : '',
+    missing.length
+      ? `${missing.length} macro(s) the tag lists are absent from the archive (${summarise(missing)})`
+      : ''
+  ]
+    .filter(Boolean)
+    .join('; ')
+
+  throw new Error(
+    `Failed to install the SAS_PACKAGES macros from ${tag}: ${detail}. The tag may have moved, or the archive was not what it claims.`
+  )
+}
+
+/**
+ * Whether this build installs the newest upstream release. The release workflow
+ * sets `SASJS_SAS_PACKAGES_LATEST`; a pull request, a local start and anything
+ * built from the published package use the pin.
+ */
+const latestRequested = (): boolean =>
+  ['1', 'true'].includes(
+    (process.env.SASJS_SAS_PACKAGES_LATEST || '').trim().toLowerCase()
+  )
+
+/**
+ * The checksum the last download recorded for `tag`.
+ *
+ * A resolved release has no pin to compare against, so this is what lets the
+ * second run in the same job - `initial`, after `prebuild` downloaded - treat
+ * the cache the first run wrote as complete.
+ */
+const recordedSha256 = async (
+  tag: string,
+  file: string = resolvedReleaseFile
+): Promise<string | undefined> => {
+  try {
+    const recorded = JSON.parse(await fs.promises.readFile(file, 'utf8'))
+
+    return recorded.tag === tag && typeof recorded.sha256 === 'string'
+      ? recorded.sha256
+      : undefined
+  } catch (error) {
+    return undefined
+  }
+}
+
+/**
+ * Which release this download installs.
+ *
+ * The pin is the default, so a pull request and a developer build install the
+ * release they were tested against. A release build asks for the newest tag
+ * instead - it is the artefact that should carry the freshest macros - and
+ * falls back to the pin, saying so, if the lookup fails: a release is better
+ * shipped from a known release than not shipped.
+ */
+export const resolveRelease = async ({
+  resolveLatest = false,
+  listTags = latestReleaseTags,
+  fetchTree = tagTree
+}: {
+  resolveLatest?: boolean
+  listTags?: () => Promise<string[]>
+  fetchTree?: (tag: string) => Promise<Record<string, string>>
+} = {}): Promise<ResolvedRelease> => {
+  if (!resolveLatest)
+    return {
+      tag: SAS_PACKAGES_RELEASE,
+      expectedSha256: SAS_PACKAGES_RELEASE_SHA256,
+      source: 'pinned'
+    }
+
+  try {
+    const tag = newestTag(await listTags())
+
+    if (!tag)
+      throw new Error('the repository lists no date-shaped release tags')
+
+    // Fetched before the archive: without it there is nothing to verify the
+    // download against, and the pin - which has a checksum - is the safer
+    // answer than an unverifiable "latest".
+    const tree = await fetchTree(tag)
+
+    return { tag, source: 'latest', tree }
+  } catch (error) {
+    console.warn(
+      `Could not resolve and verify the newest SAS_PACKAGES release; using the pinned release ${SAS_PACKAGES_RELEASE}: ${message(
+        error
+      )}`
+    )
+
+    return {
+      tag: SAS_PACKAGES_RELEASE,
+      expectedSha256: SAS_PACKAGES_RELEASE_SHA256,
+      source: 'pinned-fallback',
+      fallback: message(error)
+    }
+  }
+}
+
+/** Records which release was installed, for the build info and the release notes. */
+const writeResolvedRelease = async (
+  release: ResolvedRelease,
+  sha256: string,
+  file: string = resolvedReleaseFile
+) => {
+  // The tree is not recorded: it is large, and its only use is verifying the
+  // download that just happened.
+  const { tree, ...recorded } = release
+
+  await fs.promises.writeFile(
+    file,
+    JSON.stringify({ ...recorded, sha256 }, null, 2) + '\n'
+  )
+}
 
 /**
  * Where the downloaded macros are kept between starts.
@@ -48,8 +321,13 @@ export const sasPackagesArchiveUrl = (): string =>
 export const downloadCache = path.join(apiRoot, '.sasautos-download')
 const downloadCacheList = path.join(downloadCache, '.macrolist')
 
-/** Where the macros sit inside a release archive. */
-const macrosFolderInArchive = /^([^/]+\/)?SPF\/Macros\//
+/** Where the macros sit inside a release archive, and in the repository tree. */
+const macrosFolder = 'SPF/Macros/'
+
+/** That folder, anchored at the start of an archive entry's name. */
+const macrosFolderInArchive = new RegExp(
+  `^([^/]+/)?${macrosFolder.replace('/', '\\/')}`
+)
 
 /**
  * The file name a macro is stored under: the SPF/Macros path is stripped,
@@ -354,6 +632,17 @@ export interface DownloadMacrosOptions {
   waitSeconds?: (attempt: number) => number
   /** Milliseconds one attempt may take; defaults to `downloadTimeoutMs`. */
   timeoutMs?: number
+  /**
+   * Install the newest upstream tag rather than the pin. Set by the release
+   * workflow through `SASJS_SAS_PACKAGES_LATEST`; defaults to that.
+   */
+  resolveLatest?: boolean
+  /** Where the tags come from; the spec replaces `git ls-remote`. */
+  listTags?: () => Promise<string[]>
+  /** Where a tag's blob hashes come from; the spec replaces the API call. */
+  fetchTree?: (tag: string) => Promise<Record<string, string>>
+  /** Where the resolved release is recorded; defaults to `resolvedReleaseFile`. */
+  resolvedReleasePath?: string
 }
 
 /**
@@ -408,9 +697,8 @@ const downloadArchive = async (
  */
 const extractMacros = async (
   archive: Buffer,
-  url: string,
-  folder: string
-): Promise<string[]> => {
+  url: string
+): Promise<{ name: string; content: Buffer }[]> => {
   let entries: AdmZip.IZipEntry[]
 
   try {
@@ -450,36 +738,55 @@ const extractMacros = async (
       `Failed to download the SAS_PACKAGES macros from ${url}: the archive contains no SPF/Macros files.`
     )
 
-  for (const { name, content } of macros) {
-    await fs.promises.writeFile(path.join(folder, name), content)
-  }
-
-  return macros.map((macro) => macro.name)
+  // Returned, not written: a resolved release verifies every macro against the
+  // tag's tree first, so a mismatch leaves the folder untouched.
+  return macros
 }
 
 /**
- * The pinned release's archive, its checksum verified, then the SPF/Macros
- * files extracted from it.
+ * The release's archive, its checksum verified when one is known, then the
+ * SPF/Macros files extracted from it.
+ *
+ * Which release that is comes from `resolveRelease`: the pin by default, or the
+ * newest upstream tag when the build asks for it.
  */
 export const downloadMacros = async (
   folder: string = sasJSCoreMacros,
   cacheFolder: string = downloadCache,
   forced: boolean = force,
   {
-    archiveUrl = sasPackagesArchiveUrl(),
-    expectedSha256 = SAS_PACKAGES_RELEASE_SHA256,
+    archiveUrl,
+    expectedSha256,
     waitSeconds = (attempt: number) => attempt * 5,
-    timeoutMs = downloadTimeoutMs
+    timeoutMs = downloadTimeoutMs,
+    resolveLatest = latestRequested(),
+    listTags,
+    fetchTree,
+    resolvedReleasePath = resolvedReleaseFile
   }: DownloadMacrosOptions = {}
 ) => {
+  const release = await resolveRelease({ resolveLatest, listTags, fetchTree })
+  const url = archiveUrl ?? sasPackagesArchiveUrl(release.tag)
+
+  // A release build runs twice in one job - `prebuild` forces a download, then
+  // `initial` installs from the cache it wrote - and the newest tag has no pin
+  // to compare against, so the recorded checksum is what makes the second run a
+  // cache hit rather than a second 13 MB fetch. It is only trusted for the tag
+  // it was recorded for.
+  const expected =
+    expectedSha256 ??
+    release.expectedSha256 ??
+    (await recordedSha256(release.tag, resolvedReleasePath))
+
   if (
-    await installFromCache(
+    expected &&
+    (await installFromCache(
       folder,
       cacheFolder,
       path.join(folder, '.macrolist'),
       forced,
-      expectedSha256
-    )
+      expected
+    ))
   ) {
     console.info(
       `Macros installed from ${cacheFolder}; skipping the download (npm run downloadMacros -- --force refreshes them)`
@@ -488,27 +795,39 @@ export const downloadMacros = async (
     return
   }
 
-  console.info(`Downloading macros from ${archiveUrl}`)
+  console.info(
+    `Downloading macros from ${url} (${release.source === 'latest' ? `newest upstream release ${release.tag}` : `${release.source} release ${release.tag}`})`
+  )
 
   // Written before the cache is rebuilt: after that the list describes the new
   // release, and the names the old one owned would be lost.
   const previous = await previousDownloadNames(cacheFolder)
 
-  const archive = await downloadArchive(archiveUrl, waitSeconds, timeoutMs)
+  const archive = await downloadArchive(url, waitSeconds, timeoutMs)
 
   const actualSha256 = crypto.createHash('sha256').update(archive).digest('hex')
 
-  if (actualSha256 !== expectedSha256)
+  if (expected && actualSha256 !== expected)
     throw new Error(
-      `Failed to download the SAS_PACKAGES macros from ${archiveUrl}: the archive's SHA-256 is ${actualSha256}, but the pinned release ${SAS_PACKAGES_RELEASE} is ${expectedSha256}.`
+      `Failed to download the SAS_PACKAGES macros from ${url}: the archive's SHA-256 is ${actualSha256}, but ${release.tag} is ${expected}.`
     )
+
+  const macros = await extractMacros(archive, url)
+
+  // A resolved release has no archive checksum to compare against, so the bytes
+  // are checked against the tag's own tree before anything is installed.
+  if (release.tree) verifyAgainstTree(release.tag, macros, release.tree)
 
   // A clean clone has no `api/sas/sasautos` - it is gitignored and normally
   // created by `copySASjsCore` - and this script is documented as runnable on
   // its own, so the folder is made here rather than assumed.
   await createFolder(folder)
 
-  const names = await extractMacros(archive, archiveUrl, folder)
+  for (const { name, content } of macros) {
+    await fs.promises.writeFile(path.join(folder, name), content)
+  }
+
+  const names = macros.map((macro) => macro.name)
 
   await removeStaleDownloads(folder, previous, names)
 
@@ -516,7 +835,11 @@ export const downloadMacros = async (
   // not a macro the release dropped.
   await writeInventory(folder, path.join(folder, '.macrolist'))
 
-  await cacheDownloads(names, folder, cacheFolder, expectedSha256)
+  // The cache records the checksum that was actually installed, which for a
+  // resolved release is the only pin there is.
+  await cacheDownloads(names, folder, cacheFolder, actualSha256)
+
+  await writeResolvedRelease(release, actualSha256, resolvedReleasePath)
 }
 
 // Run only when invoked as a script, so a spec can import the helpers above
