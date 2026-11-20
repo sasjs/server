@@ -70,7 +70,7 @@
     },
     "/sasjs/drive/files/code/macro-core/.sasjslint": {
       "shard": 0,
-      "bytes": 1311
+      "bytes": 1399
     },
     "/sasjs/drive/files/code/macro-core/LICENSE": {
       "shard": 0,
@@ -86,7 +86,7 @@
     },
     "/sasjs/drive/files/code/macro-core/package.json": {
       "shard": 0,
-      "bytes": 1277
+      "bytes": 1278
     },
     "/sasjs/drive/files/code/macro-core/ddl/mddl_dc_difftable.sas": {
       "shard": 0,
@@ -866,7 +866,7 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mp_dirlist.sas": {
       "shard": 11,
-      "bytes": 13261
+      "bytes": 13885
     },
     "/sasjs/drive/files/code/macro-core/base/mp_distinctfmtvalues.sas": {
       "shard": 11,
@@ -1717,7 +1717,7 @@
     {
       "id": 0,
       "file": "host/vfs-snapshot-0.json",
-      "bytes": 189745,
+      "bytes": 189834,
       "files": 52
     },
     {
@@ -1783,7 +1783,7 @@
     {
       "id": 11,
       "file": "host/vfs-snapshot-11.json",
-      "bytes": 488803,
+      "bytes": 489427,
       "files": 141
     },
     {
