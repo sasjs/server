@@ -550,7 +550,12 @@ const Search = () => {
       cache.folders ?? (cache.folders = new Map<string, Promise<FolderScan>>())
     let scan = folders.get(folder)
 
-    if (!scan) {
+    if (scan) {
+      // a scan the reader has just gone back to is the most recent one: the cache
+      // drops the folder nobody has looked at, not the folder they are in
+      folders.delete(folder)
+      folders.set(folder, scan)
+    } else {
       // The drive root's listing is the walk this box already keeps: a reader who
       // searched the drive and then chose "Search the Drive" must not walk every
       // folder a second time, and a drive query after a root scan must not walk it
@@ -587,6 +592,12 @@ const Search = () => {
           if (root && driveCache.current === cache) {
             cache.files = files
             cache.walked = true
+            // an empty listing can be a session that was not ready rather than a
+            // drive with nothing in it, so it is not kept as the drive's answer -
+            // the drive's own walk applies the same rule, and without it every
+            // later drive query would reuse an empty list and say "nothing
+            // matches" for the life of the cache
+            if (!files.length) cache.promise = null
           }
 
           return { ...found, files }

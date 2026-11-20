@@ -224,14 +224,36 @@ await (async () => {
     assert.ok(big.contents.length < logs.length, 'and not all of them were read')
   })
   check('what a scan keeps is bounded by the budget', () => {
-    const held = big.contents.reduce((total, file) => total + file.text.length, 0)
+    const held = big.contents.reduce(
+      (total, file) => total + Buffer.byteLength(file.text, 'utf8'),
+      0
+    )
 
     // the workers already in flight finish, so the bound is the budget plus one
     // body per worker rather than the budget exactly
     assert.ok(
       held <= MAX_SCAN_TEXT + READ_CONCURRENCY * MAX_CONTENT_BYTES,
-      `${held} characters held`
+      `${held} bytes held`
     )
+  })
+
+  // The budget is stated in MB and spent in bytes, so a folder of multi-byte text
+  // must stop where the megabytes say: three bytes a character is three times the
+  // text a character count would have allowed, and the note would be a promise the
+  // scan did not keep
+  const cjk = '漢'.repeat(100000)
+  const wide = await readContents(
+    Array.from({ length: 40 }, (_, index) => `/cjk/log${index}.log`),
+    async () => cjk
+  )
+  check('a multi-byte folder stops at the byte budget', () => {
+    const held = wide.contents.reduce(
+      (total, file) => total + Buffer.byteLength(file.text, 'utf8'),
+      0
+    )
+
+    assert.equal(wide.stopped, 'text')
+    assert.ok(held <= MAX_SCAN_TEXT + READ_CONCURRENCY * MAX_CONTENT_BYTES, `${held} bytes held`)
   })
 
   // A file longer than the cap keeps its beginning and is counted as clipped, so

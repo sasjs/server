@@ -855,6 +855,37 @@ try {
     'the note that says which files were not read'
   )
 
+  // A drive that cannot be read while the scan runs must not leave an empty walk
+  // cached. The drive's own search applies that rule already; the root scan has to
+  // apply it too, or every later drive query reuses the empty list and answers
+  // "Nothing matches" for the life of the cache.
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.setEmpty(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of the empty page'
+  )
+  await openRootSearch()
+  await type(driveField, 'orders')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'an empty root scan'
+  )
+  assert.equal(await rootWalks(), 1, 'the empty scan walked the drive once')
+  await escapeToDrive()
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'the drive search after an empty root scan'
+  )
+  assert.equal(
+    await rootWalks(),
+    2,
+    'an empty root scan is not kept: the drive search walks again'
+  )
+
   console.log('a folder search answers for the folder the tree reported')
 } finally {
   socket?.close()

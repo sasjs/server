@@ -76,7 +76,8 @@ export const MAX_CONTENT_BYTES = 256 * 1024
 const encoder = new TextEncoder()
 
 /**
- * The most of a body that fits the byte budget, and whether anything was cut.
+ * The most of a body that fits the byte budget, how much it holds, and whether
+ * anything was cut.
  *
  * A string longer than the budget in code units is over it in bytes without
  * needing to be encoded at all: UTF-8 spends at least one byte per code unit, so
@@ -92,9 +93,12 @@ const encoder = new TextEncoder()
 const withinBytes = (
   text: string,
   bytes: number = MAX_CONTENT_BYTES
-): { text: string; clipped: boolean } => {
-  if (text.length <= bytes && encoder.encode(text).length <= bytes)
-    return { text, clipped: false }
+): { text: string; clipped: boolean; bytes: number } => {
+  if (text.length <= bytes) {
+    const measured = encoder.encode(text).length
+
+    if (measured <= bytes) return { text, clipped: false, bytes: measured }
+  }
 
   let low = 0
   let high = Math.min(text.length, bytes)
@@ -115,15 +119,20 @@ const withinBytes = (
   )
     low -= 1
 
-  return { text: text.slice(0, low), clipped: true }
+  // the cut steps back off half a character, so what is returned can be one byte
+  // shorter than what the bisection measured - reported as what is held
+  const kept = text.slice(0, low)
+
+  return { text: kept, clipped: true, bytes: encoder.encode(kept).length }
 }
 
 /** How much of a matching line a result shows. */
 export const SNIPPET_LENGTH = 160
 
 /**
- * How much text one folder scan keeps from the whole folder: about 4 million
- * characters.
+ * How much text one folder scan keeps from the whole folder: 4 MB of it, measured
+ * as UTF-8 bytes - the same measure the per-file cap uses, so the two numbers the
+ * reader is shown are the same kind of number.
  *
  * The bodies a scan reads are kept for the rest of the page session, so the cap
  * that protects the tab is on the total rather than on the file: two hundred logs
@@ -270,7 +279,7 @@ export const readContents = async (
 
         if (fitted.clipped) clipped += 1
 
-        held += fitted.text.length
+        held += fitted.bytes
         contents.push({ path: filePath, text: fitted.text })
       }
 
