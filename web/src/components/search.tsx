@@ -30,6 +30,7 @@ import { APPS_LISTING } from '../utils/appUrl'
 import {
   MAX_CONTENT_BYTES,
   MAX_CONTENT_FILES,
+  MAX_SCAN_TEXT,
   readContents
 } from '../utils/contentSearch'
 import type { Scan } from '../utils/contentSearch'
@@ -162,6 +163,16 @@ interface FolderScan extends Scan {
 }
 
 /**
+ * How many folder scans the session keeps at once.
+ *
+ * What a scan holds is file text, so the cache is bounded twice: each scan stops
+ * at its own text budget, and only the most recent folders are kept. A reader
+ * refining a query does not move between folders, so three is enough for the
+ * folder being searched and the two they were in before it.
+ */
+const MAX_CACHED_FOLDERS = 3
+
+/**
  * What a folder search could not cover, in one line - or '' for one that covered
  * every file it found.
  *
@@ -176,9 +187,11 @@ const scanNote = (scan: Scan | null): string => {
 
   if (scan.skipped)
     parts.push(
-      `read the first ${MAX_CONTENT_FILES} of ${
-        MAX_CONTENT_FILES + scan.skipped
-      } text files`
+      scan.stopped === 'text'
+        ? `read ${scan.readable - scan.skipped} of ${
+            scan.readable
+          } text files, to ${Math.round(MAX_SCAN_TEXT / (1024 * 1024))} MB`
+        : `read the first ${MAX_CONTENT_FILES} of ${scan.readable} text files`
     )
   if (scan.clipped)
     parts.push(
@@ -581,6 +594,18 @@ const Search = () => {
       )
 
       folders.set(folder, scan)
+
+      // the cache keeps the most recent folders, not every folder of the session:
+      // a reader who moves between folders should not hold all of their text
+      const paths: string[] = []
+      folders.forEach((_entry, path) => paths.push(path))
+
+      for (const path of paths) {
+        if (folders.size <= MAX_CACHED_FOLDERS) break
+        if (path === folder) continue
+
+        folders.delete(path)
+      }
       // a scan that threw is not a scan: the next query tries the folder again,
       // as a drive-only screen does for a walk - and a root scan that threw gives
       // the drive back its unwalked state, so the drive's own search retries it

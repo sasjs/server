@@ -24,6 +24,8 @@ registerHooks(tsResolverHooks)
 const {
   MAX_CONTENT_BYTES,
   MAX_CONTENT_FILES,
+  MAX_SCAN_TEXT,
+  READ_CONCURRENCY,
   SNIPPET_LENGTH,
   isSearchableText,
   readContents,
@@ -204,6 +206,33 @@ await (async () => {
   check('the files the cap left out are counted', () =>
     assert.equal(capped.skipped, 17)
   )
+  check('and the folder knows how many it held', () =>
+    assert.equal(capped.readable, MAX_CONTENT_FILES + 17)
+  )
+  check('the file cap is reported as the reason', () =>
+    assert.equal(capped.stopped, 'files')
+  )
+
+  // The text budget: what a scan keeps outlives the query, so a folder of big
+  // logs is read up to what a tab should hold and no further. The files it did
+  // not reach are counted, and the box can say which cap ran out.
+  const logs = Array.from({ length: 40 }, (_, index) => `/logs/log${index}.log`)
+  const big = await readContents(logs, async () => 'x'.repeat(300 * 1024))
+  check('a folder over the text budget stops reading', () => {
+    assert.equal(big.stopped, 'text')
+    assert.ok(big.skipped > 0, 'files were left unread')
+    assert.ok(big.contents.length < logs.length, 'and not all of them were read')
+  })
+  check('what a scan keeps is bounded by the budget', () => {
+    const held = big.contents.reduce((total, file) => total + file.text.length, 0)
+
+    // the workers already in flight finish, so the bound is the budget plus one
+    // body per worker rather than the budget exactly
+    assert.ok(
+      held <= MAX_SCAN_TEXT + READ_CONCURRENCY * MAX_CONTENT_BYTES,
+      `${held} characters held`
+    )
+  })
 
   // A file longer than the cap keeps its beginning and is counted as clipped, so
   // a match past 256 KB is reported as not looked for rather than as absent

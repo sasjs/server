@@ -16,6 +16,8 @@ let empty = false
 // the rest of this suite asserts a one-file drive, and a second folder in the
 // root listing would make its walk one request longer.
 let folders = false
+// A folder with more text files than one search reads, for the note that says so.
+let wide = false
 
 const file = (name: string, relativePath: string): TreeNode => ({
   name,
@@ -40,12 +42,18 @@ const levelOf = (folderPath: string): TreeNode[] => {
 
   if (folderPath === '')
     return [folder('services', '/services'), folder('reports', '/reports')]
-  if (folderPath === '/services')
+  if (folderPath === '/services') {
+    if (wide)
+      return Array.from({ length: 205 }, (_, index) =>
+        file(`f${index}.sas`, `/services/f${index}.sas`)
+      )
+
     return [
       file('orders.sas', '/services/orders.sas'),
       file('run.sas', '/services/run.sas'),
       file('logo.png', '/services/logo.png')
     ]
+  }
   if (folderPath === '/reports')
     return [file('orders.sas', '/reports/orders.sas')]
 
@@ -100,7 +108,9 @@ axios.defaults.adapter = async (config) => {
 
   if (url === '/SASjsApi/drive/file') {
     const filePath = config.params?._filePath ?? ''
-    const body = BODIES[filePath]
+    const body = /^\/services\/f\d+\.sas$/.test(filePath)
+      ? 'data orders; run;'
+      : BODIES[filePath]
 
     // a refusal, as a file the caller may not read answers
     if (body === undefined) throw new Error('refused')
@@ -157,6 +167,9 @@ function Harness() {
       setSignedIn,
       setFolders: (value: boolean) => {
         folders = value
+      },
+      setWide: (value: boolean) => {
+        wide = value
       },
       setHold: (value: boolean) => {
         hold = value

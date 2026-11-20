@@ -363,11 +363,24 @@ interface Ranked {
  * The line number is what makes a body hit usable: choosing it opens the whole
  * file in the editor, so the reader needs to know where to look when it does.
  */
-const contentHits = (query: string, contents: FileText[], hits: Ranked[]) => {
+const contentHits = (
+  query: string,
+  contents: FileText[],
+  listed: Set<string>,
+  hits: Ranked[]
+) => {
   for (const file of contents) {
     const snippet = snippetIn(file.text, query)
 
     if (!snippet) continue
+
+    const to = `/studio?filePath=${encodeURIComponent(file.path)}`
+
+    // a file whose own name already matched is listed once, by that name: the
+    // reader chose a folder and typed a word, and two rows opening the same
+    // document is one row too many - the same file counted twice reads as two
+    // files, which is the one thing a result list must not do
+    if (listed.has(to)) continue
 
     hits.push({
       rank: 1,
@@ -375,7 +388,7 @@ const contentHits = (query: string, contents: FileText[], hits: Ranked[]) => {
         kind: 'text',
         title: file.path,
         detail: `line ${snippet.line}: ${snippet.text}`,
-        to: `/studio?filePath=${encodeURIComponent(file.path)}`
+        to
       }
     })
   }
@@ -460,7 +473,13 @@ export const matches = (
     fileHits(needle, sources.files, hits)
   if (scope === 'folder') {
     fileHits(needle, sources.files, hits)
-    contentHits(query, sources.contents, hits)
+    // the documents the names already answered for, so a body hit cannot repeat one
+    const listed = new Set(
+      hits
+        .map((entry) => entry.hit.to)
+        .filter((to): to is string => typeof to === 'string')
+    )
+    contentHits(query, sources.contents, listed, hits)
   }
 
   const ranked = hits.sort(

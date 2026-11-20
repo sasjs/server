@@ -121,6 +121,19 @@ const withinBytes = (
 /** How much of a matching line a result shows. */
 export const SNIPPET_LENGTH = 160
 
+/**
+ * How much text one folder scan keeps from the whole folder: about 4 million
+ * characters.
+ *
+ * The bodies a scan reads are kept for the rest of the page session, so the cap
+ * that protects the tab is on the total rather than on the file: two hundred logs
+ * of 256 KB each is tens of megabytes held in memory to answer a query the reader
+ * has already typed, and a folder search is a request the reader made about one
+ * folder, not a reason to keep it all. A folder larger than this is searched up to
+ * the budget, and the count of files left unread is shown beside the results.
+ */
+export const MAX_SCAN_TEXT = 4 * 1024 * 1024
+
 /** How many files are read at once, as a walk reads folders at once. */
 export const READ_CONCURRENCY = 6
 
@@ -189,8 +202,12 @@ export type ScanProgress = (done: number, total: number) => void
 export interface Scan {
   /** The bodies that were read, in path order. */
   contents: FileText[]
-  /** Readable files the search did not read, because of the cap. */
+  /** Text files the folder holds, whether or not this scan read them. */
+  readable: number
+  /** Readable files the search did not read, because a cap stopped it. */
   skipped: number
+  /** Which cap stopped it, for a box that says what it left out. */
+  stopped: 'files' | 'text'
   /** Bodies that were cut at `MAX_CONTENT_BYTES`. */
   clipped: number
   /** Files the drive refused, or that had gone since the walk. */
@@ -207,6 +224,12 @@ export interface Scan {
  * say about, and nothing more: the rest of the folder is still worth reading, so
  * it is counted rather than thrown.
  *
+ * The scan stops at `MAX_SCAN_TEXT` as well as at the file cap, because what it
+ * reads is kept for the rest of the page session: a folder of two hundred logs
+ * would otherwise hold tens of megabytes of text in a tab. Files it did not reach
+ * are counted, and `stopped` says which cap ran out, so the box can tell the
+ * reader which files were not searched rather than implying there were none.
+ *
  * Concurrency is clamped the way the walk clamps it, so a malformed limit cannot
  * stall the scan or open a connection per file.
  */
@@ -220,17 +243,22 @@ export const readContents = async (
     ? Math.max(1, Math.floor(concurrency))
     : READ_CONCURRENCY
   const readable = files.filter(isSearchableText)
-  const asked = readable.slice(0, MAX_CONTENT_FILES)
+  const candidates = readable.slice(0, MAX_CONTENT_FILES)
   const contents: FileText[] = []
   let clipped = 0
   let unreadable = 0
+  let held = 0
+  let taken = 0
   let done = 0
-  let next = 0
+  let stopped: Scan['stopped'] = 'files'
 
   const worker = async (): Promise<void> => {
-    while (next < asked.length) {
-      const filePath = asked[next]
-      next += 1
+    // `held` is checked before a file is taken, so the scan stops asking as soon
+    // as what it holds fills the budget; the workers already in flight can put it
+    // over by at most one body each, which is the price of reading in parallel
+    while (taken < candidates.length && held < MAX_SCAN_TEXT) {
+      const filePath = candidates[taken]
+      taken += 1
 
       const text = await read(filePath).catch(() => null)
 
@@ -242,16 +270,23 @@ export const readContents = async (
 
         if (fitted.clipped) clipped += 1
 
+        held += fitted.text.length
         contents.push({ path: filePath, text: fitted.text })
       }
 
-      onProgress?.(done, asked.length)
+      onProgress?.(done, candidates.length)
     }
   }
 
   await Promise.all(
-    Array.from({ length: Math.min(limit, asked.length) }, worker)
+    Array.from({ length: Math.min(limit, candidates.length) }, worker)
   )
+
+  // what was left out, and which cap was the reason: a folder over the file cap
+  // has more files than one search reads, and one over the text budget has more
+  // text than a tab should hold
+  if (taken < candidates.length)
+    stopped = held >= MAX_SCAN_TEXT ? 'text' : 'files'
 
   // the workers finish in whatever order the drive answered, and a result list
   // must not reshuffle between two searches of the same folder
@@ -259,7 +294,9 @@ export const readContents = async (
 
   return {
     contents,
-    skipped: readable.length - asked.length,
+    readable: readable.length,
+    skipped: readable.length - taken,
+    stopped,
     clipped,
     unreadable
   }

@@ -828,6 +828,33 @@ try {
     'a drive search reuses the walk a root scan already made'
   )
 
+  // A folder with more text files than one search reads says so where the reader
+  // looks. The cap is a promise the note has to keep: a short list that did not say
+  // it was short would read as "the word is not in this folder".
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.setWide(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of the wide page'
+  )
+  await evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
+  })()`)
+  await until(`!!${menuItem('Search in this Folder')}`, 'the folder item on the wide page')
+  await evaluate(`${menuItem('Search in this Folder')}.click()`)
+  await until(
+    `!!document.querySelector(${JSON.stringify(folderField)})`,
+    'the wide folder'
+  )
+  await type(folderField, 'orders')
+  await until(
+    'document.body.textContent.includes("Read the first 200 of 205 text files")',
+    'the note that says which files were not read'
+  )
+
   console.log('a folder search answers for the folder the tree reported')
 } finally {
   socket?.close()

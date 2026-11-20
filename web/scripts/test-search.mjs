@@ -573,16 +573,23 @@ check(
   'file'
 )
 
-// one query, two answers from the same folder: the file called abort and the line
-// that declares it
-const bodyOnly = matches('folder', 'abort', {
+// A file whose NAME matches is not listed again for a line in its body: two rows
+// would open the same document, and the reader would count two files where there
+// is one
+const bothAnswers = matches('folder', 'abort', {
   docs: [],
   operations: [],
   apps: [],
   files: folderFiles,
   contents: folderContents
 })
-check('a word only the bodies carry', kinds(bodyOnly), 'file,text')
+check('a word the name and the body both carry', kinds(bothAnswers), 'file')
+check('and the file is listed once', bothAnswers.length, 1)
+check(
+  'the row that survives is the name match',
+  bothAnswers[0]?.title,
+  'abort.sas'
+)
 
 // --- the request the box makes ------------------------------------------------
 
