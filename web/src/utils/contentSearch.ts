@@ -63,8 +63,60 @@ export const MAX_CONTENT_FILES = 200
  * reader is looking for is far more often near the top than in the last
  * kilobyte. The cap is reported the same way the file cap is, so a search that
  * did not read a whole file says so.
+ *
+ * KB, not characters: a body arrives as a JavaScript string, whose `length` counts
+ * UTF-16 code units, and a file of accented text is two to three bytes per
+ * character in the encoding it is stored in. Measuring the string would let a
+ * 700 KB file through as "under 256 KB" and search three times what it promised
+ * - see `withinBytes`.
  */
 export const MAX_CONTENT_BYTES = 256 * 1024
+
+/** UTF-8, because that is what the cap is stated in. */
+const encoder = new TextEncoder()
+
+/**
+ * The most of a body that fits the byte budget, and whether anything was cut.
+ *
+ * A string longer than the budget in code units is over it in bytes without
+ * needing to be encoded at all: UTF-8 spends at least one byte per code unit, so
+ * only a body that could fit is worth measuring - which keeps a 10 MB log from
+ * being encoded in full just to find out that it is too long.
+ *
+ * The cut is found by bisecting the length rather than by scaling one estimate:
+ * the split is where the encoded prefix stops fitting, and a body that is mostly
+ * ASCII with one long run of CJK text has no single ratio that finds it. Each
+ * step encodes a prefix of at most the budget, and a surrogate pair is never left
+ * half in the result, so a cut cannot end a body in a broken character.
+ */
+const withinBytes = (
+  text: string,
+  bytes: number = MAX_CONTENT_BYTES
+): { text: string; clipped: boolean } => {
+  if (text.length <= bytes && encoder.encode(text).length <= bytes)
+    return { text, clipped: false }
+
+  let low = 0
+  let high = Math.min(text.length, bytes)
+
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2)
+
+    if (encoder.encode(text.slice(0, middle)).length <= bytes) low = middle
+    else high = middle - 1
+  }
+
+  // a high surrogate at the cut is the first half of a character whose second
+  // half is being left out; ending before it keeps the prefix readable
+  if (
+    low > 0 &&
+    text.charCodeAt(low - 1) >= 0xd800 &&
+    text.charCodeAt(low - 1) <= 0xdbff
+  )
+    low -= 1
+
+  return { text: text.slice(0, low), clipped: true }
+}
 
 /** How much of a matching line a result shows. */
 export const SNIPPET_LENGTH = 160
@@ -186,12 +238,11 @@ export const readContents = async (
 
       if (text === null || text === undefined) unreadable += 1
       else {
-        if (text.length > MAX_CONTENT_BYTES) clipped += 1
+        const fitted = withinBytes(text)
 
-        contents.push({
-          path: filePath,
-          text: text.slice(0, MAX_CONTENT_BYTES)
-        })
+        if (fitted.clipped) clipped += 1
+
+        contents.push({ path: filePath, text: fitted.text })
       }
 
       onProgress?.(done, asked.length)

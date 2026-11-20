@@ -33,6 +33,7 @@ import {
   readContents
 } from '../utils/contentSearch'
 import type { Scan } from '../utils/contentSearch'
+import { isRootPath } from '../utils/driveTree'
 import { WALK_CONCURRENCY, walkDrivePaths } from '../utils/driveWalk'
 import { onFolderSearch } from '../utils/folderSearch'
 import type { TreeNode } from '../utils/types'
@@ -537,14 +538,28 @@ const Search = () => {
     let scan = folders.get(folder)
 
     if (!scan) {
-      scan = walkDrivePaths(
-        (listing) =>
-          authenticated.current && driveCache.current === cache
-            ? listFolder(listing)
-            : Promise.resolve(null),
-        WALK_CONCURRENCY,
-        folder
-      ).then((files) =>
+      // The drive root's listing is the walk this box already keeps: a reader who
+      // searched the drive and then chose "Search the Drive" must not walk every
+      // folder a second time, and a drive query after a root scan must not walk it
+      // again either. So the root scan starts from `cache.promise` and puts back
+      // what it found, which is what makes one drive one list however it was
+      // reached. A folder below the root has no such cache: its walk is its own.
+      const root = isRootPath(folder)
+      const listing =
+        root && cache.promise
+          ? cache.promise
+          : walkDrivePaths(
+              (path) =>
+                authenticated.current && driveCache.current === cache
+                  ? listFolder(path)
+                  : Promise.resolve(null),
+              WALK_CONCURRENCY,
+              folder
+            )
+
+      if (root && !cache.promise) cache.promise = listing
+
+      scan = listing.then((files) =>
         readContents(
           files,
           (filePath) =>
@@ -555,13 +570,25 @@ const Search = () => {
             if (live && driveCache.current === cache)
               setReading({ done, total })
           }
-        ).then((found) => ({ ...found, files }))
+        ).then((found) => {
+          if (root && driveCache.current === cache) {
+            cache.files = files
+            cache.walked = true
+          }
+
+          return { ...found, files }
+        })
       )
 
       folders.set(folder, scan)
       // a scan that threw is not a scan: the next query tries the folder again,
-      // as a drive-only screen does for a walk
-      scan.catch(() => folders.delete(folder))
+      // as a drive-only screen does for a walk - and a root scan that threw gives
+      // the drive back its unwalked state, so the drive's own search retries it
+      scan.catch(() => {
+        folders.delete(folder)
+
+        if (root && driveCache.current === cache) cache.promise = null
+      })
     }
 
     setReading({ done: 0, total: 0 })
@@ -670,7 +697,14 @@ const Search = () => {
           value={currentQuery}
           placeholder={hint}
           onFocus={(event) => setAnchor(event.currentTarget)}
-          onChange={(event) => updateQuery(event.target.value)}
+          onChange={(event) => {
+            // Typing re-anchors as well as focusing: Escape closes the popover
+            // without moving the cursor out of the field, so a reader who clears
+            // the box that way and types again would otherwise be answering into
+            // a popover that is no longer mounted.
+            setAnchor(event.currentTarget)
+            updateQuery(event.target.value)
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setAnchor(null)

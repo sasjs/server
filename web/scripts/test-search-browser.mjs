@@ -708,27 +708,75 @@ try {
     'the root is not given a folder name'
   )
 
+  // The drive is one list however it was reached, in both directions.
+  //
+  // First: a drive search walks the drive, and a root scan started after it must
+  // answer from that walk rather than walking every folder again.
+  const escapeToDrive = async () => {
+    await evaluate(
+      `document.querySelector('input[aria-label="Search the drive"], input[aria-label="Search inside the folder /"]').focus()`
+    )
+    await call('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      key: 'Escape',
+      code: 'Escape',
+      windowsVirtualKeyCode: 27
+    })
+    await call('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      key: 'Escape',
+      code: 'Escape',
+      windowsVirtualKeyCode: 27
+    })
+    await until(
+      `!!document.querySelector('input[aria-label="Search the drive"]')`,
+      'the drive scope'
+    )
+
+  }
+  const rootWalks = async () =>
+    (await walked()).filter((path) => path === '').length
+  const openRootSearch = async () => {
+    await evaluate(`(() => {
+      const box = document.querySelector('[role="tree"]').parentElement
+      box.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 300 }))
+    })()`)
+    await until(`!!${menuItem('Search the Drive')}`, 'the root menu item again')
+    await evaluate(`${menuItem('Search the Drive')}.click()`)
+    await until(
+      `!!document.querySelector(${JSON.stringify(driveField)})`,
+      'the box takes the drive root again'
+    )
+  }
+
+  await escapeToDrive()
+  const beforeDrive = (await walked()).length
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'the drive search before a root scan'
+  )
+  assert.deepEqual(
+    (await walked()).slice(beforeDrive),
+    ['', '/services', '/reports'],
+    'the drive search walks the drive and the folders under it'
+  )
+  const beforeRootScan = (await walked()).length
+  await openRootSearch()
+  await type(driveField, 'orders')
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'the root scan after a drive search'
+  )
+  assert.deepEqual(
+    (await walked()).slice(beforeRootScan),
+    [],
+    'a root scan reuses the walk the drive search made'
+  )
+
   // a folder searched once in a session is not read again: the second query is
   // answered from what the first scan read
-  await evaluate(
-    `document.querySelector(${JSON.stringify(driveField)}).focus()`
-  )
-  await call('Input.dispatchKeyEvent', {
-    type: 'keyDown',
-    key: 'Escape',
-    code: 'Escape',
-    windowsVirtualKeyCode: 27
-  })
-  await call('Input.dispatchKeyEvent', {
-    type: 'keyUp',
-    key: 'Escape',
-    code: 'Escape',
-    windowsVirtualKeyCode: 27
-  })
-  await until(
-    `!!document.querySelector('input[aria-label="Search the drive"]')`,
-    'back to Studio'
-  )
+  await escapeToDrive()
   await evaluate(`(() => {
     const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
     row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
@@ -750,6 +798,36 @@ try {
     before,
     'a folder already scanned is not read again'
   )
+
+  // Second direction, on a fresh page: a root scan walks the drive, and the
+  // drive's own search after it must answer from that walk - which only holds if
+  // the scan writes its listing back into the drive's cache.
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of a fresh page'
+  )
+  await openRootSearch()
+  await type(driveField, 'orders')
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'a root scan of a fresh page'
+  )
+  assert.equal(await rootWalks(), 1, 'the root scan walked the drive once')
+  await escapeToDrive()
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'the drive search after a root scan'
+  )
+  assert.equal(
+    await rootWalks(),
+    1,
+    'a drive search reuses the walk a root scan already made'
+  )
+
   console.log('a folder search answers for the folder the tree reported')
 } finally {
   socket?.close()

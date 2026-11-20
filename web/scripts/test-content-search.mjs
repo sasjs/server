@@ -260,6 +260,44 @@ await (async () => {
   check('a zero concurrency still reads every file', () =>
     assert.equal(clamped.contents.length, 2)
   )
+
+  // The cap is stated in KB and a body is measured in bytes. A file of accented
+  // text is two bytes per character, so 150 000 characters is 300 KB and is over
+  // the cap - while its `length` says it is under it. Measuring code units would
+  // search three times what the reader was promised and never report the cut.
+  const accented = 'é'.repeat(150000)
+  assert.ok(accented.length < MAX_CONTENT_BYTES, 'the fixture is under the cap by length')
+  const measured = await readContents(['/accented.txt'], async () => accented)
+  check('a multi-byte body is measured in bytes, not code units', () =>
+    assert.equal(measured.clipped, 1)
+  )
+  check('what is kept fits the byte budget', () =>
+    assert.ok(
+      Buffer.byteLength(measured.contents[0].text, 'utf8') <= MAX_CONTENT_BYTES,
+      `${Buffer.byteLength(measured.contents[0].text, 'utf8')} bytes kept`
+    )
+  )
+
+  // a body under the cap in both senses is not touched at all
+  const short = 'é'.repeat(100)
+  const untouched = await readContents(['/short.txt'], async () => short)
+  check('a body that fits is kept whole', () =>
+    assert.deepEqual(
+      [untouched.contents[0].text === short, untouched.clipped],
+      [true, 0]
+    )
+  )
+
+  // A cut lands between characters, not inside one: an emoji is two code units
+  // and four bytes, and half of one is not text
+  const emoji = '😀'.repeat(80000)
+  const cutEmoji = await readContents(['/emoji.txt'], async () => emoji)
+  check('a cut does not split a surrogate pair', () => {
+    const kept = cutEmoji.contents[0].text
+
+    assert.equal(Buffer.from(kept, 'utf8').toString('utf8'), kept)
+    assert.equal(cutEmoji.clipped, 1)
+  })
 })()
 
 console.log(`\n${checks} checks passed`)
