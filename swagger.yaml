@@ -734,7 +734,7 @@ components:
                     example: /projects/app/run.sas
                 layout:
                     type: boolean
-                    description: "Whether to run the layout engine as well as the rules. Defaults to true,\nwhich is what \"format\" means.\n\n`false` is the editor's \"fix lint issues\": the rules are the changes that\ncan be made without judgement - trailing spaces, tabs, line endings, the\nheader's macro list, the wrapping a long line gets - and an author who asks\nfor those does not want the engine's statement breaks and indentation\nrewritten at the same time. Nothing else about the response changes: it is\nstill the rewritten buffer."
+                    description: "Whether to run the layout engine as well as the rules. Defaults to true,\nwhich is what \"format\" means.\n\n`false` is the editor's \"fix lint issues\": the fixes pass alone - trailing\nspaces, line endings, the Doxygen header, the wrapping a line over the\nlength limit gets, and the removal of macro declarations a header lists but\nthe file never invokes - and an author who asks for those does not want the\nengine's statement breaks and indentation rewritten at the same time. A\nfinding the fixes pass leaves alone is reported: a tab used for indentation,\nor a line it cannot break. With the layout engine a tab-indented line is\nre-indented with spaces, so that finding goes, and an over-long line is\nsplit after its keyword, which can still leave it over the limit. Nothing\nelse about the response changes: it is still the rewritten buffer."
                     example: false
             required:
                 - code
