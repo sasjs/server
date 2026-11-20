@@ -16,6 +16,7 @@ import {
   isDriveRootPath,
   isRootPath
 } from '../utils/driveTree'
+import { requestFolderSearch } from '../utils/folderSearch'
 import { TreeNode } from '../utils/types'
 
 interface Props {
@@ -294,6 +295,22 @@ const TreeView = ({
       >
         {menuNode?.isFolder ? (
           <>
+            {/* The search box is in the application's header, not in this tree,
+                so the request goes through `folderSearch` rather than up a prop
+                chain that the tree's own owner does not own. The item is first
+                because it is the one action here that does not change the drive:
+                a right-click to look for something is the commonest reason to
+                open this menu. */}
+            <MenuItem
+              onClick={() => {
+                setContextMenu(null)
+                requestFolderSearch(menuNode.relativePath)
+              }}
+            >
+              {isRootPath(menuNode.relativePath)
+                ? 'Search the Drive'
+                : 'Search in this Folder'}
+            </MenuItem>
             <MenuItem
               onClick={() => {
                 setContextMenu(null)

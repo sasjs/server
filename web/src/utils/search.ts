@@ -19,6 +19,7 @@
  * `scripts/test-search.mjs`.
  */
 import { appHref } from './appUrl'
+import { snippetIn } from './contentSearch'
 
 /**
  * The screens with something of their own to search.
@@ -26,8 +27,14 @@ import { appHref } from './appUrl'
  * `all` is the two build-time lists and `everything` is those plus the apps
  * listing and the drive - the dashboard's answer, for the reader who has just
  * signed in and does not yet know which screen holds what they want.
+ *
+ * `folder` is the one scope a route does not decide: the reader right-clicked a
+ * folder in Studio's tree and asked to search inside it, so the scope is the
+ * request rather than the screen. It searches that folder's files by name and
+ * their bodies for the query - see `contentHits`.
  */
-export type Scope = 'docs' | 'api' | 'apps' | 'drive' | 'all' | 'everything'
+export type Scope =
+  'docs' | 'api' | 'apps' | 'drive' | 'all' | 'everything' | 'folder'
 
 /** One entry of the index MkDocs writes for its own search. */
 export interface DocsEntry {
@@ -59,6 +66,17 @@ export interface AppRow {
   publishedAt: string | null
 }
 
+/**
+ * One text file's body, as a folder search read it.
+ *
+ * The path is the drive-relative one the walk collected, so a hit built from a
+ * body opens the same file a hit built from the listing does.
+ */
+export interface FileText {
+  path: string
+  text: string
+}
+
 /** Everything the box can answer from, whether or not this screen loaded it. */
 export interface Sources {
   docs: DocsEntry[]
@@ -66,11 +84,18 @@ export interface Sources {
   apps: AppRow[]
   /** The drive's file paths, as `walkDrivePaths` collects them. */
   files: string[]
+  /**
+   * The bodies of the files a folder search has read, as `readContents` collects
+   * them. Empty for every scope but `folder`: no other screen asks what is inside
+   * a file, and reading the drive to answer a question nobody asked is the cost
+   * this field exists to keep out of them.
+   */
+  contents: FileText[]
 }
 
 /** One result, whichever list it came from. */
 export interface Hit {
-  kind: 'docs' | 'api' | 'app' | 'file'
+  kind: 'docs' | 'api' | 'app' | 'file' | 'text'
   title: string
   detail: string
   /** The app's route, for a hit that is opened in place. */
@@ -146,30 +171,47 @@ export const searchScope = (
 }
 
 /**
+ * The folder a scope is searching, as a field can name it.
+ *
+ * The last segment, because that is the name the reader right-clicked and the
+ * whole path does not fit in a field 240px wide. The drive root has no segment,
+ * so it is named for what it is.
+ */
+export const folderPlace = (folderPath: string): string => {
+  const segments = folderPath.split('/').filter(Boolean)
+
+  return segments.length ? segments[segments.length - 1] : 'the drive'
+}
+
+/**
  * What the field says it searches, which is the promise the results keep.
  *
  * "Search docs and API" on the dashboard and "Search apps" on the apps screen are
  * the same control doing two different jobs, and a placeholder that did not say so
- * would leave the reader guessing which.
+ * would leave the reader guessing which. A folder search names the folder it was
+ * started from, because "Search the drive" beside a tree whose folder was just
+ * right-clicked would be a promise the results do not keep.
  */
-export const searchHint = (scope: Scope): string => {
+export const searchHint = (scope: Scope, folder = ''): string => {
   if (scope === 'docs') return 'Search the docs'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search apps'
   if (scope === 'drive') return 'Search the drive'
   if (scope === 'everything') return 'Search everything'
+  if (scope === 'folder') return `Search in ${folderPlace(folder)}`
 
   return 'Search docs and API'
 }
 
 /** The hint as a sentence, for the field's accessible name. */
-export const searchLabel = (scope: Scope): string => {
+export const searchLabel = (scope: Scope, folder = ''): string => {
   if (scope === 'docs') return 'Search the documentation'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search the apps'
   if (scope === 'drive') return 'Search the drive'
   if (scope === 'everything')
     return 'Search the documentation, the API, the apps and the drive'
+  if (scope === 'folder') return `Search inside the folder ${folder || '/'}`
 
   return 'Search the documentation and the API'
 }
@@ -179,6 +221,7 @@ export const kindLabel = (kind: Hit['kind']): string => {
   if (kind === 'api') return 'API'
   if (kind === 'app') return 'App'
   if (kind === 'file') return 'File'
+  if (kind === 'text') return 'Content'
 
   return 'Docs'
 }
@@ -308,6 +351,37 @@ interface Ranked {
 }
 
 /**
+ * A file whose BODY mentions the query, from the contents a folder search read.
+ *
+ * Ranked below a name: a reader typing `orders` in a folder called `services`
+ * means a file of that name if one is there, and the ten files that mention the
+ * word in passing are the answer to a question they did not ask yet. The title is
+ * the path rather than the name, because the detail line is the matching line -
+ * without the folder, two files called `program.sas` would read as one result
+ * twice, and the reader could not tell which line belongs to which file.
+ *
+ * The line number is what makes a body hit usable: choosing it opens the whole
+ * file in the editor, so the reader needs to know where to look when it does.
+ */
+const contentHits = (query: string, contents: FileText[], hits: Ranked[]) => {
+  for (const file of contents) {
+    const snippet = snippetIn(file.text, query)
+
+    if (!snippet) continue
+
+    hits.push({
+      rank: 1,
+      hit: {
+        kind: 'text',
+        title: file.path,
+        detail: `line ${snippet.line}: ${snippet.text}`,
+        to: `/studio?filePath=${encodeURIComponent(file.path)}`
+      }
+    })
+  }
+}
+
+/**
  * How many kinds a mixed search has to give a turn to, in the order it gives it.
  *
  * The order is the one a reader is most likely to mean: the pages that explain a
@@ -360,6 +434,10 @@ const everyKind = (ranked: Ranked[]): Ranked[] => {
  * slot with pages and leave the app of that name out - a search that says it
  * covers everything and answers from one list. `everyKind` gives each kind a turn
  * first and fills what is left afterwards.
+ *
+ * A folder search asks two things of one folder - which of its files are called
+ * this, and which of them say it - so it consults the listing and the bodies
+ * together. Every other scope reads no bodies: that list is empty there.
  */
 export const matches = (
   scope: Scope,
@@ -380,6 +458,10 @@ export const matches = (
     appHits(needle, sources.apps, hits)
   if (scope === 'drive' || scope === 'everything')
     fileHits(needle, sources.files, hits)
+  if (scope === 'folder') {
+    fileHits(needle, sources.files, hits)
+    contentHits(query, sources.contents, hits)
+  }
 
   const ranked = hits.sort(
     (first, second) =>

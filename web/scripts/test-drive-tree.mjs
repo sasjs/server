@@ -445,4 +445,48 @@ await checkAsync('walkDrivePaths reads the drive a few folders at a time', async
   assert.ok(most > 1, 'the walk is not one request at a time')
 })
 
+// A folder search walks the folder the reader right-clicked rather than the
+// drive: the request goes out for that folder and the folders under it, and for
+// nothing above or beside it. The paths are still drive-relative, so a file found
+// here opens in the editor the same way one found from the root does.
+await checkAsync('walkDrivePaths starts at the folder it was given', async () => {
+  const asked = []
+  const files = await walkDrivePaths(
+    async (folderPath) => {
+      asked.push(folderPath)
+
+      return treeOf({
+        '': [node('top.sas', '/top.sas', false)],
+        '/a': [node('a.sas', '/a/a.sas', false), node('deep', '/a/deep', true)],
+        '/a/deep': [node('deeper.sas', '/a/deep/deeper.sas', false)],
+        '/b': [node('b.sas', '/b/b.sas', false)]
+      })(folderPath)
+    },
+    3,
+    '/a'
+  )
+
+  assert.deepEqual(files.sort(), ['/a/a.sas', '/a/deep/deeper.sas'])
+  assert.deepEqual(asked.sort(), ['/a', '/a/deep'])
+})
+
+// The starting folder is read like any other, so the files directly in the folder
+// that was right-clicked are part of the answer - a walk that began at the
+// folder's children would miss them
+await checkAsync('the folder that was right-clicked is read', async () => {
+  const asked = []
+  const files = await walkDrivePaths(
+    async (folderPath) => {
+      asked.push(folderPath)
+
+      return treeOf({ '/a': [node('only.sas', '/a/only.sas', false)] })(folderPath)
+    },
+    1,
+    '/a'
+  )
+
+  assert.deepEqual(asked, ['/a'])
+  assert.deepEqual(files, ['/a/only.sas'])
+})
+
 console.log(`\n${checks} checks passed`)

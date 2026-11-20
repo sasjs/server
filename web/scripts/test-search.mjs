@@ -20,7 +20,7 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { searchScope, searchHint, matches, LIMIT } =
+const { searchScope, searchHint, searchLabel, folderPlace, kindLabel, matches, LIMIT } =
   await import('../src/utils/search.ts')
 const { APPS_LISTING } = await import('../src/utils/appUrl.ts')
 
@@ -196,10 +196,12 @@ const files = [
   '/orders/aaa.txt'
 ]
 
-const sources = { docs, operations, apps, files }
+// one list per scope, and the bodies a folder search reads - which every other
+// scope leaves empty, because no other screen asks what is inside a file
+const sources = { docs, operations, apps, files, contents: [] }
 
 // a word the docs and the API both use: each screen sees only its own
-const deployed = { docs, operations, apps, files }
+const deployed = { docs, operations, apps, files, contents: [] }
 
 check(
   'docs scope returns docs only',
@@ -275,7 +277,8 @@ const wide = {
       publishedAt: null
     }
   ],
-  files: ['/reports/orders.sas']
+  files: ['/reports/orders.sas'],
+  contents: []
 }
 check(
   'the dashboard answers from all four lists',
@@ -453,6 +456,133 @@ check(
   matches('drive', 'file', { ...sources, files: manyFiles }).length,
   LIMIT
 )
+
+// --- a folder search: names and bodies, for one folder -----------------------
+
+// The one scope a route does not decide. The tree right-clicks a folder and the
+// box answers for it, so the field says which folder rather than "the drive" -
+// which would be a promise the results do not keep.
+check(
+  'a folder hint names the folder',
+  searchHint('folder', '/Public/demo/services'),
+  'Search in services'
+)
+check(
+  'the drive root has no name, so it is named for what it is',
+  searchHint('folder', ''),
+  'Search in the drive'
+)
+check(
+  'a folder label is a sentence',
+  searchLabel('folder', '/Public/demo/services'),
+  'Search inside the folder /Public/demo/services'
+)
+check(
+  'the root is addressable too',
+  searchLabel('folder', ''),
+  'Search inside the folder /'
+)
+check(
+  'a folder is known by its own name',
+  folderPlace('/a/b/services'),
+  'services'
+)
+check('the root is the drive', folderPlace(''), 'the drive')
+
+const folderFiles = [
+  '/Public/demo/services/orders.sas',
+  '/Public/demo/services/run.sas',
+  '/Public/demo/services/macro/abort.sas'
+]
+
+const folderContents = [
+  { path: '/Public/demo/services/orders.sas', text: '/* the order report */' },
+  {
+    path: '/Public/demo/services/run.sas',
+    text: '%let report = 1;\n%include "orders";'
+  },
+  { path: '/Public/demo/services/macro/abort.sas', text: '%macro abort;' }
+]
+
+const inFolder = matches('folder', 'orders', {
+  docs: [],
+  operations: [],
+  apps: [],
+  files: folderFiles,
+  contents: folderContents
+})
+
+// a file NAMED for the query is what the reader means; a file that mentions it is
+// the second best answer, which is the same rule a page's title and body follow
+check(
+  'a folder search answers by name and by body',
+  kinds(inFolder),
+  'file,text'
+)
+check('a name outranks a body', inFolder[0]?.title, 'orders.sas')
+check(
+  'a body hit is titled by its path, so two files of one name cannot be confused',
+  inFolder.find((hit) => hit.kind === 'text')?.title,
+  '/Public/demo/services/run.sas'
+)
+check(
+  'a body hit says which line to look at',
+  inFolder.find((hit) => hit.kind === 'text')?.detail,
+  'line 2: %include "orders";'
+)
+check(
+  'a body hit opens the file the way a name hit does',
+  inFolder.find((hit) => hit.kind === 'text')?.to,
+  '/studio?filePath=%2FPublic%2Fdemo%2Fservices%2Frun.sas'
+)
+check('a body hit is labelled for what it is', kindLabel('text'), 'Content')
+
+// nothing read means nothing to say: a folder search with no bodies answers from
+// the listing alone, which is how it behaves while the files are still being read
+check(
+  'a folder search with no bodies answers by name',
+  kinds(
+    matches('folder', 'orders', {
+      ...sources,
+      files: folderFiles,
+      contents: []
+    })
+  ),
+  'file'
+)
+
+// The other scopes never read a body: the drive search costs one request per
+// folder, and a screen the reader did not start a folder search from must not pay
+// for a file per file.
+check(
+  'the drive scope does not read bodies',
+  kinds(
+    matches('drive', 'orders', {
+      ...sources,
+      files: folderFiles,
+      contents: folderContents
+    })
+  ),
+  'file'
+)
+check(
+  'the dashboard does not read bodies',
+  kinds(
+    matches('everything', 'orders', { ...sources, contents: folderContents })
+  ),
+  'file'
+)
+
+// one query, two answers from the same folder: the file called abort and the line
+// that declares it
+const bodyOnly = matches('folder', 'abort', {
+  docs: [],
+  operations: [],
+  apps: [],
+  files: folderFiles,
+  contents: folderContents
+})
+check('a word only the bodies carry', kinds(bodyOnly), 'file,text')
 
 // --- the request the box makes ------------------------------------------------
 

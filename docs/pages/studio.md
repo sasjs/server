@@ -30,6 +30,10 @@ The search box in the header searches the drive while you are in Studio. A file'
 
 The drive is read one folder at a time, so the first search in a page session walks it: a moment on a large drive, during which the box says it is searching. The list is then kept until the page is reloaded, so reload to include files created after the walk.
 
+A folder can also be searched on its own, contents and all. Right-click it in the tree and choose **Search in this Folder** - or right-click the empty part of the tree for **Search the Drive** - and the box answers for that folder and the folders under it, with the placeholder naming the folder it is answering for. A query then matches the names of its files and the text inside them: a match in a body is listed with the line it is on, so `orders` finds a file called `orders.sas` first and then the `%include "orders";` at line 2 of `run.sas`. Choosing either opens the file in the editor.
+
+Reading the bodies costs one request per file, so a folder search reads at most 200 text files and the first 256 KB of each, and says so beside the results when either limit left part of the folder unread. Pictures, SAS datasets, spreadsheets, documents, archives and `.csv` tables are not read at all. A folder is read once per page session, so a second query in the same folder answers immediately. Escape ends the folder search and puts the box back on the whole drive, as does leaving Studio.
+
 ## Linting and formatting
 
 SAS code is linted as you edit, about half a second after you stop typing, including changes you have not saved yet. Nothing is executed to do it.

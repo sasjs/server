@@ -29,7 +29,13 @@ export const WALK_CONCURRENCY = 6
 export type ListFolder = (folderPath: string) => Promise<TreeNode | null>
 
 /**
- * The paths of every file under the drive root, in the order they were found.
+ * The paths of every file under a folder, in the order they were found.
+ *
+ * The folder walked is the drive root unless a caller names another, which is
+ * what lets a search started from the tree cover the folder that was
+ * right-clicked rather than the whole drive. Naming a folder does not change what
+ * a path means: the paths are still drive-relative, so a hit opens in the editor
+ * the same way whichever folder the walk started at.
  *
  * A folder the caller may not read - a refusal, a folder removed mid-walk - is a
  * folder whose files this search cannot offer, and nothing more: the rest of the
@@ -38,17 +44,23 @@ export type ListFolder = (folderPath: string) => Promise<TreeNode | null>
  * symlinked folder, or a level that names its own parent, from looping.
  * Finite concurrency is rounded down to a minimum of one; non-finite values use
  * the default so a malformed limit cannot stall or launch an unbounded walk.
+ *
+ * The starting folder itself is read, not just its children, so a folder whose
+ * own row was right-clicked contributes the files directly in it. Its parent is
+ * not walked: a search of `/Public/demo` answers for that folder and what is
+ * under it, which is what the reader clicked.
  */
 export const walkDrivePaths = async (
   list: ListFolder,
-  concurrency: number = WALK_CONCURRENCY
+  concurrency: number = WALK_CONCURRENCY,
+  from: string = ROOT_PATH
 ): Promise<string[]> => {
   const limit = Number.isFinite(concurrency)
     ? Math.max(1, Math.floor(concurrency))
     : WALK_CONCURRENCY
   const files: string[] = []
-  const folders: string[] = [ROOT_PATH]
-  const asked = new Set<string>([ROOT_PATH])
+  const folders: string[] = [from]
+  const asked = new Set<string>([from])
   let active = 0
 
   await new Promise<void>((resolve) => {
