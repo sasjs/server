@@ -376,6 +376,19 @@ const Search = () => {
     setQueryContext(cache)
     setQuery(value)
   }
+  /**
+   * Escape, in either box: the query goes, and so does the folder it was asked of.
+   *
+   * The folder scope is a request rather than a screen, so it has to be ended
+   * deliberately - and the box on a narrow screen is a dialog whose only exit is
+   * Escape or a click outside it, so an Escape that only closed the dialog would
+   * leave the reader answering "Search in services" that they cannot get out of.
+   */
+  const endSearch = () => {
+    setAnchor(null)
+    setQuery('')
+    setFolder(null)
+  }
 
   useEffect(() => {
     setQuery('')
@@ -742,13 +755,7 @@ const Search = () => {
             updateQuery(event.target.value)
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              setAnchor(null)
-              setQuery('')
-              // Escape is how a folder search ends: the query it was for is
-              // cleared with it, and the box goes back to answering for Studio.
-              setFolder(null)
-            }
+            if (event.key === 'Escape') endSearch()
           }}
           slotProps={{
             input: {
@@ -821,6 +828,14 @@ const Search = () => {
             value={currentQuery}
             placeholder={hint}
             onChange={(event) => updateQuery(event.target.value)}
+            // the same escape as the bar's field, because this one is the whole box
+            // where the bar has no room for a field
+            onKeyDown={(event) => {
+              if (event.key !== 'Escape') return
+
+              endSearch()
+              setOpen(false)
+            }}
             slotProps={{
               htmlInput: { 'aria-label': label }
             }}

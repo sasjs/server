@@ -886,6 +886,78 @@ try {
     'an empty root scan is not kept: the drive search walks again'
   )
 
+  // On a narrow screen the box is a dialog, and Escape there has to end the folder
+  // search too. It used to close the dialog only: the placeholder came back as
+  // "Search in services" on the next open and there was no way back to the drive
+  // short of leaving Studio - the exit the docs promise.
+  await navigate(400)
+  // A layout width of 400, not the 980px a mobile emulation falls back to without a
+  // viewport meta: the point of this case is the bar having no room for the field,
+  // which is what makes a folder request open the dialog instead of focusing it.
+  await call('Emulation.setDeviceMetricsOverride', {
+    width: 400,
+    height: 800,
+    deviceScaleFactor: 1,
+    mobile: false
+  })
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of the narrow page'
+  )
+  await evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
+  })()`)
+  await until(`!!${menuItem('Search in this Folder')}`, 'the folder item on a narrow screen')
+  await evaluate(`${menuItem('Search in this Folder')}.click()`)
+  await until(
+    '!!document.querySelector("[role=dialog] input")',
+    'the dialog a folder search opens'
+  )
+  assert.equal(
+    await evaluate(
+      'document.querySelector("[role=dialog] input").getAttribute("aria-label")'
+    ),
+    'Search inside the folder /services',
+    'the dialog answers for the folder'
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27
+  })
+  await until(
+    '!document.querySelector("[role=dialog] input")',
+    'the dialog closed by Escape'
+  )
+  await until(
+    `!!document.querySelector('button[aria-label="Search the drive"]')`,
+    'the box back on the drive'
+  )
+  await evaluate(
+    `document.querySelector('button[aria-label="Search the drive"]').click()`
+  )
+  await until(
+    '!!document.querySelector("[role=dialog] input")',
+    'the dialog opened again'
+  )
+  assert.equal(
+    await evaluate(
+      'document.querySelector("[role=dialog] input").getAttribute("aria-label")'
+    ),
+    'Search the drive',
+    'Escape in the dialog ends the folder search, not just the dialog'
+  )
+
   console.log('a folder search answers for the folder the tree reported')
 } finally {
   socket?.close()
