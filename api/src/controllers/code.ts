@@ -98,12 +98,16 @@ interface FormatCodePayload {
    * Whether to run the layout engine as well as the rules. Defaults to true,
    * which is what "format" means.
    *
-   * `false` is the editor's "fix lint issues": the rules are the changes that
-   * can be made without judgement - trailing spaces, tabs, line endings, the
-   * header's macro list, the wrapping a long line gets - and an author who asks
-   * for those does not want the engine's statement breaks and indentation
-   * rewritten at the same time. Nothing else about the response changes: it is
-   * still the rewritten buffer.
+   * `false` is the editor's "fix lint issues": the fixes pass alone - trailing
+   * spaces, line endings, the Doxygen header, the wrapping a line over the
+   * length limit gets, and the removal of macro declarations a header lists but
+   * the file never invokes - and an author who asks for those does not want the
+   * engine's statement breaks and indentation rewritten at the same time. A
+   * finding the fixes pass leaves alone is reported: a tab used for indentation,
+   * or a line it cannot break. With the layout engine a tab-indented line is
+   * re-indented with spaces, so that finding goes, and an over-long line is
+   * split after its keyword, which can still leave it over the limit. Nothing
+   * else about the response changes: it is still the rewritten buffer.
    * @example false
    */
   layout?: boolean
@@ -247,16 +251,16 @@ export class CodeController {
   public async formatCode(@Body() body: FormatCodePayload): Promise<string> {
     const lintConfig = await getDriveLintConfig(body.filePath)
 
-    // The rules alone, for a caller that asked for the lint fixes and not the
-    // layout. The engine is not loaded at all in that case, so the request does
-    // not wait for a module graph it would not use.
+    // The fixes pass alone, for a caller that asked for the lint fixes and not
+    // the layout. The engine is not loaded at all in that case, so the request
+    // does not wait for a module graph it would not use.
     if (body.layout === false) return formatText(body.code, lintConfig)
 
     // The engine gives the formatter its layout - indentation, statement breaks,
     // keyword case from the drive's .sasjslint. It is loaded on first use, so a
     // server that never formats pays nothing for it, and a load that fails leaves
-    // the rules alone rather than failing the request: the header and the wrapping
-    // are still worth having.
+    // the fixes pass alone rather than failing the request: the header and the
+    // wrapping are still worth having.
     let reprint
     try {
       reprint = await getFormatEngine()

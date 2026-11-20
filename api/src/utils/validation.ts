@@ -329,7 +329,7 @@ export const formatCodeValidation = (data: any): Joi.ValidationResult =>
     code: Joi.string().required(),
     filePath: Joi.string(),
     // Absent means the engine runs, which is what the route documents as the
-    // default; only an explicit `false` asks for the rules alone.
+    // default; only an explicit `false` asks for the fixes pass alone.
     layout: Joi.boolean()
   }).validate(data)
 

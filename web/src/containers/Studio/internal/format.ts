@@ -7,9 +7,10 @@ import axios from 'axios'
  *
  * - `format` runs the layout engine as well as the rules, so statement breaks
  *   and indentation are rewritten as well as the spacing, case and header
- * - `fix` runs the rules alone - the changes that can be made without
- *   judgement. An author who wants their trailing spaces and line endings dealt
- *   with, but does not want their program re-laid-out, asks for this one
+ * - `fix` runs the fixes pass without the layout engine - the rules, plus the
+ *   passes they do not own, so wrapping and the header are still rewritten. An
+ *   author who wants their trailing spaces and line endings dealt with, but
+ *   does not want their program re-laid-out, asks for this one
  */
 export type SasFormatMode = 'format' | 'fix'
 
