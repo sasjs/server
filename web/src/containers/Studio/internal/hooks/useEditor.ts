@@ -205,15 +205,16 @@ const useEditor = ({
 
   /**
    * Rewrites the buffer, either with the layout engine (`format`) or with the
-   * `.sasjslint` rules alone (`fix`).
+   * fixes pass alone (`fix`).
    *
-   * Two jobs, two buttons, one flow. `fix` is what a rule can correct without
-   * judgement - trailing spaces, tabs, line endings, the header's macro list,
-   * a line wrapped past the limit. `format` adds the engine's layout on top:
-   * statement breaks, indentation and the macro-call boundaries that come with
-   * them. Doing the second when the author asked for the first is not a
-   * cosmetic difference - it rewrites lines the author did not ask to have
-   * touched.
+   * Two jobs, two buttons, one flow. `fix` is the fixes pass on its own -
+   * trailing spaces, line endings, the Doxygen header, the wrapping a line over
+   * the length limit gets, and the removal of macro declarations a header lists
+   * but the file never invokes. `format` lays the program out first - statement
+   * breaks, indentation and the macro-call boundaries that come with them - and
+   * then runs that same fixes pass over the layout. Doing the second when the
+   * author asked for the first is not a cosmetic difference - it rewrites lines
+   * the author did not ask to have touched.
    *
    * Three things this has to get right, and the first version got none of them:
    *
@@ -370,7 +371,7 @@ const useEditor = ({
     return true
   }
 
-  /** The rules alone: what the lint can correct without judgement. */
+  /** The fixes pass alone: the rules and the passes they do not own. */
   const fixLintIssues = useCallback(
     () => applyFormatting('fix'),
     [applyFormatting]

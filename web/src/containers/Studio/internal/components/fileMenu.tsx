@@ -17,15 +17,18 @@ type FileMenuProps = {
   saveFile: () => void
   showChanges: () => void
   /**
-   * Applies the fixes the `.sasjslint` rules can make on their own: trailing
-   * spaces, tabs, line endings, the header's macro list, a line wrapped past
-   * the limit. A rule that needs a decision - an unused macro variable, an
-   * undeclared macro - is reported and left for the author.
+   * Runs the fixes pass without the layout engine: trailing spaces, line
+   * endings, the Doxygen header, the wrapping a line over the length limit gets,
+   * and the macro declarations a header lists but the file never invokes - those
+   * are removed. A finding the pass leaves alone, such as a tab used for
+   * indentation or a line the formatter cannot break, is reported and left for
+   * the author.
    */
   fixLintIssues: () => void
   /**
-   * Rewrites the layout as well: statement breaks, indentation and the
-   * boundaries between macro calls.
+   * Lays the program out first - statement breaks, indentation and the
+   * boundaries between macro calls - and then applies the same rule fixes over
+   * the layout.
    *
    * A second button rather than one that does both, because the two jobs are
    * asked for separately. An author who wants their spacing tidied does not
@@ -155,7 +158,7 @@ const FileMenu = ({
       <RewriteButton
         onClick={fixLintIssues}
         disabledReason={lintFixDisabledReason}
-        enabledLabel="Fix what the .sasjslint rules can correct (spacing, tabs, line endings, the header)"
+        enabledLabel="Fix what the .sasjslint rules can correct (spacing, line endings, the header)"
         label="Fix lint issues"
       >
         <AutoFixHigh />
