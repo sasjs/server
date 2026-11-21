@@ -36,6 +36,13 @@ import AppTile from '../../components/appTile'
 import { appsColumnSx } from '../../components/appTileLayout'
 import { AppContext, ModeType } from '../../context/appContext'
 import { APP_STREAM_ROUTE, DEPLOY_ROUTE } from '../../utils'
+import {
+  byReleaseTime,
+  publishedLabel,
+  recallOrder,
+  ReleaseOrder,
+  rememberOrder
+} from '../../utils/appOrder'
 import { APPS_LISTING, appHref } from '../../utils/appUrl'
 import {
   RecentApp,
@@ -105,6 +112,12 @@ const rememberView = (username: string, view: AppsView): void => {
  * app by its logo, and a list for scanning names, locations and dates when there
  * are many. The choice is remembered per user.
  *
+ * The list is the detailed view, so it carries what detail means here: an app's
+ * release down to the minute, and the order the reader wants to read releases in
+ * - newest first, or oldest first. Tiles show neither, and keep the order the
+ * registry holds, where a re-sort on every publish would only move the tile the
+ * reader was about to click.
+ *
  * Studio, the API explorer and the docs are not here: they are tabs in the
  * header, on every screen, so repeating them as tiles only made the list longer
  * without making anything easier to find.
@@ -132,6 +145,7 @@ const Apps = () => {
     appContext.isAuthorizedFor(DEPLOY_ROUTE)
 
   const [view, setView] = useState<AppsView>(() => recallView(username))
+  const [order, setOrder] = useState<ReleaseOrder>(() => recallOrder(username))
   const [recent] = useState<RecentApp[]>(() => recallRecentApps(username))
 
   useEffect(() => {
@@ -176,20 +190,6 @@ const Apps = () => {
     streamed: app
   }))
 
-  /** The publish date, as a reader reads it - or nothing when there is none. */
-  const published = (entry: AppEntry): string => {
-    if (!entry.publishedAt) return ''
-
-    const when = new Date(entry.publishedAt)
-    if (isNaN(when.getTime())) return ''
-
-    return `published ${when.toLocaleDateString(undefined, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })}`
-  }
-
   /** The app's last open on this browser, if this browser has one. */
   const lastOpened = (entry: AppEntry): string => {
     const target = entry.href ?? entry.to ?? ''
@@ -222,6 +222,12 @@ const Apps = () => {
     if (!next) return
     setView(next)
     rememberView(username, next)
+  }
+
+  const changeOrder = (next: ReleaseOrder | null) => {
+    if (!next) return
+    setOrder(next)
+    rememberOrder(username, next)
   }
 
   /** What the server said, or a plain sentence when it said nothing readable. */
@@ -278,6 +284,26 @@ const Apps = () => {
       >
         <Typography variant="h5">Apps</Typography>
         <Box sx={{ flexGrow: 1 }} />
+        {view === 'list' && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={order}
+            onChange={(_event, next: ReleaseOrder | null) => changeOrder(next)}
+            aria-label="Sort by release time"
+          >
+            <ToggleButton value="newest" aria-label="Newest release first">
+              <Tooltip title="Newest release first">
+                <span>Newest</span>
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="oldest" aria-label="Oldest release first">
+              <Tooltip title="Oldest release first">
+                <span>Oldest</span>
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
         <ToggleButtonGroup
           size="small"
           exclusive
@@ -319,7 +345,7 @@ const Apps = () => {
         </Grid>
       ) : (
         <List dense disablePadding>
-          {entries.map((entry) => (
+          {byReleaseTime(entries, order).map((entry) => (
             // The bin is the row's secondary action, beside the row rather than
             // inside it: a button nested in a button is invalid markup and gives
             // the row an accessible name that includes "Unpublish ...".
@@ -361,7 +387,7 @@ const Apps = () => {
                   primary={entry.title}
                   secondary={[
                     entry.subtitle,
-                    published(entry),
+                    publishedLabel(entry.publishedAt),
                     lastOpened(entry)
                   ]
                     .filter(Boolean)
