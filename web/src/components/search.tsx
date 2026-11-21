@@ -45,6 +45,7 @@ import {
   Operation,
   Scope,
   Sources,
+  folderPlace,
   kindLabel,
   matches,
   searchHint,
@@ -788,8 +789,14 @@ const Search = () => {
 
       {/* Mounted only when it has somewhere to open: a Popover is a modal, and
           one left mounted while closed covers the page with a backdrop that
-          swallows the click meant for what is underneath it. */}
-      {anchor && asked ? (
+          swallows the click meant for what is underneath it.
+
+          A folder search opens this with nothing typed. The menu item has already
+          changed the scope by then, and a box that only changed its placeholder
+          and hoped the reader noticed reads as an item that did nothing - so the
+          panel says what it is for and what it will search before a key is
+          pressed. */}
+      {anchor && (asked || scope === 'folder') ? (
         <Popover
           open
           anchorEl={anchor}
@@ -809,12 +816,16 @@ const Search = () => {
             </>
           ) : (
             <Typography variant="body2" sx={{ p: 2 }} color="text.secondary">
-              {busy
-                ? busy
-                : settled
-                  ? `Nothing matches “${query}”.`
-                  : 'Searching…'}
-              {note ? ` ${note}` : ''}
+              {!asked
+                ? `Type to search the files in ${folderPlace(
+                    folder ?? ''
+                  )}, and the text inside them.`
+                : busy
+                  ? busy
+                  : settled
+                    ? `Nothing matches “${query}”.`
+                    : 'Searching…'}
+              {asked && note ? ` ${note}` : ''}
             </Typography>
           )}
         </Popover>

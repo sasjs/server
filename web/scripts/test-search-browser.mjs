@@ -637,6 +637,12 @@ try {
     true,
     'the request puts the cursor in the box'
   )
+  // and it says what it is for before a key is pressed: an item that only changed
+  // a placeholder reads as an item that did nothing
+  await until(
+    'document.body.textContent.includes("Type to search the files in services")',
+    'the panel a folder request opens'
+  )
 
   await type(folderField, 'orders')
   await until(
