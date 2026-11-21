@@ -14,9 +14,11 @@ import {
   expandedDescendantsOf,
   graftLevel,
   isRootPath,
+  nodeAt,
   parentPathOf,
   withRootPath
 } from '../../utils/driveTree'
+import { requestFolderSearch } from '../../utils/folderSearch'
 import { TreeNode } from '../../utils/types'
 import { homeFilePathFor } from '../../utils/userHome'
 import {
@@ -514,6 +516,9 @@ const Studio = () => {
         <SASjsEditor
           selectedFilePath={selectedFilePath}
           selectedFolderPath={selectedFolderPath}
+          folderNode={nodeAt(directoryData, selectedFolderPath)}
+          openFolder={handleFolderSelect}
+          searchFolder={requestFolderSearch}
           setSelectedFilePath={handleSelect}
           tab={tab}
           setTab={setTab}

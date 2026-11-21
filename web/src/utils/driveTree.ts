@@ -148,6 +148,31 @@ export const expandedDescendantsOf = (
     .sort((a, b) => a.split('/').length - b.split('/').length)
 }
 
+/**
+ * The node for a path, or null when the tree does not carry that path yet.
+ *
+ * The tree is loaded one folder at a time, so a deep link arrives before the level
+ * exists: null is "not fetched", which is why the folder page renders a loading
+ * state rather than an empty folder. The root is matched by both spellings, as
+ * everything that compares against it is.
+ */
+export const nodeAt = (
+  root: TreeNode | null,
+  path: string
+): TreeNode | null => {
+  if (!root) return null
+  if (isRootPath(path)) return root
+  if (root.relativePath === path) return root
+
+  for (const child of root.children) {
+    const found = nodeAt(child, path)
+
+    if (found) return found
+  }
+
+  return null
+}
+
 /** The children to render under one node. */
 export const childrenOf = (nodes: TreeNode): TreeNode[] => {
   if (nodes.children.length) return nodes.children

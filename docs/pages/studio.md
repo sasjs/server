@@ -34,6 +34,14 @@ A folder can also be searched on its own, contents and all. Right-click it in th
 
 Reading the bodies costs one request per file, and the drive answers that request with the whole file: a folder search asks for at most 200 text files and downloads each of them in full, then searches the first 256 KB of it and holds about 4 MB of text in all. When one of those limits left part of the folder unread it says so beside the results. Pictures, SAS datasets, spreadsheets, documents, archives and `.csv` tables are not read at all. The last three folders searched stay read, so a second query in one of them answers immediately. Escape ends the folder search and puts the box back on the whole drive, as does leaving Studio.
 
+## A folder
+
+Clicking a folder's NAME in the tree - rather than its chevron - opens that folder at its own address, `/studio?folderPath=%2FPublic%2Fdemo`, which is a link you can send to someone. The page names where you are as a trail of crumbs you can click back along, and summarises the level the tree has already read: how many files and folders it holds, and when anything in it last changed. Sizes appear when the drive reports them; this build's tree does not, so there is no size column and no total rather than a total that counted only some of the files.
+
+Below the summary is the listing - folders first, then files, each with the dates the drive reported, created and last modified. A row opens what it names: a file in the editor, a folder in this page. The filter box narrows the listing by name as you type, two characters being the shortest query as it is in the header's box.
+
+**Search inside these files** hands the folder to the header's search box, which searches the files' contents as well as their names - see Finding a file above.
+
 ## Linting and formatting
 
 SAS code is linted as you edit, about half a second after you stop typing, including changes you have not saved yet. Nothing is executed to do it.

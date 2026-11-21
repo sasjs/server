@@ -20,6 +20,7 @@ import lintSchema from '@sasjs/lint/sasjslint-schema.json'
 import { TabContext, TabList, TabPanel } from '@mui/lab'
 
 import FilePathInputModal from '../../components/filePathInputModal'
+import FolderView from '../../components/folderView'
 import { DisplayPane } from './internal/components/displayPane'
 import { ChangeReview } from './internal/components/changeReview'
 import { comparisonFor, formatKindFor } from './internal/changes'
@@ -30,6 +31,7 @@ import {
   displayModesFor,
   storedDisplayMode
 } from './internal/displayMode'
+import type { TreeNode } from '../../utils/types'
 import FileMenu from './internal/components/fileMenu'
 import RunMenu from './internal/components/runMenu'
 import { defineEditorThemes, editorThemeFor } from './internal/editorTheme'
@@ -132,6 +134,12 @@ type SASjsEditorProps = {
   selectedFilePath: string
   /** The folder the URL names, when it names a folder instead of a file. */
   selectedFolderPath?: string
+  /** The level the tree holds for that folder, or null until it has been read. */
+  folderNode?: TreeNode | null
+  /** Goes to a folder - a crumb, or a folder in the listing. */
+  openFolder?: (folderPath: string) => void
+  /** Searches that folder's files, bodies and all, from the header's box. */
+  searchFolder?: (folderPath: string) => void
   setSelectedFilePath: (filePath: string, refreshSideBar?: boolean) => void
   tab: string
   setTab: Dispatch<SetStateAction<string>>
@@ -147,6 +155,9 @@ defineEditorThemes()
 const SASjsEditor = ({
   selectedFilePath,
   selectedFolderPath,
+  folderNode,
+  openFolder,
+  searchFolder,
   setSelectedFilePath,
   tab,
   setTab,
@@ -431,18 +442,13 @@ const SASjsEditor = ({
         <CircularProgress color="inherit" />
       </Backdrop>
       {selectedFolderPath && !selectedFilePath ? (
-        <Box sx={{ marginTop: '10px', p: 2, maxWidth: 720 }}>
-          <Typography variant="h6" gutterBottom>
-            {selectedFolderPath.split('/').pop() || selectedFolderPath}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {selectedFolderPath}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            A folder. Its address is the URL - open a file in the tree to edit
-            one, or share this link to send someone here.
-          </Typography>
-        </Box>
+        <FolderView
+          path={selectedFolderPath}
+          node={folderNode ?? null}
+          onOpenFile={(filePath) => setSelectedFilePath(filePath)}
+          onOpenFolder={(folderPath) => openFolder?.(folderPath)}
+          onSearchInside={(folderPath) => searchFolder?.(folderPath)}
+        />
       ) : selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
         <Box sx={{ marginTop: '10px' }}>
           {!isImage && (
