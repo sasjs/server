@@ -48,6 +48,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The site names the release it was built from (see buildIdentity in
+          # mock/lib.mjs), and `git describe --tags` can only name a tag this
+          # checkout has. The default fetch is one commit, no tags, which would
+          # publish a site reporting a bare commit hash forever.
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

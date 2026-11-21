@@ -30,10 +30,12 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import {
+  buildIdentity,
   demoLoginMeta,
   readDemoLogins,
   run as runInShell,
-  runWhenTheRegistryIsReady
+  runWhenTheRegistryIsReady,
+  stampedWorker
 } from './lib.mjs'
 import { withCodeSources, withServerSeededFiles } from './driveSeed.mjs'
 import {
@@ -364,6 +366,30 @@ const index = path.join(site, 'index.html')
 
 if (!existsSync(index))
   throw new Error(`The mock site has no index.html: expected ${index}`)
+
+// The release this site reports as the build it came from.
+//
+// Every screen asks `/SASjsApi/info` what produced the build - the dashboard's
+// Version line, the footer stamp, the login screen's support ticket - and the
+// browser host answers `dev`, because a worker ships inside the CLI and has no
+// release of its own. The site IS built from this repository, so the honest
+// answer is this repository's tag, which is what `git describe` says and what a
+// running server reports in the same field (see api/src/utils/buildInfo.ts).
+// Nothing here names a version: the tag comes from the checkout.
+const identity = buildIdentity({ cwd: root })
+
+const workerPath = path.join(site, 'sw.js')
+
+writeFileSync(
+  workerPath,
+  stampedWorker(
+    readFileSync(workerPath, 'utf8'),
+    { ...identity, buildDate: new Date().toISOString() },
+    { cliVersion: CLI_VERSION }
+  )
+)
+
+process.stdout.write(`\nThe site reports itself as ${identity.display}\n`)
 
 // The page the API screen frames on this site. Absent, that screen frames the
 // application inside itself - worse than the refusal it replaced - so a CLI that

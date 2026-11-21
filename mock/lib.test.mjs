@@ -7,6 +7,7 @@
  * failure is not.
  */
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
@@ -19,11 +20,13 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  buildIdentity,
   demoLoginMeta,
   demoLogins,
   readDemoLogins,
   run,
-  runWhenTheRegistryIsReady
+  runWhenTheRegistryIsReady,
+  stampedWorker
 } from './lib.mjs'
 
 /**
@@ -268,4 +271,117 @@ test('refuses to build without the identity fixture, and reads it when it is the
   } finally {
     rmSync(folder, { recursive: true, force: true })
   }
+})
+
+/**
+ * The release the site reports comes from the checkout, so a tag reaches the
+ * published page without a commit here.
+ *
+ * Asserted against a real repository rather than a stubbed runner: the failure
+ * this guards is a `git describe` that answers something unexpected - a shallow
+ * clone with no tags names the commit, not the release - and only git can say
+ * what it answers.
+ */
+test('names the release the checkout is at, and falls back when there is no tag', () => {
+  const folder = path.join(os.tmpdir(), `mock-identity-tag-${process.pid}`)
+  const git = (command) =>
+    execFileSync('git', command.split(' '), { cwd: folder, stdio: 'ignore' })
+
+  mkdirSync(folder, { recursive: true })
+
+  try {
+    writeFileSync(path.join(folder, 'README.md'), 'a site\n')
+
+    git('init -q')
+    git(
+      '-c user.email=sasjs@4gl.io -c user.name=sasjs commit -q --allow-empty -m one'
+    )
+    git('tag v1.2.3')
+
+    const tagged = buildIdentity({ cwd: folder, env: {} })
+
+    assert.equal(tagged.version, 'v1.2.3')
+    assert.equal(tagged.gitHash.length, 7)
+    assert.equal(tagged.display, `v1.2.3 (${tagged.gitHash})`)
+
+    // a commit after the tag is named for both: the release it follows and the
+    // commit that is actually published
+    git(
+      '-c user.email=sasjs@4gl.io -c user.name=sasjs commit -q --allow-empty -m two'
+    )
+    assert.match(
+      buildIdentity({ cwd: folder, env: {} }).version,
+      /^v1\.2\.3-1-g/
+    )
+
+    // what the release workflow passes, because it cuts the tag before building
+    assert.deepEqual(
+      buildIdentity({
+        cwd: folder,
+        env: {
+          SASJS_SERVER_VERSION: 'v9.9.9',
+          SASJS_SERVER_GIT_HASH: 'abcdef1234567890'
+        }
+      }),
+      { version: 'v9.9.9', gitHash: 'abcdef1', display: 'v9.9.9 (abcdef1)' }
+    )
+
+    // not a checkout at all: a version that is obviously not a release beats a
+    // build that cannot run. Outside the repository above, or git would answer
+    // for its parent.
+    const plain = path.join(os.tmpdir(), `mock-no-checkout-${process.pid}`)
+    mkdirSync(plain, { recursive: true })
+
+    assert.deepEqual(buildIdentity({ cwd: plain, env: {} }), {
+      version: 'dev',
+      gitHash: 'unknown',
+      display: 'dev (unknown)'
+    })
+
+    rmSync(plain, { recursive: true, force: true })
+  } finally {
+    rmSync(folder, { recursive: true, force: true })
+  }
+})
+
+/**
+ * The worker is the CLI's file, so both places the release is written are
+ * asserted present: a CLI release that moves one would otherwise publish a site
+ * answering `dev` with a green pipeline.
+ */
+test('writes the release into the worker, and refuses a worker that has moved', () => {
+  const worker = [
+    "    build: { version: 'dev', gitHash: 'unknown', buildDate: null },",
+    'const SERVICES = {',
+    '  info: API.createInfoService(Object.assign({}, API.BROWSER_INFO, { runTimes }))',
+    '}'
+  ].join('\n')
+
+  const stamped = stampedWorker(
+    worker,
+    {
+      version: 'v8.7.0',
+      gitHash: '60015df',
+      display: 'v8.7.0 (60015df)',
+      buildDate: '2026-11-21T09:30:00.000Z'
+    },
+    { cliVersion: '8.0.4' }
+  )
+
+  assert.match(
+    stamped,
+    /build: \{ version: "v8\.7\.0", gitHash: "60015df", buildDate: "2026-11-21T09:30:00\.000Z" \}/
+  )
+  // the property has to be set above the copy the service takes
+  assert.ok(
+    stamped.indexOf('API.BROWSER_INFO.version = "v8.7.0 (60015df)"') <
+      stamped.indexOf('const SERVICES = {')
+  )
+  // nothing else about the worker moved
+  assert.match(stamped, /API\.createInfoService\(Object\.assign/)
+
+  assert.throws(
+    () => stampedWorker('const SERVICES = {', {}, { cliVersion: '8.0.4' }),
+    /does not carry .*build: \{ version: 'dev'.*8\.0\.4/s
+  )
 })
