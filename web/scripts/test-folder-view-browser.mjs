@@ -271,19 +271,60 @@ try {
     'a filter that matches nothing says so'
   )
 
-  // --- the way into the contents search ---------------------------------------
+  // --- the folder's own search -------------------------------------------------
 
+  // The page carries the search box, not the header: the reader has opened THIS
+  // folder, and the box searches its file names and the text inside them.
+  const field = 'input[aria-label="Search the files in demo"]'
+  assert.equal(
+    await evaluate(`!!document.querySelector(${JSON.stringify(field)})`),
+    true,
+    'the page carries a search box'
+  )
+  await evaluate(`document.querySelector(${JSON.stringify(field)}).focus()`)
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'a body hit with its line'
+  )
+
+  const resultRows = () =>
+    evaluate(
+      '[...document.querySelectorAll("[role=button]")].map((row) => row.innerText).filter((text) => text.includes("\\n"))'
+    )
+  const rowsShown = await resultRows()
+  assert.ok(
+    rowsShown.some((row) => row.includes('orders.sas') && row.includes('File')),
+    'the file named for the query is a hit'
+  )
+  assert.ok(
+    rowsShown.some((row) => row.includes('run.sas') && row.includes('line 2:')),
+    'and the file that says it is a hit, with its line'
+  )
+
+  // the walk covered the folder that was opened, and the read was its text files
+  const asked = await evaluate('folderHarness.requests')
+  assert.deepEqual(
+    asked.filter((request) => request.startsWith('fileTree:')).sort(),
+    ['fileTree:/Public/demo', 'fileTree:/Public/demo/macro'],
+    'this folder and the folders under it were walked, and nothing above them'
+  )
+  assert.deepEqual(
+    asked.filter((request) => request.startsWith('file:')).sort(),
+    ['file:/Public/demo/orders.sas', 'file:/Public/demo/run.sas'],
+    'only its text files were read'
+  )
+
+  // choosing the body hit opens that file in the editor
   await evaluate(
-    `[...document.querySelectorAll('button')].find((el) => el.textContent.includes('Search inside these files')).click()`
+    `[...document.querySelectorAll('[role=button]')].find((row) => row.innerText.includes('line 2:')).click()`
   )
   assert.deepEqual(
     (await evaluate('folderHarness.calls')).at(-1),
-    'search:/Public/demo',
-    'the button hands the folder to the search box'
+    'file:/Public/demo/run.sas',
+    'a body hit opens the file it was found in'
   )
-  console.log(
-    'folder view: where you are, what is in it, and a way into the search'
-  )
+  console.log('folder view: the search box is on the folder itself')
 
   // --- a host that reports sizes ----------------------------------------------
 

@@ -20,7 +20,7 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { searchScope, searchHint, searchLabel, folderPlace, kindLabel, matches, LIMIT } =
+const { searchScope, searchHint, kindLabel, matches, LIMIT } =
   await import('../src/utils/search.ts')
 const { APPS_LISTING } = await import('../src/utils/appUrl.ts')
 
@@ -457,37 +457,12 @@ check(
   LIMIT
 )
 
-// --- a folder search: names and bodies, for one folder -----------------------
+// --- a folder's own search: names and bodies, for one folder ------------------
 
-// The one scope a route does not decide. The tree right-clicks a folder and the
-// box answers for it, so the field says which folder rather than "the drive" -
-// which would be a promise the results do not keep.
-check(
-  'a folder hint names the folder',
-  searchHint('folder', '/Public/demo/services'),
-  'Search in services'
-)
-check(
-  'the drive root has no name, so it is named for what it is',
-  searchHint('folder', ''),
-  'Search in the drive'
-)
-check(
-  'a folder label is a sentence',
-  searchLabel('folder', '/Public/demo/services'),
-  'Search inside the folder /Public/demo/services'
-)
-check(
-  'the root is addressable too',
-  searchLabel('folder', ''),
-  'Search inside the folder /'
-)
-check(
-  'a folder is known by its own name',
-  folderPlace('/a/b/services'),
-  'services'
-)
-check('the root is the drive', folderPlace(''), 'the drive')
+// The folder scope is not a route's and has no hint of its own: a folder's page
+// carries its own box and names itself in the field. What the scope ANSWERS with is
+// what follows - and these are the same rules the header's box uses elsewhere, so
+// a file named for the query still outranks one that only mentions it.
 
 const folderFiles = [
   '/Public/demo/services/orders.sas',

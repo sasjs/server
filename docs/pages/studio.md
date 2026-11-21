@@ -30,9 +30,9 @@ The search box in the header searches the drive while you are in Studio. A file'
 
 The drive is read one folder at a time, so the first search in a page session walks it: a moment on a large drive, during which the box says it is searching. The list is then kept until the page is reloaded, so reload to include files created after the walk.
 
-A folder can also be searched on its own, contents and all. Right-click it in the tree and choose **Search in this Folder** - or right-click the empty part of the tree for **Search the Drive** - and the box answers for that folder and the folders under it, with the placeholder naming the folder it is answering for. A query then matches the names of its files and the text inside them: a match in a body is listed with the line it is on, so `orders` finds a file called `orders.sas` first and then the `%include "orders";` at line 2 of `run.sas`. Choosing either opens the file in the editor.
+A folder is searched from its own page, not from the header. Right-click it in the tree and choose **Search in this Folder**: that opens the folder - see **A folder** below - with the cursor already in its search box. The box searches the names of that folder's files and the text inside them, so `orders` finds a file called `orders.sas` first and then the `%include "orders";` at line 2 of `run.sas`, and choosing either opens the file in the editor. The header's box is left alone: it answers for the screen it is on, and a folder's contents are something the reader asks the folder for.
 
-Reading the bodies costs one request per file, and the drive answers that request with the whole file: a folder search asks for at most 200 text files and downloads each of them in full, then searches the first 256 KB of it and holds about 4 MB of text in all. When one of those limits left part of the folder unread it says so beside the results. Pictures, SAS datasets, spreadsheets, documents, archives and `.csv` tables are not read at all. The last three folders searched stay read, so a second query in one of them answers immediately. Escape ends the folder search and puts the box back on the whole drive, as does leaving Studio.
+Reading the bodies costs one request per file, and the drive answers that request with the whole file: a folder search asks for at most 200 text files and downloads each of them in full, then searches the first 256 KB of it and holds about 4 MB of text in all. When one of those limits left part of the folder unread it says so beneath the results. Pictures, SAS datasets, spreadsheets, documents, archives and `.csv` tables are not read at all. A folder is read once while its page is open, so a second query there answers at once.
 
 ## A folder
 
@@ -40,7 +40,7 @@ Clicking a folder's NAME in the tree - rather than its chevron - opens that fold
 
 Below the summary is the listing - folders first, then files, each with the dates the drive reported, created and last modified. A row opens what it names: a file in the editor, a folder in this page. The filter box narrows the listing by name as you type, two characters being the shortest query as it is in the header's box.
 
-**Search inside these files** hands the folder to the header's search box, which searches the files' contents as well as their names - see Finding a file above.
+The search box at the top of the page is the folder's own: it searches this folder's files by name and the text inside them, and it is where the cursor lands when **Search in this Folder** brought you here. The filter below it narrows the listing by name without leaving the page.
 
 ## Linting and formatting
 

@@ -86,11 +86,11 @@ export interface Sources {
   files: string[]
   /**
    * The bodies of the files a folder search has read, as `readContents` collects
-   * them. Empty for every scope but `folder`: no other screen asks what is inside
-   * a file, and reading the drive to answer a question nobody asked is the cost
-   * this field exists to keep out of them.
+   * them, and absent everywhere else: only a folder's own search asks what is
+   * inside a file, and reading the drive to answer a question nobody asked is the
+   * cost this field exists to keep out of the rest.
    */
-  contents: FileText[]
+  contents?: FileText[]
 }
 
 /** One result, whichever list it came from. */
@@ -100,6 +100,8 @@ export interface Hit {
   detail: string
   /** The app's route, for a hit that is opened in place. */
   to?: string
+  /** The drive file a file or content hit names, for a caller that opens one. */
+  filePath?: string
   /** The URL to open in a new tab, for an app - which is not a screen of this app. */
   href?: string
 }
@@ -171,19 +173,6 @@ export const searchScope = (
 }
 
 /**
- * The folder a scope is searching, as a field can name it.
- *
- * The last segment, because that is the name the reader right-clicked and the
- * whole path does not fit in a field 240px wide. The drive root has no segment,
- * so it is named for what it is.
- */
-export const folderPlace = (folderPath: string): string => {
-  const segments = folderPath.split('/').filter(Boolean)
-
-  return segments.length ? segments[segments.length - 1] : 'the drive'
-}
-
-/**
  * What the field says it searches, which is the promise the results keep.
  *
  * "Search docs and API" on the dashboard and "Search apps" on the apps screen are
@@ -192,26 +181,24 @@ export const folderPlace = (folderPath: string): string => {
  * started from, because "Search the drive" beside a tree whose folder was just
  * right-clicked would be a promise the results do not keep.
  */
-export const searchHint = (scope: Scope, folder = ''): string => {
+export const searchHint = (scope: Scope): string => {
   if (scope === 'docs') return 'Search the docs'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search apps'
   if (scope === 'drive') return 'Search the drive'
   if (scope === 'everything') return 'Search everything'
-  if (scope === 'folder') return `Search in ${folderPlace(folder)}`
 
   return 'Search docs and API'
 }
 
 /** The hint as a sentence, for the field's accessible name. */
-export const searchLabel = (scope: Scope, folder = ''): string => {
+export const searchLabel = (scope: Scope): string => {
   if (scope === 'docs') return 'Search the documentation'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search the apps'
   if (scope === 'drive') return 'Search the drive'
   if (scope === 'everything')
     return 'Search the documentation, the API, the apps and the drive'
-  if (scope === 'folder') return `Search inside the folder ${folder || '/'}`
 
   return 'Search the documentation and the API'
 }
@@ -337,6 +324,7 @@ const fileHits = (needle: string, files: string[], hits: Ranked[]) => {
           kind: 'file',
           title: name,
           detail: segments.slice(0, -1).join('/') || '/',
+          filePath,
           // the address the editor opens a file by - `?filePath=` is how a deep
           // link, a reload and the back button all land on the same file
           to: `/studio?filePath=${encodeURIComponent(filePath)}`
@@ -388,7 +376,8 @@ const contentHits = (
         kind: 'text',
         title: file.path,
         detail: `line ${snippet.line}: ${snippet.text}`,
-        to
+        to,
+        filePath: file.path
       }
     })
   }
@@ -479,7 +468,7 @@ export const matches = (
         .map((entry) => entry.hit.to)
         .filter((to): to is string => typeof to === 'string')
     )
-    contentHits(query, sources.contents, listed, hits)
+    contentHits(query, sources.contents ?? [], listed, hits)
   }
 
   const ranked = hits.sort(

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 
 import {
   Box,
-  Button,
   Paper,
   Table,
   TableBody,
@@ -13,9 +12,9 @@ import {
   TextField,
   Typography
 } from '@mui/material'
-import { Search as SearchIcon } from '@mui/icons-material'
 
 import FileTypeIcon from './fileTypeIcon'
+import FolderSearch from './folderSearch'
 import { LOADING_SUFFIX, childrenOf } from '../utils/driveTree'
 import {
   breadcrumbOf,
@@ -37,8 +36,8 @@ interface Props {
   onOpenFile: (filePath: string) => void
   /** Goes to a folder - a crumb, or a folder in the listing. */
   onOpenFolder: (folderPath: string) => void
-  /** Hands this folder to the header's search box, which searches the bodies too. */
-  onSearchInside: (folderPath: string) => void
+  /** Puts the cursor in the search box when the page was opened to search it. */
+  focusSearch?: boolean
 }
 
 /**
@@ -60,7 +59,7 @@ const FolderView = ({
   node,
   onOpenFile,
   onOpenFolder,
-  onSearchInside
+  focusSearch
 }: Props) => {
   const [filter, setFilter] = useState('')
 
@@ -162,15 +161,18 @@ const FolderView = ({
           }}
           sx={{ width: 260 }}
         />
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<SearchIcon />}
-          onClick={() => onSearchInside(path)}
-        >
-          Search inside these files
-        </Button>
       </Box>
+
+      {/* The folder's own search, here rather than in the header: a reader who has
+          opened a folder is looking at THIS folder, and a header box that changed
+          its scope because a menu item was chosen was answering a question from
+          somewhere else on the screen. */}
+      <FolderSearch
+        folder={path}
+        name={name}
+        autoFocus={focusSearch}
+        onOpenFile={onOpenFile}
+      />
 
       {!node ? null : !children.length ? (
         <Typography variant="body2" color="text.secondary">

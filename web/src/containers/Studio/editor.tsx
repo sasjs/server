@@ -138,8 +138,8 @@ type SASjsEditorProps = {
   folderNode?: TreeNode | null
   /** Goes to a folder - a crumb, or a folder in the listing. */
   openFolder?: (folderPath: string) => void
-  /** Searches that folder's files, bodies and all, from the header's box. */
-  searchFolder?: (folderPath: string) => void
+  /** Whether the page was opened to search this folder, so the box takes focus. */
+  focusSearch?: boolean
   setSelectedFilePath: (filePath: string, refreshSideBar?: boolean) => void
   tab: string
   setTab: Dispatch<SetStateAction<string>>
@@ -157,7 +157,7 @@ const SASjsEditor = ({
   selectedFolderPath,
   folderNode,
   openFolder,
-  searchFolder,
+  focusSearch,
   setSelectedFilePath,
   tab,
   setTab,
@@ -447,7 +447,7 @@ const SASjsEditor = ({
           node={folderNode ?? null}
           onOpenFile={(filePath) => setSelectedFilePath(filePath)}
           onOpenFolder={(folderPath) => openFolder?.(folderPath)}
-          onSearchInside={(folderPath) => searchFolder?.(folderPath)}
+          focusSearch={focusSearch}
         />
       ) : selectedFilePath && !runTimes.includes(selectedFileExtension) ? (
         <Box sx={{ marginTop: '10px' }}>
