@@ -7,6 +7,12 @@ import type { TreeNode } from '../../src/utils/types'
 const calls: string[] = []
 const requests: string[] = []
 let sizes = false
+// A folder the tree has a node for but nobody has read: what a deep link to a level
+// looks like before its request comes back.
+let unread = false
+// Hold every folder read, so a scan can be in flight while the page changes under it.
+let hold = false
+let held: (() => void) | undefined
 
 const file = (
   name: string,
@@ -32,24 +38,33 @@ const folder = (name: string, relativePath: string): TreeNode => ({
  * because the drive's tree does not report them today and the page has to be right
  * both ways.
  */
-const levelOf = (): TreeNode[] => [
-  folder('macro', '/Public/demo/macro'),
-  file('orders.sas', '/Public/demo/orders.sas', {
-    created: '2026-10-01T09:00:00.000Z',
-    modified: '2026-11-02T10:00:00.000Z',
-    ...(sizes ? { size: 2048 } : {})
-  }),
-  file('run.sas', '/Public/demo/run.sas', {
-    created: '2026-10-02T09:00:00.000Z',
-    modified: '2026-11-05T08:30:00.000Z',
-    ...(sizes ? { size: 1024 } : {})
-  })
-]
+const levelOf = (folderPath: string): TreeNode[] => {
+  if (folderPath === '/Public/macro')
+    return [file('abort.sas', '/Public/macro/abort.sas')]
+  // the subfolder the demo level lists, so a walk of `/Public/demo` has somewhere
+  // to go and does not fall through to the level above
+  if (folderPath === '/Public/demo/macro') return []
+
+  return [
+    folder('macro', '/Public/demo/macro'),
+    file('orders.sas', '/Public/demo/orders.sas', {
+      created: '2026-10-01T09:00:00.000Z',
+      modified: '2026-11-02T10:00:00.000Z',
+      ...(sizes ? { size: 2048 } : {})
+    }),
+    file('run.sas', '/Public/demo/run.sas', {
+      created: '2026-10-02T09:00:00.000Z',
+      modified: '2026-11-05T08:30:00.000Z',
+      ...(sizes ? { size: 1024 } : {})
+    })
+  ]
+}
 
 /** The bodies the folder's search reads - one of them mentions `orders`. */
 const BODIES: { [path: string]: string } = {
   '/Public/demo/orders.sas': '/* the order report */',
-  '/Public/demo/run.sas': '%let report = 1;\n%include "orders";'
+  '/Public/demo/run.sas': '%let report = 1;\n%include "orders";',
+  '/Public/macro/abort.sas': '%macro abort;\ndata _null_;'
 }
 
 axios.defaults.adapter = async (config) => {
@@ -59,6 +74,11 @@ axios.defaults.adapter = async (config) => {
     const folderPath = config.params?._folderPath ?? ''
 
     requests.push(`fileTree:${folderPath}`)
+
+    if (hold)
+      await new Promise<void>((resolve) => {
+        held = resolve
+      })
 
     return {
       config,
@@ -70,7 +90,7 @@ axios.defaults.adapter = async (config) => {
         tree: {
           relativePath: folderPath,
           isFolder: true,
-          children: folderPath === '/Public/demo' ? levelOf() : []
+          children: levelOf(folderPath)
         }
       }
     }
@@ -95,29 +115,52 @@ axios.defaults.adapter = async (config) => {
 
 function Harness() {
   const [flip, setFlip] = useState(0)
+  const [path, setPath] = useState('/Public/demo')
 
   Object.assign(window, {
     folderHarness: {
       calls,
       requests,
+      setPath,
       setSizes: (value: boolean) => {
         sizes = value
         setFlip((count) => count + 1)
+      },
+      setUnread: (value: boolean) => {
+        unread = value
+        setFlip((count) => count + 1)
+      },
+      setHold: (value: boolean) => {
+        hold = value
+      },
+      release: () => {
+        held?.()
+        held = undefined
       }
     }
   })
 
-  const node: TreeNode = {
-    name: 'demo',
-    relativePath: '/Public/demo',
-    isFolder: true,
-    children: levelOf()
-  }
+  const node: TreeNode = unread
+    ? {
+        // what the tree holds for a level nobody has fetched yet
+        name: 'demo',
+        relativePath: '/Public/demo',
+        isFolder: true,
+        hasChildren: true,
+        children: []
+      }
+    : {
+        name: path.split('/').pop() || 'files',
+        relativePath: path,
+        isFolder: true,
+        childrenLoaded: true,
+        children: levelOf(path)
+      }
 
   return (
     <FolderView
       key={flip}
-      path="/Public/demo"
+      path={path}
       node={node}
       onOpenFile={(filePath) => calls.push(`file:${filePath}`)}
       onOpenFolder={(folderPath) => calls.push(`folder:${folderPath}`)}

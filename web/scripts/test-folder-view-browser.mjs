@@ -340,6 +340,92 @@ try {
   assert.equal((await rows())[1][1], '2 KB', 'a file shows its size')
 
   console.log('folder view: sizes are shown when the tree carries them')
+
+  // --- an unread level is not an empty folder ----------------------------------
+
+  // The tree holds a node for a level it has not fetched, and `childrenOf` answers
+  // a loading placeholder for it: a page that read that as "no children" would tell
+  // the reader the folder is empty before anything had been asked.
+  await call('Page.navigate', {
+    url: `http://127.0.0.1:${server.address().port}/`
+  })
+  await until(
+    '!!window.folderHarness && !!document.querySelector("table")',
+    'mount again'
+  )
+  await evaluate('folderHarness.setUnread(true)')
+  await until(
+    'document.body.innerText.includes("Reading this folder…")',
+    'an unread level says it is being read'
+  )
+  assert.equal(
+    await evaluate('document.body.innerText.includes("This folder is empty.")'),
+    false,
+    'an unread level is not reported as empty'
+  )
+  await evaluate('folderHarness.setUnread(false)')
+  await until(
+    'document.body.innerText.includes("2 files")',
+    'the level read again'
+  )
+
+  // --- a scan started on one folder does not answer for another ----------------
+
+  // Open a folder, start its scan, then move to another before it settles: the
+  // first folder's matches must not appear under the second one's heading.
+  await call('Page.navigate', {
+    url: `http://127.0.0.1:${server.address().port}/`
+  })
+  await until(
+    '!!window.folderHarness && !!document.querySelector("table")',
+    'mount once more'
+  )
+  await evaluate('folderHarness.setHold(true)')
+  await evaluate(
+    `document.querySelector('input[aria-label="Search the files in demo"]').focus()`
+  )
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'folderHarness.requests.includes("fileTree:/Public/demo")',
+    'the walk for the first folder is out'
+  )
+  await evaluate('folderHarness.setPath("/Public/macro")')
+  const macroField = 'input[aria-label="Search the files in macro"]'
+  await until(
+    `!!document.querySelector(${JSON.stringify(macroField)})`,
+    'the second folder page'
+  )
+  await evaluate('folderHarness.setHold(false); folderHarness.release()')
+  await pause(400)
+
+  assert.equal(
+    await evaluate('document.body.innerText.includes("line 2: %include")'),
+    false,
+    "the first folder's body hit does not surface under the second"
+  )
+  assert.equal(
+    await evaluate('document.body.innerText.includes("run.sas")'),
+    false,
+    "nor does a file from the first folder's listing"
+  )
+
+  // and the second folder answers for itself. The pause is not decoration: the
+  // page clears the field when it changes folder, so typing before that effect has
+  // run types into a query the page is about to overwrite.
+  await pause(200)
+  await evaluate(
+    `document.querySelector(${JSON.stringify(macroField)}).focus()`
+  )
+  // A word that is in the file's BODY and in neither its name nor its path: a word
+  // in the name is already the stronger answer, and the dedupe keeps one row.
+  await call('Input.insertText', { text: 'null' })
+  await until(
+    'document.body.innerText.includes("line 2: data _null_;")',
+    'the second folder answers for itself'
+  )
+  console.log(
+    'folder view: an unread level, and a scan that outlives its folder'
+  )
 } finally {
   socket?.close()
   browser?.kill()

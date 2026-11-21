@@ -398,7 +398,14 @@ const Search = () => {
           value={currentQuery}
           placeholder={hint}
           onFocus={(event) => setAnchor(event.currentTarget)}
-          onChange={(event) => updateQuery(event.target.value)}
+          onChange={(event) => {
+            // Typing re-anchors as well as updating the query: Escape closes the
+            // popover without moving the cursor out of the field, so a reader who
+            // cleared the box that way and typed again would otherwise be
+            // answering into a popover that is no longer mounted.
+            setAnchor(event.currentTarget)
+            updateQuery(event.target.value)
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setAnchor(null)

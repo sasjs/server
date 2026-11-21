@@ -107,6 +107,9 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
   // Whether this component is still the one on screen. A walk cannot be cancelled,
   // so every result is checked against this and against the folder it was for.
   const live = useRef(true)
+  // The folder on screen, readable from a callback that started on another one. A
+  // scan cannot be cancelled, so this is what a late answer is compared against.
+  const showing = useRef(folder)
   const fieldRef = useRef<HTMLInputElement>(null)
 
   // Focus after mount rather than through `autoFocus` alone: the page renders this
@@ -127,6 +130,7 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
   // A different folder is a different search: the field empties, and the previous
   // folder's findings go with it.
   useEffect(() => {
+    showing.current = folder
     setQuery('')
     setReading(null)
     setFound(null)
@@ -142,7 +146,7 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
     if (!asked) return
 
     const startedFor = folder
-    const mine = () => live.current && startedFor === folder
+    const mine = () => live.current && showing.current === startedFor
 
     let scan = scans.current
 
@@ -195,19 +199,22 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
       .catch(() => undefined)
   }, [asked, folder])
 
+  // A reading belongs to the folder it was made for: without this, a scan started
+  // on one folder that settles after the reader has opened another would list the
+  // first folder's matches under the second one's heading.
   const hits: Hit[] = useMemo(
     () =>
       matches('folder', query, {
         docs: [],
         operations: [],
         apps: [],
-        files: found?.files ?? [],
-        contents: found?.contents ?? []
+        files: answered ? (found?.files ?? []) : [],
+        contents: answered ? (found?.contents ?? []) : []
       }),
-    [query, found]
+    [query, found, answered]
   )
 
-  const note = scanNote(found?.scan ?? null)
+  const note = scanNote(answered ? (found?.scan ?? null) : null)
   const busy = reading
     ? reading.total
       ? `Reading ${reading.done} of ${reading.total} files…`

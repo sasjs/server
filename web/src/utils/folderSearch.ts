@@ -6,11 +6,11 @@
  * threaded through the tree's props to hear one sentence. This module is that
  * sentence, and the one thing it carries is a drive path.
  *
- * What the request means now: OPEN THAT FOLDER'S PAGE with its search box focused.
- * It used to change the scope of the header's search box, which was wrong in a way
- * the user put best - a menu item in the tree had no business rewriting a control
- * in the header, and the reader was left looking at a box somewhere else on the
- * screen. The folder page carries its own search, so the request is a navigation.
+ * What the request means: OPEN THAT FOLDER'S PAGE with its search box focused. The
+ * folder page carries its own search, so the request is a navigation rather than a
+ * change of state somewhere else on the screen - a menu item in the tree has no
+ * business rewriting a control in the header, and the reader who chose it is
+ * looking at the folder.
  *
  * A subscription rather than app-wide state, because there is one listener and the
  * request is not state any screen keeps: the reader right-clicks a folder, Studio

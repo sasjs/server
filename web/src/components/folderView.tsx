@@ -43,12 +43,11 @@ interface Props {
 /**
  * The page a folder opens to: where you are, what is in it, and how to search it.
  *
- * The tree answers "where is the file I want" one level at a time; a reader who
- * clicks a folder is asking a different question - "what is in here" - and until
- * now the answer was the folder's name and a sentence. This page answers it: the
- * counts and dates of the level the tree has already read (no request of its own),
- * a filter over the names, a way into the contents search, and the listing with
- * each file's own dates.
+ * The tree answers "where is the file I want" one level at a time, and a reader who
+ * clicks a folder is asking a different question - "what is in here". This page
+ * answers it: the counts and dates of the level the tree has already read (no
+ * request of its own), the folder's own search, a filter over the names, and the
+ * listing with each file's own dates.
  *
  * Sizes come from the tree when the host reports them. The drive's tree does not
  * today, so the column and the total are simply absent rather than zero - a size
@@ -84,10 +83,10 @@ const FolderView = ({
   )
 
   // Whether the level has actually been read, which is not the same as an empty
-  // one: `childrenOf` answers a loading placeholder for a folder the API reported
-  // contents for, so an unread level and an empty one both look like no children.
-  const level = node ? childrenOf(node) : []
-  const read = !!node?.childrenLoaded || level.length > 0
+  // one. `childrenOf` answers a loading placeholder for a folder the API reported
+  // contents for, so the node is what says it - not the children this page got back:
+  // an unread level and an empty one both look like no children.
+  const read = !!node && (!!node.childrenLoaded || !node.hasChildren)
 
   const stats = useMemo(() => folderStats(children), [children])
   const bytes = useMemo(() => totalBytes(children), [children])
@@ -178,9 +177,8 @@ const FolderView = ({
       </Box>
 
       {/* The folder's own search, here rather than in the header: a reader who has
-          opened a folder is looking at THIS folder, and a header box that changed
-          its scope because a menu item was chosen was answering a question from
-          somewhere else on the screen. */}
+          opened a folder is looking at THIS folder, and the box that answers for it
+          belongs where they are looking. */}
       <FolderSearch
         folder={path}
         name={name}
