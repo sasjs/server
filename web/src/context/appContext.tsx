@@ -142,6 +142,29 @@ export const readSession = (
   }
 }
 
+/**
+ * Wait, when there is one, for the browser host to be ready to answer.
+ *
+ * A mock site's API is a service worker that registers while the page is
+ * already running, and the loader it ships promises `window.__sasjsMockReady`
+ * for exactly this - "apps can await __sasjsMockReady before calling the
+ * backend" (see `host/boot.js` in sasjs/cli's mock build). Nothing here asked,
+ * so on a first visit - the only visit a demonstration reliably gets - `/info`
+ * and `/SASjsApi/session` went out before anything could answer them, and the
+ * page rendered with no version and no run times: the dashboard's Version line
+ * read "development build" and its Run times "none reported". A reload worked,
+ * because by then the worker was in control, which is how it went unnoticed.
+ *
+ * Everywhere else there is no such promise, and this resolves at once. A host
+ * that fails to start resolves too: the requests then fail on their own terms,
+ * which is the behaviour this replaced.
+ */
+const hostReady = (): Promise<unknown> => {
+  const ready = (window as { __sasjsMockReady?: unknown }).__sasjsMockReady
+
+  return ready instanceof Promise ? ready.catch(() => {}) : Promise.resolve()
+}
+
 const AppContextProvider = (props: { children: ReactNode }) => {
   const { children } = props
   const [checkingSession, setCheckingSession] = useState(false)
@@ -189,37 +212,43 @@ const AppContextProvider = (props: { children: ReactNode }) => {
       axios.get('/').catch(() => {})
     }
 
-    axios
-      .get('/SASjsApi/session')
-      .then((res) => readSession(res.data))
-      .then((session) => {
-        // Anything that is not a session - a login page served by a proxy in
-        // front of the app, an empty body - leaves the user signed out, so the
-        // login screen (and with it the provider's sign-in button) is shown.
-        if (!session) return handleSignedOut()
+    // Everything below is the first read of the host, so it waits for a browser
+    // host to be listening: one that has not claimed the page yet answers these
+    // from the static site, and a page built from a 404 has nothing to say about
+    // the version, the run times or the session.
+    hostReady().then(() => {
+      axios
+        .get('/SASjsApi/session')
+        .then((res) => readSession(res.data))
+        .then((session) => {
+          // Anything that is not a session - a login page served by a proxy in
+          // front of the app, an empty body - leaves the user signed out, so the
+          // login screen (and with it the provider's sign-in button) is shown.
+          if (!session) return handleSignedOut()
 
-        setCheckingSession(false)
-        setUserId(session.uid)
-        setUsername(session.username)
-        setDisplayName(session.displayName)
-        setIsAdmin(session.isAdmin)
-        setLoggedIn(true)
-        setNeedsToUpdatePassword(session.needsToUpdatePassword)
-      })
-      .catch(handleSignedOut)
+          setCheckingSession(false)
+          setUserId(session.uid)
+          setUsername(session.username)
+          setDisplayName(session.displayName)
+          setIsAdmin(session.isAdmin)
+          setLoggedIn(true)
+          setNeedsToUpdatePassword(session.needsToUpdatePassword)
+        })
+        .catch(handleSignedOut)
 
-    axios
-      .get('/SASjsApi/info')
-      .then((res) => res.data)
-      .then((data: any) => {
-        setMode(data.mode)
-        setRunTimes(data.runTimes)
-        setAuthProviders(data.authProviders ?? [])
-        setOidcProviderName(data.oidcProviderName)
-        setLocalLoginEnabled(data.localLoginEnabled !== false)
-        setVersion(typeof data.version === 'string' ? data.version : '')
-      })
-      .catch(() => {})
+      axios
+        .get('/SASjsApi/info')
+        .then((res) => res.data)
+        .then((data: any) => {
+          setMode(data.mode)
+          setRunTimes(data.runTimes)
+          setAuthProviders(data.authProviders ?? [])
+          setOidcProviderName(data.oidcProviderName)
+          setLocalLoginEnabled(data.localLoginEnabled !== false)
+          setVersion(typeof data.version === 'string' ? data.version : '')
+        })
+        .catch(() => {})
+    })
   }, [])
 
   /**

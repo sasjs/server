@@ -131,6 +131,138 @@ const pauseFor = (milliseconds) =>
 const REGISTRY_NOT_READY = /ETARGET|E404/
 
 /**
+ * What produced this build, as `v8.7.0 (60015df)`: the release tag and the
+ * commit. These are the names `api/scripts/generateBuildInfo.ts` reads, kept
+ * the same so one build can be named by either.
+ */
+export const BUILD_VERSION_ENV = 'SASJS_SERVER_VERSION'
+export const BUILD_HASH_ENV = 'SASJS_SERVER_GIT_HASH'
+
+/** The output of a git command, or `fallback` when git cannot answer. */
+const gitOutput = (command, cwd, fallback) => {
+  try {
+    return (
+      execSync(command, {
+        cwd,
+        stdio: ['ignore', 'pipe', 'ignore']
+      })
+        .toString()
+        .trim() || fallback
+    )
+  } catch (error) {
+    // no git, or a directory that is not a checkout: an export of the source,
+    // a tarball unpacked somewhere. The build still has to run.
+    return fallback
+  }
+}
+
+/**
+ * The release this site is built from, in the form a running server reports.
+ *
+ * The rule is `api/scripts/generateBuildInfo.ts`'s, restated rather than
+ * imported: that module is TypeScript and the mock build runs without the API's
+ * dependencies installed, so it cannot be loaded from here. What it cannot
+ * restate is where the answer comes from - `git describe --tags` in the
+ * checkout, so the release a site names is the tag its source was at, and no
+ * number in this repository has to be moved when a release is cut. The
+ * environment overrides exist for the same reason they do there: the release
+ * workflow cuts the tag before it builds, and a checkout that has not fetched
+ * tags yet would otherwise name the previous one.
+ *
+ * `git describe --tags --always` degrades to the commit when the checkout has no
+ * tags at all (a shallow one), which is what the site then says - a short hash,
+ * which is true, rather than a release number that is not.
+ */
+export const buildIdentity = ({ cwd, env = process.env } = {}) => {
+  const fromEnv = (name) => {
+    const value = env[name]
+
+    return value && value.trim() ? value.trim() : undefined
+  }
+
+  const rawHash =
+    fromEnv(BUILD_HASH_ENV) ||
+    gitOutput('git rev-parse --short HEAD', cwd, 'unknown')
+  // CI passes the full SHA; the screen and a support ticket want the short form.
+  const gitHash = rawHash.length > 12 ? rawHash.slice(0, 7) : rawHash
+  const version =
+    fromEnv(BUILD_VERSION_ENV) ||
+    gitOutput('git describe --tags --always --dirty', cwd, 'dev')
+
+  return { version, gitHash, display: `${version} (${gitHash})` }
+}
+
+/** Where the worker states the release it reports to `/SASjsApi/info`. */
+const INFO_STAMP_POINT = 'const SERVICES = {'
+
+/**
+ * Where the worker states the release its diagnostics screen reports, written
+ * with the placeholder the `@sasjs/api` browser build carries.
+ */
+const DIAGNOSTICS_STAMP_POINT =
+  "build: { version: 'dev', gitHash: 'unknown', buildDate: null },"
+
+/**
+ * The published worker, with this build's release written into it.
+ *
+ * The host comes from `@sasjs/cli` and names no release, because a worker is not
+ * a package: it answers `dev`. That is the one thing about the site that is not
+ * already the real interface - every screen asks `/SASjsApi/info` what produced
+ * the build, and a demonstration of a server should answer the way the server
+ * does. So the answer is stamped into the ONE file that reports it, from the tag
+ * the site was built at.
+ *
+ * Stamped into the worker rather than into `host/api-browser.js`, which holds
+ * the same value: that file is cache-busted by a hash of its content, and a
+ * change made after the CLI computed it would reach a returning visitor under a
+ * URL that promises the bytes did not move. The worker's bytes are compared on
+ * every visit, so a stamped build installs like any other.
+ *
+ * Both points are required and a missing one throws: they are the CLI's text,
+ * and a CLI release that renames one would otherwise publish a site reporting
+ * `dev` with a green pipeline - the thing this stamp exists to stop.
+ */
+export const stampedWorker = (
+  source,
+  { version, gitHash, display, buildDate },
+  { cliVersion = 'the pinned CLI' } = {}
+) => {
+  for (const point of [INFO_STAMP_POINT, DIAGNOSTICS_STAMP_POINT])
+    if (!source.includes(point))
+      throw new Error(
+        `The published worker does not carry "${point}", so the release it reports cannot be set. ` +
+          `That text comes from @sasjs/cli ${cliVersion}: check the CLI_VERSION pin in mock/build.mjs against what the release now writes.`
+      )
+
+  const stamp = (text) => () => text
+
+  return (
+    source
+      // The diagnostics answer names the release, the commit and the date the
+      // interface was assembled - what the Admin screen's Release card shows.
+      .replace(
+        DIAGNOSTICS_STAMP_POINT,
+        stamp(
+          `build: { version: ${JSON.stringify(version)}, gitHash: ${JSON.stringify(
+            gitHash
+          )}, buildDate: ${JSON.stringify(buildDate)} },`
+        )
+      )
+      // The copy `createInfoService` takes is made below this line, so the
+      // property has to be set before it - the package hands back the same
+      // object, so setting it here reaches the service's configuration.
+      .replace(
+        INFO_STAMP_POINT,
+        stamp(
+          `// written by mock/build.mjs: the release this site was built from\n` +
+            `API.BROWSER_INFO.version = ${JSON.stringify(display)}\n\n` +
+            INFO_STAMP_POINT
+        )
+      )
+  )
+}
+
+/**
  * Runs a command, and tries again when the registry is the thing that failed.
  *
  * Any other failure is thrown at once: a build that is broken should stay
