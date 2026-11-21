@@ -62,14 +62,18 @@ jobs:
         run: npm audit --omit=dev
 
       - name: Audit API dependencies
-        # Fails the build on any known vulnerability, dev deps included -
-        # the same bar the pre-commit hook and local verification use. The
-        # allow-list in .github/scripts/audit.mjs carries advisories with no
-        # patched release upstream, each with the reason it cannot be fixed;
-        # matching is by GHSA id, so a NEW advisory against the same package
-        # still fails the build.
-        working-directory: ./api
-        run: npm ci --ignore-scripts && node ../.github/scripts/audit.mjs
+        # `npm run audit`, the same command a contributor runs, so there is one
+        # definition of this gate rather than a CI copy and a documented one. It is
+        # `sasjs-release --audit`: an exemption would live in
+        # api/scripts/audit-allowlist.json with a reason and a review date, an entry
+        # that stops matching fails, and the production tree is measured on every
+        # run, so an advisory that ships cannot be waived at all.
+        #
+        # The two exemptions this replaced had gone stale: `npm audit` in `api/`
+        # reports nothing at any severity, so there is nothing to waive and the
+        # allowlist is gone rather than emptied. The gate said so on its first run,
+        # which is the property the hand-written one was missing.
+        run: npm run audit
 
       - name: Audit API dependency licences and install scripts
         # The published package installs exactly this set, on other people's
