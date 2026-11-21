@@ -378,6 +378,14 @@ jobs:
         run: |
           CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")" npm --prefix ../web run test:search-browser
 
+      # The folder page carries the folder's search, so its browser assertions run
+      # here rather than beside the header's box - same browser, same managed
+      # Chromium, and nothing about the API.
+      - name: Run the folder page browser test
+        working-directory: ./api
+        run: |
+          CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")" npm --prefix ../web run test:folderview-browser
+
       - name: Run the browser tests
         working-directory: ./api
         # setupEnv.ts sets MODE/RUN_TIMES/NODE_PATH for the suite but no

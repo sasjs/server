@@ -1125,15 +1125,24 @@ describe('Studio in a browser', () => {
 
     await page.goto(`${baseUrl()}/studio?folderPath=${encodeURIComponent('/')}`)
 
-    // The URL is the folder's address, and the panel says so rather than showing
-    // an empty editor over it.
+    // The URL is the folder's address, and the page that answers is the folder's
+    // own: where you are, what the level holds, and the way into the contents
+    // search. The counts and the listing come from the level the tree reads, so
+    // the button beside them is what says the page - rather than an empty editor
+    // over the folder - is on screen.
     await page.waitForFunction(
       () => decodeURIComponent(location.search).includes('folderPath=/'),
       { timeout: 30000 }
     )
-    await page.waitForSelector('text=A folder. Its address is the URL', {
-      timeout: 30000
-    })
+    await page.waitForSelector('table', { timeout: 30000 })
+
+    // The summary is the level's own numbers, so the drive's root says how many
+    // files and folders it holds - the count the tree already read, not a request
+    // of the page's own
+    await page.waitForFunction(
+      () => /\d+ files? · \d+ folders?/.test(document.body.innerText),
+      { timeout: 30000 }
+    )
 
     expect(asked.length).toBeGreaterThan(0)
 
@@ -1152,6 +1161,49 @@ describe('Studio in a browser', () => {
     // walk from it is '', '/Public', '/Public/demo'.
     expect(asked).toContain('')
     expect(asked).toContain('/Public')
+  }, 120000)
+
+  it('searches a folder on the folder page the tree opens', async () => {
+    await page.goto(`${baseUrl()}/studio`)
+    await page.waitForSelector('.monaco-editor', { timeout: 30000 })
+
+    // The menu item in the tree: what a reader does when they want to search one
+    // folder rather than the drive.
+    await page
+      .getByRole('treeitem', { name: 'e2eFolder' })
+      .click({ button: 'right' })
+    await page
+      .getByRole('menuitem', { name: 'Search in this Folder' })
+      .click({ timeout: 30000 })
+
+    // It opens the folder's own page...
+    await page.waitForFunction(
+      () =>
+        decodeURIComponent(location.search).includes('folderPath=/e2eFolder') &&
+        location.search.includes('search=1'),
+      { timeout: 30000 }
+    )
+
+    // ...with the cursor already in the folder's OWN search box. The header's box
+    // is not the one that searches a folder: a menu item in the tree has no
+    // business rewriting a control in the header, and the reader would be left
+    // looking at a box somewhere else on the screen.
+    const field = page.getByLabel('Search the files in e2eFolder')
+    await field.waitFor({ timeout: 30000 })
+    expect(await field.evaluate((el) => el === document.activeElement)).toBe(
+      true
+    )
+
+    // A query matches the text INSIDE a file, and the result says which line -
+    // `nested.sas` holds `data _null_;`.
+    await field.fill('null')
+    await page.waitForSelector('text=line 1:', { timeout: 30000 })
+
+    // and the header's box still promises what it did before the click - it is not
+    // the box a folder search rewrites
+    await page
+      .getByRole('textbox', { name: 'Search the drive' })
+      .waitFor({ timeout: 5000 })
   }, 120000)
 
   it('opens a markdown file in the split view, at this window width', async () => {

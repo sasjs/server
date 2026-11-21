@@ -14,9 +14,11 @@ import {
   expandedDescendantsOf,
   graftLevel,
   isRootPath,
+  nodeAt,
   parentPathOf,
   withRootPath
 } from '../../utils/driveTree'
+import { onFolderSearch } from '../../utils/folderSearch'
 import { TreeNode } from '../../utils/types'
 import { homeFilePathFor } from '../../utils/userHome'
 import {
@@ -272,6 +274,25 @@ const Studio = () => {
     [fetchFolder]
   )
 
+  /**
+   * The tree's "Search in this Folder" opens the folder's own page with its search
+   * box focused.
+   *
+   * The header's box is deliberately not involved: it answers for the screen it is
+   * on, and a menu item elsewhere on the screen changing its scope was answering a
+   * question the reader had not asked there. The folder page is where a reader who
+   * opened a folder is already looking.
+   */
+  useEffect(
+    () =>
+      onFolderSearch((folderPath) => {
+        setSearchParams({ folderPath, search: '1' })
+        setSelectedFolderPath(folderPath)
+        setSelectedFilePath('')
+      }),
+    [setSearchParams]
+  )
+
   /** Opens a folder: the URL names it, and the editor stops showing a file. */
   const handleFolderSelect = (folderPath: string) => {
     setSearchParams({ folderPath })
@@ -514,6 +535,9 @@ const Studio = () => {
         <SASjsEditor
           selectedFilePath={selectedFilePath}
           selectedFolderPath={selectedFolderPath}
+          folderNode={nodeAt(directoryData, selectedFolderPath)}
+          openFolder={handleFolderSelect}
+          focusSearch={searchParams.get('search') === '1'}
           setSelectedFilePath={handleSelect}
           tab={tab}
           setTab={setTab}
