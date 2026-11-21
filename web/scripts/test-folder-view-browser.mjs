@@ -248,24 +248,14 @@ try {
     'a folder row goes to the folder'
   )
 
-  // --- the filter -------------------------------------------------------------
+  // --- one box, and the listing gives way to it --------------------------------
 
-  await evaluate(
-    `document.querySelector('input[aria-label="Filter the files in demo"]').focus()`
-  )
-  await call('Input.insertText', { text: 'ru' })
-  await until(
-    'document.querySelectorAll("tbody tr").length === 1',
-    'the filter narrows the listing'
-  )
-  assert.deepEqual(
-    (await rows()).map((row) => row[0]),
-    ['run.sas']
-  )
-  await call('Input.insertText', { text: 'zzz' })
-  await until(
-    'document.body.innerText.includes("Nothing in this folder matches")',
-    'a filter that matches nothing says so'
+  // A second box that only narrowed this level's listing was a weaker duplicate of
+  // the search, and the two could not be combined. The page has one box.
+  assert.equal(
+    await evaluate('document.querySelectorAll("input").length'),
+    1,
+    'the page has a single search box'
   )
 
   // --- the folder's own search -------------------------------------------------
@@ -283,6 +273,19 @@ try {
   await until(
     'document.body.textContent.includes("line 2: %include")',
     'a body hit with its line'
+  )
+  // the search covers the folders under this one, so the level's own listing stands
+  // down while a query is being answered - two sets of rows under one box would be
+  // ambiguous about which one the box was talking to
+  assert.equal(
+    await evaluate('!!document.querySelector("table")'),
+    false,
+    'the listing gives way to the results'
+  )
+  assert.equal(
+    await evaluate('document.querySelector("input").value'),
+    'orders',
+    'the one box holds the query'
   )
 
   const resultRows = () =>
@@ -321,6 +324,25 @@ try {
     'file:/Public/demo/run.sas',
     'a body hit opens the file it was found in'
   )
+  // clearing the box puts the listing back: the level the reader was looking at is
+  // still what the page is about when nothing is being asked
+  await evaluate(
+    `(() => { const field = document.querySelector("input"); field.focus(); field.select() })()`
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await until('!!document.querySelector("table")', 'the listing returns')
+
   console.log('folder view: the search box is on the folder itself')
 
   // --- a host that reports sizes ----------------------------------------------

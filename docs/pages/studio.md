@@ -38,9 +38,9 @@ Reading the bodies costs one request per file, and the drive answers that reques
 
 Clicking a folder's NAME in the tree - rather than its chevron - opens that folder at its own address, `/studio?folderPath=%2FPublic%2Fdemo`, which is a link you can send to someone. The page names where you are as a trail of crumbs you can click back along, and summarises the level the tree has already read: how many files and folders it holds, and when anything in it last changed. Sizes appear when the drive reports them; this build's tree does not, so there is no size column and no total rather than a total that counted only some of the files.
 
-Below the summary is the listing - folders first, then files, each with the dates the drive reported, created and last modified. A row opens what it names: a file in the editor, a folder in this page. The filter box narrows the listing by name as you type, two characters being the shortest query as it is in the header's box.
+Below the summary is the listing - folders first, then files, each with the dates the drive reported, created and last modified. A row opens what it names: a file in the editor, a folder in this page. The listing stands down while a search is being answered, because the search covers the folders under this one: its results replace the level's rows rather than sitting beside them.
 
-The search box at the top of the page is the folder's own: it searches this folder's files by name and the text inside them, and it is where the cursor lands when **Search in this Folder** brought you here. The filter below it narrows the listing by name without leaving the page.
+The search box at the top of the page is the folder's own, and it is the page's only one: it searches this folder's files by name **and** the text inside them, through the folders beneath it, and it is where the cursor lands when **Search in this Folder** brought you here. Two characters is the shortest query, as in the header's box; clearing it puts the listing back.
 
 ## Linting and formatting
 

@@ -26,6 +26,10 @@ interface Props {
   folder: string
   /** The folder's own name, for the field's label and placeholder. */
   name: string
+  /** The query, held by the page so it can tell whether a search is running. */
+  query: string
+  /** Called as the reader types. */
+  onQueryChange: (value: string) => void
   /** Puts the cursor in the field when the page was opened to search it. */
   autoFocus?: boolean
   /** Opens a file the reader chose. */
@@ -89,8 +93,14 @@ const scanNote = (scan: Scan | null): string => {
  * read until there is something to look for, and the caps on that read are reported
  * beneath the results.
  */
-const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
-  const [query, setQuery] = useState('')
+const FolderSearch = ({
+  folder,
+  name,
+  query,
+  onQueryChange,
+  autoFocus,
+  onOpenFile
+}: Props) => {
   const [reading, setReading] = useState<{
     done: number
     total: number
@@ -131,7 +141,6 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
   // folder's findings go with it.
   useEffect(() => {
     showing.current = folder
-    setQuery('')
     setReading(null)
     setFound(null)
     setFailed(false)
@@ -239,7 +248,7 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
         inputRef={fieldRef}
         value={query}
         autoFocus={autoFocus}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={(event) => onQueryChange(event.target.value)}
         placeholder={`Search in ${name}`}
         sx={{ width: 320 }}
         slotProps={{

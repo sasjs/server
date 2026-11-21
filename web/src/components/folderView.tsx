@@ -9,7 +9,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography
 } from '@mui/material'
 
@@ -18,7 +17,6 @@ import FolderSearch from './folderSearch'
 import { LOADING_SUFFIX, childrenOf } from '../utils/driveTree'
 import {
   breadcrumbOf,
-  filterChildren,
   folderStats,
   formatBytes,
   formatWhen,
@@ -46,8 +44,8 @@ interface Props {
  * The tree answers "where is the file I want" one level at a time, and a reader who
  * clicks a folder is asking a different question - "what is in here". This page
  * answers it: the counts and dates of the level the tree has already read (no
- * request of its own), the folder's own search, a filter over the names, and the
- * listing with each file's own dates.
+ * request of its own), the folder's own search - names and contents, recursively -
+ * and the listing with each file's own dates.
  *
  * Sizes come from the tree when the host reports them. The drive's tree does not
  * today, so the column and the total are simply absent rather than zero - a size
@@ -60,15 +58,19 @@ const FolderView = ({
   onOpenFolder,
   focusSearch
 }: Props) => {
-  const [filter, setFilter] = useState('')
+  // The one search this page has: its box searches the folder's names AND the text
+  // inside its files, recursively, so a second box that only narrowed the listing to
+  // the level on screen was a second, weaker answer to the same question - and the
+  // two did not combine.
+  const [query, setQuery] = useState('')
 
-  // Studio reuses this component when one folder page replaces another, so the
-  // filter is reset by the path rather than by a remount: a filter typed in
-  // `/Public/demo` narrowing `/Public/macro` to "nothing matches" is a listing that
-  // lies about a folder the reader just opened.
+  // Studio reuses this component when one folder page replaces another, so the query
+  // is reset by the path rather than by a remount.
   useEffect(() => {
-    setFilter('')
+    setQuery('')
   }, [path])
+
+  const searching = query.trim().length >= 2
 
   const children = useMemo(
     () =>
@@ -90,10 +92,7 @@ const FolderView = ({
 
   const stats = useMemo(() => folderStats(children), [children])
   const bytes = useMemo(() => totalBytes(children), [children])
-  const shown = useMemo(
-    () => filterChildren(children, filter),
-    [children, filter]
-  )
+
   const crumbs = useMemo(() => breadcrumbOf(path), [path])
   const hasSizes = children.some((child) => typeof child.size === 'number')
   const name = crumbs[crumbs.length - 1].name
@@ -161,42 +160,32 @@ const FolderView = ({
         {node ? summary.join(' · ') : 'Reading this folder…'}
       </Typography>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, my: 2 }}>
-        <TextField
-          size="small"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          placeholder="Filter this folder"
-          // only offered once there is something to filter
-          disabled={!children.length}
-          slotProps={{
-            htmlInput: { 'aria-label': `Filter the files in ${name}` }
-          }}
-          sx={{ width: 260 }}
+      <Box sx={{ my: 2 }}>
+        {/* The folder's own search, here rather than in the header: a reader who has
+            opened a folder is looking at THIS folder, and the box that answers for it
+            belongs where they are looking. It is the page's only search box - names
+            and contents, recursively - so a second box that merely narrowed the
+            listing to the level on screen would be a weaker duplicate. */}
+        <FolderSearch
+          folder={path}
+          name={name}
+          query={query}
+          onQueryChange={setQuery}
+          autoFocus={focusSearch}
+          onOpenFile={onOpenFile}
         />
       </Box>
 
-      {/* The folder's own search, here rather than in the header: a reader who has
-          opened a folder is looking at THIS folder, and the box that answers for it
-          belongs where they are looking. */}
-      <FolderSearch
-        folder={path}
-        name={name}
-        autoFocus={focusSearch}
-        onOpenFile={onOpenFile}
-      />
-
-      {!node ? null : !read ? (
+      {/* While a query is being answered the results stand in for the listing: the
+          search covers the folders under this one, so a listing of this level beside
+          it would be a different, narrower set of rows under the same box. */}
+      {searching ? null : !node ? null : !read ? (
         <Typography variant="body2" color="text.secondary">
           Reading this folder…
         </Typography>
       ) : !children.length ? (
         <Typography variant="body2" color="text.secondary">
           This folder is empty.
-        </Typography>
-      ) : !shown.length ? (
-        <Typography variant="body2" color="text.secondary">
-          Nothing in this folder matches “{filter.trim()}”.
         </Typography>
       ) : (
         <TableContainer component={Paper} variant="outlined">
@@ -210,7 +199,7 @@ const FolderView = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {shown.map((child) => (
+              {children.map((child) => (
                 <TableRow
                   key={child.relativePath}
                   hover

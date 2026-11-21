@@ -128,25 +128,6 @@ export const breadcrumbOf = (
 }
 
 /**
- * The entries a filter leaves, folders first as the tree shows them.
- *
- * The filter is over the NAME, not the path: the reader is looking at one folder,
- * so every entry is under the same folder and the part of a path that differs is
- * the name. Two characters is the shortest query the header's box accepts, and it
- * is the same rule here - one character matches most of a folder.
- */
-export const filterChildren = (
-  children: TreeNode[],
-  filter: string
-): TreeNode[] => {
-  const needle = filter.trim().toLowerCase()
-
-  if (needle.length < 2) return children
-
-  return children.filter((child) => child.name.toLowerCase().includes(needle))
-}
-
-/**
  * A level in the order a reader scans it: folders, then files, each by name.
  *
  * The drive's own answer is already sorted that way, but the page must not depend

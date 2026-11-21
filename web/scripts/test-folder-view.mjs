@@ -2,7 +2,7 @@
  * Asserts what the folder page says about the level it is showing.
  *
  * The numbers on that page are derived from the tree's own answer - a count, a
- * total, the newest date, the crumbs, the filter - so they are pure functions of
+ * total, the newest date, the crumbs - so they are pure functions of
  * a level and are asserted here rather than through a render. The page's wiring is
  * in `test-folder-view-browser.mjs`.
  *
@@ -22,7 +22,6 @@ registerHooks(tsResolverHooks)
 
 const {
   breadcrumbOf,
-  filterChildren,
   folderStats,
   formatBytes,
   formatWhen,
@@ -151,35 +150,6 @@ check('the root is one crumb', () =>
 // the host answers the root as '/' as well as '', and the crumbs are the same
 check('the root in its other spelling', () =>
   assert.deepEqual(breadcrumbOf('/'), [{ name: 'files', path: '' }])
-)
-
-// --- the filter ---------------------------------------------------------------
-
-check('two characters filter by name', () =>
-  assert.deepEqual(
-    filterChildren(level, 'ord').map((child) => child.name),
-    ['orders.sas']
-  )
-)
-check('the filter is case-insensitive', () =>
-  assert.deepEqual(
-    filterChildren(level, 'ORD').map((child) => child.name),
-    ['orders.sas']
-  )
-)
-// one character is not a query, as in the header's box: it would match most of a
-// folder and read as a listing that had not changed
-check('one character leaves the level alone', () =>
-  assert.equal(filterChildren(level, 'o').length, level.length)
-)
-check('a filter matches folders too', () =>
-  assert.deepEqual(
-    filterChildren(level, 'mac').map((child) => child.name),
-    ['macro']
-  )
-)
-check('no match is an empty list', () =>
-  assert.deepEqual(filterChildren(level, 'zzz'), [])
 )
 
 // --- the order ----------------------------------------------------------------
