@@ -581,6 +581,384 @@ try {
   console.log(
     'clearing and retyping during a walk shows only the current query'
   )
+  // --- a search started from the tree ------------------------------------------
+  //
+  // The whole path a reader takes for a folder search: right-click a row in
+  // Studio's tree, choose the item, type. What follows asserts the promise the
+  // item makes - the box answers for THAT folder, reads the bodies of the files in
+  // it, and says which line matched - and what it must not do: walk the whole
+  // drive, or ask for a file it cannot read.
+  const walked = () =>
+    evaluate(
+      'searchHarness.requests.filter(x => x.startsWith("/SASjsApi/drive/fileTree:")).map(x => x.split(":")[1])'
+    )
+  const readFiles = () =>
+    evaluate(
+      'searchHarness.requests.filter(x => x.startsWith("/SASjsApi/drive/file:")).map(x => x.split(":")[1])'
+    )
+  const menuItem = (label) =>
+    `[...document.querySelectorAll('[role="menuitem"]')].find((el) => el.textContent.trim() === ${JSON.stringify(label)})`
+
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until('!!document.querySelector(\'[role="treeitem"]\')', 'the tree')
+
+  await evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
+    return !!row
+  })()`)
+  await until(`!!${menuItem('Search in this Folder')}`, 'the folder menu item')
+  assert.equal(
+    await evaluate('document.body.textContent.includes("Search the Drive")'),
+    false,
+    'a folder row does not offer the drive search'
+  )
+  await evaluate(`${menuItem('Search in this Folder')}.click()`)
+
+  // the box now answers for that folder, and says so where the reader looks
+  const folderField = 'input[aria-label="Search inside the folder /services"]'
+  await until(
+    `!!document.querySelector(${JSON.stringify(folderField)})`,
+    'the box takes the folder'
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector(${JSON.stringify(folderField)}).placeholder`
+    ),
+    'Search in services',
+    'the placeholder names the folder'
+  )
+  assert.equal(
+    await evaluate(
+      'document.activeElement === document.querySelector(\'input[aria-label="Search inside the folder /services"]\')'
+    ),
+    true,
+    'the request puts the cursor in the box'
+  )
+
+  await type(folderField, 'orders')
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'a body hit with its line'
+  )
+
+  // the walk covered the folder that was clicked and the folders under it - not
+  // the drive, which would have asked for the root as well
+  assert.deepEqual(await walked(), ['/services'], 'walked only the folder')
+  // the bodies read are that folder's text files; a picture is not asked for, and
+  // a file in a sibling folder is not read at all
+  assert.deepEqual(
+    (await readFiles()).sort(),
+    ['/services/orders.sas', '/services/run.sas'],
+    "read the folder's text files, and only those"
+  )
+  // both answers are on screen: the file by name, and the file that says it
+  assert.equal(
+    await evaluate('document.body.textContent.includes("run.sas")'),
+    true,
+    'the body hit names its file'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("Content")'),
+    true,
+    'the body hit is labelled'
+  )
+
+  // Escape ends the folder search: the box goes back to answering for Studio
+  await evaluate(
+    `document.querySelector(${JSON.stringify(folderField)}).focus()`
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27
+  })
+  await until(
+    `!!document.querySelector('input[aria-label="Search the drive"]')`,
+    'Escape returns the box to Studio'
+  )
+
+  // The drive root has no row of its own, so its menu is the empty part of the
+  // tree - and its item is named for what the root is
+  await evaluate(`(() => {
+    const box = document.querySelector('[role="tree"]').parentElement
+    box.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 300 }))
+  })()`)
+  await until(`!!${menuItem('Search the Drive')}`, 'the root menu item')
+  await evaluate(`${menuItem('Search the Drive')}.click()`)
+  const driveField = 'input[aria-label="Search inside the folder /"]'
+  await until(
+    `!!document.querySelector(${JSON.stringify(driveField)})`,
+    'the box takes the drive root'
+  )
+  assert.equal(
+    await evaluate(
+      `document.querySelector(${JSON.stringify(driveField)}).placeholder`
+    ),
+    'Search in the drive',
+    'the root is not given a folder name'
+  )
+
+  // The drive is one list however it was reached, in both directions.
+  //
+  // First: a drive search walks the drive, and a root scan started after it must
+  // answer from that walk rather than walking every folder again.
+  const escapeToDrive = async () => {
+    await evaluate(
+      `document.querySelector('input[aria-label="Search the drive"], input[aria-label="Search inside the folder /"]').focus()`
+    )
+    await call('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      key: 'Escape',
+      code: 'Escape',
+      windowsVirtualKeyCode: 27
+    })
+    await call('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      key: 'Escape',
+      code: 'Escape',
+      windowsVirtualKeyCode: 27
+    })
+    await until(
+      `!!document.querySelector('input[aria-label="Search the drive"]')`,
+      'the drive scope'
+    )
+
+  }
+  const rootWalks = async () =>
+    (await walked()).filter((path) => path === '').length
+  const openRootSearch = async () => {
+    await evaluate(`(() => {
+      const box = document.querySelector('[role="tree"]').parentElement
+      box.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 300 }))
+    })()`)
+    await until(`!!${menuItem('Search the Drive')}`, 'the root menu item again')
+    await evaluate(`${menuItem('Search the Drive')}.click()`)
+    await until(
+      `!!document.querySelector(${JSON.stringify(driveField)})`,
+      'the box takes the drive root again'
+    )
+  }
+
+  await escapeToDrive()
+  const beforeDrive = (await walked()).length
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'the drive search before a root scan'
+  )
+  assert.deepEqual(
+    (await walked()).slice(beforeDrive),
+    ['', '/services', '/reports'],
+    'the drive search walks the drive and the folders under it'
+  )
+  const beforeRootScan = (await walked()).length
+  await openRootSearch()
+  await type(driveField, 'orders')
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'the root scan after a drive search'
+  )
+  assert.deepEqual(
+    (await walked()).slice(beforeRootScan),
+    [],
+    'a root scan reuses the walk the drive search made'
+  )
+
+  // a folder searched once in a session is not read again: the second query is
+  // answered from what the first scan read
+  await escapeToDrive()
+  await evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
+  })()`)
+  await until(`!!${menuItem('Search in this Folder')}`, 'the folder item again')
+  await evaluate(`${menuItem('Search in this Folder')}.click()`)
+  await until(
+    `!!document.querySelector(${JSON.stringify(folderField)})`,
+    'the folder again'
+  )
+  const before = (await walked()).length + (await readFiles()).length
+  await type(folderField, 'report')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'the second query in a scanned folder'
+  )
+  assert.equal(
+    (await walked()).length + (await readFiles()).length,
+    before,
+    'a folder already scanned is not read again'
+  )
+
+  // Second direction, on a fresh page: a root scan walks the drive, and the
+  // drive's own search after it must answer from that walk - which only holds if
+  // the scan writes its listing back into the drive's cache.
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of a fresh page'
+  )
+  await openRootSearch()
+  await type(driveField, 'orders')
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'a root scan of a fresh page'
+  )
+  assert.equal(await rootWalks(), 1, 'the root scan walked the drive once')
+  await escapeToDrive()
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("orders.sas")',
+    'the drive search after a root scan'
+  )
+  assert.equal(
+    await rootWalks(),
+    1,
+    'a drive search reuses the walk a root scan already made'
+  )
+
+  // A folder with more text files than one search reads says so where the reader
+  // looks. The cap is a promise the note has to keep: a short list that did not say
+  // it was short would read as "the word is not in this folder".
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.setWide(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of the wide page'
+  )
+  await evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
+  })()`)
+  await until(`!!${menuItem('Search in this Folder')}`, 'the folder item on the wide page')
+  await evaluate(`${menuItem('Search in this Folder')}.click()`)
+  await until(
+    `!!document.querySelector(${JSON.stringify(folderField)})`,
+    'the wide folder'
+  )
+  await type(folderField, 'orders')
+  await until(
+    'document.body.textContent.includes("Read the first 200 of 205 text files")',
+    'the note that says which files were not read'
+  )
+
+  // A drive that cannot be read while the scan runs must not leave an empty walk
+  // cached. The drive's own search applies that rule already; the root scan has to
+  // apply it too, or every later drive query reuses the empty list and answers
+  // "Nothing matches" for the life of the cache.
+  await navigate(1200)
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.setEmpty(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of the empty page'
+  )
+  await openRootSearch()
+  await type(driveField, 'orders')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'an empty root scan'
+  )
+  assert.equal(await rootWalks(), 1, 'the empty scan walked the drive once')
+  await escapeToDrive()
+  await type(desktop, 'orders')
+  await until(
+    'document.body.textContent.includes("Nothing matches")',
+    'the drive search after an empty root scan'
+  )
+  assert.equal(
+    await rootWalks(),
+    2,
+    'an empty root scan is not kept: the drive search walks again'
+  )
+
+  // On a narrow screen the box is a dialog, and Escape there has to end the folder
+  // search too. It used to close the dialog only: the placeholder came back as
+  // "Search in services" on the next open and there was no way back to the drive
+  // short of leaving Studio - the exit the docs promise.
+  await navigate(400)
+  // A layout width of 400, not the 980px a mobile emulation falls back to without a
+  // viewport meta: the point of this case is the bar having no room for the field,
+  // which is what makes a folder request open the dialog instead of focusing it.
+  await call('Emulation.setDeviceMetricsOverride', {
+    width: 400,
+    height: 800,
+    deviceScaleFactor: 1,
+    mobile: false
+  })
+  await evaluate('searchHarness.setFolders(true)')
+  await evaluate('searchHarness.navigate("/studio")')
+  await until(
+    '!!document.querySelector(\'[role="treeitem"]\')',
+    'the tree of the narrow page'
+  )
+  await evaluate(`(() => {
+    const row = [...document.querySelectorAll('[role="treeitem"]')].find((el) => el.textContent.trim() === 'services')
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 40 }))
+  })()`)
+  await until(`!!${menuItem('Search in this Folder')}`, 'the folder item on a narrow screen')
+  await evaluate(`${menuItem('Search in this Folder')}.click()`)
+  await until(
+    '!!document.querySelector("[role=dialog] input")',
+    'the dialog a folder search opens'
+  )
+  assert.equal(
+    await evaluate(
+      'document.querySelector("[role=dialog] input").getAttribute("aria-label")'
+    ),
+    'Search inside the folder /services',
+    'the dialog answers for the folder'
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Escape',
+    code: 'Escape',
+    windowsVirtualKeyCode: 27
+  })
+  await until(
+    '!document.querySelector("[role=dialog] input")',
+    'the dialog closed by Escape'
+  )
+  await until(
+    `!!document.querySelector('button[aria-label="Search the drive"]')`,
+    'the box back on the drive'
+  )
+  await evaluate(
+    `document.querySelector('button[aria-label="Search the drive"]').click()`
+  )
+  await until(
+    '!!document.querySelector("[role=dialog] input")',
+    'the dialog opened again'
+  )
+  assert.equal(
+    await evaluate(
+      'document.querySelector("[role=dialog] input").getAttribute("aria-label")'
+    ),
+    'Search the drive',
+    'Escape in the dialog ends the folder search, not just the dialog'
+  )
+
+  console.log('a folder search answers for the folder the tree reported')
 } finally {
   socket?.close()
   browser?.kill()
