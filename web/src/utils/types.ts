@@ -42,6 +42,15 @@ export interface TreeNode {
   modified?: string
   /** When the file was created, ISO. Folders carry neither date. */
   created?: string
+  /**
+   * The file's size in bytes, when the host reports one.
+   *
+   * The tree reports it for a file and never for a folder, so a folder page knows
+   * how big its files are without reading them. Nothing in this build sends it
+   * yet - the shape comes from @sasjs/api - so every reader of it treats it as
+   * absent rather than as zero.
+   */
+  size?: number
   /** Reported by the API for one-level loads: this folder is not empty. */
   hasChildren?: boolean
   /** Set once this node's children have been fetched, so [] means "empty". */

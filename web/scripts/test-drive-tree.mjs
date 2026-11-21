@@ -22,6 +22,7 @@ const {
   ROOT_PATH,
   graftLevel,
   isDriveRootPath,
+  nodeAt,
   isRootPath,
   parentPathOf,
   withRootPath
@@ -487,6 +488,36 @@ await checkAsync('the folder that was right-clicked is read', async () => {
 
   assert.deepEqual(asked, ['/a'])
   assert.deepEqual(files, ['/a/only.sas'])
+})
+
+// The folder page asks the tree for the node its URL names: a level is loaded on
+// demand, so a deep link arrives before the node exists and null is "not read yet"
+// rather than "empty".
+check('nodeAt finds a level the tree holds', () => {
+  const root = withRootPath(
+    node('files', '', true, [
+      node('Public', '/Public', true, [
+        node('demo', '/Public/demo', true, [node('a.sas', '/Public/demo/a.sas', false)])
+      ])
+    ])
+  )
+
+  assert.equal(nodeAt(root, '/Public/demo')?.relativePath, '/Public/demo')
+  assert.equal(nodeAt(root, '/Public/demo/a.sas')?.name, 'a.sas')
+})
+
+check('nodeAt answers the root for either spelling of it', () => {
+  const root = node('files', '', true, [])
+
+  assert.equal(nodeAt(root, ''), root)
+  assert.equal(nodeAt(root, '/'), root)
+})
+
+check('nodeAt answers null for a level the tree has not read', () => {
+  const root = node('files', '', true, [node('Public', '/Public', true, [])])
+
+  assert.equal(nodeAt(root, '/Public/demo'), null)
+  assert.equal(nodeAt(null, '/Public'), null)
 })
 
 console.log(`\n${checks} checks passed`)
