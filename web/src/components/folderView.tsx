@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   Box,
@@ -63,6 +63,14 @@ const FolderView = ({
 }: Props) => {
   const [filter, setFilter] = useState('')
 
+  // Studio reuses this component when one folder page replaces another, so the
+  // filter is reset by the path rather than by a remount: a filter typed in
+  // `/Public/demo` narrowing `/Public/macro` to "nothing matches" is a listing that
+  // lies about a folder the reader just opened.
+  useEffect(() => {
+    setFilter('')
+  }, [path])
+
   const children = useMemo(
     () =>
       node
@@ -74,6 +82,12 @@ const FolderView = ({
         : [],
     [node]
   )
+
+  // Whether the level has actually been read, which is not the same as an empty
+  // one: `childrenOf` answers a loading placeholder for a folder the API reported
+  // contents for, so an unread level and an empty one both look like no children.
+  const level = node ? childrenOf(node) : []
+  const read = !!node?.childrenLoaded || level.length > 0
 
   const stats = useMemo(() => folderStats(children), [children])
   const bytes = useMemo(() => totalBytes(children), [children])
@@ -174,7 +188,11 @@ const FolderView = ({
         onOpenFile={onOpenFile}
       />
 
-      {!node ? null : !children.length ? (
+      {!node ? null : !read ? (
+        <Typography variant="body2" color="text.secondary">
+          Reading this folder…
+        </Typography>
+      ) : !children.length ? (
         <Typography variant="body2" color="text.secondary">
           This folder is empty.
         </Typography>

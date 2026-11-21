@@ -16,13 +16,6 @@ import type { TreeNode } from './types'
 export interface FolderStats {
   files: number
   folders: number
-  /**
-   * Bytes across the files whose size the host reports, or null when it reports
-   * none - which is what the drive's tree does today. A total that silently
-   * counted a subset would be a wrong number said confidently, so the page says
-   * nothing rather than something approximate.
-   */
-  bytes: number | null
   /** The most recent date in the level, ISO, or null for a level with none. */
   newest: string | null
 }
@@ -40,21 +33,15 @@ const dateOf = (node: TreeNode): string | null => {
 }
 
 /**
- * A level summarised: how many files, how many folders, how big, how recent.
+ * A level summarised: how many files, how many folders, how recent.
  *
- * `bytes` is null unless at least one file reports a size, and the count is of the
- * files that DO report one - but a level where only some files report a size is
- * still reported, because that is a host that reports sizes for some formats and
- * not others, and a missing size on one file says nothing about the others. The
- * page only prints the total when every file has one, which is checked in
- * `totalBytes`.
+ * The size total is deliberately not here. `totalBytes` is the one answer to "how
+ * big is this level", and it is null unless every file reports a size - a second
+ * field that summed whichever sizes it had would be a number that looks like the
+ * total and is not.
  */
 export const folderStats = (children: TreeNode[]): FolderStats => {
   const files = children.filter((child) => !child.isFolder)
-  const sizes = files
-    .map((file) => file.size)
-    .filter((size): size is number => typeof size === 'number')
-
   const dates = children
     .map(dateOf)
     .filter((date): date is string => date !== null)
@@ -63,17 +50,11 @@ export const folderStats = (children: TreeNode[]): FolderStats => {
   return {
     files: files.length,
     folders: children.length - files.length,
-    bytes: sizes.length ? sizes.reduce((total, size) => total + size, 0) : null,
     newest: dates.length ? dates[dates.length - 1] : null
   }
 }
 
-/**
- * The level's total, or null when any file's size is unknown.
- *
- * The distinction `folderStats.bytes` keeps is "we have some sizes"; this is the
- * one the page prints, and it has to be all of them or nothing.
- */
+/** The level's total in bytes, or null when any file's size is unknown. */
 export const totalBytes = (children: TreeNode[]): number | null => {
   const files = children.filter((child) => !child.isFolder)
 

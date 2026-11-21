@@ -90,9 +90,6 @@ check('an unparseable date is ignored', () =>
 check('no sizes reported means no total, not zero', () =>
   assert.equal(totalBytes(level), null)
 )
-check('and the summary says the same', () =>
-  assert.equal(folderStats(level).bytes, null)
-)
 
 const sized = [
   node('a.sas', '/demo/a.sas', false, { size: 1024 }),
@@ -101,9 +98,6 @@ const sized = [
 ]
 check('a total is the sum of the files', () =>
   assert.equal(totalBytes(sized), 1536)
-)
-check('and the summary carries it', () =>
-  assert.equal(folderStats(sized).bytes, 1536)
 )
 
 // one file without a size makes the total a partial sum, which is not the

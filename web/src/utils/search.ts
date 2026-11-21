@@ -28,13 +28,22 @@ import { snippetIn } from './contentSearch'
  * listing and the drive - the dashboard's answer, for the reader who has just
  * signed in and does not yet know which screen holds what they want.
  *
- * `folder` is the one scope a route does not decide: the reader right-clicked a
- * folder in Studio's tree and asked to search inside it, so the scope is the
- * request rather than the screen. It searches that folder's files by name and
- * their bodies for the query - see `contentHits`.
+ * Every one of these is derived from the route (`searchScope`), which is why a hint
+ * and a label can be derived from it too.
  */
-export type Scope =
-  'docs' | 'api' | 'apps' | 'drive' | 'all' | 'everything' | 'folder'
+export type ScreenScope =
+  'docs' | 'api' | 'apps' | 'drive' | 'all' | 'everything'
+
+/**
+ * What a query can be asked OF: a screen's own lists, or one folder's files.
+ *
+ * `folder` is the one scope no route decides, and it is asked by a folder's own
+ * page rather than by the header's box: the reader opened a folder, so that
+ * folder's files by name and their bodies are what its search answers from - see
+ * `contentHits`. The header never asks for it, which is why the hint and label
+ * functions take a `ScreenScope` and not this.
+ */
+export type Scope = ScreenScope | 'folder'
 
 /** One entry of the index MkDocs writes for its own search. */
 export interface DocsEntry {
@@ -160,7 +169,7 @@ export const searchScope = (
   pathname: string,
   canListApps = true,
   canListDrive = true
-): Scope => {
+): ScreenScope => {
   if (isScreen(pathname, '/docs')) return 'docs'
   if (isScreen(pathname, '/api')) return 'api'
   if (canListApps && APPS_PATHS.some((path) => isScreen(pathname, path)))
@@ -177,11 +186,10 @@ export const searchScope = (
  *
  * "Search docs and API" on the dashboard and "Search apps" on the apps screen are
  * the same control doing two different jobs, and a placeholder that did not say so
- * would leave the reader guessing which. A folder search names the folder it was
- * started from, because "Search the drive" beside a tree whose folder was just
- * right-clicked would be a promise the results do not keep.
+ * would leave the reader guessing which. Only a screen has a hint: a folder's own
+ * page names itself in its own field, so `folder` is not a `ScreenScope`.
  */
-export const searchHint = (scope: Scope): string => {
+export const searchHint = (scope: ScreenScope): string => {
   if (scope === 'docs') return 'Search the docs'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search apps'
@@ -192,7 +200,7 @@ export const searchHint = (scope: Scope): string => {
 }
 
 /** The hint as a sentence, for the field's accessible name. */
-export const searchLabel = (scope: Scope): string => {
+export const searchLabel = (scope: ScreenScope): string => {
   if (scope === 'docs') return 'Search the documentation'
   if (scope === 'api') return 'Search the API'
   if (scope === 'apps') return 'Search the apps'

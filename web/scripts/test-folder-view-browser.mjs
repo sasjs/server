@@ -171,9 +171,6 @@ try {
 
   // --- where the reader is ----------------------------------------------------
 
-  const crumbs = await evaluate(
-    '[...document.querySelectorAll("button, span")].map((el) => el.textContent.trim()).filter(Boolean)'
-  )
   assert.ok(
     await evaluate('document.body.innerText.includes("files")'),
     'the drive crumb'

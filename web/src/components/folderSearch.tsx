@@ -32,12 +32,20 @@ interface Props {
   onOpenFile: (filePath: string) => void
 }
 
+/** A folder read once, and the query answered from it however many times. */
+interface Reading {
+  folder: string
+  files: string[]
+  contents: FileText[]
+  scan: Scan
+}
+
 /**
  * What a folder search left out, in one line, or '' when it covered everything.
  *
  * A cap that is not reported is a search that claims to have read a folder it only
  * part-read, and the reader's conclusion - "the word is not in there" - would be
- * wrong. So the caps are said out loud, under the results they limit.
+ * wrong. So the caps are said out loud, beneath the results they limit.
  */
 const scanNote = (scan: Scan | null): string => {
   if (!scan) return ''
@@ -74,28 +82,30 @@ const scanNote = (scan: Scan | null): string => {
  * one answers "where in THIS folder is the thing I mean", and it is here rather
  * than in the header because that is where the reader is looking when they open a
  * folder. It searches the names of the folder's files and the text inside them,
- * and choosing a result opens the file at the line it was found on.
+ * and choosing a result opens the file in the editor.
  *
- * The scan is expensive - one request per folder, one per text file - so it runs
- * once per folder and the later queries are answered from what it read. The caps
- * on that read are reported underneath, and nothing is read until there is
- * something to look for.
+ * The read is expensive - one request per folder, one per text file - so it happens
+ * once per folder and every later query is answered from what it read. Nothing is
+ * read until there is something to look for, and the caps on that read are reported
+ * beneath the results.
  */
 const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
   const [query, setQuery] = useState('')
-  const [files, setFiles] = useState<string[]>([])
-  const [contents, setContents] = useState<FileText[]>([])
-  const [scan, setScan] = useState<Scan | null>(null)
   const [reading, setReading] = useState<{
     done: number
     total: number
   } | null>(null)
-  const [searched, setSearched] = useState(false)
-  // The scan for the folder on screen, so a second query is not a second read.
-  // Reset when the folder changes, and dropped on unmount with the component.
-  const scanned = useRef<{ folder: string; promise: Promise<void> } | null>(
-    null
-  )
+  // The scan's answer, and which folder it is an answer for. Kept as one value so
+  // a result that arrives for a folder the reader has left cannot be shown as this
+  // one's.
+  const [found, setFound] = useState<Reading | null>(null)
+  const [failed, setFailed] = useState(false)
+  const scans = useRef<{
+    folder: string
+    promise: Promise<Reading | null>
+  } | null>(null)
+  // Whether this component is still the one on screen. A walk cannot be cancelled,
+  // so every result is checked against this and against the folder it was for.
   const live = useRef(true)
   const fieldRef = useRef<HTMLInputElement>(null)
 
@@ -114,57 +124,75 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
     }
   }, [])
 
-  // A different folder is a different search: the field empties and the previous
+  // A different folder is a different search: the field empties, and the previous
   // folder's findings go with it.
   useEffect(() => {
     setQuery('')
-    setFiles([])
-    setContents([])
-    setScan(null)
     setReading(null)
-    setSearched(false)
-    scanned.current = null
+    setFound(null)
+    setFailed(false)
+    scans.current = null
   }, [folder])
 
   const needle = query.trim()
   const asked = needle.length >= 2
+  const answered = found?.folder === folder
 
   useEffect(() => {
     if (!asked) return
 
-    if (!scanned.current || scanned.current.folder !== folder) {
+    const startedFor = folder
+    const mine = () => live.current && startedFor === folder
+
+    let scan = scans.current
+
+    if (!scan || scan.folder !== startedFor) {
       const promise = walkDrivePaths(
         (path) => listFolder(path),
         WALK_CONCURRENCY,
-        folder
+        startedFor
       )
-        .then((found) =>
-          readContents(found, readFileText, (done, total) => {
-            if (live.current) setReading({ done, total })
-          }).then((result) => {
-            if (!live.current) return
-
-            setFiles(found)
-            setContents(result.contents)
-            setScan(result)
-            setSearched(true)
-            setReading(null)
-          })
+        .then((files) =>
+          readContents(files, readFileText, (done, total) => {
+            if (mine()) setReading({ done, total })
+          }).then((result) => ({
+            folder: startedFor,
+            files,
+            contents: result.contents,
+            scan: result
+          }))
         )
-        .catch(() => {
-          if (!live.current) return
+        // a walk that threw is not an answer: the folder could not be read, which
+        // is not the same as a folder that does not contain the word
+        .catch(() => null)
 
-          setSearched(true)
-          setReading(null)
-        })
-
-      scanned.current = { folder, promise }
+      scan = { folder: startedFor, promise }
+      scans.current = scan
+      setReading({ done: 0, total: 0 })
+      setFound(null)
+      setFailed(false)
     }
 
-    setReading({ done: 0, total: 0 })
-    setSearched(false)
+    // The resolve is attached every time, not only when the scan starts: a cached
+    // scan is a promise that has already settled, and a reader who typed, cleared
+    // and typed again needs its answer put back on screen.
+    scan.promise
+      .then((result) => {
+        if (!mine()) return
 
-    scanned.current.promise.catch(() => undefined)
+        setReading(null)
+
+        if (!result) {
+          setFailed(true)
+          // not kept, so the next query tries the folder again
+          if (scans.current?.folder === startedFor) scans.current = null
+
+          return
+        }
+
+        setFound(result)
+      })
+      .catch(() => undefined)
   }, [asked, folder])
 
   const hits: Hit[] = useMemo(
@@ -173,19 +201,29 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
         docs: [],
         operations: [],
         apps: [],
-        files,
-        contents
+        files: found?.files ?? [],
+        contents: found?.contents ?? []
       }),
-    [query, files, contents]
+    [query, found]
   )
 
-  const note = scanNote(scan)
+  const note = scanNote(found?.scan ?? null)
   const busy = reading
     ? reading.total
       ? `Reading ${reading.done} of ${reading.total} files…`
       : 'Reading this folder…'
     : ''
-  const settled = searched && !reading
+
+  const nothing = () => {
+    if (!asked) {
+      return `Searches this folder's files by name, and the text inside them.`
+    }
+    if (busy) return busy
+    if (failed) return 'This folder could not be read.'
+    if (!answered) return 'Reading this folder…'
+
+    return `Nothing in this folder matches “${needle}”.`
+  }
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -202,15 +240,7 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
         }}
       />
 
-      {!asked ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Searches this folder&apos;s files by name, and the text inside them.
-        </Typography>
-      ) : busy ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {busy}
-        </Typography>
-      ) : hits.length ? (
+      {hits.length ? (
         <>
           <List dense sx={{ py: 0, maxWidth: 720 }}>
             {hits.map((hit) => (
@@ -240,10 +270,8 @@ const FolderSearch = ({ folder, name, autoFocus, onOpenFile }: Props) => {
         </>
       ) : (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {settled
-            ? `Nothing in this folder matches “${needle}”.`
-            : 'Searching…'}
-          {note ? ` ${note}` : ''}
+          {nothing()}
+          {answered && note ? ` ${note}` : ''}
         </Typography>
       )}
     </Box>
