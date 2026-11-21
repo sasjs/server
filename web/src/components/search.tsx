@@ -130,6 +130,12 @@ const listFolder = (folderPath: string) =>
  * object, and a folder search would then be searching the string "[object
  * Object]". A file that cannot be read answers null for the reason `listFolder`
  * gives - a refusal ends that file, not the folder.
+ *
+ * The route answers with the whole file - there is no byte range and no length
+ * parameter - so the per-file cap bounds the search rather than the transfer: a
+ * large log is downloaded in full and then cut by `withinBytes`. Trimming the
+ * transfer would mean a partial read on the server, which is a change to the
+ * drive route's contract rather than to this box.
  */
 const readFileText = (filePath: string) =>
   axios

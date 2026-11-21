@@ -69,6 +69,11 @@ export const MAX_CONTENT_FILES = 200
  * character in the encoding it is stored in. Measuring the string would let a
  * 700 KB file through as "under 256 KB" and search three times what it promised
  * - see `withinBytes`.
+ *
+ * This bounds what is SEARCHED, not what is transferred: the drive's file route
+ * has no partial read, so the whole body is downloaded and only then cut. A
+ * folder of large logs therefore costs their full size in traffic, which is why
+ * the docs say so rather than promising a smaller download.
  */
 export const MAX_CONTENT_BYTES = 256 * 1024
 
