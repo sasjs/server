@@ -1125,15 +1125,27 @@ describe('Studio in a browser', () => {
 
     await page.goto(`${baseUrl()}/studio?folderPath=${encodeURIComponent('/')}`)
 
-    // The URL is the folder's address, and the panel says so rather than showing
-    // an empty editor over it.
+    // The URL is the folder's address, and the page that answers is the folder's
+    // own: where you are, what the level holds, and the way into the contents
+    // search. The counts and the listing come from the level the tree reads, so
+    // the button beside them is what says the page - rather than an empty editor
+    // over the folder - is on screen.
     await page.waitForFunction(
       () => decodeURIComponent(location.search).includes('folderPath=/'),
       { timeout: 30000 }
     )
-    await page.waitForSelector('text=A folder. Its address is the URL', {
+    await page.waitForSelector('text=Search inside these files', {
       timeout: 30000
     })
+    await page.waitForSelector('table', { timeout: 30000 })
+
+    // The summary is the level's own numbers, so the drive's root says how many
+    // files and folders it holds - the count the tree already read, not a request
+    // of the page's own
+    await page.waitForFunction(
+      () => /\d+ files? · \d+ folders?/.test(document.body.innerText),
+      { timeout: 30000 }
+    )
 
     expect(asked.length).toBeGreaterThan(0)
 
