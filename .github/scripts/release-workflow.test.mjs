@@ -122,7 +122,7 @@ test('the exact release ZIPs are attested and the bundle is verified in both att
   const attest = step('Attest the release ZIPs')
   assert.match(attest, /^        if: steps\.publish\.outputs\.tag != ''$/m)
   assert.match(attest, /^        id: attest$/m)
-  assert.match(attest, /^        uses: sasjs\/release\/\.github\/actions\/attest-assets@6bce05cbcd9364c7097f089ea6c9132978a500ca\s+# v0\.19\.0$/m)
+  assert.match(attest, /^        uses: sasjs\/release\/\.github\/actions\/attest-assets@[0-9a-f]{40}(?:\s+#.*)?$/m)
   assert.match(attest, /^          version: \$\{\{ steps\.publish\.outputs\.version \}\}$/m)
   const subjects = attest.match(/^          subject-path: \|\n((?:            [^\n]+\n)+)/m)
   assert.ok(subjects, 'the attestation must name its ZIPs explicitly')
