@@ -113,6 +113,34 @@ test('nothing is built when this run has no tag to finish', () => {
   }
 })
 
+test('the exact release ZIPs are attested and the bundle is verified in both attachments', () => {
+  const permissionBlock = workflow.slice(at('  release:\n'), at('    strategy:'))
+  assert.match(permissionBlock, /^      contents: write\b/m)
+  assert.match(permissionBlock, /^      id-token: write\b/m)
+  assert.match(permissionBlock, /^      attestations: write\b/m)
+
+  const attest = step('Attest the release ZIPs')
+  assert.match(attest, /^        if: steps\.publish\.outputs\.tag != ''$/m)
+  assert.match(attest, /^        id: attest$/m)
+  assert.match(attest, /^        uses: sasjs\/release\/\.github\/actions\/attest-assets@6bce05cbcd9364c7097f089ea6c9132978a500ca\s+# v0\.19\.0$/m)
+  assert.match(attest, /^          version: \$\{\{ steps\.publish\.outputs\.version \}\}$/m)
+  const subjects = attest.match(/^          subject-path: \|\n((?:            [^\n]+\n)+)/m)
+  assert.ok(subjects, 'the attestation must name its ZIPs explicitly')
+  assert.deepEqual(subjects[1].trim().split('\n').map((line) => line.trim()),
+    releaserc.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === '@sasjs/release')[1].assets
+      .map((asset) => asset.path).filter((path) => path.endsWith('.zip')))
+  assert.ok(subjects[1].includes('linux.zip') && subjects[1].includes('macos.zip') && subjects[1].includes('windows.zip'))
+
+  for (const name of ['Attach the assets to the draft, and verify them', 'Publish the verified release']) {
+    const attach = step(name)
+    assert.match(attach, /^          BUNDLE: \$\{\{ steps\.attest\.outputs\.bundle-path \}\}$/m)
+    assert.match(attach, /--asset "\$BUNDLE"/)
+    assert.match(attach, /--verify-assets/)
+  }
+  assert.ok(at('name: Compress Executables') < at('name: Attest the release ZIPs'))
+  assert.ok(at('name: Attest the release ZIPs') < at('name: Attach the assets to the draft'))
+})
+
 test('the assets are verified before npm sees the version, and published after it', () => {
   const attach = step('Attach the assets to the draft, and verify them')
   assert.match(attach, /--attach "\$TAG" --verify-assets --keep-draft/)
