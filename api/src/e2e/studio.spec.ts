@@ -41,8 +41,10 @@ import { RunTimeType, sysInitCompiledPath } from '../utils/'
 const NEW_PASSWORD = 'newpass123'
 
 // How many files the folder-search fixture holds. More than one batch, so the box
-// has to page; the batch size itself is the component's, and the test reads what the
-// box says rather than repeating it here.
+// has to page; the test proves that on the **Show more** control rather than by
+// comparing this number with the component's batch, which this package cannot import
+// (api's rootDir stops at this package). If the batch ever grows past the fixture the
+// control never appears and the test fails on the wait for it.
 const SEARCH_MATCHES = 20
 
 const screenshotDir =
@@ -1238,23 +1240,22 @@ describe('Studio in a browser', () => {
     const results = page
       .locator('[role=button]')
       .filter({ hasText: /match\d\d\.bin/ })
-    // The box pages: it shows a batch, says how many that is of the matches, and the
-    // batch size is its own business - so this reads what it says instead of naming
-    // a number that would have to be chased here when the batch changes.
+    // The box pages, and what proves it is the control: **Show more** is offered
+    // while some matches are not on screen and gone once they all are. The batch size
+    // is the component's, so nothing here names a count of its own.
     const countLine = page.getByText(/Showing \d+ of \d+ results/)
     await countLine.waitFor({ timeout: 30000 })
+    const more = page.getByRole('button', { name: 'Show more' })
+    await more.waitFor({ timeout: 30000 })
     const firstShown = Number(
       /Showing (\d+) of/.exec(await countLine.innerText())![1]
     )
     expect(firstShown).toBeGreaterThan(0)
-    expect(firstShown).toBeLessThan(SEARCH_MATCHES)
     expect(await results.count()).toBe(firstShown)
-    // Each Show more adds to what is visible, and the last one leaves nothing more to
-    // ask for. The batch size is the component's, so this asserts growth rather than
-    // naming a number that would have to be chased here when the batch changes.
+    // Each press adds to what is visible, and the last leaves nothing more to ask
+    // for: twenty files whose batch is smaller would fail the waitFor above.
     let previous = firstShown
     for (let press = 0; press < SEARCH_MATCHES; press++) {
-      const more = page.getByRole('button', { name: 'Show more' })
       if (!(await more.count())) break
       await more.click()
       await page.waitForFunction(

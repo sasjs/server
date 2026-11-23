@@ -157,8 +157,11 @@ const FolderSearch = ({
     }
   }, [])
 
-  // A different folder is a different search: the field empties, and the previous
-  // folder's findings go with it.
+  // A different folder is a different search, and nothing read for the old one may
+  // stand for the new one. The query itself is the page's and is reset on the path
+  // change (folderView); this drops the answer - the progress, the findings, the
+  // failure - and the cached scan with them, so returning to a folder already
+  // searched starts a fresh read instead of reusing the scan of an earlier visit.
   useEffect(() => {
     setReading(null)
     setFound(null)
