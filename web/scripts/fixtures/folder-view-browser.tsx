@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useLayoutEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import axios from 'axios'
 import FolderView from '../../src/components/folderView'
@@ -13,6 +13,26 @@ let unread = false
 // Hold every folder read, so a scan can be in flight while the page changes under it.
 let hold = false
 let held: (() => void) | undefined
+let staleHeldTree = false
+let completedHeldTree = 0
+let typeOnPath = ''
+let refusedFolders: string[] = []
+
+// React input tracking must see a native edit, not a direct assignment to its own
+// value setter. Dispatch during layout to model input before passive effects run.
+function EarlyTyping({ path }: { path: string }) {
+  useLayoutEffect(() => {
+    if (!typeOnPath) return
+    const input = document.querySelector('input')!
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value'
+    )!.set!.call(input, typeOnPath)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    typeOnPath = ''
+  }, [path])
+  return null
+}
 
 const file = (
   name: string,
@@ -39,6 +59,17 @@ const folder = (name: string, relativePath: string): TreeNode => ({
  * both ways.
  */
 const levelOf = (folderPath: string): TreeNode[] => {
+  if (
+    folderPath === '/many' ||
+    folderPath === '/many2' ||
+    folderPath === '/many3'
+  )
+    return Array.from({ length: folderPath === '/many3' ? 37 : 20 }, (_, i) =>
+      file(
+        `match${String(i).padStart(2, '0')}.bin`,
+        `${folderPath}/match${String(i).padStart(2, '0')}.bin`
+      )
+    )
   if (folderPath === '/Public/macro')
     return [file('abort.sas', '/Public/macro/abort.sas')]
   // the subfolder the demo level lists, so a walk of `/Public/demo` has somewhere
@@ -74,11 +105,15 @@ axios.defaults.adapter = async (config) => {
     const folderPath = config.params?._folderPath ?? ''
 
     requests.push(`fileTree:${folderPath}`)
+    if (refusedFolders.includes(folderPath)) throw new Error('refused')
 
-    if (hold)
+    const wasHeld = hold
+    if (wasHeld) {
       await new Promise<void>((resolve) => {
         held = resolve
       })
+      completedHeldTree++
+    }
 
     return {
       config,
@@ -90,7 +125,10 @@ axios.defaults.adapter = async (config) => {
         tree: {
           relativePath: folderPath,
           isFolder: true,
-          children: levelOf(folderPath)
+          children:
+            wasHeld && staleHeldTree
+              ? [file('stale-orders.bin', `${folderPath}/stale-orders.bin`)]
+              : levelOf(folderPath)
         }
       }
     }
@@ -121,7 +159,19 @@ function Harness() {
     folderHarness: {
       calls,
       requests,
+      setRefusedFolders: (paths: string[]) => {
+        refusedFolders = paths
+      },
+      get completedHeldTree() {
+        return completedHeldTree
+      },
+      setStaleHeldTree: (value: boolean) => {
+        staleHeldTree = value
+      },
       setPath,
+      typeDuringNextPath: (value: string) => {
+        typeOnPath = value
+      },
       setSizes: (value: boolean) => {
         sizes = value
         setFlip((count) => count + 1)
@@ -158,13 +208,16 @@ function Harness() {
       }
 
   return (
-    <FolderView
-      key={flip}
-      path={path}
-      node={node}
-      onOpenFile={(filePath) => calls.push(`file:${filePath}`)}
-      onOpenFolder={(folderPath) => calls.push(`folder:${folderPath}`)}
-    />
+    <>
+      <FolderView
+        key={flip}
+        path={path}
+        node={node}
+        onOpenFile={(filePath) => calls.push(`file:${filePath}`)}
+        onOpenFolder={(folderPath) => calls.push(`folder:${folderPath}`)}
+      />
+      <EarlyTyping path={path} />
+    </>
   )
 }
 

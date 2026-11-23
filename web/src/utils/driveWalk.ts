@@ -53,7 +53,8 @@ export type ListFolder = (folderPath: string) => Promise<TreeNode | null>
 export const walkDrivePaths = async (
   list: ListFolder,
   concurrency: number = WALK_CONCURRENCY,
-  from: string = ROOT_PATH
+  from: string = ROOT_PATH,
+  onFolder?: (path: string) => void
 ): Promise<string[]> => {
   const limit = Number.isFinite(concurrency)
     ? Math.max(1, Math.floor(concurrency))
@@ -81,6 +82,7 @@ export const walkDrivePaths = async (
               if (asked.has(child.relativePath)) continue
 
               asked.add(child.relativePath)
+              onFolder?.(child.relativePath)
               folders.push(child.relativePath)
             }
           })

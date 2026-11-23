@@ -30,7 +30,7 @@ The search box in the header searches the drive while you are in Studio. A file'
 
 The drive is read one folder at a time, so the first search in a page session walks it: a moment on a large drive, during which the box says it is searching. The list is then kept until the page is reloaded, so reload to include files created after the walk.
 
-A folder is searched from its own page, not from the header. Right-click it in the tree and choose **Search in this Folder**: that opens the folder - see **A folder** below - with the cursor already in its search box. The box searches the names of that folder's files and the text inside them, so `orders` finds a file called `orders.sas` first and then the `%include "orders";` at line 2 of `run.sas`, and choosing either opens the file in the editor. The header's box is left alone: it answers for the screen it is on, and a folder's contents are something the reader asks the folder for.
+A folder is searched from its own page, not from the header. Right-click it in the tree and choose **Search in this Folder**: that opens the folder - see **A folder** below - with the cursor already in its search box. The box searches descendant folder and file names and the text inside files, so `orders` finds a file called `orders.sas` first and then the `%include "orders";` at line 2 of `run.sas`. A folder-name result opens that folder, including when it is empty; a file or text result opens the file in the editor. The header's box is left alone: it answers for the screen it is on, and a folder's contents are something the reader asks the folder for.
 
 Reading the bodies costs one request per file, and the drive answers that request with the whole file: a folder search asks for at most 200 text files and downloads each of them in full, then searches the first 256 KB of it and holds about 4 MB of text in all. When one of those limits left part of the folder unread it says so beneath the results. Pictures, SAS datasets, spreadsheets, documents, archives and `.csv` tables are not read at all. A folder is read once while its page is open, so a second query there answers at once.
 
@@ -40,7 +40,7 @@ Clicking a folder's NAME in the tree - rather than its chevron - opens that fold
 
 Below the summary is the listing - folders first, then files, each with the dates the drive reported, created and last modified. A row opens what it names: a file in the editor, a folder in this page. The listing stands down while a search is being answered, because the search covers the folders under this one: its results replace the level's rows rather than sitting beside them.
 
-The search box at the top of the page is the folder's own, and it is the page's only one: it searches this folder's files by name **and** the text inside them, through the folders beneath it, and it is where the cursor lands when **Search in this Folder** brought you here. Two characters is the shortest query, as in the header's box; clearing it puts the listing back.
+The search box at the top of the page is the folder's own, and it is the page's only one: it searches descendant folders and files by name **and** the text inside files, and it is where the cursor lands when **Search in this Folder** brought you here. Two characters is the shortest query, as in the header's box; clearing it puts the listing back.
 
 ## Linting and formatting
 

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { KeyboardEventHandler } from 'react'
 
 import {
   Box,
+  Button,
   List,
   ListItemButton,
   ListItemText,
@@ -19,7 +21,7 @@ import type { Scan } from '../utils/contentSearch'
 import { listFolder, readFileText } from '../utils/driveRequests'
 import { WALK_CONCURRENCY, walkDrivePaths } from '../utils/driveWalk'
 import type { FileText, Hit } from '../utils/search'
-import { kindLabel, matches } from '../utils/search'
+import { isSearchQuery, kindLabel, matches } from '../utils/search'
 
 interface Props {
   /** The folder being searched, drive-relative: '' is the drive root. */
@@ -34,12 +36,15 @@ interface Props {
   autoFocus?: boolean
   /** Opens a file the reader chose. */
   onOpenFile: (filePath: string) => void
+  onOpenFolder: (folderPath: string) => void
 }
 
 /** A folder read once, and the query answered from it however many times. */
 interface Reading {
   folder: string
   files: string[]
+  folders: string[]
+  unreadableFolders: number
   contents: FileText[]
   scan: Scan
 }
@@ -79,14 +84,16 @@ const scanNote = (scan: Scan | null): string => {
   return `${sentence[0].toUpperCase()}${sentence.slice(1)}.`
 }
 
+const RESULTS_BATCH = 12
+
 /**
  * The search box a folder page carries.
  *
  * The header's box answers "where is the file I want" for the whole screen; this
  * one answers "where in THIS folder is the thing I mean", and it is here rather
  * than in the header because that is where the reader is looking when they open a
- * folder. It searches the names of the folder's files and the text inside them,
- * and choosing a result opens the file in the editor.
+ * folder. It searches descendant folder and file names and the text inside files;
+ * choosing a result opens the corresponding folder or file.
  *
  * The read is expensive - one request per folder, one per text file - so it happens
  * once per folder and every later query is answered from what it read. Nothing is
@@ -99,8 +106,16 @@ const FolderSearch = ({
   query,
   onQueryChange,
   autoFocus,
-  onOpenFile
+  onOpenFile,
+  onOpenFolder
 }: Props) => {
+  const [page, setPage] = useState({ folder, query, count: RESULTS_BATCH })
+  // Reset during render so a new query or folder never paints the old batch.
+  if (page.folder !== folder || page.query !== query) {
+    setPage({ folder, query, count: RESULTS_BATCH })
+  }
+  const visibleCount =
+    page.folder === folder && page.query === query ? page.count : RESULTS_BATCH
   const [reading, setReading] = useState<{
     done: number
     total: number
@@ -114,13 +129,15 @@ const FolderSearch = ({
     folder: string
     promise: Promise<Reading | null>
   } | null>(null)
-  // Whether this component is still the one on screen. A walk cannot be cancelled,
-  // so every result is checked against this and against the folder it was for.
+  // A walk cannot be cancelled. Only the current scan may publish its progress or
+  // answer, even if the reader has left and returned to the same folder.
   const live = useRef(true)
-  // The folder on screen, readable from a callback that started on another one. A
-  // scan cannot be cancelled, so this is what a late answer is compared against.
-  const showing = useRef(folder)
   const fieldRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  // The index of the result that the batch just revealed, for the focus that follows
+  // it: a keyboard reader who asked for more should land on the first new answer, not
+  // stay on the button and tab back through the ones they have already heard.
+  const revealRef = useRef<number | null>(null)
 
   // Focus after mount rather than through `autoFocus` alone: the page renders this
   // box while the editor is still settling, and anything that takes focus on the
@@ -140,7 +157,6 @@ const FolderSearch = ({
   // A different folder is a different search: the field empties, and the previous
   // folder's findings go with it.
   useEffect(() => {
-    showing.current = folder
     setReading(null)
     setFound(null)
     setFailed(false)
@@ -148,32 +164,46 @@ const FolderSearch = ({
   }, [folder])
 
   const needle = query.trim()
-  const asked = needle.length >= 2
+  const asked = isSearchQuery(query)
   const answered = found?.folder === folder
 
   useEffect(() => {
     if (!asked) return
 
     const startedFor = folder
-    const mine = () => live.current && showing.current === startedFor
-
     let scan = scans.current
+    const mine = () => live.current && scans.current === scan
 
     if (!scan || scan.folder !== startedFor) {
+      const folders: string[] = []
+      let rootUnreadable = false
+      let unreadableFolders = 0
       const promise = walkDrivePaths(
-        (path) => listFolder(path),
+        async (path) => {
+          const node = await listFolder(path)
+          if (!node) {
+            if (path === startedFor) rootUnreadable = true
+            else unreadableFolders++
+          }
+          return node
+        },
         WALK_CONCURRENCY,
-        startedFor
+        startedFor,
+        (path) => folders.push(path)
       )
         .then((files) =>
-          readContents(files, readFileText, (done, total) => {
-            if (mine()) setReading({ done, total })
-          }).then((result) => ({
-            folder: startedFor,
-            files,
-            contents: result.contents,
-            scan: result
-          }))
+          rootUnreadable
+            ? null
+            : readContents(files, readFileText, (done, total) => {
+                if (mine()) setReading({ done, total })
+              }).then((result) => ({
+                folder: startedFor,
+                files,
+                folders,
+                unreadableFolders,
+                contents: result.contents,
+                scan: result
+              }))
         )
         // a walk that threw is not an answer: the folder could not be read, which
         // is not the same as a folder that does not contain the word
@@ -218,12 +248,65 @@ const FolderSearch = ({
         operations: [],
         apps: [],
         files: answered ? (found?.files ?? []) : [],
+        folders: answered ? (found?.folders ?? []) : [],
         contents: answered ? (found?.contents ?? []) : []
       }),
     [query, found, answered]
   )
 
-  const note = scanNote(answered ? (found?.scan ?? null) : null)
+  const shown = Math.min(visibleCount, hits.length)
+  const unreadableFolders = answered ? (found?.unreadableFolders ?? 0) : 0
+
+  // One batch more, and never past the last result: the final batch is whatever is
+  // left rather than a full one. The next count is derived from what is on screen, so
+  // a click and a key that both reach this in one turn cannot add two batches.
+  const expand = (forKeyboard: boolean) => {
+    const next = Math.min(shown + RESULTS_BATCH, hits.length)
+
+    if (next <= shown) return
+
+    if (forKeyboard) revealRef.current = shown
+
+    setPage({ folder, query, count: next })
+  }
+
+  // The revealed results exist only after the render that added them, so the focus
+  // moves in an effect rather than in the handler that asked for more.
+  useEffect(() => {
+    const index = revealRef.current
+
+    if (index === null) return
+
+    const revealed =
+      listRef.current?.querySelectorAll<HTMLElement>('[role="button"]')
+    const target = revealed?.[index]
+
+    if (!target) return
+
+    revealRef.current = null
+    target.focus()
+  }, [visibleCount, hits])
+
+  // The button is a native one, so the browser would act on Enter and Space itself and
+  // leave focus on the button. Handling the keys here keeps one activation per press
+  // and lets the new results take focus, which is where a keyboard reader is going.
+  const onShowMoreKeyDown: KeyboardEventHandler<HTMLButtonElement> = (
+    event
+  ) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+
+    event.preventDefault()
+    expand(true)
+  }
+
+  const note = [
+    unreadableFolders
+      ? `${unreadableFolders} subfolder${unreadableFolders === 1 ? '' : 's'} could not be read; results may be incomplete.`
+      : '',
+    scanNote(answered ? (found?.scan ?? null) : null)
+  ]
+    .filter(Boolean)
+    .join(' ')
   const busy = reading
     ? reading.total
       ? `Reading ${reading.done} of ${reading.total} files…`
@@ -232,11 +315,12 @@ const FolderSearch = ({
 
   const nothing = () => {
     if (!asked) {
-      return `Searches this folder's files by name, and the text inside them.`
+      return `Searches this folder's folders and files by name, and the text inside files.`
     }
     if (busy) return busy
     if (failed) return 'This folder could not be read.'
     if (!answered) return 'Reading this folder…'
+    if (unreadableFolders) return 'No matches found in the folders searched.'
 
     return `Nothing in this folder matches “${needle}”.`
   }
@@ -252,17 +336,20 @@ const FolderSearch = ({
         placeholder={`Search in ${name}`}
         sx={{ width: 320 }}
         slotProps={{
-          htmlInput: { 'aria-label': `Search the files in ${name}` }
+          htmlInput: { 'aria-label': `Search folders and files in ${name}` }
         }}
       />
 
       {hits.length ? (
         <>
-          <List dense sx={{ py: 0, maxWidth: 720 }}>
-            {hits.map((hit) => (
+          <List dense ref={listRef} sx={{ py: 0, maxWidth: 720 }}>
+            {hits.slice(0, shown).map((hit) => (
               <ListItemButton
                 key={`${hit.kind}:${hit.title}:${hit.detail}`}
-                onClick={() => hit.filePath && onOpenFile(hit.filePath)}
+                onClick={() => {
+                  if (hit.folderPath) onOpenFolder(hit.folderPath)
+                  else if (hit.filePath) onOpenFile(hit.filePath)
+                }}
               >
                 <ListItemText
                   primary={hit.title}
@@ -278,6 +365,14 @@ const FolderSearch = ({
               </ListItemButton>
             ))}
           </List>
+          <Typography variant="caption" color="text.secondary" component="div">
+            Showing {shown} of {hits.length} results
+          </Typography>
+          {shown < hits.length ? (
+            <Button onClick={() => expand(false)} onKeyDown={onShowMoreKeyDown}>
+              Show more
+            </Button>
+          ) : null}
           {note ? (
             <Typography variant="caption" color="text.secondary">
               {note}

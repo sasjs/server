@@ -15,13 +15,41 @@
  * Run with `npm run test:search`.
  */
 import { registerHooks } from 'node:module'
+import { readFile } from 'node:fs/promises'
+import assert from 'node:assert/strict'
 
 import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { searchScope, searchHint, kindLabel, matches, LIMIT } =
+const { searchScope, searchHint, kindLabel, matches, LIMIT, isSearchQuery } =
   await import('../src/utils/search.ts')
+// All folder search consumers must use the matcher predicate, not their own
+// threshold, so changing it cannot split the listing, walk, and result behavior.
+for (const component of ['folderView.tsx', 'folderSearch.tsx']) {
+  const source = await readFile(
+    new URL(`../src/components/${component}`, import.meta.url),
+    'utf8'
+  )
+  assert.match(
+    source,
+    /\bisSearchQuery\s*\(/,
+    `${component} uses the matcher predicate`
+  )
+}
+for (const query of ['', ' x ', ' xy ', '  XYZ  ']) {
+  const sources = {
+    docs: [],
+    operations: [],
+    apps: [],
+    files: [`/${query.trim()}.sas`]
+  }
+  assert.equal(
+    isSearchQuery(query),
+    matches('folder', query, sources).length > 0,
+    `query eligibility: ${query}`
+  )
+}
 const { APPS_LISTING } = await import('../src/utils/appUrl.ts')
 
 const failures = []
@@ -565,6 +593,34 @@ check(
   bothAnswers[0]?.title,
   'abort.sas'
 )
+
+// A query matching the searched folder's name must not turn every descendant into
+// a name hit, masking its content snippet or admitting unrelated descendants.
+const ancestorSources = {
+  ...sources,
+  files: ['/orders/run.sas', '/orders/other.sas', '/orders/orders.sas'],
+  folders: ['/orders/archive', '/orders/orders-reports'],
+  contents: [
+    { path: '/orders/run.sas', text: 'first line\norders are ready' },
+    { path: '/orders/other.sas', text: 'unrelated' },
+    { path: '/orders/orders.sas', text: 'orders' }
+  ]
+}
+const ancestorHits = matches('folder', 'orders', ancestorSources)
+assert.deepEqual(
+  ancestorHits.map(({ kind, title, detail }) => ({ kind, title, detail })),
+  [
+    { kind: 'folder', title: 'orders-reports', detail: '/orders' },
+    { kind: 'file', title: 'orders.sas', detail: '/orders' },
+    { kind: 'text', title: '/orders/run.sas', detail: 'line 2: orders are ready' }
+  ],
+  'folder search matches names and contents, not ancestor names'
+)
+assert.equal(matches('drive', 'orders', ancestorSources).length, 3,
+  'header drive search retains ancestor-path matching')
+assert.ok(matches('folder', '/orders/run', ancestorSources).some(
+  (hit) => hit.filePath === '/orders/run.sas'
+), 'an explicit path query can find a file')
 
 // --- the request the box makes ------------------------------------------------
 

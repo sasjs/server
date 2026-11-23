@@ -93,6 +93,7 @@ export interface Sources {
   apps: AppRow[]
   /** The drive's file paths, as `walkDrivePaths` collects them. */
   files: string[]
+  folders?: string[]
   /**
    * The bodies of the files a folder search has read, as `readContents` collects
    * them, and absent everywhere else: only a folder's own search asks what is
@@ -104,13 +105,14 @@ export interface Sources {
 
 /** One result, whichever list it came from. */
 export interface Hit {
-  kind: 'docs' | 'api' | 'app' | 'file' | 'text'
+  kind: 'docs' | 'api' | 'app' | 'file' | 'text' | 'folder'
   title: string
   detail: string
   /** The app's route, for a hit that is opened in place. */
   to?: string
   /** The drive file a file or content hit names, for a caller that opens one. */
   filePath?: string
+  folderPath?: string
   /** The URL to open in a new tab, for an app - which is not a screen of this app. */
   href?: string
 }
@@ -216,6 +218,7 @@ export const kindLabel = (kind: Hit['kind']): string => {
   if (kind === 'api') return 'API'
   if (kind === 'app') return 'App'
   if (kind === 'file') return 'File'
+  if (kind === 'folder') return 'Folder'
   if (kind === 'text') return 'Content'
 
   return 'Docs'
@@ -317,13 +320,18 @@ const appHits = (needle: string, apps: AppRow[], hits: Ranked[]) => {
  * for a file at the top - because that is what tells two files of the same name
  * apart, and the name is already in the result.
  */
-const fileHits = (needle: string, files: string[], hits: Ranked[]) => {
+const fileHits = (
+  needle: string,
+  files: string[],
+  hits: Ranked[],
+  matchPath = true
+) => {
   for (const filePath of files) {
     const segments = filePath.split('/')
     const name = segments[segments.length - 1] || filePath
     // the path is the weaker match, and it contains the name, so a name match
     // can never be scored as a path match by accident
-    const rank = score(needle, name, filePath)
+    const rank = score(needle, name, matchPath ? filePath : '')
 
     if (rank)
       hits.push({
@@ -336,6 +344,24 @@ const fileHits = (needle: string, files: string[], hits: Ranked[]) => {
           // the address the editor opens a file by - `?filePath=` is how a deep
           // link, a reload and the back button all land on the same file
           to: `/studio?filePath=${encodeURIComponent(filePath)}`
+        }
+      })
+  }
+}
+
+const folderHits = (needle: string, folders: string[], hits: Ranked[]) => {
+  for (const folderPath of folders) {
+    const segments = folderPath.split('/')
+    const name = segments[segments.length - 1] || folderPath
+    const rank = score(needle, name, needle.includes('/') ? folderPath : '')
+    if (rank)
+      hits.push({
+        rank,
+        hit: {
+          kind: 'folder',
+          title: name,
+          detail: segments.slice(0, -1).join('/') || '/',
+          folderPath
         }
       })
   }
@@ -431,6 +457,9 @@ const everyKind = (ranked: Ranked[]): Ranked[] => {
   return chosen
 }
 
+export const isSearchQuery = (query: string): boolean =>
+  query.trim().length >= 2
+
 /**
  * The results for a query, in the order worth reading.
  *
@@ -445,9 +474,9 @@ const everyKind = (ranked: Ranked[]): Ranked[] => {
  * covers everything and answers from one list. `everyKind` gives each kind a turn
  * first and fills what is left afterwards.
  *
- * A folder search asks two things of one folder - which of its files are called
- * this, and which of them say it - so it consults the listing and the bodies
- * together. Every other scope reads no bodies: that list is empty there.
+ * The folder's files and subfolders are matched by name alongside file bodies.
+ * Folder results are not capped; the header keeps its compact result limit.
+ * Every other scope reads no bodies.
  */
 export const matches = (
   scope: Scope,
@@ -456,7 +485,7 @@ export const matches = (
 ): Hit[] => {
   const needle = query.trim().toLowerCase()
 
-  if (needle.length < 2) return []
+  if (!isSearchQuery(query)) return []
 
   const hits: Ranked[] = []
 
@@ -469,7 +498,10 @@ export const matches = (
   if (scope === 'drive' || scope === 'everything')
     fileHits(needle, sources.files, hits)
   if (scope === 'folder') {
-    fileHits(needle, sources.files, hits)
+    // Plain words search names and bodies, not the path of every descendant.
+    // A slash explicitly asks for a path; the header retains its broader search.
+    fileHits(needle, sources.files, hits, needle.includes('/'))
+    folderHits(needle, sources.folders ?? [], hits)
     // the documents the names already answered for, so a body hit cannot repeat one
     const listed = new Set(
       hits
@@ -486,6 +518,10 @@ export const matches = (
   )
 
   return (
-    scope === 'everything' ? everyKind(ranked) : ranked.slice(0, LIMIT)
+    scope === 'everything'
+      ? everyKind(ranked)
+      : scope === 'folder'
+        ? ranked
+        : ranked.slice(0, LIMIT)
   ).map((entry) => entry.hit)
 }

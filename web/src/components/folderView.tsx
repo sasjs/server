@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
   Box,
@@ -24,6 +24,7 @@ import {
   totalBytes
 } from '../utils/folderView'
 import type { TreeNode } from '../utils/types'
+import { isSearchQuery } from '../utils/search'
 
 interface Props {
   /** The folder's path, as the URL names it - '' is the drive root. */
@@ -58,19 +59,19 @@ const FolderView = ({
   onOpenFolder,
   focusSearch
 }: Props) => {
-  // The one search this page has: its box searches the folder's names AND the text
-  // inside its files, recursively, so a second box that only narrowed the listing to
-  // the level on screen was a second, weaker answer to the same question - and the
-  // two did not combine.
-  const [query, setQuery] = useState('')
+  // This page has exactly one search box, and it answers for this folder: the
+  // names of the folders and files beneath it, and the text inside those files,
+  // recursively. The query is held here rather than in the box so the page can tell
+  // whether a search is running.
+  const [search, setSearch] = useState({ path, value: '' })
+  const query = search.path === path ? search.value : ''
+  const setQuery = (value: string) => setSearch({ path, value })
 
-  // Studio reuses this component when one folder page replaces another, so the query
-  // is reset by the path rather than by a remount.
-  useEffect(() => {
-    setQuery('')
-  }, [path])
+  // Reset synchronously on a path change, before the new page can accept input.
+  // A passive effect could clear a query typed after the new field appeared.
+  if (search.path !== path) setSearch({ path, value: '' })
 
-  const searching = query.trim().length >= 2
+  const searching = isSearchQuery(query)
 
   const children = useMemo(
     () =>
@@ -163,9 +164,8 @@ const FolderView = ({
       <Box sx={{ my: 2 }}>
         {/* The folder's own search, here rather than in the header: a reader who has
             opened a folder is looking at THIS folder, and the box that answers for it
-            belongs where they are looking. It is the page's only search box - names
-            and contents, recursively - so a second box that merely narrowed the
-            listing to the level on screen would be a weaker duplicate. */}
+            belongs where they are looking. It is the page's only search box, and it
+            covers this folder's names and the text inside its files, recursively. */}
         <FolderSearch
           folder={path}
           name={name}
@@ -173,6 +173,7 @@ const FolderView = ({
           onQueryChange={setQuery}
           autoFocus={focusSearch}
           onOpenFile={onOpenFile}
+          onOpenFolder={onOpenFolder}
         />
       </Box>
 

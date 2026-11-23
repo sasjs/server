@@ -162,6 +162,21 @@ describe('Studio in a browser', () => {
       'data _null_;'
     )
 
+    // Isolated search fixture: an empty folder and more than twelve files.
+    await createFolder(
+      path.join(driveLocation, 'files', 'searchFixture', 'emptyNeedle')
+    )
+    for (let i = 0; i < 20; i++)
+      await createFile(
+        path.join(
+          driveLocation,
+          'files',
+          'searchFixture',
+          `match${String(i).padStart(2, '0')}.bin`
+        ),
+        'fixture'
+      )
+
     // A folder with contents, for the delete test.
     await createFolder(path.join(driveLocation, 'files', 'deleteMe', 'nested'))
     await createFile(
@@ -1188,7 +1203,7 @@ describe('Studio in a browser', () => {
     // is not the one that searches a folder: a menu item in the tree has no
     // business rewriting a control in the header, and the reader would be left
     // looking at a box somewhere else on the screen.
-    const field = page.getByLabel('Search the files in e2eFolder')
+    const field = page.getByLabel('Search folders and files in e2eFolder')
     await field.waitFor({ timeout: 30000 })
     expect(await field.evaluate((el) => el === document.activeElement)).toBe(
       true
@@ -1201,6 +1216,49 @@ describe('Studio in a browser', () => {
 
     // and the header's box still promises what it did before the click - it is not
     // the box a folder search rewrites
+    await page
+      .getByRole('textbox', { name: 'Search the drive' })
+      .waitFor({ timeout: 5000 })
+  }, 120000)
+
+  it('opens empty folder results and shows all matching files', async () => {
+    await page.goto(
+      `${baseUrl()}/studio?folderPath=${encodeURIComponent('/searchFixture')}`
+    )
+    const field = page.getByRole('textbox', {
+      name: 'Search folders and files in searchFixture'
+    })
+    await field.waitFor({ timeout: 30000 })
+    await field.fill('match')
+    const results = page
+      .locator('[role=button]')
+      .filter({ hasText: /match\d\d\.bin/ })
+    await page.getByText('Showing 12 of 20 results').waitFor({ timeout: 30000 })
+    expect(await results.count()).toBe(12)
+    await page.getByRole('button', { name: 'Show more' }).click()
+    await page.getByText('Showing 20 of 20 results').waitFor({ timeout: 30000 })
+    expect(await results.count()).toBe(20)
+    await results.filter({ hasText: 'match19.bin' }).waitFor({ timeout: 30000 })
+    await field.fill('emptyNeedle')
+    const folderResult = page
+      .locator('[role=button]')
+      .filter({ hasText: 'emptyNeedle' })
+      .filter({ hasText: 'Folder' })
+    await folderResult.waitFor({ timeout: 30000 })
+    await folderResult.click()
+    await page.waitForFunction(
+      () =>
+        decodeURIComponent(location.search).includes(
+          'folderPath=/searchFixture/emptyNeedle'
+        ),
+      { timeout: 30000 }
+    )
+    const emptyField = page.getByRole('textbox', {
+      name: 'Search folders and files in emptyNeedle'
+    })
+    await emptyField.waitFor({ timeout: 30000 })
+    expect(await emptyField.inputValue()).toBe('')
+    await page.getByText('This folder is empty.').waitFor({ timeout: 30000 })
     await page
       .getByRole('textbox', { name: 'Search the drive' })
       .waitFor({ timeout: 5000 })
