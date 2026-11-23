@@ -1430,7 +1430,7 @@
     },
     "/sasjs/drive/files/code/macro-core/viya/mv_getfoldermembers.sas": {
       "shard": 14,
-      "bytes": 7792
+      "bytes": 8394
     },
     "/sasjs/drive/files/code/macro-core/viya/mv_getgroupmembers.sas": {
       "shard": 14,
@@ -1801,7 +1801,7 @@
     {
       "id": 14,
       "file": "host/vfs-snapshot-14.json",
-      "bytes": 220717,
+      "bytes": 221319,
       "files": 33
     },
     {
