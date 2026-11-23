@@ -40,6 +40,13 @@ import { RunTimeType, sysInitCompiledPath } from '../utils/'
 // The password the user is moved to on the first-login change screen.
 const NEW_PASSWORD = 'newpass123'
 
+// How many files the folder-search fixture holds. More than one batch, so the box
+// has to page; the test proves that on the **Show more** control rather than by
+// comparing this number with the component's batch, which this package cannot import
+// (api's rootDir stops at this package). If the batch ever grows past the fixture the
+// control never appears and the test fails on the wait for it.
+const SEARCH_MATCHES = 20
+
 const screenshotDir =
   process.env.E2E_SCREENSHOT_DIR ?? path.join(__dirname, 'screenshots')
 
@@ -161,6 +168,21 @@ describe('Studio in a browser', () => {
       path.join(driveLocation, 'files', 'e2eFolder', 'nested.sas'),
       'data _null_;'
     )
+
+    // Isolated search fixture: an empty folder and more files than one batch.
+    await createFolder(
+      path.join(driveLocation, 'files', 'searchFixture', 'emptyNeedle')
+    )
+    for (let i = 0; i < SEARCH_MATCHES; i++)
+      await createFile(
+        path.join(
+          driveLocation,
+          'files',
+          'searchFixture',
+          `match${String(i).padStart(2, '0')}.bin`
+        ),
+        'fixture'
+      )
 
     // A folder with contents, for the delete test.
     await createFolder(path.join(driveLocation, 'files', 'deleteMe', 'nested'))
@@ -1188,7 +1210,7 @@ describe('Studio in a browser', () => {
     // is not the one that searches a folder: a menu item in the tree has no
     // business rewriting a control in the header, and the reader would be left
     // looking at a box somewhere else on the screen.
-    const field = page.getByLabel('Search the files in e2eFolder')
+    const field = page.getByLabel('Search folders and files in e2eFolder')
     await field.waitFor({ timeout: 30000 })
     expect(await field.evaluate((el) => el === document.activeElement)).toBe(
       true
@@ -1201,6 +1223,77 @@ describe('Studio in a browser', () => {
 
     // and the header's box still promises what it did before the click - it is not
     // the box a folder search rewrites
+    await page
+      .getByRole('textbox', { name: 'Search the drive' })
+      .waitFor({ timeout: 5000 })
+  }, 120000)
+
+  it('opens empty folder results and shows all matching files', async () => {
+    await page.goto(
+      `${baseUrl()}/studio?folderPath=${encodeURIComponent('/searchFixture')}`
+    )
+    const field = page.getByRole('textbox', {
+      name: 'Search folders and files in searchFixture'
+    })
+    await field.waitFor({ timeout: 30000 })
+    await field.fill('match')
+    const results = page
+      .locator('[role=button]')
+      .filter({ hasText: /match\d\d\.bin/ })
+    // The box pages, and what proves it is the control: **Show more** is offered
+    // while some matches are not on screen and gone once they all are. The batch size
+    // is the component's, so nothing here names a count of its own.
+    const countLine = page.getByText(/Showing \d+ of \d+ results/)
+    await countLine.waitFor({ timeout: 30000 })
+    const more = page.getByRole('button', { name: 'Show more' })
+    await more.waitFor({ timeout: 30000 })
+    const firstShown = Number(
+      /Showing (\d+) of/.exec(await countLine.innerText())![1]
+    )
+    expect(firstShown).toBeGreaterThan(0)
+    expect(await results.count()).toBe(firstShown)
+    // Each press adds to what is visible, and the last leaves nothing more to ask
+    // for: twenty files whose batch is smaller would fail the waitFor above.
+    let previous = firstShown
+    for (let press = 0; press < SEARCH_MATCHES; press++) {
+      if (!(await more.count())) break
+      await more.click()
+      await page.waitForFunction(
+        (count) =>
+          Array.from(document.querySelectorAll('[role=button]')).filter((el) =>
+            /match\d\d\.bin/.test(el.textContent ?? '')
+          ).length > count,
+        previous,
+        { timeout: 30000 }
+      )
+      previous = await results.count()
+    }
+    await page
+      .getByText(`Showing ${SEARCH_MATCHES} of ${SEARCH_MATCHES} results`)
+      .waitFor({ timeout: 30000 })
+    expect(await results.count()).toBe(SEARCH_MATCHES)
+    const lastMatch = `match${String(SEARCH_MATCHES - 1).padStart(2, '0')}.bin`
+    await results.filter({ hasText: lastMatch }).waitFor({ timeout: 30000 })
+    await field.fill('emptyNeedle')
+    const folderResult = page
+      .locator('[role=button]')
+      .filter({ hasText: 'emptyNeedle' })
+      .filter({ hasText: 'Folder' })
+    await folderResult.waitFor({ timeout: 30000 })
+    await folderResult.click()
+    await page.waitForFunction(
+      () =>
+        decodeURIComponent(location.search).includes(
+          'folderPath=/searchFixture/emptyNeedle'
+        ),
+      { timeout: 30000 }
+    )
+    const emptyField = page.getByRole('textbox', {
+      name: 'Search folders and files in emptyNeedle'
+    })
+    await emptyField.waitFor({ timeout: 30000 })
+    expect(await emptyField.inputValue()).toBe('')
+    await page.getByText('This folder is empty.').waitFor({ timeout: 30000 })
     await page
       .getByRole('textbox', { name: 'Search the drive' })
       .waitFor({ timeout: 5000 })

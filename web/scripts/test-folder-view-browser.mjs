@@ -248,41 +248,65 @@ try {
     'a folder row goes to the folder'
   )
 
-  // --- the filter -------------------------------------------------------------
+  // --- one box, and the listing gives way to it --------------------------------
 
-  await evaluate(
-    `document.querySelector('input[aria-label="Filter the files in demo"]').focus()`
-  )
-  await call('Input.insertText', { text: 'ru' })
-  await until(
-    'document.querySelectorAll("tbody tr").length === 1',
-    'the filter narrows the listing'
-  )
-  assert.deepEqual(
-    (await rows()).map((row) => row[0]),
-    ['run.sas']
-  )
-  await call('Input.insertText', { text: 'zzz' })
-  await until(
-    'document.body.innerText.includes("Nothing in this folder matches")',
-    'a filter that matches nothing says so'
+  // A second box that only narrowed this level's listing was a weaker duplicate of
+  // the search, and the two could not be combined. The page has one box.
+  assert.equal(
+    await evaluate('document.querySelectorAll("input").length'),
+    1,
+    'the page has a single search box'
   )
 
   // --- the folder's own search -------------------------------------------------
 
   // The page carries the search box, not the header: the reader has opened THIS
   // folder, and the box searches its file names and the text inside them.
-  const field = 'input[aria-label="Search the files in demo"]'
+  const field = 'input[aria-label="Search folders and files in demo"]'
   assert.equal(
     await evaluate(`!!document.querySelector(${JSON.stringify(field)})`),
     true,
     'the page carries a search box'
   )
+  // One trimmed character neither hides the listing nor starts a walk.
+  await evaluate(`document.querySelector(${JSON.stringify(field)}).focus()`)
+  await call('Input.insertText', { text: ' m' })
+  await pause(150)
+  assert.equal(await evaluate('!!document.querySelector("table")'), true)
+  assert.equal((await evaluate('folderHarness.requests')).length, 0)
+  await evaluate(
+    `(() => { const input = document.querySelector('input'); input.focus(); input.select() })()`
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
   await evaluate(`document.querySelector(${JSON.stringify(field)}).focus()`)
   await call('Input.insertText', { text: 'orders' })
   await until(
     'document.body.textContent.includes("line 2: %include")',
     'a body hit with its line'
+  )
+  // the search covers the folders under this one, so the level's own listing stands
+  // down while a query is being answered - two sets of rows under one box would be
+  // ambiguous about which one the box was talking to
+  assert.equal(
+    await evaluate('!!document.querySelector("table")'),
+    false,
+    'the listing gives way to the results'
+  )
+  assert.equal(
+    await evaluate('document.querySelector("input").value'),
+    'orders',
+    'the one box holds the query'
   )
 
   const resultRows = () =>
@@ -321,6 +345,190 @@ try {
     'file:/Public/demo/run.sas',
     'a body hit opens the file it was found in'
   )
+  // clearing the box puts the listing back: the level the reader was looking at is
+  // still what the page is about when nothing is being asked
+  await evaluate(
+    `(() => { const field = document.querySelector("input"); field.focus(); field.select() })()`
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await until('!!document.querySelector("table")', 'the listing returns')
+
+  // Empty subfolders are discoverable and openable from the search results.
+  await evaluate(`document.querySelector(${JSON.stringify(field)}).focus()`)
+  await call('Input.insertText', { text: 'macro' })
+  await until(
+    `[...document.querySelectorAll('[role=button]')].some(el => el.innerText.includes('macro') && el.innerText.includes('Folder'))`,
+    'empty folder search result'
+  )
+  await evaluate(
+    `[...document.querySelectorAll('[role=button]')].find(el => el.innerText.includes('macro') && el.innerText.includes('Folder')).click()`
+  )
+  assert.equal(
+    (await evaluate('folderHarness.calls')).at(-1),
+    'folder:/Public/demo/macro'
+  )
+  await evaluate(
+    `(() => { const input = document.querySelector('input'); input.focus(); input.select() })()`
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await until(
+    '!!document.querySelector("table")',
+    'listing after folder search'
+  )
+
+  // Every matching result is reachable, including those after the first batch. Both
+  // fixtures are sized around the batch the box renders - read from the page, where
+  // the fixture exposes the component's own constant, rather than repeated here.
+  const RESULTS_BATCH = await evaluate('folderHarness.batch')
+  const MANY = 20
+  const MANY3 = 37
+  assert.ok(
+    RESULTS_BATCH < MANY,
+    'the first fixture is larger than one batch'
+  )
+  assert.ok(
+    RESULTS_BATCH * 3 < MANY3 && RESULTS_BATCH * 4 >= MANY3,
+    'the second fixture needs three presses, the last one partial'
+  )
+  const nameOf = (index) => `match${String(index).padStart(2, '0')}.bin`
+  const rendered = `[...document.querySelectorAll('[role=button]')].filter(el => /match\\d\\d\\.bin/.test(el.innerText)).length`
+  const showMore = `[...document.querySelectorAll('button')].find(el => el.textContent.trim() === 'Show more')`
+  const showing = (shown, total) =>
+    `document.body.innerText.includes("Showing ${shown} of ${total} results")`
+  const count = () => evaluate(rendered)
+
+  await evaluate('folderHarness.setPath("/many")')
+  await until(
+    `!!document.querySelector('input[aria-label="Search folders and files in many"]')`,
+    'many folder'
+  )
+  await pause(100)
+  await evaluate(
+    `document.querySelector('input[aria-label="Search folders and files in many"]').focus()`
+  )
+  await call('Input.insertText', { text: 'match' })
+  await until(
+    'document.body.innerText.includes("match00.bin")',
+    'many search ready'
+  )
+  assert.equal(
+    await count(),
+    RESULTS_BATCH,
+    'only the first batch is initially rendered'
+  )
+  assert.ok(await evaluate(showing(RESULTS_BATCH, MANY)))
+  await evaluate(`${showMore}.click()`)
+  await until(showing(MANY, MANY), 'all results shown')
+  assert.equal(
+    await count(),
+    MANY,
+    `all ${MANY} matches are accessible after showing more`
+  )
+  assert.equal(
+    await evaluate(`!!(${showMore})`),
+    false,
+    'show more is gone when all results are visible'
+  )
+  await evaluate(
+    `[...document.querySelectorAll('[role=button]')].find(el => el.innerText.includes(${JSON.stringify(nameOf(MANY - 1))})).click()`
+  )
+  assert.equal(
+    (await evaluate('folderHarness.calls')).at(-1),
+    `file:/many/${nameOf(MANY - 1)}`
+  )
+  // Changing a query resets the visible batch even when it matches the same files.
+  await evaluate(
+    `(() => { const input = document.querySelector('input'); input.focus(); input.select() })()`
+  )
+  await call('Input.insertText', { text: 'MATCH' })
+  await until(showing(RESULTS_BATCH, MANY), 'query resets the batch')
+  await evaluate(`${showMore}.click()`)
+  await until(showing(MANY, MANY), 'expand before navigation')
+  // Type in the destination's layout phase: the reset must not depend on effects.
+  await evaluate(
+    'folderHarness.typeDuringNextPath("match"); folderHarness.setPath("/many2")'
+  )
+  await until(showing(RESULTS_BATCH, MANY), 'folder resets the batch')
+  assert.equal(
+    await count(),
+    RESULTS_BATCH,
+    'the new folder starts at the first batch'
+  )
+  // Each press adds a bounded batch, including a partial final batch.
+  await evaluate(
+    'folderHarness.typeDuringNextPath("match"); folderHarness.setPath("/many3")'
+  )
+  await until(showing(RESULTS_BATCH, MANY3), 'large result count')
+  const pressKey = async (key, code, windowsVirtualKeyCode) => {
+    for (const type of ['keyDown', 'keyUp'])
+      await call('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode })
+  }
+  // The batches this fixture needs, each with the press that asks for it and the
+  // result it should land on - the first of the ones it revealed.
+  const batches = []
+  for (let next = RESULTS_BATCH + RESULTS_BATCH; ; next += RESULTS_BATCH) {
+    const shown = Math.min(next, MANY3)
+    batches.push(shown)
+    if (shown === MANY3) break
+  }
+  const presses = [
+    { key: 'Enter', code: 'Enter', keyCode: 13 },
+    { key: ' ', code: 'Space', keyCode: 32 }
+  ]
+  let revealed = RESULTS_BATCH
+  let focusedName = ''
+  for (const [index, shown] of batches.entries()) {
+    const first = nameOf(revealed)
+    const press = presses[index % presses.length]
+    await evaluate(`${showMore}.focus()`)
+    assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Show more', 'show more receives focus')
+    await pressKey(press.key, press.code, press.keyCode)
+    await until(showing(shown, MANY3), `batch ${shown}`)
+    assert.equal(await count(), shown)
+    assert.ok(
+      await evaluate(`document.activeElement?.innerText.includes(${JSON.stringify(first)})`),
+      `focus moves to ${first}, the first newly revealed result`
+    )
+    assert.equal(await evaluate(`document.activeElement?.getAttribute('role')`), 'button',
+      'the focused result has button semantics')
+    if (index === 0) {
+      await pressKey('Tab', 'Tab', 9)
+      assert.ok(await evaluate(`document.activeElement?.innerText.includes(${JSON.stringify(nameOf(revealed + 1))})`),
+        'Tab proceeds through newly revealed results')
+    }
+    revealed = shown
+    focusedName = first
+  }
+  await pressKey('Enter', 'Enter', 13)
+  assert.equal(
+    (await evaluate('folderHarness.calls')).at(-1),
+    `file:/many3/${focusedName}`
+  )
+  await evaluate('folderHarness.setPath("/Public/demo")')
+  await until('!!document.querySelector("table")', 'return to demo')
+
   console.log('folder view: the search box is on the folder itself')
 
   // --- a host that reports sizes ----------------------------------------------
@@ -382,7 +590,7 @@ try {
   )
   await evaluate('folderHarness.setHold(true)')
   await evaluate(
-    `document.querySelector('input[aria-label="Search the files in demo"]').focus()`
+    `document.querySelector('input[aria-label="Search folders and files in demo"]').focus()`
   )
   await call('Input.insertText', { text: 'orders' })
   await until(
@@ -390,10 +598,16 @@ try {
     'the walk for the first folder is out'
   )
   await evaluate('folderHarness.setPath("/Public/macro")')
-  const macroField = 'input[aria-label="Search the files in macro"]'
+  const macroField = 'input[aria-label="Search folders and files in macro"]'
   await until(
     `!!document.querySelector(${JSON.stringify(macroField)})`,
     'the second folder page'
+  )
+  await pause(150)
+  assert.equal(
+    await evaluate('folderHarness.requests.includes("fileTree:/Public/macro")'),
+    false,
+    'navigation during a search must not start a scan of the destination'
   )
   await evaluate('folderHarness.setHold(false); folderHarness.release()')
   await pause(400)
@@ -409,10 +623,7 @@ try {
     "nor does a file from the first folder's listing"
   )
 
-  // and the second folder answers for itself. The pause is not decoration: the
-  // page clears the field when it changes folder, so typing before that effect has
-  // run types into a query the page is about to overwrite.
-  await pause(200)
+  // The second folder answers for itself.
   await evaluate(
     `document.querySelector(${JSON.stringify(macroField)}).focus()`
   )
@@ -426,6 +637,171 @@ try {
   console.log(
     'folder view: an unread level, and a scan that outlives its folder'
   )
+
+  // A -> B -> A: the original A scan must not replace the new A scan, even
+  // though both have the same path. Give the old response a distinct file name.
+  await call('Page.navigate', {
+    url: `http://127.0.0.1:${server.address().port}/`
+  })
+  await until(
+    '!!window.folderHarness && !!document.querySelector("table")',
+    'race mount'
+  )
+  await evaluate(
+    'folderHarness.setStaleHeldTree(true); folderHarness.setHold(true)'
+  )
+  await evaluate('document.querySelector("input").focus()')
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'folderHarness.requests.includes("fileTree:/Public/demo")',
+    'old scan held'
+  )
+  await evaluate('folderHarness.setPath("/Public/macro")')
+  await until(
+    `!!document.querySelector(${JSON.stringify(macroField)})`,
+    'race folder B'
+  )
+  await evaluate(
+    'folderHarness.setHold(false); folderHarness.setPath("/Public/demo")'
+  )
+  await until(
+    `!!document.querySelector(${JSON.stringify(field)})`,
+    'race folder A again'
+  )
+  await evaluate('document.querySelector("input").focus()')
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'new A scan finishes'
+  )
+  await evaluate('folderHarness.release()')
+  await until(
+    'folderHarness.completedHeldTree === 1',
+    'old A response released'
+  )
+  await pause(300)
+  assert.equal(
+    await evaluate('document.body.textContent.includes("stale-orders.bin")'),
+    false,
+    'an old A response cannot overwrite the new A scan after A → B → A'
+  )
+  assert.equal(
+    await evaluate('document.body.textContent.includes("line 2: %include")'),
+    true
+  )
+  console.log('folder view: same-folder return keeps the new scan')
+
+  // Simulate input in the destination's layout phase, before passive effects.
+  await evaluate(
+    'folderHarness.typeDuringNextPath("null"); folderHarness.setPath("/Public/macro")'
+  )
+  await until(
+    `!!document.querySelector(${JSON.stringify(macroField)})`,
+    'early typing destination'
+  )
+  await pause(100)
+  assert.equal(
+    await evaluate('document.querySelector("input").value'),
+    'null',
+    'navigation must not erase early destination typing'
+  )
+  await until(
+    'document.body.textContent.includes("line 2: data _null_;")',
+    'early typed query is searched'
+  )
+  console.log('folder view: early destination typing is retained')
+
+  // A refused root is not an empty answer; clearing and trying again retries it.
+  await call('Page.navigate', {
+    url: `http://127.0.0.1:${server.address().port}/`
+  })
+  await until(
+    '!!window.folderHarness && !!document.querySelector("table")',
+    'refusal mount'
+  )
+  await evaluate('folderHarness.setRefusedFolders(["/Public/demo"])')
+  await evaluate('document.querySelector("input").focus()')
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'document.body.innerText.includes("This folder could not be read.")',
+    'refused root reported'
+  )
+  assert.equal(
+    await evaluate(
+      'document.body.innerText.includes("Nothing in this folder matches")'
+    ),
+    false
+  )
+  await evaluate(
+    'folderHarness.setRefusedFolders([]); document.querySelector("input").select()'
+  )
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await call('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 'Backspace',
+    code: 'Backspace',
+    windowsVirtualKeyCode: 8
+  })
+  await until('!!document.querySelector("table")', 'clear failed search')
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'retry after root refusal'
+  )
+  assert.equal(
+    await evaluate(
+      'folderHarness.requests.filter(r => r === "fileTree:/Public/demo").length'
+    ),
+    2
+  )
+  console.log('folder view: refused root is reported and retried')
+
+  // A refused descendant leaves useful results, but the answer is incomplete even
+  // when the readable branches contain no matches.
+  await call('Page.navigate', {
+    url: `http://127.0.0.1:${server.address().port}/`
+  })
+  await until(
+    '!!window.folderHarness && !!document.querySelector("table")',
+    'partial mount'
+  )
+  await evaluate('folderHarness.setRefusedFolders(["/Public/demo/macro"])')
+  await evaluate('document.querySelector("input").focus()')
+  await call('Input.insertText', { text: 'orders' })
+  await until(
+    'document.body.textContent.includes("line 2: %include")',
+    'readable branch retained'
+  )
+  assert.ok(
+    await evaluate(
+      'document.body.innerText.includes("1 subfolder could not be read; results may be incomplete.")'
+    ),
+    'partial results must disclose the unreadable subtree'
+  )
+  await evaluate('document.querySelector("input").select()')
+  await call('Input.insertText', { text: 'no-such-word' })
+  await until(
+    'document.body.innerText.includes("No matches found in the folders searched.")',
+    'no matches in readable branches'
+  )
+  assert.equal(
+    await evaluate(
+      'document.body.innerText.includes("Nothing in this folder matches")'
+    ),
+    false
+  )
+  assert.ok(
+    await evaluate(
+      'document.body.innerText.includes("1 subfolder could not be read; results may be incomplete.")'
+    ),
+    'empty partial answer must disclose the unreadable subtree'
+  )
+  console.log('folder view: partial results disclose refused descendants')
 } finally {
   socket?.close()
   browser?.kill()

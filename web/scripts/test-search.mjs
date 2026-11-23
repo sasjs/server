@@ -15,13 +15,49 @@
  * Run with `npm run test:search`.
  */
 import { registerHooks } from 'node:module'
+import assert from 'node:assert/strict'
 
 import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { searchScope, searchHint, kindLabel, matches, LIMIT } =
+const { searchScope, searchHint, kindLabel, matches, LIMIT, isSearchQuery, RESULTS_BATCH } =
   await import('../src/utils/search.ts')
+// The threshold is one rule, owned by the matcher: two characters after trimming.
+// These are its edges, asserted against what the predicate means - not against a
+// search's result count, which is a different question (a valid query can find
+// nothing). That the components use the same rule is covered by behaviour: the
+// folder-page suite types one character and expects the listing to stay.
+for (const [query, expected] of [
+  ['', false],
+  [' x ', false],
+  [' xy ', true],
+  ['  XYZ  ', true]
+]) {
+  assert.equal(
+    isSearchQuery(query),
+    expected,
+    `query eligibility: ${JSON.stringify(query)}`
+  )
+}
+assert.deepEqual(
+  matches('folder', ' x ', {
+    docs: [],
+    operations: [],
+    apps: [],
+    files: ['/x.sas']
+  }),
+  [],
+  'a one-character query answers nothing'
+)
+for (const [name, value] of [
+  ['LIMIT', LIMIT],
+  ['RESULTS_BATCH', RESULTS_BATCH]
+])
+  assert.ok(
+    Number.isInteger(value) && value > 0,
+    `${name} is a positive whole number`
+  )
 const { APPS_LISTING } = await import('../src/utils/appUrl.ts')
 
 const failures = []
@@ -565,6 +601,34 @@ check(
   bothAnswers[0]?.title,
   'abort.sas'
 )
+
+// A query matching the searched folder's name must not turn every descendant into
+// a name hit, masking its content snippet or admitting unrelated descendants.
+const ancestorSources = {
+  ...sources,
+  files: ['/orders/run.sas', '/orders/other.sas', '/orders/orders.sas'],
+  folders: ['/orders/archive', '/orders/orders-reports'],
+  contents: [
+    { path: '/orders/run.sas', text: 'first line\norders are ready' },
+    { path: '/orders/other.sas', text: 'unrelated' },
+    { path: '/orders/orders.sas', text: 'orders' }
+  ]
+}
+const ancestorHits = matches('folder', 'orders', ancestorSources)
+assert.deepEqual(
+  ancestorHits.map(({ kind, title, detail }) => ({ kind, title, detail })),
+  [
+    { kind: 'folder', title: 'orders-reports', detail: '/orders' },
+    { kind: 'file', title: 'orders.sas', detail: '/orders' },
+    { kind: 'text', title: '/orders/run.sas', detail: 'line 2: orders are ready' }
+  ],
+  'folder search matches names and contents, not ancestor names'
+)
+assert.equal(matches('drive', 'orders', ancestorSources).length, 3,
+  'header drive search retains ancestor-path matching')
+assert.ok(matches('folder', '/orders/run', ancestorSources).some(
+  (hit) => hit.filePath === '/orders/run.sas'
+), 'an explicit path query can find a file')
 
 // --- the request the box makes ------------------------------------------------
 
