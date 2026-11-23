@@ -40,6 +40,11 @@ import { RunTimeType, sysInitCompiledPath } from '../utils/'
 // The password the user is moved to on the first-login change screen.
 const NEW_PASSWORD = 'newpass123'
 
+// How many files the folder-search fixture holds. More than one batch, so the box
+// has to page; the batch size itself is the component's, and the test reads what the
+// box says rather than repeating it here.
+const SEARCH_MATCHES = 20
+
 const screenshotDir =
   process.env.E2E_SCREENSHOT_DIR ?? path.join(__dirname, 'screenshots')
 
@@ -162,11 +167,11 @@ describe('Studio in a browser', () => {
       'data _null_;'
     )
 
-    // Isolated search fixture: an empty folder and more than twelve files.
+    // Isolated search fixture: an empty folder and more files than one batch.
     await createFolder(
       path.join(driveLocation, 'files', 'searchFixture', 'emptyNeedle')
     )
-    for (let i = 0; i < 20; i++)
+    for (let i = 0; i < SEARCH_MATCHES; i++)
       await createFile(
         path.join(
           driveLocation,
@@ -1233,12 +1238,41 @@ describe('Studio in a browser', () => {
     const results = page
       .locator('[role=button]')
       .filter({ hasText: /match\d\d\.bin/ })
-    await page.getByText('Showing 12 of 20 results').waitFor({ timeout: 30000 })
-    expect(await results.count()).toBe(12)
-    await page.getByRole('button', { name: 'Show more' }).click()
-    await page.getByText('Showing 20 of 20 results').waitFor({ timeout: 30000 })
-    expect(await results.count()).toBe(20)
-    await results.filter({ hasText: 'match19.bin' }).waitFor({ timeout: 30000 })
+    // The box pages: it shows a batch, says how many that is of the matches, and the
+    // batch size is its own business - so this reads what it says instead of naming
+    // a number that would have to be chased here when the batch changes.
+    const countLine = page.getByText(/Showing \d+ of \d+ results/)
+    await countLine.waitFor({ timeout: 30000 })
+    const firstShown = Number(
+      /Showing (\d+) of/.exec(await countLine.innerText())![1]
+    )
+    expect(firstShown).toBeGreaterThan(0)
+    expect(firstShown).toBeLessThan(SEARCH_MATCHES)
+    expect(await results.count()).toBe(firstShown)
+    // Each Show more adds to what is visible, and the last one leaves nothing more to
+    // ask for. The batch size is the component's, so this asserts growth rather than
+    // naming a number that would have to be chased here when the batch changes.
+    let previous = firstShown
+    for (let press = 0; press < SEARCH_MATCHES; press++) {
+      const more = page.getByRole('button', { name: 'Show more' })
+      if (!(await more.count())) break
+      await more.click()
+      await page.waitForFunction(
+        (count) =>
+          Array.from(document.querySelectorAll('[role=button]')).filter((el) =>
+            /match\d\d\.bin/.test(el.textContent ?? '')
+          ).length > count,
+        previous,
+        { timeout: 30000 }
+      )
+      previous = await results.count()
+    }
+    await page
+      .getByText(`Showing ${SEARCH_MATCHES} of ${SEARCH_MATCHES} results`)
+      .waitFor({ timeout: 30000 })
+    expect(await results.count()).toBe(SEARCH_MATCHES)
+    const lastMatch = `match${String(SEARCH_MATCHES - 1).padStart(2, '0')}.bin`
+    await results.filter({ hasText: lastMatch }).waitFor({ timeout: 30000 })
     await field.fill('emptyNeedle')
     const folderResult = page
       .locator('[role=button]')

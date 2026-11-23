@@ -15,41 +15,49 @@
  * Run with `npm run test:search`.
  */
 import { registerHooks } from 'node:module'
-import { readFile } from 'node:fs/promises'
 import assert from 'node:assert/strict'
 
 import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { searchScope, searchHint, kindLabel, matches, LIMIT, isSearchQuery } =
+const { searchScope, searchHint, kindLabel, matches, LIMIT, isSearchQuery, RESULTS_BATCH } =
   await import('../src/utils/search.ts')
-// All folder search consumers must use the matcher predicate, not their own
-// threshold, so changing it cannot split the listing, walk, and result behavior.
-for (const component of ['folderView.tsx', 'folderSearch.tsx']) {
-  const source = await readFile(
-    new URL(`../src/components/${component}`, import.meta.url),
-    'utf8'
-  )
-  assert.match(
-    source,
-    /\bisSearchQuery\s*\(/,
-    `${component} uses the matcher predicate`
+// The threshold is one rule, owned by the matcher: two characters after trimming.
+// These are its edges, asserted against what the predicate means - not against a
+// search's result count, which is a different question (a valid query can find
+// nothing). That the components use the same rule is covered by behaviour: the
+// folder-page suite types one character and expects the listing to stay.
+for (const [query, expected] of [
+  ['', false],
+  [' x ', false],
+  [' xy ', true],
+  ['  XYZ  ', true]
+]) {
+  assert.equal(
+    isSearchQuery(query),
+    expected,
+    `query eligibility: ${JSON.stringify(query)}`
   )
 }
-for (const query of ['', ' x ', ' xy ', '  XYZ  ']) {
-  const sources = {
+assert.deepEqual(
+  matches('folder', ' x ', {
     docs: [],
     operations: [],
     apps: [],
-    files: [`/${query.trim()}.sas`]
-  }
-  assert.equal(
-    isSearchQuery(query),
-    matches('folder', query, sources).length > 0,
-    `query eligibility: ${query}`
+    files: ['/x.sas']
+  }),
+  [],
+  'a one-character query answers nothing'
+)
+for (const [name, value] of [
+  ['LIMIT', LIMIT],
+  ['RESULTS_BATCH', RESULTS_BATCH]
+])
+  assert.ok(
+    Number.isInteger(value) && value > 0,
+    `${name} is a positive whole number`
   )
-}
 const { APPS_LISTING } = await import('../src/utils/appUrl.ts')
 
 const failures = []

@@ -21,7 +21,12 @@ import type { Scan } from '../utils/contentSearch'
 import { listFolder, readFileText } from '../utils/driveRequests'
 import { WALK_CONCURRENCY, walkDrivePaths } from '../utils/driveWalk'
 import type { FileText, Hit } from '../utils/search'
-import { isSearchQuery, kindLabel, matches } from '../utils/search'
+import {
+  RESULTS_BATCH,
+  isSearchQuery,
+  kindLabel,
+  matches
+} from '../utils/search'
 
 interface Props {
   /** The folder being searched, drive-relative: '' is the drive root. */
@@ -83,8 +88,6 @@ const scanNote = (scan: Scan | null): string => {
 
   return `${sentence[0].toUpperCase()}${sentence.slice(1)}.`
 }
-
-const RESULTS_BATCH = 12
 
 /**
  * The search box a folder page carries.

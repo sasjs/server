@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import axios from 'axios'
 import FolderView from '../../src/components/folderView'
+import { RESULTS_BATCH } from '../../src/utils/search'
 import type { TreeNode } from '../../src/utils/types'
 
 const calls: string[] = []
@@ -159,6 +160,8 @@ function Harness() {
     folderHarness: {
       calls,
       requests,
+      // The component's own batch size, so the suite's expectations derive from it.
+      batch: RESULTS_BATCH,
       setRefusedFolders: (paths: string[]) => {
         refusedFolders = paths
       },

@@ -398,7 +398,27 @@ try {
     'listing after folder search'
   )
 
-  // Every matching result is reachable, including those after the header's cap.
+  // Every matching result is reachable, including those after the first batch. Both
+  // fixtures are sized around the batch the box renders - read from the page, where
+  // the fixture exposes the component's own constant, rather than repeated here.
+  const RESULTS_BATCH = await evaluate('folderHarness.batch')
+  const MANY = 20
+  const MANY3 = 37
+  assert.ok(
+    RESULTS_BATCH < MANY,
+    'the first fixture is larger than one batch'
+  )
+  assert.ok(
+    RESULTS_BATCH * 3 < MANY3 && RESULTS_BATCH * 4 >= MANY3,
+    'the second fixture needs three presses, the last one partial'
+  )
+  const nameOf = (index) => `match${String(index).padStart(2, '0')}.bin`
+  const rendered = `[...document.querySelectorAll('[role=button]')].filter(el => /match\\d\\d\\.bin/.test(el.innerText)).length`
+  const showMore = `[...document.querySelectorAll('button')].find(el => el.textContent.trim() === 'Show more')`
+  const showing = (shown, total) =>
+    `document.body.innerText.includes("Showing ${shown} of ${total} results")`
+  const count = () => evaluate(rendered)
+
   await evaluate('folderHarness.setPath("/many")')
   await until(
     `!!document.querySelector('input[aria-label="Search folders and files in many"]')`,
@@ -414,124 +434,97 @@ try {
     'many search ready'
   )
   assert.equal(
-    await evaluate(
-      `[...document.querySelectorAll('[role=button]')].filter(el => /match\\d\\d\\.bin/.test(el.innerText)).length`
-    ),
-    12,
-    'only the first 12 matches are initially rendered'
+    await count(),
+    RESULTS_BATCH,
+    'only the first batch is initially rendered'
   )
-  assert.ok(
-    await evaluate(
-      'document.body.innerText.includes("Showing 12 of 20 results")'
-    )
-  )
-  await evaluate(
-    `[...document.querySelectorAll('button')].find(el => el.textContent.trim() === 'Show more').click()`
-  )
-  await until(
-    'document.body.innerText.includes("Showing 20 of 20 results")',
-    'all results shown'
+  assert.ok(await evaluate(showing(RESULTS_BATCH, MANY)))
+  await evaluate(`${showMore}.click()`)
+  await until(showing(MANY, MANY), 'all results shown')
+  assert.equal(
+    await count(),
+    MANY,
+    `all ${MANY} matches are accessible after showing more`
   )
   assert.equal(
-    await evaluate(
-      `[...document.querySelectorAll('[role=button]')].filter(el => /match\\d\\d\\.bin/.test(el.innerText)).length`
-    ),
-    20,
-    'all 20 matches are accessible after showing more'
-  )
-  assert.equal(
-    await evaluate(
-      `[...document.querySelectorAll('button')].some(el => el.textContent.trim() === 'Show more')`
-    ),
+    await evaluate(`!!(${showMore})`),
     false,
     'show more is gone when all results are visible'
   )
   await evaluate(
-    `[...document.querySelectorAll('[role=button]')].find(el => el.innerText.includes('match19.bin')).click()`
+    `[...document.querySelectorAll('[role=button]')].find(el => el.innerText.includes(${JSON.stringify(nameOf(MANY - 1))})).click()`
   )
   assert.equal(
     (await evaluate('folderHarness.calls')).at(-1),
-    'file:/many/match19.bin'
+    `file:/many/${nameOf(MANY - 1)}`
   )
   // Changing a query resets the visible batch even when it matches the same files.
   await evaluate(
     `(() => { const input = document.querySelector('input'); input.focus(); input.select() })()`
   )
   await call('Input.insertText', { text: 'MATCH' })
-  await until(
-    'document.body.innerText.includes("Showing 12 of 20 results")',
-    'query resets the batch'
-  )
-  await evaluate(
-    `[...document.querySelectorAll('button')].find(el => el.textContent.trim() === 'Show more').click()`
-  )
-  await until(
-    'document.body.innerText.includes("Showing 20 of 20 results")',
-    'expand before navigation'
-  )
+  await until(showing(RESULTS_BATCH, MANY), 'query resets the batch')
+  await evaluate(`${showMore}.click()`)
+  await until(showing(MANY, MANY), 'expand before navigation')
   // Type in the destination's layout phase: the reset must not depend on effects.
   await evaluate(
     'folderHarness.typeDuringNextPath("match"); folderHarness.setPath("/many2")'
   )
-  await until(
-    'document.body.innerText.includes("Showing 12 of 20 results")',
-    'folder resets the batch'
-  )
+  await until(showing(RESULTS_BATCH, MANY), 'folder resets the batch')
   assert.equal(
-    await evaluate(
-      `[...document.querySelectorAll('[role=button]')].filter(el => /match\\d\\d\\.bin/.test(el.innerText)).length`
-    ),
-    12,
+    await count(),
+    RESULTS_BATCH,
     'the new folder starts at the first batch'
   )
-  // Each click adds a bounded batch, including a partial final batch.
+  // Each press adds a bounded batch, including a partial final batch.
   await evaluate(
     'folderHarness.typeDuringNextPath("match"); folderHarness.setPath("/many3")'
   )
-  await until(
-    'document.body.innerText.includes("Showing 12 of 37 results")',
-    'large result count'
-  )
+  await until(showing(RESULTS_BATCH, MANY3), 'large result count')
   const pressKey = async (key, code, windowsVirtualKeyCode) => {
     for (const type of ['keyDown', 'keyUp'])
       await call('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode })
   }
-  for (const [shown, first, key, code, keyCode] of [
-    [24, 'match12.bin', 'Enter', 'Enter', 13],
-    [36, 'match24.bin', ' ', 'Space', 32],
-    [37, 'match36.bin', 'Enter', 'Enter', 13]
-  ]) {
-    await evaluate(
-      `[...document.querySelectorAll('button')].find(el => el.textContent.trim() === 'Show more').focus()`
-    )
+  // The batches this fixture needs, each with the press that asks for it and the
+  // result it should land on - the first of the ones it revealed.
+  const batches = []
+  for (let next = RESULTS_BATCH + RESULTS_BATCH; ; next += RESULTS_BATCH) {
+    const shown = Math.min(next, MANY3)
+    batches.push(shown)
+    if (shown === MANY3) break
+  }
+  const presses = [
+    { key: 'Enter', code: 'Enter', keyCode: 13 },
+    { key: ' ', code: 'Space', keyCode: 32 }
+  ]
+  let revealed = RESULTS_BATCH
+  let focusedName = ''
+  for (const [index, shown] of batches.entries()) {
+    const first = nameOf(revealed)
+    const press = presses[index % presses.length]
+    await evaluate(`${showMore}.focus()`)
     assert.equal(await evaluate(`document.activeElement?.textContent.trim()`), 'Show more', 'show more receives focus')
-    await pressKey(key, code, keyCode)
-    await until(
-      `document.body.innerText.includes("Showing ${shown} of 37 results")`,
-      `batch ${shown}`
-    )
-    assert.equal(
-      await evaluate(
-        `[...document.querySelectorAll('[role=button]')].filter(el => /match\\d\\d\\.bin/.test(el.innerText)).length`
-      ),
-      shown
-    )
+    await pressKey(press.key, press.code, press.keyCode)
+    await until(showing(shown, MANY3), `batch ${shown}`)
+    assert.equal(await count(), shown)
     assert.ok(
       await evaluate(`document.activeElement?.innerText.includes(${JSON.stringify(first)})`),
       `focus moves to ${first}, the first newly revealed result`
     )
     assert.equal(await evaluate(`document.activeElement?.getAttribute('role')`), 'button',
       'the focused result has button semantics')
-    if (shown === 24) {
+    if (index === 0) {
       await pressKey('Tab', 'Tab', 9)
-      assert.ok(await evaluate(`document.activeElement?.innerText.includes('match13.bin')`),
+      assert.ok(await evaluate(`document.activeElement?.innerText.includes(${JSON.stringify(nameOf(revealed + 1))})`),
         'Tab proceeds through newly revealed results')
     }
+    revealed = shown
+    focusedName = first
   }
   await pressKey('Enter', 'Enter', 13)
   assert.equal(
     (await evaluate('folderHarness.calls')).at(-1),
-    'file:/many3/match36.bin'
+    `file:/many3/${focusedName}`
   )
   await evaluate('folderHarness.setPath("/Public/demo")')
   await until('!!document.querySelector("table")', 'return to demo')

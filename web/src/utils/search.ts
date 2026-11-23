@@ -121,6 +121,16 @@ export interface Hit {
 export const LIMIT = 12
 
 /**
+ * How many of a folder search's results are shown at a time.
+ *
+ * A folder's search is not capped - every match is reachable - but it arrives in
+ * batches, so a folder of three hundred matches does not cost three hundred rows
+ * before the reader has read one. Exported because the suites size their fixtures
+ * and their expectations from it rather than repeating the number.
+ */
+export const RESULTS_BATCH = 12
+
+/**
  * The paths a screen answers on.
  *
  * `/SASjsApps` is the address the apps screen had before the short URLs, and
