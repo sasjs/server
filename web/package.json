@@ -13,6 +13,7 @@
     "test:language": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-sas-language.mjs",
     "test:markers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-lint-markers.mjs",
     "test:completions": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-completions.mjs",
+    "test:completions-browser": "node scripts/test-function-completions-browser.mjs",
     "test:hover": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-hover.mjs",
     "test:language-server": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-language-server.mjs",
     "test:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-studio-settings.mjs",

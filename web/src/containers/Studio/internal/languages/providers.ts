@@ -10,6 +10,7 @@ import type * as monaco from 'monaco-editor'
 
 import type { MessageConnection, SemanticTokensLegend } from './connection'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
+import { detailedFunctionItems } from './completions'
 import { isReviewModel } from '../reviewModel'
 
 /** Positions: monaco is 1-based, the protocol is 0-based. */
@@ -164,19 +165,27 @@ export const provideCompletions = async (
 
   return {
     incomplete: false,
-    suggestions: items.map((item): monaco.languages.CompletionItem => ({
-      label: item.label,
-      kind: toMonacoCompletionKind(item.kind),
-      insertText: item.insertText ?? item.textEdit?.newText ?? item.label,
-      insertTextRules:
-        item.insertTextFormat === 2
-          ? (INSERT_AS_SNIPPET as monaco.languages.CompletionItemInsertTextRule)
-          : undefined,
-      documentation: documentationText(item.documentation),
-      detail: item.detail,
-      sortText: item.sortText,
-      range: wordRange
-    }))
+    suggestions: items
+      .filter(
+        (item) =>
+          !(
+            [2, 3].includes(item.kind ?? 0) &&
+            detailedFunctionItems.has(item.label.toLowerCase())
+          )
+      )
+      .map((item): monaco.languages.CompletionItem => ({
+        label: item.label,
+        kind: toMonacoCompletionKind(item.kind),
+        insertText: item.insertText ?? item.textEdit?.newText ?? item.label,
+        insertTextRules:
+          item.insertTextFormat === 2
+            ? (INSERT_AS_SNIPPET as monaco.languages.CompletionItemInsertTextRule)
+            : undefined,
+        documentation: documentationText(item.documentation),
+        detail: item.detail,
+        sortText: item.sortText,
+        range: wordRange
+      }))
   }
 }
 
