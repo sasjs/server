@@ -157,6 +157,48 @@ describe('OIDC web routes', () => {
   })
 
   describe('GET /SASLogon/openid/callback', () => {
+    it('returns an authorization request to the login UI after OIDC sign-in', async () => {
+      const agent = request.agent(app)
+      const start = await agent
+        .get('/SASLogon/openid?client_id=flowClient&response_type=code')
+        .expect(302)
+      const url = new URL(start.headers.location)
+      const state = url.searchParams.get('state')
+      const nonce = url.searchParams.get('nonce')
+      idp.setIdTokenClaims({ sub: 'alice', preferred_username: 'alice', nonce })
+
+      await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+        .expect('location', '/logon?client_id=flowClient&response_type=code')
+    })
+
+    it('keeps OIDC return targets local even with hostile parameters', async () => {
+      const agent = request.agent(app)
+      const clientId = '//evil.example/?x=1&y=2#fragment'
+      const query = new URLSearchParams({
+        client_id: clientId,
+        response_type: 'code',
+        returnTo: 'https://evil.example/'
+      })
+      const start = await agent.get(`/SASLogon/openid?${query}`).expect(302)
+      const provider = new URL(start.headers.location)
+      const state = provider.searchParams.get('state')
+      idp.setIdTokenClaims({
+        sub: 'alice',
+        preferred_username: 'alice',
+        nonce: provider.searchParams.get('nonce')
+      })
+      const callback = await agent
+        .get(`/SASLogon/openid/callback?code=c&state=${state}`)
+        .expect(302)
+      const target = new URL(callback.headers.location, 'http://localhost')
+      expect(target.origin).toBe('http://localhost')
+      expect(target.pathname).toBe('/logon')
+      expect(target.searchParams.get('client_id')).toBe(clientId)
+      expect(target.searchParams.has('returnTo')).toBe(false)
+    })
+
     it('should sign the user in and establish a session', async () => {
       const agent = request.agent(app)
       const { state, nonce } = await beginFlow(agent)

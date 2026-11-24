@@ -53,7 +53,24 @@ const login = async (payload: { username: string; password: string }) => {
  * than an XHR: the server answers with a redirect to the provider, which the
  * browser has to follow itself.
  */
-const startSingleSignOn = () => window.location.assign('/SASLogon/openid')
+const startSingleSignOn = () => {
+  const current = new URL(window.location.href)
+  const params = new URLSearchParams(current.search)
+  const clientId = params.get('client_id')
+  if (
+    current.pathname === '/logon' &&
+    clientId &&
+    params.get('response_type') === 'code'
+  ) {
+    const query = new URLSearchParams({
+      client_id: clientId,
+      response_type: 'code'
+    })
+    window.location.assign(`/SASLogon/openid?${query}`)
+    return
+  }
+  window.location.assign('/SASLogon/openid')
+}
 
 const Login = () => {
   const appContext = useContext(AppContext)

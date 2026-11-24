@@ -127,15 +127,54 @@ describe('the Viya sign-in flow, with the estate mounted', () => {
     expect(typeof exchanged.body.access_token).toBe('string')
   })
 
-  it('refuses the authorize URL to a caller with no session', async () => {
-    // the estate renders its own login page for this case; this server does not,
-    // so the answer says exactly what is missing rather than serving an empty form
+  it('sends a fresh browser to the login UI with the authorization request intact', async () => {
     const answer = await request(app).get(
       `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
     )
 
-    expect(answer.status).toBe(401)
-    expect(answer.text).toBe('Invalid userId.')
+    expect(answer.status).toBe(302)
+    expect(answer.headers.location).toBe(
+      `/logon?client_id=${CLIENT_ID}&response_type=code`
+    )
+    expect(answer.headers['cache-control']).toBe('no-store')
+    expect(answer.headers.pragma).toBe('no-cache')
+  })
+
+  it('encodes untrusted client ids and never redirects to a supplied URL', async () => {
+    const clientId = '//evil.example/?x=1&y=2#frag'
+    const query = new URLSearchParams({
+      client_id: clientId,
+      response_type: 'code',
+      redirect_uri: 'https://evil.example/'
+    })
+    const answer = await request(app).get(`/SASLogon/oauth/authorize?${query}`)
+    expect(answer.status).toBe(302)
+    const target = new URL(answer.headers.location, 'http://localhost')
+    expect(target.origin).toBe('http://localhost')
+    expect(target.pathname).toBe('/logon')
+    expect(target.searchParams.get('client_id')).toBe(clientId)
+    expect(target.searchParams.get('response_type')).toBe('code')
+    expect(target.searchParams.has('redirect_uri')).toBe(false)
+  })
+
+  it.each([
+    '',
+    '?client_id=x',
+    '?response_type=code',
+    '?client_id=x&response_type=token',
+    '?client_id=x&response_type=code&response_type=code'
+  ])('rejects invalid authorize query %s', async (query) => {
+    const answer = await request(app).get(`/SASLogon/oauth/authorize${query}`)
+    expect(answer.status).toBe(400)
+    expect(answer.headers['cache-control']).toBe('no-store')
+  })
+
+  it('rejects duplicate client ids rather than treating them as one value', async () => {
+    const answer = await request(app).get(
+      '/SASLogon/oauth/authorize?client_id=one&client_id=two&response_type=code'
+    )
+    expect(answer.status).toBe(400)
+    expect(answer.headers['cache-control']).toBe('no-store')
   })
 
   it('refuses the authorize URL to an unknown client', async () => {
@@ -187,6 +226,22 @@ describe('the Viya sign-in flow, with the estate mounted', () => {
     } finally {
       spy.mockRestore()
     }
+  })
+
+  it('returns authorization codes with no-store headers', async () => {
+    const agent = request.agent(app)
+    const csrf = extractCSRF((await agent.get('/')).headers)
+    await agent
+      .post('/SASLogon/login')
+      .set('x-xsrf-token', csrf)
+      .send({ username: account.username, password: account.password })
+    const answer = await agent
+      .post('/SASLogon/authorize')
+      .set('x-xsrf-token', csrf)
+      .send({ clientId: CLIENT_ID })
+    expect(answer.status).toBe(200)
+    expect(answer.headers['cache-control']).toBe('no-store')
+    expect(answer.headers.pragma).toBe('no-cache')
   })
 
   it('signs in, takes a code, and exchanges it for a pair', async () => {

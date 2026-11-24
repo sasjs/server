@@ -21,6 +21,7 @@ import {
 } from '../../utils'
 import { NO_WEB_BUILD } from '@sasjs/api'
 import { refusalFor, sendRefusal } from '../refusal'
+import { isViyaEmulationEnabled } from '../viya/services'
 
 const webRouter = express.Router()
 const controller = new WebController()
@@ -97,6 +98,8 @@ webRouter.post(
   desktopRestrict,
   authenticateAccessToken,
   async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('Pragma', 'no-cache')
     const { error, value: body } = authorizeValidation(req.body)
     if (error) return res.status(400).send(error.details[0].message)
 
@@ -116,19 +119,26 @@ webRouter.post(
  * it renders - `.infobox h4` inside the body - so an estate has to answer a page,
  * not JSON. The POST above is this server's own API; this is the estate's.
  *
- * The SIGN-IN page itself is the host's: this answers a session that already
- * exists (the SPA signed in, or `POST /SASLogon/login` was called), and a caller
- * with no session is told so rather than being handed a login form this server
- * does not render.
+ * A fresh browser on an emulated estate is sent to this server's own sign-in
+ * UI. A signed-in session continues to receive the adapter's HTML code page.
  */
 webRouter.get(
   '/SASLogon/oauth/authorize',
   desktopRestrict,
   async (req, res) => {
-    const clientId = String(req.query.client_id ?? '')
-    const responseType = String(req.query.response_type ?? '')
+    // The whole authorization response, including refusals and redirects, must
+    // not be cached. Successful pages carry a single-use bearer credential.
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('Pragma', 'no-cache')
 
-    if (responseType !== 'code' || !clientId)
+    const { client_id: clientId, response_type: responseType } = req.query
+
+    if (
+      typeof clientId !== 'string' ||
+      !clientId ||
+      typeof responseType !== 'string' ||
+      responseType !== 'code'
+    )
       return res
         .status(400)
         .type('text/plain')
@@ -136,10 +146,13 @@ webRouter.get(
           'The estate answers this route with response_type=code and a client_id.'
         )
 
-    // a code is a bearer credential, single-use by design: a proxy, or the
-    // browser's back-forward cache, must not be able to replay this page
-    res.setHeader('Cache-Control', 'no-store')
-    res.setHeader('Pragma', 'no-cache')
+    if (isViyaEmulationEnabled() && !req.session.user?.userId) {
+      const params = new URLSearchParams({
+        client_id: clientId,
+        response_type: responseType
+      })
+      return res.redirect(302, `/logon?${params}`)
+    }
 
     try {
       const { code } = await controller.authorize(req, { clientId })

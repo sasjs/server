@@ -65,6 +65,7 @@ export interface StubIdP {
    * recorded for the code, and it must hash to it.
    */
   requirePkce: () => void
+  enableBrowserAuthorization: () => void
   close: () => Promise<void>
 }
 
@@ -77,6 +78,7 @@ export const startStubIdP = async (): Promise<StubIdP> => {
   let endSessionEndpoint = false
   let codeChallenge: string | undefined
   let pkceRequired = false
+  let browserAuthorization = false
   let groupsScope = true
   let userinfoGroups: string[] = []
   let lastUserinfo: { headers: any } | undefined
@@ -143,6 +145,22 @@ export const startStubIdP = async (): Promise<StubIdP> => {
             : {})
         })
       )
+      return
+    }
+
+    if (url.pathname === `${ISSUER_PATH}/auth` && browserAuthorization) {
+      idTokenClaims = {
+        sub: 'oidc-browser',
+        preferred_username: 'oidc-browser',
+        nonce: url.searchParams.get('nonce')
+      }
+      codeChallenge = url.searchParams.get('code_challenge') ?? undefined
+      pkceRequired = true
+      const callback = new URL(url.searchParams.get('redirect_uri')!)
+      callback.searchParams.set('code', 'stub-code')
+      callback.searchParams.set('state', url.searchParams.get('state')!)
+      res.writeHead(302, { location: callback.toString() })
+      res.end()
       return
     }
 
@@ -250,6 +268,9 @@ export const startStubIdP = async (): Promise<StubIdP> => {
     },
     requirePkce: () => {
       pkceRequired = true
+    },
+    enableBrowserAuthorization: () => {
+      browserAuthorization = true
     },
     close: () =>
       new Promise<void>((resolve) => {
