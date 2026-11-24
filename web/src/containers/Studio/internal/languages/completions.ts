@@ -46,14 +46,14 @@ for (const snippet of Object.values(snippets)) {
 }
 
 /**
- * Every SAS word the editor knows, from the vocabulary published by
- * @sasjs/sas-language. A word claimed by more than one group appears once, and
- * the function entry wins, so accepting `sum` inserts a call rather than the
- * bare word.
+ * Completions from the shared function snippets and the SAS vocabulary in
+ * @sasjs/sas-language. For a matching label the detailed snippet wins over
+ * vocabulary entries, and providers.ts suppresses matching LSP function and
+ * method suggestions. Remaining vocabulary overlaps follow group order.
  *
- * Functions are offered as snippets, so accepting one leaves the cursor inside
- * the parentheses. Options that take a value insert the trailing equals, so
- * accepting `bufno` leaves the cursor where the value belongs.
+ * Detailed snippets include argument placeholders; other functions insert a
+ * call with the cursor inside. Options that take a value insert a trailing
+ * equals, leaving the cursor where the value belongs.
  */
 export const sasCompletionItems = (): CompletionSpec[] => {
   const items: CompletionSpec[] = Array.from(detailedFunctionItems.values())
