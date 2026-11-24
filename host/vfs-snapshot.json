@@ -2,7 +2,7 @@
   "format": 1,
   "sharded": true,
   "boot": 0,
-  "files": 427,
+  "files": 429,
   "entries": {
     "/sasjs/drive/files/.sasjslint": {
       "shard": 0,
@@ -86,7 +86,11 @@
     },
     "/sasjs/drive/files/code/macro-core/package.json": {
       "shard": 0,
-      "bytes": 1278
+      "bytes": 1277
+    },
+    "/sasjs/drive/files/code/macro-core/ddl/mddl_assert.sas": {
+      "shard": 0,
+      "bytes": 806
     },
     "/sasjs/drive/files/code/macro-core/ddl/mddl_dc_difftable.sas": {
       "shard": 0,
@@ -722,7 +726,7 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mf_islibds.sas": {
       "shard": 11,
-      "bytes": 969
+      "bytes": 1292
     },
     "/sasjs/drive/files/code/macro-core/base/mf_loc.sas": {
       "shard": 11,
@@ -790,23 +794,27 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mp_assert.sas": {
       "shard": 11,
-      "bytes": 1372
+      "bytes": 1455
     },
     "/sasjs/drive/files/code/macro-core/base/mp_assertcols.sas": {
       "shard": 11,
-      "bytes": 3643
+      "bytes": 3721
     },
     "/sasjs/drive/files/code/macro-core/base/mp_assertcolvals.sas": {
       "shard": 11,
-      "bytes": 4643
+      "bytes": 4697
     },
     "/sasjs/drive/files/code/macro-core/base/mp_assertdsobs.sas": {
       "shard": 11,
-      "bytes": 3701
+      "bytes": 3703
+    },
+    "/sasjs/drive/files/code/macro-core/base/mp_assertmodel.sas": {
+      "shard": 11,
+      "bytes": 7088
     },
     "/sasjs/drive/files/code/macro-core/base/mp_assertscope.sas": {
       "shard": 11,
-      "bytes": 4652
+      "bytes": 4716
     },
     "/sasjs/drive/files/code/macro-core/base/mp_base64copy.sas": {
       "shard": 11,
@@ -1114,7 +1122,7 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mp_validatecol.sas": {
       "shard": 11,
-      "bytes": 4966
+      "bytes": 5100
     },
     "/sasjs/drive/files/code/macro-core/base/mp_wait4file.sas": {
       "shard": 11,
@@ -1717,8 +1725,8 @@
     {
       "id": 0,
       "file": "host/vfs-snapshot-0.json",
-      "bytes": 189834,
-      "files": 52
+      "bytes": 190639,
+      "files": 53
     },
     {
       "id": 1,
@@ -1783,8 +1791,8 @@
     {
       "id": 11,
       "file": "host/vfs-snapshot-11.json",
-      "bytes": 489427,
-      "files": 141
+      "bytes": 497253,
+      "files": 142
     },
     {
       "id": 12,
