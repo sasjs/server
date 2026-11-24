@@ -101,6 +101,8 @@ function render(review, options = {}) {
     runTimes: ['sas'],
     lintMarkers: [],
     review,
+    saving: false,
+    showChanges() {},
     relayout() {},
     beginRevert: () => {
       calls.push('begin')
@@ -133,7 +135,19 @@ function render(review, options = {}) {
     review ? 1 : 0,
     'parent mounts one review only when active'
   )
-  return { props: reviews[0]?.props, calls, displayChanges }
+  // The pane that holds the editor, identified by the display switch that
+  // hides it in the rendered mode - the thing this change is about.
+  const editorPane = walk(tree).find(
+    (node) =>
+      node?.props?.sx?.flex === 1 &&
+      node.props.sx.height === '100%' &&
+      node.props.sx.display !== undefined &&
+      React.Children.toArray(node.props.children).some(
+        (child) => React.isValidElement(child) && child.type === Component
+      )
+  )
+  assert.ok(editorPane, 'the editor is mounted')
+  return { props: reviews[0]?.props, calls, displayChanges, editorPane }
 }
 
 for (const extension of ['sas', 'json']) {
@@ -187,6 +201,25 @@ for (const result of [true, false]) {
   assert.deepEqual(format.calls, ['undo'])
   assert.deepEqual(format.displayChanges, result ? ['source'] : [])
 }
+// A comparison is a pane beside the buffer, never a replacement for it: the
+// author asked to see the changes, not to stop typing.
+for (const mode of ['source', 'split']) {
+  const open = render({ kind: 'saved', before: 'saved' }, { mode })
+  assert.equal(
+    open.editorPane.props.sx.display,
+    'block',
+    `the editor stays visible beside a comparison in ${mode} mode`
+  )
+}
+// The rendered view is the file's full-width view, so there the editor stays
+// hidden - with or without a comparison.
+for (const review of [null, { kind: 'saved', before: 'saved' }]) {
+  assert.equal(
+    render(review, { mode: 'rendered' }).editorPane.props.sx.display,
+    'none',
+    'the rendered mode keeps the editor hidden'
+  )
+}
 const rejected = render(
   { kind: 'saved', before: 'saved' },
   { beginResult: false }
@@ -200,7 +233,10 @@ const untitled = render(
 assert.equal(untitled.props.untitled, true)
 untitled.props.onClose()
 assert.deepEqual(untitled.calls, [['review', null]])
-assert.deepEqual(untitled.displayChanges, ['source'])
+// Closing the comparison in the rendered mode returns to the rendering the
+// author chose; it used to force the source view, which took them somewhere
+// they had not asked to go.
+assert.deepEqual(untitled.displayChanges, [])
 render(null)
 console.log(
   'Editor: review kind selects only its corresponding action and callbacks'

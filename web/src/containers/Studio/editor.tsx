@@ -194,10 +194,12 @@ const SASjsEditor = ({
     fixLintIssues,
     formatDocument,
     undoFormat,
+    showChanges,
     beginRevert,
     cancelRevert,
     confirmRevert,
     formatting,
+    saving,
     review,
     setReview,
     setOpenFilePathInputModal,
@@ -284,13 +286,28 @@ const SASjsEditor = ({
           ? 'Lint fixes apply to SAS programs'
           : undefined
 
+  /**
+   * Why the Changes button cannot be used, or undefined when it can.
+   *
+   * A picture has no text to compare, and an untouched buffer has nothing to
+   * compare against. A comparison already on screen stays available, so the
+   * button can take it away again.
+   */
+  const changesDisabledReason = isImageFile(selectedFilePath)
+    ? 'A picture has no text to compare'
+    : !isDirty && review?.kind !== 'saved'
+      ? 'No changes since last loaded or saved'
+      : undefined
+
   const fileMenu = (
     <FileMenu
       isDirty={isDirty}
       selectedFilePath={selectedFilePath}
       setOpenFilePathInputModal={setOpenFilePathInputModal}
       saveFile={saveBuffer}
-      showChanges={() => setReview({ kind: 'saved', before: prevFileContent })}
+      saving={saving}
+      showChanges={showChanges}
+      changesDisabledReason={changesDisabledReason}
       fixLintIssues={fixLintIssues}
       formatDocument={formatDocument}
       lintFixDisabledReason={lintFixDisabledReason}
@@ -358,13 +375,18 @@ const SASjsEditor = ({
   )
 
   /**
-   * The editor, and the rendered view beside it or instead of it.
+   * The editor, and a second pane beside it: a rendering, or a comparison.
    *
    * One element used by both layouts: a `.md`, `.csv` or `.json` file is not
    * runnable, so it renders in the simpler branch, and the pair has to behave the
-   * same there. Monaco stays mounted in the rendered mode - hidden rather than
-   * unmounted - so the buffer, its undo history and the cursor survive a look at
-   * the preview.
+   * same there. Monaco stays mounted - hidden rather than unmounted in the
+   * rendered mode - so the buffer, its undo history and the cursor survive a look
+   * at the preview.
+   *
+   * A comparison is a pane, never a replacement for the editor: the author asked
+   * to see the changes, not to stop typing. Only the rendered mode hides the
+   * buffer, because there the rendering is the file's full-width view and a
+   * comparison opened from it takes the row on its own.
    */
   const codeAndPreview = (
     <Box sx={{ display: 'flex', gap: 1, height: '100%', minHeight: 0 }}>
@@ -373,13 +395,21 @@ const SASjsEditor = ({
           flex: 1,
           minWidth: 0,
           height: '100%',
-          display: review || displayMode === 'rendered' ? 'none' : 'block'
+          display: displayMode === 'rendered' ? 'none' : 'block'
         }}
       >
         {monacoEditor}
       </Box>
-      {review && (
-        <Box sx={{ flex: 1, minWidth: 0, height: '100%' }}>
+      {review ? (
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            height: '100%',
+            borderLeft: displayMode === 'rendered' ? 0 : 1,
+            borderColor: 'divider'
+          }}
+        >
           <ChangeReview
             {...comparisonFor(review, fileContent)}
             language={languageForFile(selectedFilePath, selectedFileExtension)}
@@ -409,26 +439,24 @@ const SASjsEditor = ({
                   }
                 : undefined
             }
-            onClose={() => {
-              setReview(null)
-              if (displayMode === 'rendered') setDisplayMode('source')
-            }}
+            onClose={() => setReview(null)}
           />
         </Box>
-      )}
-      {!review && displayMode !== 'source' && (
-        <Box
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            height: '100%',
-            overflow: 'auto',
-            borderLeft: displayMode === 'split' ? 1 : 0,
-            borderColor: 'divider'
-          }}
-        >
-          <DisplayPane filePath={selectedFilePath} text={fileContent} />
-        </Box>
+      ) : (
+        displayMode !== 'source' && (
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              height: '100%',
+              overflow: 'auto',
+              borderLeft: displayMode === 'split' ? 1 : 0,
+              borderColor: 'divider'
+            }}
+          >
+            <DisplayPane filePath={selectedFilePath} text={fileContent} />
+          </Box>
+        )
       )}
     </Box>
   )

@@ -10,9 +10,31 @@ import {
   Typography
 } from '@mui/material'
 import { monaco } from 'react-monaco-editor'
-import { createReview } from '../changes'
+import { createReview, LineChangeCount } from '../changes'
 
-/** A read-only snapshot review. The live editor stays mounted behind this pane. */
+/** "12 added, 3 removed", or nothing while Monaco is still comparing. */
+const describeChanges = (count: LineChangeCount | null): string => {
+  if (!count) return ''
+  if (!count.added && !count.removed) return 'No line differences'
+
+  const added = `${count.added} added`
+  const removed = `${count.removed} removed`
+
+  return count.added && count.removed
+    ? `${added}, ${removed}`
+    : count.added
+      ? added
+      : removed
+}
+
+/**
+ * A read-only snapshot review, shown beside the live editor rather than in
+ * place of it.
+ *
+ * The editor stays mounted and editable behind this pane. A diff is something
+ * the author asked to see - it must never be the thing that stops them
+ * typing - so this pane shares the width instead of taking it.
+ */
 export const ChangeReview = ({
   before,
   after,
@@ -38,10 +60,12 @@ export const ChangeReview = ({
 }) => {
   const node = useRef<HTMLDivElement>(null)
   const [confirming, setConfirming] = useState(false)
+  const [count, setCount] = useState<LineChangeCount | null>(null)
   const revertLabel = untitled ? 'Revert to baseline' : 'Revert to saved'
   useEffect(() => {
     if (!node.current) return
-    return createReview(monaco, node.current, before, after, language)
+    setCount(null)
+    return createReview(monaco, node.current, before, after, language, setCount)
   }, [before, after, language])
 
   return (
@@ -59,6 +83,9 @@ export const ChangeReview = ({
         <Typography variant="body2" sx={{ flexGrow: 1 }}>
           {label}
         </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {describeChanges(count)}
+        </Typography>
         {onUndoFormatting && (
           <Button onClick={onUndoFormatting}>Undo formatting</Button>
         )}
@@ -67,7 +94,7 @@ export const ChangeReview = ({
             {revertLabel}
           </Button>
         )}
-        <Button onClick={onClose}>Back to editor</Button>
+        <Button onClick={onClose}>Close diff</Button>
       </Box>
       <Dialog
         open={confirming}

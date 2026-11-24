@@ -9,6 +9,7 @@ import React, {
 import axios from 'axios'
 import { PermissionResponse } from '../utils/types'
 import { useModal, useSnackbar } from '../utils/hooks'
+import type { SetSnackbarMessage } from '../utils/hooks'
 import { AlertSeverityType } from '../components/snackbar'
 import usePermissionResponseModal from '../containers/Settings/internal/hooks/usePermissionResponseModal'
 import { PermissionResponsePayload } from '../containers/Settings/internal/components/permissionResponseModal'
@@ -33,7 +34,7 @@ interface PermissionsContextProps {
   setModalPayload: Dispatch<SetStateAction<string>>
   Snackbar: () => React.JSX.Element
   setOpenSnackbar: Dispatch<React.SetStateAction<boolean>>
-  setSnackbarMessage: Dispatch<React.SetStateAction<string>>
+  setSnackbarMessage: SetSnackbarMessage
   setSnackbarSeverity: Dispatch<React.SetStateAction<AlertSeverityType>>
   PermissionResponseDialog: () => React.JSX.Element
   setOpenPermissionResponseModal: Dispatch<React.SetStateAction<boolean>>

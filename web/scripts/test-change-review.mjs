@@ -86,7 +86,7 @@ function fixture(props = {}) {
   const f = fixture()
   const markup = f.render()
   assert.match(markup, /Review changes/)
-  assert.match(markup, /Back to editor/)
+  assert.match(markup, /Close diff/)
   assert.match(markup, /aria-label="Changes comparison"/)
   assert.doesNotMatch(
     markup,
@@ -125,7 +125,7 @@ function fixture(props = {}) {
   assert.match(markup, /Undo formatting/)
   assert.match(markup, /Revert to saved/)
   f.button('Undo formatting').props.onClick()
-  f.button('Back to editor').props.onClick()
+  f.button('Close diff').props.onClick()
   f.button('Revert to saved').props.onClick()
   markup = f.render()
   assert.match(markup, /role="dialog"/)

@@ -14,15 +14,15 @@
  * green while the listener is missing or stops preventing the browser's own save.
  */
 
-/** The subset of `KeyboardEvent` the decision needs. */
-export interface SaveShortcutEvent {
-  key: string
-  ctrlKey: boolean
-  metaKey: boolean
-  /** Alt and Shift are not part of Save; Ctrl+Shift+S must not resolve to it. */
-  altKey?: boolean
-  shiftKey?: boolean
-}
+import { bindKeydown } from './keydown'
+import type { ShortcutEvent, ShortcutKeyEvent, KeyEventTarget } from './keydown'
+
+/**
+ * The subset of `KeyboardEvent` the decision needs.
+ *
+ * Alt and Shift are not part of Save; Ctrl+Shift+S must not resolve to it.
+ */
+export type SaveShortcutEvent = ShortcutEvent
 
 /**
  * Whether this keydown means "save the buffer", given where focus is.
@@ -49,9 +49,7 @@ export interface SaveKeyOptions {
 }
 
 /** The event shape a keydown handler receives, as far as this uses it. */
-export interface SaveKeyEvent extends SaveShortcutEvent {
-  preventDefault: () => void
-}
+export type SaveKeyEvent = ShortcutKeyEvent
 
 /**
  * The keydown handler for the document.
@@ -71,10 +69,7 @@ export const createSaveKeyHandler = (
 }
 
 /** The part of a document this binding needs. */
-export interface KeyEventTarget {
-  addEventListener: (type: 'keydown', handler: (event: any) => void) => void
-  removeEventListener: (type: 'keydown', handler: (event: any) => void) => void
-}
+export type { KeyEventTarget }
 
 /**
  * Bind the handler to a document, returning the unbind.
@@ -86,8 +81,4 @@ export interface KeyEventTarget {
 export const bindSaveShortcut = (
   target: KeyEventTarget,
   handler: (event: SaveKeyEvent) => void
-): (() => void) => {
-  target.addEventListener('keydown', handler)
-
-  return () => target.removeEventListener('keydown', handler)
-}
+): (() => void) => bindKeydown(target, handler)
