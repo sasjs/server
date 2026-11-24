@@ -13,9 +13,8 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { connectSasLanguageServer, didChange, didClose, didOpen } = await import(
-  '../src/containers/Studio/internal/languages/connection.ts'
-)
+const { connectSasLanguageServer, didChange, didClose, didOpen } =
+  await import('../src/containers/Studio/internal/languages/connection.ts')
 const {
   provideCompletions,
   provideDocumentSymbols,
@@ -79,14 +78,20 @@ const fakeWorker = () => {
             id: message.id,
             result: {
               items: [
-                { label: 'data', kind: 14, documentation: { value: 'DATA statement help' } },
                 {
-                  label: 'sum',
+                  label: 'data',
+                  kind: 14,
+                  documentation: { value: 'DATA statement help' }
+                },
+                {
+                  label: 'add_table_attr',
                   kind: 3,
-                  insertText: 'sum($0)',
+                  insertText: 'add_table_attr($0)',
                   insertTextFormat: 2,
                   documentation: 'string documentation the protocol allows'
                 },
+                { label: 'atan2', kind: 3, insertText: 'atan2' },
+                { label: 'ATAN2', kind: 6, insertText: 'ATAN2' },
                 { label: 'unmaped-kind', kind: 99 }
               ]
             }
@@ -281,12 +286,15 @@ const completions = await provideCompletions(
   { startLineNumber: 2, endLineNumber: 2, startColumn: 1, endColumn: 5 }
 )
 check(
-  'completions translate to suggestions',
-  completions.suggestions.length === 3
+  'only the duplicate LSP function is suppressed',
+  completions.suggestions.length === 4 &&
+    !completions.suggestions.some((s) => s.label === 'atan2') &&
+    completions.suggestions.some((s) => s.label === 'ATAN2')
 )
 check(
   'a snippet item keeps its snippet insert rule',
-  completions.suggestions.find((s) => s.label === 'sum')?.insertTextRules === 4
+  completions.suggestions.find((s) => s.label === 'add_table_attr')
+    ?.insertTextRules === 4
 )
 check(
   'every suggestion carries the typed word range',
@@ -298,7 +306,7 @@ check(
 )
 check(
   'an LSP function maps to the monaco function kind',
-  completions.suggestions.find((s) => s.label === 'sum')?.kind === 1
+  completions.suggestions.find((s) => s.label === 'add_table_attr')?.kind === 1
 )
 check(
   'MarkupContent documentation survives the translation',
@@ -307,8 +315,8 @@ check(
 )
 check(
   'string documentation survives the translation',
-  completions.suggestions.find((s) => s.label === 'sum')?.documentation ===
-    'string documentation the protocol allows'
+  completions.suggestions.find((s) => s.label === 'add_table_attr')
+    ?.documentation === 'string documentation the protocol allows'
 )
 check(
   'an unknown LSP kind falls back to the neutral text kind',

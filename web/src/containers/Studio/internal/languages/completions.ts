@@ -1,5 +1,7 @@
 import type * as monaco from 'monaco-editor'
 
+import functionSnippets from '@sasjs/sas-language/snippets/functions.json'
+
 import { SAS_LANGUAGE_ID } from './sasLanguage'
 import { groupWords, sasVocabularyGroups } from './vocabulary'
 
@@ -14,18 +16,47 @@ const INSERT_AS_SNIPPET = 4 as monaco.languages.CompletionItemInsertTextRule
 
 type CompletionSpec = Omit<monaco.languages.CompletionItem, 'range'>
 
+type FunctionSnippet = {
+  prefix: string | string[]
+  body: string | string[]
+  description?: string
+}
+
+const snippets = functionSnippets as Record<string, FunctionSnippet>
+
+/** Detailed function completions indexed by their case-insensitive prefix. */
+export const detailedFunctionItems = new Map<string, CompletionSpec>()
+for (const snippet of Object.values(snippets)) {
+  const prefixes = Array.isArray(snippet.prefix)
+    ? snippet.prefix
+    : [snippet.prefix]
+  const body = Array.isArray(snippet.body)
+    ? snippet.body.join('\n')
+    : snippet.body
+  for (const prefix of prefixes) {
+    detailedFunctionItems.set(prefix.toLowerCase(), {
+      label: prefix.toUpperCase(),
+      kind: FUNCTION,
+      insertText: body,
+      insertTextRules: INSERT_AS_SNIPPET,
+      documentation: snippet.description,
+      detail: 'SAS function'
+    })
+  }
+}
+
 /**
- * Every SAS word the editor knows, from the vocabulary published by
- * @sasjs/sas-language. A word claimed by more than one group appears once, and
- * the function entry wins, so accepting `sum` inserts a call rather than the
- * bare word.
+ * Completions from the shared function snippets and the SAS vocabulary in
+ * @sasjs/sas-language. For a matching label the detailed snippet wins over
+ * vocabulary entries, and providers.ts suppresses matching LSP function and
+ * method suggestions. Remaining vocabulary overlaps follow group order.
  *
- * Functions are offered as snippets, so accepting one leaves the cursor inside
- * the parentheses. Options that take a value insert the trailing equals, so
- * accepting `bufno` leaves the cursor where the value belongs.
+ * Detailed snippets include argument placeholders; other functions insert a
+ * call with the cursor inside. Options that take a value insert a trailing
+ * equals, leaving the cursor where the value belongs.
  */
 export const sasCompletionItems = (): CompletionSpec[] => {
-  const items: CompletionSpec[] = []
+  const items: CompletionSpec[] = Array.from(detailedFunctionItems.values())
 
   for (const group of sasVocabularyGroups) {
     const isFunction = group.kind === FUNCTION

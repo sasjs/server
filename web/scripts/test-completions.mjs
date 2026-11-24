@@ -11,9 +11,8 @@ import { tsResolverHooks } from './node-ts-resolver.mjs'
 
 registerHooks(tsResolverHooks)
 
-const { registerSasCompletions, sasCompletionItems } = await import(
-  '../src/containers/Studio/internal/languages/completions.ts'
-)
+const { registerSasCompletions, sasCompletionItems } =
+  await import('../src/containers/Studio/internal/languages/completions.ts')
 
 const failures = []
 const check = (label, condition) => {
@@ -51,7 +50,25 @@ check('a macro statement is a keyword', byLabel.get('%macro')?.kind === KEYWORD)
 
 const sum = byLabel.get('sum')
 check('a function is offered as a function', sum?.kind === FUNCTION)
-check('a function inserts a call', sum?.insertText === 'SUM($0)')
+check(
+  'a shared function inserts its argument snippet',
+  sum?.insertText === 'sum(${1})'
+)
+const atan2 = byLabel.get('atan2')
+check(
+  'shared function labels keep vocabulary uppercase',
+  atan2?.label === 'ATAN2'
+)
+check('another shared function label is uppercase', sum?.label === 'SUM')
+check(
+  'argument placeholders survive unchanged',
+  atan2?.insertText === 'atan2(${1:x}, ${2:y})'
+)
+check('snippet description is offered', Boolean(atan2?.documentation))
+check(
+  'a function without a detailed snippet keeps the generic call',
+  byLabel.get('add_table_attr')?.insertText === 'ADD_TABLE_ATTR($0)'
+)
 check(
   'a function inserts as a snippet',
   sum?.insertTextRules === INSERT_AS_SNIPPET

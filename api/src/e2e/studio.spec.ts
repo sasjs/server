@@ -513,29 +513,43 @@ describe('Studio in a browser', () => {
   it('offers SAS completions', async () => {
     await page.click('.monaco-editor')
     await page.keyboard.press('Control+End')
-    await page.keyboard.type('\nda')
+    // Monaco virtualizes suggestion rows: adding function snippets can push
+    // DATA below the rendered rows for "da". Narrow the query and assert the
+    // exact label, not the label plus its detail or a similarly named option.
+    await page.keyboard.type('\ndata')
+    await page.keyboard.press('Escape')
     await page.keyboard.press('Control+Space')
 
-    await page.waitForSelector('.suggest-widget .monaco-list-row', {
-      timeout: 15000
-    })
-
-    const suggestions = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.suggest-widget .monaco-list-row'))
-        .map((row) => (row.textContent ?? '').trim().split('\n')[0])
-        .filter(Boolean)
-    )
-
-    expect(suggestions.length).toBeGreaterThan(0)
-    // Each row's text is the label followed by its detail, so match on the
-    // prefix rather than the whole string.
-    expect(
-      suggestions.some((suggestion) => suggestion.startsWith('DATA'))
-    ).toBe(true)
+    const statement = page
+      .locator('.suggest-widget.visible .monaco-list-row')
+      .filter({ has: page.locator('.label-name', { hasText: /^DATA$/ }) })
+    await statement.waitFor({ timeout: 15000 })
+    expect(await statement.count()).toBe(1)
+    // The completion unit test separately checks DATA's keyword kind.
 
     await page.screenshot({
       path: path.join(screenshotDir, '03-completions.png')
     })
+
+    // Exercise the shared snippet in the actual Studio, not just a minimal
+    // Monaco harness. Accepting it must insert the argument placeholders.
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Control+End')
+    await page.keyboard.type('\natan2')
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Control+Space')
+    const functionItem = page
+      .locator('.suggest-widget.visible .monaco-list-row')
+      .filter({ has: page.locator('.label-name', { hasText: /^ATAN2$/ }) })
+    await functionItem.waitFor({ timeout: 15000 })
+    expect(await functionItem.count()).toBe(1)
+    await functionItem.click()
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('.view-lines .view-line')).some(
+        (line) =>
+          line.textContent?.replace(/\u00a0/g, ' ').includes('atan2(x, y)')
+      )
+    )
   }, 60000)
 
   it('lists the errors, warnings and notable notes of a SAS log, and hides the notes on request', async () => {
