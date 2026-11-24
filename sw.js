@@ -35,9 +35,9 @@
  * services are the package's; this file supplies the transport, the worker's own
  * activity, and the browser's answers to questions a server asks its process.
  */
-importScripts('host/runtime-core.js?v=b13205c1ad')
-importScripts('host/api-browser.js?v=b13205c1ad')
-importScripts('host/lint-browser.js?v=b13205c1ad')
+importScripts('host/runtime-core.js?v=82658d3019')
+importScripts('host/api-browser.js?v=82658d3019')
+importScripts('host/lint-browser.js?v=82658d3019')
 
 const R = self.SASjsMockRuntime
 
@@ -950,7 +950,7 @@ const adminReports = {
     const total = Number(heap.jsHeapSizeLimit || deviceBytes || 0)
     const used = Number(heap.usedJSHeapSize || 0)
     return {
-      build: { version: "v8.12.0-3-gcf44fe00", gitHash: "cf44fe00", buildDate: "2026-11-24T16:02:06.705Z" },
+      build: { version: "v8.12.1-6-g1cb35462", gitHash: "1cb35462", buildDate: "2026-11-24T22:29:40.923Z" },
       server: {
         // a page is not a process: the fields exist so a diagnostics screen
         // renders, and their values describe this worker rather than inventing
@@ -1293,7 +1293,7 @@ const parseLintConfig = (contents) => {
 }
 
 // written by mock/build.mjs: the release this site was built from
-API.BROWSER_INFO.version = "v8.12.0-3-gcf44fe00 (cf44fe00)"
+API.BROWSER_INFO.version = "v8.12.1-6-g1cb35462 (1cb35462)"
 
 const SERVICES = {
   drive: API.createDriveService(DRIVE_STORE),

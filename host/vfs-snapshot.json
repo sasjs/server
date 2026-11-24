@@ -2,7 +2,7 @@
   "format": 1,
   "sharded": true,
   "boot": 0,
-  "files": 429,
+  "files": 430,
   "entries": {
     "/sasjs/drive/files/.sasjslint": {
       "shard": 0,
@@ -115,6 +115,10 @@
     "/sasjs/drive/files/code/macro-core/ddl/mddl_derivedvars.sas": {
       "shard": 0,
       "bytes": 1513
+    },
+    "/sasjs/drive/files/code/macro-core/ddl/mddl_dirlist.sas": {
+      "shard": 0,
+      "bytes": 793
     },
     "/sasjs/drive/files/code/macro-core/ddl/mddl_sas_cntlout.sas": {
       "shard": 0,
@@ -874,7 +878,7 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mp_dirlist.sas": {
       "shard": 11,
-      "bytes": 13885
+      "bytes": 13917
     },
     "/sasjs/drive/files/code/macro-core/base/mp_distinctfmtvalues.sas": {
       "shard": 11,
@@ -1725,8 +1729,8 @@
     {
       "id": 0,
       "file": "host/vfs-snapshot-0.json",
-      "bytes": 190639,
-      "files": 53
+      "bytes": 191432,
+      "files": 54
     },
     {
       "id": 1,
@@ -1791,7 +1795,7 @@
     {
       "id": 11,
       "file": "host/vfs-snapshot-11.json",
-      "bytes": 497253,
+      "bytes": 497285,
       "files": 142
     },
     {
