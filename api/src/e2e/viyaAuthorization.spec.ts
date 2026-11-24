@@ -104,6 +104,50 @@ describe('Viya authorization in a fresh browser', () => {
     }
   })
 
+  it('uses the installed Viya adapter before and after browser sign-in', async () => {
+    const base = `http://127.0.0.1:${(server.address() as any).port}`
+    const context = await browser.newContext({ bypassCSP: true })
+    try {
+      const page = await context.newPage()
+      await page.goto(`${base}/logon?client_id=${clientId}&response_type=code`)
+      await page.addScriptTag({
+        path: require.resolve('@sasjs/adapter/dist/sasjs-adapter.js')
+      })
+      const makeCode = () =>
+        page.evaluate((id) => {
+          const SASjs = (window as any).SASjs.default
+          const adapter = new SASjs({ serverType: 'SASVIYA' })
+          return adapter.getAuthCode(id)
+        }, clientId)
+
+      // An XHR cannot interact with the login page or supply credentials.
+      expect(await makeCode()).toBeNull()
+      await page.locator('#username').fill('browseruser')
+      await page.locator('#password').fill('browser-password')
+      const issued = page.waitForResponse(
+        (r) =>
+          r.url().endsWith('/SASLogon/authorize') &&
+          r.request().method() === 'POST'
+      )
+      await page.locator('form button[type="submit"]').click()
+      expect((await issued).status()).toBe(200)
+      const code = await makeCode()
+      expect(typeof code).toBe('string')
+      expect(code).toBeTruthy()
+      const exchanged = await fetch(`${base}/SASLogon/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+        },
+        body: new URLSearchParams({ grant_type: 'authorization_code', code })
+      })
+      expect(exchanged.status).toBe(200)
+    } finally {
+      await context.close()
+    }
+  })
+
   it('signs in on the actual UI, displays a code and exchanges it for a usable token', async () => {
     const base = `http://127.0.0.1:${(server.address() as any).port}`
     const context = await browser.newContext()

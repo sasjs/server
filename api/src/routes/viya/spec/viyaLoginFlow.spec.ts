@@ -1,9 +1,12 @@
 /**
  * The flow a Viya client actually walks, end to end.
  *
- * `@sasjs/adapter` signs a user in at `POST /SASLogon/login`, asks
+ * The browser signs a user in at `POST /SASLogon/login`, asks
  * `POST /SASLogon/authorize` for a code, and exchanges it at
- * `POST /SASLogon/oauth/token`. Each of those routes has a case of its own
+ * `POST /SASLogon/oauth/token`. The installed Viya adapter's `getAuthCode`
+ * instead fetches `GET /SASLogon/oauth/authorize` in an existing session; it
+ * cannot submit a login form. The browser E2E spec exercises the real adapter.
+ * Each route has a case of its own
  * elsewhere; what this file proves is that the three are reachable TOGETHER with
  * `EMULATE_VIYA` on - the mount at `/` sits in front of the web router, so a
  * prefix match on `/SASLogon` once shadowed the sign-in and answered
@@ -22,6 +25,7 @@ import { join } from 'path'
 import request from 'supertest'
 
 import Client from '../../../model/Client'
+import User from '../../../model/User'
 import { configureExpressSession } from '../../../app-modules'
 import { ModeType, SECRETS } from '../../../utils'
 import { UserController, WebController } from '../../../controllers/'
@@ -126,6 +130,134 @@ describe('the Viya sign-in flow, with the estate mounted', () => {
     expect(exchanged.status).toBe(200)
     expect(typeof exchanged.body.access_token).toBe('string')
   })
+
+  it('refuses authorization when a signed-in user is deactivated', async () => {
+    const agent = request.agent(app)
+    const csrf = extractCSRF((await agent.get('/')).headers)
+    expect(
+      (
+        await agent.post('/SASLogon/login').set('x-xsrf-token', csrf).send({
+          username: account.username,
+          password: account.password
+        })
+      ).status
+    ).toBe(200)
+
+    await User.updateOne({ username: account.username }, { isActive: false })
+    try {
+      const answer = await agent.get(
+        `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
+      )
+      expect(answer.status).toBe(401)
+      expect(answer.text).not.toContain('<h4>')
+      expect(answer.headers['cache-control']).toBe('no-store')
+    } finally {
+      await User.updateOne({ username: account.username }, { isActive: true })
+    }
+  })
+
+  it('applies the initial admin password gate to the authorize page', async () => {
+    const previousAdmin = process.env.ADMIN_USERNAME
+    process.env.ADMIN_USERNAME = account.username
+    await User.updateOne(
+      { username: account.username },
+      { needsToUpdatePassword: true }
+    )
+    try {
+      const agent = request.agent(app)
+      const csrf = extractCSRF((await agent.get('/')).headers)
+      const login = await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrf)
+        .send({ username: account.username, password: account.password })
+      expect(login.status).toBe(200)
+      const answer = await agent.get(
+        `/SASLogon/oauth/authorize?client_id=${CLIENT_ID}&response_type=code`
+      )
+      expect(answer.status).toBe(403)
+      expect(answer.text).toBe('Password update required')
+      expect(answer.headers['cache-control']).toBe('no-store')
+    } finally {
+      if (previousAdmin === undefined) delete process.env.ADMIN_USERNAME
+      else process.env.ADMIN_USERNAME = previousAdmin
+    }
+  })
+
+  it.each([
+    ['viya', false],
+    ['viya', true],
+    ['native', false],
+    ['native', true]
+  ] as const)(
+    'refuses a %s code exchange after deactivation (existing pair: %s)',
+    async (port, existingPair) => {
+      await User.updateOne({ username: account.username }, { tokens: [] })
+      const agent = request.agent(app)
+      const csrf = extractCSRF((await agent.get('/')).headers)
+      const login = await agent
+        .post('/SASLogon/login')
+        .set('x-xsrf-token', csrf)
+        .send({ username: account.username, password: account.password })
+      expect(login.status).toBe(200)
+
+      if (existingPair) {
+        const first = await agent
+          .post('/SASLogon/authorize')
+          .set('x-xsrf-token', csrf)
+          .send({ clientId: CLIENT_ID })
+        expect(first.status).toBe(200)
+        const pair = await request(app)
+          .post('/SASLogon/oauth/token')
+          .auth(CLIENT_ID, CLIENT_SECRET)
+          .type('form')
+          .send({ grant_type: 'authorization_code', code: first.body.code })
+        expect(pair.status).toBe(200)
+      }
+
+      const authorized = await agent
+        .post('/SASLogon/authorize')
+        .set('x-xsrf-token', csrf)
+        .send({ clientId: CLIENT_ID })
+      expect(authorized.status).toBe(200)
+      const code = authorized.body.code
+      expect(typeof code).toBe('string')
+      await User.updateOne({ username: account.username }, { isActive: false })
+      try {
+        const answer =
+          port === 'viya'
+            ? await request(app)
+                .post('/SASLogon/oauth/token')
+                .auth(CLIENT_ID, CLIENT_SECRET)
+                .type('form')
+                .send({ grant_type: 'authorization_code', code })
+            : await request(app)
+                .post('/SASjsApi/auth/token')
+                .send({ clientId: CLIENT_ID, code })
+        expect(answer.status).toBe(401)
+        expect(
+          answer.body.access_token ?? answer.body.accessToken
+        ).toBeUndefined()
+        expect(
+          answer.body.refresh_token ?? answer.body.refreshToken
+        ).toBeUndefined()
+        if (port === 'viya') expect(answer.body.error).toBe('invalid_grant')
+      } finally {
+        await User.updateOne({ username: account.username }, { isActive: true })
+      }
+      // A refused code cannot be revived by reactivating the account.
+      const replay =
+        port === 'viya'
+          ? await request(app)
+              .post('/SASLogon/oauth/token')
+              .auth(CLIENT_ID, CLIENT_SECRET)
+              .type('form')
+              .send({ grant_type: 'authorization_code', code })
+          : await request(app)
+              .post('/SASjsApi/auth/token')
+              .send({ clientId: CLIENT_ID, code })
+      expect(replay.status).toBe(401)
+    }
+  )
 
   it('sends a fresh browser to the login UI with the authorization request intact', async () => {
     const answer = await request(app).get(

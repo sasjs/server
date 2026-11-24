@@ -115,9 +115,9 @@ webRouter.post(
 /**
  * The authorization route in the shape a Viya client asks for it.
  *
- * `@sasjs/adapter` opens this URL in a popup and reads the code out of the page
- * it renders - `.infobox h4` inside the body - so an estate has to answer a page,
- * not JSON. The POST above is this server's own API; this is the estate's.
+ * `@sasjs/adapter.getAuthCode` fetches this URL, then reads `.infobox h4`
+ * from its HTML response. It cannot sign a fresh session in: that must happen
+ * interactively before the fetch. The CLI asks the user to visit the URL.
  *
  * A fresh browser on an emulated estate is sent to this server's own sign-in
  * UI. A signed-in session continues to receive the adapter's HTML code page.
@@ -125,7 +125,7 @@ webRouter.post(
 webRouter.get(
   '/SASLogon/oauth/authorize',
   desktopRestrict,
-  async (req, res) => {
+  async (req, res, next) => {
     // The whole authorization response, including refusals and redirects, must
     // not be cached. Successful pages carry a single-use bearer credential.
     res.setHeader('Cache-Control', 'no-store')
@@ -153,6 +153,14 @@ webRouter.get(
       })
       return res.redirect(302, `/logon?${params}`)
     }
+
+    return next()
+  },
+  // Revalidate the session against the current account, including the same
+  // initial-password gate enforced by the server's POST authorization route.
+  authenticateAccessToken,
+  async (req, res) => {
+    const clientId = req.query.client_id as string
 
     try {
       const { code } = await controller.authorize(req, { clientId })

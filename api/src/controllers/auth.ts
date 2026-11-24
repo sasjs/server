@@ -139,6 +139,11 @@ const token = async (data: any): Promise<TokenResponse> => {
 
   AuthController.deleteCode(userInfo.userId, clientId)
 
+  // A code may outlive the account's active status. Consume it even on refusal,
+  // and never return an existing pair for a deleted or deactivated account.
+  const user = await User.findOne({ _id: userInfo.userId, isActive: true })
+  if (!user) throw new HttpError(401, 'Invalid Auth Code')
+
   // Re-exchanging a code for the same user/client while a still-valid token
   // pair already exists returns that pair instead of minting a new one -
   // keeps other tabs/sessions using the old tokens alive instead of
