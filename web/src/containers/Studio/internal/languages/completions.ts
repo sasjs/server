@@ -35,7 +35,7 @@ for (const snippet of Object.values(snippets)) {
     : snippet.body
   for (const prefix of prefixes) {
     detailedFunctionItems.set(prefix.toLowerCase(), {
-      label: prefix,
+      label: prefix.toUpperCase(),
       kind: FUNCTION,
       insertText: body,
       insertTextRules: INSERT_AS_SNIPPET,

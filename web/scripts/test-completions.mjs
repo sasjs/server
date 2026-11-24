@@ -56,6 +56,11 @@ check(
 )
 const atan2 = byLabel.get('atan2')
 check(
+  'shared function labels keep vocabulary uppercase',
+  atan2?.label === 'ATAN2'
+)
+check('another shared function label is uppercase', sum?.label === 'SUM')
+check(
   'argument placeholders survive unchanged',
   atan2?.insertText === 'atan2(${1:x}, ${2:y})'
 )

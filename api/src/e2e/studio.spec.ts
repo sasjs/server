@@ -520,12 +520,12 @@ describe('Studio in a browser', () => {
     await page.keyboard.press('Escape')
     await page.keyboard.press('Control+Space')
 
-    const statement = page.locator(
-      '.suggest-widget.visible .monaco-list-row[aria-label="DATA"]'
-    )
+    const statement = page
+      .locator('.suggest-widget.visible .monaco-list-row')
+      .filter({ has: page.locator('.label-name', { hasText: /^DATA$/ }) })
     await statement.waitFor({ timeout: 15000 })
     expect(await statement.count()).toBe(1)
-    expect(await statement.locator('.codicon-symbol-keyword').count()).toBe(1)
+    // The completion unit test separately checks DATA's keyword kind.
 
     await page.screenshot({
       path: path.join(screenshotDir, '03-completions.png')
@@ -540,7 +540,7 @@ describe('Studio in a browser', () => {
     await page.keyboard.press('Control+Space')
     const functionItem = page
       .locator('.suggest-widget.visible .monaco-list-row')
-      .filter({ has: page.locator('.label-name', { hasText: /^atan2$/ }) })
+      .filter({ has: page.locator('.label-name', { hasText: /^ATAN2$/ }) })
     await functionItem.waitFor({ timeout: 15000 })
     expect(await functionItem.count()).toBe(1)
     await functionItem.click()
