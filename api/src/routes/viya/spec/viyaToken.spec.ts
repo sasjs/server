@@ -451,6 +451,25 @@ describe('the estate token port', () => {
     )
   })
 
+  it('refuses refresh after the account is deactivated', async () => {
+    const granted = await passwordGrant()
+    expect(granted.status).toBe(200)
+    await User.updateOne({ username: account.username }, { isActive: false })
+    try {
+      const answer = await request(app)
+        .post('/SASLogon/oauth/token')
+        .set('Authorization', basic('sas.cli', ''))
+        .field('grant_type', 'refresh_token')
+        .field('refresh_token', granted.body.refresh_token)
+      expect(answer.status).toBe(401)
+      expect(answer.body.error).toBe('invalid_grant')
+      expect(answer.body.access_token).toBeUndefined()
+      expect(answer.body.refresh_token).toBeUndefined()
+    } finally {
+      await User.updateOne({ username: account.username }, { isActive: true })
+    }
+  })
+
   it('refuses a grant no client sends', async () => {
     const answer = await request(app)
       .post('/SASLogon/oauth/token')

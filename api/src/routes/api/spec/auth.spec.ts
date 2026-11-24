@@ -13,7 +13,6 @@ import {
   generateAccessToken,
   generateAuthCode,
   generateRefreshToken,
-  randomBytesHexString,
   saveTokensInDB,
   verifyTokenInDB
 } from '../../../utils'
@@ -50,12 +49,10 @@ describe('auth', () => {
   })
 
   describe('token', () => {
-    const userInfo: InfoJWT = {
-      clientId,
-      userId: randomBytesHexString(12)
-    }
+    let userInfo: InfoJWT
     beforeAll(async () => {
-      await userController.createUser(user)
+      const created = await userController.createUser(user)
+      userInfo = { clientId, userId: created.uid }
     })
     afterAll(async () => {
       const collections = mongoose.connection.collections

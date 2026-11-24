@@ -15,6 +15,7 @@ declare module 'express-session' {
       state: string
       nonce: string
       codeVerifier: string
+      authorization?: { clientId: string }
     }
     /**
      * The id_token issued at login, retained only so that logout can pass it

@@ -219,7 +219,12 @@ const startOidc = async (req: express.Request): Promise<{ url: string }> => {
   // The callback arrives as a GET from the provider, so it cannot carry a CSRF
   // token; `state` is what proves this callback belongs to a flow that this
   // browser session started.
-  req.session.oidc = { state, nonce, codeVerifier }
+  const { client_id, response_type } = req.query
+  const authorization =
+    typeof client_id === 'string' && client_id && response_type === 'code'
+      ? { clientId: client_id }
+      : undefined
+  req.session.oidc = { state, nonce, codeVerifier, authorization }
 
   return { url: client.getAuthorizationUrl(state, nonce, codeVerifier) }
 }
@@ -300,6 +305,13 @@ const oidcCallback = async (req: express.Request): Promise<{ url: string }> => {
     needsToUpdatePassword: user.needsToUpdatePassword
   }
 
+  if (pending.authorization) {
+    const params = new URLSearchParams({
+      client_id: pending.authorization.clientId,
+      response_type: 'code'
+    })
+    return { url: `/logon?${params}` }
+  }
   return { url: '/' }
 }
 

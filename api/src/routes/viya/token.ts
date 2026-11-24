@@ -339,6 +339,12 @@ const exchangeCode = async (
 
   AuthController.deleteCode(userInfo.userId, clientId)
 
+  // The account can be deactivated after the code was issued. Consume the code
+  // on refusal and do not return a previously stored pair either.
+  const user = await UserModel.findOne({ _id: userInfo.userId, isActive: true })
+  if (!user)
+    throw invalidGrant('The authorization code is invalid or already used.')
+
   const expirations = expirationsOf(client)
   const live = await livePair(userInfo, expirations)
 
@@ -426,6 +432,7 @@ const rotateRefreshToken = async (
   const replaced = await UserModel.findOneAndUpdate(
     {
       _id: userInfo.userId,
+      isActive: true,
       tokens: { $elemMatch: { clientId, refreshToken } }
     },
     {
