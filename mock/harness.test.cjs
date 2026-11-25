@@ -6,6 +6,48 @@ const path = require('node:path')
 const test = require('node:test')
 const { waitForMockReady } = require('./mock-ready.cjs')
 const { runBrowser } = require('./test-built-site.cjs')
+const { selectCases } = require('./format.browser.test.cjs')
+
+test('formatter cases skip a changed upstream fragment but retain the crafted full-output case', () => {
+  const warnings = []
+  const cases = selectCases(
+    { status: 200, text: '%macro mf_getfilesize();\n%mend mf_getfilesize;' },
+    (message) => warnings.push(message)
+  )
+  assert.deepEqual(
+    cases.map(({ name }) => name),
+    ['crafted joined %end']
+  )
+  assert.ok(cases[0].expected, 'crafted case checks complete output')
+  assert.match(warnings.join('\n'), /skip.*mf_getfilesize.*fragment/i)
+})
+
+test('formatter cases retain a matching drive file and reject failed fetches', () => {
+  const text = `%macro mf_getfilesize();
+  %if &format=NO %then %do;
+    &bytes
+  %end;
+  %else %do;
+    %sysfunc(INPUTN(&bytes, best.),sizekmg.)
+  %end;
+%mend mf_getfilesize;`
+  const warnings = []
+  const cases = selectCases({ status: 200, text }, (s) => warnings.push(s))
+  assert.deepEqual(
+    cases.map(({ name }) => name),
+    ['drive mf_getfilesize', 'crafted joined %end']
+  )
+  assert.equal(cases[0].input, text)
+  assert.deepEqual(warnings, [])
+  const reindented = text.replace('\n  %if', '\n   %if')
+  assert.deepEqual(
+    selectCases({ status: 200, text: reindented }, () => {}).map(
+      ({ name }) => name
+    ),
+    ['crafted joined %end']
+  )
+  assert.throws(() => selectCases({ status: 404, text: '' }), /Cannot read/)
+})
 
 test('mock readiness rejects a stalled promise within its deadline', async () => {
   const page = {

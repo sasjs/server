@@ -2,12 +2,11 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
-const { chromium } = require('../api/node_modules/playwright')
 const { waitForMockReady } = require('./mock-ready.cjs')
 
 const drivePath = '/code/macro-core/base/mf_getfilesize.sas'
 const fragment =
-  /  %if &format=NO %then %do;\n    &bytes\n  %end;\n  %else %do;\n    %sysfunc\(INPUTN\(&bytes, best\.\),sizekmg\.\)\n  %end;/
+  /^  %if &format=NO %then %do;\n    &bytes\n  %end;\n  %else %do;\n    %sysfunc\(INPUTN\(&bytes, best\.\),sizekmg\.\)\n  %end;$/m
 
 const crafted = fs.readFileSync(
   path.join(__dirname, 'fixtures/mf_getfilesize.sas'),
@@ -23,7 +22,29 @@ const craftedExpected = `%macro example();
 %mend example;
 `
 
+function selectCases(drive, warn = console.warn) {
+  assert.equal(drive.status, 200, `Cannot read ${drivePath} from mock drive`)
+  const cases = []
+  if (fragment.test(drive.text)) {
+    assert.match(drive.text, /%macro mf_getfilesize\b/)
+    cases.push({ name: 'drive mf_getfilesize', input: drive.text })
+  } else {
+    warn(
+      `SKIP: drive mf_getfilesize source no longer matches the expected fragment; crafted regression still runs`
+    )
+  }
+  cases.push({
+    name: 'crafted joined %end',
+    input: crafted,
+    expected: craftedExpected
+  })
+  return cases
+}
+
 async function main() {
+  const { chromium } = require(
+    require.resolve('playwright', { paths: [path.join(__dirname, '../api')] })
+  )
   const url = process.env.MOCK_SITE_URL || 'http://127.0.0.1:8765/'
   const browser = await chromium.launch({
     ...(process.env.CHROMIUM_PATH
@@ -53,16 +74,7 @@ async function main() {
       )
       return { status: response.status, text: await response.text() }
     }, drivePath)
-    assert.equal(drive.status, 200, `Cannot read ${drivePath} from mock drive`)
-    assert.match(drive.text, /%macro mf_getfilesize\b/)
-    assert.match(drive.text, fragment)
-    const cases = [
-      {
-        name: 'drive mf_getfilesize',
-        input: drive.text
-      },
-      { name: 'crafted joined %end', input: crafted, expected: craftedExpected }
-    ]
+    const cases = selectCases(drive)
 
     const editor = page.locator('.monaco-editor').first()
     await editor.waitFor({ state: 'visible' })
@@ -129,7 +141,10 @@ async function main() {
     await browser.close()
   }
 }
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+module.exports = { selectCases }
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
+}
