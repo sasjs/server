@@ -85,6 +85,72 @@ describe('ExecutionController.executeProgram', () => {
     })
   })
 
+  // A service that streams with webout() and stops before CLOSE leaves a JSON
+  // prefix on the drive. Served as it is, the caller's parse fails and an app
+  // reports its own error instead of the refusal the service wrote - and both
+  // endings produce that body: a throw (a non-zero interpreter exit) and an
+  // early return, which reports no error at all.
+  describe('streamed webout left open', () => {
+    const openEnvelope =
+      '{"SYSDATE":"24NOV26","SYSTIME":"22:44","sasjsAbort":[{"MSG":"not authorised"}]'
+
+    const runWithWebout = async (body: string, failure?: string) => {
+      jest
+        .spyOn(ProcessProgramModule, 'processProgram')
+        .mockImplementation(
+          async (
+            _program,
+            _preProgramVariables,
+            _vars,
+            _session,
+            weboutPath
+          ) => {
+            await createFile(weboutPath, body)
+            if (failure) {
+              session.state = SessionState.failed
+              session.failureReason = failure
+            } else {
+              session.state = SessionState.completed
+            }
+          }
+        )
+
+      return new ExecutionController().executeProgram({
+        program: 'webout()',
+        preProgramVariables,
+        vars: {},
+        session,
+        runTime: RunTimeType.JS
+      })
+    }
+
+    it('serves the closed envelope of a run that failed', async () => {
+      const { result } = await runWithWebout(
+        openEnvelope,
+        'Error: not authorised'
+      )
+
+      // the log is framed after the webout, so the body is read from its head
+      const body = JSON.parse(String(result).split('\n')[0])
+      expect(body.sasjsAbort[0].MSG).toBe('not authorised')
+    })
+
+    it('serves the closed envelope of a run that returned early', async () => {
+      const { result } = await runWithWebout(openEnvelope)
+
+      expect(JSON.parse(result as string).sasjsAbort[0].MSG).toBe(
+        'not authorised'
+      )
+    })
+
+    it('serves a complete body unchanged', async () => {
+      const complete = `${openEnvelope}}`
+      const { result } = await runWithWebout(complete)
+
+      expect(result).toBe(complete)
+    })
+  })
+
   // A failed SAS session (e.g. from %abort;) is a normal outcome of
   // running arbitrary user code, not a request-shape/server problem - the
   // same way a plain SAS ERROR: in the log (without %abort;) already

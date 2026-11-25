@@ -4,6 +4,7 @@ import { getSessionController, processProgram } from './'
 import { readFile, fileExists, createFile, readFileBinary } from '@sasjs/utils'
 import { PreProgramVars, Session, TreeNode, SessionState } from '../../types'
 import {
+  closeStreamedEnvelope,
   extractHeaders,
   getFilesFolder,
   HttpError,
@@ -150,11 +151,19 @@ export class ExecutionController {
 
     const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
 
-    const webout = (await fileExists(weboutPath))
+    const weboutRaw = (await fileExists(weboutPath))
       ? fileResponse && !forceStringResult
         ? await readFileBinary(weboutPath)
         : await readFile(weboutPath)
       : ''
+
+    // A service that streams with webout() writes each member as it is added
+    // and closes the document at finalise, which sits after the payload - so one
+    // that aborts, or returns early after writing a refusal, leaves a JSON
+    // prefix behind. Served as it is, the caller's parse fails and an app
+    // reports its own error instead of the message the service sent.
+    const repaired = closeStreamedEnvelope(weboutRaw)
+    const webout = repaired ? repaired.webout : weboutRaw
 
     // it should be deleted by scheduleSessionDestroy
     //
