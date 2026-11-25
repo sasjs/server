@@ -107,6 +107,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run mock:build
 
+      - name: Install Chromium for the formatter regression
+        run: npx --prefix api playwright install --with-deps chromium
+
+      - name: Verify built Studio formatter in Chromium
+        run: node mock/test-built-site.cjs
+
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.0.0
         with:

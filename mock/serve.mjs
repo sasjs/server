@@ -78,6 +78,8 @@ http
       404
     )
   })
-  .listen(port, () => {
-    process.stdout.write(`Mock site on http://localhost:${port}\n`)
+  .listen(port, function () {
+    process.stdout.write(
+      `Mock site on http://localhost:${this.address().port}\n`
+    )
   })
