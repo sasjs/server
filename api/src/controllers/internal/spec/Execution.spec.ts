@@ -149,6 +149,16 @@ describe('ExecutionController.executeProgram', () => {
 
       expect(result).toBe(complete)
     })
+
+    it('names a body cut mid-member in the session log', async () => {
+      // no brace makes a half-written member readable, so the body is served as
+      // found and the log - the only place the caller can learn it - says why
+      const cut = '{"SYSDATE":"24NOV26","SYSTIME":"22:44","users":['
+      const { result, log } = await runWithWebout(cut)
+
+      expect(result).toBe(cut)
+      expect(log).toContain('the response envelope is truncated')
+    })
   })
 
   // A failed SAS session (e.g. from %abort;) is a normal outcome of
