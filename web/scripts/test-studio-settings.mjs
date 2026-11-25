@@ -38,8 +38,8 @@ check(
   SETTINGS_STORAGE_KEY === 'studio-settings'
 )
 check(
-  'format on save defaults to on',
-  defaultSettings['editor.formatOnSave'] === true
+  'format on save defaults to off',
+  defaultSettings['editor.formatOnSave'] === false
 )
 // the explorer is shown until the user hides it, and the choice is remembered
 check(
@@ -57,21 +57,28 @@ writeSetting('workbench.sideBarCollapsed', false)
 let settings = readSettings()
 check(
   'a fresh store reads the defaults',
+  settings['editor.formatOnSave'] === false
+)
+
+// Existing settings made before this preference was recorded should not opt in.
+backing.set(SETTINGS_STORAGE_KEY, JSON.stringify({ 'log.notableNotes': false }))
+check(
+  'a store missing format on save defaults to off',
+  readSettings()['editor.formatOnSave'] === false
+)
+
+writeSetting('editor.formatOnSave', true)
+settings = readSettings()
+check(
+  'an explicit opt-in survives a read',
   settings['editor.formatOnSave'] === true
 )
 
 writeSetting('editor.formatOnSave', false)
 settings = readSettings()
 check(
-  'a written setting survives a read',
+  'format on save can be turned back off',
   settings['editor.formatOnSave'] === false
-)
-
-writeSetting('editor.formatOnSave', true)
-settings = readSettings()
-check(
-  'a setting can be turned back on',
-  settings['editor.formatOnSave'] === true
 )
 
 // A corrupt store must not break the editor: settings are convenience.
@@ -79,7 +86,7 @@ backing.set(SETTINGS_STORAGE_KEY, '{not json')
 settings = readSettings()
 check(
   'a corrupt store falls back to the defaults',
-  settings['editor.formatOnSave'] === true
+  settings['editor.formatOnSave'] === false
 )
 
 // Junk values for known keys are ignored rather than adopted.
@@ -90,7 +97,7 @@ backing.set(
 settings = readSettings()
 check(
   'a value of the wrong type is ignored',
-  settings['editor.formatOnSave'] === true
+  settings['editor.formatOnSave'] === false
 )
 
 // Two controls can own one key - the log tab's eye and the Settings panel switch -
