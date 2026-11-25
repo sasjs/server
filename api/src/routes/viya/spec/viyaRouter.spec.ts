@@ -14,6 +14,7 @@ import {
   type ViyaRouterOptions
 } from '../index'
 import { configureBodyParsers } from '../../../app-modules'
+import { subjectOf } from '../services'
 import { createDriveService, dispatchViya } from '@sasjs/api'
 import { MemoryDriveStore } from '@sasjs/api'
 import type { Services } from '@sasjs/api'
@@ -135,7 +136,7 @@ describe('the caller the guard resolved', () => {
   const asUser =
     (username: string): express.RequestHandler =>
     (req, _res, next) => {
-      ;(req as express.Request & { user?: unknown }).user = {
+      req.user = {
         userId: 'u1',
         clientId: 'c1',
         username,
@@ -187,6 +188,21 @@ describe('the caller the guard resolved', () => {
 
     expect(answer.status).toBe(200)
     expect(answer.body).toMatchObject({ id: 'alice', name: 'alice' })
+  })
+
+  it('passes the authenticated account ID separately from the wire identity', async () => {
+    const server = express()
+    server.get('/', asUser('alice'), (req, res) => {
+      res.json(subjectOf(req))
+    })
+
+    const answer = await request(server).get('/')
+
+    expect(answer.body).toEqual({
+      userId: 'alice',
+      clientId: 'c1',
+      ownerId: 'u1'
+    })
   })
 
   it('names the emulated user when no guard resolved one', async () => {
@@ -320,6 +336,123 @@ describe('who may reach the estate', () => {
     )
 
     expect(answer.status).toBe(401)
+  })
+
+  it.each(['route', 'router'])(
+    'treats authentication callback value %s as a failure, not Express control flow',
+    (error) => {
+      const authenticate: express.RequestHandler = (_req, _res, next) =>
+        next(error)
+      const decide = jest.fn()
+      const next = jest.fn()
+      const path = '/identities/users/@currentUser'
+
+      viyaGuard(authenticate, decide)(
+        { path, url: path, baseUrl: '' } as express.Request,
+        {} as express.Response,
+        next
+      )
+
+      expect(next.mock.calls).toEqual([[expect.any(Error)]])
+      expect(decide).not.toHaveBeenCalled()
+    }
+  )
+
+  it('denies a failed credential lookup before the mounted router runs', async () => {
+    const error = new Error('identity lookup failed')
+    const authenticate: express.RequestHandler = async (_req, _res, next) =>
+      next(error)
+    const decide = jest.fn((_req, _res, next: express.NextFunction) => next())
+    const services = jest.fn(() => withExecution('[]', ''))
+    const handleError = jest.fn()
+    const onError: express.ErrorRequestHandler = (err, _req, res, _next) => {
+      handleError(err)
+      res.sendStatus(500)
+    }
+    const server = express()
+    server.use(viyaGuard(authenticate, decide), createViyaRouter(services))
+    server.use(onError)
+
+    await request(server).get('/compute/contexts').expect(500)
+    expect(handleError).toHaveBeenCalledWith(error)
+    expect(decide).not.toHaveBeenCalled()
+    expect(services).not.toHaveBeenCalled()
+  })
+
+  it('treats a non-Error rejection from authentication as a failure', async () => {
+    const authenticate: express.RequestHandler = async () =>
+      Promise.reject('route')
+    const decide = jest.fn()
+    const next = jest.fn()
+    const path = '/compute/contexts'
+
+    await viyaGuard(authenticate, decide)(
+      { path, url: path, baseUrl: '' } as express.Request,
+      {} as express.Response,
+      next
+    )
+
+    expect(next.mock.calls).toEqual([[expect.any(Error)]])
+    expect(decide).not.toHaveBeenCalled()
+  })
+
+  it.each(['throw', 'reject', 'reject without an Error'])(
+    'forwards a permission %s after restoring the mounted request',
+    async (failure) => {
+      const error = new Error('permission lookup failed')
+      const path = '/compute/contexts'
+      const url = `${path}?limit=1`
+      const baseUrl = '/mount'
+      const req = { path, url, baseUrl } as express.Request
+      let continuation: Promise<unknown> | undefined
+      const authenticate: express.RequestHandler = (_req, _res, next) => {
+        // Observe settlement for the test, but do not return it to the guard.
+        continuation = Promise.resolve(next()).catch(() => undefined)
+      }
+      const decide: express.RequestHandler = (request) => {
+        expect(request.url).toBe('/SASjsApi/code/execute')
+        expect(request.baseUrl).toBe('')
+        if (failure === 'throw') throw error
+        return Promise.reject(failure === 'reject' ? error : undefined)
+      }
+      const forwarded = jest.fn()
+      const next: express.NextFunction = (error?: unknown) => {
+        forwarded(error, req.url, req.baseUrl)
+      }
+
+      await viyaGuard(authenticate, decide)(req, {} as express.Response, next)
+      await continuation
+
+      expect(forwarded).toHaveBeenCalledTimes(1)
+      const [[forwardedError, forwardedUrl, forwardedBaseUrl]] =
+        forwarded.mock.calls
+      if (failure === 'reject without an Error') {
+        expect(forwardedError).toEqual(
+          new Error('Viya permission check failed')
+        )
+      } else {
+        expect(forwardedError).toBe(error)
+      }
+      expect(forwardedUrl).toBe(url)
+      expect(forwardedBaseUrl).toBe(baseUrl)
+    }
+  )
+
+  it('continues without a permission lookup after authenticating an unmapped path', async () => {
+    const authenticate = jest.fn((_req, _res, next: express.NextFunction) => {
+      next()
+    })
+    const decide = jest.fn()
+    const next = jest.fn()
+    const path = '/identities/users/@currentUser'
+    const req = { path, url: path, baseUrl: '/mount' } as express.Request
+
+    await viyaGuard(authenticate, decide)(req, {} as express.Response, next)
+
+    expect(authenticate).toHaveBeenCalledTimes(1)
+    expect(decide).not.toHaveBeenCalled()
+    expect(next.mock.calls).toEqual([[]])
+    expect(req).toMatchObject({ url: path, baseUrl: '/mount' })
   })
 
   it('leaves the application shell to the web router, unauthenticated', async () => {
