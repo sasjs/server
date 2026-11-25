@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { Badge, IconButton, Tooltip } from '@mui/material'
+import { Badge, CircularProgress, IconButton, Tooltip } from '@mui/material'
 
 import {
   AutoFixHigh,
@@ -12,10 +12,14 @@ import {
 
 type FileMenuProps = {
   isDirty: boolean
+  /** Whether a save is in flight, so the disk can say so and refuse a second one. */
+  saving: boolean
   selectedFilePath: string
   setOpenFilePathInputModal: React.Dispatch<React.SetStateAction<boolean>>
   saveFile: () => void
   showChanges: () => void
+  /** Why the Changes button is disabled, or undefined when it is not. */
+  changesDisabledReason?: string
   /**
    * Runs the fixes pass without the layout engine: trailing spaces, line
    * endings, the Doxygen header, the wrapping a line over the length limit gets,
@@ -52,19 +56,25 @@ type FileMenuProps = {
  *
  * The disk is disabled when a file matches what the drive holds, because a
  * click on it would write nothing and say nothing. A buffer with no file behind
- * it stays enabled: saving one asks for a path.
+ * it stays enabled: saving one asks for a path. While a save runs the disk
+ * spins and refuses a second click - the formatter is a server round trip, and
+ * a pause with no state of its own reads as a missed keypress.
  */
 const SaveButton = ({
   isDirty,
+  saving,
   selectedFilePath,
   saveFile
-}: Pick<FileMenuProps, 'isDirty' | 'selectedFilePath' | 'saveFile'>) => {
-  const canSave = !selectedFilePath || isDirty
-  const label = !canSave
-    ? 'Nothing to save'
-    : isDirty
+}: Pick<
+  FileMenuProps,
+  'isDirty' | 'saving' | 'selectedFilePath' | 'saveFile'
+>) => {
+  const canSave = (!selectedFilePath || isDirty) && !saving
+  const label = saving
+    ? 'Saving...'
+    : !selectedFilePath || isDirty
       ? 'Save (unsaved changes)'
-      : 'Save'
+      : 'Nothing to save'
 
   return (
     <Tooltip title={label}>
@@ -73,12 +83,12 @@ const SaveButton = ({
         <Badge
           color="info"
           variant="dot"
-          invisible={!isDirty}
+          invisible={!isDirty || saving}
           overlap="circular"
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
           <IconButton aria-label={label} onClick={saveFile} disabled={!canSave}>
-            <Save />
+            {saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
           </IconButton>
         </Badge>
       </span>
@@ -123,10 +133,12 @@ const RewriteButton = ({
 
 const FileMenu = ({
   isDirty,
+  saving,
   selectedFilePath,
   setOpenFilePathInputModal,
   saveFile,
   showChanges,
+  changesDisabledReason,
   fixLintIssues,
   formatDocument,
   lintFixDisabledReason,
@@ -136,6 +148,7 @@ const FileMenu = ({
     <>
       <SaveButton
         isDirty={isDirty}
+        saving={saving}
         selectedFilePath={selectedFilePath}
         saveFile={saveFile}
       />
@@ -144,17 +157,20 @@ const FileMenu = ({
           <IconButton
             aria-label="Save as a new file"
             onClick={() => setOpenFilePathInputModal(true)}
-            disabled={!selectedFilePath}
+            disabled={!selectedFilePath || saving}
           >
             <SaveAs />
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip title="Changes since last loaded or saved">
-        <IconButton aria-label="Changes" onClick={showChanges}>
-          <Difference />
-        </IconButton>
-      </Tooltip>
+      <RewriteButton
+        onClick={showChanges}
+        disabledReason={changesDisabledReason}
+        enabledLabel="Show changes since last loaded or saved (Ctrl+Shift+D)"
+        label="Changes"
+      >
+        <Difference />
+      </RewriteButton>
       <RewriteButton
         onClick={fixLintIssues}
         disabledReason={lintFixDisabledReason}

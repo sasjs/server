@@ -197,7 +197,22 @@ try {
   )
 } finally {
   socket?.close()
-  browser?.kill()
+  /* Chromium keeps writing its profile while it shuts down, and removing the
+     directory underneath it fails with ENOTEMPTY - which took the e2e job down
+     after the assertions had already passed. Wait for the exit, then retry a
+     removal that a late flush can still race. */
+  if (browser && browser.exitCode === null) {
+    const exited = new Promise((resolve) => browser.once('exit', resolve))
+    browser.kill()
+    // A browser that refuses to die must not hang the job; the retrying
+    // removal below copes with a profile it is still writing.
+    await Promise.race([exited, pause(5000)])
+  }
   if (server) await new Promise((resolve) => server.close(resolve))
-  await rm(temp, { recursive: true, force: true })
+  await rm(temp, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 100
+  })
 }

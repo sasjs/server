@@ -12,10 +12,15 @@ import { EditorDidMount, monaco } from 'react-monaco-editor'
 import { SelectChangeEvent } from '@mui/material'
 import { getSelection, programPathInjection } from '../helper'
 import { bindSaveShortcut, createSaveKeyHandler } from '../saveShortcut'
+import {
+  bindChangesShortcut,
+  createChangesKeyHandler
+} from '../changesShortcut'
 import { AppContext, RunTimeType } from '../../../../context/appContext'
 import { applyRunTimeSelection } from '../runTime'
 import { extensionOf } from '../../../../utils/files'
 import { AlertSeverityType } from '../../../../components/snackbar'
+import type { SnackbarAction } from '../../../../components/snackbar'
 import {
   useModal,
   useSnackbar,
@@ -204,6 +209,66 @@ const useEditor = ({
   const [formatting, setFormatting] = useState(false)
 
   /**
+   * Whether a save is in flight.
+   *
+   * The formatter is a server round trip, so Ctrl+S is not instant; without a
+   * visible state the pause reads as a missed keypress and invites a second one.
+   * It disables the save control for the same reason.
+   */
+  const [saving, setSaving] = useState(false)
+
+  /**
+   * Undo one formatting rewrite, if the buffer still holds its result.
+   *
+   * Takes the rewrite rather than reading `review`, because the Undo offered by
+   * the notice after a save refers to a comparison that is not on screen.
+   */
+  const undoRewrite = useCallback(
+    (target: Review): boolean => {
+      if (target.kind !== 'format') return false
+      const editor = editorRef.current
+      const result = editor
+        ? undoFormatting(
+            editor,
+            target,
+            () =>
+              fileGeneration.current === target.generation &&
+              selectedFilePathRef.current === selectedFilePath &&
+              !savingRef.current &&
+              !formattingRef.current
+          )
+        : 'unavailable'
+      if (result === 'applied') {
+        setReview(null)
+        return true
+      }
+      setSnackbarMessage(
+        'Formatting cannot be undone because the buffer changed or another operation is in progress. Your code is unchanged.'
+      )
+      setSnackbarSeverity(AlertSeverityType.Warning)
+      setOpenSnackbar(true)
+      return false
+    },
+    [selectedFilePath, setSnackbarMessage, setSnackbarSeverity, setOpenSnackbar]
+  )
+
+  /**
+   * The buttons a rewrite's notice offers: see the comparison, or take the
+   * rewrite back.
+   *
+   * The rewrite happens in place and says so in a notice, rather than opening
+   * the diff over the editor: an author who pressed Ctrl+S wants to keep
+   * typing, and the comparison is one click away when they want it.
+   */
+  const rewriteActions = useCallback(
+    (target: Review): SnackbarAction[] => [
+      { label: 'Review', onClick: () => setReview(target) },
+      { label: 'Undo', onClick: () => void undoRewrite(target) }
+    ],
+    [undoRewrite]
+  )
+
+  /**
    * Rewrites the buffer, either with the layout engine (`format`) or with the
    * fixes pass alone (`fix`).
    *
@@ -236,6 +301,7 @@ const useEditor = ({
       const kind = formatKindFor(formatContext)
       if (!editor || formattingRef.current || savingRef.current || !kind) return
       const generation = fileGeneration.current
+      let applied: Review | null = null
       formattingRef.current = true
       setFormatting(true)
       try {
@@ -253,27 +319,35 @@ const useEditor = ({
             }
             return formatSasCode(sent, path || undefined, mode)
           },
-          onApplied: (before, after, snapshot) =>
-            setReview({
+          onApplied: (before, after, snapshot) => {
+            applied = {
               kind: 'format',
               before,
               after,
               generation,
               ...snapshot
-            })
+            }
+          }
         })
         if (fileGeneration.current !== generation) return
-        setSnackbarMessage(
-          result === 'applied'
-            ? mode === 'fix'
-              ? 'Lint fixes applied.'
-              : 'Formatting applied.'
-            : result === 'unchanged'
+        const rewrite = applied as Review | null
+        /* A rewrite that landed is announced in place, with the comparison and
+           the undo behind one click each. Opening the diff here took the editor
+           away at the moment the author asked to keep writing. */
+        if (result === 'applied' && rewrite)
+          setSnackbarMessage(
+            mode === 'fix' ? 'Lint fixes applied.' : 'Formatting applied.',
+            rewriteActions(rewrite),
+            8000
+          )
+        else
+          setSnackbarMessage(
+            result === 'unchanged'
               ? mode === 'fix'
                 ? 'No lint fixes to apply.'
                 : 'Already formatted.'
               : 'The buffer changed; formatting was not applied.'
-        )
+          )
         setSnackbarSeverity(
           result === 'stale' || result === 'unavailable'
             ? AlertSeverityType.Warning
@@ -297,43 +371,18 @@ const useEditor = ({
     [
       selectedFilePath,
       selectedRunTime,
+      rewriteActions,
       setOpenSnackbar,
       setSnackbarMessage,
       setSnackbarSeverity
     ]
   )
 
-  const undoFormat = useCallback((): boolean => {
-    if (review?.kind !== 'format') return false
-    const editor = editorRef.current
-    const result = editor
-      ? undoFormatting(
-          editor,
-          review,
-          () =>
-            fileGeneration.current === review.generation &&
-            selectedFilePathRef.current === selectedFilePath &&
-            !savingRef.current &&
-            !formattingRef.current
-        )
-      : 'unavailable'
-    if (result === 'applied') {
-      setReview(null)
-      return true
-    }
-    setSnackbarMessage(
-      'Formatting cannot be undone because the buffer changed or another operation is in progress. Your code is unchanged.'
-    )
-    setSnackbarSeverity(AlertSeverityType.Warning)
-    setOpenSnackbar(true)
-    return false
-  }, [
-    review,
-    selectedFilePath,
-    setSnackbarMessage,
-    setSnackbarSeverity,
-    setOpenSnackbar
-  ])
+  /** Undo the comparison on screen, when it is a formatting rewrite. */
+  const undoFormat = useCallback(
+    (): boolean => (review ? undoRewrite(review) : false),
+    [review, undoRewrite]
+  )
 
   const revertContext = (): RevertContext => ({
     editor: editorRef.current,
@@ -450,9 +499,11 @@ const useEditor = ({
           }
         }
         setPrevFileContent(text)
-        setReview((current) =>
-          current?.kind === 'saved' ? { kind: 'saved', before: text } : current
-        )
+        /* The comparison is between the buffer and the last save, so a save
+           ends it: leaving it up would show an empty diff of the file against
+           itself, and the editor gets its full width back. A formatting
+           comparison is left alone - it describes a rewrite, not the save. */
+        setReview((current) => (current?.kind === 'saved' ? null : current))
         if (normalizedPath) setSelectedFilePath(normalizedPath, true)
         setSnackbarMessage('File saved!')
         setSnackbarSeverity(AlertSeverityType.Success)
@@ -629,8 +680,10 @@ const useEditor = ({
     const editor = editorRef.current
     if (!editor) return
     const generation = fileGeneration.current
+    let rewrite: Review | null = null
     savingRef.current = true
     saveEpoch.current++
+    setSaving(true)
     try {
       const result = await saveSnapshot({
         editor,
@@ -646,12 +699,33 @@ const useEditor = ({
           readSettings()['editor.formatOnSave'] && isSasBuffer()
             ? (text) => formatSasCode(text, selectedFilePath || undefined)
             : undefined,
-        onFormatted: (before, after, snapshot) =>
-          setReview({ kind: 'format', before, after, generation, ...snapshot }),
+        onFormatted: (before, after, snapshot) => {
+          rewrite = {
+            kind: 'format',
+            before,
+            after,
+            generation,
+            ...snapshot
+          }
+        },
         write: async (text) => {
           if (text !== prevFileContent) await saveFile(undefined, text)
         }
       })
+      const formatted = rewrite as Review | null
+      /* A save that laid the file out says both, and leaves the comparison
+         behind one click. Opening the diff here - which is what this used to
+         do - took the editor away from an author who had only asked to write
+         the file. */
+      if (result === 'saved' && formatted) {
+        setSnackbarMessage(
+          'Saved and formatted.',
+          rewriteActions(formatted),
+          8000
+        )
+        setSnackbarSeverity(AlertSeverityType.Success)
+        setOpenSnackbar(true)
+      }
       if (result !== 'saved' && fileGeneration.current === generation) {
         setSnackbarMessage(
           'The buffer changed; save was cancelled. Save again to include your edits.'
@@ -667,6 +741,7 @@ const useEditor = ({
       }
     } finally {
       savingRef.current = false
+      setSaving(false)
     }
   }, [
     selectedFilePath,
@@ -675,6 +750,7 @@ const useEditor = ({
     isSasBuffer,
     prevFileContent,
     saveFile,
+    rewriteActions,
     setSnackbarMessage,
     setSnackbarSeverity,
     setOpenSnackbar
@@ -695,6 +771,58 @@ const useEditor = ({
 
     return bindSaveShortcut(document, onKeyDown)
   }, [saveBuffer])
+
+  /**
+   * Shows the comparison between the buffer and its baseline, or hides it.
+   *
+   * The baseline is read at call time, so the diff always describes the file
+   * that is open now - not the one that was open when the handler was made.
+   * What the toolbar button and the shortcut both do, including saying so when
+   * there is nothing to compare: a shortcut that silently does nothing reads as
+   * a broken key.
+   */
+  const showChanges = useCallback(() => {
+    if (review?.kind === 'saved') {
+      setReview(null)
+      return
+    }
+
+    const nothingToSay = isImageFile(selectedFilePathRef.current)
+      ? 'A picture has no text to compare.'
+      : fileContent === prevFileContent
+        ? 'No changes since the last load or save.'
+        : null
+
+    if (nothingToSay) {
+      setSnackbarMessage(nothingToSay)
+      setSnackbarSeverity(AlertSeverityType.Info)
+      setOpenSnackbar(true)
+      return
+    }
+
+    setReview({ kind: 'saved', before: baselineRef.current })
+  }, [
+    review,
+    fileContent,
+    prevFileContent,
+    setSnackbarMessage,
+    setSnackbarSeverity,
+    setOpenSnackbar
+  ])
+
+  /**
+   * Ctrl+Shift+D anywhere in Studio shows the changes.
+   *
+   * Unlike Save there is no Monaco action to cover the focused editor, so the
+   * document listener is the only path and it covers every focus.
+   */
+  useEffect(() => {
+    const onKeyDown = createChangesKeyHandler({
+      showChanges: () => showChanges()
+    })
+
+    return bindChangesShortcut(document, onKeyDown)
+  }, [showChanges])
 
   useEffect(() => {
     const saveFileAction = editorRef.current?.addAction({
@@ -1007,10 +1135,12 @@ const useEditor = ({
     fixLintIssues,
     formatDocument,
     undoFormat,
+    showChanges,
     beginRevert,
     cancelRevert,
     confirmRevert,
     formatting,
+    saving,
     review,
     setReview,
     saveFile,

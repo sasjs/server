@@ -159,13 +159,58 @@ export async function saveSnapshot({
 
 let nextReviewModelId = 0
 
+/**
+ * One block of difference between the two sides of a comparison, as Monaco
+ * reports it.
+ *
+ * A range can be empty - an insertion has no original lines and a deletion no
+ * modified ones - which Monaco spells as a start beyond its end.
+ */
+export type LineChange = {
+  originalStartLineNumber: number
+  originalEndLineNumber: number
+  modifiedStartLineNumber: number
+  modifiedEndLineNumber: number
+}
+
+export type LineChangeCount = { added: number; removed: number }
+
+/** How many lines a range covers; zero when the range is empty. */
+const lineCount = (start: number, end: number): number =>
+  start > 0 && end >= start ? end - start + 1 : 0
+
+/**
+ * The size of a comparison, for the pane's header.
+ *
+ * Counted from the diff editor's own answer rather than from a second
+ * comparison of the two strings: the editor has already done the work, and a
+ * separate implementation could disagree with the colours on screen.
+ */
+export function countLineChanges(
+  changes: readonly LineChange[]
+): LineChangeCount {
+  return changes.reduce<LineChangeCount>(
+    (count, change) => ({
+      added:
+        count.added +
+        lineCount(change.modifiedStartLineNumber, change.modifiedEndLineNumber),
+      removed:
+        count.removed +
+        lineCount(change.originalStartLineNumber, change.originalEndLineNumber)
+    }),
+    { added: 0, removed: 0 }
+  )
+}
+
 /** A review owns its models; it never edits or disposes the live editor's model. */
 export function createReview(
   monaco: typeof import('monaco-editor'),
   element: HTMLElement,
   before: string,
   after: string,
-  language: string
+  language: string,
+  /** Told the size of the comparison each time the diff is computed. */
+  onChanges?: (count: LineChangeCount) => void
 ): () => void {
   const createSnapshot = (text: string) =>
     monaco.editor.createModel(
@@ -191,6 +236,11 @@ export function createReview(
       minimap: { enabled: false }
     })
     diff.setModel({ original, modified })
+    // The first diff is computed asynchronously, so the count arrives later
+    // than the widget and is passed on rather than returned.
+    diff.onDidUpdateDiff?.(() => {
+      onChanges?.(countLineChanges(diff?.getLineChanges() ?? []))
+    })
   } catch (error) {
     diff?.dispose()
     modified?.dispose()

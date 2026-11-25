@@ -20,7 +20,11 @@ Code is saved in local storage, so you don't lose your work if you close the bro
 
 ## Saving
 
-The disk icon above the editor saves the file, as does Ctrl+S. When the editor holds changes the drive does not have yet, a blue dot sits on the disk. Saving clears it. While the file matches what the drive holds the disk is greyed out, so a click on it always has something to do.
+The disk icon above the editor saves the file, as does Ctrl+S. When the editor holds changes the drive does not have yet, a blue dot sits on the disk. Saving clears it. While the file matches what the drive holds the disk is greyed out, so a click on it always has something to do. While a save runs the disk shows a spinner instead, because with **Format On Save** on the file is laid out first, and the formatter is a server round trip: a pause with no state of its own reads as a missed keypress.
+
+A rewrite never takes the editor away. When **Format**, **Fix Lint Issues** or Ctrl+S changes the buffer, the result is applied in place and a notice says what happened, with **Review** to show the comparison and **Undo** to put the text back. The comparison opens in a pane beside the editor, not instead of it, so you can keep typing while it is on screen.
+
+To see the buffer against the last load or save, click the changes icon (the two overlapping sheets in the file menu) or press Ctrl+Shift+D - the shortcut works anywhere in Studio, including inside the editor. The comparison follows your edits as you type, and the shortcut again - or **Close diff** - puts it away. A file with nothing unsaved has nothing to compare, and both the button and the shortcut say so rather than opening an empty pane.
 
 A JSON file that is minified - one line with no spaces between the tokens - opens indented, so a generated config reads as a document rather than one long line. The editor only re-indents text it can reproduce character for character, so a one-line file with its own spacing, or one that already carries indentation, opens exactly as it is stored. The file on the drive keeps its bytes either way until it is saved.
 
@@ -52,7 +56,7 @@ Findings appear above the editor as a count. Expanding it lists each finding, an
 
 Two buttons in the file menu rewrite the buffer, because they are two different jobs. **Fix Lint Issues** (the wand) runs the fixes pass on its own - among the changes it makes are trailing spaces, line endings, the Doxygen header, the wrapping a line over the length limit gets, and the removal of macro declarations a header lists but the file never invokes. **Format** (the alignment icon) lays the program out first - statement breaks, indentation and the boundaries between macro calls - and then runs that same fixes pass over the layout, which is a bigger change, so it is a separate click. What the fixes pass leaves alone is reported and left to you: a tab used for indentation, or a line it cannot break. **Format** re-indents that line with spaces, so the tab finding goes, and splits an over-long line after its keyword - which can still leave it over the limit, and so still a finding.
 
-**Format On Save** in Settings > Editor - on by default - lays the file out as you save it, the same as the **Format** button. All of these take the `.sasjslint` for the file's folder, so a project's indentation, header and naming conventions travel with its content.
+**Format On Save** in Settings > Editor - on by default - lays the file out as it is saved, the same as the **Format** button, and announces the result in a notice with Review and Undo. All of these take the `.sasjslint` for the file's folder, so a project's indentation, header and naming conventions travel with its content.
 
 ## Clipboard
 

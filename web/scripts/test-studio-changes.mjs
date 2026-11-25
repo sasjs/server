@@ -547,6 +547,72 @@ assert.equal(
   )
   assert.equal(models.length, 0)
 }
+// The pane's header counts what the diff editor found: added and removed lines,
+// with an empty range (an insertion or a deletion) contributing nothing.
+assert.equal(
+  typeof changes.countLineChanges,
+  'function',
+  'the comparison reports its own size'
+)
+assert.deepEqual(changes.countLineChanges([]), { added: 0, removed: 0 })
+assert.deepEqual(
+  changes.countLineChanges([
+    {
+      originalStartLineNumber: 0,
+      originalEndLineNumber: 0,
+      modifiedStartLineNumber: 2,
+      modifiedEndLineNumber: 4
+    },
+    {
+      originalStartLineNumber: 5,
+      originalEndLineNumber: 6,
+      modifiedStartLineNumber: 7,
+      modifiedEndLineNumber: 6
+    },
+    {
+      originalStartLineNumber: 9,
+      originalEndLineNumber: 9,
+      modifiedStartLineNumber: 10,
+      modifiedEndLineNumber: 10
+    }
+  ]),
+  { added: 4, removed: 3 }
+)
+{
+  let update
+  let reported
+  const api = {
+    Uri: { from: (parts) => parts },
+    editor: {
+      createModel: (text) => ({
+        text,
+        dispose() {}
+      }),
+      createDiffEditor: () => ({
+        setModel() {},
+        getLineChanges: () => [
+          {
+            originalStartLineNumber: 0,
+            originalEndLineNumber: 0,
+            modifiedStartLineNumber: 1,
+            modifiedEndLineNumber: 2
+          }
+        ],
+        onDidUpdateDiff: (callback) => {
+          update = callback
+        },
+        dispose() {}
+      })
+    }
+  }
+  const close = changes.createReview(api, {}, 'a', 'b', 'sas', (count) => {
+    reported = count
+  })
+  assert.equal(typeof update, 'function', 'the diff is watched for its result')
+  update()
+  assert.deepEqual(reported, { added: 2, removed: 0 })
+  close()
+}
 console.log(
   'Studio changes: guarded formatter and isolated whitespace-aware review'
 )
