@@ -4,6 +4,7 @@ import { getSessionController, processProgram } from './'
 import { readFile, fileExists, createFile, readFileBinary } from '@sasjs/utils'
 import { PreProgramVars, Session, TreeNode, SessionState } from '../../types'
 import {
+  closeStreamedEnvelope,
   extractHeaders,
   getFilesFolder,
   HttpError,
@@ -138,7 +139,6 @@ export class ExecutionController {
       onSpawn
     )
 
-    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
     const headersContent = (await fileExists(headersPath))
       ? await readFile(headersPath)
       : ''
@@ -150,11 +150,31 @@ export class ExecutionController {
 
     const fileResponse: boolean = httpHeaders.hasOwnProperty('content-type')
 
-    const webout = (await fileExists(weboutPath))
+    const weboutRaw = (await fileExists(weboutPath))
       ? fileResponse && !forceStringResult
         ? await readFileBinary(weboutPath)
         : await readFile(weboutPath)
       : ''
+
+    // A service that streams with webout() writes each member as it is added
+    // and closes the document at finalise, which sits after the payload - so one
+    // that aborts, or returns early after writing a refusal, leaves a JSON
+    // prefix behind. Served as it is, the caller's parse fails and an app
+    // reports its own error instead of the message the service sent.
+    const repaired = closeStreamedEnvelope(weboutRaw)
+    const webout = repaired ? repaired.webout : weboutRaw
+
+    // A body cut mid-member cannot be repaired, and the session log is the only
+    // place a caller can learn that: it is read below, so the line has to be in
+    // the file before it is read, the way the prelude's own warnings are.
+    if (repaired && repaired.truncated) {
+      fs.appendFileSync(
+        logPath,
+        '\nwebout: the response envelope is truncated - a member was cut short, and closing it would not make the body valid JSON\n'
+      )
+    }
+
+    const log = (await fileExists(logPath)) ? await readFile(logPath) : ''
 
     // it should be deleted by scheduleSessionDestroy
     //
