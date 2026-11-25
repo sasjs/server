@@ -1,4 +1,4 @@
-/* @sasjs/api 0.44.6 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.46.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -75,6 +75,7 @@ var SASjsApi = (() => {
     STATIC_AUTHORIZED_ROUTES: () => STATIC_AUTHORIZED_ROUTES,
     SURFACE: () => SURFACE,
     SURFACE_ADAPTER_VERSION: () => SURFACE_ADAPTER_VERSION,
+    SURFACE_CLI_VERSION: () => SURFACE_CLI_VERSION,
     TAG_CAPABILITIES: () => TAG_CAPABILITIES,
     TOP_LEVEL_ROUTES: () => TOP_LEVEL_ROUTES,
     UNRECORDED: () => UNRECORDED,
@@ -3819,7 +3820,8 @@ var SASjsApi = (() => {
   };
 
   // src/viya/surface.ts
-  var SURFACE_ADAPTER_VERSION = "6.0.2";
+  var SURFACE_ADAPTER_VERSION = "6.1.2";
+  var SURFACE_CLI_VERSION = "8.0.5";
   var SURFACE = [
     // sas9
     {
@@ -3827,6 +3829,12 @@ var SASjsApi = (() => {
       family: "sas9",
       decision: "declined",
       reason: "a default config value the client falls back to, not a call"
+    },
+    {
+      path: "/host/boot.js",
+      family: "sasjs-api",
+      decision: "declined",
+      reason: "the mock host's own boot script: the adapter reads it off a page's script tag to tell whether the mock service worker is serving, so it is never a request to an estate"
     },
     {
       path: "/SASJobExecution",
@@ -3840,6 +3848,12 @@ var SASjsApi = (() => {
       family: "viya-auth",
       decision: "in",
       reason: "the auth flow the client speaks, and the reason the emulated paths cannot be renamed"
+    },
+    {
+      path: "/SASLogon/authorize",
+      family: "viya-auth",
+      decision: "in",
+      reason: "the transport the CLI signs in with: it posts the credential here for a code, and this server answers it as its own auth route rather than the emulator"
     },
     {
       path: "/SASLogon/login",
@@ -4055,6 +4069,13 @@ var SASjsApi = (() => {
       family: "viya-jobs",
       decision: "in",
       reason: "the job path a deployed service runs through"
+    },
+    {
+      path: "/jobDefinitions/definitions/{}",
+      family: "viya-jobs",
+      decision: "in",
+      source: "capture",
+      reason: "the definition itself, which the client reads through the link a folder listing handed it - the URL arrives as data, so no literal in the adapter states it"
     },
     {
       path: "/jobExecution/jobs",
@@ -4382,6 +4403,33 @@ var SASjsApi = (() => {
       shape: void 0
     },
     {
+      id: "GET /compute/sessions/{}/variables/{}",
+      method: "GET",
+      path: "/compute/sessions/{}/variables/{}",
+      steps: ["compute/execute-script"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        scope: "string",
+        value: "string",
+        version: "number"
+      }
+    },
+    {
       id: "POST /files/files",
       method: "POST",
       path: "/files/files",
@@ -4534,7 +4582,7 @@ var SASjsApi = (() => {
       id: "GET /files/files/{}/content",
       method: "GET",
       path: "/files/files/{}/content",
-      steps: ["files/content"],
+      steps: ["files/content", "jobs/execute"],
       statuses: [200],
       queries: [],
       request: {
@@ -4595,7 +4643,7 @@ var SASjsApi = (() => {
       id: "POST /folders/folders",
       method: "POST",
       path: "/folders/folders",
-      steps: ["folders/create"],
+      steps: ["folders/create", "jobs/folder-create"],
       statuses: [201],
       queries: ["parentFolderUri"],
       request: {
@@ -4631,7 +4679,7 @@ var SASjsApi = (() => {
       id: "GET /folders/folders/{}",
       method: "GET",
       path: "/folders/folders/{}",
-      steps: ["folders/delete"],
+      steps: ["folders/delete", "jobs/folders/delete"],
       statuses: [200],
       queries: [],
       request: {
@@ -4668,7 +4716,7 @@ var SASjsApi = (() => {
       id: "PATCH /folders/folders/{}",
       method: "PATCH",
       path: "/folders/folders/{}",
-      steps: ["folders/delete"],
+      steps: ["folders/delete", "jobs/folders/delete"],
       statuses: [200],
       queries: [],
       request: {
@@ -4708,8 +4756,8 @@ var SASjsApi = (() => {
       steps: [
         "files/content",
         "files/replace",
-        "folders/create",
-        "folders/members"
+        "folders/members",
+        "jobs/execute"
       ],
       statuses: [200],
       queries: ["limit"],
@@ -4772,7 +4820,13 @@ var SASjsApi = (() => {
         "folders/create",
         "folders/delete",
         "folders/item",
-        "folders/members"
+        "folders/members",
+        "folders/missing",
+        "folders/unauthorized",
+        "jobs/definition",
+        "jobs/execute",
+        "jobs/folder-create",
+        "jobs/folders/delete"
       ],
       statuses: [200, 401, 404],
       queries: ["path"],
@@ -4807,7 +4861,7 @@ var SASjsApi = (() => {
       id: "GET /folders/folders/@myRecycleBin",
       method: "GET",
       path: "/folders/folders/@myRecycleBin",
-      steps: ["folders/delete"],
+      steps: ["folders/delete", "jobs/folders/delete"],
       statuses: [200],
       queries: [],
       request: {
@@ -4881,6 +4935,348 @@ var SASjsApi = (() => {
       }
     },
     {
+      id: "POST /jobDefinitions/definitions",
+      method: "POST",
+      path: "/jobDefinitions/definitions",
+      steps: ["jobs/definition"],
+      statuses: [201],
+      queries: ["parentFolderUri"],
+      request: {
+        queries: ["parentFolderUri"],
+        body: {
+          code: "string",
+          name: "string",
+          parameters: [
+            {
+              defaultValue: "string",
+              name: "string",
+              type: "string"
+            }
+          ],
+          type: "string"
+        }
+      },
+      shape: {
+        code: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parameters: [
+          {
+            defaultValue: "string",
+            name: "string",
+            required: "boolean",
+            type: "string",
+            version: "number"
+          }
+        ],
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /jobDefinitions/definitions/{}",
+      method: "GET",
+      path: "/jobDefinitions/definitions/{}",
+      steps: ["jobs/execute"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        code: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parameters: [
+          {
+            defaultValue: "string",
+            name: "string",
+            required: "boolean",
+            type: "string",
+            version: "number"
+          }
+        ],
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "POST /jobExecution/jobs",
+      method: "POST",
+      path: "/jobExecution/jobs",
+      steps: ["jobs/execute"],
+      statuses: [201],
+      queries: ["_action"],
+      request: {
+        queries: ["_action"],
+        body: {
+          arguments: {
+            _DEBUG: "string",
+            _OMITJSONLISTING: "string",
+            _OMITJSONLOG: "string",
+            _OMITTEXTLISTING: "string",
+            _OMITTEXTLOG: "string",
+            _contextName: "string",
+            _omitSessionResults: "string",
+            _program: "string",
+            _webin_file_count: "string"
+          },
+          description: "string",
+          jobDefinition: {
+            code: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parameters: [
+              {
+                defaultValue: "string",
+                name: "string",
+                required: "boolean",
+                type: "string",
+                version: "number"
+              }
+            ],
+            type: "string",
+            version: "number"
+          },
+          name: "string"
+        }
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        elapsedTime: "number",
+        heartbeatInterval: "number",
+        heartbeatTimeStamp: "string",
+        id: "string",
+        jobRequest: {
+          arguments: {
+            _DEBUG: "string",
+            _OMITJSONLISTING: "string",
+            _OMITJSONLOG: "string",
+            _OMITTEXTLISTING: "string",
+            _OMITTEXTLOG: "string",
+            _addjesbeginendmacros: "string",
+            _contextName: "string",
+            _omitSessionResults: "string",
+            _program: "string",
+            _webin_file_count: "string"
+          },
+          createdByApplication: "string",
+          description: "string",
+          jobDefinition: {
+            code: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: ["object"],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parameters: ["object"],
+            type: "string",
+            version: "number"
+          },
+          name: "string",
+          properties: "array",
+          version: "number"
+        },
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        results: {},
+        state: "string",
+        submittedByApplication: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /jobExecution/jobs/{}",
+      method: "GET",
+      path: "/jobExecution/jobs/{}",
+      steps: ["jobs/execute"],
+      statuses: [200],
+      queries: [],
+      request: {
+        queries: [],
+        body: void 0
+      },
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        elapsedTime: "number",
+        endTimeStamp: "string",
+        heartbeatInterval: "number",
+        heartbeatTimeStamp: "string",
+        id: "string",
+        jobRequest: {
+          arguments: {
+            _DEBUG: "string",
+            _OMITJSONLISTING: "string",
+            _OMITJSONLOG: "string",
+            _OMITTEXTLISTING: "string",
+            _OMITTEXTLOG: "string",
+            _addjesbeginendmacros: "string",
+            _contextName: "string",
+            _omitSessionResults: "string",
+            _program: "string",
+            _webin_file_count: "string"
+          },
+          createdByApplication: "string",
+          description: "string",
+          jobDefinition: {
+            code: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: ["object"],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parameters: ["object"],
+            type: "string",
+            version: "number"
+          },
+          name: "string",
+          properties: "array",
+          version: "number"
+        },
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        logLocation: "string",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        results: {
+          COMPUTE_CONTEXT: "string",
+          COMPUTE_JOB: "string",
+          COMPUTE_SESSION: "string",
+          "{}.log": "string",
+          "{}.log.txt": "string"
+        },
+        state: "string",
+        submittedByApplication: "string",
+        version: "number"
+      }
+    },
+    {
+      id: "GET /jobExecution/jobs/{}/state",
+      method: "GET",
+      path: "/jobExecution/jobs/{}/state",
+      steps: ["jobs/execute"],
+      statuses: [200],
+      queries: ["_action", "wait"],
+      request: {
+        queries: ["_action", "wait"],
+        body: void 0
+      },
+      shape: void 0
+    },
+    {
+      id: "GET /launcher/contexts",
+      method: "GET",
+      path: "/launcher/contexts",
+      steps: ["compute/launcher-contexts"],
+      statuses: [200],
+      queries: ["limit"],
+      request: {
+        queries: ["limit"],
+        body: void 0
+      },
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            createdBy: "string",
+            creationTimeStamp: "string",
+            description: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            type: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
       id: "POST /SASLogon/oauth/token",
       method: "POST",
       path: "/SASLogon/oauth/token",
@@ -4917,7 +5313,45 @@ var SASjsApi = (() => {
         queries: ["limit"],
         body: void 0
       },
-      shape: void 0
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            description: "string",
+            iconUri: "string",
+            label: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            mediaType: "string",
+            name: "string",
+            resourceUri: "string",
+            tags: ["string"],
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
     }
   ];
 
@@ -4929,6 +5363,10 @@ var SASjsApi = (() => {
     {
       path: "/SASLogon",
       reason: "no capture: the pass authenticates outside the adapter, so the login root is never requested through the client"
+    },
+    {
+      path: "/SASLogon/authorize",
+      reason: "no capture: this is the CLI's sign-in against this server's own auth route, which a Viya estate does not serve"
     },
     {
       path: "/SASLogon/login",
@@ -4949,28 +5387,6 @@ var SASjsApi = (() => {
     {
       path: "/SASLogon/oauth/authorize",
       reason: "no capture: the authorisation-code step needs a browser; the pass uses the password grant"
-    },
-    // Compute operations the scripted passes do not reach.
-    {
-      path: "/compute/sessions/{}/variables/{}",
-      reason: "no capture: the adapter reads a session variable only to report a submitted job's pid (`printPid`), which the pass does not set"
-    },
-    {
-      path: "/launcher/contexts",
-      reason: "no capture: the fallback list, asked for only when the compute context list fails; a healthy estate never reaches it"
-    },
-    // The job path needs something deployed to run.
-    {
-      path: "/jobDefinitions/definitions",
-      reason: "no capture: needs a job definition on the estate. The next pass deploys a service pack under its own app folder and reads the definition back"
-    },
-    {
-      path: "/jobExecution/jobs",
-      reason: "no capture: needs a deployed service to submit. The next pass deploys a service pack under its own app folder"
-    },
-    {
-      path: "/jobExecution/jobs/{}",
-      reason: "no capture: follows a submission, so it arrives with the same pass as POST /jobExecution/jobs"
     }
   ];
 
@@ -5006,6 +5422,7 @@ var SASjsApi = (() => {
 
   // src/viya/overlay.ts
   var NEEDS_AUTH = "The token endpoint is answered by the host that mounts the emulator, which owns the token port.";
+  var NEEDS_JOBS = "The emulator answers the compute and content families; the job definitions a deploy creates and the executions a run submits are not modelled yet.";
   var VIYA_OVERLAY = {
     // answered here
     "POST /folders/folders": { implemented: true },
@@ -5031,6 +5448,32 @@ var SASjsApi = (() => {
     "PATCH /files/files/{}": { implemented: true },
     "GET /files/files/{}/content": { implemented: true },
     "PUT /files/files/{}/content": { implemented: true },
+    // declined: the job family needs a job service
+    //
+    // A capture describes what the estate answers on the deploy-and-run path, and
+    // the emulator does not answer that path yet: a client that deploys a service
+    // pack against an emulated estate stops here, with a reason rather than a 404.
+    "POST /jobDefinitions/definitions": {
+      implemented: false,
+      reason: NEEDS_JOBS
+    },
+    "GET /jobDefinitions/definitions/{}": {
+      implemented: false,
+      reason: NEEDS_JOBS
+    },
+    "POST /jobExecution/jobs": { implemented: false, reason: NEEDS_JOBS },
+    "GET /jobExecution/jobs/{}": { implemented: false, reason: NEEDS_JOBS },
+    "GET /jobExecution/jobs/{}/state": { implemented: false, reason: NEEDS_JOBS },
+    // declined: contexts come from the seed, not from the launcher
+    "GET /launcher/contexts": {
+      implemented: false,
+      reason: "The emulator answers compute contexts from its seed; the launcher list a client falls back to is not modelled, and nothing on the emulated path asks for it."
+    },
+    // declined: session variables are not modelled
+    "GET /compute/sessions/{}/variables/{}": {
+      implemented: false,
+      reason: "The emulator does not model session variables; the client reads these only to log the pid of a job it is about to submit (SYSJOBID), and any name it asks for is refused here rather than answered with a value the emulator did not run."
+    },
     // declined: the host owns the token port
     "POST /SASLogon/oauth/token": { implemented: false, reason: NEEDS_AUTH },
     // declared, not captured: the webout an application's service returns
@@ -6193,6 +6636,28 @@ var SASjsApi = (() => {
       shape: void 0
     },
     {
+      route: "GET /compute/sessions/{}/variables/{}",
+      step: "compute/execute-script",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        scope: "string",
+        value: "string",
+        version: "number"
+      }
+    },
+    {
       route: "POST /files/files",
       step: "files/create",
       queries: ["parentFolderUri", "typeDefName"],
@@ -6601,6 +7066,264 @@ var SASjsApi = (() => {
       }
     },
     {
+      route: "POST /jobDefinitions/definitions",
+      step: "jobs/definition",
+      queries: ["parentFolderUri"],
+      statuses: [201],
+      expected: 201,
+      shape: {
+        code: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parameters: [
+          {
+            defaultValue: "string",
+            name: "string",
+            required: "boolean",
+            type: "string",
+            version: "number"
+          }
+        ],
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /jobDefinitions/definitions/{}",
+      step: "jobs/execute",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        code: "string",
+        createdBy: "string",
+        creationTimeStamp: "string",
+        id: "string",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        name: "string",
+        parameters: [
+          {
+            defaultValue: "string",
+            name: "string",
+            required: "boolean",
+            type: "string",
+            version: "number"
+          }
+        ],
+        type: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "POST /jobExecution/jobs",
+      step: "jobs/execute",
+      queries: ["_action"],
+      statuses: [201],
+      expected: 201,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        elapsedTime: "number",
+        heartbeatInterval: "number",
+        heartbeatTimeStamp: "string",
+        id: "string",
+        jobRequest: {
+          arguments: {
+            _DEBUG: "string",
+            _OMITJSONLISTING: "string",
+            _OMITJSONLOG: "string",
+            _OMITTEXTLISTING: "string",
+            _OMITTEXTLOG: "string",
+            _addjesbeginendmacros: "string",
+            _contextName: "string",
+            _omitSessionResults: "string",
+            _program: "string",
+            _webin_file_count: "string"
+          },
+          createdByApplication: "string",
+          description: "string",
+          jobDefinition: {
+            code: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: ["object"],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parameters: ["object"],
+            type: "string",
+            version: "number"
+          },
+          name: "string",
+          properties: "array",
+          version: "number"
+        },
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        results: {},
+        state: "string",
+        submittedByApplication: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /jobExecution/jobs/{}",
+      step: "jobs/execute",
+      queries: [],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        createdBy: "string",
+        creationTimeStamp: "string",
+        elapsedTime: "number",
+        endTimeStamp: "string",
+        heartbeatInterval: "number",
+        heartbeatTimeStamp: "string",
+        id: "string",
+        jobRequest: {
+          arguments: {
+            _DEBUG: "string",
+            _OMITJSONLISTING: "string",
+            _OMITJSONLOG: "string",
+            _OMITTEXTLISTING: "string",
+            _OMITTEXTLOG: "string",
+            _addjesbeginendmacros: "string",
+            _contextName: "string",
+            _omitSessionResults: "string",
+            _program: "string",
+            _webin_file_count: "string"
+          },
+          createdByApplication: "string",
+          description: "string",
+          jobDefinition: {
+            code: "string",
+            createdBy: "string",
+            creationTimeStamp: "string",
+            id: "string",
+            links: ["object"],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            parameters: ["object"],
+            type: "string",
+            version: "number"
+          },
+          name: "string",
+          properties: "array",
+          version: "number"
+        },
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        logLocation: "string",
+        modifiedBy: "string",
+        modifiedTimeStamp: "string",
+        results: {
+          COMPUTE_CONTEXT: "string",
+          COMPUTE_JOB: "string",
+          COMPUTE_SESSION: "string",
+          "{}.log": "string",
+          "{}.log.txt": "string"
+        },
+        state: "string",
+        submittedByApplication: "string",
+        version: "number"
+      }
+    },
+    {
+      route: "GET /jobExecution/jobs/{}/state",
+      step: "jobs/execute",
+      queries: ["_action", "wait"],
+      statuses: [200],
+      expected: 200,
+      shape: void 0
+    },
+    {
+      route: "GET /launcher/contexts",
+      step: "compute/launcher-contexts",
+      queries: ["limit"],
+      statuses: [200],
+      expected: 200,
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            createdBy: "string",
+            creationTimeStamp: "string",
+            description: "string",
+            id: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            modifiedBy: "string",
+            modifiedTimeStamp: "string",
+            name: "string",
+            type: "string",
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
+    },
+    {
       route: "POST /SASLogon/oauth/token",
       step: "auth/token-refresh",
       queries: [],
@@ -6625,7 +7348,45 @@ var SASjsApi = (() => {
       queries: ["limit"],
       statuses: [200],
       expected: 200,
-      shape: void 0
+      shape: {
+        accept: "string",
+        count: "number",
+        items: [
+          {
+            description: "string",
+            iconUri: "string",
+            label: "string",
+            links: [
+              {
+                href: "string",
+                method: "string",
+                rel: "string",
+                type: "string",
+                uri: "string"
+              }
+            ],
+            mediaType: "string",
+            name: "string",
+            resourceUri: "string",
+            tags: ["string"],
+            version: "number"
+          }
+        ],
+        limit: "number",
+        links: [
+          {
+            href: "string",
+            itemType: "string",
+            method: "string",
+            rel: "string",
+            type: "string",
+            uri: "string"
+          }
+        ],
+        name: "string",
+        start: "number",
+        version: "number"
+      }
     }
   ];
 
