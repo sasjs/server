@@ -3,7 +3,11 @@
  *
  * It is the prelude's own marker, not a guess at a service's output: `OPEN`
  * opens the envelope with the SAS date and time, so a body that begins with
- * them is one a run started streaming and a program did not close.
+ * them is one a run started streaming and a program did not close. The producer
+ * is `getWeboutPrelude` in @sasjs/utils, the same block `createJSProgram` emits,
+ * so `spec/closeStreamedEnvelope.spec.ts` builds its fixtures by running that
+ * block rather than by copying this shape - if the prelude ever writes the head
+ * differently, that spec fails instead of the repair quietly never firing.
  */
 export const STREAMED_ENVELOPE_HEAD = /^\{"SYSDATE":"[^"]*","SYSTIME":"[^"]*"/
 
