@@ -73,14 +73,14 @@ const serverUrl = (req: Request): string =>
   process.env.API_SERVER_URL ??
   `${req.protocol}://${req.get('host') ?? 'localhost'}`
 
-/**
- * The caller, as the guard resolved them - the one answer both the estate's
- * identity port and the bodies use, so `@currentUser` and `createdBy` cannot
- * disagree about who is asking.
- */
+/** Keep the Viya username on the wire; use the authenticated account ID for ownership. */
 export const subjectOf = (req: Request): Subject | undefined =>
   req.user
-    ? { userId: req.user.username, clientId: req.user.clientId }
+    ? {
+        userId: req.user.username,
+        clientId: req.user.clientId,
+        ownerId: req.user.userId
+      }
     : undefined
 
 /**

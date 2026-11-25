@@ -50,6 +50,11 @@ export const VIYA_PREFIXES = [
   '/types'
 ]
 
+// Express gives strings such as 'route' and 'router' control flow semantics.
+// An authentication failure must only enter error handling.
+const authenticationError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error('Viya authentication failed')
+
 /**
  * The guard, scoped to what it protects.
  *
@@ -69,10 +74,13 @@ export const viyaGuard =
     /** The permission gate, run with `req.url` set to the API rule's path. */
     decide: express.RequestHandler
   ): express.RequestHandler =>
-  (req, res, next) => {
+  async (req, res, next) => {
     if (!isViyaPath(req.path)) return next()
 
-    return authenticate(req, res, () => {
+    // Authentication middleware need not return the result of calling next.
+    const afterAuthentication = async (error?: unknown) => {
+      if (error != null) return next(authenticationError(error))
+
       const rule = ruleFor(req.path)
 
       // a path with no API equivalent has no rule to decide on: the estate's
@@ -88,20 +96,31 @@ export const viyaGuard =
       req.url = rule
       req.baseUrl = ''
 
-      try {
-        return decide(req, res, (error?: unknown) => {
-          req.url = url
-          req.baseUrl = baseUrl
+      const restoreRequestPath = () => {
+        req.url = url
+        req.baseUrl = baseUrl
+      }
 
+      try {
+        await decide(req, res, (error?: unknown) => {
+          restoreRequestPath()
           next(error as Error | undefined)
         })
       } catch (error) {
-        req.url = url
-        req.baseUrl = baseUrl
-
-        throw error
+        restoreRequestPath()
+        return next(
+          error instanceof Error
+            ? error
+            : new Error('Viya permission check failed')
+        )
       }
-    })
+    }
+
+    try {
+      await authenticate(req, res, afterAuthentication)
+    } catch (error) {
+      return next(authenticationError(error))
+    }
   }
 
 /**
@@ -354,7 +373,7 @@ export const createViyaRouter = (
         subject: subjectOf(req),
         // the scheme is case-insensitive (RFC 7235 2.1), so `bearer <tok>` is a
         // bearer token and not a token that happens to start with the word
-        token: (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '')
+        token: req.headers.authorization?.replace(/^Bearer\s+/i, '')
       })
     } catch (error) {
       return next(error)
