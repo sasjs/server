@@ -1,8 +1,8 @@
 /**
  * A save that formats must not take the editor away.
  *
- * `editor.formatOnSave` is on by default, so every Ctrl+S on a SAS file rewrote
- * the buffer and then opened the comparison in place of the editor: the author
+ * When `editor.formatOnSave` is enabled, Ctrl+S on a SAS file used to rewrite
+ * the buffer and then open the comparison in place of the editor: the author
  * asked to write the file and lost the surface they were typing in. The rewrite
  * belongs in the buffer, said out loud in a notice that offers Review and Undo -
  * the comparison is a pane they can ask for, not something a save does to them.
@@ -91,7 +91,7 @@ function fixture({ formats = true } = {}) {
     focus() {},
     getDomNode: () => null,
     getModel: () => ({
-      getValue: () => (written ?? text),
+      getValue: () => written ?? text,
       getVersionId: () => 2
     }),
     hasTextFocus: () => false,

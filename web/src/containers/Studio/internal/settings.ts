@@ -48,7 +48,7 @@ export interface StudioSettings {
 }
 
 export const defaultSettings: StudioSettings = {
-  'editor.formatOnSave': true,
+  'editor.formatOnSave': false,
   'log.notableNotes': true,
   'workbench.colorTheme': 'system',
   'workbench.sideBarCollapsed': false

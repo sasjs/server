@@ -56,7 +56,7 @@ Findings appear above the editor as a count. Expanding it lists each finding, an
 
 Two buttons in the file menu rewrite the buffer, because they are two different jobs. **Fix Lint Issues** (the wand) runs the fixes pass on its own - among the changes it makes are trailing spaces, line endings, the Doxygen header, the wrapping a line over the length limit gets, and the removal of macro declarations a header lists but the file never invokes. **Format** (the alignment icon) lays the program out first - statement breaks, indentation and the boundaries between macro calls - and then runs that same fixes pass over the layout, which is a bigger change, so it is a separate click. What the fixes pass leaves alone is reported and left to you: a tab used for indentation, or a line it cannot break. **Format** re-indents that line with spaces, so the tab finding goes, and splits an over-long line after its keyword - which can still leave it over the limit, and so still a finding.
 
-**Format On Save** in Settings > Editor - on by default - lays the file out as it is saved, the same as the **Format** button, and announces the result in a notice with Review and Undo. All of these take the `.sasjslint` for the file's folder, so a project's indentation, header and naming conventions travel with its content.
+**Format On Save** in Settings > Editor is off by default. Turn it on to lay out SAS files when saving, the same as the **Format** button; the result is announced in a notice with Review and Undo. A previously saved preference is retained. All of these take the `.sasjslint` for the file's folder, so a project's indentation, header and naming conventions travel with its content.
 
 ## Clipboard
 

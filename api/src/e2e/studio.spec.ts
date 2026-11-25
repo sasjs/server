@@ -39,6 +39,7 @@ import { RunTimeType, sysInitCompiledPath } from '../utils/'
 
 // The password the user is moved to on the first-login change screen.
 const NEW_PASSWORD = 'newpass123'
+const FORMAT_SAVE_FILE_NAME = 'format-save.sas'
 
 // How many files the folder-search fixture holds. More than one batch, so the box
 // has to page; the test proves that on the **Show more** control rather than by
@@ -142,6 +143,10 @@ describe('Studio in a browser', () => {
     // A program of its own, for the tests that save what they typed.
     await createFile(
       path.join(driveLocation, 'files', SAVE_FILE_NAME),
+      SAVE_FILE_CONTENT
+    )
+    await createFile(
+      path.join(driveLocation, 'files', FORMAT_SAVE_FILE_NAME),
       SAVE_FILE_CONTENT
     )
 
@@ -934,6 +939,104 @@ describe('Studio in a browser', () => {
     )
     expect(asStored).toBe(INDENTED_JSON)
   }, 60000)
+
+  it('saves verbatim by default and formats SAS only after opting in', async () => {
+    await page.evaluate(() => localStorage.removeItem('studio-settings'))
+    await page.goto(
+      `${baseUrl()}/studio?filePath=${encodeURIComponent(`/${FORMAT_SAVE_FILE_NAME}`)}`
+    )
+    await page.waitForSelector('.monaco-editor', { timeout: 30000 })
+    await page.waitForFunction(
+      () => document.querySelectorAll('.view-lines .view-line').length > 2,
+      { timeout: 30000 }
+    )
+
+    const formatRequests: import('playwright').Request[] = []
+    const onRequest = (request: import('playwright').Request) => {
+      if (request.url().includes('/SASjsApi/code/format'))
+        formatRequests.push(request)
+    }
+    page.on('request', onRequest)
+    // Jest cannot load the ESM layout engine from the server. Supply a known
+    // formatter response while leaving the browser and drive write real.
+    const formatted = 'data _null_;\n  put "opted in";\nrun;\n'
+    await page.route('**/SASjsApi/code/format', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/plain', body: formatted })
+    )
+    const replaceBuffer = async (text: string) => {
+      await page.locator('textarea.inputarea').focus()
+      await page.keyboard.press('Control+A')
+      await page.keyboard.insertText(text)
+    }
+    const save = async () => {
+      const response = page.waitForResponse(
+        (r) =>
+          r.url().includes('/SASjsApi/drive/file') &&
+          r.request().method() === 'PATCH' &&
+          r.ok()
+      )
+      await page.getByRole('button', { name: 'Save (unsaved changes)' }).click()
+      await response
+      await page.getByRole('button', { name: 'Nothing to save' }).waitFor()
+    }
+
+    try {
+      const original = 'data _null_;put "as typed";run;'
+      await replaceBuffer(original)
+      await save()
+      expect(
+        await readFile(
+          path.join(driveLocation, 'files', FORMAT_SAVE_FILE_NAME),
+          'utf8'
+        )
+      ).toBe(original)
+      expect(formatRequests).toHaveLength(0)
+
+      await page.getByLabel('account of current user').click()
+      await page.getByRole('link', { name: 'Settings' }).click()
+      await page.getByRole('tab', { name: 'Editor' }).click()
+      const toggle = page.getByRole('switch', { name: 'Format On Save' })
+      expect(await toggle.isChecked()).toBe(false)
+      await toggle.check()
+      await page.reload()
+      await page.getByRole('tab', { name: 'Editor' }).click()
+      expect(
+        await page.getByRole('switch', { name: 'Format On Save' }).isChecked()
+      ).toBe(true)
+
+      await page.goto(
+        `${baseUrl()}/studio?filePath=${encodeURIComponent(`/${FORMAT_SAVE_FILE_NAME}`)}`
+      )
+      await page.waitForSelector('.monaco-editor', { timeout: 30000 })
+      await page.waitForFunction(() =>
+        document
+          .querySelector('.view-lines')
+          ?.textContent?.includes('as\u00a0typed')
+      )
+      const edited = 'data _null_;put "opted in";run;'
+      await replaceBuffer(edited)
+      await save()
+      expect(formatRequests).toHaveLength(1)
+      expect(formatRequests[0].postDataJSON()).toMatchObject({
+        code: edited,
+        filePath: `/${FORMAT_SAVE_FILE_NAME}`,
+        layout: true
+      })
+      expect(
+        await readFile(
+          path.join(driveLocation, 'files', FORMAT_SAVE_FILE_NAME),
+          'utf8'
+        )
+      ).toBe(formatted)
+      expect(await page.getByText('Saved and formatted.').isVisible()).toBe(
+        true
+      )
+    } finally {
+      page.off('request', onRequest)
+      await page.unroute('**/SASjsApi/code/format')
+      await page.evaluate(() => localStorage.removeItem('studio-settings'))
+    }
+  }, 120000)
 
   it('shows a disk that carries a blue dot while the buffer holds unsaved edits', async () => {
     await page.click(`text=${SAVE_FILE_NAME}`)
