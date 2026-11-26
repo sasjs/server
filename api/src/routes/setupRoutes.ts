@@ -6,7 +6,14 @@ import apiRouter from './api'
 import appStreamRouter from './appStream'
 import { legacyRouteRedirects } from './legacyRouteRedirects'
 import { normalizeTierQuery } from '../utils/tierQuery'
-import { tierProgramRequest } from '../utils/tierPostVariables'
+import {
+  tierProgramRequest,
+  viyaWebJobRequest
+} from '../utils/tierPostVariables'
+import { emulatedHeaders } from '@sasjs/api'
+import { readDebugWebout } from './viya/webJobDebug'
+import { localJesRouter } from './viya/localJes'
+import { ModeType } from '../utils'
 
 import {
   authenticateAccessToken,
@@ -55,8 +62,8 @@ export const setupRoutes = (app: Express) => {
    *
    * Each tier speaks the two parameters its platform's tier speaks: `_FILE=` for
    * a file to read, `_program=` for a stored program to run. `/StoredProgram`
-   * answers both; `/SASJobExecution` answers `_FILE=`, which is the one a
-   * streamed build links to, and keeps its own POST stub for the rest.
+   * answers both; `/SASJobExecution` also forwards a POST with `_program` when
+   * Viya emulation is enabled. This is a local JS web-job mock, not Viya.
    *
    * Both are handed to the API as the path they stand for - `/drive/file` or
    * `/stp/execute` - so the same guard, the same permission rule and the same
@@ -69,7 +76,29 @@ export const setupRoutes = (app: Express) => {
       if (req.path !== '/') return next()
 
       const { url, baseUrl } = req
-      const { search, hasFile, hasProgram } = normalizeTierQuery(url)
+      if (
+        webTier === '/SASJobExecution' &&
+        req.method === 'GET' &&
+        isViyaEmulationEnabled() &&
+        process.env.MODE === ModeType.Desktop
+      ) {
+        const params = new URLSearchParams(url.split('?')[1] ?? '')
+        if (params.has('_fileid')) {
+          Object.entries(emulatedHeaders()).forEach(([name, value]) =>
+            res.setHeader(name, String(value))
+          )
+          if (params.size !== 1) return res.status(400).send('Invalid file id.')
+          const body = readDebugWebout(params.get('_fileid') ?? '')
+          return body === undefined
+            ? res.status(404).send('Debug output not found.')
+            : res.type('text/plain').send(body)
+        }
+      }
+      const viyaPost =
+        webTier === '/SASJobExecution' &&
+        req.method === 'POST' &&
+        isViyaEmulationEnabled()
+      const { search, hasFile, hasProgram } = normalizeTierQuery(url, viyaPost)
 
       // one file, or one program, never both: the two answer different things,
       // and choosing silently would answer a question the caller did not ask -
@@ -84,16 +113,46 @@ export const setupRoutes = (app: Express) => {
       if (hasProgram && hasFile)
         return res.status(400).send(TIER_NEEDS_ONE_PARAMETER)
 
+      if (viyaPost && hasProgram) {
+        Object.entries(emulatedHeaders()).forEach(([name, value]) =>
+          res.setHeader(name, String(value))
+        )
+        const params = new URLSearchParams(search)
+        let unsupported = false
+        params.forEach((value, name) => {
+          const key = name.toLowerCase()
+          if (
+            [
+              '_job',
+              '__program',
+              '_executiontasks',
+              '_form',
+              '_prompts'
+            ].includes(key) ||
+            (key === '_action' && value.toLowerCase() !== 'execute') ||
+            (key === '_debug' &&
+              value !== '' &&
+              value !== '0' &&
+              (value !== '131' || process.env.MODE !== ModeType.Desktop))
+          )
+            unsupported = true
+        })
+        if (unsupported)
+          return res.status(400).send('Unsupported Viya web-job request.')
+      }
+
       // a program to run: the estate's other parameter, on the tier that stands
       // where the estate's tiers stand. The method travels too - the adapter
       // posts a program with its input data, a browser may get it
-      if (webTier === '/StoredProgram' && hasProgram) {
+      if ((webTier === '/StoredProgram' || viyaPost) && hasProgram) {
         req.url = `/stp/execute${search}`
         req.baseUrl = API_PREFIX
         ;(req as any)[tierProgramRequest] = true
+        if (viyaPost) (req as any)[viyaWebJobRequest] = true
 
         return apiRouter(req, res, (error?: unknown) => {
           delete (req as any)[tierProgramRequest]
+          delete (req as any)[viyaWebJobRequest]
           req.url = url
           req.baseUrl = baseUrl
 
@@ -144,6 +203,7 @@ export const setupRoutes = (app: Express) => {
       // the guard is the one answer that never reaches the router
       viyaEmulatedHeaders,
       viyaGuard(authenticateAccessToken, authorize),
+      localJesRouter,
       createViyaRouter(viyaServices)
     )
 

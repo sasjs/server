@@ -1,0 +1,39 @@
+{
+  "_comment": "The log a mocked run reports. A mock site has no SAS binary, so a run here is JavaScript - and a JavaScript run that wrote nothing leaves the SAS Logs panel empty, which teaches a visitor that the panel does not work. These are written the way SAS writes a log: source lines with their numbers, notes, a warning, a process-time block. `noisy` is the failure-shaped one, `clean` is a run with nothing to report; each twin reports one of them at random, half the time. `{{program}}` is replaced with the program that ran.",
+  "noisy": [
+    "NOTE: This is a mocked SAS log: a browser has no SAS binary.",
+    "      The program below is {{program}}.",
+    "",
+    "1    %mp_abort(iftrue= (%mf_isdir(&path) = 0)",
+    "2      ,mac=&_program..sas",
+    "3      ,msg=%str(File path (&path) is not a valid directory)",
+    "4    )",
+    "5    %mp_webin()",
+    "",
+    "NOTE: The SAS System stopped processing this step because of errors.",
+    "WARNING: Apparent invocation of macro MP_WEBIN not resolved.",
+    "ERROR: Execution canceled by an %ABORT CANCEL statement.",
+    "ERROR: Errors printed on page 1.",
+    "",
+    "NOTE: DATA statement used (Total process time):",
+    "      real time           0.01 seconds",
+    "      cpu time            0.01 seconds",
+    "",
+    "NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414"
+  ],
+  "clean": [
+    "NOTE: This is a mocked SAS log: a browser has no SAS binary.",
+    "      The program below is {{program}}.",
+    "",
+    "1    %webout(OPEN)",
+    "2    %webout(OBJ, areas)",
+    "3    %webout(CLOSE)",
+    "",
+    "NOTE: The PROCEDURE SQL printed page 1.",
+    "NOTE: PROCEDURE SQL used (Total process time):",
+    "      real time           0.02 seconds",
+    "      cpu time            0.02 seconds",
+    "",
+    "NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414"
+  ]
+}

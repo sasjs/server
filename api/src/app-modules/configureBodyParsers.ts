@@ -75,6 +75,15 @@ export const configureBodyParsers = (app: Express) => {
       }) => {
         if (VIYA_CONTENT_PATH.test((req.url ?? '').split('?')[0])) return false
 
+        // The desktop JES mock receives table CSV as a raw JSON-typed upload.
+        if (
+          /^(1|true|yes|on)$/i.test(process.env.EMULATE_VIYA ?? '') &&
+          process.env.MODE === 'desktop' &&
+          process.env.LOCAL_VIYA_JS_JOBS &&
+          (req.url ?? '').split('?')[0] === '/files/files'
+        )
+          return false
+
         const contentType = String(req.headers?.['content-type'] ?? '')
 
         return /^application\/json\b/i.test(contentType)

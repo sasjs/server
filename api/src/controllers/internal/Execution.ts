@@ -50,6 +50,8 @@ interface ExecuteFileParams {
   session?: Session
   runTime: RunTimeType
   forceStringResult?: boolean
+  /** Return webout separately from the log for the emulated Viya tier. */
+  separateWebout?: boolean
   /**
    * Called with the pid as soon as a local runtime process is spawned, so a
    * trigger can report it without polling. Never called on `sasviya`, and not
@@ -74,6 +76,7 @@ export class ExecutionController {
     session,
     runTime,
     forceStringResult,
+    separateWebout,
     onSpawn
   }: ExecuteFileParams) {
     const program = await readFile(programPath)
@@ -87,6 +90,7 @@ export class ExecutionController {
       session,
       runTime,
       forceStringResult,
+      separateWebout,
       onSpawn
     })
   }
@@ -99,6 +103,7 @@ export class ExecutionController {
     session: sessionByFileUpload,
     runTime,
     forceStringResult,
+    separateWebout,
     includePrintOutput,
     onSpawn
   }: ExecuteProgramParams): Promise<ExecuteReturnRaw> {
@@ -214,7 +219,7 @@ export class ExecutionController {
         ? { failureReason: session.failureReason }
         : {}),
       result:
-        isDebugOn(vars) || session.failureReason
+        !separateWebout && (isDebugOn(vars) || session.failureReason)
           ? resultParts.join(`\n`)
           : webout
     }

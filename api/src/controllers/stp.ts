@@ -1,4 +1,5 @@
 import express from 'express'
+import { readFile } from '@sasjs/utils'
 import {
   Request,
   Security,
@@ -20,13 +21,16 @@ import {
   makeFilesNamesMap,
   getRunTimeAndFilePath,
   parseDebugValue,
-  waitForSessionPid
+  waitForSessionPid,
+  RunTimeType
 } from '../utils'
+import { debugPage, saveDebugWebout } from '../routes/viya/webJobDebug'
 import { MulterFile } from '../types/Upload'
 import { TriggerResponse } from '../types'
 import {
   mergeTierPostVariables,
-  tierProgramRequest
+  tierProgramRequest,
+  viyaWebJobRequest
 } from '../utils/tierPostVariables'
 
 /**
@@ -187,17 +191,29 @@ const execute = async (
 ): Promise<string | Buffer> => {
   try {
     const { codePath, runTime } = await getRunTimeAndFilePath(_program)
+    if ((req as any)[viyaWebJobRequest] && runTime !== RunTimeType.JS)
+      throw new Error('Only local JS programs are supported by this mock.')
 
-    const { result, httpHeaders } = await new ExecutionController().executeFile(
-      {
+    const viyaDebug =
+      Boolean((req as any)[viyaWebJobRequest]) && vars._debug === 131
+    const { result, httpHeaders, log, failureReason } =
+      await new ExecutionController().executeFile({
         programPath: codePath,
         runTime,
         preProgramVariables: getPreProgramVariables(req),
         vars,
+        separateWebout: viyaDebug,
         otherArgs,
         session: req.sasjsSession
-      }
-    )
+      })
+
+    if (viyaDebug) {
+      if (failureReason) throw new Error('Local JS program failed.')
+      const id = saveDebugWebout(result.toString())
+      if (!id) throw new Error('Debug output exceeds the local mock limit.')
+      req.res?.type('html')
+      return debugPage(id, log)
+    }
 
     req.res?.header(httpHeaders)
 
@@ -252,9 +268,19 @@ const triggerProgram = async (
       reportSpawned = resolve
     })
 
-    // call executeFile method of ExecutionController without awaiting
-    const program = new ExecutionController().executeFile({
-      programPath: codePath,
+    // A pre-warmed SAS pid exists before the file read. Do not acknowledge the
+    // trigger until that read succeeds, and release a reservation on failure.
+    let source: string
+    try {
+      source = await readFile(codePath)
+    } catch {
+      await sessionController.abandonReservation(session)
+      throw new Error('Program could not be read.')
+    }
+
+    // call executeProgram method of ExecutionController without awaiting
+    const program = new ExecutionController().executeProgram({
+      program: source,
       runTime,
       preProgramVariables: getPreProgramVariables(req),
       vars,

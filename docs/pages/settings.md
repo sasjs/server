@@ -21,6 +21,24 @@ In a server environment, it is highly recommended to protect this file with appr
 
 ## Environment Variables
 
+### LOCAL_VIYA_JS_JOBS
+
+In trusted desktop mode with `EMULATE_VIYA=true` and the JS runtime enabled, this optional JSON mapping registers Viya job paths to JS mock files on the Drive. For example:
+
+```sh
+LOCAL_VIYA_JS_JOBS='{"/Public/app/demo/services/common/appinit":"/Public/app/demo/services/common/appinit.js"}'
+```
+
+`EMULATE_VIYA` is a startup setting: restart the server to change the mounted emulation routes; changing the environment of a running process is not supported.
+
+**Compute mock platform requirement:** registered JS twins in Compute mode require Linux with accessible `/proc/self/fd`. They fail closed when procfs is missing or inaccessible; Windows and macOS Compute mocks are not supported. This requirement is for the local Compute mock, not a claim about SAS Compute.
+
+Only registered JS files are executed; this is not SAS or a Viya deployment. The local-only JES subset supports adapter discovery, uploads, submission, state, result and log. In Compute mode the server publishes a mock definition token and requires an exact match to the registered selector and code; it never executes submitted code, and rejects arbitrary Compute programs while this option is enabled. Setting this mapping therefore replaces the usual SAS Compute execution path in this desktop mock; the existing SAS Compute path is unchanged when it is disabled.
+
+JES accepts string-valued, SAS-name arguments and forwards them to the JS twin; unsupported types, invalid names and conflicting protocol/upload names are rejected. Protocol fields control execution and uploads rather than becoming arbitrary user variables. As with other JS stored programs, identifiers reserved by the runtime are available in the `webout('FETCH')` parameter context rather than as legacy JS bindings. The released adapter's `request()` executors do not accept arbitrary job arguments through its config in web, JES or Compute mode; JES forwarding applies to clients that submit JES arguments directly. Inline tables and uploaded CSV tables reach the JS twin. Compute logs start with `JS mock (not SAS)`; JES and web-job logs come from the JS twin and may contain simulated SAS-like text.
+
+Uploaded tables and completed JES outputs are held in bounded process memory for up to 15 minutes and are lost on restart. This runs trusted JS code with server privileges and is intended for a single trusted user on a local, non-exposed server. Existing multipart file uploads remain on the normal file route; JSON-typed raw uploads to `/files/files` are reserved for this mock when enabled. The emulated unfiltered context list names `SAS Job Execution compute context`; configure the target with that name.
+
 ### ADMIN_PASSWORD_INITIAL
 
 Defines the initial (temporary) password for the `ADMIN_USERNAME`, which is in place until the first login.  There is no default: a default would ship a publicly-known credential.  In server mode it is required unless an external auth provider is enabled - with a provider, leaving it unset seeds no local admin at all, and access is decided by the provider's groups - see [Access policy](auth.md#access-policy).
@@ -191,7 +209,9 @@ Answers the Viya APIs an application built for `serverType=SASVIYA` calls - `/co
 What is emulated and what is real is worth knowing:
 
 - identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file `GET /SASjsApi/drive/file` reads.
-- execution is real. A submitted service runs on this server's SAS engine and the client receives the `_webout` the program produced, and a program that fails fails.
+- Compute execution normally uses this server's SAS engine. With [`LOCAL_VIYA_JS_JOBS`](#local_viya_js_jobs) enabled in desktop mode, Compute instead runs registered JS twins and refuses arbitrary code; the local web-job bridge also runs JS mock services, not SAS. The Compute JS mock requires Linux procfs as described above.
+
+With `MODE=desktop`, `EMULATE_VIYA=true`, and `RUN_TIMES=js`, a `POST /SASJobExecution/?_program=<drive path>` forwards to the existing stored-program executor. This is intended only for a trusted single-user local mock: desktop mode has no authentication and JS programs run with the server's OS privileges. It supports adapter web-job empty, inline-table and multipart-file requests, including `_debug=131` using the Viya 4 iframe form captured in sasjs/adapter commit `74873e7a`. Debug output is held in a bounded, expiring in-memory store (128 entries, 8 MiB total, 15 minutes), and may be evicted sooner. The returned log is an HTML debug page containing the JS runtime log, not a SAS log. `_program` must be in the query; `_job`, forms, task execution, other debug levels, and debug in server mode are not supported. Existing server-mode authentication and STP route permissions still apply, but adapter 6.1.8 Node fresh bearer-only discovery does not send the token during folder lookup; desktop mode avoids that adapter limitation. No real Viya connection or SAS execution is involved in the JS mock. Default React seed settings select JES, and the CLI defaults to compute; choose the adapter web executor (`useComputeApi: null`) to use this bridge.
 
 A client authenticates at `/SASLogon/oauth/token`, which this server answers with its own accounts and registered clients. The three grants a Viya client speaks are answered - `authorization_code` after a `/SASLogon/login` sign-in, `refresh_token` with single-use rotation, and the `password` grant for the secret-less `sas.cli` client - and the pair it returns is a sasjs/server token that the Viya paths accept. `client_credentials` is not answered, because neither `@sasjs/adapter` nor the CLI makes that call.
 
