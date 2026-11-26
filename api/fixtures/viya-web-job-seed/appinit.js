@@ -7,9 +7,8 @@
  *
  * The SAS service runs:
  *   proc sql; create table areas as select distinct area from mydb.springs;
- * over the dataset serviceinit.sas builds. Here the same rows come from
- * springs.json beside this file, which scripts/springs-data.js derives from
- * that datalines block - generated, not hand-copied, and checked in CI.
+ * over the dataset serviceinit.sas builds. This mock reads its input rows from
+ * springs.json beside this file.
  */
 
 const path = require('path')
