@@ -22,6 +22,8 @@ import {
 import { nodeDriveStore } from '../../controllers/internal/nodeDriveStore'
 import { desktopIdentity } from '../../utils/desktopIdentity'
 import { getPreProgramVariables, RunTimeType } from '../../utils'
+import { localJesEnabled } from './localJes'
+import { executeLocalCompute } from './localCompute'
 
 /** The one drive the server serves, whichever API is asked for it. */
 let drive: ReturnType<typeof createDriveService> | undefined
@@ -102,6 +104,12 @@ export const viyaServices = (req: Request): Services => ({
   viya: {
     serverUrl: serverUrl(req),
     execute: async ({ program, variables, name: _name, sessionId }) => {
+      if (localJesEnabled())
+        return executeLocalCompute(
+          req,
+          program,
+          variables as Record<string, unknown> | undefined
+        )
       const controller = new ExecutionController()
 
       // every field a generated program reads, from the request: a service that

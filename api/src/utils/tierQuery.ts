@@ -1,7 +1,7 @@
 /** Normalize tier query names, preserving raw values and all occurrences so the
  * destination API validates duplicates rather than silently selecting one.
  */
-export const normalizeTierQuery = (url: string) => {
+export const normalizeTierQuery = (url: string, preserveInputs = false) => {
   const queryStart = url.indexOf('?')
   const pairs = queryStart < 0 ? [] : url.slice(queryStart + 1).split('&')
   const names: Record<string, string> = {
@@ -20,7 +20,9 @@ export const normalizeTierQuery = (url: string) => {
     const key = decoded.toLowerCase()
     const name = Object.prototype.hasOwnProperty.call(names, key)
       ? names[key]
-      : key
+      : preserveInputs
+        ? decoded
+        : key
     if (name === '_FILE') hasFile = true
     if (name === '_program') hasProgram = true
     return (

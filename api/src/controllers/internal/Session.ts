@@ -215,21 +215,41 @@ export class SessionController {
     return session
   }
 
+  // Serialize acquisition, not execution: creation itself awaits filesystem I/O
+  // and publishes a pending session before its promise settles.
+  private acquisition = Promise.resolve()
+
   public async getSession(username: string) {
-    const readySessions = this.getReadySessions()
+    let release!: () => void
+    const previous = this.acquisition
+    this.acquisition = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await previous
+    try {
+      const readySessions = this.getReadySessions()
+      const session = readySessions.length
+        ? readySessions[0]
+        : await this.createSession(username)
 
-    const session = readySessions.length
-      ? readySessions[0]
-      : await this.createSession(username)
+      if (session.state === SessionState.failed)
+        throw new Error(session.failureReason || 'Session startup failed')
 
-    // a pending session has never run anything, so handing it to this caller
-    // makes this caller its owner; the pool is a warm start, not a transfer of
-    // one user's session to another
-    session.owner = username
+      // Claim before resolving: all routes share this pool, and marking it in
+      // the caller after await lets two requests receive the same folder.
+      session.owner = username
+      session.state = SessionState.running
+      if (readySessions.length < 3) this.createSession(username)
+      return session
+    } finally {
+      release()
+    }
+  }
 
-    if (readySessions.length < 3) this.createSession(username)
-
-    return session
+  /** Release a reservation that never reached execution, including a parked SAS child. */
+  public async abandonReservation(session: Session): Promise<void> {
+    const stopped = await this.terminate(session, DEFAULT_DRAIN_BUDGET)
+    if (stopped) session.state = SessionState.failed
   }
 
   public getSessionById(id: string) {

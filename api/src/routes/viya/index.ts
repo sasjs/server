@@ -30,6 +30,7 @@ import type { Services, ViyaResponse } from '@sasjs/api'
 
 import { oauthToken, TOKEN_PATH } from './token'
 import { subjectOf } from './services'
+import { addJesMembers, localJesEnabled } from './localJes'
 import { VIYA_CONTENT_BYTES, VIYA_CONTENT_PATH } from '../../app-modules'
 
 /**
@@ -136,6 +137,8 @@ export const ruleFor = (path: string): string | undefined => {
   if (path.startsWith('/folders/')) return '/SASjsApi/drive/folder'
   if (/\/jobs$/.test(path)) return '/SASjsApi/code/execute'
   if (path.startsWith('/compute/')) return '/SASjsApi/code/execute'
+  if (path.startsWith('/jobExecution/') || path.startsWith('/jobDefinitions/'))
+    return '/SASjsApi/code/execute'
 
   return undefined
 }
@@ -237,7 +240,11 @@ const contentOf = async (
 export const isViyaPath = (path: string): boolean =>
   VIYA_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
-  )
+  ) ||
+  (localJesEnabled() &&
+    ['/jobDefinitions', '/jobExecution'].some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+    ))
 
 /**
  * Whether a request is the one the server answers under `/SASLogon`.
@@ -375,6 +382,7 @@ export const createViyaRouter = (
         // bearer token and not a token that happens to start with the word
         token: req.headers.authorization?.replace(/^Bearer\s+/i, '')
       })
+      await addJesMembers(req, services(req), answer)
     } catch (error) {
       return next(error)
     }

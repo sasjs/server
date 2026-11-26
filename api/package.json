@@ -66,6 +66,7 @@
     "compression": "1.8.2",
     "connect-mongo": "^6.0.0",
     "consola": "3.4.2",
+    "content-type": "1.0.5",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "csrf": "^3.1.0",

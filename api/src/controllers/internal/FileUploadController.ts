@@ -2,8 +2,19 @@ import { Request, RequestHandler } from 'express'
 import multer from 'multer'
 import { uuidv4 } from '@sasjs/utils'
 import { getSessionController } from '.'
-import { executeProgramRawValidation, getRunTimeAndFilePath } from '../../utils'
+import {
+  executeProgramRawValidation,
+  getRunTimeAndFilePath,
+  RunTimeType
+} from '../../utils'
 import { SessionState } from '../../types'
+import { viyaWebJobRequest } from '../../utils/tierPostVariables'
+
+// The same parser Multer's type-is uses; a failed parse makes Multer silently
+// skip the upload instead of reporting an error.
+const contentType: {
+  parse: (value: string) => { type: string; parameters: Record<string, string> }
+} = require('content-type')
 
 export class FileUploadController {
   private storage = multer.diskStorage({
@@ -22,6 +33,20 @@ export class FileUploadController {
   //It will intercept request and generate unique uuid to be used as a subfolder name
   //that will store the files uploaded
   public preUploadMiddleware: RequestHandler = async (req, res, next) => {
+    const type = req.headers['content-type'] ?? ''
+    if (/^\s*multipart\//i.test(type)) {
+      try {
+        const parsed = contentType.parse(type)
+        if (
+          parsed.type !== 'multipart/form-data' ||
+          !parsed.parameters.boundary
+        )
+          throw new Error('Invalid multipart boundary')
+      } catch {
+        return res.status(400).send('Invalid multipart upload.')
+      }
+    }
+
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
 
     // multer has not run yet, so a multipart body is empty here - but a JSON body
@@ -57,6 +82,10 @@ export class FileUploadController {
 
     try {
       ;({ runTime } = await getRunTimeAndFilePath(programPath))
+      if ((req as any)[viyaWebJobRequest] && runTime !== RunTimeType.JS)
+        return res
+          .status(400)
+          .send('Only local JS programs are supported by this mock.')
     } catch (err: any) {
       return res.status(400).send({
         status: 'failure',
@@ -82,10 +111,41 @@ export class FileUploadController {
 
     req.sasjsSession = session
 
+    if ((req as any)[viyaWebJobRequest]) {
+      const abandon = () => {
+        if (session.state === SessionState.running)
+          session.state = SessionState.failed
+      }
+      if (req.aborted || (req.destroyed && !req.complete) || res.destroyed) {
+        abandon()
+        return
+      }
+      req.once('aborted', abandon)
+    }
+
     next()
   }
 
   public getMulterUploadObject() {
     return this.upload
+  }
+
+  public uploadViya: RequestHandler = (req, res, next) => {
+    const type = req.headers['content-type'] ?? ''
+    if (
+      /^multipart\/form-data\s*;/i.test(type) &&
+      req.headers['content-length'] === '0' &&
+      !req.headers['transfer-encoding']
+    ) {
+      // The whole header and its boundary were validated before allocation.
+      req.body = Object.create(null)
+      req.files = []
+      return next()
+    }
+    this.upload.any()(req, res, (error: any) => {
+      if (!error) return next()
+      if (req.sasjsSession) req.sasjsSession.state = SessionState.failed
+      return res.status(400).send('Invalid multipart upload.')
+    })
   }
 }
