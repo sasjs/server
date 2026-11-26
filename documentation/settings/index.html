@@ -560,6 +560,15 @@
 <nav aria-label="Environment Variables" class="md-nav">
 <ul class="md-nav__list">
 <li class="md-nav__item">
+<a class="md-nav__link" href="#local_viya_js_jobs">
+<span class="md-ellipsis">
+      
+        LOCAL_VIYA_JS_JOBS
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#admin_password_initial">
 <span class="md-ellipsis">
       
@@ -1118,6 +1127,15 @@
 <nav aria-label="Environment Variables" class="md-nav">
 <ul class="md-nav__list">
 <li class="md-nav__item">
+<a class="md-nav__link" href="#local_viya_js_jobs">
+<span class="md-ellipsis">
+      
+        LOCAL_VIYA_JS_JOBS
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#admin_password_initial">
 <span class="md-ellipsis">
       
@@ -1652,41 +1670,50 @@
 <p><img alt="The .env file, beside the server executable, holding the settings" decoding="async" height="290" loading="lazy" src="../img/env.png" width="880"/></p>
 <p>In a server environment, it is highly recommended to protect this file with appropriate permissions (eg, to prevent changes being made by the shared identity under which the server is launched) </p>
 <h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">¶</a></h2>
+<h3 id="local_viya_js_jobs">LOCAL_VIYA_JS_JOBS<a class="headerlink" href="#local_viya_js_jobs" title="Permanent link">¶</a></h3>
+<p>In trusted desktop mode with <code>EMULATE_VIYA=true</code> and the JS runtime enabled, this optional JSON mapping registers Viya job paths to JS mock files on the Drive. For example:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nv">LOCAL_VIYA_JS_JOBS</span><span class="o">=</span><span class="s1">'{"/Public/app/demo/services/common/appinit":"/Public/app/demo/services/common/appinit.js"}'</span>
+</span></code></pre></div>
+<p><code>EMULATE_VIYA</code> is a startup setting: restart the server to change the mounted emulation routes; changing the environment of a running process is not supported.</p>
+<p><strong>Compute mock platform requirement:</strong> registered JS twins in Compute mode require Linux with accessible <code>/proc/self/fd</code>. They fail closed when procfs is missing or inaccessible; Windows and macOS Compute mocks are not supported. This requirement is for the local Compute mock, not a claim about SAS Compute.</p>
+<p>Only registered JS files are executed; this is not SAS or a Viya deployment. The local-only JES subset supports adapter discovery, uploads, submission, state, result and log. In Compute mode the server publishes a mock definition token and requires an exact match to the registered selector and code; it never executes submitted code, and rejects arbitrary Compute programs while this option is enabled. Setting this mapping therefore replaces the usual SAS Compute execution path in this desktop mock; the existing SAS Compute path is unchanged when it is disabled.</p>
+<p>JES accepts string-valued, SAS-name arguments and forwards them to the JS twin; unsupported types, invalid names and conflicting protocol/upload names are rejected. Protocol fields control execution and uploads rather than becoming arbitrary user variables. As with other JS stored programs, identifiers reserved by the runtime are available in the <code>webout('FETCH')</code> parameter context rather than as legacy JS bindings. The released adapter's <code>request()</code> executors do not accept arbitrary job arguments through its config in web, JES or Compute mode; JES forwarding applies to clients that submit JES arguments directly. Inline tables and uploaded CSV tables reach the JS twin. Compute logs start with <code>JS mock (not SAS)</code>; JES and web-job logs come from the JS twin and may contain simulated SAS-like text.</p>
+<p>Uploaded tables and completed JES outputs are held in bounded process memory for up to 15 minutes and are lost on restart. This runs trusted JS code with server privileges and is intended for a single trusted user on a local, non-exposed server. Existing multipart file uploads remain on the normal file route; JSON-typed raw uploads to <code>/files/files</code> are reserved for this mock when enabled. The emulated unfiltered context list names <code>SAS Job Execution compute context</code>; configure the target with that name.</p>
 <h3 id="admin_password_initial">ADMIN_PASSWORD_INITIAL<a class="headerlink" href="#admin_password_initial" title="Permanent link">¶</a></h3>
 <p>Defines the initial (temporary) password for the <code>ADMIN_USERNAME</code>, which is in place until the first login.  There is no default: a default would ship a publicly-known credential.  In server mode it is required unless an external auth provider is enabled - with a provider, leaving it unset seeds no local admin at all, and access is decided by the provider's groups - see <a href="../auth/#access-policy">Access policy</a>.</p>
 <p>Example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a>ADMIN_PASSWORD_INITIAL=&lt;a strong password&gt;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a>ADMIN_PASSWORD_INITIAL=&lt;a strong password&gt;
 </span></code></pre></div>
 <h3 id="admin_password_reset">ADMIN_PASSWORD_RESET<a class="headerlink" href="#admin_password_reset" title="Permanent link">¶</a></h3>
 <p>This option can be used to force a reset of the password of the <code>ADMIN_USERNAME</code>.  Default is NO.  Possible options are YES and NO.
 If <code>ADMIN_PASSWORD_RESET=YES</code> then the <code>ADMIN_USERNAME</code> will be prompted to change the password <strong>from</strong> <code>ADMIN_PASSWORD_INITIAL</code> on next login. This will repeat on every server restart, unless the option is removed / set to NO.</p>
 <p>If the <code>ADMIN_USERNAME</code> is an existing, non-admin user then the password will NOT be reset (only works for admins).  If the ADMIN_USERNAME uses an auth provider (eg LDAP) then again, this approach will not work. In this case, you can create a new admin user by setting a new ADMIN_USERNAME.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a>ADMIN_PASSWORD_RESET=NO
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a>ADMIN_PASSWORD_RESET=NO
 </span></code></pre></div></p>
 <h3 id="admin_username">ADMIN_USERNAME<a class="headerlink" href="#admin_username" title="Permanent link">¶</a></h3>
 <p>Used to define the name of the local admin user.  The default value is <code>secretuser</code>.  The user is created on startup only when <a href="./#admin_password_initial">ADMIN_PASSWORD_INITIAL</a> is set.</p>
 <p>Example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a>ADMIN_USERNAME=secretuser
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a>ADMIN_USERNAME=secretuser
 </span></code></pre></div>
 <h3 id="auth_providers">AUTH_PROVIDERS<a class="headerlink" href="#auth_providers" title="Permanent link">¶</a></h3>
 <p>Used to list the desired Authentication providers (space or comma separated).  Supported values are <code>ldap</code> and <code>oidc</code>, and more than one may be enabled at once - for example LDAP for directory users together with OpenID Connect for single sign-on.  See <a href="../auth/">Authentication</a> for the detail of each.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a>AUTH_PROVIDERS=ldap
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a>AUTH_PROVIDERS=ldap
 </span></code></pre></div></p>
 <p>Combining providers:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a>AUTH_PROVIDERS=ldap oidc
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a>AUTH_PROVIDERS=ldap oidc
 </span></code></pre></div></p>
 <h3 id="allowed_domain">ALLOWED_DOMAIN<a class="headerlink" href="#allowed_domain" title="Permanent link">¶</a></h3>
 <p>Prevent authentication from other domains by listing the primary domain here.  This will reject cookies arriving from any other domain.  Used only when <code>MODE=server</code>, and only relevant for SASjs Studio / SASjs Logon.  </p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a>ALLOWED_DOMAIN=sas.company.com
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a>ALLOWED_DOMAIN=sas.company.com
 </span></code></pre></div></p>
 <p>For API use by different servers / domains, see <a href="./#cors">CORS</a> and <a href="./#whitelist">WHITELIST</a> settings.</p>
 <h3 id="api_server_url">API_SERVER_URL<a class="headerlink" href="#api_server_url" title="Permanent link">¶</a></h3>
 <p>The URL generated stored programs use to call back into this server. Unset, it is taken from the request that starts the session; set it when that is wrong for the topology - behind a reverse proxy or a load balancer, for instance - because the value is written into each program verbatim, so a wrong one only surfaces when the program runs. It must be an http(s) URL with no path: <code>https://host</code> is accepted and <code>https://host/base</code> is refused, so a deployment behind a path-prefixed proxy has to set the value some other way. A value with a path is refused at startup, while the configuration is still in front of you. (The check does not look past the host, so a query or fragment passes it - no program needs one.)</p>
 <p>Example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a>API_SERVER_URL=https://sas.4gl.io
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a>API_SERVER_URL=https://sas.4gl.io
 </span></code></pre></div>
 <h3 id="cert_chain">CERT_CHAIN<a class="headerlink" href="#cert_chain" title="Permanent link">¶</a></h3>
 <p>Necessary when <code>HTTPS_PORT</code> is set.</p>
@@ -1727,7 +1754,7 @@ If <code>ADMIN_PASSWORD_RESET=YES</code> then the <code>ADMIN_USERNAME</code> wi
 <li>Permissions (which users / groups are authorised to access which resources)</li>
 </ul>
 <p>This value contains the Connection string for the DB instance.  Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a>DB_CONNECT=mongodb+srv://&lt;DB_USERNAME&gt;:&lt;DB_PASSWORD&gt;@&lt;CLUSTER&gt;/&lt;DB_NAME&gt;?retryWrites=true&amp;w=majority
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a>DB_CONNECT=mongodb+srv://&lt;DB_USERNAME&gt;:&lt;DB_PASSWORD&gt;@&lt;CLUSTER&gt;/&lt;DB_NAME&gt;?retryWrites=true&amp;w=majority
 </span></code></pre></div>
 See also:</p>
 <ul>
@@ -1761,8 +1788,9 @@ See also:</p>
 <p>What is emulated and what is real is worth knowing:</p>
 <ul>
 <li>identity, folders, files and the shape of every answer come from the emulator, backed by this server's own Drive and identity store - a file uploaded over the Viya paths is the same file <code>GET /SASjsApi/drive/file</code> reads.</li>
-<li>execution is real. A submitted service runs on this server's SAS engine and the client receives the <code>_webout</code> the program produced, and a program that fails fails.</li>
+<li>Compute execution normally uses this server's SAS engine. With <a href="#local_viya_js_jobs"><code>LOCAL_VIYA_JS_JOBS</code></a> enabled in desktop mode, Compute instead runs registered JS twins and refuses arbitrary code; the local web-job bridge also runs JS mock services, not SAS. The Compute JS mock requires Linux procfs as described above.</li>
 </ul>
+<p>With <code>MODE=desktop</code>, <code>EMULATE_VIYA=true</code>, and <code>RUN_TIMES=js</code>, a <code>POST /SASJobExecution/?_program=&lt;drive path&gt;</code> forwards to the existing stored-program executor. This is intended only for a trusted single-user local mock: desktop mode has no authentication and JS programs run with the server's OS privileges. It supports adapter web-job empty, inline-table and multipart-file requests, including <code>_debug=131</code> using the Viya 4 iframe form captured in sasjs/adapter commit <code>74873e7a</code>. Debug output is held in a bounded, expiring in-memory store (128 entries, 8 MiB total, 15 minutes), and may be evicted sooner. The returned log is an HTML debug page containing the JS runtime log, not a SAS log. <code>_program</code> must be in the query; <code>_job</code>, forms, task execution, other debug levels, and debug in server mode are not supported. Existing server-mode authentication and STP route permissions still apply, but adapter 6.1.8 Node fresh bearer-only discovery does not send the token during folder lookup; desktop mode avoids that adapter limitation. No real Viya connection or SAS execution is involved in the JS mock. Default React seed settings select JES, and the CLI defaults to compute; choose the adapter web executor (<code>useComputeApi: null</code>) to use this bridge.</p>
 <p>A client authenticates at <code>/SASLogon/oauth/token</code>, which this server answers with its own accounts and registered clients. The three grants a Viya client speaks are answered - <code>authorization_code</code> after a <code>/SASLogon/login</code> sign-in, <code>refresh_token</code> with single-use rotation, and the <code>password</code> grant for the secret-less <code>sas.cli</code> client - and the pair it returns is a sasjs/server token that the Viya paths accept. <code>client_credentials</code> is not answered, because neither <code>@sasjs/adapter</code> nor the CLI makes that call.</p>
 <p>A code is asked for either way a client asks: <code>POST /SASLogon/authorize</code> returns it as JSON, and <code>GET /SASLogon/oauth/authorize?client_id=...&amp;response_type=code</code> returns the page <code>@sasjs/adapter</code> reads the code out of when a session exists. A fresh browser is redirected to this server's sign-in page and then shown the code; local, LDAP and OIDC sign-in are supported. The adapter's <code>getAuthCode</code> cannot sign in interactively: without an existing browser session it returns <code>null</code>.</p>
 <p>Every answer on the emulated paths, and every answer from the token port, carries an <code>x-sasjs-emulated</code> header naming the Viya version whose shapes are being answered, so a client - or a person reading a log - can tell an emulated estate from a real one. That includes refusals - a 401 from the guard, a 429 from the sign-in throttle, a 501 for an operation that is out of scope. Everything under <code>/SASLogon</code> except the token port is unmarked: the login form, code-grant routes, logout and openid routes are this server's own. The GET code-grant route additionally redirects fresh browsers to sign in when emulation is enabled.</p>
@@ -1779,34 +1807,34 @@ See also:</p>
 <p>An application deployed on the server that needs inline scripts or inline event handlers (many Angular and Data Controller builds do) loosens the policy with its own config file.</p>
 <p>Docs: <a href="https://helmetjs.github.io/#reference" target="_blank" rel="noopener">https://helmetjs.github.io/#reference</a></p>
 <p>Default config:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a>{
-</span><span id="__span-8-2"><a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a>  "frame-src": ["'self'"],
-</span><span id="__span-8-3"><a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a>  "img-src": ["'self'", "data:", "blob:"],
-</span><span id="__span-8-4"><a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a>  "script-src": ["'self'"],
-</span><span id="__span-8-5"><a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a>  "script-src-attr": ["'none'"]
-</span><span id="__span-8-6"><a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a>}
-</span></code></pre></div></p>
-<p>Loosened config for an app that requires inline scripts:
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a>{
 </span><span id="__span-9-2"><a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a>  "frame-src": ["'self'"],
 </span><span id="__span-9-3"><a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>  "img-src": ["'self'", "data:", "blob:"],
-</span><span id="__span-9-4"><a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a>  "script-src": ["'self'", "'unsafe-inline'"],
-</span><span id="__span-9-5"><a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a>  "script-src-attr": ["'self'", "'unsafe-inline'"]
+</span><span id="__span-9-4"><a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a>  "script-src": ["'self'"],
+</span><span id="__span-9-5"><a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a>  "script-src-attr": ["'none'"]
 </span><span id="__span-9-6"><a href="#__codelineno-9-6" id="__codelineno-9-6" name="__codelineno-9-6"></a>}
+</span></code></pre></div></p>
+<p>Loosened config for an app that requires inline scripts:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a>{
+</span><span id="__span-10-2"><a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a>  "frame-src": ["'self'"],
+</span><span id="__span-10-3"><a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a>  "img-src": ["'self'", "data:", "blob:"],
+</span><span id="__span-10-4"><a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a>  "script-src": ["'self'", "'unsafe-inline'"],
+</span><span id="__span-10-5"><a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a>  "script-src-attr": ["'self'", "'unsafe-inline'"]
+</span><span id="__span-10-6"><a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a>}
 </span></code></pre></div></p>
 <p>Example: <code>HELMET_CSP_CONFIG_PATH=./csp.config.json</code></p>
 <p>The policy actually sent when the variable is unset: helmet's own defaults, in the order helmet writes them, with the directives this server adds.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a>default-src 'self'
-</span><span id="__span-10-2"><a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a>base-uri 'self'
-</span><span id="__span-10-3"><a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a>font-src 'self' https: data:
-</span><span id="__span-10-4"><a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a>form-action 'self'
-</span><span id="__span-10-5"><a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a>frame-ancestors 'self'
-</span><span id="__span-10-6"><a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a>img-src 'self' data: blob:
-</span><span id="__span-10-7"><a href="#__codelineno-10-7" id="__codelineno-10-7" name="__codelineno-10-7"></a>object-src 'none'
-</span><span id="__span-10-8"><a href="#__codelineno-10-8" id="__codelineno-10-8" name="__codelineno-10-8"></a>script-src 'self'
-</span><span id="__span-10-9"><a href="#__codelineno-10-9" id="__codelineno-10-9" name="__codelineno-10-9"></a>script-src-attr 'none'
-</span><span id="__span-10-10"><a href="#__codelineno-10-10" id="__codelineno-10-10" name="__codelineno-10-10"></a>style-src 'self' https: 'unsafe-inline'
-</span><span id="__span-10-11"><a href="#__codelineno-10-11" id="__codelineno-10-11" name="__codelineno-10-11"></a>upgrade-insecure-requests
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a>default-src 'self'
+</span><span id="__span-11-2"><a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a>base-uri 'self'
+</span><span id="__span-11-3"><a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a>font-src 'self' https: data:
+</span><span id="__span-11-4"><a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a>form-action 'self'
+</span><span id="__span-11-5"><a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a>frame-ancestors 'self'
+</span><span id="__span-11-6"><a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a>img-src 'self' data: blob:
+</span><span id="__span-11-7"><a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a>object-src 'none'
+</span><span id="__span-11-8"><a href="#__codelineno-11-8" id="__codelineno-11-8" name="__codelineno-11-8"></a>script-src 'self'
+</span><span id="__span-11-9"><a href="#__codelineno-11-9" id="__codelineno-11-9" name="__codelineno-11-9"></a>script-src-attr 'none'
+</span><span id="__span-11-10"><a href="#__codelineno-11-10" id="__codelineno-11-10" name="__codelineno-11-10"></a>style-src 'self' https: 'unsafe-inline'
+</span><span id="__span-11-11"><a href="#__codelineno-11-11" id="__codelineno-11-11" name="__codelineno-11-11"></a>upgrade-insecure-requests
 </span></code></pre></div>
 <ul>
 <li><code>blob:</code> in <code>img-src</code> is what lets the Studio draw a drive image: it fetches the file and hands the page an object URL, which a policy without <code>blob:</code> refuses - the preview pane is then simply empty.</li>
@@ -1819,8 +1847,8 @@ See also:</p>
 <p>Required to bind the plain HTTP listener to an address that is not loopback. Plain HTTP sends credentials in clear text, so a non-loopback <a href="./#http_bind_address"><code>HTTP_BIND_ADDRESS</code></a> is refused unless this is <code>true</code>.</p>
 <p>Options: [true|false]</p>
 <p>Default: unset (refused)</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a>HTTP_BIND_ADDRESS=0.0.0.0
-</span><span id="__span-11-2"><a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a>HTTP_ALLOW_REMOTE=true
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a>HTTP_BIND_ADDRESS=0.0.0.0
+</span><span id="__span-12-2"><a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a>HTTP_ALLOW_REMOTE=true
 </span></code></pre></div>
 <h3 id="http_bind_address">HTTP_BIND_ADDRESS<a class="headerlink" href="#http_bind_address" title="Permanent link">¶</a></h3>
 <p>The interface the plain HTTP listener binds to.</p>
@@ -1842,22 +1870,22 @@ See also:</p>
 <h3 id="ldap_url">LDAP_URL<a class="headerlink" href="#ldap_url" title="Permanent link">¶</a></h3>
 <p>The URL of the LDAP directory server.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a>LDAP_URL= ldaps://LDAP_SERVER_URL:PORT
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a>LDAP_URL= ldaps://LDAP_SERVER_URL:PORT
 </span></code></pre></div></p>
 <h3 id="ldap_bind_dn">LDAP_BIND_DN<a class="headerlink" href="#ldap_bind_dn" title="Permanent link">¶</a></h3>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a>LDAP_BIND_DN=cn=admin,ou=system,dc=companyname
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a>LDAP_BIND_DN=cn=admin,ou=system,dc=companyname
 </span></code></pre></div></p>
 <h3 id="ldap_bind_password">LDAP_BIND_PASSWORD<a class="headerlink" href="#ldap_bind_password" title="Permanent link">¶</a></h3>
 <p>All LDAP queries have to be authenticated with this secret and the LDAP_USERS_BASE_DN</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a>LDAP_BIND_PASSWORD = &lt;password&gt;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a>LDAP_BIND_PASSWORD = &lt;password&gt;
 </span></code></pre></div></p>
 <h3 id="ldap_users_base_dn">LDAP_USERS_BASE_DN<a class="headerlink" href="#ldap_users_base_dn" title="Permanent link">¶</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a>LDAP_USERS_BASE_DN = ou=users,dc=companyname
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a>LDAP_USERS_BASE_DN = ou=users,dc=companyname
 </span></code></pre></div>
 <h3 id="ldap_groups_base_dn">LDAP_GROUPS_BASE_DN<a class="headerlink" href="#ldap_groups_base_dn" title="Permanent link">¶</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a>LDAP_GROUPS_BASE_DN = ou=groups,dc=companyname
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a>LDAP_GROUPS_BASE_DN = ou=groups,dc=companyname
 </span></code></pre></div>
 <h3 id="local_login_enabled">LOCAL_LOGIN_ENABLED<a class="headerlink" href="#local_login_enabled" title="Permanent link">¶</a></h3>
 <p>Whether a local (database) account can sign in with its stored password.  Set to <code>false</code> and the password is never compared, so a local account cannot sign in at all - useful where every account lives in an identity provider instead.  On the Cloudron app package this defaults to <code>false</code> when single sign-on is configured and no break-glass admin is seeded.</p>
@@ -1899,58 +1927,58 @@ More details on this can be found in the Morgan documentation here:<a href="http
 <h3 id="oidc_issuer_url">OIDC_ISSUER_URL<a class="headerlink" href="#oidc_issuer_url" title="Permanent link">¶</a></h3>
 <p>The issuer URL of your OpenID Connect provider.  SASjs Server reads the provider's endpoints from <code>&lt;OIDC_ISSUER_URL&gt;/.well-known/openid-configuration</code>.  Required when <code>oidc</code> is listed in <a href="./#auth_providers">AUTH_PROVIDERS</a>, unless <a href="./#oidc_discovery_url">OIDC_DISCOVERY_URL</a> is given instead.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a>OIDC_ISSUER_URL=https://id.example.com
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a>OIDC_ISSUER_URL=https://id.example.com
 </span></code></pre></div></p>
 <h3 id="oidc_discovery_url">OIDC_DISCOVERY_URL<a class="headerlink" href="#oidc_discovery_url" title="Permanent link">¶</a></h3>
 <p>Use this instead of <code>OIDC_ISSUER_URL</code> when your provider does not serve its discovery document at the conventional path.  Optional.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a>OIDC_DISCOVERY_URL=https://id.example.com/.well-known/openid-configuration
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a>OIDC_DISCOVERY_URL=https://id.example.com/.well-known/openid-configuration
 </span></code></pre></div></p>
 <h3 id="oidc_client_id">OIDC_CLIENT_ID<a class="headerlink" href="#oidc_client_id" title="Permanent link">¶</a></h3>
 <p>The client ID issued by your provider for SASjs Server.  Required when <code>oidc</code> is listed in <a href="./#auth_providers">AUTH_PROVIDERS</a>.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a>OIDC_CLIENT_ID=sasjs-server
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a href="#__codelineno-20-1" id="__codelineno-20-1" name="__codelineno-20-1"></a>OIDC_CLIENT_ID=sasjs-server
 </span></code></pre></div></p>
 <h3 id="oidc_client_secret">OIDC_CLIENT_SECRET<a class="headerlink" href="#oidc_client_secret" title="Permanent link">¶</a></h3>
 <p>The client secret issued by your provider.  Required when <code>oidc</code> is listed in <a href="./#auth_providers">AUTH_PROVIDERS</a>.</p>
 <p>This value is write-only: it is read from the environment and used, but it is never returned by the API or shown in the settings screen.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a href="#__codelineno-20-1" id="__codelineno-20-1" name="__codelineno-20-1"></a>OIDC_CLIENT_SECRET=&lt;client secret&gt;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a href="#__codelineno-21-1" id="__codelineno-21-1" name="__codelineno-21-1"></a>OIDC_CLIENT_SECRET=&lt;client secret&gt;
 </span></code></pre></div></p>
 <h3 id="oidc_redirect_uri">OIDC_REDIRECT_URI<a class="headerlink" href="#oidc_redirect_uri" title="Permanent link">¶</a></h3>
 <p>The callback URL, which must be registered with your provider and must match exactly.  Required when <code>oidc</code> is listed in <a href="./#auth_providers">AUTH_PROVIDERS</a>.  It must be an absolute <code>http</code> or <code>https</code> URL, and the path is fixed by the server.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a href="#__codelineno-21-1" id="__codelineno-21-1" name="__codelineno-21-1"></a>OIDC_REDIRECT_URI=https://sas.example.com/SASLogon/openid/callback
+<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a href="#__codelineno-22-1" id="__codelineno-22-1" name="__codelineno-22-1"></a>OIDC_REDIRECT_URI=https://sas.example.com/SASLogon/openid/callback
 </span></code></pre></div></p>
 <h3 id="oidc_provider_name">OIDC_PROVIDER_NAME<a class="headerlink" href="#oidc_provider_name" title="Permanent link">¶</a></h3>
 <p>The label shown on the sign-in button, as in "Sign in with <name>".  Defaults to <code>OpenID Connect</code>.</name></p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a href="#__codelineno-22-1" id="__codelineno-22-1" name="__codelineno-22-1"></a>OIDC_PROVIDER_NAME=Example Identity
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a href="#__codelineno-23-1" id="__codelineno-23-1" name="__codelineno-23-1"></a>OIDC_PROVIDER_NAME=Example Identity
 </span></code></pre></div></p>
 <h3 id="oidc_scope">OIDC_SCOPE<a class="headerlink" href="#oidc_scope" title="Permanent link">¶</a></h3>
 <p>The scopes requested from the provider.  Defaults to <code>openid profile email</code>, and must always include <code>openid</code>.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a href="#__codelineno-23-1" id="__codelineno-23-1" name="__codelineno-23-1"></a>OIDC_SCOPE=openid profile email
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a href="#__codelineno-24-1" id="__codelineno-24-1" name="__codelineno-24-1"></a>OIDC_SCOPE=openid profile email
 </span></code></pre></div></p>
 <h3 id="oidc_username_claim">OIDC_USERNAME_CLAIM<a class="headerlink" href="#oidc_username_claim" title="Permanent link">¶</a></h3>
 <p>The claim used to derive the SASjs username when provisioning a new user.  Defaults to <code>preferred_username</code>, falling back to <code>sub</code> when the claim is absent.  The value is normalised to a SASjs username - lowercase, alphanumeric, up to 16 characters.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a href="#__codelineno-24-1" id="__codelineno-24-1" name="__codelineno-24-1"></a>OIDC_USERNAME_CLAIM=email
+<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a href="#__codelineno-25-1" id="__codelineno-25-1" name="__codelineno-25-1"></a>OIDC_USERNAME_CLAIM=email
 </span></code></pre></div></p>
 <h3 id="oidc_signing_alg">OIDC_SIGNING_ALG<a class="headerlink" href="#oidc_signing_alg" title="Permanent link">¶</a></h3>
 <p>The algorithm used to verify the provider's <code>id_token</code> signature.  Defaults to <code>RS256</code>.  Valid options are <code>RS256</code>, <code>RS384</code>, <code>RS512</code>, <code>ES256</code>, <code>ES384</code>, <code>ES512</code> and <code>EdDSA</code>.  Set this to match what your provider signs with.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a href="#__codelineno-25-1" id="__codelineno-25-1" name="__codelineno-25-1"></a>OIDC_SIGNING_ALG=RS256
+<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a href="#__codelineno-26-1" id="__codelineno-26-1" name="__codelineno-26-1"></a>OIDC_SIGNING_ALG=RS256
 </span></code></pre></div></p>
 <h3 id="oidc_jit_provision">OIDC_JIT_PROVISION<a class="headerlink" href="#oidc_jit_provision" title="Permanent link">¶</a></h3>
 <p>Whether a user who signs in successfully but has no SASjs account should have one created automatically.  Defaults to <code>true</code>.  Set to <code>false</code> to require that an admin creates the account first.  The new account's administrator status comes from the provider's groups, as described under <a href="../auth/#access-policy">Access policy</a>.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a href="#__codelineno-26-1" id="__codelineno-26-1" name="__codelineno-26-1"></a>OIDC_JIT_PROVISION=true
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a href="#__codelineno-27-1" id="__codelineno-27-1" name="__codelineno-27-1"></a>OIDC_JIT_PROVISION=true
 </span></code></pre></div></p>
 <h3 id="oidc_post_logout_redirect_uri">OIDC_POST_LOGOUT_REDIRECT_URI<a class="headerlink" href="#oidc_post_logout_redirect_uri" title="Permanent link">¶</a></h3>
 <p>Where the provider should send the browser after the single sign-on session is closed.  Optional - when omitted, logout returns to the SASjs Server home page.</p>
 <p>Example:
-<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a href="#__codelineno-27-1" id="__codelineno-27-1" name="__codelineno-27-1"></a>OIDC_POST_LOGOUT_REDIRECT_URI=https://sas.example.com/
+<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a href="#__codelineno-28-1" id="__codelineno-28-1" name="__codelineno-28-1"></a>OIDC_POST_LOGOUT_REDIRECT_URI=https://sas.example.com/
 </span></code></pre></div></p>
 <h3 id="port">PORT<a class="headerlink" href="#port" title="Permanent link">¶</a></h3>
 <p>Deprecated - use <a href="./#http_port"><code>HTTP_PORT</code></a> or <a href="./#https_port"><code>HTTPS_PORT</code></a>. For one release <code>PORT</code> and <code>PROTOCOL</code> are translated into the matching port variable, with a warning, and are removed after that. An environment that sets <code>HTTP_PORT</code> or <code>HTTPS_PORT</code> ignores both, and the warning says so.</p>
@@ -2029,7 +2057,7 @@ More details on this can be found in the Morgan documentation here:<a href="http
 <li>Viya compatibility</li>
 </ul>
 <p>To force UTF-8 encoding, update the appropriate <code>sasv9.cfg</code> file with the following option:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a href="#__codelineno-28-1" id="__codelineno-28-1" name="__codelineno-28-1"></a>-ENCODING UTF-8
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a href="#__codelineno-29-1" id="__codelineno-29-1" name="__codelineno-29-1"></a>-ENCODING UTF-8
 </span></code></pre></div>
 <p>Example:</p>
 <p><code>SAS_PATH=/path/to/sas/executable.exe</code></p>
@@ -2047,16 +2075,16 @@ More details on this can be found in the Morgan documentation here:<a href="http
 <h3 id="site_id">SITE_ID<a class="headerlink" href="#site_id" title="Permanent link">¶</a></h3>
 <p>The site that stored programs report as <code>SYSSITE</code>. A SAS session sets that macro variable itself, but a program running in the JavaScript runtime has none, so the value comes from this server's configuration. Default <code>123</code>, the SASjs demonstration site. Unset, or blank, leaves it undefined and the default applies.</p>
 <p>Example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a href="#__codelineno-29-1" id="__codelineno-29-1" name="__codelineno-29-1"></a>SITE_ID=123
+<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a href="#__codelineno-30-1" id="__codelineno-30-1" name="__codelineno-30-1"></a>SITE_ID=123
 </span></code></pre></div>
 <h3 id="static_mock_location">STATIC_MOCK_LOCATION<a class="headerlink" href="#static_mock_location" title="Permanent link">¶</a></h3>
 <p>The folder the SAS 9 mock reads its files from and writes uploads into - the routes that stand in for <code>/SASStoredProcess</code> and the pages around it. A relative path is resolved against the working directory; an absolute path is used as written. Default <code>mocks</code>.</p>
 <p>Example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a href="#__codelineno-30-1" id="__codelineno-30-1" name="__codelineno-30-1"></a>STATIC_MOCK_LOCATION=mocks
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a href="#__codelineno-31-1" id="__codelineno-31-1" name="__codelineno-31-1"></a>STATIC_MOCK_LOCATION=mocks
 </span></code></pre></div>
 <h3 id="whitelist">WHITELIST<a class="headerlink" href="#whitelist" title="Permanent link">¶</a></h3>
 <p>The browser origins that may call the server cross-origin, comma or space separated. Each entry is an origin - scheme, host and port only, with no path, query or trailing slash:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a href="#__codelineno-31-1" id="__codelineno-31-1" name="__codelineno-31-1"></a>WHITELIST=http://localhost:3000,https://abc.com
+<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a href="#__codelineno-32-1" id="__codelineno-32-1" name="__codelineno-32-1"></a>WHITELIST=http://localhost:3000,https://abc.com
 </span></code></pre></div>
 <p>A browser sends an <code>Origin</code> header that is a bare origin, so an entry carrying a path or a query can never match a request. The server refuses to start rather than register an allow-list entry that would answer nobody.</p>
 <p>See also:</p>

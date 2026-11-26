@@ -1,1 +1,1 @@
-@sasjs/core 7.3.0 (npm latest at build time)
+@sasjs/core 8.0.0 (npm latest at build time)

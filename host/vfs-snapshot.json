@@ -2,7 +2,7 @@
   "format": 1,
   "sharded": true,
   "boot": 0,
-  "files": 430,
+  "files": 431,
   "entries": {
     "/sasjs/drive/files/.sasjslint": {
       "shard": 0,
@@ -120,6 +120,10 @@
       "shard": 0,
       "bytes": 793
     },
+    "/sasjs/drive/files/code/macro-core/ddl/mddl_getgroups.sas": {
+      "shard": 0,
+      "bytes": 804
+    },
     "/sasjs/drive/files/code/macro-core/ddl/mddl_sas_cntlout.sas": {
       "shard": 0,
       "bytes": 2709
@@ -194,7 +198,7 @@
     },
     "/sasjs/drive/files/code/macro-core/xplatform/mx_getgroups.sas": {
       "shard": 0,
-      "bytes": 2778
+      "bytes": 2499
     },
     "/sasjs/drive/files/code/sas-packages/.gitattributes": {
       "shard": 0,
@@ -926,7 +930,7 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mp_filtercheck.sas": {
       "shard": 11,
-      "bytes": 13579
+      "bytes": 13690
     },
     "/sasjs/drive/files/code/macro-core/base/mp_filtergenerate.sas": {
       "shard": 11,
@@ -938,7 +942,7 @@
     },
     "/sasjs/drive/files/code/macro-core/base/mp_filtervalidate.sas": {
       "shard": 11,
-      "bytes": 3304
+      "bytes": 4370
     },
     "/sasjs/drive/files/code/macro-core/base/mp_getcols.sas": {
       "shard": 11,
@@ -1226,7 +1230,7 @@
     },
     "/sasjs/drive/files/code/macro-core/meta/mm_getgroups.sas": {
       "shard": 12,
-      "bytes": 2865
+      "bytes": 3082
     },
     "/sasjs/drive/files/code/macro-core/meta/mm_getlibmetadiffs.sas": {
       "shard": 12,
@@ -1354,7 +1358,7 @@
     },
     "/sasjs/drive/files/code/macro-core/server/ms_getgroups.sas": {
       "shard": 13,
-      "bytes": 3170
+      "bytes": 3993
     },
     "/sasjs/drive/files/code/macro-core/server/ms_getusers.sas": {
       "shard": 13,
@@ -1450,7 +1454,7 @@
     },
     "/sasjs/drive/files/code/macro-core/viya/mv_getgroups.sas": {
       "shard": 14,
-      "bytes": 2313
+      "bytes": 4726
     },
     "/sasjs/drive/files/code/macro-core/viya/mv_getjobcode.sas": {
       "shard": 14,
@@ -1729,8 +1733,8 @@
     {
       "id": 0,
       "file": "host/vfs-snapshot-0.json",
-      "bytes": 191432,
-      "files": 54
+      "bytes": 191957,
+      "files": 55
     },
     {
       "id": 1,
@@ -1795,25 +1799,25 @@
     {
       "id": 11,
       "file": "host/vfs-snapshot-11.json",
-      "bytes": 497285,
+      "bytes": 498462,
       "files": 142
     },
     {
       "id": 12,
       "file": "host/vfs-snapshot-12.json",
-      "bytes": 195974,
+      "bytes": 196191,
       "files": 45
     },
     {
       "id": 13,
       "file": "host/vfs-snapshot-13.json",
-      "bytes": 73590,
+      "bytes": 74413,
       "files": 14
     },
     {
       "id": 14,
       "file": "host/vfs-snapshot-14.json",
-      "bytes": 221319,
+      "bytes": 223732,
       "files": 33
     },
     {
