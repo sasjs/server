@@ -341,7 +341,7 @@ process.stdout.write(
   `\nPublished ${published
     .map(
       ({ app, pack }) =>
-        `${pack.streamServiceName} ${app.release}${app.resolved === false ? ' (last known, latest unreadable)' : ''}`
+        `${pack.streamServiceName ?? app.name} ${app.release}${app.resolved === false ? ' (last known, latest unreadable)' : ''}`
     )
     .join(', ')} to the demo drive` +
     ` (${Object.keys(drive.files).length} files)\n`

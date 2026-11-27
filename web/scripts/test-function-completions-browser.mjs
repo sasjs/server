@@ -64,6 +64,9 @@ try {
     if (req.url === '/bundle.js') {
       res.setHeader('content-type', 'application/javascript')
       res.end(await readFile(path.join(temp, 'bundle.js')))
+    } else if (req.url.endsWith('.js')) {
+      res.setHeader('content-type', 'application/javascript')
+      res.end(await readFile(path.join(temp, path.basename(req.url))))
     } else {
       res.setHeader('content-type', 'text/html')
       res.end(
@@ -192,9 +195,19 @@ try {
     await key('Tab', 'Tab', 9)
   }
   assert.equal(await selection(), '')
-  console.log(
-    'Monaco completions: atan2 and compound inserted with all argument tab stops'
+  const source = '%let z=%bquote(%();\n%put TAIL;\n'
+  const formatted = await evaluate(`testFormat(${JSON.stringify(source)})`)
+  assert.equal(
+    formatted.first,
+    source,
+    'LSP must preserve marked delimiters and suffix'
   )
+  assert.equal(
+    formatted.second,
+    formatted.first,
+    'LSP formatting must be idempotent'
+  )
+  console.log('Monaco completions and real language-worker formatting passed')
 } finally {
   socket?.close()
   /* Chromium keeps writing its profile while it shuts down, and removing the
