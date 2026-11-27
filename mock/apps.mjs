@@ -254,8 +254,9 @@ const isText = (bytes) =>
 /**
  * A file member's bytes.
  *
- * The deploy format this build consumes encodes every file member as base64 -
- * the release's own `index.html` arrives as `PCFET0NUWVBFIGh0bWw+` - and a
+ * Deployed asset file members are base64 - the release's own `index.html`
+ * arrives as `PCFET0NUWVBFIGh0bWw+`. The generated app manifest is a separate
+ * metadata exception and may contain raw JSON. A
  * `Buffer.from(code, 'base64')` is lenient: handed the file's characters instead
  * of their encoding it decodes to mojibake, `isText` then says bytes, and the
  * build publishes a corrupt asset while reporting success. So the code is
@@ -387,7 +388,7 @@ const folderNamed = (node, name) =>
 /**
  * The release's file tree as paths and contents, drive-relative.
  *
- * Every file member's `code` is base64 in this format - the release's own
+ * Deployed asset file members' `code` is base64 in this format - the release's own
  * `index.html` arrives as `PCFET0NUWVBFIGh0bWw+` - so each one is decoded and the
  * drive entry is chosen from the bytes: text where they survive a UTF-8 round
  * trip, bytes otherwise. Reading `code` as the file's characters (the obvious
@@ -588,7 +589,8 @@ export const packFiles = (pack, app) => {
  *
  * The logo is a file inside the app itself - the surface builds its URL from the
  * app's own, so a path that is not in the deployment is a broken image rather than
- * a 404 at publish time.
+ * a 404 at publish time. The CLI-generated manifest is raw JSON; an archive may
+ * instead carry base64 (with an encoding marker, or as an unmarked file member).
  */
 export const appEntry = (pack, app, publishedAt) => {
   const manifest = (pack.fileTree.members ?? []).find(
@@ -597,7 +599,13 @@ export const appEntry = (pack, app, publishedAt) => {
   const logo =
     pack.streamLogo ??
     (pack.streamWebFolder === undefined && manifest
-      ? JSON.parse(manifest.code).logo
+      ? JSON.parse(
+          manifest.encoding !== 'base64' &&
+            typeof manifest.code === 'string' &&
+            manifest.code.trimStart().startsWith('{')
+            ? manifest.code
+            : decodeCode(manifest).toString('utf8')
+        ).logo
       : undefined)
   return {
     id: app.id,

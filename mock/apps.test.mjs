@@ -33,7 +33,7 @@ import {
   withPublishedApps
 } from './apps.mjs'
 
-/** A file member's `code`, which is base64 in this format for every file. */
+/** An asset file member's `code`, base64 in the deploy format. */
 const code = (text) => Buffer.from(text, 'utf8').toString('base64')
 
 /**
@@ -762,11 +762,102 @@ test('a split frontend and backend pack publishes the frontend and backend servi
     byPath['/Public/app/minimal-seed-app/tests/verify.sas'],
     '%put test;'
   )
-  assert.equal(Object.keys(byPath).length, 6)
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/services/web/index.html'],
+    undefined
+  )
+  assert.equal(byPath['/Public/app/minimal-seed-app/web/index.html'], undefined)
   assert.equal(
     appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo,
     'favicon.ico'
   )
+})
+
+test('a split pack also accepts a base64-encoded manifest file', () => {
+  const pack = {
+    appLoc: seedPack.appLoc,
+    fileTree: {
+      members: [
+        {
+          name: 'sasjs.app.json',
+          type: 'file',
+          code: code(JSON.stringify({ logo: 'favicon.ico' }))
+        }
+      ]
+    }
+  }
+  assert.equal(
+    appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo,
+    'favicon.ico'
+  )
+  pack.fileTree.members[0].encoding = 'base64'
+  assert.equal(
+    appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo,
+    'favicon.ico'
+  )
+})
+
+test('split packs can omit the manifest or its logo', () => {
+  const pack = { ...seedPack, fileTree: { members: [] } }
+  delete pack.streamWebFolder
+  delete pack.streamLogo
+  const services = seedPack.fileTree.members[0]
+  pack.fileTree.members.push(
+    { name: 'web', type: 'folder', members: services.members[1].members },
+    { name: 'backend', type: 'folder', members: [services] }
+  )
+  const published = withPublishedApp({}, pack, MINIMAL_SEED_APP, '2026-01-01')
+  const entries = JSON.parse(
+    published.files['/sasjs/drive/files/.sasjs/apps.json']
+  )
+  assert.equal(entries[0].logo, undefined)
+  assert.equal(appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo, undefined)
+  pack.fileTree.members.push({
+    name: 'sasjs.app.json',
+    type: 'file',
+    code: '{}'
+  })
+  assert.equal(appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo, undefined)
+})
+
+test('split packs refuse missing code, invalid base64 and malformed JSON', () => {
+  const manifest = { name: 'sasjs.app.json', type: 'file' }
+  const pack = { appLoc: seedPack.appLoc, fileTree: { members: [manifest] } }
+  assert.throws(
+    () => appEntry(pack, MINIMAL_SEED_APP, '2026-01-01'),
+    /sasjs\.app\.json carries no code/
+  )
+  manifest.code = 'not-base64!'
+  assert.throws(
+    () => appEntry(pack, MINIMAL_SEED_APP, '2026-01-01'),
+    /sasjs\.app\.json does not carry base64/
+  )
+  manifest.code = code('{broken')
+  assert.throws(
+    () => appEntry(pack, MINIMAL_SEED_APP, '2026-01-01'),
+    SyntaxError
+  )
+  manifest.code = '{broken'
+  assert.throws(
+    () => appEntry(pack, MINIMAL_SEED_APP, '2026-01-01'),
+    SyntaxError
+  )
+})
+
+test('explicit streamLogo and legacy packs do not depend on the manifest', () => {
+  const manifest = { name: 'sasjs.app.json', type: 'file' }
+  const pack = {
+    appLoc: seedPack.appLoc,
+    streamLogo: 'override.png',
+    fileTree: { members: [manifest] }
+  }
+  assert.equal(
+    appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo,
+    'override.png'
+  )
+  delete pack.streamLogo
+  pack.streamWebFolder = 'web'
+  assert.equal(appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo, undefined)
 })
 
 test('a data file beside a program travels with it, so the program can read it', () => {
