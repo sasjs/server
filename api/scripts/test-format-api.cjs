@@ -71,6 +71,25 @@ async function main() {
       .expect(200)
     assert.equal(formattedMacroAgain.body, expectedMacro)
 
+    // Marked macro delimiters can make the remainder unsafe to parse: preserve
+    // the following data records and produce the same text on a second pass.
+    for (const source of [
+      '%let z=%bquote(%();\n%put TAIL;\n',
+      '%let z=%nrbquote(%));\n%put TAIL;\n',
+      '%let z=%bquote(%();\ndata w;\ninput x $;\ndatalines;\nrun;   DATA\n;\nrun;\n'
+    ]) {
+      const first = await request(app)
+        .post('/SASjsApi/code/format')
+        .send({ code: source, layout: true })
+        .expect(200)
+      assert.equal(first.body, source, 'marked delimiter and suffix must survive')
+      const second = await request(app)
+        .post('/SASjsApi/code/format')
+        .send({ code: first.body, layout: true })
+        .expect(200)
+      assert.equal(second.body, first.body, 'formatting must be idempotent')
+    }
+
     const header =
       '/**\n  @file example\n    @details Details\n      code sample\n**/\n'
     const formattedHeader = await request(app)

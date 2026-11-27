@@ -59,7 +59,7 @@
     "@sasjs/api": "0.49.1",
     "@sasjs/core": "7.1.15",
     "@sasjs/lint": "5.5.7",
-    "@sasjs/sas-language": "0.7.4",
+    "@sasjs/sas-language": "0.8.9",
     "@sasjs/utils": "4.13.2",
     "adm-zip": "0.6.1",
     "bcryptjs": "^3.0.3",
