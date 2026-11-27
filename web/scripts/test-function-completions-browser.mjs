@@ -195,6 +195,111 @@ try {
     await key('Tab', 'Tab', 9)
   }
   assert.equal(await selection(), '')
+  // Select through Monaco's real suggestion widget, rather than applying a
+  // provider item directly: this exercises Monaco's filtering and insertion.
+  const macroCases = [
+    { value: 'mf_', column: 4, expected: '%mf_getuser()' },
+    { value: '%mf_', column: 5, expected: '%mf_getuser()' },
+    { value: '%', column: 2, expected: '%mf_getuser()' },
+    { value: '%Mf_GetUser', column: 12, expected: '%mf_getuser()' },
+    { value: '%mf_getuserTAIL', column: 12, expected: '%mf_getuser()TAIL' }
+  ]
+  for (const { value, column, expected } of macroCases) {
+    await evaluate(
+      `testEditor.setValue(${JSON.stringify(value)}); testEditor.setPosition({lineNumber:1,column:${column}}); testEditor.focus(); testEditor.trigger('test','editor.action.triggerSuggest',{})`
+    )
+    await until(
+      `(() => {
+      const controller = testEditor.getContribution('editor.contrib.suggestController');
+      const model = controller.widget.value.getFocusedItem()?.model;
+      return !!model?.items.some(item => item.completion.label === 'mf_getuser');
+    })()`,
+      `mf_getuser visible for ${value}`
+    )
+    await evaluate(`(() => {
+      const widget = testEditor.getContribution('editor.contrib.suggestController').widget.value;
+      const model = widget.getFocusedItem().model;
+      widget._list.setFocus([model.items.findIndex(item => item.completion.label === 'mf_getuser')]);
+    })()`)
+    await key('Enter', 'Enter', 13)
+    await until(
+      `testEditor.getValue() !== ${JSON.stringify(value)}`,
+      `macro insertion for ${value}`
+    )
+    assert.equal(await evaluate('testEditor.getValue()'), expected, value)
+    assert.equal(
+      await evaluate('testEditor.getPosition().column'),
+      expected.indexOf(')') + 1,
+      `cursor inside no-argument call for ${value}`
+    )
+  }
+
+  // Accept an all-keyword core macro via Monaco and type an argument at the
+  // final tab stop. The closing parenthesis must remain after the typed value.
+  await evaluate(
+    "testEditor.setValue('%mp_abort'); testEditor.setPosition({lineNumber:1,column:10}); testEditor.focus(); testEditor.trigger('test','editor.action.triggerSuggest',{})"
+  )
+  await until(
+    `testEditor.getContribution('editor.contrib.suggestController').widget.value.getFocusedItem()?.item.completion.label === 'mp_abort'`,
+    'all-keyword core suggestion'
+  )
+  await key('Enter', 'Enter', 13)
+  assert.equal(await evaluate('testEditor.getValue()'), '%mp_abort()')
+  assert.equal(await selection(), '', 'all-keyword call has no selected text')
+  assert.equal(await evaluate('testEditor.getPosition().column'), 11, 'cursor is inside parentheses')
+  await call('Input.insertText', { text: 'iftrue=0' })
+  assert.equal(await evaluate('testEditor.getValue()'), '%mp_abort(iftrue=0)')
+
+  // A platform-specific macro must show the installation warning in the
+  // actual suggestion widget, not just in the provider's data.
+  await evaluate(
+    "testEditor.setValue('%mfv_existfile'); testEditor.setPosition({lineNumber:1,column:15}); testEditor.focus(); testEditor.trigger('test','editor.action.triggerSuggest',{})"
+  )
+  await until(
+    "document.querySelector('.suggest-widget.visible')?.innerText.includes('not bundled in Server')",
+    'Viya install warning visible in suggest widget'
+  )
+  const viyaWidgetText = await evaluate(
+    "document.querySelector('.suggest-widget.visible').innerText"
+  )
+  assert.match(viyaWidgetText, /SASjs core - viya/)
+  assert.match(viyaWidgetText, /not bundled in Server/)
+  assert.match(viyaWidgetText, /Viya/)
+  await key('Escape', 'Escape', 27)
+
+  // The trigger must work when the user types %, not only on manual invocation.
+  await evaluate(
+    "testEditor.setValue(''); testEditor.setPosition({lineNumber:1,column:1}); testEditor.focus()"
+  )
+  await call('Input.insertText', { text: '%' })
+  await until(
+    `(() => {
+    const controller = testEditor.getContribution('editor.contrib.suggestController');
+    const model = controller.widget.value.getFocusedItem()?.model;
+    return !!model?.items.some(item => item.completion.label === 'mf_getuser');
+  })()`,
+    'automatic percent trigger'
+  )
+  await key('Escape', 'Escape', 27)
+
+  // A real generated core call selects its argument placeholder.
+  await evaluate(
+    "testEditor.setValue('%mf_deletefile'); testEditor.setPosition({lineNumber:1,column:15}); testEditor.focus(); testEditor.trigger('test','editor.action.triggerSuggest',{})"
+  )
+  await until(
+    `testEditor.getContribution('editor.contrib.suggestController').widget.value.getFocusedItem()?.item.completion.label === 'mf_deletefile'`,
+    'core argument suggestion'
+  )
+  await key('Enter', 'Enter', 13)
+  assert.equal(await evaluate('testEditor.getValue()'), '%mf_deletefile(file)')
+  assert.equal(
+    await selection(),
+    'file',
+    'core argument placeholder is selected'
+  )
+  await key('Tab', 'Tab', 9)
+  assert.equal(await selection(), '', 'Tab exits core placeholder')
+
   const source = '%let z=%bquote(%();\n%put TAIL;\n'
   const formatted = await evaluate(`testFormat(${JSON.stringify(source)})`)
   assert.equal(

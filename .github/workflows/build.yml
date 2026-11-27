@@ -378,6 +378,11 @@ jobs:
         run: |
           CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")" npm --prefix ../web run test:completions-browser
 
+      - name: Run full Studio core completion browser test
+        working-directory: ./api
+        run: |
+          CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")" node ../web/scripts/test-studio-core-completions-browser.mjs
+
       - name: Run Studio search browser test
         working-directory: ./api
         run: |

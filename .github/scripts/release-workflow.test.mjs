@@ -113,6 +113,21 @@ test('nothing is built when this run has no tag to finish', () => {
   }
 })
 
+test('release snippets use the API core selected before either build', () => {
+  const names = ['Install Dependencies API', 'Take the newest @sasjs/core', 'Install Dependencies WEB', 'Generate release core snippets', 'Build WEB', 'Build Executables']
+  for (const name of names) {
+    assert.match(step(name), /^        if: steps\.publish\.outputs\.tag != ''$/m, `${name} must wait for a tag`)
+  }
+  for (let i = 1; i < names.length; i++) {
+    assert.ok(at(`name: ${names[i - 1]}\n`) < at(`name: ${names[i]}\n`), `${names[i - 1]} must precede ${names[i]}`)
+  }
+  assert.match(step('Install Dependencies API'), /^        working-directory: \.\/api\n        run: npm ci$/m)
+  assert.match(step('Take the newest @sasjs/core'), /^        run: node \.github\/scripts\/take-latest-core\.mjs$/m)
+  const generate = step('Generate release core snippets')
+  assert.match(generate, /^        working-directory: \.\/web$/m)
+  assert.match(generate, /^        run: npm run generate:core-snippets -- "\$GITHUB_WORKSPACE\/api\/node_modules\/@sasjs\/core"$/m)
+})
+
 test('the exact release ZIPs are attested and the bundle is verified in both attachments', () => {
   const permissionBlock = workflow.slice(at('  release:\n'), at('    strategy:'))
   assert.match(permissionBlock, /^      contents: write\b/m)

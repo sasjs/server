@@ -133,10 +133,33 @@ jobs:
           fi
           cat "$decision" >> "$GITHUB_OUTPUT"
 
+      - name: Install Dependencies API
+        if: steps.publish.outputs.tag != ''
+        working-directory: ./api
+        run: npm ci
+
+      # The release carries the newest core macros, not the version the lock
+      # pins: the pin is what pull requests are tested against, and a release is
+      # cut often enough that bumping it by hand every time is the thing this
+      # avoids. Installed without touching package.json or the lock, so the
+      # committed pin stays intact; the version actually installed is recorded
+      # for buildInfo and the release notes, and a failed lookup falls back to
+      # the pin rather than failing the release.
+      - name: Take the newest @sasjs/core
+        if: steps.publish.outputs.tag != ''
+        run: node .github/scripts/take-latest-core.mjs
+
       - name: Install Dependencies WEB
         if: steps.publish.outputs.tag != ''
         working-directory: ./web
         run: npm ci
+
+      # Use the exact installed API tree, including its pinned fallback, rather
+      # than a second latest lookup or the web development pin.
+      - name: Generate release core snippets
+        if: steps.publish.outputs.tag != ''
+        working-directory: ./web
+        run: npm run generate:core-snippets -- "$GITHUB_WORKSPACE/api/node_modules/@sasjs/core"
 
       - name: Build WEB
         if: steps.publish.outputs.tag != ''
@@ -161,22 +184,6 @@ jobs:
         run: |
           pip install -r docs/requirements.txt
           node docs/scripts/mkdocs.mjs build --strict -f docs/mkdocs.yml
-
-      - name: Install Dependencies API
-        if: steps.publish.outputs.tag != ''
-        working-directory: ./api
-        run: npm ci
-
-      # The release carries the newest core macros, not the version the lock
-      # pins: the pin is what pull requests are tested against, and a release is
-      # cut often enough that bumping it by hand every time is the thing this
-      # avoids. Installed without touching package.json or the lock, so the
-      # committed pin stays intact; the version actually installed is recorded
-      # for buildInfo and the release notes, and a failed lookup falls back to
-      # the pin rather than failing the release.
-      - name: Take the newest @sasjs/core
-        if: steps.publish.outputs.tag != ''
-        run: node .github/scripts/take-latest-core.mjs
 
       # Same reason as the smoke workflow: `pkg` builds Node from source when its
       # base-binary download fails, and that build cannot compile on this image
