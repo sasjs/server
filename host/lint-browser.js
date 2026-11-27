@@ -29,9 +29,9 @@
     mod
   ));
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/asyncForEach.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/asyncForEach.js
   var require_asyncForEach = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/asyncForEach.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/asyncForEach.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -72,9 +72,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSav8A/path.js
+  // ../../../../../tmp/sasjs-lint-Sqa9e4/path.js
   var require_path = __commonJS({
-    "../../../../../tmp/sasjs-lint-BSav8A/path.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-Sqa9e4/path.js"(exports, module) {
       var SEP = String.fromCharCode(92);
       var clean = (value) => String(value).split(SEP).join("/").replace(/\/+/g, "/");
       var strip = (value) => clean(value).replace(/\/+$/, "");
@@ -112,9 +112,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSav8A/os.js
+  // ../../../../../tmp/sasjs-lint-Sqa9e4/os.js
   var require_os = __commonJS({
-    "../../../../../tmp/sasjs-lint-BSav8A/os.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-Sqa9e4/os.js"(exports, module) {
       module.exports = {
         homedir: () => "/",
         platform: () => "browser",
@@ -124,33 +124,33 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/Diagnostic.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/Diagnostic.js
   var require_Diagnostic = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/Diagnostic.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/Diagnostic.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/FormatResult.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/FormatResult.js
   var require_FormatResult = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/FormatResult.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/FormatResult.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/FormatOptions.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/FormatOptions.js
   var require_FormatOptions = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/FormatOptions.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/FormatOptions.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/KeywordCase.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/KeywordCase.js
   var require_KeywordCase = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/KeywordCase.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/KeywordCase.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.KEYWORD_CASES = void 0;
@@ -158,17 +158,17 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LintRule.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LintRule.js
   var require_LintRule = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LintRule.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LintRule.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LintRuleType.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LintRuleType.js
   var require_LintRuleType = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LintRuleType.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LintRuleType.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LintRuleType = void 0;
@@ -181,9 +181,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/Severity.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/Severity.js
   var require_Severity = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/Severity.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/Severity.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.Severity = void 0;
@@ -196,17 +196,17 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/Macro.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/Macro.js
   var require_Macro = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/Macro.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/Macro.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/index.js
   var require_types = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k2, k22) {
         if (k22 === void 0) k22 = k2;
@@ -237,9 +237,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LineEndings.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LineEndings.js
   var require_LineEndings = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LineEndings.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LineEndings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LineEndings = void 0;
@@ -252,9 +252,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/splitLines.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/splitLines.js
   var require_splitLines = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/splitLines.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/splitLines.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitLines = void 0;
@@ -263,9 +263,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getPosition.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getPosition.js
   var require_getPosition = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getPosition.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getPosition.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getPosition = void 0;
@@ -283,9 +283,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getSeverity.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getSeverity.js
   var require_getSeverity = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getSeverity.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getSeverity.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getSeverity = void 0;
@@ -297,9 +297,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js
   var require_hasDoxygenHeader = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasDoxygenHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasDoxygenHeader = void 0;
@@ -458,9 +458,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/escapeRegExp.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/escapeRegExp.js
   var require_escapeRegExp = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/escapeRegExp.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/escapeRegExp.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.escapeRegExp = void 0;
@@ -469,9 +469,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getColumnNumber.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getColumnNumber.js
   var require_getColumnNumber = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getColumnNumber.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getColumnNumber.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getColumnNumber = void 0;
@@ -488,9 +488,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/maskingFunction.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/maskingFunction.js
   var require_maskingFunction = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/maskingFunction.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/maskingFunction.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.maskedArgumentEnd = exports.maskingFunctionStart = exports.argumentTextFunctionNames = exports.quotingFunctionNames = exports.callScannerMaskingFunctionStart = exports.maskingFunctionNames = exports.dataMaskingFunctionNames = void 0;
@@ -521,9 +521,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/trimComments.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/trimComments.js
   var require_trimComments = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/trimComments.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/trimComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.trimComments = void 0;
@@ -579,9 +579,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseMacros.js
   var require_parseMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacros = void 0;
@@ -735,9 +735,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js
   var require_hasMacroNameInMend = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasMacroNameInMend.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasMacroNameInMend = void 0;
@@ -843,9 +843,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getIndex.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getIndex.js
   var require_getIndex = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getIndex.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getIndex.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getIndex = void 0;
@@ -865,9 +865,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js
   var require_hasMacroParentheses = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasMacroParentheses.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasMacroParentheses = void 0;
@@ -937,9 +937,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/lineEndings.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/lineEndings.js
   var require_lineEndings = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/lineEndings.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/lineEndings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lineEndings = void 0;
@@ -1019,9 +1019,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js
   var require_minMacroNameLength = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/minMacroNameLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.minMacroNameLength = void 0;
@@ -1107,9 +1107,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseMacroCalls.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseMacroCalls.js
   var require_parseMacroCalls = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseMacroCalls.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseMacroCalls.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacroCalls = void 0;
@@ -1327,9 +1327,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js
   var require_noMacroIfInOpenCode = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noMacroIfInOpenCode.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noMacroIfInOpenCode = void 0;
@@ -1378,9 +1378,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/sasMacros.generated.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/sasMacros.generated.js
   var require_sasMacros_generated = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/sasMacros.generated.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/sasMacros.generated.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.sasMacros = void 0;
@@ -1512,9 +1512,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/sasMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/sasMacros.js
   var require_sasMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/sasMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/sasMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.isSasMacro = exports.sasMacros = void 0;
@@ -1525,9 +1525,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js
   var require_parseMacroCallArguments = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseMacroCallArguments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.parseMacroCallArguments = exports.hasMaskedName = void 0;
@@ -1643,9 +1643,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js
   var require_noMalformedMacroCalls = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noMalformedMacroCalls.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noMalformedMacroCalls = void 0;
@@ -1728,9 +1728,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js
   var require_noNestedCommentsInHeader = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noNestedCommentsInHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noNestedCommentsInHeader = void 0;
@@ -1797,9 +1797,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noNestedMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noNestedMacros.js
   var require_noNestedMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noNestedMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noNestedMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noNestedMacros = void 0;
@@ -1838,9 +1838,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noXcmd.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noXcmd.js
   var require_noXcmd = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noXcmd.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noXcmd.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noXcmd = void 0;
@@ -2219,9 +2219,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/splitText.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/splitText.js
   var require_splitText = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/splitText.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/splitText.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitText = void 0;
@@ -2238,9 +2238,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js
   var require_getHeaderLinesCount = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getHeaderLinesCount.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getHeaderLinesCount = void 0;
@@ -2262,9 +2262,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/headerMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/headerMacros.js
   var require_headerMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/headerMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/headerMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.removeMacrosFromHeader = exports.repairHeaderList = exports.addMacrosToHeader = exports.getHeaderMacros = void 0;
@@ -2531,9 +2531,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/isDoxygenHeader.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/isDoxygenHeader.js
   var require_isDoxygenHeader = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/isDoxygenHeader.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/isDoxygenHeader.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.isDoxygenHeader = void 0;
@@ -2569,9 +2569,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js
   var require_noUndeclaredMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noUndeclaredMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUndeclaredMacros = void 0;
@@ -2658,9 +2658,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js
   var require_noUnusedMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noUnusedMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUnusedMacros = void 0;
@@ -2718,9 +2718,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseLibnames.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseLibnames.js
   var require_parseLibnames = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseLibnames.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseLibnames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getUnusedLibnames = exports.parseLibnames = void 0;
@@ -2897,9 +2897,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js
   var require_noUnusedLibnames = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noUnusedLibnames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noUnusedLibnames = void 0;
@@ -2938,9 +2938,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js
   var require_strictMacroDefinition = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/strictMacroDefinition.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.strictMacroDefinition = void 0;
@@ -3099,9 +3099,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js
   var require_hasRequiredMacroOptions = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/hasRequiredMacroOptions.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hasRequiredMacroOptions = void 0;
@@ -3146,9 +3146,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js
   var require_noSingleAsteriskComments = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/noSingleAsteriskComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noSingleAsteriskComments = void 0;
@@ -3313,9 +3313,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js
   var require_lowerCaseMacroNames = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/lowerCaseMacroNames.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lowerCaseMacroNames = void 0;
@@ -3435,9 +3435,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/index.js
   var require_file = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/file/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/file/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lowerCaseMacroNames = exports.noSingleAsteriskComments = exports.hasRequiredMacroOptions = exports.strictMacroDefinition = exports.noUnusedLibnames = exports.noUnusedMacros = exports.noUndeclaredMacros = exports.noXcmd = exports.noNestedMacros = exports.noNestedCommentsInHeader = exports.noMalformedMacroCalls = exports.noMacroIfInOpenCode = exports.minMacroNameLength = exports.lineEndings = exports.hasMacroParentheses = exports.hasMacroNameInMend = exports.hasDoxygenHeader = void 0;
@@ -3512,9 +3512,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noBannedStrings.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noBannedStrings.js
   var require_noBannedStrings = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noBannedStrings.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noBannedStrings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noBannedStrings = void 0;
@@ -3570,9 +3570,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noGremlins.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noGremlins.js
   var require_noGremlins = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noGremlins.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noGremlins.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.charFromHex = exports.noGremlins = void 0;
@@ -3622,9 +3622,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/indentationMultiple.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/indentationMultiple.js
   var require_indentationMultiple = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/indentationMultiple.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/indentationMultiple.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.indentationMultiple = void 0;
@@ -3664,9 +3664,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/maxLineLength.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/maxLineLength.js
   var require_maxLineLength = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/maxLineLength.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/maxLineLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.maxLineLength = void 0;
@@ -3711,9 +3711,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js
   var require_noEncodedPasswords = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noEncodedPasswords.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noEncodedPasswords = void 0;
@@ -3747,9 +3747,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noTabs.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noTabs.js
   var require_noTabs = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noTabs.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noTabs.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTabs = void 0;
@@ -3782,9 +3782,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js
   var require_noTrailingSpaces = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/noTrailingSpaces.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTrailingSpaces = void 0;
@@ -3818,9 +3818,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/index.js
   var require_line = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/line/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/line/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noTrailingSpaces = exports.noTabs = exports.noEncodedPasswords = exports.maxLineLength = exports.indentationMultiple = exports.noGremlins = exports.noBannedStrings = void 0;
@@ -3855,9 +3855,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js
   var require_lowerCaseFileNames = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/path/lowerCaseFileNames.js"(exports) {
       "use strict";
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -3896,9 +3896,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js
   var require_noSpacesInFileNames = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/path/noSpacesInFileNames.js"(exports) {
       "use strict";
       var __importDefault = exports && exports.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -3938,9 +3938,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/path/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/path/index.js
   var require_path2 = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/rules/path/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/rules/path/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.noSpacesInFileNames = exports.lowerCaseFileNames = void 0;
@@ -3955,9 +3955,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/mergeLintConfig.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/mergeLintConfig.js
   var require_mergeLintConfig = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/mergeLintConfig.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/mergeLintConfig.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.mergeLintConfig = void 0;
@@ -4003,9 +4003,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LintConfig.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LintConfig.js
   var require_LintConfig = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/types/LintConfig.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/types/LintConfig.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.LintConfig = void 0;
@@ -4266,9 +4266,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSav8A/utils-file.js
+  // ../../../../../tmp/sasjs-lint-Sqa9e4/utils-file.js
   var require_utils_file = __commonJS({
-    "../../../../../tmp/sasjs-lint-BSav8A/utils-file.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-Sqa9e4/utils-file.js"(exports, module) {
       var unavailable = (name) => async () => {
         throw new Error(name + " is not available in the browser host");
       };
@@ -4281,9 +4281,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getProjectRoot.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getProjectRoot.js
   var require_getProjectRoot = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getProjectRoot.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getProjectRoot.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -4345,9 +4345,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/defaultBannedStrings.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/defaultBannedStrings.js
   var require_defaultBannedStrings = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/defaultBannedStrings.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/defaultBannedStrings.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.defaultBannedStrings = void 0;
@@ -4355,9 +4355,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js
   var require_defaultIgnoredMacros = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/defaultIgnoredMacros.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.defaultIgnoredMacros = void 0;
@@ -4365,9 +4365,9 @@
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getLintConfig.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getLintConfig.js
   var require_getLintConfig = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getLintConfig.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getLintConfig.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -4477,9 +4477,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/gremlinCharacters.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/gremlinCharacters.js
   var require_gremlinCharacters = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/gremlinCharacters.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/gremlinCharacters.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.gremlinCharacters = void 0;
@@ -4800,9 +4800,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/ignore/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/ignore/index.js
   var require_ignore = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/ignore/index.js"(exports, module) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/ignore/index.js"(exports, module) {
       function makeArray(subject) {
         return Array.isArray(subject) ? subject : [subject];
       }
@@ -5650,9 +5650,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/isIgnored.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/isIgnored.js
   var require_isIgnored = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/isIgnored.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/isIgnored.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5710,9 +5710,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/listSasFiles.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/listSasFiles.js
   var require_listSasFiles = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/listSasFiles.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/listSasFiles.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -5752,9 +5752,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getIndicesOf.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getIndicesOf.js
   var require_getIndicesOf = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getIndicesOf.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getIndicesOf.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.getIndicesOf = void 0;
@@ -5778,9 +5778,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/scanLine.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/scanLine.js
   var require_scanLine = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/scanLine.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/scanLine.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.scanLine = exports.noScan = exports.cleanState = void 0;
@@ -5865,9 +5865,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js
   var require_getDataSectionsDetail = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/getDataSectionsDetail.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.checkIsDataLine = exports.getDataSectionsDetail = void 0;
@@ -5916,9 +5916,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseLintOverride.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseLintOverride.js
   var require_parseLintOverride = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/parseLintOverride.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/parseLintOverride.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.applyLintOverride = exports.getLintOverride = exports.startsDirective = void 0;
@@ -5985,9 +5985,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/index.js
   var require_utils = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/utils/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/utils/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k2, k22) {
         if (k22 === void 0) k22 = k2;
@@ -6034,9 +6034,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/longLines.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/longLines.js
   var require_longLines = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/longLines.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/longLines.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.breakAwareState = exports.indentationMultipleOf = exports.continuationIndentFor = exports.firstNonSpace = exports.putTextStart = exports.breakAwareStatement = exports.macroComment = exports.macroDeclaration = void 0;
@@ -6077,9 +6077,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/rewrapText.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/rewrapText.js
   var require_rewrapText = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/rewrapText.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/rewrapText.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.rewrapText = exports.splitWithTerminators = void 0;
@@ -6301,9 +6301,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/adjustLineLength.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/adjustLineLength.js
   var require_adjustLineLength = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/adjustLineLength.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/adjustLineLength.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.lineEndingOf = exports.adjustLineLength = void 0;
@@ -6430,9 +6430,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/headerLayout.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/headerLayout.js
   var require_headerLayout = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/headerLayout.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/headerLayout.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.headerLayout = void 0;
@@ -6489,9 +6489,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/reflowComments.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/reflowComments.js
   var require_reflowComments = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/reflowComments.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/reflowComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.reflowComments = void 0;
@@ -6791,9 +6791,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/splitTrailingComments.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/splitTrailingComments.js
   var require_splitTrailingComments = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/splitTrailingComments.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/splitTrailingComments.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.splitTrailingComments = void 0;
@@ -6834,9 +6834,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/shared.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/shared.js
   var require_shared = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/shared.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/shared.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.processLine = exports.processText = void 0;
@@ -6889,9 +6889,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatText.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatText.js
   var require_formatText = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatText.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatText.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -6933,9 +6933,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/shared.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/shared.js
   var require_shared2 = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/shared.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/shared.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.processLine = exports.processFile = exports.processText = void 0;
@@ -6981,9 +6981,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintText.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintText.js
   var require_lintText = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintText.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintText.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7024,9 +7024,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintFile.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintFile.js
   var require_lintFile = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintFile.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintFile.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7074,9 +7074,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintFolder.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintFolder.js
   var require_lintFolder = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintFolder.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintFolder.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7144,9 +7144,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintProject.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintProject.js
   var require_lintProject = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/lintProject.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/lintProject.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7191,9 +7191,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/index.js
   var require_lint = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/lint/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/lint/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k2, k22) {
         if (k22 === void 0) k22 = k2;
@@ -7219,9 +7219,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatFile.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatFile.js
   var require_formatFile = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatFile.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatFile.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7280,9 +7280,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatFolder.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatFolder.js
   var require_formatFolder = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatFolder.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatFolder.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7379,9 +7379,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatProject.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatProject.js
   var require_formatProject = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/formatProject.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/formatProject.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -7426,9 +7426,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/index.js
   var require_format = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/format/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/format/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k2, k22) {
         if (k22 === void 0) k22 = k2;
@@ -7454,9 +7454,9 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/index.js
   var require_lint2 = __commonJS({
-    "../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/lint/index.js"(exports) {
+    "../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/lint/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k2, k22) {
         if (k22 === void 0) k22 = k2;
@@ -7482,7 +7482,7 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-BSav8A/process.js
+  // ../../../../../tmp/sasjs-lint-Sqa9e4/process.js
   if (typeof globalThis.process === "undefined")
     globalThis.process = {
       env: {},
@@ -7493,10 +7493,10 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
       version: "v0"
     };
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/api/build/esm/code/service.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/api/build/esm/code/service.js
   var import_lint = __toESM(require_lint2(), 1);
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/api/build/esm/types.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/api/build/esm/types.js
   var ApiError = class extends Error {
     constructor(status, message, body) {
       super(message);
@@ -7507,7 +7507,7 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   };
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/api/build/esm/code/service.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/api/build/esm/code/service.js
   var codeOf = (body) => {
     const value = body.code;
     if (value === void 0)
@@ -7538,10 +7538,10 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     };
   };
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/api/build/esm/code/index.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/api/build/esm/code/index.js
   var import_lint2 = __toESM(require_lint2(), 1);
 
-  // ../../../.npm/_npx/ae32eadfdfece4e6/node_modules/@sasjs/sas-language/dist/format.browser.bundle.js
+  // ../../../.npm/_npx/96be0b3c3d47dbe1/node_modules/@sasjs/sas-language/dist/format.browser.bundle.js
   var __defProp2 = Object.defineProperty;
   var __typeError = (msg) => {
     throw TypeError(msg);
@@ -16425,6 +16425,7 @@ ${f}`), u.reset(f);
   var preserveQuoting = (current, statement, model) => {
     const token = statement.children[statement.children.length - 1];
     if (isComment(token)) {
+      if (current > 0) statement.children.pop();
       return current;
     }
     if (current === -1 && (Lexer.isQuoting[token.text.toUpperCase()] || Lexer.isBQuoting[token.text.toUpperCase()])) {
@@ -16455,7 +16456,7 @@ ${f}`), u.reset(f);
     }
     return current;
   };
-  var getParser = (model, tokens, syntaxProvider) => () => {
+  var getParser = (model, tokens, syntaxProvider, onMaskFallback, stopOnMaskFallback = false, onMaskSpan) => () => {
     const root = {
       type: "program",
       children: []
@@ -16533,7 +16534,10 @@ ${f}`), u.reset(f);
         if (region) {
           if (region.children.length === 0 && prevStatement) {
             const prevToken = prevStatement.children[prevStatement.children.length - 1];
-            if (prevStatement.children.length === 1 && isComment(prevToken)) {
+            const commentAfterStep = region.block && prevStatement.afterStep && prevToken === tokens[i - 1];
+            if (commentAfterStep) {
+              prevStatement.blankLineAfter = false;
+            } else if (prevStatement.children.length === 1 && isComment(prevToken) && !(prevToken === tokens[i - 1] && parent.children[parent.children.length - 2] !== prevStatement && tokens[i - 2]?.type === "sep" && tokens[i - 2].text === ";" && prevToken.start.line === tokens[i - 2].end.line + 1)) {
               currentStatement.leadingComment = prevToken;
               removePrevStatement(parent);
             }
@@ -16541,6 +16545,20 @@ ${f}`), u.reset(f);
           region.children.push(currentStatement);
         } else {
           parent.children.push(currentStatement);
+        }
+      }
+      if (currentStatement.children[0]?.type === "raw-data" && currentStatement.children.length && node.start) {
+        const previous = currentStatement.children[currentStatement.children.length - 1];
+        if (previous.end) {
+          const gap = model.getText({ start: previous.end, end: node.start });
+          if (gap) {
+            currentStatement.children.push({
+              type: "raw-data",
+              text: gap,
+              start: previous.end,
+              end: node.start
+            });
+          }
         }
       }
       currentStatement.children.push(node);
@@ -16558,25 +16576,186 @@ ${f}`), u.reset(f);
         continue;
       }
       quoting = preserveQuoting(quoting, currentStatement, model);
+      if (quoting === 1 && node.type === "sep" && node.text === "(" && currentStatement.children.length > 0) {
+        let closeAt;
+        let spansToEnd = false;
+        let depth = 1;
+        let inComment = false;
+        let stringQuote;
+        layout: for (let scanLine = node.end.line; scanLine < model.getLineCount(); scanLine++) {
+          const content = model.getLine(scanLine).replace(/\r?\n$/, "");
+          for (let column = scanLine === node.end.line ? node.end.column : 0; column < content.length; column++) {
+            const char = content[column];
+            let percentCount = 0;
+            for (let previous = column - 1; content[previous] === "%"; previous--) {
+              percentCount++;
+            }
+            const masked = percentCount % 2 === 1;
+            if (stringQuote) {
+              if (char === stringQuote) {
+                if (content[column + 1] === stringQuote) {
+                  column++;
+                } else {
+                  stringQuote = void 0;
+                }
+              }
+              continue;
+            }
+            if (inComment) {
+              if (char === "*" && content[column + 1] === "/") {
+                inComment = false;
+                column++;
+              }
+              continue;
+            }
+            if (char === "/" && content[column + 1] === "*") {
+              inComment = true;
+              column++;
+              continue;
+            }
+            if ((char === '"' || char === "'") && !masked) {
+              stringQuote = char;
+              continue;
+            }
+            if (char === "(" && !masked) {
+              depth++;
+            } else if (char === ")" && !masked) {
+              if (--depth === 0) {
+                closeAt = { line: scanLine, column: column + 1 };
+                break layout;
+              }
+            }
+          }
+        }
+        if (!closeAt) {
+          let lastLine = model.getLineCount() - 1;
+          let lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+          while (lastLine > node.end.line && lastContent === "") {
+            lastLine--;
+            lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+          }
+          closeAt = { line: lastLine, column: lastContent.length };
+          spansToEnd = true;
+        }
+        const inside = (position) => !!closeAt && (position.line < closeAt.line || position.line === closeAt.line && position.column < closeAt.column);
+        let spansStatements = spansToEnd;
+        let lastInside = i;
+        for (let j2 = i + 1; j2 < tokens.length && inside(tokens[j2].start); j2++) {
+          lastInside = j2;
+          if (tokens[j2].type === "sec-keyword" || tokens[j2].type === "macro-sec-keyword" || /^%mend$/i.test(tokens[j2].text)) {
+            spansStatements = true;
+          }
+        }
+        let tokenDepth = 1;
+        let tokenClose = -1;
+        for (let j2 = i + 1; j2 <= lastInside; j2++) {
+          if (tokens[j2].text === "(") tokenDepth++;
+          else if (tokens[j2].text === ")" && --tokenDepth === 0) {
+            tokenClose = j2;
+            break;
+          }
+        }
+        const delimiterMismatch = !spansToEnd && tokenClose !== lastInside;
+        if (delimiterMismatch) spansStatements = true;
+        const crossedBoundary = !spansToEnd && lastInside > i && !inside(tokens[lastInside].end) && (!isSamePosition(tokens[lastInside].end, closeAt) || tokens[lastInside].type !== "sep" || tokens[lastInside].text !== ")");
+        if (crossedBoundary || delimiterMismatch) {
+          spansStatements = true;
+          spansToEnd = true;
+        }
+        if (spansToEnd) {
+          let lastLine = model.getLineCount() - 1;
+          if (lastLine > 0 && model.getLine(lastLine) === "") lastLine--;
+          const lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+          closeAt = { line: lastLine, column: lastContent.length };
+          lastInside = tokens.length - 1;
+        }
+        if (closeAt) onMaskSpan?.(node.end, closeAt);
+        const firstToken = currentStatement.children[0];
+        const start = "start" in firstToken && firstToken.start ? {
+          line: firstToken.start.line,
+          column: model.getLine(firstToken.start.line).slice(0, firstToken.start.column).trim() === "" ? 0 : firstToken.start.column
+        } : void 0;
+        const lastToken = tokens[tokens.length - 1];
+        const finalLine = model.getLineCount() - 1;
+        const finalColumn = model.getLine(finalLine).replace(/\r?\n$/, "").length;
+        const suffix = lastToken?.end ? model.getText({ start: lastToken.end, end: { line: finalLine, column: finalColumn } }) : "";
+        if (!spansToEnd && tokenClose !== lastInside && (lastToken?.text.endsWith("\n") || /\n[ \t\r]*\n/.test(suffix))) {
+          let lastLine = model.getLineCount() - 1;
+          if (lastLine > 0 && model.getLine(lastLine) === "") lastLine--;
+          const lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+          closeAt = { line: lastLine, column: lastContent.length };
+          lastInside = tokens.length - 1;
+          spansToEnd = true;
+        }
+        if (spansStatements && closeAt && start) {
+          if (spansToEnd) {
+            onMaskFallback?.(delimiterMismatch && !crossedBoundary ? node.end : start);
+            if (stopOnMaskFallback) return root;
+          }
+          currentStatement.children = [
+            {
+              type: "raw-data",
+              text: model.getText({ start, end: closeAt }),
+              start,
+              end: closeAt
+            }
+          ];
+          i = lastInside;
+          quoting = -1;
+          continue;
+        }
+      }
       if (quoting >= 0) {
         continue;
       }
-      if (node.type === "sep" && node.text === ";" && currentStatement.children.length === 2 && /^(datalines|cards|lines|parmcards)4?$/i.test(currentStatement.name)) {
+      if (node.type === "sep" && node.text === ";" && currentStatement.children.slice(1, -1).every(isComment) && /^(datalines|cards|lines|parmcards)4?$/i.test(currentStatement.name)) {
         const four = /4$/i.test(currentStatement.name);
         const firstToken = currentStatement.children[0];
-        const start = "start" in firstToken && firstToken.start ? { line: firstToken.start.line, column: 0 } : node.start;
+        const start = "start" in firstToken && firstToken.start ? {
+          line: firstToken.start.line,
+          column: /^\s*$/.test(
+            model.getLine(firstToken.start.line).slice(0, firstToken.start.column)
+          ) ? 0 : firstToken.start.column
+        } : node.start;
         let line3 = node.end.line + 1;
         let sectionEnd;
         while (line3 < model.getLineCount()) {
           const content = model.getLine(line3).replace(/\r?\n$/, "");
-          const ends = four ? /^;{4,}$/.test(content.trim()) : content.startsWith(";");
+          const ends = four ? content.startsWith(";;;;") : content.startsWith(";");
           if (ends) {
             sectionEnd = { line: line3, column: content.length };
             break;
           }
           line3++;
         }
+        if (start && !sectionEnd) {
+          let lastLine = model.getLineCount() - 1;
+          let lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+          if (lastLine > node.end.line && lastContent === "") {
+            lastLine--;
+            lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+          }
+          sectionEnd = { line: lastLine, column: lastContent.length };
+        }
         if (start && sectionEnd) {
+          const boundary = sectionEnd;
+          let crossing = false;
+          for (let j2 = i + 1; j2 < tokens.length && tokens[j2].start.line <= boundary.line; j2++) {
+            const token = tokens[j2];
+            if (token.end.line > boundary.line || token.end.line === boundary.line && token.end.column > boundary.column) {
+              crossing = true;
+              break;
+            }
+          }
+          if (crossing) {
+            let lastLine = model.getLineCount() - 1;
+            let lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+            if (lastLine > node.end.line && lastContent === "") {
+              lastLine--;
+              lastContent = model.getLine(lastLine).replace(/\r?\n$/, "");
+            }
+            sectionEnd = { line: lastLine, column: lastContent.length };
+          }
           while (i + 1 < tokens.length && tokens[i + 1].start.line <= sectionEnd.line) {
             i++;
           }
@@ -16675,7 +16854,15 @@ ${f}`), u.reset(f);
             (token) => token.type === "cards-data"
           );
           const minGapToPreserve = hasCardsData ? 2 : 1;
-          if (lineGap > minGapToPreserve) {
+          const nextBlock = currentStatement.children[0].type === "raw-data" && (nextToken.type === "sec-keyword" || nextToken.type === "macro-sec-keyword") ? syntaxProvider.getFoldingBlock(
+            nextToken.start.line,
+            nextToken.start.column,
+            true,
+            true,
+            true
+          ) : void 0;
+          const nextStartsBlock = nextBlock && nextBlock.startLine === nextToken.start.line && nextBlock.startCol === nextToken.start.column;
+          if (lineGap > minGapToPreserve && !nextStartsBlock) {
             currentStatement.children.push({
               type: "raw-data",
               text: "\n",
@@ -16687,6 +16874,8 @@ ${f}`), u.reset(f);
         prevStatement = currentStatement;
         currentStatement = void 0;
       } else if (currentStatement.children.length === 1 && isComment(node)) {
+        const previousToken = tokens[i - 1];
+        currentStatement.afterStep = !!previousToken && prevStatement?.children.length === 2 && /^(run|quit)$/i.test(prevStatement.children[0].text) && prevStatement.children[1] === previousToken && previousToken.type === "sep" && previousToken.text === ";" && node.start.line === previousToken.end.line + 1;
         const afterComment = tokens[i + 1];
         if (afterComment && afterComment.start.line - node.end.line > 1) {
           currentStatement.blankLineAfter = true;
@@ -18196,7 +18385,7 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
     const { node } = path;
     if ("children" in node && node.children?.length) {
       if (node.type === "statement") {
-        return printStatement(node);
+        return printStatement(node, path.isFirst && path.parent?.type === "region");
       }
       const children = removeRedundantLineBreaks(
         path.map(print3, "children").filter((doc) => doc !== "")
@@ -18224,7 +18413,7 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
       )
     ];
   };
-  var printStatement = (node) => {
+  var printStatement = (node, opensRegion) => {
     const [first, ...others] = node.children;
     const statement = first.type === "cards-data" || first.type === "raw-data" ? markAsRoot2(node.children.map((token) => token.text)) : fill2(
       // Note: `fill` requires elements with odd indices must be line breaks
@@ -18238,7 +18427,7 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
           }
           return [
             ...pre,
-            indent2(
+            isComment(token) && preToken.type === "sep" && preToken.text === ";" && !opensRegion ? line2 : indent2(
               isEqualsSign(token) || isEqualsSign(preToken) && index + 1 < others.length && !isEqualsSign(others[index + 1]) ? (
                 // trim whitespace around equals sign
                 softline2
@@ -18660,6 +18849,8 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
     const transform = (word) => keywordCase === "upper" ? word.toUpperCase() : word.toLowerCase();
     const model = new Model(documentFrom(text));
     const syntaxProvider = new SyntaxProvider(model);
+    const lexedTokens = [];
+    syntaxProvider.setTokenCallback((token) => lexedTokens.push(token));
     const lastLine = model.getLineCount() - 1;
     syntaxProvider.add({
       text: "",
@@ -18670,6 +18861,57 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
         end: { line: lastLine, column: model.getColumnCount(lastLine) }
       }
     });
+    let unsafe;
+    const raw = [];
+    const ast = getParser(
+      model,
+      lexedTokens,
+      syntaxProvider,
+      (start) => {
+        unsafe = start;
+      },
+      true,
+      (start, end) => raw.push({ start, end })
+    )();
+    const cardsOpeners = [];
+    const visit = [ast];
+    while (visit.length) {
+      const node = visit.pop();
+      if (node.type === "statement" && /^(datalines|cards|lines|parmcards)4?$/i.test(node.name ?? "")) {
+        const rawNode = node.children?.[0];
+        if (rawNode?.type === "raw-data" && rawNode.start && rawNode.text) {
+          const match = /^\s*(datalines|cards|lines|parmcards)4?\b/i.exec(rawNode.text);
+          if (match) {
+            const word = match[0].trimStart();
+            const start = rawNode.start.column + match[0].length - word.length;
+            cardsOpeners.push({ line: rawNode.start.line, start, end: start + word.length });
+          }
+        }
+      }
+      if (node.type === "raw-data" && node.start && node.end) {
+        raw.push({ start: node.start, end: node.end });
+      }
+      if (node.children) for (const child of node.children) visit.push(child);
+    }
+    const compare = (a, b2) => a.line - b2.line || a.column - b2.column;
+    raw.sort((a, b2) => compare(a.start, b2.start));
+    const spans = [];
+    for (const span of raw) {
+      const last = spans[spans.length - 1];
+      if (last && compare(span.start, last.end) <= 0) {
+        if (compare(span.end, last.end) > 0) last.end = span.end;
+      } else spans.push({ ...span });
+    }
+    const overlapsRaw = (start, end) => {
+      let lo2 = 0;
+      let hi2 = spans.length;
+      while (lo2 < hi2) {
+        const mid = lo2 + hi2 >>> 1;
+        if (compare(spans[mid].start, end) < 0) lo2 = mid + 1;
+        else hi2 = mid;
+      }
+      return lo2 > 0 && compare(spans[lo2 - 1].end, start) > 0;
+    };
     return text.split("\n").map((line3, index) => {
       const tokens = syntaxProvider.getSyntax(index) ?? [];
       let result = line3;
@@ -18677,9 +18919,21 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
         const token = tokens[at3];
         if (!KEYWORD_STYLES.has(token.style)) continue;
         const end = at3 === tokens.length - 1 ? line3.length : tokens[at3 + 1].start;
+        if (unsafe && (index > unsafe.line || index === unsafe.line && end > unsafe.column)) {
+          continue;
+        }
+        if (overlapsRaw({ line: index, column: token.start }, { line: index, column: end })) {
+          continue;
+        }
         const word = line3.slice(token.start, end);
         if (!/[A-Za-z]/.test(word)) continue;
         result = result.slice(0, token.start) + transform(word) + result.slice(end);
+      }
+      for (const opener of cardsOpeners.filter((item) => item.line === index)) {
+        if (unsafe && (index > unsafe.line || index === unsafe.line && opener.end > unsafe.column)) {
+          continue;
+        }
+        result = result.slice(0, opener.start) + transform(result.slice(opener.start, opener.end)) + result.slice(opener.end);
       }
       return result;
     }).join("\n");
@@ -18825,6 +19079,6 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
     );
   };
 
-  // ../../../../../tmp/sasjs-lint-BSav8A/entry.js
-  globalThis.SASjsCode = { createCodeService, LintConfig: import_lint2.LintConfig, formatText: formatText2, dataPath: "sas-language/0.7.4/" };
+  // ../../../../../tmp/sasjs-lint-Sqa9e4/entry.js
+  globalThis.SASjsCode = { createCodeService, LintConfig: import_lint2.LintConfig, formatText: formatText2, dataPath: "sas-language/0.8.9/" };
 })();

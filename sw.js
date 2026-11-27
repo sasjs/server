@@ -35,9 +35,10 @@
  * services are the package's; this file supplies the transport, the worker's own
  * activity, and the browser's answers to questions a server asks its process.
  */
-importScripts('host/runtime-core.js?v=10cc0d6140')
-importScripts('host/api-browser.js?v=10cc0d6140')
-importScripts('host/lint-browser.js?v=10cc0d6140')
+// viya-jobs-version: d751713988987e9331980363e24189ce
+importScripts('host/runtime-core.js?v=3571caded9')
+importScripts('host/api-browser.js?v=3571caded9')
+importScripts('host/lint-browser.js?v=3571caded9')
 
 const R = self.SASjsMockRuntime
 
@@ -68,8 +69,32 @@ const DRIVE_STORE = R.driveStore
  */
 const IDENTITY_FILE = 'host/identity.json'
 
+/**
+ * The public OAuth client every Viya deployment ships, and the one
+ * `@sasjs/adapter` falls back to when a target names no client.
+ *
+ * It is never a fixture entry: a client record carries a secret and this one has
+ * none, which is why `@sasjs/api` resolves it from the store as a rule while
+ * leaving the administration listing to the fixture. sasjs/server binds its
+ * password grant, and the refresh that follows, to this exact id with an empty
+ * secret.
+ */
+const PUBLIC_CLIENT_ID = 'sas.cli'
+
 const IDENTITY_STATE = {
   store: new API.MemoryIdentityStore(API.DEFAULT_IDENTITY),
+  /**
+   * The secrets the current fixture declares, kept beside the store rather than
+   * read back from it: the store's read path omits a client's secret, and its
+   * snapshot is an inspection aid rather than the port a credential is checked
+   * through.
+   */
+  secrets: new Map(
+    (API.DEFAULT_IDENTITY.clients || []).map((client) => [
+      client.clientId,
+      client.clientSecret
+    ])
+  ),
   /** The fixture the store last reported to the page, as JSON. */
   persisted: '',
   /** The fixture the build shipped; `reset()` returns to this one. */
@@ -129,6 +154,13 @@ const resolveCaller = () => {
 const seedIdentity = (fixture) => {
   IDENTITY_STATE.store = new API.MemoryIdentityStore(fixture)
   IDENTITY_STATE.persisted = JSON.stringify(IDENTITY_STATE.store.snapshot())
+  // rebuilt with the store, against the invariant the initialiser documents
+  IDENTITY_STATE.secrets = new Map(
+    (fixture.clients || []).map((client) => [
+      client.clientId,
+      client.clientSecret
+    ])
+  )
   IDENTITY_STATE.seeded = true
   resolveCaller()
 }
@@ -203,12 +235,28 @@ const bootIdentity = async (data) => {
     }
   }
 
+  // a subject the fixture does not declare is refused rather than answered as
+  // the administrator: taking the name anyway would answer every request as
+  // `emulated-user`, and falling back to the administrator would hide a typo, a
+  // stale shared link, or a test that meant to be someone else. `undefined` stays
+  // the fresh-boot case - no session, so the administrator, the same answer a
+  // request with no session gets (see `resolveCaller`).
+  const named = data.subject === undefined ? undefined : data.subject
+
+  if (
+    named !== null &&
+    named !== undefined &&
+    !fixture.users.some((user) => user.username === String(named))
+  ) {
+    // tagged so the page can clear the account it stored without dropping the
+    // fixture, which is fine; `SASjsMock.as()` sees the error itself
+    const refused = new Error(`No account '${named}' in the identity fixture`)
+    refused.callerRejected = true
+    throw refused
+  }
+
   CALLER_USERNAME =
-    data.subject === null
-      ? null
-      : data.subject === undefined
-        ? undefined
-        : String(data.subject)
+    named === null ? null : named === undefined ? undefined : String(named)
 
   seedIdentity(fixture)
 }
@@ -216,6 +264,7 @@ const bootIdentity = async (data) => {
 const LOGS_SEPARATOR = 'SASJS_LOGS_SEPARATOR_163ee17b6ff24f028928972d80a26784'
 const SAS9_FRAME = Symbol('sas9-frame')
 const TIER_FRAME = Symbol('tier-frame')
+const EXECUTION_FRAME = Symbol('execution-frame')
 
 // The server frames a tier run only when its normalized debug level is >= 131.
 // Its parseDebugValue maps every nonempty, non-integer string (including 1e3
@@ -800,6 +849,8 @@ class BrowserRuntime extends API.MemorySessionHost {
     const params = Object.assign(Object.create(null), request.vars || {})
     const sas9 = params[SAS9_FRAME]
     const tier = Boolean(params[TIER_FRAME])
+    const execution = params[EXECUTION_FRAME]
+    delete params[EXECUTION_FRAME]
     delete params[SAS9_FRAME]
     delete params[TIER_FRAME]
     // The package normalizes named debug values for the API, but the SAS9
@@ -845,15 +896,22 @@ class BrowserRuntime extends API.MemorySessionHost {
         Boolean(sas9)
       )
     } else {
-      const payload = { params, tables: tablesOf(request.files) }
+      const payload = {
+        params,
+        tables: tablesOf(request.files),
+        execution,
+        transientOutputs: execution?.viyaGeneration !== undefined
+      }
       if (program.code !== undefined) payload.code = program.code
       else payload.program = program.path
 
-      const result = R.run(payload)
+      const result = await R.run(payload)
       if (result.error) throw runFailure(result.error)
 
       artifact = artifactOf(result, debug, Boolean(sas9))
     }
+    // A trigger must not register a result after its originating job was reset.
+    assertCurrentViyaJob(execution)
     const session = request.session
     if (session) {
       const stamp = new Date().toISOString()
@@ -994,7 +1052,7 @@ const adminReports = {
     const total = Number(heap.jsHeapSizeLimit || deviceBytes || 0)
     const used = Number(heap.usedJSHeapSize || 0)
     return {
-      build: { version: "v8.15.0-4-ga3b8b0fb", gitHash: "a3b8b0fb", buildDate: "2026-11-27T17:45:49.649Z" },
+      build: { version: "v8.15.1-2-g7cb21224", gitHash: "7cb21224", buildDate: "2026-11-27T18:48:04.955Z" },
       server: {
         // a page is not a process: the fields exist so a diagnostics screen
         // renders, and their values describe this worker rather than inventing
@@ -1118,6 +1176,299 @@ const APP_STREAM = API.createAppStreamService(
  * The app stream's prefix: what a rule names to cover every app at once.
  */
 const APP_STREAM_PREFIX = '/AppStream'
+
+/**
+ * The tiers a build's links address, answered here rather than by the static
+ * host. The estate's prefixes are not in this literal: they come from
+ * `VIYA_PREFIXES`, and `isAnswered` joins the two, so a family the emulator
+ * gains is routed rather than served `index.html`.
+ */
+const TIER_PATHS =
+  /^\/(SASjsApi|SASLogon|AppStream|api|app|SASJobExecution|StoredProgram|SASStoredProcess)(\/|$)/i
+
+/**
+ * The paths a Viya-targeted application asks for, which no SASjs route table has:
+ * compute, folders, files, identities, types, and the batch families
+ * (jobDefinitions, jobExecution, launcher).
+ *
+ * Read from the package's route table rather than written out, so a family the
+ * emulator gains is answered here without a second list to remember - and read
+ * *through* `TIER_PATHS`, so a family whose first segment is a tier this host
+ * already serves (`/SASLogon`, and any the package adds later) is left to the
+ * host rather than taken from it. `/SASLogon` is the overlap that exists today;
+ * its estate path, the token endpoint, is named in `ESTATE_PATHS`.
+ *
+ * The worker answers these from `@sasjs/api`'s emulator over the drive and
+ * identity it already holds - the same answers, and the same `x-sasjs-emulated`
+ * header, a server running `EMULATE_VIYA` gives.
+ */
+const VIYA_PREFIXES = [
+  ...new Set(
+    API.VIYA_TABLE.map(
+      (route) => `/${route.path.split('/').filter(Boolean)[0]}`
+    )
+  )
+]
+  .map((prefix) => prefix.toLowerCase())
+  .filter((prefix) => !TIER_PATHS.test(prefix))
+
+/**
+ * The estate paths that are not a whole family.
+ *
+ * `/SASLogon` cannot be a prefix: it carries this host's own sign-in routes
+ * (`POST /SASLogon/login` among them) as well as the estate's token endpoint, and
+ * taking the family would answer this host's routes from the emulator. The token
+ * endpoint is named instead, so it is answered here - with the emulator's own
+ * refusal, `implemented: false` in its overlay because the token port belongs to
+ * the host that mounts the emulator - rather than falling through to the SASjs
+ * route table or to the static host.
+ */
+/**
+ * The two endpoints a Viya client speaks to sign in: the authorize step it
+ * redirects to, and the token step it exchanges a code at.
+ *
+ * Both are the host's, not the emulator's - the emulator holds no account to
+ * check a credential against, exactly as on a server, where `routes/viya` answers
+ * the token port from the server's own accounts. `IDENTITY` verifies the client
+ * and mints the pair, and every answer here carries the same `x-sasjs-emulated`
+ * stamp as the estate's, because this host is standing in for Viya whichever
+ * endpoint is asked.
+ *
+ * They are named once: `ESTATE_PATHS` is what makes the worker answer them, and
+ * the handlers below are what answers - a literal repeated in both could leave a
+ * handler that never runs. The authorize step is not a row in the package's
+ * table: it is this host's own half of the token port, the page a client is sent
+ * to before it holds a code.
+ */
+const OAUTH_AUTHORIZE = '/saslogon/oauth/authorize'
+const OAUTH_TOKEN = '/saslogon/oauth/token'
+
+const ESTATE_PATHS = [OAUTH_TOKEN, OAUTH_AUTHORIZE]
+
+// ------------------------------------------------------------ the sign-in page
+/**
+ * The page a browser is sent to before it holds a session.
+ *
+ * A Viya deployment sends a client that arrives without a session here; a mock
+ * site has no wall, so this is the page an operator or a demo asks for rather
+ * than one they are forced through. The form is the estate's shape - a username
+ * and a password posted to this path.
+ *
+ * The session is the page's, not the worker's: a service worker is not handed
+ * cookies (`request.headers` has none) and a `Set-Cookie` it writes is ignored,
+ * so the answer is a redirect carrying the account, which `persist.js` stores as
+ * the subject it already keeps for `SASjsMock.as()`.
+ */
+const LOGIN_PATH = '/saslogon/login'
+
+/** Text that came from a request, made safe for the page it is written into. */
+const escapeHtml = (value) =>
+  String(value).replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]
+  )
+
+/** Where a signed-in browser is sent: this site, never anywhere else. */
+const signInTarget = (service, url) => {
+  const root = `${new URL(`${BASE}/`, url.origin).pathname}`
+
+  if (!service) return root
+
+  try {
+    const target = new URL(service, url.origin)
+
+    return target.origin === url.origin ? target.pathname + target.search : root
+  } catch (error) {
+    return root
+  }
+}
+
+/** The sign-in page, with what the last attempt said. */
+const loginPage = ({ message = '', service = '', status = 200 }) => {
+  const page = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1b1f24; }
+  main { max-width: 22rem; margin: 10vh auto; background: #fff; padding: 2rem; border-radius: .5rem;
+         box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
+  .note { color: #57606a; font-size: .8rem; margin: 0 0 1.25rem; }
+  .error { background: #ffebe9; border: 1px solid #ff8182; color: #82071e; padding: .5rem .75rem;
+           border-radius: .25rem; font-size: .85rem; margin: 0 0 1rem; }
+  label { display: block; font-size: .85rem; margin-bottom: .75rem; }
+  input { width: 100%; box-sizing: border-box; margin-top: .25rem; padding: .5rem;
+          border: 1px solid #d0d7de; border-radius: .25rem; font-size: 1rem; }
+  button { width: 100%; padding: .6rem; font-size: 1rem; border: 0; border-radius: .25rem;
+           background: #1f6feb; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sign in</h1>
+  <p class="note">This is the emulated estate's sign-in page on a mock site. No SAS server is involved,
+  and the accounts are the ones the build's identity fixture declares. The account you choose is
+  carried in the address you land on, so a link to a signed-in view can be shared - an emulated
+  estate protects nothing, and the same choice is one call away in the console.</p>
+  ${message ? `<p class="error" role="alert">${escapeHtml(message)}</p>` : ''}
+  <form method="post" action="${BASE}${LOGIN_PATH}" autocomplete="on">
+    <label>Username <input name="username" autocomplete="username" autofocus></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password"></label>
+    <input type="hidden" name="service" value="${escapeHtml(service)}">
+    <button type="submit">Sign in</button>
+  </form>
+</main>
+</body>
+</html>`
+
+  return new Response(page, {
+    status,
+    headers: Object.assign(
+      {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store'
+      },
+      API.emulatedHeaders()
+    )
+  })
+}
+
+/** The sign-out a browser follows, which ends the cookie's session. */
+const LOGOUT_PATH = '/saslogon/logout'
+
+/**
+ * Ends the caller the worker holds, and asks the browser to end the page's own.
+ *
+ * The package answers `OK!` and leaves the session alone, because on a server the
+ * session is the server's. Here the session is the page's, so the answer carries
+ * a `Refresh` into the site with `sasjs-signout=1`: `persist.js` drops the stored
+ * subject, and the worker's caller goes back to the one the boot names.
+ */
+const signOut = async () => {
+  // back to the account the boot named, which for a signed-out site is the
+  // fixture's administrator - the same answer a first visit gets
+  CALLER_USERNAME = undefined
+  resolveCaller()
+
+  // the body stays the package's: the conformance corpus pins this route to
+  // `OK!`, and a sign-out that changed it would be a different contract. The
+  // browser is sent into the site by a header instead, where the page drops the
+  // session it owns.
+  //
+  // Only that navigation ends the session. The row holding the account belongs to
+  // the page, and a worker cannot write it, so a caller that reads this answer
+  // without following a navigation - a fetch, an XHR, a script - ends the worker's
+  // caller and nothing else: the next page load boots the stored subject and the
+  // visitor is signed in again. A browser that follows the redirect lands on
+  // `#sasjs-signout=1`, which the page reads and clears.
+  return new Response(await IDENTITY.logoutSession(), {
+    status: 200,
+    headers: Object.assign(
+      {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        refresh: `0; url=${BASE}/#sasjs-signout=1`
+      },
+      API.emulatedHeaders()
+    )
+  })
+}
+
+/**
+ * The sign-in page's two answers.
+ *
+ * A GET is the page. A form post is a browser, not an API client, so it is
+ * answered as a browser expects: a redirect into the site carrying the account,
+ * or the page again with what went wrong. A JSON post is the package's own
+ * route, and is left to answer it.
+ */
+const signIn = async (request, url) => {
+  const service = url.searchParams.get('service') || ''
+
+  if (request.method === 'GET' || request.method === 'HEAD')
+    return loginPage({ service })
+
+  const type = request.headers.get('content-type') || ''
+
+  if (!type.includes('application/x-www-form-urlencoded')) return undefined
+
+  const form = new URLSearchParams(await request.text())
+
+  try {
+    const { user } = await IDENTITY.login({
+      username: form.get('username') || '',
+      password: form.get('password') || ''
+    })
+
+    CALLER_USERNAME = user.username
+    resolveCaller()
+
+    // the account travels in the address the browser lands on, and `persist.js`
+    // stores it as the subject `SASjsMock.as()` already keeps: the page owns the
+    // session because a service worker cannot read or set a cookie
+    const target = new URL(
+      signInTarget(form.get('service') || service, url),
+      url.origin
+    )
+    // the fragment, not the query: it is not sent in a Referer, so the account
+    // does not travel to whatever the page links to next
+    target.hash = `sasjs-caller=${encodeURIComponent(user.username)}`
+
+    return new Response(null, {
+      status: 302,
+      headers: Object.assign(
+        {
+          location: `${target.pathname}${target.search}${target.hash}`,
+          'cache-control': 'no-store'
+        },
+        API.emulatedHeaders()
+      )
+    })
+  } catch (error) {
+    // the estate answers a refused sign-in with the form again and what went
+    // wrong, rather than a status a browser would render as a blank page
+    if (error instanceof API.ApiError)
+      return loginPage({
+        message: error.message,
+        // the service a form post carries is in the body, not the address: losing
+        // it would drop the caller on the site root after one wrong password
+        service: form.get('service') || service
+      })
+
+    throw error
+  }
+}
+
+const isViyaPath = (path) => {
+  // the prefixes are lowercased when the list is built: Viya's own families are
+  // mixed case (`/jobExecution`), and a path compared as written would never
+  // match them
+  const lower = path.toLowerCase()
+
+  return (
+    ESTATE_PATHS.includes(lower) ||
+    VIYA_PREFIXES.some(
+      (prefix) => lower === prefix || lower.startsWith(`${prefix}/`)
+    )
+  )
+}
+
+/**
+ * Whether the worker is handed this request at all: a build's tiers, or the
+ * estate's prefixes - which come from `VIYA_PREFIXES` rather than a second list
+ * written into the listener, so a sixth prefix is answered instead of being left
+ * to the static host, where a client would parse `index.html` as JSON.
+ */
+const isAnswered = (path) => TIER_PATHS.test(path) || isViyaPath(path)
 
 /** One caller's rules, in the shape the route decision takes them. */
 const routeRulesOf = (permissions) => ({
@@ -1337,7 +1688,7 @@ const parseLintConfig = (contents) => {
 }
 
 // written by mock/build.mjs: the release this site was built from
-API.BROWSER_INFO.version = "v8.15.0-4-ga3b8b0fb (a3b8b0fb)"
+API.BROWSER_INFO.version = "v8.15.1-2-g7cb21224 (7cb21224)"
 
 const SERVICES = {
   drive: API.createDriveService(DRIVE_STORE),
@@ -1372,6 +1723,527 @@ const SERVICES = {
   // `.sasjslint` at or above its folder, so editing that file changes the
   // editor here exactly as it does on a server
   code: lazyCode()
+}
+
+/**
+ * The services the emulated estate answers through.
+ *
+ * The drive is this host's own, so a file uploaded over the Viya paths is the
+ * file the SASjs API routes read back, and the address the site is served from is
+ * the estate's identity - the only input to its seed, exactly as it is on a
+ * server. The address is its scheme, host and port, so what separates two builds on
+ * one origin is the drive they each persist, not the seed.
+ */
+const VIYA_SERVICES = {
+  drive: SERVICES.drive,
+  // The identity the site signs in with, so the identity questions an
+  // application asks the platform itself are answered from the same fixture the
+  // sign-in flow uses. `@sasjs/adapter` asks only who the caller is, but an
+  // application calls the identity service directly for its group, user and
+  // deploy screens - and the package answers those from the records port, so a
+  // host that omitted it would answer `501` where the screen expects a list.
+  identity: IDENTITY,
+  records: RECORDS,
+  // the address, as the package reads it: scheme, host and port. A path is not
+  // part of an address to `normaliseServerUrl` (sasjs/api `viya/seed.ts`), so the
+  // path is not passed - and it would change nothing if it were. Two builds on
+  // one origin are still two sites, because the drive they see is named for the
+  // mount (`persist.js` opens `sasjs-mock-host:<mount>`), which is what has to be
+  // separate for them not to share one filesystem.
+  viya: { serverUrl: self.location.origin }
+}
+
+/**
+ * A matcher for one of the package's operations, built from the route template the
+ * table carries, so a path this host treats specially is the table's own path
+ * rather than a second copy of it. `{}` is the table's parameter marker.
+ *
+ * A missing id answers false instead of throwing: a package rename must not take
+ * the whole host down, and a spec pins both ids so the rename fails there, loudly,
+ * rather than here silently.
+ */
+const operationMatcher = (id) => {
+  const route = API.VIYA_TABLE.find((entry) => entry.id === id)
+
+  if (!route) return () => false
+
+  const pattern = new RegExp(`^${route.path.replace(/\{\}/g, '[^/]+')}$`)
+
+  return (path) => pattern.test(path)
+}
+
+/** A file's content, which arrives as the body rather than as JSON. */
+const isContentPath = operationMatcher('PUT /files/files/{}/content')
+
+/** A file's upload, which arrives as a multipart part rather than as JSON. */
+const isUploadPath = operationMatcher('POST /files/files')
+
+// The project explicitly registers JavaScript twins, not SAS or arbitrary code.
+// This is a small adapter-facing JES emulation, not a general Viya job service.
+// The package still owns unregistered routes and the legacy web-tier stub.
+// Folder ids are resolved through the emulator, not a cache of earlier requests.
+let VIYA_MOCK_JOBS
+const viyaMockJobs = async () => {
+  if (!VIYA_MOCK_JOBS) {
+    VIYA_MOCK_JOBS = fetch(`${BASE}/host/mock-config.json`, {
+      cache: 'no-store'
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('Unable to load mock configuration')
+        return response.json()
+      })
+      .then((config) =>
+        Array.isArray(config.viyaMockJobs) ? config.viyaMockJobs : []
+      )
+      .catch((error) => {
+        VIYA_MOCK_JOBS = undefined
+        throw error
+      })
+  }
+  return VIYA_MOCK_JOBS
+}
+
+const VIYA_MOCK_RESULTS = new Map()
+const VIYA_MOCK_UPLOADS = new Map()
+// A successful reset invalidates work that began before it, even if it finishes later.
+let viyaMockGeneration = 0
+const VIYA_MOCK_TTL = 10 * 60 * 1000
+const VIYA_MOCK_LIMIT = 100
+const VIYA_MOCK_BYTES = 20 * 1024 * 1024
+let viyaMockRunning = 0
+const pruneViyaMock = () => {
+  const cutoff = Date.now() - VIYA_MOCK_TTL
+  for (const [id, value] of VIYA_MOCK_RESULTS)
+    if (value.created < cutoff) VIYA_MOCK_RESULTS.delete(id)
+  for (const [id, value] of VIYA_MOCK_UPLOADS)
+    if (value.created < cutoff) VIYA_MOCK_UPLOADS.delete(id)
+}
+const viyaMockBytes = (map) =>
+  [...map.values()].reduce((n, value) => n + value.bytes, 0)
+const viyaMockResponse = (body, status = 200, type = 'application/json') =>
+  new Response(type === 'application/json' ? JSON.stringify(body) : body, {
+    status,
+    headers: { 'content-type': type, ...API.emulatedHeaders() }
+  })
+
+const assertCurrentViyaJob = (inherited) => {
+  if (
+    inherited?.viyaGeneration !== undefined &&
+    inherited.viyaGeneration !== viyaMockGeneration
+  )
+    throw new API.ApiError(409, 'Mock reset during job')
+}
+
+const registeredJs = async (program) => {
+  await R.ensurePaths([`/sasjs/drive/files${program}.js`])
+  const resolved = R.resolveProgram(program + '.js')
+  return resolved === `/sasjs/drive/files${program}.js`
+}
+
+const executionFrame = (subject, token, inherited, viyaGeneration) => {
+  const user =
+    subject &&
+    IDENTITY_STATE.store
+      .snapshot()
+      .users.find((candidate) => candidate.uid === subject.userId)
+  const runToken = token || (inherited && inherited.token)
+  const headers = runToken ? `Authorization: Bearer ${runToken}` : ''
+  return {
+    apiServerUrl: self.location.origin + BASE,
+    viyaGeneration,
+    user: user || { username: '', uid: '', displayName: '' },
+    headers,
+    fetch: (input, init) => {
+      const target = new URL(
+        typeof input === 'string' || input instanceof URL ? input : input.url,
+        self.location.origin + BASE + '/'
+      )
+      const inside =
+        !BASE ||
+        target.pathname === BASE ||
+        target.pathname.startsWith(BASE + '/')
+      const path = inside ? withoutBase(target.pathname) : ''
+      if (
+        target.origin === self.location.origin &&
+        inside &&
+        isAnswered(path) &&
+        !/^\/api\/?$/i.test(path)
+      ) {
+        const nested = new Request(
+          input instanceof Request ? input : target.href,
+          init
+        )
+        return routeRequest(
+          nested,
+          target,
+          0,
+          null,
+          { subject, token: runToken, viyaGeneration },
+          viyaGeneration === undefined ? viyaMockGeneration : viyaGeneration
+        )
+      }
+      return fetch(input, init)
+    }
+  }
+}
+
+const viyaMockJobRequest = async (
+  request,
+  path,
+  subject,
+  token,
+  inherited,
+  generation
+) => {
+  const jobs = await viyaMockJobs()
+  if (!jobs.length) return null
+  pruneViyaMock()
+  const definition = /^\/jobDefinitions\/definitions\/([^/]+)$/.exec(path)
+  if (definition && request.method === 'GET') {
+    const program = decodeURIComponent(definition[1])
+    if (!jobs.includes(program) || !(await registeredJs(program))) return null
+    return viyaMockResponse({
+      id: definition[1],
+      name: program.slice(program.lastIndexOf('/') + 1),
+      program
+    })
+  }
+  if (path === '/jobExecution/jobs' && request.method === 'POST') {
+    const body = await request.clone().json()
+    assertCurrentViyaJob(inherited)
+    const program = body && body.arguments && body.arguments._program
+    if (
+      !jobs.includes(program) ||
+      !body.jobDefinition ||
+      body.jobDefinition.program !== program
+    )
+      return null
+    const grants = await RECORDS.myAuthorizedRoutes(subject)
+    if (!grants.paths.includes('/SASjsApi/stp/execute'))
+      throw new API.ApiError(401, 'Unauthorized')
+    if (VIYA_MOCK_RESULTS.size + viyaMockRunning >= VIYA_MOCK_LIMIT)
+      throw new API.ApiError(429, 'Mock result capacity reached')
+    viyaMockRunning++
+    try {
+      const files = []
+      const count = Number(body.arguments._webin_file_count || 0)
+      if (!Number.isInteger(count) || count < 0 || count > 100)
+        throw badRequest('Invalid file count')
+      // Snapshot references before any asynchronous file reads. Another request
+      // may prune an expired upload while this job is already using it.
+      const uploads = new Map(VIYA_MOCK_UPLOADS)
+      for (let i = 1; i <= count; i++) {
+        const uri = body.arguments[`_webin_fileuri${i}`]
+        if (!/^\/files\/files\/[^/]+$/.test(uri || ''))
+          throw badRequest('Invalid file URI')
+        const upload = uploads.get(uri.split('/').pop())
+        const result =
+          upload && upload.owner === (subject && subject.userId)
+            ? { status: 200, contents: upload.contents }
+            : await API.dispatchViya(VIYA_SERVICES, 'GET', uri + '/content', {
+                subject
+              })
+        if (result.status !== 200)
+          throw new API.ApiError(result.status, 'Uploaded file not found')
+        files.push({
+          name: body.arguments[`_webin_name${i}`],
+          contents: result.contents
+        })
+      }
+      await R.ensureAll()
+      if (!(await registeredJs(program)))
+        throw new API.ApiError(404, 'Registered JavaScript mock not found')
+      assertCurrentViyaJob(inherited)
+      if (generation !== viyaMockGeneration)
+        throw new API.ApiError(409, 'Mock reset during job')
+      let output
+      try {
+        output = await R.run({
+          program: program + '.js',
+          params: body.arguments,
+          tables: tablesOf(files),
+          transientSession: true,
+          execution: executionFrame(subject, token, inherited, generation)
+        })
+        if (output.error) throw runFailure(output.error)
+      } catch (error) {
+        // Failed runs can still have changed the drive, just like SASjs runs.
+        // Keep the execution error if reporting also fails; the persistence
+        // queue retains the batch for its next attempt.
+        try {
+          await persistChanges()
+        } catch (persistError) {
+          logEntry(`persist after failed job: ${String(persistError)}`)
+        }
+        throw error
+      }
+      await persistChanges()
+      const artifact = artifactOf(output, false)
+      const outputBytes = output.binary
+        ? artifact.contents.byteLength
+        : bytesOf(output.webout || '')
+      // This is the runtime's captured JS console, never a SAS or Compute log.
+      const log = output.log
+        ? `[sasjs mock: JavaScript console output, not a SAS log]\n${output.log}`
+        : ''
+      const resultBytes = outputBytes + bytesOf(log)
+      if (generation !== viyaMockGeneration)
+        throw new API.ApiError(409, 'Mock reset during job')
+      if (resultBytes + viyaMockBytes(VIYA_MOCK_RESULTS) > VIYA_MOCK_BYTES)
+        throw new API.ApiError(429, 'Mock result byte capacity reached')
+      const id = crypto.randomUUID()
+      const resultPath = `/jobExecution/jobs/${id}/results/webout`
+      const links = [{ rel: 'state', href: `/jobExecution/jobs/${id}/state` }]
+      if (log) links.push({ rel: 'log', href: `/jobExecution/jobs/${id}/log` })
+      const job = { id, links, results: { '_webout.json': resultPath } }
+      VIYA_MOCK_RESULTS.set(id, {
+        job,
+        log,
+        output: output.binary ? artifact : { webout: output.webout },
+        owner: subject && subject.userId,
+        created: Date.now(),
+        bytes: resultBytes
+      })
+      return viyaMockResponse(job, 201)
+    } finally {
+      viyaMockRunning--
+    }
+  }
+  const result =
+    /^\/jobExecution\/jobs\/([0-9a-f-]+)(?:\/(state|log\/content|results\/webout\/content))?$/.exec(
+      path
+    )
+  if (result && request.method === 'GET') {
+    const saved = VIYA_MOCK_RESULTS.get(result[1])
+    if (!saved || saved.owner !== (subject && subject.userId)) return null
+    if (result[2] === 'state')
+      return viyaMockResponse('completed', 200, 'text/plain')
+    if (result[2] === 'log/content') {
+      if (!saved.log) return null
+      return viyaMockResponse({
+        items: saved.log.split('\n').map((line) => ({ line }))
+      })
+    }
+    if (result[2]) {
+      if (saved.output.contents !== undefined)
+        return new Response(saved.output.contents, {
+          status: 200,
+          headers: { ...saved.output.headers, ...API.emulatedHeaders() }
+        })
+      const webout = saved.output.webout || ''
+      let type = 'text/plain; charset=utf-8'
+      try {
+        JSON.parse(webout)
+        type = 'application/json; charset=utf-8'
+      } catch (_) {}
+      return viyaMockResponse(webout, 200, type)
+    }
+    return viyaMockResponse(saved.job)
+  }
+  return null
+}
+
+/**
+ * One request to the emulated estate, answered by `@sasjs/api`.
+ *
+ * The transport is the whole of this function: a `Request` is not the package's
+ * `ApiRequest`, so the query, the body (or the bytes, or the multipart part) and
+ * the caller are read here, and the answer's status, headers, body and byte
+ * content are written back unchanged - including the `x-sasjs-emulated` stamp,
+ * which is the package's to set, not this host's.
+ *
+ * The caller is the account the page chose, which is the same answer the SASjs
+ * routes get - so the bodies this host returns name that account, not a generic
+ * emulated user.
+ *
+ * A service's own nested call has no page and no account of its own: `inherited`
+ * carries the caller that started the run, so the emulation answers for the
+ * same account throughout the recursion.
+ */
+const viyaRequest = async (request, url, path, inherited, generation) => {
+  const query = Object.create(null)
+  for (const [key, value] of url.searchParams.entries()) query[key] = value
+
+  const apiRequest = {
+    query,
+    token: bearerOf(request, query),
+    subject: await subjectOf(request, query, undefined, inherited)
+  }
+
+  if (/^\/(jobDefinitions|jobExecution)\//.test(path)) {
+    try {
+      const mock = await viyaMockJobRequest(
+        request,
+        path,
+        apiRequest.subject,
+        apiRequest.token,
+        inherited,
+        generation
+      )
+      if (mock) return mock
+    } catch (error) {
+      if (error instanceof API.ApiError)
+        return viyaMockResponse({ message: error.message }, error.status)
+      throw error
+    }
+  }
+
+  const uploadContent = /^\/files\/files\/([0-9a-f-]+)\/content$/.exec(path)
+  if (request.method === 'GET' && uploadContent) {
+    pruneViyaMock()
+    const upload = VIYA_MOCK_UPLOADS.get(uploadContent[1])
+    if (
+      upload &&
+      upload.owner === (apiRequest.subject && apiRequest.subject.userId)
+    )
+      return viyaMockResponse(upload.contents, 200, 'text/plain; charset=utf-8')
+  }
+
+  if (request.method === 'POST' && isUploadPath(path)) {
+    // the multipart part, read by the host's own reader: the emulator takes the
+    // name the client sent and the bytes, not a file this worker staged
+    const payload = await readPayload(request.clone())
+    apiRequest.body = payload.body
+    let file = singleFile(payload)
+    if (
+      !file &&
+      (await viyaMockJobs()).length &&
+      (request.headers.get('content-type') || '').includes('application/json')
+    ) {
+      const raw = await request.text()
+      if (raw && !raw.trimStart().startsWith('{')) {
+        if (bytesOf(raw) > R.MAX_UPLOAD_BYTES)
+          throw payloadTooLarge(R.MAX_UPLOAD_BYTES)
+        pruneViyaMock()
+        const bytes = bytesOf(raw)
+        if (
+          VIYA_MOCK_UPLOADS.size >= VIYA_MOCK_LIMIT ||
+          bytes + viyaMockBytes(VIYA_MOCK_UPLOADS) > VIYA_MOCK_BYTES
+        )
+          throw new API.ApiError(429, 'Mock upload capacity reached')
+        const id = crypto.randomUUID()
+        if (generation !== viyaMockGeneration)
+          return viyaMockResponse({ message: 'Mock reset during upload' }, 409)
+        VIYA_MOCK_UPLOADS.set(id, {
+          contents: raw,
+          bytes,
+          created: Date.now(),
+          owner: apiRequest.subject && apiRequest.subject.userId
+        })
+        return viyaMockResponse({ id, name: `sasjs-upload-${id}.csv` }, 201)
+      }
+    }
+    if (file) apiRequest.file = file
+  } else if (request.method !== 'GET' && request.method !== 'HEAD') {
+    if (isContentPath(path))
+      apiRequest.contents = new Uint8Array(await request.arrayBuffer())
+    else apiRequest.body = await readJson(request)
+  }
+
+  assertCurrentViyaJob(inherited)
+  const answer = await API.dispatchViya(
+    VIYA_SERVICES,
+    request.method,
+    path,
+    apiRequest
+  )
+
+  const members = /^\/folders\/folders\/([^/]+)\/members$/.exec(path)
+  const folderResource = /^\/folders\/folders\/([^/]+)$/.exec(path)
+  if (
+    request.method === 'GET' &&
+    (members || folderResource) &&
+    answer.status === 200
+  ) {
+    const jobs = await viyaMockJobs()
+    // Resolve each distinct registered parent using the package's own id rules.
+    // This also works after a worker restart and does not retain stale mappings.
+    const parents = [
+      ...new Set(jobs.map((job) => job.slice(0, job.lastIndexOf('/'))))
+    ]
+    const folderId = members ? members[1] : answer.body.id
+    let folder
+    for (const candidate of parents) {
+      const resolved = await API.dispatchViya(
+        VIYA_SERVICES,
+        'GET',
+        '/folders/folders/@item',
+        {
+          ...apiRequest,
+          query: { path: candidate }
+        }
+      )
+      if (resolved.status === 200 && resolved.body.id === folderId) {
+        folder = candidate
+        break
+      }
+    }
+    if (folder && jobs.length) {
+      const registrations = []
+      for (const program of jobs) {
+        if (program.slice(0, program.lastIndexOf('/')) !== folder) continue
+        const name = program.slice(program.lastIndexOf('/') + 1)
+        if (!(await registeredJs(program))) continue
+        const id = encodeURIComponent(program)
+        registrations.push({
+          name,
+          contentType: 'jobDefinition',
+          uri: `/jobDefinitions/definitions/${id}`,
+          links: [
+            { rel: 'getResource', href: `/jobDefinitions/definitions/${id}` }
+          ]
+        })
+      }
+      if (registrations.length && !members) {
+        answer.body.memberCount += registrations.length
+      } else if (registrations.length) {
+        // The package ignores start and truncates before returning. Re-read its
+        // complete physical listing, then page the combined collection once.
+        const physical = await API.dispatchViya(VIYA_SERVICES, 'GET', path, {
+          ...apiRequest,
+          query: { ...query, limit: 0 }
+        })
+        // getFileUri selects the first name match without checking its type;
+        // job lookup filters by type, so physical members must precede jobs.
+        const items = [...physical.body.items, ...registrations]
+        const start = Math.max(0, Math.trunc(Number(query.start) || 0))
+        const limit = Number(query.limit) || 0
+        answer.body.start = start
+        answer.body.items =
+          limit > 0 ? items.slice(start, start + limit) : items.slice(start)
+        answer.body.count = answer.body.items.length
+        answer.body.limit = limit || answer.body.count
+      }
+    }
+  }
+
+  // a folder or file the estate created is a change to this host's drive - but
+  // only an answer that succeeded can have changed one: the emulator's refusals
+  // (the token endpoint, launcher, jobExecution) cost no write
+  if (
+    request.method !== 'GET' &&
+    request.method !== 'HEAD' &&
+    answer.status < 300
+  )
+    await persistChanges()
+
+  const headers = Object.assign({}, answer.headers || {})
+
+  if (answer.contents !== undefined)
+    return new Response(answer.contents, { status: answer.status, headers })
+
+  // the emulator sets its own type; a duplicate key under another casing would
+  // leave the effective one to merge order, so the default is only written when
+  // no casing of the header is present at all
+  if (!Object.keys(headers).some((key) => key.toLowerCase() === 'content-type'))
+    headers['content-type'] = 'application/json'
+
+  return new Response(
+    answer.body === undefined || answer.body === null
+      ? null
+      : JSON.stringify(answer.body),
+    { status: answer.status, headers }
+  )
 }
 
 /** The routes this host performs itself, because the answer is not JSON. */
@@ -1762,9 +2634,9 @@ const publicGrantOn = (path) => {
 
 /** The subject a request is talking as, from its bearer token or the implicit
  * caller when it carries none. Invalid tokens are anonymous on public routes. */
-const subjectOf = async (request, query, publicPath) => {
+const subjectOf = async (request, query, publicPath, inherited) => {
   const token = bearerOf(request, query)
-  if (!token) return IMPLICIT_CALLER
+  if (!token) return inherited ? inherited.subject : IMPLICIT_CALLER
   const subject = await IDENTITY.authenticate(token)
   if (!subject && !(publicPath && publicGrantOn(publicPath)))
     throw new API.ApiError(401, 'Unauthorized')
@@ -1787,7 +2659,9 @@ const runRoute = async (
   payload,
   subject,
   sas9 = false,
-  tier = false
+  tier = false,
+  execution,
+  inherited
 ) => {
   // A program may read any file it likes - the drive is its filesystem - so
   // every piece of a sharded drive is fetched here rather than guessed from the
@@ -1797,6 +2671,7 @@ const runRoute = async (
   // time anything runs on a cold visit. A page that only lists apps never pays
   // it; the saving this change is for is on that page.
   await R.ensureAll()
+  assertCurrentViyaJob(inherited)
 
   if (
     sas9 &&
@@ -1838,6 +2713,7 @@ const runRoute = async (
       value: vars._debug
     }
   if (tier && !sas9) vars[TIER_FRAME] = true
+  vars[EXECUTION_FRAME] = execution
 
   const runRequest = {
     source: code ? 'code' : 'program',
@@ -1863,6 +2739,7 @@ const runRoute = async (
       code ? recordedProgramIn(body.code, body.runTime) : runRequest.program
     )
 
+    assertCurrentViyaJob(inherited)
     return artifactResponse(
       artifactOf(
         {
@@ -1891,13 +2768,29 @@ const runRoute = async (
       query.expiresAfterMins !== undefined
         ? query.expiresAfterMins
         : body.expiresAfterMins
-    const answer = await SERVICES.runtime.trigger(subject, runRequest)
+    let answer
+    try {
+      answer = await SERVICES.runtime.trigger(subject, runRequest)
+    } catch (error) {
+      assertCurrentViyaJob(inherited)
+      throw error
+    }
+    assertCurrentViyaJob(inherited)
     await persistChanges()
+    assertCurrentViyaJob(inherited)
     return json(answer, 200)
   }
 
-  const artifact = await SERVICES.runtime.execute(subject, runRequest)
+  let artifact
+  try {
+    artifact = await SERVICES.runtime.execute(subject, runRequest)
+  } catch (error) {
+    assertCurrentViyaJob(inherited)
+    throw error
+  }
+  assertCurrentViyaJob(inherited)
   await persistChanges()
+  assertCurrentViyaJob(inherited)
   return artifactResponse(artifact)
 }
 
@@ -1947,6 +2840,340 @@ const ensureForRequest = async (url, tierQuery) => {
   if (paths.length) await R.ensurePaths(paths)
 }
 
+/** An OAuth answer: the body the document states, and no caching of a token. */
+const oauthJson = (status, body) => {
+  const headers = Object.assign(
+    {
+      'content-type': 'application/json',
+      'cache-control': 'no-store',
+      pragma: 'no-cache'
+    },
+    API.emulatedHeaders()
+  )
+
+  return new Response(JSON.stringify(body), { status, headers })
+}
+
+const oauthError = (status, error, description) => {
+  const answer = oauthJson(status, { error, error_description: description })
+
+  // RFC 6749 section 5.2: a 401 for a failed client authentication carries the
+  // challenge for the scheme the client used, or a client that retries only when
+  // challenged treats the answer as fatal
+  if (status === 401 && error === 'invalid_client')
+    answer.headers.set('www-authenticate', 'Basic realm="SASLogon"')
+
+  return answer
+}
+
+/** The form a token request carries, or its JSON equivalent. */
+const readForm = async (request) => {
+  const type = request.headers.get('content-type') || ''
+
+  // read without the swallowing helper: a body that cannot be read is the
+  // caller's answer to give (`invalid_request`), not an empty form
+  if (!type.includes('application/x-www-form-urlencoded')) {
+    const parsed = await request.json()
+
+    // `null`, a string or an array parses as valid JSON and is not a form: the
+    // field reads below would throw on it, so it is refused the way an
+    // unparseable body is
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+      throw new Error('The token request body is not a form.')
+
+    return parsed
+  }
+
+  const form = Object.create(null)
+  for (const [key, value] of new URLSearchParams(
+    await request.text()
+  ).entries())
+    form[key] = value
+
+  return form
+}
+
+/**
+ * One half of a Basic credential, decoded.
+ *
+ * A malformed escape is not a credential, so it is returned as written and
+ * refused as a wrong one - the alternative is a throw out of the handler, which
+ * tells the client nothing.
+ */
+const decodePart = (value) => {
+  try {
+    // form semantics, not URI semantics: section 2.3.1 encodes a space as `+`,
+    // which `decodeURIComponent` leaves in place
+    return decodeURIComponent(value.replace(/\+/g, ' '))
+  } catch (error) {
+    return value
+  }
+}
+
+/**
+ * The client credentials, from the Basic header a Viya client sends or from the
+ * body of a client that posts them instead.
+ */
+const clientOf = (request, form) => {
+  const basic = /^Basic\s+(.+)$/i.exec(
+    request.headers.get('authorization') || ''
+  )
+
+  if (basic) {
+    let decoded = ''
+
+    try {
+      decoded = atob(basic[1])
+    } catch (error) {
+      // a header that is not base64 is not a client: it falls through to the
+      // body's credentials, so a malformed header answers like any other bad
+      // credential instead of throwing out of the handler as a network error
+      decoded = ''
+    }
+
+    const separator = decoded.indexOf(':')
+
+    if (separator !== -1)
+      // RFC 6749 section 2.3.1: both halves are form-encoded before they are
+      // base64'd, so a client whose id or secret carries `:`, `%`, `+` or `&`
+      // verifies here as it would on a server. The body path gets this from
+      // `URLSearchParams`.
+      return {
+        clientId: decodePart(decoded.slice(0, separator)),
+        clientSecret: decodePart(decoded.slice(separator + 1))
+      }
+  }
+
+  return {
+    clientId: form.client_id || '',
+    clientSecret: form.client_secret || ''
+  }
+}
+
+/**
+ * The authorize step: a client sends the browser here, and this host answers a
+ * redirect carrying the code.
+ *
+ * The registered redirect is this site, because that is where the app reads the
+ * code from - a mock site has no other address to send it to, and accepting one
+ * from the query would make this an open redirect.
+ */
+const oauthAuthorize = async (url) => {
+  const responseType = url.searchParams.get('response_type') || ''
+
+  // the code flow is the one this host answers; an implicit-flow request would
+  // otherwise be redirected with a code it never asked for and fail with no
+  // diagnostic at all
+  if (responseType !== 'code')
+    return oauthError(
+      400,
+      'unsupported_response_type',
+      'This host answers the authorization code flow: response_type=code.'
+    )
+
+  const clientId = url.searchParams.get('client_id') || ''
+
+  try {
+    const code = await IDENTITY.authorize(IMPLICIT_CALLER, clientId)
+
+    // the site's own address, base path included: a site served below the origin
+    // root must not send the code outside its own app
+    const target = new URL(`${BASE}/`, self.location.origin)
+    target.searchParams.set('code', code)
+
+    const state = url.searchParams.get('state')
+    if (state) target.searchParams.set('state', state)
+
+    return new Response(null, {
+      status: 302,
+      headers: Object.assign(
+        { location: target.toString(), 'cache-control': 'no-store' },
+        API.emulatedHeaders()
+      )
+    })
+  } catch (error) {
+    if (error instanceof API.ApiError)
+      return oauthError(
+        error.status,
+        error.status === 403 ? 'invalid_client' : 'invalid_grant',
+        error.message
+      )
+
+    throw error
+  }
+}
+
+/**
+ * A pair's own id, in the shape the estate mints: 32 hex characters.
+ *
+ * `@sasjs/api`'s store issues the tokens and no id beside them, and the answer
+ * states one so a client can tell two pairs minted in the same second apart -
+ * the reason sasjs/server mints its `jti` from 16 random bytes.
+ */
+const pairId = () => {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16))
+
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+    ''
+  )
+}
+
+/**
+ * The token step: a code, a refresh token or a password buys a pair.
+ *
+ * The grants are the ones a browser application signs in with; SASLogon also
+ * answers `client_credentials` and `jwt-bearer` for service clients, which this
+ * host does not stand in for. A client that asks for another gets
+ * `unsupported_grant_type` naming these rather than a silent failure. The pair and its lifetimes are the client's own - a token's expiry is
+ * a fact about that client, read back from the store rather than invented here.
+ */
+const oauthToken = async (request) => {
+  let form
+
+  try {
+    form = await readForm(request)
+  } catch (error) {
+    // a body that cannot be read is the request's problem, not the host's: it is
+    // answered as an OAuth error like every other malformed sign-in, never as a
+    // throw out of the handler
+    return oauthError(
+      400,
+      'invalid_request',
+      'The token request body could not be read as a form or as JSON.'
+    )
+  }
+
+  const client = clientOf(request, form)
+
+  if (!client.clientId)
+    return oauthError(401, 'invalid_client', 'A client id is required.')
+
+  const registered = await IDENTITY_STATE.store.client(client.clientId)
+
+  if (!registered)
+    return oauthError(
+      401,
+      'invalid_client',
+      `The client ${client.clientId} is not registered on this site.`
+    )
+
+  // A secret is checked against the record the fixture declares for the client -
+  // the store's read answers the client's lifetimes and not its secret, so the
+  // comparison reads the snapshot the host persists, the same record with the
+  // field a client authenticates with kept out of the read path.
+  const declaredSecret = IDENTITY_STATE.secrets.get(client.clientId)
+
+  if (declaredSecret !== undefined) {
+    // A fixture that names the public client has stated a secret for it, and a
+    // rule about the estate must not overwrite what the site says about itself:
+    // the declared secret is the one that verifies, and an empty one is refused
+    // like any other wrong secret.
+    if (declaredSecret !== client.clientSecret)
+      return oauthError(401, 'invalid_client', 'The client secret is wrong.')
+  } else if (client.clientId === PUBLIC_CLIENT_ID) {
+    // The public client the estate ships holds no secret, so there is nothing to
+    // compare against: sasjs/server binds its password grant - and the refresh
+    // that follows - to this id with an empty secret, and `@sasjs/adapter` falls
+    // back to it whenever a target names no client. A secret offered for it is
+    // refused rather than ignored, or naming the client alone would buy a token.
+    if (client.clientSecret !== '')
+      return oauthError(
+        401,
+        'invalid_client',
+        `The public client ${PUBLIC_CLIENT_ID} carries no secret.`
+      )
+  } else {
+    // verified or refused, never skipped: a client the fixture declares no secret
+    // for at all cannot be checked, so it is refused by name. A change to what the
+    // fixture carries then shows up as a refusal here rather than as a check that
+    // quietly accepts any secret.
+    return oauthError(
+      401,
+      'invalid_client',
+      `The identity fixture declares no secret for ${client.clientId}, so its secret cannot be verified.`
+    )
+  }
+
+  try {
+    let pair
+
+    switch (form.grant_type) {
+      case 'authorization_code':
+        pair = await IDENTITY.token({
+          clientId: client.clientId,
+          code: form.code
+        })
+        break
+      case 'refresh_token': {
+        // The pair belongs to the client it was issued to, and the server checks
+        // that before it rotates (`verifyRefreshToken` compares the token's own
+        // clientId with the one presented). Without the same check a refresh token
+        // minted for a confidential client is redeemable as any other - the public
+        // client included, which presents no secret at all - and the answer would
+        // state the wrong client's lifetimes. Refused in the server's words, and
+        // before the rotation, so a refused attempt leaves the caller's pair live.
+        const held = await IDENTITY_STATE.store.readRefresh(form.refresh_token)
+
+        if (held && held.clientId !== client.clientId)
+          return oauthError(
+            401,
+            'invalid_grant',
+            'The refresh token was issued for another client.'
+          )
+
+        pair = await IDENTITY.refresh(form.refresh_token)
+        break
+      }
+      case 'password': {
+        // the credentials are the grant: the account signs in, buys a code and
+        // exchanges it - the same path the authorize step's code takes, so the
+        // mint-and-save sequence lives in the package and cannot drift from it
+        const { user } = await IDENTITY.login({
+          username: form.username || '',
+          password: form.password || ''
+        })
+        const subject = { userId: user.uid, clientId: client.clientId }
+        const code = await IDENTITY.authorize(subject, client.clientId)
+
+        pair = await IDENTITY.token({ clientId: client.clientId, code })
+        break
+      }
+      default:
+        return oauthError(
+          400,
+          'unsupported_grant_type',
+          'This site answers authorization_code, refresh_token and password.'
+        )
+    }
+
+    return oauthJson(200, {
+      access_token: pair.accessToken,
+      refresh_token: pair.refreshToken,
+      token_type: 'bearer',
+      expires_in: registered.accessTokenExpiration,
+      refresh_expires_in: registered.refreshTokenExpiration,
+      scope: '',
+      // the estate's answer carries three more fields than this host used to
+      // state: `jti` is the pair's own id, and the two `revocable` flags are what
+      // a client reads before it tries a revocation. sasjs/server emits all
+      // three (its `tokenResponse`), so a client that branches on them behaves
+      // here as it does there. `id_token` is recorded in the estate's shape and
+      // minted by neither: an ID token asserts an OpenID Connect identity, and
+      // both hosts answer "who is this" with `/identities/users/@currentUser`.
+      jti: pairId(),
+      revocable: true,
+      refresh_revocable: true
+    })
+  } catch (error) {
+    // a refusal from a grant is a grant problem: the client was verified above,
+    // so an unknown client or a wrong secret never reaches here
+    if (error instanceof API.ApiError)
+      return oauthError(error.status, 'invalid_grant', error.message)
+
+    throw error
+  }
+}
+
 /**
  * One attempt at a request, with the body source a retry can copy again.
  *
@@ -1955,8 +3182,20 @@ const ensureForRequest = async (url, tierQuery) => {
  * beside it and every attempt after that is made from a copy of the copy. Only a
  * request with a body needs one, and `source` is what carries it through the
  * recursion.
+ *
+ * `inherited` is the recursion's other carry: a nested call made by a running
+ * service arrives with the caller that started the run, so the child answers
+ * for the same account - and retries keep both carries, the body and the
+ * caller.
  */
-const routeRequest = async (request, url, attempts = 0, source = null) => {
+const routeRequest = async (
+  request,
+  url,
+  attempts = 0,
+  source = null,
+  inherited = null,
+  generation = viyaMockGeneration
+) => {
   const hasBody = request.method !== 'GET' && request.method !== 'HEAD'
   const replay = hasBody ? source || request.clone() : null
   const path = withoutBase(url.pathname).replace(/\/+$/, '') || '/'
@@ -2026,12 +3265,41 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
         : path.replace(/^\/api(?=\/|$)/i, '/SASjsApi')
 
   try {
+    // Nested calls remain owned by their original Viya job across all routes.
+    assertCurrentViyaJob(inherited)
     // the identity is a file the build shipped, so it is read before anything
     // that needs a caller - a request that arrives before the page has booted
     // (a static asset fetch raced by an API call) must not answer as nobody
     await ensureIdentity()
     await R.ensureReady(askHostForDrive)
     await ensureForRequest(url, tierQuery ? query : null)
+    assertCurrentViyaJob(inherited)
+
+    // the sign-in page and the form it posts: a browser, not an API client
+    if (apiPath.toLowerCase() === LOGIN_PATH) {
+      const answer = await signIn(request, url)
+      if (answer) return answer
+    }
+
+    // the sign-out a browser follows: the cookie is this host's session, so
+    // ending it is this host's answer
+    if (apiPath.toLowerCase() === LOGOUT_PATH && request.method === 'GET')
+      return await signOut()
+
+    // A Viya-targeted application asks the estate's own paths. They are answered
+    // from the package's emulator over the drive this host already holds, which
+    // is what makes a Viya build mockable in the browser at all.
+    // The OAuth endpoints a Viya client signs in at: the token port is this
+    // host's own, as it is on a server running the emulator.
+    if (isViyaPath(apiPath)) {
+      // the two sign-in endpoints are the host's port; every other estate path
+      // is the emulator's
+      const signedIn = apiPath.toLowerCase()
+      if (signedIn === OAUTH_AUTHORIZE) return await oauthAuthorize(url)
+      if (signedIn === OAUTH_TOKEN) return await oauthToken(request)
+
+      return await viyaRequest(request, url, apiPath, inherited, generation)
+    }
 
     // The app stream is the server's own web surface rather than part of the
     // API: the listing, the landing page and the redirect from one to the other
@@ -2066,7 +3334,9 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
         // who may see which app, which the surface leaves to the host. The
         // caller is resolved here because this branch answers before the API
         // routes below resolve theirs
-        allow: await appFilter(await subjectOf(request, query))
+        allow: await appFilter(
+          await subjectOf(request, query, undefined, inherited)
+        )
       })
 
       // a removal changes the index, which lives in the drive: persisted in the
@@ -2086,7 +3356,7 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     }
 
     if (/^\/SASStoredProcess$/i.test(path) && request.method === 'GET') {
-      const subject = await subjectOf(request, query)
+      const subject = await subjectOf(request, query, undefined, inherited)
       const user =
         subject &&
         IDENTITY_STATE.store
@@ -2117,7 +3387,7 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     )
     const subject = SELF_AUTH_ROUTES.has(routeId)
       ? undefined
-      : await subjectOf(request, query, publicPath)
+      : await subjectOf(request, query, publicPath, inherited)
     if (routeId === DEPLOY_UPLOAD) {
       const uploadPath = '/SASjsApi/drive/deploy/upload'
       // Newer packages expose the same decision as dispatch. With older ones,
@@ -2158,6 +3428,7 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     if (askedForFile && Array.isArray(query._filePath))
       throw badRequest('"_filePath" must be a string')
     const payload = await readPayload(request, routeId === DEPLOY_UPLOAD)
+    assertCurrentViyaJob(inherited)
     payload.query = query
     payload.method = request.method
 
@@ -2187,7 +3458,21 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     }
 
     if (RUN_ROUTES.has(routeId)) {
-      return await runRoute(routeId, payload, subject, sas9Run, tierQuery)
+      const execution = executionFrame(
+        subject,
+        token,
+        inherited,
+        inherited?.viyaGeneration
+      )
+      return await runRoute(
+        routeId,
+        payload,
+        subject,
+        sas9Run,
+        tierQuery,
+        execution,
+        inherited
+      )
     }
 
     const apiRequest = {
@@ -2214,6 +3499,7 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
       })
     }
 
+    assertCurrentViyaJob(inherited)
     const answer = await API.dispatch(SERVICES, routeId, apiRequest)
     if (request.method !== 'GET') await persistChanges()
 
@@ -2261,7 +3547,14 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
       else await R.ensureAll()
       // a fresh copy per attempt: the one this attempt read is spent
       const next = replay ? replay.clone() : request
-      return await routeRequest(next, url, attempts + 1, replay)
+      return await routeRequest(
+        next,
+        url,
+        attempts + 1,
+        replay,
+        inherited,
+        generation
+      )
     }
 
     const message = (e && e.stack) || String(e)
@@ -2280,6 +3573,11 @@ const routeRequest = async (request, url, attempts = 0, source = null) => {
     )
 
     if (!refusal) broadcast({ type: 'sasjs-host-error', path, message })
+    if (isViyaPath(apiPath))
+      return viyaMockResponse(
+        { message: (e && e.message) || String(e) },
+        status
+      )
     // A refusal the API decided on carries its status and, where the route
     // answers an envelope, the body to send. The deploy routes state one in the
     // document - a refusal there is `{status: 'failure', message}` - while the
@@ -2363,12 +3661,7 @@ self.addEventListener('fetch', (event) => {
   // canonicalises to `/SASjsApi`.
   if (/^\/api\/?$/i.test(path)) return
 
-  if (
-    !/^\/(SASjsApi|SASLogon|AppStream|api|app|SASJobExecution|StoredProgram|SASStoredProcess)(\/|$)/i.test(
-      path
-    )
-  )
-    return
+  if (!isAnswered(path)) return
   event.respondWith(handle(event.request, url))
 })
 
@@ -2416,7 +3709,12 @@ self.addEventListener('message', (event) => {
             reply({
               type: 'sasjs-load-ack',
               error: (e && e.message) || String(e),
-              errorKind: e && e.identityRejected ? 'identity' : 'host'
+              errorKind:
+                e && e.identityRejected
+                  ? 'identity'
+                  : e && e.callerRejected
+                    ? 'caller'
+                    : 'host'
             })
           )
       )
@@ -2453,7 +3751,12 @@ self.addEventListener('message', (event) => {
             reply({
               type: 'sasjs-seed-ack',
               error: (e && e.message) || String(e),
-              errorKind: e && e.identityRejected ? 'identity' : 'host'
+              errorKind:
+                e && e.identityRejected
+                  ? 'identity'
+                  : e && e.callerRejected
+                    ? 'caller'
+                    : 'host'
             })
           )
       )
@@ -2477,6 +3780,9 @@ self.addEventListener('message', (event) => {
           })
           .then(async () => {
             await persistChanges()
+            viyaMockGeneration++
+            VIYA_MOCK_UPLOADS.clear()
+            VIYA_MOCK_RESULTS.clear()
             reply({ type: 'sasjs-reset-ack', boot: R.bootInfo() })
           })
           .catch((e) =>

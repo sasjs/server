@@ -1,5 +1,6 @@
 {
   "appLoc": "/Public/server",
+  "viyaMockJobs": [],
   "seedPath": "host/vfs-seed.json",
   "driveEntries": 357,
   "jsPrograms": 0,
@@ -13,5 +14,5 @@
   "sasTranscript": true,
   "identity": "default",
   "buildStamp": "546079e5c2",
-  "builtAt": "2026-11-27T17:45:49.476Z"
+  "builtAt": "2026-11-27T18:48:04.634Z"
 }

@@ -1,4 +1,4 @@
-/* @sasjs/api 0.46.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
+/* @sasjs/api 0.50.0 - the SASjs Server API, for a service worker. https://github.com/sasjs/api */
 "use strict";
 var SASjsApi = (() => {
   var __defProp = Object.defineProperty;
@@ -128,7 +128,7 @@ var SASjsApi = (() => {
     isRouteGranted: () => isRouteGranted,
     logLines: () => logLines,
     measureDeployTree: () => measureDeployTree,
-    newAppId: () => newAppId,
+    newAppId: () => newUuidV4,
     normaliseAppLoc: () => normaliseAppLoc,
     normaliseAuthConfig: () => normaliseAuthConfig,
     normaliseDiagnostics: () => normaliseDiagnostics,
@@ -139,12 +139,14 @@ var SASjsApi = (() => {
     parseIdentity: () => parseIdentity,
     programNotFound: () => programNotFound,
     publishRequestFor: () => publishRequestFor,
+    requestFor: () => requestFor,
     resolveProgram: () => resolveProgram,
     routeById: () => routeById,
     runCase: () => runCase,
     runTimeOfPath: () => runTimeOfPath,
     sanitiseDisplayName: () => sanitiseDisplayName,
     servicesFor: () => servicesFor,
+    shapeMismatches: () => shapeMismatches,
     splitAppBundle: () => splitAppBundle,
     topLevelRouteFor: () => topLevelRouteFor,
     withBundleVersion: () => withBundleVersion
@@ -520,18 +522,8 @@ var SASjsApi = (() => {
     };
   };
 
-  // src/appstream/identity.ts
-  var normaliseAppLoc = (appLoc) => {
-    if (typeof appLoc !== "string" || appLoc === "")
-      throw new Error(
-        `App location must be a non-empty string, got ${JSON.stringify(appLoc)}.`
-      );
-    const normalised = normaliseDrivePath(appLoc);
-    if (normalised === null)
-      throw new ApiError(400, "appLoc cannot be outside drive.");
-    return normalised;
-  };
-  var newAppId = () => {
+  // src/uuid.ts
+  var newUuidV4 = () => {
     const webCrypto = globalThis.crypto;
     if (typeof webCrypto?.randomUUID === "function") return webCrypto.randomUUID();
     if (typeof webCrypto?.getRandomValues !== "function")
@@ -548,6 +540,18 @@ var SASjsApi = (() => {
       hex.slice(16, 20),
       hex.slice(20)
     ].join("-");
+  };
+
+  // src/appstream/identity.ts
+  var normaliseAppLoc = (appLoc) => {
+    if (typeof appLoc !== "string" || appLoc === "")
+      throw new Error(
+        `App location must be a non-empty string, got ${JSON.stringify(appLoc)}.`
+      );
+    const normalised = normaliseDrivePath(appLoc);
+    if (normalised === null)
+      throw new ApiError(400, "appLoc cannot be outside drive.");
+    return normalised;
   };
   var APP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
   var isAppId = (value) => typeof value === "string" && APP_ID.test(value);
@@ -748,7 +752,7 @@ var SASjsApi = (() => {
               );
           }
           const entry = {
-            id: existing ? existing.id : newAppId(),
+            id: existing ? existing.id : newUuidV4(),
             // the label is the one field a redeploy inherits: everything else is
             // what this publish states
             name,
@@ -5416,6 +5420,102 @@ var SASjsApi = (() => {
       // there is no JSON shape to record
       shape: void 0,
       declared: "The adapter fetches this only when a run expects a webout (`expectWebout`), and the recording pass submits a `%put` and reads the log instead. Without it an application cannot receive the data its service returns, so the emulator answers it from the job it just ran."
+    },
+    // The application's own identity reads. No capture describes these at all: the
+    // recorder drives the client the adapter is, and Data Controller's group, user
+    // and deploy screens call the identity service from the browser instead. That
+    // is why they are declared rather than recorded, and why the scope they belong
+    // to is stated in `src/viya/appSurface.ts`.
+    {
+      id: "GET /identities/groups",
+      method: "GET",
+      path: "/identities/groups",
+      steps: [],
+      statuses: [200],
+      queries: ["sortBy", "limit", "start"],
+      request: { queries: ["sortBy", "limit", "start"], body: void 0 },
+      // a collection of groups, whose own shape Viya publishes rather than an
+      // estate recording supplying it
+      shape: void 0,
+      declared: "The application fetches the group list twice on its deploy screen - for the admin-group dropdown and, filtered, for the caller own groups - and aborts the wizard when that read fails. The adapter never calls it, so no recording pass reaches it."
+    },
+    {
+      id: "GET /identities/groups/{}/members",
+      method: "GET",
+      path: "/identities/groups/{}/members",
+      steps: [],
+      statuses: [200, 404],
+      queries: ["limit"],
+      request: { queries: ["limit"], body: void 0 },
+      shape: void 0,
+      declared: "The group screen lists the accounts that hold a group, following the members link the group list advertises. The adapter has no identity route beyond the caller, so a capture driven by it cannot reach this one."
+    },
+    {
+      id: "GET /identities/users",
+      method: "GET",
+      path: "/identities/users",
+      steps: [],
+      statuses: [200],
+      queries: ["limit", "start"],
+      request: { queries: ["limit", "start"], body: void 0 },
+      shape: void 0,
+      declared: "The user screen lists the estate accounts. The adapter does not offer an account list and never requests one, so the recording pass has no way to observe it."
+    },
+    {
+      id: "GET /identities/users/{}",
+      method: "GET",
+      path: "/identities/users/{}",
+      steps: [],
+      statuses: [200, 404],
+      queries: [],
+      request: { queries: [], body: void 0 },
+      shape: void 0,
+      declared: "The user screen reads one account from the id the list returned, for the profile above the memberships. The adapter asks only about the caller, which is a different operation with its own row."
+    },
+    {
+      id: "GET /identities/users/@currentUser/memberships",
+      method: "GET",
+      path: "/identities/users/@currentUser/memberships",
+      steps: [],
+      statuses: [200],
+      queries: ["limit", "start"],
+      request: { queries: ["limit", "start"], body: void 0 },
+      shape: void 0,
+      declared: "The deploy screen filters the admin-group list to the groups the caller belongs to, and shows every group when this read fails. The adapter reads the caller itself but never the caller memberships."
+    },
+    {
+      id: "GET /identities/users/{}/memberships",
+      method: "GET",
+      path: "/identities/users/{}/memberships",
+      steps: [],
+      statuses: [200, 401],
+      queries: ["limit", "start"],
+      request: { queries: ["limit", "start"], body: void 0 },
+      shape: void 0,
+      declared: "The user screen lists the groups any account holds, addressed by the id the list returned. It is the same answer as the caller own memberships for one id, and the adapter asks for neither."
+    },
+    {
+      id: "GET /identities/users/{}/avatar/content",
+      method: "GET",
+      path: "/identities/users/{}/avatar/content",
+      steps: [],
+      statuses: [404],
+      queries: [],
+      request: { queries: [], body: void 0 },
+      // the body is an image when an estate holds one: there is no JSON shape
+      shape: void 0,
+      declared: "The header renders the caller avatar from this URL, and an estate whose identity carries no avatar answers 404 so the client falls back to its own image. The adapter has no avatar read."
+    },
+    {
+      id: "GET /compute/contexts/{}",
+      method: "GET",
+      path: "/compute/contexts/{}",
+      steps: [],
+      statuses: [200, 404],
+      queries: [],
+      request: { queries: [], body: void 0 },
+      shape: void 0,
+      declared: "The deploy screen reads each context in full, because the list view carries neither the batch identity nor the reuse setting it filters on. The capture recorded the list only, so the read it follows with is stated here."
     }
   ];
   var VIYA_OPERATIONS = [...VIYA_TABLE, ...DECLARED];
@@ -5432,9 +5532,19 @@ var SASjsApi = (() => {
     "GET /folders/folders/@item": { implemented: true },
     "GET /folders/folders/@myRecycleBin": { implemented: true },
     "GET /identities/users/@currentUser": { implemented: true },
+    // answered here: the application's own identity reads, declared rather than
+    // captured - see src/viya/appSurface.ts for the scope they belong to
+    "GET /identities/groups": { implemented: true },
+    "GET /identities/groups/{}/members": { implemented: true },
+    "GET /identities/users": { implemented: true },
+    "GET /identities/users/{}": { implemented: true },
+    "GET /identities/users/@currentUser/memberships": { implemented: true },
+    "GET /identities/users/{}/memberships": { implemented: true },
+    "GET /identities/users/{}/avatar/content": { implemented: true },
     "GET /types/types": { implemented: true },
     // answered here: compute
     "GET /compute/contexts": { implemented: true },
+    "GET /compute/contexts/{}": { implemented: true },
     "POST /compute/contexts/{}/sessions": { implemented: true },
     "DELETE /compute/sessions/{}": { implemented: true },
     "POST /compute/sessions/{}/jobs": { implemented: true },
@@ -5536,10 +5646,12 @@ var SASjsApi = (() => {
     return value >>> 0;
   };
   var seedOf = (settings = {}) => {
-    if (settings.seed !== void 0 && settings.seed !== "")
-      return hash(`seed:${settings.seed}`);
     const address = normaliseServerUrl(settings.serverUrl);
     return hash(`url:${address || DEFAULT_SEED}`);
+  };
+  var estateKeyOf = (settings = {}) => {
+    const address = normaliseServerUrl(settings.serverUrl);
+    return address || DEFAULT_SEED;
   };
   var generator = (seed) => {
     let state = seed >>> 0;
@@ -5576,12 +5688,14 @@ var SASjsApi = (() => {
     constructor(seed) {
       this.seed = seed;
       this.sessions = /* @__PURE__ */ new Map();
-      this.created = 0;
     }
-    /** A new session: deterministic id, no jobs. */
-    create() {
+    /** A new session: opaque UUID v4, no jobs. */
+    create(owner) {
+      const id = newUuidV4();
+      if (this.sessions.has(id)) throw new Error("Duplicate compute session ID.");
       const session = {
-        id: `emulated-${this.seed.toString(16)}-ses${String(this.created++).padStart(4, "0")}`,
+        id,
+        owner,
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
         jobs: /* @__PURE__ */ new Map(),
         submitted: 0
@@ -5619,17 +5733,18 @@ var SASjsApi = (() => {
     }
   };
   var estates = /* @__PURE__ */ new Map();
-  var estateFor = (seed) => {
-    const existing = estates.get(seed);
+  var estateFor = (key, seed) => {
+    const existing = estates.get(key);
     if (existing) return existing;
     const estate = new EmulatedEstate(seed);
-    estates.set(seed, estate);
+    estates.set(key, estate);
     return estate;
   };
 
   // src/viya/ids.ts
   var EMULATED_NOW = "2026-01-01T00:00:00.000Z";
   var EMULATED_USER = { id: "emulated-user", name: "Emulated User" };
+  var callerId = (subject) => subject?.userId ?? EMULATED_USER.id;
   var idFor = (path, kind = "folder") => {
     const hash2 = (input, seed) => {
       let value = seed;
@@ -5658,10 +5773,10 @@ var SASjsApi = (() => {
   var DEFAULT_CONTEXT_NAME = "SAS Job Execution compute context";
   var EMULATED_CONTEXT_ID = idFor("emulated-context", "context");
   var relLinks = (type, rels) => rels.map(([rel, href]) => ({ href, uri: href, rel, method: "GET", type }));
-  var linksFor = (uri, type, collection = false, itemType = false) => [
+  var linksFor = (uri, type, collection2 = false, itemType = false) => [
     // the collection link comes first, because that is the order the capture
     // recorded and the item shape assertion walks the first element
-    ...collection ? [
+    ...collection2 ? [
       {
         href: `${uri}/members`,
         uri: `${uri}/members`,
@@ -5682,29 +5797,44 @@ var SASjsApi = (() => {
       ...itemType ? { itemType: type } : {}
     }
   ];
-  var estateOf = (services) => estateFor(seedOf(services.viya));
+  var estateOf = (services) => estateFor(estateKeyOf(services.viya), seedOf(services.viya));
   var contextNameFrom = (filter) => {
     if (!filter) return DEFAULT_CONTEXT_NAME;
     const match = /name\s*,\s*'([^']*)'|name\s*,\s*"([^"]*)"/i.exec(filter);
     return match?.[1] ?? match?.[2] ?? DEFAULT_CONTEXT_NAME;
   };
-  var contextBody = (name) => ({
+  var contextBody = (name, caller) => ({
     id: EMULATED_CONTEXT_ID,
     name,
-    createdBy: EMULATED_USER.id,
+    createdBy: caller,
     version: 2,
     links: linksFor(
       `/compute/contexts/${EMULATED_CONTEXT_ID}`,
       "application/vnd.sas.compute.context"
     )
   });
-  var sessionBody = (services, session, autoExecLines) => {
+  var contextDetailsBody = (caller) => ({
+    ...contextBody(DEFAULT_CONTEXT_NAME, caller),
+    description: "The compute context an emulated estate answers for",
+    creationTimeStamp: EMULATED_NOW,
+    modifiedTimeStamp: EMULATED_NOW,
+    modifiedBy: caller,
+    launchType: "service",
+    launchContext: { contextId: EMULATED_CONTEXT_ID },
+    environment: { autoExecLines: [] },
+    attributes: {
+      reuseServerProcesses: "false",
+      allowXCMD: "false",
+      serverMinAvailable: "1"
+    }
+  });
+  var sessionBody = (services, session, autoExecLines, caller) => {
     const { id } = session;
     const uri = `/compute/sessions/${id}`;
     return {
       id,
       applicationName: "emulated",
-      owner: EMULATED_USER.id,
+      owner: caller,
       serverId: idFor(
         normaliseServerUrl(services.viya?.serverUrl) || "emulated",
         "server"
@@ -5759,14 +5889,25 @@ var SASjsApi = (() => {
       ])
     };
   };
-  var sessionOf = (services, id) => {
+  var ownerOf = (subject) => {
+    if (subject === void 0) return { kind: "anonymous" };
+    if (!subject || typeof subject.userId !== "string" || !subject.userId.trim())
+      throw new ApiError(401, "A valid caller is required.");
+    if (subject.ownerId === void 0)
+      return { kind: "user", key: subject.userId };
+    if (typeof subject.ownerId !== "string" || !subject.ownerId.trim())
+      throw new ApiError(401, "A valid caller is required.");
+    return { kind: "account", key: subject.ownerId };
+  };
+  var sessionOf = (services, id, subject) => {
+    const owner = ownerOf(subject);
     const session = estateOf(services).session(id);
-    if (!session)
+    if (!session || !session.owner || session.owner.kind !== owner.kind || session.owner.key !== owner.key)
       throw new ApiError(404, `Session with ID '${id}' was not found.`);
     return session;
   };
-  var jobOf = (services, sessionId, jobId) => {
-    const job = sessionOf(services, sessionId).jobs.get(jobId);
+  var jobOf = (services, sessionId, jobId, subject) => {
+    const job = sessionOf(services, sessionId, subject).jobs.get(jobId);
     if (!job) throw new ApiError(404, `Job with ID '${jobId}' was not found.`);
     return job;
   };
@@ -5783,7 +5924,12 @@ var SASjsApi = (() => {
           limit,
           count: 1,
           version: 2,
-          items: [contextBody(contextNameFrom(request.query?.filter))],
+          items: [
+            contextBody(
+              contextNameFrom(request.query?.filter),
+              callerId(request.subject)
+            )
+          ],
           links: linksFor(
             "/compute/contexts",
             "application/vnd.sas.compute.context",
@@ -5791,6 +5937,14 @@ var SASjsApi = (() => {
           )
         }
       };
+    },
+    "GET /compute/contexts/{}": async ({ request, params }) => {
+      if (params.id !== EMULATED_CONTEXT_ID)
+        throw new ApiError(
+          404,
+          `No compute context matches the id ${params.id}. The emulated estate answers one context, and this is not its id.`
+        );
+      return { status: 200, body: contextDetailsBody(callerId(request.subject)) };
     },
     "POST /compute/contexts/{}/sessions": async ({
       services,
@@ -5800,27 +5954,28 @@ var SASjsApi = (() => {
       if (params.id !== EMULATED_CONTEXT_ID)
         throw new ApiError(404, `Context with ID '${params.id}' was not found.`);
       const body = request.body ?? {};
-      const session = estateOf(services).create();
+      const session = estateOf(services).create(ownerOf(request.subject));
       return {
         status: 201,
         body: sessionBody(
           services,
           session,
-          body.environment?.autoExecLines ?? []
+          body.environment?.autoExecLines ?? [],
+          callerId(request.subject)
         )
       };
     },
-    "GET /compute/sessions/{}/state": async ({ services, params }) => {
-      sessionOf(services, params.id);
+    "GET /compute/sessions/{}/state": async ({ services, params, request }) => {
+      sessionOf(services, params.id, request.subject);
       return { status: 200, body: "idle" };
     },
-    "DELETE /compute/sessions/{}": async ({ services, params }) => {
-      sessionOf(services, params.id);
+    "DELETE /compute/sessions/{}": async ({ services, params, request }) => {
+      sessionOf(services, params.id, request.subject);
       estateOf(services).remove(params.id);
       return { status: 204, body: void 0 };
     },
     "POST /compute/sessions/{}/jobs": async ({ services, params, request }) => {
-      const session = sessionOf(services, params.id);
+      const session = sessionOf(services, params.id, request.subject);
       const body = request.body ?? {};
       const job = estateOf(services).submit(session, body);
       const execute = services.viya?.execute;
@@ -5850,9 +6005,10 @@ var SASjsApi = (() => {
     },
     "GET /compute/sessions/{}/filerefs/_webout/content": async ({
       services,
-      params
+      params,
+      request
     }) => {
-      const session = sessionOf(services, params.id);
+      const session = sessionOf(services, params.id, request.subject);
       const last = [...session.jobs.values()].pop();
       if (!last)
         throw new ApiError(
@@ -5870,15 +6026,22 @@ var SASjsApi = (() => {
         headers: { "content-type": "text/plain" }
       };
     },
-    "GET /compute/sessions/{}/jobs/{}": async ({ services, params }) => {
-      const [sessionId, jobId] = segmentsOf(params);
-      return { status: 200, body: jobBody(jobOf(services, sessionId, jobId)) };
-    },
-    "GET /compute/sessions/{}/jobs/{}/state": async ({ services, params }) => {
+    "GET /compute/sessions/{}/jobs/{}": async ({ services, params, request }) => {
       const [sessionId, jobId] = segmentsOf(params);
       return {
         status: 200,
-        body: jobOf(services, sessionId, jobId).state
+        body: jobBody(jobOf(services, sessionId, jobId, request.subject))
+      };
+    },
+    "GET /compute/sessions/{}/jobs/{}/state": async ({
+      services,
+      params,
+      request
+    }) => {
+      const [sessionId, jobId] = segmentsOf(params);
+      return {
+        status: 200,
+        body: jobOf(services, sessionId, jobId, request.subject).state
       };
     },
     "GET /compute/sessions/{}/jobs/{}/log/content": async ({
@@ -5887,7 +6050,7 @@ var SASjsApi = (() => {
       request
     }) => {
       const [sessionId, jobId] = segmentsOf(params);
-      const job = jobOf(services, sessionId, jobId);
+      const job = jobOf(services, sessionId, jobId, request.subject);
       const start = Number(request.query?.start ?? 0) || 0;
       const limit = Number(request.query?.limit ?? 0) || 0;
       const lines = job.log.slice(start, limit ? start + limit : void 0);
@@ -5922,7 +6085,7 @@ var SASjsApi = (() => {
     if (/\.(jpe?g)$/i.test(name)) return "image/jpeg";
     return "application/octet-stream";
   };
-  var fileBody = (file) => {
+  var fileBody = (file, caller) => {
     const id = idFor(file.path, "file");
     const uri = `/files/files/${id}`;
     const contentType = contentTypeOf(file.name);
@@ -5937,8 +6100,8 @@ var SASjsApi = (() => {
       fileVersion: 1,
       version: 2,
       typeDefName: "file",
-      createdBy: EMULATED_USER.id,
-      modifiedBy: EMULATED_USER.id,
+      createdBy: caller,
+      modifiedBy: caller,
       creationTimeStamp: EMULATED_NOW,
       modifiedTimeStamp: EMULATED_NOW,
       quarantine: false,
@@ -5950,7 +6113,7 @@ var SASjsApi = (() => {
         "content.openInBrowser": "true",
         "content.preview": "false",
         sasIconKey: "file",
-        typeRegistrant: EMULATED_USER.id
+        typeRegistrant: caller
       },
       links: [
         {
@@ -6030,12 +6193,18 @@ var SASjsApi = (() => {
       const parent = await parentOf(drive, request.query?.parentFolderUri);
       const path = `${parent}/${upload.name}`.replace(/\/{2,}/g, "/");
       await drive.save(path, upload.contents);
-      return { status: 201, body: fileBody(await bodyOf(drive, path)) };
+      return {
+        status: 201,
+        body: fileBody(await bodyOf(drive, path), callerId(request.subject))
+      };
     },
-    "GET /files/files/{}": async ({ services, params }) => {
+    "GET /files/files/{}": async ({ services, params, request }) => {
       const drive = requireDrive(services);
       const path = await pathForFileId(drive, params.id);
-      return { status: 200, body: fileBody(await bodyOf(drive, path)) };
+      return {
+        status: 200,
+        body: fileBody(await bodyOf(drive, path), callerId(request.subject))
+      };
     },
     "PATCH /files/files/{}": async ({ services, params, request }) => {
       const drive = requireDrive(services);
@@ -6047,7 +6216,10 @@ var SASjsApi = (() => {
         "/"
       );
       if (target !== path) await drive.rename(path, target);
-      return { status: 200, body: fileBody(await bodyOf(drive, target)) };
+      return {
+        status: 200,
+        body: fileBody(await bodyOf(drive, target), callerId(request.subject))
+      };
     },
     "GET /files/files/{}/content": async ({ services, params }) => {
       const drive = requireDrive(services);
@@ -6069,12 +6241,216 @@ var SASjsApi = (() => {
       if (contents === void 0 || contents === null)
         throw new ApiError(400, "File content is required.");
       await drive.update(path, contents);
-      return { status: 200, body: fileBody(await bodyOf(drive, path)) };
+      return {
+        status: 200,
+        body: fileBody(await bodyOf(drive, path), callerId(request.subject))
+      };
+    }
+  };
+
+  // src/viya/identity.ts
+  var requireRecords = (services) => {
+    if (!services.records)
+      throw new ApiError(
+        501,
+        "The emulated identity answers from the records service, which this host does not supply."
+      );
+    return services.records;
+  };
+  var callerOf = async (services, request) => request.subject ?? await services.identity?.authenticate(request.token);
+  var userIdFrom = (segment, caller) => {
+    if (segment.toLowerCase() !== "@currentuser") return segment;
+    const id = caller?.userId;
+    if (!id) throw new ApiError(401, "No caller is signed in.");
+    return id;
+  };
+  var collection = (name, items, limit, uri, type) => {
+    const page = limit > 0 ? items.slice(0, limit) : items;
+    return {
+      accept: "application/json",
+      name,
+      start: 0,
+      // the value asked for is echoed, as the folder answers echo it: a caller
+      // that asked for five and is told zero cannot tell what happened
+      limit: limit || page.length,
+      count: page.length,
+      version: 2,
+      items: page,
+      links: [
+        {
+          href: uri,
+          uri,
+          rel: "self",
+          method: "GET",
+          type: "application/vnd.sas.collection",
+          itemType: type
+        }
+      ]
+    };
+  };
+  var identityLinks = (uri, type) => [
+    { href: uri, uri, rel: "self", method: "GET", type }
+  ];
+  var GROUP_TYPE = "application/vnd.sas.identity.group";
+  var USER_TYPE = "application/vnd.sas.identity.user";
+  var groupBody = (group, memberCount) => ({
+    id: group.uid,
+    name: group.name,
+    description: group.description,
+    providerId: "sas",
+    state: "active",
+    memberCount,
+    creationTimeStamp: EMULATED_NOW,
+    modifiedTimeStamp: EMULATED_NOW,
+    version: 1,
+    links: identityLinks(`/identities/groups/${group.uid}`, GROUP_TYPE)
+  });
+  var userBody = (user3) => ({
+    id: user3.uid,
+    // Viya's `name` is the identifier a person signs in with; the display name is
+    // a separate field, and this is the one a member list shows
+    name: user3.username,
+    displayName: user3.displayName,
+    providerId: "sas",
+    state: "active",
+    version: 1,
+    links: identityLinks(`/identities/users/${user3.uid}`, USER_TYPE)
+  });
+  var membershipsOf = async (records, caller, uid) => {
+    const users = await records.listUsers(caller);
+    const user3 = users.find((item) => item.uid === uid) ?? users.find((item) => item.username === uid);
+    const resolvedUid = user3?.uid ?? uid;
+    const groups = await records.listGroups(caller);
+    const found = [];
+    for (const group of groups) {
+      const details = await records.getGroup(caller, { uid: group.uid });
+      if (details.users.some((member) => member.uid === resolvedUid))
+        found.push(groupBody(group, details.users.length));
+    }
+    return found;
+  };
+  var IDENTITY_HANDLERS = {
+    "GET /identities/groups": async ({ services, request }) => {
+      const records = requireRecords(services);
+      const caller = await callerOf(services, request);
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const sortBy = request.query?.sortBy;
+      const groups = await records.listGroups(caller);
+      const items = [];
+      for (const group of groups) {
+        const details = await records.getGroup(caller, { uid: group.uid });
+        items.push(groupBody(group, details.users.length));
+      }
+      const ordered = sortBy && sortBy.toLowerCase() === "name" ? [...items].sort((left, right) => left.name.localeCompare(right.name)) : items;
+      return {
+        status: 200,
+        body: collection(
+          "groups",
+          ordered,
+          limit,
+          "/identities/groups",
+          GROUP_TYPE
+        )
+      };
+    },
+    "GET /identities/groups/{}/members": async ({
+      services,
+      request,
+      params
+    }) => {
+      const records = requireRecords(services);
+      const caller = await callerOf(services, request);
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const details = await records.getGroup(caller, { uid: params.id });
+      const items = details.users.map((user3) => userBody(user3));
+      return {
+        status: 200,
+        body: collection(
+          "members",
+          items,
+          limit,
+          `/identities/groups/${details.uid}/members`,
+          USER_TYPE
+        )
+      };
+    },
+    "GET /identities/users": async ({ services, request }) => {
+      const records = requireRecords(services);
+      const caller = await callerOf(services, request);
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const users = await records.listUsers(caller);
+      return {
+        status: 200,
+        body: collection(
+          "users",
+          users.map((user3) => userBody(user3)),
+          limit,
+          "/identities/users",
+          USER_TYPE
+        )
+      };
+    },
+    "GET /identities/users/{}": async ({ services, request, params }) => {
+      const records = requireRecords(services);
+      const caller = await callerOf(services, request);
+      const uid = userIdFrom(params.id, caller);
+      const user3 = await records.getUser(caller, { uid });
+      return { status: 200, body: userBody(user3) };
+    },
+    "GET /identities/users/@currentUser/memberships": async ({
+      services,
+      request
+    }) => {
+      const records = requireRecords(services);
+      const caller = await callerOf(services, request);
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const uid = userIdFrom("@currentUser", caller);
+      const items = await membershipsOf(records, caller, uid);
+      return {
+        status: 200,
+        body: collection(
+          "memberships",
+          items,
+          limit,
+          "/identities/users/@currentUser/memberships",
+          GROUP_TYPE
+        )
+      };
+    },
+    "GET /identities/users/{}/memberships": async ({
+      services,
+      request,
+      params
+    }) => {
+      const records = requireRecords(services);
+      const caller = await callerOf(services, request);
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const uid = userIdFrom(params.id, caller);
+      const items = await membershipsOf(records, caller, uid);
+      return {
+        status: 200,
+        body: collection(
+          "memberships",
+          items,
+          limit,
+          `/identities/users/${params.id}/memberships`,
+          GROUP_TYPE
+        )
+      };
+    },
+    "GET /identities/users/{}/avatar/content": async ({
+      services,
+      request,
+      params
+    }) => {
+      const caller = await callerOf(services, request);
+      const uid = userIdFrom(params.id, caller);
+      throw new ApiError(404, `No avatar is recorded for the user ${uid}.`);
     }
   };
 
   // src/viya/service.ts
-  var linksFor2 = (uri, collection = false) => {
+  var linksFor2 = (uri, collection2 = false) => {
     const self = {
       href: uri,
       uri,
@@ -6090,9 +6466,9 @@ var SASjsApi = (() => {
       type: "application/vnd.sas.collection",
       itemType: "folder"
     };
-    return collection ? [members, self] : [self, members];
+    return collection2 ? [members, self] : [self, members];
   };
-  var folderBody = async (drive, path) => {
+  var folderBody = async (drive, path, caller) => {
     const listing = await drive.list(path);
     const id = idFor(path);
     const name = path.split("/").filter(Boolean).pop() ?? "";
@@ -6103,16 +6479,20 @@ var SASjsApi = (() => {
       description: "",
       type: "folder",
       version: 1,
-      createdBy: EMULATED_USER.id,
-      modifiedBy: EMULATED_USER.id,
+      createdBy: caller,
+      modifiedBy: caller,
       creationTimeStamp: EMULATED_NOW,
       modifiedTimeStamp: EMULATED_NOW,
       memberCount: listing.files.length + listing.folders.length,
       parentFolderUri: `/folders/folders/${idFor(parent)}`,
+      // the capture's folder shape carries `properties`, and this body is the one a
+      // real folder is read through: answering only the recycle bin with it left a
+      // client reading `folder.properties` against nothing
+      properties: { allowMove: "true" },
       links: linksFor2(`/folders/folders/${id}`)
     };
   };
-  var recycleBin = () => {
+  var recycleBin = (caller) => {
     const path = "@myRecycleBin";
     const id = idFor(path);
     return {
@@ -6121,8 +6501,8 @@ var SASjsApi = (() => {
       description: "Recycle Bin",
       type: "trashFolder",
       version: 1,
-      createdBy: EMULATED_USER.id,
-      modifiedBy: EMULATED_USER.id,
+      createdBy: caller,
+      modifiedBy: caller,
       creationTimeStamp: EMULATED_NOW,
       modifiedTimeStamp: EMULATED_NOW,
       memberCount: 0,
@@ -6160,7 +6540,7 @@ var SASjsApi = (() => {
   var VIYA_HANDLERS = {
     "GET /identities/users/@currentUser": async ({ services, request }) => {
       const subject = request.subject ?? await services.identity?.authenticate(request.token);
-      const id = subject?.userId ?? EMULATED_USER.id;
+      const id = callerId(subject);
       return {
         status: 200,
         body: {
@@ -6183,35 +6563,80 @@ var SASjsApi = (() => {
         }
       };
     },
-    "GET /types/types": async () => ({
-      status: 200,
-      body: {
-        count: 1,
-        items: [
+    "GET /types/types": async ({ request }) => {
+      const limit = Number(request.query?.limit ?? 0) || 0;
+      const item = {
+        name: "file",
+        label: "File",
+        description: "A file type",
+        mediaType: "application/octet-stream",
+        resourceUri: "/types/types/file",
+        iconUri: "/types/types/file/icon",
+        tags: ["file"],
+        version: 1,
+        links: [
           {
-            name: "file",
-            type: "typeDef",
-            version: 1,
-            links: [{ href: "/types/types/file", rel: "self", method: "GET" }]
+            href: "/types/types/file",
+            uri: "/types/types/file",
+            rel: "self",
+            method: "GET",
+            type: "application/vnd.sas.type.definition"
           }
         ]
-      }
-    }),
+      };
+      return {
+        status: 200,
+        body: {
+          accept: "application/json",
+          name: "types",
+          start: 0,
+          limit,
+          count: 1,
+          version: 2,
+          items: [item],
+          links: [
+            {
+              href: "/types/types",
+              uri: "/types/types",
+              rel: "collection",
+              method: "GET",
+              type: "application/vnd.sas.collection",
+              itemType: "typeDef"
+            },
+            {
+              href: "/types/types",
+              uri: "/types/types",
+              rel: "self",
+              method: "GET",
+              type: "application/vnd.sas.collection"
+            }
+          ]
+        }
+      };
+    },
     "GET /folders/folders/@item": async ({ services, request }) => ({
       status: 200,
-      body: await folderBody(requireDrive(services), pathFromQuery(request))
+      body: await folderBody(
+        requireDrive(services),
+        pathFromQuery(request),
+        callerId(request.subject)
+      )
     }),
-    "GET /folders/folders/@myRecycleBin": async () => ({
+    "GET /folders/folders/@myRecycleBin": async ({ request }) => ({
       status: 200,
-      body: recycleBin()
+      body: recycleBin(callerId(request.subject))
     }),
-    "GET /folders/folders/{}": async ({ services, params }) => {
+    "GET /folders/folders/{}": async ({ services, params, request }) => {
       if (params.id === idFor("@myRecycleBin"))
-        return { status: 200, body: recycleBin() };
+        return { status: 200, body: recycleBin(callerId(request.subject)) };
       const drive = requireDrive(services);
       return {
         status: 200,
-        body: await folderBody(drive, await pathForId(drive, params.id))
+        body: await folderBody(
+          drive,
+          await pathForId(drive, params.id),
+          callerId(request.subject)
+        )
       };
     },
     "GET /folders/folders/{}/members": async ({ services, params, request }) => {
@@ -6235,14 +6660,15 @@ var SASjsApi = (() => {
         };
       const path = await pathForId(drive, params.id);
       const listing = await drive.list(path);
+      const caller = callerId(request.subject);
       const items = [
         ...listing.folders.map((name) => ({
           id: idFor(`${path}/${name}`.replace(/\/{2,}/g, "/")),
           name,
           type: "folder",
           version: 1,
-          createdBy: EMULATED_USER.id,
-          modifiedBy: EMULATED_USER.id,
+          createdBy: caller,
+          modifiedBy: caller,
           creationTimeStamp: EMULATED_NOW,
           modifiedTimeStamp: EMULATED_NOW,
           parentFolderUri: `/folders/folders/${idFor(path)}`,
@@ -6257,8 +6683,8 @@ var SASjsApi = (() => {
           type: "file",
           version: 1,
           contentType: "text/plain",
-          createdBy: EMULATED_USER.id,
-          modifiedBy: EMULATED_USER.id,
+          createdBy: caller,
+          modifiedBy: caller,
           creationTimeStamp: EMULATED_NOW,
           modifiedTimeStamp: EMULATED_NOW,
           parentFolderUri: `/folders/folders/${idFor(path)}`,
@@ -6292,7 +6718,10 @@ var SASjsApi = (() => {
       const parent = parentUri ? await pathForId(drive, String(parentUri).split("/").pop()) : "/";
       const path = normalisePath(`${parent}/${body.name}`);
       await drive.mkdir(path);
-      return { status: 201, body: await folderBody(drive, path) };
+      return {
+        status: 201,
+        body: await folderBody(drive, path, callerId(request.subject))
+      };
     },
     "PATCH /folders/folders/{}": async ({ services, request, params }) => {
       const drive = requireDrive(services);
@@ -6301,7 +6730,7 @@ var SASjsApi = (() => {
       const path = await pathForId(drive, params.id);
       const body = request.body ?? {};
       if (isRecycleBin(body.parentFolderUri)) {
-        const removed = await folderBody(drive, path);
+        const removed = await folderBody(drive, path, callerId(request.subject));
         await drive.rmdir(path);
         return {
           status: 200,
@@ -6315,10 +6744,14 @@ var SASjsApi = (() => {
       );
       const target = normalisePath(`${parent}/${name}`);
       if (target !== path) await drive.rename(path, target);
-      return { status: 200, body: await folderBody(drive, target) };
+      return {
+        status: 200,
+        body: await folderBody(drive, target, callerId(request.subject))
+      };
     },
     ...COMPUTE_HANDLERS,
-    ...FILE_HANDLERS
+    ...FILE_HANDLERS,
+    ...IDENTITY_HANDLERS
   };
 
   // src/viya/dispatch.ts
@@ -6398,6 +6831,8 @@ var SASjsApi = (() => {
         }
       };
     try {
+      if (request.subject === void 0 && request.token !== void 0 && (found.operation.id === "POST /compute/contexts/{}/sessions" || found.operation.path.startsWith("/compute/sessions/")))
+        throw new ApiError(401, "A valid caller is required.");
       const answer = await handler({
         services,
         request,
@@ -7389,6 +7824,82 @@ var SASjsApi = (() => {
       }
     }
   ];
+
+  // src/corpus/viya/replay.ts
+  var KEY_BY_SEGMENT = {
+    contexts: "context",
+    sessions: "session",
+    jobs: "job",
+    folders: "folder",
+    files: "file",
+    definitions: "definition",
+    variables: "variable"
+  };
+  var requestFor = (viyaCase, state = {}, queryValues = {}) => {
+    const [method, template] = viyaCase.route.split(" ");
+    const unresolved = [];
+    return build(
+      method,
+      template.split("/"),
+      viyaCase,
+      state,
+      queryValues,
+      unresolved
+    );
+  };
+  var build = (method, segments, viyaCase, state, queryValues, unresolved) => {
+    let previousSegment = "";
+    const filled = segments.map((segment) => {
+      if (segment !== "{}") {
+        previousSegment = segment;
+        return segment;
+      }
+      const key = KEY_BY_SEGMENT[previousSegment] ?? previousSegment;
+      const id = state[key];
+      if (id === void 0) {
+        unresolved.push(key);
+        return "{}";
+      }
+      return id;
+    });
+    let path = filled.join("/");
+    const omittedQueries = [];
+    const params = [];
+    for (const name of viyaCase.queries) {
+      const value = queryValues[name];
+      if (value === void 0) omittedQueries.push(name);
+      else params.push(`${encodeURIComponent(name)}=${encodeURIComponent(value)}`);
+    }
+    if (params.length) path += (path.includes("?") ? "&" : "?") + params.join("&");
+    return { method, path, unresolved, omittedQueries };
+  };
+  var shapeMismatches = (shape, body, where = "body") => {
+    if (shape === "object")
+      return isRecord(body) ? [] : [`${where}: expected an object, got ${typeName(body)}`];
+    if (shape === "array")
+      return Array.isArray(body) ? [] : [`${where}: expected an array, got ${typeName(body)}`];
+    if (Array.isArray(shape)) {
+      if (!Array.isArray(body))
+        return [`${where}: expected an array, got ${typeName(body)}`];
+      const first = body[0];
+      return first === void 0 || shape.length === 0 ? [] : shapeMismatches(shape[0], first, `${where}[0]`);
+    }
+    if (shape && typeof shape === "object") {
+      if (!isRecord(body))
+        return [`${where}: expected an object, got ${typeName(body)}`];
+      const record = body;
+      return Object.keys(shape).flatMap(
+        (key) => key in record ? shapeMismatches(
+          shape[key],
+          record[key],
+          `${where}.${key}`
+        ) : [`${where}.${key}: missing from the answer`]
+      );
+    }
+    return typeof body === String(shape) ? [] : [`${where}: expected ${String(shape)}, got ${typeName(body)}`];
+  };
+  var typeName = (value) => value === null ? "null" : Array.isArray(value) ? "array" : typeof value;
+  var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 
   // src/appstream/bundle.ts
   var APP_MANIFEST = "sasjs.app.json";
@@ -9635,16 +10146,16 @@ var SASjsApi = (() => {
   var normaliseDiagnostics = (report) => {
     if (!isObject2(report))
       throw new Error("The diagnostics report is not an object.");
-    const build = requireObject(
+    const build2 = requireObject(
       report,
       "build",
       "diagnostics"
     );
-    requireString(build, "version", "diagnostics build");
-    requireString(build, "gitHash", "diagnostics build");
-    if (!(build.buildDate === null || isString(build.buildDate)))
+    requireString(build2, "version", "diagnostics build");
+    requireString(build2, "gitHash", "diagnostics build");
+    if (!(build2.buildDate === null || isString(build2.buildDate)))
       throw new Error(
-        `The diagnostics build states \`buildDate\` as ${JSON.stringify(build.buildDate)}; the document states an ISO timestamp or null.`
+        `The diagnostics build states \`buildDate\` as ${JSON.stringify(build2.buildDate)}; the document states an ISO timestamp or null.`
       );
     const server = requireObject(
       report,
@@ -10005,6 +10516,11 @@ var SASjsApi = (() => {
   };
   var CODE_LIFETIME_SECONDS = 30;
   var live = (issued, now) => issued && (issued.expiresAt === void 0 || issued.expiresAt > now) ? issued.subject : void 0;
+  var PUBLIC_CLIENT = {
+    clientId: "sas.cli",
+    accessTokenExpiration: 86400,
+    refreshTokenExpiration: 86400 * 30
+  };
   var MemoryIdentityStore = class {
     constructor(fixture = DEFAULT_IDENTITY) {
       this.userList = [];
@@ -10112,7 +10628,9 @@ var SASjsApi = (() => {
       return this.passwords.get(user3.uid) === password;
     }
     async client(clientId) {
-      return this.clientMap.get(clientId);
+      const declared = this.clientMap.get(clientId);
+      if (declared) return declared;
+      return clientId === PUBLIC_CLIENT.clientId ? { ...PUBLIC_CLIENT } : void 0;
     }
     async issue(subject, client) {
       const issuedAt = Date.now();
@@ -11923,7 +12441,7 @@ var SASjsApi = (() => {
   };
   var createRuntimeService = (directory, runner, options = {}) => {
     const runTimes = options.runTimes || DOCUMENTED_RUN_TIMES;
-    const callerOf = async (caller) => {
+    const callerOf2 = async (caller) => {
       if (!caller) throw new ApiError(401, "Unauthorized");
       const reader = await directory.userById(caller.userId);
       if (!reader || !reader.isActive) throw new ApiError(401, "Unauthorized");
@@ -11980,7 +12498,7 @@ var SASjsApi = (() => {
       return minutes;
     };
     const prepare = async (caller, request) => {
-      const reader = await callerOf(caller);
+      const reader = await callerOf2(caller);
       const program = programOf2(request);
       const vars = { ...request.vars || {} };
       const debug = "code" in program ? CODE_DEBUG : parseDebugValue(vars._debug);
