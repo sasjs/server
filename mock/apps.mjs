@@ -14,9 +14,9 @@
  * versions someone can name instead of a copy of another repository's source.
  *
  * The packaging is the release's own `server.json`, the file a `sasjs deploy`
- * sends to a SASjs server: it names the appLoc, the streamed web folder and the
- * file tree, so what this module writes onto the demo's drive is what a deploy
- * would have written there.
+ * sends to a SASjs server. Older packs put the frontend under `services/` and
+ * name it with `streamWebFolder`; split packs carry `web/` and `backend/`
+ * separately. Both name the appLoc and the file tree deployed to the drive.
  *
  * Two paths, both on the drive, per app:
  *
@@ -397,11 +397,12 @@ const folderNamed = (node, name) =>
  * Three sets of files come out of the tree, because a browser host needs the first
  * two to run the app and a reader browsing it in Studio wants all three:
  *
- *   - the streamed web folder, which becomes the app's FRONTEND: its contents are
+ *   - the frontend: either `web/` at the root of a split pack or the named
+ *     streamed web folder under `services/` in an older pack. Its contents are
  *     what `apps/<name>` holds, the folder the App Stream serves and the one the
- *     Studio tree shows at the root of the drive. It is the `web/` folder of the
- *     deployment, which is what a v8 `sasjs app publish` uploads on its own;
- *   - every file beside it under `services/`, which is what the host runs and what
+ *     Studio tree shows at the root of the drive;
+ *   - every backend file under `services/`, except a legacy frontend folder,
+ *     which is what the host runs and what
  *     a program reads while it runs. A JS program (`services/common/getdata.js`) is
  *     written by a pack built for a server that can run JS - the `server` target of
  *     a SASjs app with its JS mocks in `serviceFolders` - and only a JS server,
@@ -430,12 +431,22 @@ const folderNamed = (node, name) =>
  * file members are base64; these are not), so it goes on the drive as it is.
  */
 export const packFiles = (pack, app) => {
-  const services = folderNamed(pack.fileTree, 'services') ?? pack.fileTree
-  const web = folderNamed(services, pack.streamWebFolder)
+  const split = pack.streamWebFolder === undefined
+  const backend = split ? folderNamed(pack.fileTree, 'backend') : pack.fileTree
+  if (!backend) throw new Error('The packaged app has no backend folder.')
+
+  const services = folderNamed(backend, 'services') ?? (split ? null : backend)
+  if (!services)
+    throw new Error('The packaged app has no backend services folder.')
+  const web = split
+    ? folderNamed(pack.fileTree, 'web')
+    : folderNamed(services, pack.streamWebFolder)
 
   if (!web)
     throw new Error(
-      `The packaged app has no ${pack.streamWebFolder} folder under services, so there is nothing to serve from it.`
+      split
+        ? 'The packaged app has no frontend web folder.'
+        : `The packaged app has no ${pack.streamWebFolder} folder under services, so there is nothing to serve from it.`
     )
 
   const appLoc = pack.appLoc.replace(/\/+$/, '')
@@ -483,7 +494,7 @@ export const packFiles = (pack, app) => {
       const name = `${prefix}/${member.name}`
 
       if (member.type === 'folder') {
-        if (name === `/${pack.streamWebFolder}`) continue
+        if (!split && name === `/${pack.streamWebFolder}`) continue
 
         /* A pack laid out at the root rather than under `services/` (the fallback
            above) has `jobs/` and `tests/` as its own members, and those are walked
@@ -553,7 +564,7 @@ export const packFiles = (pack, app) => {
   walkServices(services, '')
 
   for (const name of ['jobs', 'tests']) {
-    const folder = folderNamed(pack.fileTree, name)
+    const folder = folderNamed(backend, name)
 
     if (folder) walkPrograms(folder, `/${name}`)
   }
@@ -579,13 +590,23 @@ export const packFiles = (pack, app) => {
  * app's own, so a path that is not in the deployment is a broken image rather than
  * a 404 at publish time.
  */
-export const appEntry = (pack, app, publishedAt) => ({
-  id: app.id,
-  name: app.name,
-  appLoc: pack.appLoc,
-  ...(pack.streamLogo ? { logo: pack.streamLogo } : {}),
-  publishedAt
-})
+export const appEntry = (pack, app, publishedAt) => {
+  const manifest = (pack.fileTree.members ?? []).find(
+    (member) => member.type === 'file' && member.name === 'sasjs.app.json'
+  )
+  const logo =
+    pack.streamLogo ??
+    (pack.streamWebFolder === undefined && manifest
+      ? JSON.parse(manifest.code).logo
+      : undefined)
+  return {
+    id: app.id,
+    name: app.name,
+    appLoc: pack.appLoc,
+    ...(logo ? { logo } : {}),
+    publishedAt
+  }
+}
 
 /**
  * The site's drive with the app on it, and the app published.

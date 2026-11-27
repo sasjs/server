@@ -692,6 +692,83 @@ const seedPack = {
   }
 }
 
+test('a split frontend and backend pack publishes the frontend and backend services', () => {
+  const services = seedPack.fileTree.members[0].members
+  const pack = {
+    appLoc: seedPack.appLoc,
+    fileTree: {
+      name: 'files',
+      members: [
+        {
+          name: 'sasjs.app.json',
+          type: 'file',
+          code: JSON.stringify({ logo: 'favicon.ico' })
+        },
+        {
+          name: 'web',
+          type: 'folder',
+          members: [
+            { name: 'index.html', type: 'file', code: code('split frontend') }
+          ]
+        },
+        {
+          name: 'backend',
+          type: 'folder',
+          members: [
+            { name: 'services', type: 'folder', members: [services[0]] },
+            {
+              name: 'jobs',
+              type: 'folder',
+              members: [{ name: 'nightly', type: 'job', code: '%put job;' }]
+            },
+            {
+              name: 'tests',
+              type: 'folder',
+              members: [{ name: 'verify', type: 'service', code: '%put test;' }]
+            },
+            {
+              name: 'web',
+              type: 'folder',
+              members: [
+                { name: 'index.html', type: 'file', code: code('backend copy') }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+  const byPath = Object.fromEntries(
+    packFiles(pack, MINIMAL_SEED_APP).map((file) => [file.path, file.contents])
+  )
+  assert.equal(byPath['/apps/minimal-seed-app/index.html'], 'split frontend')
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/services/common/getdata.js'],
+    'webout("OPEN")'
+  )
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/services/common/springs.json'],
+    '[{"AREA":"x"}]'
+  )
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/services/common/getdata.sas'],
+    '%macro getdata;%mend;'
+  )
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/jobs/nightly.sas'],
+    '%put job;'
+  )
+  assert.equal(
+    byPath['/Public/app/minimal-seed-app/tests/verify.sas'],
+    '%put test;'
+  )
+  assert.equal(Object.keys(byPath).length, 6)
+  assert.equal(
+    appEntry(pack, MINIMAL_SEED_APP, '2026-01-01').logo,
+    'favicon.ico'
+  )
+})
+
 test('a data file beside a program travels with it, so the program can read it', () => {
   const byPath = Object.fromEntries(
     packFiles(seedPack, MINIMAL_SEED_APP).map((file) => [
