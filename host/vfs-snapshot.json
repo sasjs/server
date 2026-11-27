@@ -2,7 +2,7 @@
   "format": 1,
   "sharded": true,
   "boot": 0,
-  "files": 431,
+  "files": 430,
   "entries": {
     "/sasjs/drive/files/.sasjslint": {
       "shard": 0,
@@ -304,10 +304,6 @@
       "shard": 3,
       "bytes": 17350
     },
-    "/sasjs/drive/files/Public/app/minimal-seed-app/services/minimal-seed-app.html": {
-      "shard": 3,
-      "bytes": 3392
-    },
     "/sasjs/drive/files/Public/app/react-seed-app/services/React.html": {
       "shard": 4,
       "bytes": 1917
@@ -458,7 +454,7 @@
     },
     "/sasjs/drive/files/apps/minimal-seed-app/index.html": {
       "shard": 8,
-      "bytes": 3361
+      "bytes": 3142
     },
     "/sasjs/drive/files/apps/minimal-seed-app/scripts.js": {
       "shard": 8,
@@ -466,7 +462,7 @@
     },
     "/sasjs/drive/files/apps/minimal-seed-app/style.css": {
       "shard": 8,
-      "bytes": 3071
+      "bytes": 3008
     },
     "/sasjs/drive/files/apps/react-seed-app/favicon.ico": {
       "shard": 9,
@@ -1751,8 +1747,8 @@
     {
       "id": 3,
       "file": "host/vfs-snapshot-3.json",
-      "bytes": 265128,
-      "files": 6
+      "bytes": 261736,
+      "files": 5
     },
     {
       "id": 4,
@@ -1781,7 +1777,7 @@
     {
       "id": 8,
       "file": "host/vfs-snapshot-8.json",
-      "bytes": 349469,
+      "bytes": 349187,
       "files": 5
     },
     {
