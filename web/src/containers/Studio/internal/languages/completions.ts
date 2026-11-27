@@ -3,6 +3,7 @@ import type * as monaco from 'monaco-editor'
 import functionSnippets from '@sasjs/sas-language/snippets/functions.json'
 
 import coreSnippets from './coreSnippets.json'
+import coreSnippetSuites from './coreSnippetSuites.json'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
 import { groupWords, sasVocabularyGroups } from './vocabulary'
 
@@ -69,18 +70,17 @@ for (const snippet of Object.values(snippets)) {
 export const sasCompletionItems = (): CompletionSpec[] => {
   const items: CompletionSpec[] = [
     ...Array.from(detailedFunctionItems.values()),
-    ...coreSnippets.map((snippet) => ({
-      label: snippet.name,
-      kind: FUNCTION,
-      insertText: snippet.insertText,
-      insertTextRules: INSERT_AS_SNIPPET,
-      documentation: `${snippet.description}\n\nAvailability depends on your Drive and runtime.`,
-      detail: `SASjs core - ${snippet.folder}${
-        coreFolderNotes[snippet.folder]
-          ? ` (${coreFolderNotes[snippet.folder]})`
-          : ''
-      }`
-    }))
+    ...Object.entries(coreSnippets).map(([name, snippet]) => {
+      const folder = (coreSnippetSuites as Record<string, string>)[name]
+      return {
+        label: name,
+        kind: FUNCTION,
+        insertText: snippet.body,
+        insertTextRules: INSERT_AS_SNIPPET,
+        documentation: `${snippet.description.join('\n')}\n\nAvailability depends on your Drive and runtime.`,
+        detail: `SASjs core - ${folder}${coreFolderNotes[folder] ? ` (${coreFolderNotes[folder]})` : ''}`
+      }
+    })
   ]
 
   for (const group of sasVocabularyGroups) {
@@ -134,7 +134,7 @@ export const registerSasCompletions = (monacoApi: typeof monaco): void => {
   isRegistered = true
 
   const items = sasCompletionItems()
-  const coreNames = new Set(coreSnippets.map((snippet) => snippet.name))
+  const coreNames = new Set(Object.keys(coreSnippets))
 
   monacoApi.languages.registerCompletionItemProvider(SAS_LANGUAGE_ID, {
     triggerCharacters: ['%'],

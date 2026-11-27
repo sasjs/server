@@ -126,6 +126,7 @@ test('release snippets use the API core selected before either build', () => {
   const generate = step('Generate release core snippets')
   assert.match(generate, /^        working-directory: \.\/web$/m)
   assert.match(generate, /^        run: npm run generate:core-snippets -- "\$GITHUB_WORKSPACE\/api\/node_modules\/@sasjs\/core"$/m)
+  assert.match(step('Build WEB'), /SASJS_CORE_ROOT: \$\{\{ github\.workspace \}\}\/api\/node_modules\/@sasjs\/core/)
 })
 
 test('the exact release ZIPs are attested and the bundle is verified in both attachments', () => {

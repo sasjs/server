@@ -75,6 +75,10 @@ const generatedCore = JSON.parse(
     'utf8'
   )
 )
+const generatedSuites = JSON.parse(
+  readFileSync(new URL('../src/containers/Studio/internal/languages/coreSnippetSuites.json', import.meta.url), 'utf8')
+)
+const generatedEntries = Object.keys(generatedCore).map((name) => ({ name, folder: generatedSuites[name] }))
 const bundledFolders = ['base', 'ddl', 'fcmp', 'lua', 'server']
 const additionalFolders = {
   meta: 'not bundled in Server; SAS 9 metadata',
@@ -84,7 +88,7 @@ const additionalFolders = {
 }
 const platformDetails = { server: 'SASjs Server' }
 for (const folder of [...bundledFolders, ...Object.keys(additionalFolders)]) {
-  const entries = generatedCore.filter((entry) => entry.folder === folder)
+  const entries = generatedEntries.filter((entry) => entry.folder === folder)
   check(`${folder}: generated suite is not empty`, entries.length > 0)
   for (const { name } of entries) {
     const note = additionalFolders[folder] ?? platformDetails[folder]
@@ -104,7 +108,7 @@ for (const folder of [...bundledFolders, ...Object.keys(additionalFolders)]) {
 }
 check(
   'all generated core folders have an explicit install-status test',
-  generatedCore.every(({ folder }) =>
+  generatedEntries.every(({ folder }) =>
     [...bundledFolders, ...Object.keys(additionalFolders)].includes(folder)
   )
 )

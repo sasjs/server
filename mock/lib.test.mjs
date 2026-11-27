@@ -7,9 +7,12 @@
  * failure is not.
  */
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
+import { createServer } from 'node:http'
 import {
   existsSync,
+  cpSync,
+  mkdtempSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -28,6 +31,206 @@ import {
   runWhenTheRegistryIsReady,
   stampedWorker
 } from './lib.mjs'
+
+test('mock web build uses the same selected core tree as the drive', async (t) => {
+  for (const cached of [true, false])
+    await t.test(cached ? 'cached core' : 'fresh core', async () => {
+      const root = mkdtempSync(
+        path.join(os.tmpdir(), 'mock core $(exit 37) build-')
+      )
+      let registry
+      try {
+        mkdirSync(path.join(root, 'mock'))
+        cpSync(
+          new URL('./build.mjs', import.meta.url),
+          path.join(root, 'mock', 'build.mjs')
+        )
+        for (const name of ['lib.mjs', 'driveSeed.mjs', 'apps.mjs'])
+          cpSync(
+            new URL(`./${name}`, import.meta.url),
+            path.join(root, 'mock', name)
+          )
+        const core = path.join(root, 'sasjsbuild', 'macro-core')
+        const probe = path.join(root, 'probe.json')
+        const driveProbe = path.join(root, 'drive-probe.json')
+        mkdirSync(core, { recursive: true })
+        mkdirSync(path.join(root, 'web'))
+        writeFileSync(
+          path.join(core, 'package.json'),
+          JSON.stringify({ name: '@sasjs/core', version: '99.0.0' })
+        )
+        writeFileSync(
+          path.join(root, 'sasjsbuild', 'macro-core.txt'),
+          '@sasjs/core 99.0.0\n'
+        )
+        if (!cached) {
+          const staging = path.join(root, 'staging', 'package')
+          mkdirSync(staging, { recursive: true })
+          writeFileSync(
+            path.join(staging, 'package.json'),
+            JSON.stringify({ name: '@sasjs/core', version: '99.0.0' })
+          )
+          execFileSync('tar', [
+            'czf',
+            path.join(root, 'fixture.tgz'),
+            '-C',
+            path.join(root, 'staging'),
+            'package'
+          ])
+          rmSync(path.join(root, 'sasjsbuild'), { recursive: true })
+          // Exercise the actual npm pack against a local registry, not a stubbed
+          // command or the public network. The path also contains shell syntax.
+          const requests = []
+          registry = createServer((req, res) => {
+            requests.push(req.url)
+            if (req.url === '/fixture.tgz') {
+              res.writeHead(200, { 'content-type': 'application/octet-stream' })
+              res.end(readFileSync(path.join(root, 'fixture.tgz')))
+            } else if (req.url.toLowerCase() === '/@sasjs%2fcore') {
+              res.writeHead(200, { 'content-type': 'application/json' })
+              res.end(
+                JSON.stringify({
+                  name: '@sasjs/core',
+                  'dist-tags': { latest: '99.0.0' },
+                  versions: {
+                    '99.0.0': {
+                      name: '@sasjs/core',
+                      version: '99.0.0',
+                      dist: {
+                        tarball: `http://127.0.0.1:${registry.address().port}/fixture.tgz`
+                      }
+                    }
+                  }
+                })
+              )
+            } else {
+              res.writeHead(404)
+              res.end()
+            }
+          })
+          await new Promise((resolve) =>
+            registry.listen(0, '127.0.0.1', resolve)
+          )
+          registry.requests = requests
+        }
+        writeFileSync(path.join(root, 'mock', 'drive.json'), '{}')
+        writeFileSync(
+          path.join(root, 'mock', 'apps.mjs'),
+          `export const PUBLISHED_APPS=[]; export const resolveRelease=()=>{}; export const releaseUrl=()=>{}; export const fetchPack=()=>{}; export const withPublishedApps=(s)=>s`
+        )
+        writeFileSync(
+          path.join(root, 'mock', 'driveSeed.mjs'),
+          `import fs from 'node:fs'; export const withServerSeededFiles=(s)=>s; export const withCodeSources=(s, sources)=>{fs.writeFileSync(process.env.DRIVE_PROBE,JSON.stringify({root:sources[0].root,version:JSON.parse(fs.readFileSync(sources[0].root+'/package.json')).version}));throw Error('end of test')}`
+        )
+        mkdirSync(path.join(root, 'api', 'src', 'utils'), { recursive: true })
+        writeFileSync(
+          path.join(
+            root,
+            'api',
+            'src',
+            'utils',
+            'defaultLintConfiguration.json'
+          ),
+          '{}'
+        )
+        const packages = path.join(root, 'sasjsbuild', 'sas-packages')
+        mkdirSync(path.join(packages, 'SPF'), { recursive: true })
+        writeFileSync(
+          path.join(root, 'sasjsbuild', 'sas-packages.txt'),
+          'fixture'
+        )
+        const preload = path.join(root, 'commands.cjs')
+        writeFileSync(
+          preload,
+          `// Intercept only the build's external commands; keep its control flow and tar extraction real.
+const child = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+const realExecSync = child.execSync
+child.execSync = (command, options) => {
+  const root = process.env.TEST_ROOT
+  if (command.startsWith('npx ') && command.endsWith('--version')) return 'v1.2.3\\n'
+  if (command.startsWith('npx ') && command.includes('compile')) {
+    if (process.env.TEST_CACHED === 'false') fs.rmSync(path.join(root, 'sasjsbuild'), { recursive: true, force: true })
+    fs.mkdirSync(path.join(root, 'sasjsbuild', 'sas-packages', 'SPF'), { recursive: true })
+    fs.writeFileSync(path.join(root, 'sasjsbuild', 'sas-packages.txt'), 'fixture')
+    return ''
+  }
+  if (command.startsWith('npm pack ')) return realExecSync(command, options)
+  if (command === 'npm run docs:build') return ''
+  if (command === 'npm run build' && options.cwd === process.env.TEST_WEB) {
+    const core = process.env.SASJS_CORE_ROOT
+    fs.writeFileSync(process.env.TEST_PROBE, JSON.stringify({root: core, version: JSON.parse(fs.readFileSync(path.join(core, 'package.json'))).version}))
+    return ''
+  }
+  throw new Error('Unexpected external command: ' + command)
+}
+require('node:module').syncBuiltinESMExports()
+`
+        )
+        const result = await new Promise((resolve, reject) => {
+          const child = spawn(
+            process.execPath,
+            [path.join(root, 'mock', 'build.mjs')],
+            {
+              env: {
+                ...process.env,
+                NODE_OPTIONS: `--require=${JSON.stringify(preload)}`,
+                npm_config_registry: registry
+                  ? `http://127.0.0.1:${registry.address().port}/`
+                  : '',
+                npm_config_cache: path.join(root, 'npm-cache'),
+                SASJS_CORE_ROOT: '/wrong/core',
+                TEST_ROOT: root,
+                TEST_CACHED: String(cached),
+                TEST_WEB: path.join(root, 'web'),
+                TEST_PROBE: probe,
+                DRIVE_PROBE: driveProbe
+              }
+            }
+          )
+          let stdout = ''
+          let stderr = ''
+          child.stdout.on('data', (data) => {
+            stdout += data
+          })
+          child.stderr.on('data', (data) => {
+            stderr += data
+          })
+          child.on('error', reject)
+          child.on('close', (status) => resolve({ status, stdout, stderr }))
+        })
+        assert.notEqual(result.status, 0, 'test stops at drive seeding')
+        assert.match(
+          result.stderr,
+          /end of test/,
+          result.stdout + result.stderr
+        )
+        if (!cached) {
+          assert.ok(
+            registry.requests.includes('/fixture.tgz'),
+            'npm fetched the fixture tarball'
+          )
+          assert.equal(
+            readFileSync(
+              path.join(root, 'sasjsbuild', 'macro-core.txt'),
+              'utf8'
+            ),
+            '@sasjs/core 99.0.0 (npm latest at build time)\n'
+          )
+        }
+        assert.ok(existsSync(probe), result.stdout + result.stderr)
+        const used = JSON.parse(readFileSync(probe, 'utf8'))
+        assert.equal(used.root, core)
+        assert.equal(used.version, '99.0.0')
+        assert.ok(existsSync(driveProbe), result.stdout + result.stderr)
+        assert.deepEqual(JSON.parse(readFileSync(driveProbe, 'utf8')), used)
+      } finally {
+        if (registry) await new Promise((resolve) => registry.close(resolve))
+        rmSync(root, { recursive: true, force: true })
+      }
+    })
+})
 
 /**
  * A command that fails `failures` times with `message`, then succeeds - and

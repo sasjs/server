@@ -167,6 +167,7 @@ jobs:
         run: npm run build
         env:
           CI: true
+          SASJS_CORE_ROOT: ${{ github.workspace }}/api/node_modules/@sasjs/core
 
       # The pages ship inside the build, so the copy a reader opens describes
       # the release that carries it. Built after the client because they land in

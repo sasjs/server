@@ -1,147 +1,132 @@
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { basename, dirname, isAbsolute, join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 const webRoot = dirname(dirname(fileURLToPath(import.meta.url)))
-export const coreRoot = join(webRoot, 'node_modules', '@sasjs', 'core')
-export const manifestPath = join(webRoot, 'src', 'containers', 'Studio', 'internal', 'languages', 'coreSnippets.json')
-export const folders = ['base', 'ddl', 'fcmp', 'lua', 'server', 'meta', 'metax', 'viya', 'xplatform']
+const output = join(
+  webRoot,
+  'src',
+  'containers',
+  'Studio',
+  'internal',
+  'languages'
+)
+const folders = [
+  'base',
+  'ddl',
+  'fcmp',
+  'lua',
+  'server',
+  'meta',
+  'metax',
+  'viya',
+  'xplatform'
+]
+const args = process.argv.slice(2)
+if (args.length > 1 || (args.length && !isAbsolute(args[0])))
+  throw new Error('Expected an optional absolute @sasjs/core package directory')
+const selected = args[0] || process.env.SASJS_CORE_ROOT
+if (selected && !isAbsolute(selected))
+  throw new Error('SASJS_CORE_ROOT must be an absolute path')
+const core = selected || join(webRoot, 'node_modules', '@sasjs', 'core')
+const pkg = JSON.parse(readFileSync(join(core, 'package.json'), 'utf8'))
+if (pkg.name !== '@sasjs/core' || typeof pkg.version !== 'string')
+  throw new Error(`Invalid @sasjs/core package in ${core}`)
+if (!selected && pkg.version !== '7.1.15')
+  throw new Error(`Expected @sasjs/core 7.1.15, got ${pkg.version}`)
+const cli =
+  process.env.SASJS_CLI_ENTRY ||
+  join(webRoot, 'node_modules', '@sasjs', 'cli', 'build', 'index.js')
+if (!isAbsolute(cli))
+  throw new Error('SASJS_CLI_ENTRY must be an absolute path')
 
-export function generateManifest(root = coreRoot) {
-  const result = []
-  const seen = new Map()
-  for (const folder of folders) {
-    const files = readdirSync(join(root, folder)).filter((name) => name.endsWith('.sas')).sort()
-    for (const filename of files) {
-      const path = join(root, folder, filename)
-      const item = parseMacro(readFileSync(path, 'utf8'), folder, filename)
-      if (seen.has(item.name)) throw new Error(`Duplicate macro ${item.name}: ${seen.get(item.name)} and ${path}`)
-      seen.set(item.name, path)
-      result.push(item)
+// The CLI owns the snippet format. This separate index only adds suite labels.
+const suites = {}
+function indexSuite(dir, suite) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) indexSuite(path, suite)
+    else if (
+      entry.isFile() &&
+      entry.name.endsWith('.sas') &&
+      !/\.test\.(?:\d+\.)?sas$/i.test(entry.name)
+    ) {
+      const name = basename(entry.name, '.sas')
+      if (Object.hasOwn(suites, name))
+        throw new Error(`Duplicate macro ${name}`)
+      suites[name] = suite
     }
   }
-  return result.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
 }
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const args = process.argv.slice(2)
-  if (args.length > 1 || (args.length && !isAbsolute(args[0]))) {
-    throw new Error('Expected an optional absolute @sasjs/core package directory')
+for (const folder of folders) indexSuite(join(core, folder), folder)
+const temp = mkdtempSync(join(webRoot, '.core-snippets-'))
+try {
+  mkdirSync(join(temp, 'sasjs'))
+  writeFileSync(
+    join(temp, 'sasjs', 'sasjsconfig.json'),
+    JSON.stringify({
+      macroFolders: folders.map((folder) => join(core, folder)),
+      defaultTarget: 'local',
+      targets: [
+        {
+          name: 'local',
+          serverType: 'SASJS',
+          serverUrl: 'http://localhost:5000',
+          appLoc: '/test'
+        }
+      ]
+    })
+  )
+  const result = spawnSync(
+    process.execPath,
+    [cli, 'snippets', '-o', 'snippets.json'],
+    { cwd: temp, encoding: 'utf8' }
+  )
+  if (result.error || result.status !== 0)
+    throw new Error(
+      `sasjs snippets failed: ${result.error || result.stdout + result.stderr}`
+    )
+  const generated = readFileSync(join(temp, 'snippets.json'), 'utf8')
+  const snippets = JSON.parse(generated)
+  const names = Object.keys(snippets).sort()
+  if (JSON.stringify(names) !== JSON.stringify(Object.keys(suites).sort()))
+    throw new Error('CLI snippet inventory differs from core suite index')
+  for (const name of names) {
+    const item = snippets[name]
+    if (
+      item.prefix !== `%${name}` ||
+      typeof item.body !== 'string' ||
+      !Array.isArray(item.description)
+    )
+      throw new Error(`Unexpected CLI snippet format for ${name}`)
   }
-  const root = args[0] || coreRoot
-  const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version
-  if (!version || typeof version !== 'string') throw new Error(`Missing @sasjs/core version in ${root}`)
-  if (!args.length && version !== '7.1.15') throw new Error(`Expected @sasjs/core 7.1.15, got ${version}`)
-  const manifest = generateManifest(root)
-  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
-  console.log(`Generated ${manifest.length} snippets from @sasjs/core ${version}`)
-}
-
-// The published @sasjs/core package is the source of truth. Only the macro
-// named for each source file is public; helper definitions in a file are not.
-export function parseMacro(source, folder, filename) {
-  const expected = basename(filename, '.sas').toLowerCase()
-  // Mask comments and literals together so comment markers inside strings cannot
-  // swallow code. Keep offsets identical to the source for signature parsing.
-  const cleanChars = source.split('')
-  const declarationChars = source.split('')
-  let state = ''
-  for (let i = 0; i < source.length; i++) {
-    const ch = source[i]
-    const next = source[i + 1]
-    if (state === 'comment') {
-      cleanChars[i] = declarationChars[i] = ' '
-      if (ch === '*' && next === '/') {
-        cleanChars[++i] = declarationChars[i] = ' '
-        state = ''
-      }
-    } else if (state) {
-      declarationChars[i] = ' '
-      if (ch === state) {
-        if (next === state) declarationChars[++i] = ' '
-        else state = ''
-      }
-    } else if (ch === '/' && next === '*') {
-      cleanChars[i] = declarationChars[i] = ' '
-      cleanChars[++i] = declarationChars[i] = ' '
-      state = 'comment'
-    } else if (ch === '%' && /[(),;'"%]/.test(next || '')) {
-      i++
-    } else if (ch === "'" || ch === '"') {
-      declarationChars[i] = ' '
-      state = ch
-    }
-  }
-  const clean = cleanChars.join('')
-  const declarationsOnly = declarationChars.join('')
-  const declaration = new RegExp(`%macro\\s+${expected}\\b`, 'ig')
-  const matches = [...declarationsOnly.matchAll(declaration)]
-  if (matches.length !== 1) throw new Error(`Missing or duplicate macro declaration in ${filename}`)
-  let pos = matches[0].index + matches[0][0].length
-  while (/\s/.test(clean[pos] || '')) pos++
-  if (clean[pos] !== '(') throw new Error(`Cannot parse declaration in ${filename}: missing ( `)
-  pos++
-  let depth = 0
-  let quote = ''
-  let part = ''
-  const params = []
-  let closed = false
-  for (; pos < clean.length; pos++) {
-    const ch = source[pos]
-    if (quote) {
-      part += ch
-      if (ch === quote) {
-        if (source[pos + 1] === quote) part += source[++pos]
-        else quote = ''
-      }
-      continue
-    }
-    if (ch === '/' && source[pos + 1] === '*') {
-      const end = source.indexOf('*/', pos + 2)
-      if (end < 0) throw new Error(`Unbalanced comment in ${filename}`)
-      part += ' '
-      pos = end + 1
-      continue
-    }
-    // %STR/%NRSTR use % to mask unmatched punctuation (including parentheses).
-    if (ch === '%' && /[(),;'"%]/.test(source[pos + 1] || '')) {
-      part += ch + source[++pos]
-      continue
-    }
-    if (ch === "'" || ch === '"') { quote = ch; part += ch; continue }
-    if (ch === '(') { depth++; part += ch; continue }
-    if (ch === ')') {
-      if (depth) { depth--; part += ch; continue }
-      if (part.trim() || params.length) params.push(part.trim())
-      closed = true
-      break
-    }
-    if (ch === ',' && depth === 0) { params.push(part.trim()); part = ''; continue }
-    part += ch
-  }
-  if (!closed || quote || depth) throw new Error(`Unbalanced macro signature in ${filename}`)
-  const terminator = clean.slice(pos + 1).match(/^\s*(?:\/[^;]*)?;/)
-  if (!terminator) throw new Error(`Invalid or missing declaration terminator in ${filename}`)
-  const args = []
-  const signature = []
-  const seen = new Set()
-  let keyword = false
-  for (const raw of params) {
-    // A parameter name cannot contain =, so its first equals is the delimiter.
-    const match = raw.match(/^([a-z_]\w*)\s*(?:=([\s\S]*))?$/i)
-    if (!match) throw new Error(`Invalid parameter ${JSON.stringify(raw)} in ${filename}`)
-    const param = match[1]
-    if (seen.has(param.toLowerCase())) throw new Error(`Duplicate parameter ${param} in ${filename}`)
-    seen.add(param.toLowerCase())
-    const value = match[2]?.trim()
-    if (value !== undefined) keyword = true
-    else if (keyword) throw new Error(`Invalid positional parameter after keyword in ${filename}`)
-    signature.push(value === undefined ? param : `${param}=${value}`)
-    if (value === undefined) {
-      const placeholder = '${' + (args.length + 1) + ':' + param + '}'
-      args.push(placeholder)
-    }
-  }
-  const brief = source.match(/@brief\s+([^\n*]+)/i)?.[1].trim() || expected
-  return { name: expected, folder, description: `${brief}\nSignature: ${signature.join(', ')}`, insertText: `%${expected}(${args.length ? args.join(', ') : '$0'})` }
+  writeFileSync(
+    join(output, 'coreSnippets.json'),
+    JSON.stringify(
+      Object.fromEntries(names.map((name) => [name, snippets[name]])),
+      null,
+      2
+    ) + '\n'
+  )
+  writeFileSync(
+    join(output, 'coreSnippetSuites.json'),
+    JSON.stringify(
+      Object.fromEntries(names.map((name) => [name, suites[name]])),
+      null,
+      2
+    ) + '\n'
+  )
+  console.log(
+    `Generated ${names.length} snippets using sasjs snippets from @sasjs/core ${pkg.version}`
+  )
+} finally {
+  rmSync(temp, { recursive: true, force: true })
 }

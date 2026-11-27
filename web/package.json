@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "webpack-dev-server --config webpack.dev.ts --hot",
-    "build": "webpack --config webpack.prod.ts",
+    "start": "npm run generate:core-snippets && webpack-dev-server --config webpack.dev.ts --hot",
+    "build": "npm run generate:core-snippets && webpack --config webpack.prod.ts",
     "generate:core-snippets": "node scripts/generate-core-snippets.mjs",
     "test:core-snippets": "node --test scripts/test-core-snippets.mjs",
     "test": "npm run test:core-snippets && npm run test:studiosavebusy && npm run test:studiosaveformat && npm run test:studiorevert && npm run test:studiochanges && npm run test:grammar && npm run test:language && npm run test:markers && npm run test:completions && npm run test:hover && npm run test:language-server && npm run test:settings && npm run test:prettyjson && npm run test:cachedsite && npm run test:displaymodes && npm run test:mousepaste && npm run test:drivetree && npm run test:filetypes && npm run test:colorscheme && npm run test:userhome && npm run test:lastfile && npm run test:logissues && npm run test:response && npm run test:webout && npm run test:lintissues && npm run test:deployform && npm run test:publishrefusal && npm run test:appgrants && npm run test:appurl && npm run test:images && npm run test:appslayout && npm run test:apporder && npm run test:saveshortcut && npm run test:changesshortcut && npm run test:runtime && npm run test:treerow && npm run test:apidocs && npm run test:search && npm run test:content-search && npm run test:folderview && npm run test:browser-start && npm run test:demologin",
@@ -81,6 +81,7 @@
     "@babel/preset-env": "8.0.6",
     "@babel/preset-react": "8.0.1",
     "@babel/preset-typescript": "8.0.1",
+    "@sasjs/cli": "10.5.0",
     "@sasjs/core": "7.1.15",
     "@types/dotenv-webpack": "7.0.8",
     "@types/node": "26.6.4",
