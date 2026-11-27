@@ -96,7 +96,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // the SAS9 upload path, which no screen on this site uses.
 // 8.0.9 embeds sas-language 0.7.4: earlier workers join returned macro values
 // to %end and misindent them even though the packaged server uses 0.7.4.
-const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '8.0.9'
+// 10.4.1 embeds sas-language 0.8.9, preserving PARMCARDS data and marked
+// delimiters in %bquote / %nrbquote when formatting in the browser host.
+const CLI_VERSION = process.env.SASJS_CLI_VERSION ?? '10.4.1'
 
 const run = (command, cwd = root) => runInShell(command, cwd)
 
