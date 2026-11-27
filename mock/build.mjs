@@ -273,11 +273,11 @@ const fetchSasPackages = async () => {
  * The REPOSITORY, not the release package, and the difference is worth stating.
  * A release is one zip per platform (`toolbox-lnx`, `toolbox-win`) whose macro
  * bodies are a compiled `sasmacr_*.sas7bcat` catalogue. Nobody opens a catalogue
- * in an editor, every visitor would download it, and the two zips differ in
- * nothing a tree of files can show - so what travels here is what a clone gives:
+ * in an editor, every visitor would download it, and the per-platform zips differ
+ * in nothing a tree of files can show - so what travels here is what a clone gives:
  * a page of documentation per macro, the test script that calls it, the
- * standalone copies of the eight `custom/` macros, and the templates. The
- * catalogue is what a SAS session installs; the drive is what a person reads.
+ * standalone copies of its `custom/` macros, and the templates. The catalogue is
+ * what a SAS session installs; the drive is what a person reads.
  *
  * `.github/` stays out for the reason the framework's papers do: issue templates
  * are a forge's paperwork, not the library.
