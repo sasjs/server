@@ -128,12 +128,19 @@ try {
 process.stdout.write(versionOutput || '\n')
 const cliUsed = /v(\d+\.\d+\.\d+)/.exec(versionOutput)?.[1] ?? 'unknown'
 
+// Compile recreates sasjsbuild on a clean build, so it must run before resolving
+// the core used by both the web bundle and the drive.
+sasjs('compile -t mock')
+
+// Resolve the drive's core once, before the web build: the Studio's snippets
+// must describe the exact tree the visitor will browse, even on cached builds.
+const macroCore = fetchMacroCore()
+process.env.SASJS_CORE_ROOT = macroCore.target
+
 // The docs are inside the web build by construction, so the site carries the
 // pages that describe the release it was built from.
 run('npm run docs:build')
 run('npm run build', path.join(root, 'web'))
-
-sasjs('compile -t mock')
 
 // The drive a visitor starts with. It is a captured snapshot - the format the
 // browser host exports - so the demo opens on files rather than on an empty
@@ -339,7 +346,7 @@ const fetchToolbox = async () => {
 }
 
 /** The macro core, from npm's newest release of the package. */
-const fetchMacroCore = () => {
+function fetchMacroCore() {
   const target = path.join(root, 'sasjsbuild', 'macro-core')
   const record = path.join(root, 'sasjsbuild', 'macro-core.txt')
   const pack = path.join(root, 'sasjsbuild')
@@ -347,15 +354,19 @@ const fetchMacroCore = () => {
   if (existsSync(path.join(target, 'package.json')) && existsSync(record))
     return { target, record }
 
+  mkdirSync(pack, { recursive: true })
+
   // an archive from an earlier build would be picked up by the find below and
   // written to the record as this build's core, so they all go first
   for (const name of readdirSync(pack))
     if (name.startsWith('sasjs-core-') && name.endsWith('.tgz'))
       rmSync(path.join(pack, name), { force: true })
 
+  // Run from the destination so no checkout path is interpolated into a shell
+  // command (paths may contain spaces or shell metacharacters).
   runWhenTheRegistryIsReady(
-    `npm pack @sasjs/core@latest --silent --pack-destination ${pack}`,
-    { cwd: root }
+    'npm pack @sasjs/core@latest --silent --pack-destination .',
+    { cwd: pack }
   )
 
   const archives = readdirSync(pack).filter(
@@ -388,7 +399,6 @@ const fetchMacroCore = () => {
   return { target, record }
 }
 
-const macroCore = fetchMacroCore()
 const sasPackages = await fetchSasPackages()
 const toolbox = await fetchToolbox()
 

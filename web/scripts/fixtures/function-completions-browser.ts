@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor'
 import { registerSasCompletions } from '../../src/containers/Studio/internal/languages/completions'
+import { registerSasLanguage } from '../../src/containers/Studio/internal/languages/register'
 import {
   connectSasLanguageServer,
   didOpen,
@@ -9,7 +10,7 @@ import { provideDocumentFormattingEdits } from '../../src/containers/Studio/inte
 
 const workerUrl = new URL('@sasjs/sas-language/server/browser', import.meta.url)
 
-monaco.languages.register({ id: 'sas' })
+registerSasLanguage(monaco)
 registerSasCompletions(monaco)
 const editor = monaco.editor.create(document.getElementById('root')!, {
   value: 'atan2',

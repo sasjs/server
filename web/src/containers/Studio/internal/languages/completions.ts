@@ -2,6 +2,8 @@ import type * as monaco from 'monaco-editor'
 
 import functionSnippets from '@sasjs/sas-language/snippets/functions.json'
 
+import coreSnippets from './coreSnippets.json'
+import coreSnippetSuites from './coreSnippetSuites.json'
 import { SAS_LANGUAGE_ID } from './sasLanguage'
 import { groupWords, sasVocabularyGroups } from './vocabulary'
 
@@ -23,6 +25,16 @@ type FunctionSnippet = {
 }
 
 const snippets = functionSnippets as Record<string, FunctionSnippet>
+
+// Mirrors the suites copied by api/scripts/copySASjsCore.ts; this is a build
+// default, not an inventory of the user's possibly customized or stale Drive.
+const coreFolderNotes: Record<string, string> = {
+  meta: 'not bundled in Server; SAS 9 metadata',
+  metax: 'not bundled in Server; SAS 9 metadata and OS commands',
+  viya: 'not bundled in Server; Viya',
+  server: 'SASjs Server',
+  xplatform: 'not bundled in Server; target platform dependencies'
+}
 
 /** Detailed function completions indexed by their case-insensitive prefix. */
 export const detailedFunctionItems = new Map<string, CompletionSpec>()
@@ -56,7 +68,20 @@ for (const snippet of Object.values(snippets)) {
  * equals, leaving the cursor where the value belongs.
  */
 export const sasCompletionItems = (): CompletionSpec[] => {
-  const items: CompletionSpec[] = Array.from(detailedFunctionItems.values())
+  const items: CompletionSpec[] = [
+    ...Array.from(detailedFunctionItems.values()),
+    ...Object.entries(coreSnippets).map(([name, snippet]) => {
+      const folder = (coreSnippetSuites as Record<string, string>)[name]
+      return {
+        label: name,
+        kind: FUNCTION,
+        insertText: snippet.body,
+        insertTextRules: INSERT_AS_SNIPPET,
+        documentation: `${snippet.description.join('\n')}\n\nAvailability depends on your Drive and runtime.`,
+        detail: `SASjs core - ${folder}${coreFolderNotes[folder] ? ` (${coreFolderNotes[folder]})` : ''}`
+      }
+    })
+  ]
 
   for (const group of sasVocabularyGroups) {
     const isFunction = group.kind === FUNCTION
@@ -109,8 +134,10 @@ export const registerSasCompletions = (monacoApi: typeof monaco): void => {
   isRegistered = true
 
   const items = sasCompletionItems()
+  const coreNames = new Set(Object.keys(coreSnippets))
 
   monacoApi.languages.registerCompletionItemProvider(SAS_LANGUAGE_ID, {
+    triggerCharacters: ['%'],
     provideCompletionItems: (model, position) => {
       const word = model.getWordUntilPosition(position)
 
@@ -123,7 +150,25 @@ export const registerSasCompletions = (monacoApi: typeof monaco): void => {
         endColumn: word.endColumn
       }
 
-      return { suggestions: items.map((item) => ({ ...item, range })) }
+      const hasPercent =
+        word.startColumn > 1 &&
+        model.getLineContent(position.lineNumber)[word.startColumn - 2] === '%'
+      const coreRange = hasPercent
+        ? { ...range, startColumn: range.startColumn - 1 }
+        : range
+
+      return {
+        suggestions: items.map((item) => {
+          const label = String(item.label)
+          return coreNames.has(label)
+            ? {
+                ...item,
+                range: coreRange,
+                filterText: `${hasPercent ? '%' : ''}${label}`
+              }
+            : { ...item, range }
+        })
+      }
     }
   })
 }
