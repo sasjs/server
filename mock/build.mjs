@@ -420,7 +420,20 @@ const drive = withCodeSources(
       folder: 'toolbox',
       root: toolbox.target,
       // issue templates are the forge's paperwork, not the library
-      skip: ['.github/']
+      skip: ['.github/'],
+      // The toolbox carries no rules file, so the nearest one on the drive
+      // would be the root's - which is written for a SASjs project and marks
+      // most of a third-party library: every line of it ends in a space, the
+      // headers are single-asterisk, the standalone `custom/` macros nest
+      // definitions. This one is the strictest set that reports nothing about
+      // the tree as it stands, so a visitor browsing `/code/toolbox` sees the
+      // rules the library can meet rather than a wall of markers.
+      additions: {
+        '.sasjslint': readFileSync(
+          path.join(root, 'mock', 'toolbox.sasjslint'),
+          'utf8'
+        )
+      }
     }
   ]
 )

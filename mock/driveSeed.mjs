@@ -46,6 +46,11 @@ export const withServerSeededFiles = (snapshot, lintConfiguration) => ({
  * slow site nobody can explain. `MAX_CODE_BYTES` bounds what the snapshot carries
  * - the stored string, so a binary counts four thirds - and passing it fails the
  * build at the file that did it rather than publishing a site to be fixed later.
+ *
+ * A source can also carry a file that is not in the tree it came from, named in
+ * `additions` against the folder's own root. The toolbox's rules file is the one
+ * that needs it: no upstream repository holds the rules a demo lints its tree
+ * against, and the drive root's mark most of a third-party library.
  */
 export const MAX_CODE_BYTES = 20 * 1024 * 1024
 
@@ -54,7 +59,7 @@ export const withCodeSources = (drive, sources) => {
 
   let carried = 0
 
-  for (const { folder, root, skip = [] } of sources) {
+  for (const { folder, root, skip = [], additions = {} } of sources) {
     for (const file of listFiles(root)) {
       if (file.relative.endsWith('.zip')) continue
       if (skip.some((prefix) => file.relative.startsWith(prefix))) continue
@@ -68,6 +73,20 @@ export const withCodeSources = (drive, sources) => {
         )
 
       files[`${DRIVE_ROOT}/code/${folder}/${file.relative}`] = file.contents
+    }
+
+    // a file the source does not hold: counted the same way, because what
+    // bounds the snapshot is what a visitor downloads, not where it came from
+    for (const [relative, contents] of Object.entries(additions)) {
+      carried += Buffer.byteLength(contents)
+
+      if (carried > MAX_CODE_BYTES)
+        throw new Error(
+          `The code on the drive passed ${MAX_CODE_BYTES} bytes at ${folder}/${relative}. ` +
+            `Every visitor downloads the drive snapshot, so a tree this large needs a decision rather than a build.`
+        )
+
+      files[`${DRIVE_ROOT}/code/${folder}/${relative}`] = contents
     }
   }
 

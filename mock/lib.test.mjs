@@ -50,6 +50,11 @@ test('mock web build uses the same selected core tree as the drive', async (t) =
             new URL(`./${name}`, import.meta.url),
             path.join(root, 'mock', name)
           )
+        // the toolbox rules file is data the build reads, next to its own code
+        cpSync(
+          new URL('./toolbox.sasjslint', import.meta.url),
+          path.join(root, 'mock', 'toolbox.sasjslint')
+        )
         const core = path.join(root, 'sasjsbuild', 'macro-core')
         const probe = path.join(root, 'probe.json')
         const driveProbe = path.join(root, 'drive-probe.json')

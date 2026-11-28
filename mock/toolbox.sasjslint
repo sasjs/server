@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sasjs/lint/main/sasjslint-schema.json",
+  "noTrailingSpaces": false,
+  "noEncodedPasswords": true,
+  "hasDoxygenHeader": false,
+  "hasMacroNameInMend": false,
+  "hasMacroParentheses": false,
+  "noGremlins": true,
+  "noMacroIfInOpenCode": true,
+  "noMalformedMacroCalls": true,
+  "noNestedCommentsInHeader": true,
+  "noNestedMacros": false,
+  "noSingleAsteriskComments": false,
+  "noXcmd": true,
+  "strictMacroDefinition": true,
+  "lowerCaseMacroNames": false,
+  "lowerCaseFileNames": true,
+  "noSpacesInFileNames": true,
+  "noTabs": true,
+  "noUndeclaredMacros": true,
+  "noUnusedMacros": true,
+  "noUnusedLibnames": true,
+  "noBannedStrings": true,
+  "bannedStrings": ["warning:"],
+  "maxLineLength": 169,
+  "indentationMultiple": 0,
+  "lineEndings": "off",
+  "ignoredLibnames": ["USR_HOME", "USR_DATA", "TEMP"],
+  "severityLevel": {
+    "default": "error"
+  }
+}
