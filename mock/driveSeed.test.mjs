@@ -177,3 +177,43 @@ test('a source can name the folders it does not want', () => {
     rmSync(root, { recursive: true, force: true })
   }
 })
+
+test('a source can carry a file it does not hold on disk', () => {
+  const root = makeTree()
+
+  try {
+    const rules = '{"maxLineLength": 169}'
+    const drive = withCodeSources({}, [
+      { folder: 'toolbox', root, additions: { '.sasjslint': rules } }
+    ])
+    const keys = Object.keys(drive.files)
+
+    // at the folder's own root: a `.sasjslint` is the rules file for
+    // everything beneath it, so a visitor's tree finds it where the host walks
+    assert.equal(drive.files[`${DRIVE_ROOT}/code/toolbox/.sasjslint`], rules)
+    // and the files the source does hold still land beside it
+    assert.ok(keys.includes(`${DRIVE_ROOT}/code/toolbox/base/mp_abort.sas`))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('an addition is counted against the bound like any other file', () => {
+  const root = makeTree()
+
+  try {
+    assert.throws(
+      () =>
+        withCodeSources({}, [
+          {
+            folder: 'toolbox',
+            root,
+            additions: { '.sasjslint': 'x'.repeat(MAX_CODE_BYTES + 1) }
+          }
+        ]),
+      /passed \d+ bytes at toolbox\/\.sasjslint/
+    )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
