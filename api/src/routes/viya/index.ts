@@ -32,6 +32,18 @@ import { oauthToken, TOKEN_PATH } from './token'
 import { subjectOf } from './services'
 import { addJesMembers, localJesEnabled } from './localJes'
 import { VIYA_CONTENT_BYTES, VIYA_CONTENT_PATH } from '../../app-modules'
+import { hasRoutePermission } from '../../middlewares/authorize'
+import { grantDefinitionAccess, hasDefinitionAccess } from './definitionAccess'
+
+// Not a request field: callers cannot supply or overwrite this decision.
+const metadataAccess = new WeakMap<express.Request, boolean>()
+const isDefinition = (path: string) => /^\/jobDefinitions(?:\/|$)/i.test(path)
+// The API's reserved filename namespace. Filter before dispatch, not from its
+// response: older releases ignore readJobDefinitionMetadata and paging happens
+// inside the dispatcher. This also prevents metadata reads on newer releases.
+const isReservedDefinition = (name: string) => /^\.sasjs-viya-job-/i.test(name)
+const isMembers = (path: string, method: string) =>
+  method === 'GET' && /^\/folders\/folders\/[^/]+\/members\/*$/i.test(path)
 
 /**
  * The paths a Viya client uses, and the only ones this router answers.
@@ -47,6 +59,7 @@ export const VIYA_PREFIXES = [
   '/compute',
   '/folders',
   '/files',
+  '/jobDefinitions',
   '/identities',
   '/types'
 ]
@@ -73,7 +86,11 @@ export const viyaGuard =
   (
     authenticate: express.RequestHandler,
     /** The permission gate, run with `req.url` set to the API rule's path. */
-    decide: express.RequestHandler
+    decide: express.RequestHandler,
+    /** A non-responding metadata permission check, not a second middleware gate. */
+    metadataDecision: (
+      req: express.Request
+    ) => Promise<boolean> = hasRoutePermission
   ): express.RequestHandler =>
   async (req, res, next) => {
     if (!isViyaPath(req.path)) return next()
@@ -82,39 +99,55 @@ export const viyaGuard =
     const afterAuthentication = async (error?: unknown) => {
       if (error != null) return next(authenticationError(error))
 
-      const rule = ruleFor(req.path)
+      const members = isMembers(req.path, req.method)
+      if (members) metadataAccess.set(req, false)
+      const rules = rulesFor(req.path, req.method)
+      if (!rules.length) return next()
 
-      // a path with no API equivalent has no rule to decide on: the estate's
-      // identities and types are not files and do not run code
-      if (!rule) return next()
-
-      // `authorize` decides from `baseUrl + req.url`, so the rule is made the
-      // whole path: a Viya path is not in the gate's inventory, and a rule left
-      // as a suffix of the mount's would be a path the lookup does not match
+      // Each Drive operation has its own route grant. A definition operation
+      // composes several of them; every grant must pass before dispatch.
       const url = req.url
       const baseUrl = req.baseUrl
-
-      req.url = rule
-      req.baseUrl = ''
-
       const restoreRequestPath = () => {
         req.url = url
         req.baseUrl = baseUrl
       }
-
-      try {
-        await decide(req, res, (error?: unknown) => {
+      const check = async (index: number): Promise<void> => {
+        if (index === rules.length) {
+          if (members) {
+            req.url = '/SASjsApi/drive/file'
+            req.baseUrl = ''
+            try {
+              metadataAccess.set(req, (await metadataDecision(req)) === true)
+            } catch {
+              // Failure to decide is never a grant.
+              metadataAccess.set(req, false)
+            } finally {
+              restoreRequestPath()
+            }
+          }
+          if (isDefinition(req.path)) grantDefinitionAccess(req)
+          return next()
+        }
+        req.url = rules[index]
+        req.baseUrl = ''
+        try {
+          await decide(req, res, (error?: unknown) => {
+            restoreRequestPath()
+            if (error != null) return next(authenticationError(error))
+            // Middleware is not required to return its continuation's promise.
+            void check(index + 1)
+          })
+        } catch (error) {
           restoreRequestPath()
-          next(error as Error | undefined)
-        })
-      } catch (error) {
-        restoreRequestPath()
-        return next(
-          error instanceof Error
-            ? error
-            : new Error('Viya permission check failed')
-        )
+          next(
+            error instanceof Error
+              ? error
+              : new Error('Viya permission check failed')
+          )
+        }
       }
+      await check(0)
     }
 
     try {
@@ -137,10 +170,22 @@ export const ruleFor = (path: string): string | undefined => {
   if (path.startsWith('/folders/')) return '/SASjsApi/drive/folder'
   if (/\/jobs$/.test(path)) return '/SASjsApi/code/execute'
   if (path.startsWith('/compute/')) return '/SASjsApi/code/execute'
-  if (path.startsWith('/jobExecution/') || path.startsWith('/jobDefinitions/'))
-    return '/SASjsApi/code/execute'
+  if (path.startsWith('/jobDefinitions/')) return '/SASjsApi/drive/file'
+  if (path.startsWith('/jobExecution/')) return '/SASjsApi/code/execute'
 
   return undefined
+}
+
+/** Keep the tree grant until the dependency's list-only traversal is released.
+ * Definitions also require folder listings and file reads/writes. */
+const rulesFor = (path: string, method: string): string[] => {
+  const file = '/SASjsApi/drive/file'
+  const folder = '/SASjsApi/drive/folder'
+  const tree = '/SASjsApi/drive/fileTree'
+  if (isDefinition(path)) return [file, tree, folder]
+  if (isMembers(path, method)) return [folder]
+  const rule = ruleFor(path)
+  return rule ? [rule] : []
 }
 
 /**
@@ -242,9 +287,7 @@ export const isViyaPath = (path: string): boolean =>
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   ) ||
   (localJesEnabled() &&
-    ['/jobDefinitions', '/jobExecution'].some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
-    ))
+    (path === '/jobExecution' || path.startsWith('/jobExecution/')))
 
 /**
  * Whether a request is the one the server answers under `/SASLogon`.
@@ -325,6 +368,16 @@ export const createViyaRouter = (
 
     if (answersToken) return oauthToken(req, res)
 
+    if (isDefinition(req.path) && !hasDefinitionAccess(req))
+      return res
+        .status(401)
+        .json(
+          emulatedRefusal(
+            401,
+            'Viya definition access requires the authorization guard.'
+          )
+        )
+
     // the emulator answers `POST /files/files` from the multipart part, and this
     // is the parser the rest of the server uses for one. Imported here rather
     // than at the top: the multer helper reads the server's folder layout at
@@ -370,8 +423,45 @@ export const createViyaRouter = (
       // a refusal is already answered
       if (res.headersSent) return
 
-      answer = await dispatchViya(services(req), req.method, req.path, {
-        query: req.query as Record<string, string | undefined>,
+      const baseServices = services(req)
+      const canReadMetadata = metadataAccess.get(req) === true
+      const drive = baseServices.drive
+      const restrictedDrive =
+        !canReadMetadata && isMembers(req.path, req.method) && drive
+          ? {
+              ...drive,
+              list: async (path?: string) => {
+                const listing = await drive.list(path)
+                return {
+                  ...listing,
+                  files: listing.files.filter(
+                    (name) => !isReservedDefinition(name)
+                  )
+                }
+              }
+            }
+          : drive
+      const requestServices = isMembers(req.path, req.method)
+        ? {
+            ...baseServices,
+            drive: restrictedDrive,
+            viya: {
+              ...baseServices.viya,
+              readJobDefinitionMetadata: canReadMetadata
+            }
+          }
+        : baseServices
+      // Local JES adds members after dispatch. Fetch the whole visible listing
+      // first so neither the API nor the registry is paged independently.
+      const combinedMembers =
+        localJesEnabled() && isMembers(req.path, req.method)
+      const query = { ...req.query } as Record<string, string | undefined>
+      if (combinedMembers) {
+        delete query.start
+        delete query.limit
+      }
+      answer = await dispatchViya(requestServices, req.method, req.path, {
+        query,
         body: req.body as Record<string, unknown> | undefined,
         contents,
         file: await uploadOf(req),
@@ -382,7 +472,28 @@ export const createViyaRouter = (
         // bearer token and not a token that happens to start with the word
         token: req.headers.authorization?.replace(/^Bearer\s+/i, '')
       })
-      await addJesMembers(req, services(req), answer)
+      if (canReadMetadata) await addJesMembers(req, requestServices, answer)
+      if (combinedMembers && answer.status === 200) {
+        const body = answer.body as {
+          items: unknown[]
+          start: number
+          limit: number
+          count: number
+        }
+        const requestedStart = Number(req.query.start ?? 0)
+        const start =
+          Number.isSafeInteger(requestedStart) && requestedStart > 0
+            ? requestedStart
+            : 0
+        const limit = Number(req.query.limit ?? 0) || 0
+        body.items =
+          limit > 0
+            ? body.items.slice(start, start + limit)
+            : body.items.slice(start)
+        body.start = start
+        body.limit = limit || body.items.length
+        body.count = body.items.length
+      }
     } catch (error) {
       return next(error)
     }

@@ -25,6 +25,8 @@ import { getPreProgramVariables, RunTimeType } from '../../utils'
 import { localJesEnabled } from './localJes'
 import { executeLocalCompute } from './localCompute'
 
+type Execute = NonNullable<NonNullable<Services['viya']>['execute']>
+
 /** The one drive the server serves, whichever API is asked for it. */
 let drive: ReturnType<typeof createDriveService> | undefined
 
@@ -102,14 +104,55 @@ export const viyaServices = (req: Request): Services => ({
   drive: serverDrive(),
   identity: identityFor(req),
   viya: {
+    // Opt in only for the disposable desktop mock.
+    ...(localJesEnabled() && {
+      allowUntransactionalJobDefinitionCreation: true
+    }),
     serverUrl: serverUrl(req),
-    execute: async ({ program, variables, name: _name, sessionId }) => {
+    execute: (async ({
+      program,
+      variables,
+      name: _name,
+      sessionId
+    }: Parameters<Execute>[0]) => {
+      if (process.env.LOCAL_VIYA_SCRIPT_MOCKS !== undefined) {
+        try {
+          return await executeLocalCompute(
+            req,
+            program,
+            variables as Record<string, unknown> | undefined
+          )
+        } catch (error) {
+          // Do not let the API dispatcher format this as a synthetic SAS ERROR,
+          // or expose submitted code and other unexpected exception details.
+          const knownErrors = [
+            'Local script mock requires a loopback desktop client.',
+            'Invalid local script mock registry.',
+            'Invalid local script mock code.',
+            'Unregistered local script mock.'
+          ]
+          const message =
+            error instanceof Error && knownErrors.includes(error.message)
+              ? error.message
+              : 'Local script mock failed.'
+          return {
+            state: 'failed' as const,
+            log: `Mock Compute (not SAS)\n${message}`
+          }
+        }
+      }
       if (localJesEnabled())
         return executeLocalCompute(
           req,
           program,
           variables as Record<string, unknown> | undefined
         )
+      if (
+        process.env.MODE === 'desktop' &&
+        process.runTimes.includes(RunTimeType.JS) &&
+        !process.runTimes.includes(RunTimeType.SAS)
+      )
+        throw new Error('Local JS mock: no registered twin.')
       const controller = new ExecutionController()
 
       // every field a generated program reads, from the request: a service that
@@ -146,6 +189,6 @@ export const viyaServices = (req: Request): Services => ({
         return { webout: undefined, log, state: 'failed' as const }
 
       return { webout, log }
-    }
+    }) satisfies Execute
   }
 })

@@ -7,7 +7,10 @@ import {
   writeFile,
   copyFile,
   readdir,
-  unlink
+  unlink,
+  readFile,
+  rename,
+  symlink
 } from 'fs/promises'
 import { spawn } from 'child_process'
 import { tmpdir } from 'os'
@@ -25,8 +28,11 @@ import mongoose from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 import { UserController } from '../controllers'
 import { generateAccessToken, saveTokensInDB } from '../utils'
+import * as authorization from '../middlewares/authorize'
 
 jest.unmock('axios')
+
+const mockContext = 'SASjs Mock context'
 
 describe('local Viya web jobs', () => {
   let root: string
@@ -205,6 +211,7 @@ describe('local Viya web jobs', () => {
           serverUrl: `http://127.0.0.1:${address.port}`,
           serverType: ServerType.SasViya,
           appLoc: '/Public/bridge',
+          contextName: mockContext,
           useComputeApi: true
         })
         await compute.request('other-race', null)
@@ -276,6 +283,249 @@ describe('local Viya web jobs', () => {
     },
     30000
   )
+  it.each([
+    ['nonempty', false],
+    ['empty', true]
+  ])(
+    'uses a deployed %s definition with its registered JS twin for web, Compute and JES',
+    async (_kind, empty) => {
+      const folderPath = join(root, 'drive/files/Public/bridge')
+      let recordPath = ''
+      const marker = join(root, 'must-not-run-sas')
+      const definition = {
+        name: 'capture',
+        code: empty ? '' : `%put never execute;\nx 'touch ${marker}';\nrun;`,
+        type: 'Compute',
+        parameters: [],
+        links: []
+      }
+      process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
+        '/Public/bridge/capture': '/Public/bridge/capture.js'
+      })
+      const execution = jest.spyOn(
+        ExecutionController.prototype,
+        'executeProgram'
+      )
+      try {
+        const address = listener.address()
+        if (!address || typeof address === 'string')
+          throw new Error('listener unavailable')
+        const folder = await request(app)
+          .get('/folders/folders/@item?path=/Public/bridge')
+          .expect(200)
+        const created = await request(app)
+          .post(
+            `/jobDefinitions/definitions?parentFolderUri=${encodeURIComponent(`/folders/folders/${folder.body.id}`)}`
+          )
+          .send(definition)
+          .expect(201)
+        const definitionId = created.body.id
+        recordPath = join(folderPath, `.sasjs-viya-job-${definitionId}.json`)
+        const members = await request(app)
+          .get(`/folders/folders/${folder.body.id}/members`)
+          .expect(200)
+        expect(
+          members.body.items.filter((item: any) => item.name === 'capture')
+        ).toHaveLength(1)
+        const original = await request(app)
+          .get(`/jobDefinitions/definitions/${definitionId}`)
+          .expect(200)
+        expect(original.body).toEqual(created.body)
+        process.env.LOCAL_VIYA_JS_JOBS = '{}'
+        try {
+          await request(app)
+            .post(
+              `/SASJobExecution/?_job=/jobDefinitions/definitions/${definitionId}`
+            )
+            .expect(400)
+        } finally {
+          process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
+            '/Public/bridge/capture': '/Public/bridge/capture.js'
+          })
+        }
+        const pair = `__program=/Public/bridge/capture&_job=/jobDefinitions/definitions/${definitionId}`
+        const twinPath = join(folderPath, 'capture.js')
+        const twinBefore = await readFile(twinPath, 'utf8')
+        await writeFile(
+          twinPath,
+          `_webout = JSON.stringify({ program: _program, passed: typeof __program === 'undefined' ? null : __program })`
+        )
+        for (const [extra, passed] of [
+          ['', null],
+          ['&__program=ordinary-pass-through', 'ordinary-pass-through'],
+          ['&__program=/Public/bridge/unrelated', '/Public/bridge/unrelated']
+        ]) {
+          const result = await request(app)
+            .post(
+              `/SASJobExecution/?_job=/jobDefinitions/definitions/${definitionId}${extra}`
+            )
+            .expect(200)
+          expect(JSON.parse(result.text)).toEqual({
+            program: '/Public/bridge/capture',
+            passed
+          })
+        }
+        await writeFile(twinPath, twinBefore)
+        execution.mockClear()
+        for (const invalid of [
+          `__program=/Public/bridge/capture&_job=/jobDefinitions/definitions/wrong`,
+          `${pair}&_job=/jobDefinitions/definitions/duplicate`,
+          `${pair}&_program=/Public/bridge/capture`,
+          `${pair}&_executionTasks=true`
+        ])
+          await request(app).post(`/SASJobExecution/?${invalid}`).expect(400)
+        for (const field of ['_job', '_program'])
+          await request(app)
+            .post(`/SASJobExecution/?${pair}`)
+            .field(field, 'spoof')
+            .expect(400)
+        for (const denied of [
+          '/SASjsApi/drive/file',
+          '/SASjsApi/drive/fileTree',
+          '/SASjsApi/drive/folder',
+          '/SASjsApi/stp/execute'
+        ]) {
+          const access = jest
+            .spyOn(authorization, 'hasRoutePermission')
+            .mockImplementation(async (req) => req.url !== denied)
+          try {
+            await request(app).post(`/SASJobExecution/?${pair}`).expect(401)
+          } finally {
+            access.mockRestore()
+          }
+        }
+        const backup = `${twinPath}.backup`
+        const outside = join(root, 'outside.js')
+        await writeFile(outside, `_webout = JSON.stringify({ escaped: true })`)
+        await rename(twinPath, backup)
+        try {
+          await request(app).post(`/SASJobExecution/?${pair}`).expect(400)
+          await symlink(outside, twinPath)
+          await request(app).post(`/SASJobExecution/?${pair}`).expect(400)
+        } finally {
+          await rm(twinPath, { force: true })
+          await rename(backup, twinPath)
+        }
+        expect(execution).not.toHaveBeenCalled()
+        const recordBefore = await readFile(recordPath, 'utf8')
+        for (const useComputeApi of [undefined, true, false]) {
+          const client = new SASjs({
+            serverUrl: `http://127.0.0.1:${address.port}`,
+            serverType: ServerType.SasViya,
+            appLoc: '/Public/bridge',
+            contextName: mockContext,
+            debug: true,
+            useComputeApi
+          })
+          for (const value of ['alpha', 'beta', 'file;upload']) {
+            trace.length = 0
+            const response: any = await client.request(
+              'capture',
+              { input: [{ value }] },
+              {},
+              undefined,
+              undefined,
+              ['log']
+            )
+            const output = useComputeApi === true ? response : response.result
+            expect(output.program).toBe('/Public/bridge/capture')
+            expect(
+              useComputeApi === false || value.includes(';')
+                ? output.upload
+                : output.data
+            ).toContain(value)
+            const log =
+              useComputeApi === true
+                ? client.getSasRequests().slice(-1)[0].logFile
+                : response.log
+            expect(log).toContain('JS mock (not SAS)')
+            if (useComputeApi === undefined)
+              expect(
+                trace.some(
+                  (entry) =>
+                    entry.method === 'POST' &&
+                    entry.url.includes('__program=') &&
+                    entry.url.includes('_job=')
+                )
+              ).toBe(true)
+          }
+        }
+        expect(await readFile(recordPath, 'utf8')).toBe(recordBefore)
+        expect(
+          (
+            await request(app)
+              .get(`/jobDefinitions/definitions/${definitionId}`)
+              .expect(200)
+          ).body
+        ).toEqual(original.body)
+        expect(execution).toHaveBeenCalled()
+        expect(
+          execution.mock.calls.every(
+            ([args]) => args.runTime === RunTimeType.JS
+          )
+        ).toBe(true)
+        await expect(readdir(marker)).rejects.toMatchObject({ code: 'ENOENT' })
+      } finally {
+        execution.mockRestore()
+        delete process.env.LOCAL_VIYA_JS_JOBS
+        if (recordPath) await unlink(recordPath)
+      }
+    },
+    30000
+  )
+  it('uses the registered synthetic definition with the actual web adapter', async () => {
+    process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
+      '/Public/bridge/capture': '/Public/bridge/capture.js'
+    })
+    try {
+      delete process.env.LOCAL_VIYA_JS_JOBS
+      await request(app)
+        .post(
+          `/SASJobExecution/?_job=/jobDefinitions/definitions/${Buffer.from('/Public/bridge/capture').toString('base64url')}`
+        )
+        .expect(404)
+      process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
+        '/Public/bridge/capture': '/Public/bridge/capture.js'
+      })
+      const address = listener.address()
+      if (!address || typeof address === 'string')
+        throw new Error('listener unavailable')
+      const client = new SASjs({
+        serverUrl: `http://127.0.0.1:${address.port}`,
+        serverType: ServerType.SasViya,
+        appLoc: '/Public/bridge'
+      })
+      await writeFile(
+        join(root, 'drive/files/Public/bridge/body-param.js'),
+        `_webout = JSON.stringify({passed: __program})`
+      )
+      process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
+        '/Public/bridge/capture': '/Public/bridge/capture.js',
+        '/Public/bridge/body-param': '/Public/bridge/body-param.js'
+      })
+      const bodyParam = await request(app)
+        .post(
+          `/SASJobExecution/?_job=/jobDefinitions/definitions/${Buffer.from('/Public/bridge/body-param').toString('base64url')}`
+        )
+        .field('__program', 'body-pass-through')
+        .expect(200)
+      expect(JSON.parse(bodyParam.text)).toEqual({
+        passed: 'body-pass-through'
+      })
+      for (const value of ['first', 'second']) {
+        const result: any = await client.request('capture', {
+          input: [{ value }]
+        })
+        expect(result.program).toBe('/Public/bridge/capture')
+        expect(result.data).toContain(value)
+      }
+    } finally {
+      delete process.env.LOCAL_VIYA_JS_JOBS
+      await rm(join(root, 'drive/files/Public/bridge/body-param.js'), {
+        force: true
+      })
+    }
+  }, 30000)
   it('runs registered compute mock with inline data and refuses altered code', async () => {
     process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
       '/Public/bridge/capture': '/Public/bridge/capture.js'
@@ -288,6 +538,7 @@ describe('local Viya web jobs', () => {
         serverUrl: `http://127.0.0.1:${address.port}`,
         serverType: ServerType.SasViya,
         appLoc: '/Public/bridge',
+        contextName: mockContext,
         useComputeApi: true,
         debug: true
       })
@@ -319,6 +570,242 @@ describe('local Viya web jobs', () => {
       delete process.env.LOCAL_VIYA_JS_JOBS
     }
   }, 30000)
+  it('answers an explicitly registered exact script with a labelled fixture log and rejects changes', async () => {
+    const { createHash } = await import('crypto')
+    const code = 'data;\n  put "fixture";\nrun;'
+    const digest = createHash('sha256').update(code).digest('hex')
+    process.env.LOCAL_VIYA_SCRIPT_MOCKS = JSON.stringify({
+      [digest]: { state: 'completed', log: 'fixture behavior' }
+    })
+    const marker = join(root, 'unexpected-code-execution')
+    const modified = `${code}\nx 'touch ${marker}';`
+    const req = {
+      get: () => 'localhost',
+      headers: {},
+      cookies: {},
+      protocol: 'http',
+      socket: { remoteAddress: '127.0.0.1' }
+    } as unknown as express.Request
+    try {
+      const { viyaServices } = await import('../routes/viya/services')
+      const execute = viyaServices(req).viya!.execute!
+      const answer = await execute({
+        program: code.split('\n'),
+        sessionId: 'test'
+      })
+      expect(answer.log).toBe('Mock Compute (not SAS)\nfixture behavior')
+      await expect(
+        execute({ program: modified.split('\n'), sessionId: 'test' })
+      ).resolves.toEqual({
+        state: 'failed',
+        log: 'Mock Compute (not SAS)\nUnregistered local script mock.'
+      })
+      await expect(
+        (await import('fs/promises')).stat(marker)
+      ).rejects.toMatchObject({ code: 'ENOENT' })
+      await expect(
+        viyaServices({
+          ...req,
+          socket: { remoteAddress: '192.0.2.1' }
+        } as express.Request).viya!.execute!({
+          program: code,
+          sessionId: 'test'
+        })
+      ).resolves.toEqual({
+        state: 'failed',
+        log: 'Mock Compute (not SAS)\nLocal script mock requires a loopback desktop client.'
+      })
+    } finally {
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+      delete process.env.LOCAL_VIYA_JS_JOBS
+    }
+  })
+  it('fails closed for invalid registry and non-desktop mode', async () => {
+    const { executeLocalCompute } = await import('../routes/viya/localCompute')
+    const req = { socket: { remoteAddress: '127.0.0.1' } } as express.Request
+    try {
+      process.env.LOCAL_VIYA_SCRIPT_MOCKS = '{'
+      await expect(executeLocalCompute(req, 'x', {})).rejects.toThrow()
+      process.env.LOCAL_VIYA_SCRIPT_MOCKS = '{}'
+      process.env.MODE = ModeType.Server
+      await expect(executeLocalCompute(req, 'x', {})).rejects.toThrow()
+    } finally {
+      process.env.MODE = ModeType.Desktop
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+    }
+  })
+  it.each([undefined, null, '', 'running', 1])(
+    'fails closed for unsupported or missing fixture state %p',
+    async (state) => {
+      const { createHash } = await import('crypto')
+      const { executeLocalCompute } =
+        await import('../routes/viya/localCompute')
+      const code = 'registered script'
+      const digest = createHash('sha256').update(code).digest('hex')
+      process.env.LOCAL_VIYA_SCRIPT_MOCKS = JSON.stringify({
+        [digest]: { state, log: 'must not succeed' }
+      })
+      try {
+        const req = {
+          socket: { remoteAddress: '127.0.0.1' }
+        } as express.Request
+        await expect(executeLocalCompute(req, code, {})).rejects.toThrow()
+      } finally {
+        delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+      }
+    }
+  )
+  it('returns an explicit completed state through Compute without interpreting its log', async () => {
+    const { createHash } = await import('crypto')
+    const code = 'fixture success'
+    const digest = createHash('sha256').update(code).digest('hex')
+    process.env.LOCAL_VIYA_SCRIPT_MOCKS = JSON.stringify({
+      [digest]: { state: 'completed', log: 'fixture success' }
+    })
+    try {
+      const contexts = await request(listener)
+        .get('/compute/contexts')
+        .expect(200)
+      const session = await request(listener)
+        .post(`/compute/contexts/${contexts.body.items[0].id}/sessions`)
+        .send({})
+        .expect(201)
+      const submitted = await request(listener)
+        .post(`/compute/sessions/${session.body.id}/jobs`)
+        .send({ code })
+        .expect(201)
+      const path = `/compute/sessions/${session.body.id}/jobs/${submitted.body.id}`
+      const state = await request(listener).get(`${path}/state`).expect(200)
+      expect(state.text.replace(/"/g, '')).toBe('completed')
+      const log = await request(listener).get(`${path}/log/content`).expect(200)
+      expect(log.body.items.map((item: any) => item.line)).toEqual([
+        'Mock Compute (not SAS)',
+        'fixture success'
+      ])
+    } finally {
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+    }
+  })
+  it('routes the fixture failed state and its log through Compute', async () => {
+    const { createHash } = await import('crypto')
+    const code = 'fixture failure'
+    const digest = createHash('sha256').update(code).digest('hex')
+    process.env.LOCAL_VIYA_SCRIPT_MOCKS = JSON.stringify({
+      [digest]: { state: 'failed', log: 'ERROR: explicit failure fixture' }
+    })
+    try {
+      const contexts = await request(listener)
+        .get('/compute/contexts')
+        .expect(200)
+      const session = await request(listener)
+        .post(`/compute/contexts/${contexts.body.items[0].id}/sessions`)
+        .send({})
+        .expect(201)
+      const submitted = await request(listener)
+        .post(`/compute/sessions/${session.body.id}/jobs`)
+        .send({ code: [code] })
+        .expect(201)
+      const path = `/compute/sessions/${session.body.id}/jobs/${submitted.body.id}`
+      const state = await request(listener).get(`${path}/state`).expect(200)
+      expect(state.text.replace(/"/g, '')).toBe('failed')
+      const log = await request(listener).get(`${path}/log/content`).expect(200)
+      expect(log.body.items.map((item: any) => item.line)).toEqual([
+        'Mock Compute (not SAS)',
+        'ERROR: explicit failure fixture'
+      ])
+    } finally {
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+    }
+  })
+  it('fails missing and empty code through the mounted Compute dispatcher even when the empty digest is registered', async () => {
+    const { createHash } = await import('crypto')
+    const digest = createHash('sha256').update('').digest('hex')
+    process.env.LOCAL_VIYA_SCRIPT_MOCKS = JSON.stringify({
+      [digest]: { state: 'completed', log: 'must not run' }
+    })
+    try {
+      const contexts = await request(listener)
+        .get('/compute/contexts')
+        .expect(200)
+      const session = await request(listener)
+        .post(`/compute/contexts/${contexts.body.items[0].id}/sessions`)
+        .send({})
+        .expect(201)
+      for (const body of [{}, { code: '' }, { code: [] }, { code: [''] }]) {
+        const submitted = await request(listener)
+          .post(`/compute/sessions/${session.body.id}/jobs`)
+          .send(body)
+          .expect(201)
+        const path = `/compute/sessions/${session.body.id}/jobs/${submitted.body.id}`
+        let state = ''
+        for (let i = 0; i < 50; i++) {
+          const response = await request(listener)
+            .get(`${path}/state`)
+            .expect(200)
+          state = response.text.replace(/"/g, '')
+          if (state !== 'running') break
+          await new Promise((resolve) => setTimeout(resolve, 10))
+        }
+        expect(state).toBe('failed')
+        const log = await request(listener)
+          .get(`${path}/log/content`)
+          .expect(200)
+        expect(JSON.stringify(log.body)).not.toContain('must not run')
+      }
+    } finally {
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+    }
+  })
+  it('rejects malformed code rather than matching the empty fixture', async () => {
+    const { createHash } = await import('crypto')
+    const { executeLocalCompute } = await import('../routes/viya/localCompute')
+    const digest = createHash('sha256').update('').digest('hex')
+    process.env.LOCAL_VIYA_SCRIPT_MOCKS = JSON.stringify({
+      [digest]: { state: 'completed', log: 'empty' }
+    })
+    try {
+      const req = { socket: { remoteAddress: '127.0.0.1' } } as express.Request
+      await expect(executeLocalCompute(req, [123] as any, {})).rejects.toThrow()
+    } finally {
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+    }
+  })
+  it('does not fall through to JS twins when script mocks are enabled', async () => {
+    const { executeLocalCompute } = await import('../routes/viya/localCompute')
+    const { localComputeCode } = await import('../routes/viya/localJes')
+    const marker = join(root, 'script-mock-fallback-executed')
+    await writeFile(
+      join(root, 'drive/files/Public/bridge/fallback.js'),
+      `fs.writeFileSync(${JSON.stringify(marker)}, 'ran')`
+    )
+    process.env.LOCAL_VIYA_JS_JOBS = JSON.stringify({
+      '/Public/bridge/fallback': '/Public/bridge/fallback.js'
+    })
+    process.env.LOCAL_VIYA_SCRIPT_MOCKS = '{}'
+    try {
+      const req = {
+        socket: { remoteAddress: '127.0.0.1' },
+        headers: {},
+        cookies: {},
+        get: () => 'localhost',
+        protocol: 'http'
+      } as unknown as express.Request
+      await expect(
+        executeLocalCompute(
+          req,
+          [localComputeCode('/Public/bridge/fallback')],
+          {
+            _program: '/Public/bridge/fallback'
+          }
+        )
+      ).rejects.toThrow()
+      const fs = await import('fs/promises')
+      await expect(fs.stat(marker)).rejects.toMatchObject({ code: 'ENOENT' })
+    } finally {
+      delete process.env.LOCAL_VIYA_JS_JOBS
+      delete process.env.LOCAL_VIYA_SCRIPT_MOCKS
+    }
+  })
   it('never executes altered code, mismatched selectors, missing uploads, or an escaped twin', async () => {
     const { executeLocalCompute } = await import('../routes/viya/localCompute')
     const { localComputeCode } = await import('../routes/viya/localJes')
@@ -510,6 +997,7 @@ describe('local Viya web jobs', () => {
           serverUrl: `http://127.0.0.1:${address.port}`,
           serverType: ServerType.SasViya,
           appLoc: '/Public/bridge',
+          contextName: mockContext,
           ...(mode === 'web' ? {} : { useComputeApi: mode === 'compute' })
         })
         const result = await client.request('config-argument', null, {

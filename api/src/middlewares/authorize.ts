@@ -25,21 +25,16 @@ const sendPermissionDenied = async (req: Request, res: Response) => {
  *
  * Administrators bypass the rules, and a public route is admitted before them.
  */
-export const authorize: RequestHandler = async (req, res, next) => {
+export const hasRoutePermission = async (req: Request): Promise<boolean> => {
   const { user } = req
-
-  if (!user) return sendPermissionDenied(req, res)
-
-  // no need to check for permissions when user is admin
-  if (user.isAdmin) return next()
-
-  // no need to check for permissions when route is Public
-  if (await isPublicRoute(req)) return next()
-
+  if (!user) return false
+  if (user.isAdmin) return true
+  if (await isPublicRoute(req)) return true
   const dbUser = await User.findOne({ _id: user.userId })
-  if (!dbUser) return sendPermissionDenied(req, res)
+  return !!dbUser && (await isGrantedForRequest(dbUser, req))
+}
 
-  if (await isGrantedForRequest(dbUser, req)) return next()
-
+export const authorize: RequestHandler = async (req, res, next) => {
+  if (await hasRoutePermission(req)) return next()
   return sendPermissionDenied(req, res)
 }

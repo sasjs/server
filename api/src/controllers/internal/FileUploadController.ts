@@ -8,7 +8,14 @@ import {
   RunTimeType
 } from '../../utils'
 import { SessionState } from '../../types'
-import { viyaWebJobRequest } from '../../utils/tierPostVariables'
+import {
+  viyaWebJobRequest,
+  viyaWebDefinition
+} from '../../utils/tierPostVariables'
+import { persistedDefinition } from '../../routes/viya/persistedDefinition'
+import { resolveDrivePath } from './nodeDriveStore'
+import { hasRoutePermission } from '../../middlewares/authorize'
+import { registry } from '../../routes/viya/localJes'
 
 // The same parser Multer's type-is uses; a failed parse makes Multer silently
 // skip the upload instead of reporting an error.
@@ -47,6 +54,44 @@ export class FileUploadController {
       }
     }
 
+    const registered = (req as any)[viyaWebDefinition] as
+      { selector?: string; job: string; target?: string } | undefined
+    if (registered) {
+      try {
+        const url = req.url
+        const baseUrl = req.baseUrl
+        let allowed: boolean
+        try {
+          req.url = '/SASjsApi/stp/execute'
+          req.baseUrl = ''
+          allowed = await hasRoutePermission(req)
+        } finally {
+          req.url = url
+          req.baseUrl = baseUrl
+        }
+        if (!allowed) return res.sendStatus(401)
+        const matches: { selector: string; target: string }[] = []
+        // Resolve the job URI independently of ordinary request variables.
+        for (const [selector, target] of Object.entries(registry())) {
+          const definition = await persistedDefinition(req, selector)
+          const synthetic = Buffer.from(selector).toString('base64url')
+          if (
+            registered.job ===
+            `/jobDefinitions/definitions/${definition?.id ?? synthetic}`
+          )
+            matches.push({ selector, target })
+        }
+        if (matches.length !== 1)
+          return res.status(400).send('Unregistered local JS job.')
+        Object.assign(registered, matches[0])
+        const params = new URLSearchParams(req.url.split('?')[1] ?? '')
+        params.set('_program', matches[0].target)
+        req.url = `/execute?${params.toString()}`
+      } catch {
+        return res.status(401).send('Definition access denied.')
+      }
+    }
+
     const { error: errQ, value: query } = executeProgramRawValidation(req.query)
 
     // multer has not run yet, so a multipart body is empty here - but a JSON body
@@ -81,6 +126,7 @@ export class FileUploadController {
     let runTime
 
     try {
+      if (registered?.target) resolveDrivePath(registered.target)
       ;({ runTime } = await getRunTimeAndFilePath(programPath))
       if ((req as any)[viyaWebJobRequest] && runTime !== RunTimeType.JS)
         return res

@@ -129,6 +129,9 @@ const runCli = (args: string[], options: { cwd: string; home: string }) =>
     child.on('close', (code) => resolve({ code, output }))
   })
 
+/** The single context advertised by the Viya mock, not the adapter default. */
+const mockContext = 'SASjs Mock context'
+
 /** The public client the CLI signs in with, and the account a caller uses. */
 const clientId = 'sas.cli'
 const user = {
@@ -294,7 +297,7 @@ describe('a Viya client against the emulated estate', () => {
     client = new SASViyaApiClient(
       origin,
       '',
-      'SAS Job Execution compute context',
+      mockContext,
       new SasjsRequestClient(origin)
     )
 
@@ -394,11 +397,22 @@ describe('a Viya client against the emulated estate', () => {
     expect(me.id).toBeTruthy()
   })
 
-  it('lists the compute contexts', async () => {
+  it('lists and selects the named mock compute context', async () => {
     const contexts = await client.getComputeContexts(tokens.access_token)
 
-    expect(contexts.length).toBeGreaterThan(0)
-    expect(contexts[0].name).toBeTruthy()
+    expect(contexts.map((context) => context.name)).toEqual([mockContext])
+    const selected = await client.getComputeContextByName(
+      mockContext,
+      tokens.access_token
+    )
+    expect(selected.id).toBe(contexts[0].id)
+    expect(selected.name).toBe(mockContext)
+    await expect(
+      client.getComputeContextByName(
+        'SAS Job Execution compute context',
+        tokens.access_token
+      )
+    ).rejects.toThrow('was not found')
   })
 
   it('drives the estate through the client the server builds', async () => {
@@ -416,7 +430,7 @@ describe('a Viya client against the emulated estate', () => {
     }
 
     process.env.VIYA_URL = origin
-    process.env.VIYA_CONTEXT = 'SAS Job Execution compute context'
+    process.env.VIYA_CONTEXT = mockContext
 
     // the client is cached for the process, so this case builds a fresh one from
     // its own env rather than accepting whatever an earlier caller left behind
@@ -434,8 +448,13 @@ describe('a Viya client against the emulated estate', () => {
       expect((built as any).contextName).toBe(process.env.VIYA_CONTEXT)
 
       const contexts = await built.getComputeContexts(tokens.access_token)
+      const selected = await built.getComputeContextByName(
+        process.env.VIYA_CONTEXT,
+        tokens.access_token
+      )
 
-      expect(contexts.length).toBeGreaterThan(0)
+      expect(selected.name).toBe(mockContext)
+      expect(selected.id).toBe(contexts[0].id)
     } finally {
       if (saved.url === undefined) delete process.env.VIYA_URL
       else process.env.VIYA_URL = saved.url
@@ -454,14 +473,8 @@ describe('a Viya client against the emulated estate', () => {
     // the client ages a session from `creationTimeStamp` against
     // `sessionInactiveTimeout`, so a session stamped in the past is discarded on
     // the way in and this call is what notices
-    const first = await client.createSession(
-      'SAS Job Execution compute context',
-      tokens.access_token
-    )
-    const second = await client.createSession(
-      'SAS Job Execution compute context',
-      tokens.access_token
-    )
+    const first = await client.createSession(mockContext, tokens.access_token)
+    const second = await client.createSession(mockContext, tokens.access_token)
 
     expect(first.id).toBeTruthy()
     expect(second.id).toBeTruthy()
@@ -569,7 +582,7 @@ describe('a Viya client against the emulated estate', () => {
     const result = await client.executeScript(
       'conformance/job',
       linesOfCode,
-      'SAS Job Execution compute context',
+      mockContext,
       undefined,
       null,
       true,
@@ -631,6 +644,7 @@ describe('a Viya client against the emulated estate', () => {
                 serverType: 'SASVIYA',
                 serverUrl: origin,
                 appLoc,
+                contextName: mockContext,
                 authConfig: {
                   access_token: tokens.access_token,
                   refresh_token: tokens.refresh_token,

@@ -8,11 +8,12 @@ import { legacyRouteRedirects } from './legacyRouteRedirects'
 import { normalizeTierQuery } from '../utils/tierQuery'
 import {
   tierProgramRequest,
-  viyaWebJobRequest
+  viyaWebJobRequest,
+  viyaWebDefinition
 } from '../utils/tierPostVariables'
+import { localJesEnabled, localJesRouter } from './viya/localJes'
 import { emulatedHeaders } from '@sasjs/api'
 import { readDebugWebout } from './viya/webJobDebug'
-import { localJesRouter } from './viya/localJes'
 import { ModeType } from '../utils'
 
 import {
@@ -98,7 +99,32 @@ export const setupRoutes = (app: Express) => {
         webTier === '/SASJobExecution' &&
         req.method === 'POST' &&
         isViyaEmulationEnabled()
-      const { search, hasFile, hasProgram } = normalizeTierQuery(url, viyaPost)
+      let routedUrl = url
+      if (viyaPost && localJesEnabled()) {
+        const params = new URLSearchParams(url.split('?')[1] ?? '')
+        const keys = Array.from(params.keys(), (key) => key.toLowerCase())
+        const jobs = keys.filter((key) => key === '_job')
+        if (jobs.length) {
+          if (
+            jobs.length !== 1 ||
+            keys.some((key) => key === '_program' || key === '_file') ||
+            !params.has('_job')
+          )
+            return res.status(400).send('Unsupported Viya web-job request.')
+          const job = params.get('_job')!
+          if (!/^\/jobDefinitions\/definitions\/[^/]+$/.test(job))
+            return res.status(400).send('Unregistered local JS job.')
+          params.delete('_job')
+          // The real target is resolved after authentication and authorization.
+          params.set('_program', '/__local_js_job__')
+          routedUrl = `/?${params.toString()}`
+          ;(req as any)[viyaWebDefinition] = { job }
+        }
+      }
+      const { search, hasFile, hasProgram } = normalizeTierQuery(
+        routedUrl,
+        viyaPost
+      )
 
       // one file, or one program, never both: the two answer different things,
       // and choosing silently would answer a question the caller did not ask -
@@ -122,13 +148,7 @@ export const setupRoutes = (app: Express) => {
         params.forEach((value, name) => {
           const key = name.toLowerCase()
           if (
-            [
-              '_job',
-              '__program',
-              '_executiontasks',
-              '_form',
-              '_prompts'
-            ].includes(key) ||
+            ['_job', '_executiontasks', '_form', '_prompts'].includes(key) ||
             (key === '_action' && value.toLowerCase() !== 'execute') ||
             (key === '_debug' &&
               value !== '' &&
