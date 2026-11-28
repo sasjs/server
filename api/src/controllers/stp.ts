@@ -30,7 +30,8 @@ import { TriggerResponse } from '../types'
 import {
   mergeTierPostVariables,
   tierProgramRequest,
-  viyaWebJobRequest
+  viyaWebJobRequest,
+  viyaWebDefinition
 } from '../utils/tierPostVariables'
 
 /**
@@ -142,6 +143,8 @@ export class STPController {
         isTier ? merged._debug : (request.query._debug ?? request.body?._debug)
       )
     }
+    const registered = (request as any)[viyaWebDefinition]
+    if (registered) vars._program = registered.selector
     const filesNamesMap = request.files?.length
       ? makeFilesNamesMap(request.files as MulterFile[])
       : null
@@ -212,7 +215,7 @@ const execute = async (
       const id = saveDebugWebout(result.toString())
       if (!id) throw new Error('Debug output exceeds the local mock limit.')
       req.res?.type('html')
-      return debugPage(id, log)
+      return debugPage(id, `JS mock (not SAS)\n${log}`)
     }
 
     req.res?.header(httpHeaders)

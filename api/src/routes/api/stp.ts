@@ -77,7 +77,6 @@ stpRouter.post(
               '_program',
               '_file',
               '_job',
-              '__program',
               '_executiontasks',
               '_form',
               '_prompts'

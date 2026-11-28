@@ -3,6 +3,7 @@ import { Request } from 'express'
 // A private request marker, set only when the web tier forwards to the API.
 export const tierProgramRequest = Symbol('tierProgramRequest')
 export const viyaWebJobRequest = Symbol('viyaWebJobRequest')
+export const viyaWebDefinition = Symbol('viyaWebDefinition')
 
 /** Merge body fields into query variables without creating case-only aliases. */
 export const mergeTierPostVariables = (

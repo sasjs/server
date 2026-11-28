@@ -12,6 +12,8 @@ import { resolveDrivePath } from '../../controllers/internal/nodeDriveStore'
 import { getPreProgramVariables, ModeType, RunTimeType } from '../../utils'
 import { SessionState } from '../../types'
 import { isValidSasName } from '../../utils/programVariables'
+import { hasDefinitionAccess } from './definitionAccess'
+import { persistedDefinition } from './persistedDefinition'
 
 // An explicit operator-controlled mapping, only for a trusted desktop mock.
 export const localJesEnabled = () =>
@@ -101,7 +103,7 @@ export const addJesMembers = async (
   if (
     !localJesEnabled() ||
     req.method !== 'GET' ||
-    !/^\/folders\/folders\/[^/]+\/members$/.test(req.path) ||
+    !/^\/folders\/folders\/[^/]+\/members\/*$/i.test(req.path) ||
     answer.status !== 200
   )
     return
@@ -120,9 +122,35 @@ export const addJesMembers = async (
     for (const name of Object.keys(registry()).filter(
       (job) => path.posix.dirname(job) === folder
     )) {
+      const memberName = path.posix.basename(name)
+      // Older API pins expose reserved definition files as opaque ordinary
+      // members. Their names cannot establish whether a definition collides,
+      // so refuse discovery rather than guessing or reading another format.
+      const opaqueDefinition = answer.body.items.some(
+        (item: any) =>
+          item.type === 'file' && /^\.sasjs-viya-job-/i.test(item.name)
+      )
+      const matches = answer.body.items.filter(
+        (item: any) => item.name === memberName
+      )
+      // Keep the genuine definition and its resource link; only synthesize a
+      // member when no persisted definition exists. Other collisions stay errors.
+      if (
+        !opaqueDefinition &&
+        matches.length === 1 &&
+        matches[0].contentType === 'jobDefinition'
+      )
+        continue
+      if (opaqueDefinition || matches.length) {
+        answer.status = 409
+        answer.body = {
+          message: 'Registered local JS job name collides with a folder member.'
+        }
+        return
+      }
       const href = definitionPath(name)
       answer.body.items.push({
-        name: path.posix.basename(name),
+        name: memberName,
         type: 'jobDefinition',
         code: localComputeCode(name),
         uri: href,
@@ -139,8 +167,12 @@ localJesRouter.use(async (req, res, next) => {
   prune()
   const definition = /^\/jobDefinitions\/definitions\/([^/]+)$/.exec(req.path)
   if (req.method === 'GET' && definition) {
+    if (!hasDefinitionAccess(req))
+      return res.status(401).json({
+        message: 'Viya definition access requires the authorization guard.'
+      })
     const name = findDefinition(definition[1])
-    if (!name) return res.sendStatus(404)
+    if (!name) return next()
     return res.json({
       id: definition[1],
       name: path.posix.basename(name),
@@ -175,8 +207,12 @@ localJesRouter.use(async (req, res, next) => {
         ? args._program.replace(/\/{2,}/g, '/')
         : undefined
     const target = typeof name === 'string' ? registry()[name] : undefined
-    if (!target || body?.jobDefinition?.id !== idFor(name))
-      return res.status(400).send('Unregistered local JS job.')
+    if (!target) return res.status(400).send('Unregistered local JS job.')
+    if (body?.jobDefinition?.id !== idFor(name)) {
+      const definition = await persistedDefinition(req, name)
+      if (!definition || body?.jobDefinition?.id !== definition.id)
+        return res.status(400).send('Unregistered local JS job.')
+    }
     if (!args || typeof args !== 'object' || Array.isArray(args))
       return res.status(400).send('Invalid local mock arguments.')
     const count = Number(args._webin_file_count ?? 0)
@@ -274,7 +310,7 @@ localJesRouter.use(async (req, res, next) => {
         throw new Error('Local mock output limit reached.')
       jobs.set(id, {
         result,
-        log: output.log,
+        log: `JS mock (not SAS)\n${output.log}`,
         state: output.failureReason ? 'failed' : 'completed',
         expires: Date.now() + TTL
       })
