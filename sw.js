@@ -36,9 +36,9 @@
  * activity, and the browser's answers to questions a server asks its process.
  */
 // viya-jobs-version: d751713988987e9331980363e24189ce
-importScripts('host/runtime-core.js?v=aff95ff1ae')
-importScripts('host/api-browser.js?v=aff95ff1ae')
-importScripts('host/lint-browser.js?v=aff95ff1ae')
+importScripts('host/runtime-core.js?v=d7fc92c6eb')
+importScripts('host/api-browser.js?v=d7fc92c6eb')
+importScripts('host/lint-browser.js?v=d7fc92c6eb')
 
 const R = self.SASjsMockRuntime
 
@@ -1052,7 +1052,7 @@ const adminReports = {
     const total = Number(heap.jsHeapSizeLimit || deviceBytes || 0)
     const used = Number(heap.usedJSHeapSize || 0)
     return {
-      build: { version: "v8.15.2-3-gf3563844", gitHash: "f3563844", buildDate: "2026-11-28T10:13:27.317Z" },
+      build: { version: "v8.16.0-4-g9dcb78c8-dirty", gitHash: "9dcb78c8", buildDate: "2026-11-28T11:17:50.108Z" },
       server: {
         // a page is not a process: the fields exist so a diagnostics screen
         // renders, and their values describe this worker rather than inventing
@@ -1688,7 +1688,7 @@ const parseLintConfig = (contents) => {
 }
 
 // written by mock/build.mjs: the release this site was built from
-API.BROWSER_INFO.version = "v8.15.2-3-gf3563844 (f3563844)"
+API.BROWSER_INFO.version = "v8.16.0-4-g9dcb78c8-dirty (9dcb78c8)"
 
 const SERVICES = {
   drive: API.createDriveService(DRIVE_STORE),
