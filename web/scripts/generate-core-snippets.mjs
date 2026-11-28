@@ -40,8 +40,6 @@ const core = selected || join(webRoot, 'node_modules', '@sasjs', 'core')
 const pkg = JSON.parse(readFileSync(join(core, 'package.json'), 'utf8'))
 if (pkg.name !== '@sasjs/core' || typeof pkg.version !== 'string')
   throw new Error(`Invalid @sasjs/core package in ${core}`)
-if (!selected && pkg.version !== '7.1.15')
-  throw new Error(`Expected @sasjs/core 7.1.15, got ${pkg.version}`)
 const cli =
   process.env.SASJS_CLI_ENTRY ||
   join(webRoot, 'node_modules', '@sasjs', 'cli', 'build', 'index.js')

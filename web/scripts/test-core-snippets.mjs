@@ -68,7 +68,11 @@ test('generates unmodified VS Code snippets with the actual CLI for the selected
     }
     writeFileSync(join(core, 'base', 'zlast.sas'), '%macro zlast(); %mend;')
     writeFileSync(join(core, 'base', 'afirst.sas'), '%macro afirst(); %mend;')
-    for (const name of ['afirst.test.sas', 'afirst.test.1.sas', 'afirst.test.10.sas'])
+    for (const name of [
+      'afirst.test.sas',
+      'afirst.test.1.sas',
+      'afirst.test.10.sas'
+    ])
       writeFileSync(join(core, 'base', name), '%put test;')
     const run = spawnSync(
       process.execPath,
@@ -96,6 +100,24 @@ test('generates unmodified VS Code snippets with the actual CLI for the selected
     assert.equal(Object.keys(suites).length, folders.length + 2)
     assert.deepEqual(Object.keys(data), Object.keys(data).sort())
     assert.deepEqual(Object.keys(suites), Object.keys(suites).sort())
+
+    // Without a selection, use the installed core regardless of its version.
+    const installedCore = join(web, 'node_modules', '@sasjs', 'core')
+    cpSync(core, installedCore, { recursive: true })
+    const defaultEnv = { ...process.env, SASJS_CLI_ENTRY: cli }
+    delete defaultEnv.SASJS_CORE_ROOT
+    const installed = spawnSync(
+      process.execPath,
+      [join(scripts, 'generate-core-snippets.mjs')],
+      { cwd: web, env: defaultEnv, encoding: 'utf8' }
+    )
+    assert.equal(installed.status, 0, installed.stdout + installed.stderr)
+    assert.match(installed.stdout, /@sasjs\/core 99\.0\.0/)
+    assert.deepEqual(
+      JSON.parse(readFileSync(join(output, 'coreSnippets.json'), 'utf8')),
+      data
+    )
+
     const before = ['coreSnippets.json', 'coreSnippetSuites.json'].map((file) =>
       readFileSync(join(output, file))
     )
