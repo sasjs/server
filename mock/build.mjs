@@ -174,18 +174,19 @@ const seeded = withServerSeededFiles(
  * The code the demo's drive carries, at whatever is newest when the site is built.
  *
  * Nothing here is pinned: the macro core follows `@sasjs/core` on npm's `latest`
- * tag, the SAS Packages framework follows its default branch, and the apps below
- * follow their newest releases. A demo that named versions would be describing a
- * library nobody installs today - the daily rebuild exists so a release reaches
- * the site without anyone remembering to move a number.
+ * tag, the SAS Packages framework and Paul Canals' toolbox follow their default
+ * branches, and the apps below follow their newest releases. A demo that named
+ * versions would be describing a library nobody installs today - the daily
+ * rebuild exists so a release reaches the site without anyone remembering to
+ * move a number.
  *
  * So the core on the drive is NOT the core this server bundles: `api/package.json`
  * pins the range that the server's own programs are written against, which may be
  * older. That is deliberate - the tree is a library to read, not the server's
  * runtime - and it is why the resolved version is recorded rather than assumed.
  *
- * `code-macro-core.txt` and `code-sas-packages.txt` sit beside `cli-version.txt`,
- * so a published tree can be traced to what built it.
+ * `code-macro-core.txt`, `code-sas-packages.txt` and `code-toolbox.txt` sit
+ * beside `cli-version.txt`, so a published tree can be traced to what built it.
  */
 
 /** Fetches with a deadline and one retry, so a stalled host cannot hang a rebuild. */
@@ -265,6 +266,78 @@ const fetchSasPackages = async () => {
   return { target, record }
 }
 
+/**
+ * Paul Canals' toolbox: the third library the tree carries, from its default
+ * branch.
+ *
+ * The REPOSITORY, not the release package, and the difference is worth stating.
+ * A release is one zip per platform (`toolbox-lnx`, `toolbox-win`) whose macro
+ * bodies are a compiled `sasmacr_*.sas7bcat` catalogue. Nobody opens a catalogue
+ * in an editor, every visitor would download it, and the per-platform zips differ
+ * in nothing a tree of files can show - so what travels here is what a clone gives:
+ * a page of documentation per macro, the test script that calls it, the
+ * standalone copies of its `custom/` macros, and the templates. The catalogue is
+ * what a SAS session installs; the drive is what a person reads.
+ *
+ * `.github/` stays out for the reason the framework's papers do: issue templates
+ * are a forge's paperwork, not the library.
+ */
+const fetchToolbox = async () => {
+  const target = path.join(root, 'sasjsbuild', 'toolbox')
+  const record = path.join(root, 'sasjsbuild', 'toolbox.txt')
+
+  // the record as well as the tree: a build interrupted between the extraction
+  // and the write leaves a tree with no version, and the site copy then fails
+  if (existsSync(path.join(target, 'docs')) && existsSync(record))
+    return { target, record }
+
+  // the default branch, whatever it points at now
+  const head = JSON.parse(
+    (
+      await fetchWithRetry(
+        'https://api.github.com/repos/paul-canals/toolbox/commits/HEAD',
+        {
+          headers: process.env.GITHUB_TOKEN
+            ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+            : {}
+        }
+      )
+    ).toString('utf8')
+  )
+
+  const sha = head.sha
+  const tarball = path.join(root, 'sasjsbuild', 'toolbox.tar.gz')
+
+  writeFileSync(
+    tarball,
+    await fetchWithRetry(
+      `https://codeload.github.com/paul-canals/toolbox/tar.gz/${sha}`
+    )
+  )
+
+  rmSync(target, { recursive: true, force: true })
+  mkdirSync(target, { recursive: true })
+
+  // one top-level folder in the archive, named after the commit
+  execFileSync('tar', ['xzf', tarball, '--strip-components=1', '-C', target], {
+    cwd: root
+  })
+
+  // the pages per macro are the half of this tree a visitor reads, so a tarball
+  // that did not unpack them is the wrong archive rather than an empty tree
+  if (!existsSync(path.join(target, 'docs', 'md')))
+    throw new Error(
+      `The toolbox tarball did not unpack a docs/md folder: expected ${path.join(target, 'docs', 'md')}`
+    )
+
+  writeFileSync(
+    record,
+    `paul-canals/toolbox ${sha} (default branch at build time)\n`
+  )
+
+  return { target, record }
+}
+
 /** The macro core, from npm's newest release of the package. */
 const fetchMacroCore = () => {
   const target = path.join(root, 'sasjsbuild', 'macro-core')
@@ -317,12 +390,14 @@ const fetchMacroCore = () => {
 
 const macroCore = fetchMacroCore()
 const sasPackages = await fetchSasPackages()
+const toolbox = await fetchToolbox()
 
 const drive = withCodeSources(
   withPublishedApps(seeded, published, new Date().toISOString()),
   [
-    // the library half of SASjs uses, and the framework the other half arrives
-    // with; both are read at build time, so the site describes today
+    // the library one half of SASjs uses, the framework the other half arrives
+    // with, and Paul Canals' toolbox alongside them; all three are read at build
+    // time, so the site describes today
     { folder: 'macro-core', root: macroCore.target },
     {
       folder: 'sas-packages',
@@ -330,6 +405,12 @@ const drive = withCodeSources(
       // the papers and the logos: 12MB of PDFs and screenshots, and a visitor who
       // opens `/code` is there for the SAS
       skip: ['SPF/Documentation/', 'SPF/Logo/']
+    },
+    {
+      folder: 'toolbox',
+      root: toolbox.target,
+      // issue templates are the forge's paperwork, not the library
+      skip: ['.github/']
     }
   ]
 )
@@ -580,9 +661,10 @@ writeFileSync(
   `@sasjs/cli ${cliUsed} (resolved from ${CLI_VERSION} at build time)\n`
 )
 
-// The two libraries the drive carries under /code, at whatever they were when the
+// The libraries the drive carries under /code, at whatever they were when the
 // site was built: the tree a visitor browses should be traceable the same way.
 copyFileSync(macroCore.record, path.join(site, 'code-macro-core.txt'))
 copyFileSync(sasPackages.record, path.join(site, 'code-sas-packages.txt'))
+copyFileSync(toolbox.record, path.join(site, 'code-toolbox.txt'))
 
 process.stdout.write(`\nMock site written to ${site}\n`)
