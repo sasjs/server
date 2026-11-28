@@ -2,7 +2,7 @@
   "appLoc": "/Public/server",
   "viyaMockJobs": [],
   "seedPath": "host/vfs-seed.json",
-  "driveEntries": 357,
+  "driveEntries": 682,
   "jsPrograms": 0,
   "programFolders": [
     "services",
@@ -10,9 +10,9 @@
     "tests"
   ],
   "snapshot": true,
-  "snapshotShards": 24,
+  "snapshotShards": 29,
   "sasTranscript": true,
   "identity": "default",
-  "buildStamp": "546079e5c2",
-  "builtAt": "2026-11-27T18:48:04.634Z"
+  "buildStamp": "ff2ea6f6f7",
+  "builtAt": "2026-11-28T10:13:27.119Z"
 }
