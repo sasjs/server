@@ -72,9 +72,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-xMISd7/path.js
+  // ../../../../../tmp/sasjs-lint-QktSzi/path.js
   var require_path = __commonJS({
-    "../../../../../tmp/sasjs-lint-xMISd7/path.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-QktSzi/path.js"(exports, module) {
       var SEP = String.fromCharCode(92);
       var clean = (value) => String(value).split(SEP).join("/").replace(/\/+/g, "/");
       var strip = (value) => clean(value).replace(/\/+$/, "");
@@ -112,9 +112,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-xMISd7/os.js
+  // ../../../../../tmp/sasjs-lint-QktSzi/os.js
   var require_os = __commonJS({
-    "../../../../../tmp/sasjs-lint-xMISd7/os.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-QktSzi/os.js"(exports, module) {
       module.exports = {
         homedir: () => "/",
         platform: () => "browser",
@@ -4266,9 +4266,9 @@
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-xMISd7/utils-file.js
+  // ../../../../../tmp/sasjs-lint-QktSzi/utils-file.js
   var require_utils_file = __commonJS({
-    "../../../../../tmp/sasjs-lint-xMISd7/utils-file.js"(exports, module) {
+    "../../../../../tmp/sasjs-lint-QktSzi/utils-file.js"(exports, module) {
       var unavailable = (name) => async () => {
         throw new Error(name + " is not available in the browser host");
       };
@@ -7482,7 +7482,7 @@ The file is read as strict JSON, so it cannot carry comments. Every setting, its
     }
   });
 
-  // ../../../../../tmp/sasjs-lint-xMISd7/process.js
+  // ../../../../../tmp/sasjs-lint-QktSzi/process.js
   if (typeof globalThis.process === "undefined")
     globalThis.process = {
       env: {},
@@ -19079,6 +19079,6 @@ Expected it to be ${EXPECTED_TYPE_VALUES}.`;
     );
   };
 
-  // ../../../../../tmp/sasjs-lint-xMISd7/entry.js
+  // ../../../../../tmp/sasjs-lint-QktSzi/entry.js
   globalThis.SASjsCode = { createCodeService, LintConfig: import_lint2.LintConfig, formatText: formatText2, dataPath: "sas-language/0.8.9/" };
 })();

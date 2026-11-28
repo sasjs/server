@@ -211,7 +211,7 @@
   }
 
   navigator.serviceWorker
-    .register('/sw.js?v=d7fc92c6eb', {
+    .register('/sw.js?v=579269eb8a', {
       updateViaCache: 'none'
     })
     .then(function (reg) {
