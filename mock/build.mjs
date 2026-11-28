@@ -421,13 +421,22 @@ const drive = withCodeSources(
       root: toolbox.target,
       // issue templates are the forge's paperwork, not the library
       skip: ['.github/'],
-      // The toolbox carries no rules file, so the nearest one on the drive
-      // would be the root's - which is written for a SASjs project and marks
-      // most of a third-party library: every line of it ends in a space, the
-      // headers are single-asterisk, the standalone `custom/` macros nest
-      // definitions. This one is the strictest set that reports nothing about
-      // the tree as it stands, so a visitor browsing `/code/toolbox` sees the
-      // rules the library can meet rather than a wall of markers.
+      // The toolbox carries no rules file of its own, so without this the
+      // nearest one is the drive root's: a project's rules, not a library's.
+      // This file relaxes five of them (trailing spaces, `%mend` naming its
+      // macro, `%macro` parentheses, nested definitions, lower-case macro
+      // names), turns indentation off and raises the line limit from 80 to
+      // 169, because a third-party library keeps its own house style: a
+      // one-space ` * ` comment leader on essentially every line, single
+      // asterisk headers, data lines that run long, and the standalone copies
+      // of its macros defining helpers inside themselves. It narrows
+      // `bannedStrings` to the one default the library never says, and raises
+      // what the root leaves down - `noMacroIfInOpenCode`, `noUnusedLibnames`
+      // with the librefs that outlive their file named, and every rule at
+      // `error` rather than `warn` - so the tree is held to a library's
+      // rules rather than to no rules at all. Nothing re-checks the result:
+      // the tree follows upstream's default branch, so a commit there can
+      // start reporting against this file.
       additions: {
         '.sasjslint': readFileSync(
           path.join(root, 'mock', 'toolbox.sasjslint'),
