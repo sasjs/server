@@ -288,6 +288,20 @@ try {
     '%mf_deletefile(demo.txt)',
     'core argument placeholder selected'
   )
+  // A suggestion may appear while editing an argument. Reproduce that state
+  // explicitly so Tab navigation is tested even when the worker is fast.
+  await key(' ', 'Space', 32, 2)
+  await until(
+    `!!document.querySelector('.suggest-widget.visible .monaco-list-row')`,
+    'suggestions while editing core argument'
+  )
+  // Tab accepts a focused suggestion before it navigates a snippet. Dismiss
+  // the widget first so this assertion tests snippet navigation, not completion.
+  await key('Escape', 'Escape', 27)
+  await until(
+    `!document.querySelector('.suggest-widget.visible')`,
+    'argument suggestions dismissed'
+  )
   await key('Tab', 'Tab', 9)
   await call('Input.insertText', { text: ';' })
   await expectEditorText(
